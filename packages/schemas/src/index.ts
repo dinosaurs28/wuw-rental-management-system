@@ -1,1 +1,1 @@
-export const test="hello world"
+export * from "./auth.schema.js";
