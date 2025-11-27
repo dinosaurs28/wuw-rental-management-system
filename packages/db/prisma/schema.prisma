@@ -1,7 +1,485 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../src/generated/client"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+
+enum Role {
+  ADMIN
+  MANAGER
+  STAFF
+  CUSTOMER
+}
+
+enum AuthProvider {
+  PASSWORD
+  GOOGLE
+}
+
+enum KycType {
+  DL
+  AADHAAR
+  PAN
+  STUDENT_ID
+}
+
+enum KycStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum VehicleStatus {
+  AVAILABLE
+  OUT_FOR_RENTAL
+  MAINTENANCE
+  INACTIVE
+}
+
+enum BookingStatus {
+  HOLD
+  CONFIRMED
+  PICKED_UP
+  RETURNED
+  CANCELLED
+}
+
+enum BookingPhotoType {
+  PRE_DELIVERY
+  POST_RETURN
+  DAMAGE
+}
+
+enum DepositMethod {
+  ONLINE_RAZORPAY
+  CASH
+  UPI
+}
+
+enum PaymentStatus {
+  CREATED
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum InvoiceStatus {
+  PENDING
+  APPROVED
+  FINALIZED
+  PAID
+}
+
+enum PricingRuleType {
+  WEEKDAY
+  WEEKEND
+  PEAK
+  CUSTOM
+}
+
+
+
+// USER & AUTH
+
+
+model User {
+  id               Int           @id @default(autoincrement())
+  publicId         String        @unique
+  name             String
+  email            String        @unique
+  passwordHash     String?
+  authProvider     AuthProvider  @default(PASSWORD)
+  emailVerifiedAt  DateTime?
+  role             Role
+  branchId         Int?
+  branch           Branch?       @relation(fields: [branchId], references: [id],onDelete: Restrict)
+
+  providers        UserProvider[]
+  customerProfile  Customer?
+  auditLogs        AuditLog[]
+  bookingsCreated  Booking[]     @relation("BookingCreator")
+  approvedDamageReports DamageReport[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  deletedAt        DateTime?
+  @@index([branchId])
+  @@index([role])
+}
+
+model UserProvider {
+  id              Int      @id @default(autoincrement())
+  publicId        String   @unique
+  userId          Int
+  provider        String
+  providerUserId  String
+  accessToken     String?
+  refreshToken    String?
+  user            User     @relation(fields: [userId], references: [id])
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model EmailVerificationOtp {
+  id         Int      @id @default(autoincrement())
+  email      String
+  otpHash    String
+  expiresAt  DateTime
+  used       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+
+
+// CUSTOMER & KYC
+
+
+model Customer {
+  id           Int       @id @default(autoincrement())
+  publicId     String    @unique
+  userId       Int       @unique
+  user         User      @relation(fields: [userId], references: [id])
+
+  kycs         CustomerKyc[]
+  bookings     Booking[]
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+}
+
+model CustomerKyc {
+  id         Int        @id @default(autoincrement())
+  publicId   String     @unique
+  customerId Int
+  type       KycType
+  fileId     Int
+  status     KycStatus  @default(PENDING)
+
+  customer   Customer   @relation(fields: [customerId], references: [id])
+  file       FileObject @relation(fields: [fileId], references: [id])
+
+  createdAt  DateTime   @default(now())
+  @@unique([customerId, type])
+  @@index([customerId])
+  @@index([fileId])
+}
+
+
+
+// FILE STORAGE (Cloudflare R2)
+
+
+model FileObject {
+  id        Int      @id @default(autoincrement())
+  publicId  String   @unique
+  key       String
+  url       String
+  mime      String
+  size      Int
+  createdAt DateTime @default(now())
+  bookingPhotos BookingPhoto[]
+  customerKycs CustomerKyc[]
+  @@index([publicId])
+}
+
+// BRANCH & STAFF
+
+
+model Branch {
+  id        Int       @id @default(autoincrement())
+  publicId  String    @unique
+  name      String
+  address   String
+  phone     String?
+  users     User[]
+  vehicles  Vehicle[]
+  bookings  Booking[]
+  
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+}
+
+model StaffActivityLog {
+  id        Int      @id @default(autoincrement())
+  publicId  String   @unique
+  staffId   Int
+  action    String
+  entity    String?
+  entityId  String?
+  createdAt DateTime @default(now())
+}
+
+
+
+// VEHICLES
+
+
+model VehicleCategory {
+  id          Int       @id @default(autoincrement())
+  publicId    String    @unique
+  name        String
+  description String?
+
+  vehicles    Vehicle[]
+  pricingRules PricingRule[]
+}
+
+model Vehicle {
+  id               Int                @id @default(autoincrement())
+  publicId         String             @unique
+  branchId         Int
+  categoryId       Int
+  make             String
+  model            String
+  regNo            String             @unique
+  odo              Int
+  insuranceExpiry  DateTime
+  status           VehicleStatus      @default(AVAILABLE)
+
+  branch           Branch             @relation(fields: [branchId], references: [id])
+  category         VehicleCategory    @relation(fields: [categoryId], references: [id])
+  insuranceRecords VehicleInsurance[]
+  maintenance      VehicleMaintenanceRecord[]
+  bookings         Booking[]
+  damageReports    DamageReport[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  deletedAt        DateTime?
+  @@index([branchId])
+  @@index([categoryId])
+  @@index([status])
+}
+
+model VehicleInsurance {
+  id           Int      @id @default(autoincrement())
+  publicId     String   @unique
+  vehicleId    Int
+  policyNumber String
+  provider     String
+  validTill    DateTime
+
+  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id])
+  @@index([vehicleId])
+}
+
+model VehicleMaintenanceRecord {
+  id           Int      @id @default(autoincrement())
+  publicId     String   @unique
+  vehicleId    Int
+  description  String
+  cost         Decimal
+  servicedAt   DateTime
+
+  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id])
+  @@index([vehicleId])
+}
+
+
+
+// BOOKINGS
+
+
+model RentalPlan {
+  id            Int      @id @default(autoincrement())
+  publicId      String   @unique
+  name          String
+  durationHours Int
+  basePrice     Decimal
+  bookings      Booking[]
+}
+
+model PricingRule {
+  id         Int              @id @default(autoincrement())
+  publicId   String           @unique
+  ruleType   PricingRuleType
+  multiplier Decimal
+  categoryId Int?
+
+  category   VehicleCategory? @relation(fields: [categoryId], references: [id])
+  createdAt  DateTime         @default(now())
+}
+
+model Booking {
+  id                Int            @id @default(autoincrement())
+  publicId          String         @unique
+  customerId        Int            
+  vehicleId         Int
+  branchId          Int
+  rentalPlanId      Int
+  startAt           DateTime
+  endAt             DateTime
+  status            BookingStatus  @default(HOLD)
+  rentalPrice       Decimal
+  depositRequired   Decimal
+  depositMethod     DepositMethod
+  pricingSnapshot   Json
+  createdById       Int
+
+  customer          Customer       @relation(fields: [customerId], references: [id])
+  vehicle           Vehicle        @relation(fields: [vehicleId], references: [id])
+  branch            Branch         @relation(fields: [branchId], references: [id])
+  rentalPlan        RentalPlan     @relation(fields: [rentalPlanId], references: [id])
+  createdBy         User           @relation("BookingCreator", fields: [createdById], references: [id])
+
+  photos            BookingPhoto[]
+  damages           DamageReport[]
+  deposit           Deposit?
+  invoice           Invoice?
+
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  deletedAt         DateTime?
+  @@index([customerId])
+  @@index([vehicleId])
+  @@index([branchId])
+  @@index([createdById])
+  @@index([status])
+  @@index([startAt, endAt])
+}
+
+model BookingPhoto {
+  id         Int            @id @default(autoincrement())
+  publicId   String         @unique
+  bookingId  Int
+  fileId     Int
+  type       BookingPhotoType
+
+  booking    Booking        @relation(fields: [bookingId], references: [id])
+  file       FileObject     @relation(fields: [fileId], references: [id])
+  createdAt  DateTime       @default(now())
+  @@index([bookingId])
+  @@index([fileId])
+}
+
+model DamageReport {
+  id            Int       @id @default(autoincrement())
+  publicId      String    @unique
+  bookingId     Int
+  vehicleId     Int
+  severity      String
+  estimatedCost Decimal
+  notes         String?
+  approvedById  Int?
+
+  booking       Booking    @relation(fields: [bookingId], references: [id])
+  vehicle       Vehicle    @relation(fields: [vehicleId], references: [id])
+  approvedBy    User?      @relation(fields: [approvedById], references: [id],onDelete: SetNull)
+
+  createdAt     DateTime   @default(now())
+}
+
+
+
+// DEPOSIT & PAYMENTS
+
+
+model Deposit {
+  id            Int            @id @default(autoincrement())
+  publicId      String         @unique
+  bookingId     Int            @unique
+  amount        Decimal
+  method        DepositMethod
+  isRefunded    Boolean        @default(false)
+  refundedAt    DateTime?
+  refundMethod  String?
+
+  booking       Booking        @relation(fields: [bookingId], references: [id])
+  createdAt     DateTime       @default(now())
+}
+
+model Payment {
+  id                Int            @id @default(autoincrement())
+  publicId          String         @unique
+  invoiceId         Int
+  method            DepositMethod  // ONLINE_RAZORPAY or CASH/UPI
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  status            PaymentStatus
+  amount            Decimal
+
+  createdAt         DateTime       @default(now())
+  invoice           Invoice        @relation(fields: [invoiceId], references: [id])
+  @@index([invoiceId])
+  @@index([status])
+}
+
+model PaymentWebhookLog {
+  id         Int      @id @default(autoincrement())
+  publicId   String   @unique
+  payload    Json
+  signature  String
+  processed  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+
+
+// INVOICE
+
+
+model Invoice {
+  id             Int           @id @default(autoincrement())
+  publicId       String        @unique
+  bookingId      Int           @unique
+  subtotal       Decimal
+  discount       Decimal
+  tax            Decimal
+  damageCharges  Decimal
+  total          Decimal
+  status         InvoiceStatus @default(PENDING)
+
+  booking        Booking       @relation(fields: [bookingId], references: [id],onDelete: Cascade)
+  items          InvoiceItem[]
+  payments       Payment[]
+  createdAt      DateTime      @default(now())
+  @@index([bookingId])
+}
+
+model InvoiceItem {
+  id         Int       @id @default(autoincrement())
+  publicId   String    @unique
+  invoiceId  Int
+  label      String
+  amount     Decimal
+
+  invoice    Invoice   @relation(fields: [invoiceId], references: [id])
+  
+}
+
+
+
+// AUDIT LOG
+
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  publicId  String   @unique
+  userId    Int
+  action    String
+  entity    String
+  entityId  String
+  before    Json?
+  after     Json?
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+
+
+// SYSTEM SETTINGS
+
+
+model SystemSetting {
+  id        Int      @id @default(autoincrement())
+  publicId  String   @unique
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
 }
