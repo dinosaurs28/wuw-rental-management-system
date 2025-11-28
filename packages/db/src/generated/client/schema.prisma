@@ -95,13 +95,14 @@ model User {
   branchId        Int?
   branch          Branch?      @relation(fields: [branchId], references: [id], onDelete: Restrict)
 
+  emailOtps             EmailVerificationOtp[]
   providers             UserProvider[]
   customerProfile       Customer?
   auditLogs             AuditLog[]
-  bookingsCreated       Booking[]      @relation("BookingCreator")
+  bookingsCreated       Booking[]              @relation("BookingCreator")
   approvedDamageReports DamageReport[]
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
   deletedAt             DateTime?
 
   @@index([branchId])
@@ -124,11 +125,13 @@ model UserProvider {
 
 model EmailVerificationOtp {
   id        Int      @id @default(autoincrement())
+  userId    Int      @unique
   email     String
   otpHash   String
   expiresAt DateTime
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 // CUSTOMER & KYC

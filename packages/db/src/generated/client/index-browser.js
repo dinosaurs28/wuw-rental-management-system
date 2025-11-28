@@ -151,6 +151,7 @@ exports.Prisma.UserProviderScalarFieldEnum = {
 
 exports.Prisma.EmailVerificationOtpScalarFieldEnum = {
   id: 'id',
+  userId: 'userId',
   email: 'email',
   otpHash: 'otpHash',
   expiresAt: 'expiresAt',

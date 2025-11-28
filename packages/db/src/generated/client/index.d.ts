@@ -2976,6 +2976,7 @@ export namespace Prisma {
    */
 
   export type UserCountOutputType = {
+    emailOtps: number
     providers: number
     auditLogs: number
     bookingsCreated: number
@@ -2983,6 +2984,7 @@ export namespace Prisma {
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    emailOtps?: boolean | UserCountOutputTypeCountEmailOtpsArgs
     providers?: boolean | UserCountOutputTypeCountProvidersArgs
     auditLogs?: boolean | UserCountOutputTypeCountAuditLogsArgs
     bookingsCreated?: boolean | UserCountOutputTypeCountBookingsCreatedArgs
@@ -2998,6 +3000,13 @@ export namespace Prisma {
      * Select specific fields to fetch from the UserCountOutputType
      */
     select?: UserCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountEmailOtpsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: EmailVerificationOtpWhereInput
   }
 
   /**
@@ -3630,6 +3639,7 @@ export namespace Prisma {
     updatedAt?: boolean
     deletedAt?: boolean
     branch?: boolean | User$branchArgs<ExtArgs>
+    emailOtps?: boolean | User$emailOtpsArgs<ExtArgs>
     providers?: boolean | User$providersArgs<ExtArgs>
     customerProfile?: boolean | User$customerProfileArgs<ExtArgs>
     auditLogs?: boolean | User$auditLogsArgs<ExtArgs>
@@ -3671,6 +3681,7 @@ export namespace Prisma {
 
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     branch?: boolean | User$branchArgs<ExtArgs>
+    emailOtps?: boolean | User$emailOtpsArgs<ExtArgs>
     providers?: boolean | User$providersArgs<ExtArgs>
     customerProfile?: boolean | User$customerProfileArgs<ExtArgs>
     auditLogs?: boolean | User$auditLogsArgs<ExtArgs>
@@ -3686,6 +3697,7 @@ export namespace Prisma {
     name: "User"
     objects: {
       branch: Prisma.$BranchPayload<ExtArgs> | null
+      emailOtps: Prisma.$EmailVerificationOtpPayload<ExtArgs>[]
       providers: Prisma.$UserProviderPayload<ExtArgs>[]
       customerProfile: Prisma.$CustomerPayload<ExtArgs> | null
       auditLogs: Prisma.$AuditLogPayload<ExtArgs>[]
@@ -4070,6 +4082,7 @@ export namespace Prisma {
   export interface Prisma__UserClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     branch<T extends User$branchArgs<ExtArgs> = {}>(args?: Subset<T, User$branchArgs<ExtArgs>>): Prisma__BranchClient<$Result.GetResult<Prisma.$BranchPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    emailOtps<T extends User$emailOtpsArgs<ExtArgs> = {}>(args?: Subset<T, User$emailOtpsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$EmailVerificationOtpPayload<ExtArgs>, T, "findMany"> | Null>
     providers<T extends User$providersArgs<ExtArgs> = {}>(args?: Subset<T, User$providersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserProviderPayload<ExtArgs>, T, "findMany"> | Null>
     customerProfile<T extends User$customerProfileArgs<ExtArgs> = {}>(args?: Subset<T, User$customerProfileArgs<ExtArgs>>): Prisma__CustomerClient<$Result.GetResult<Prisma.$CustomerPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     auditLogs<T extends User$auditLogsArgs<ExtArgs> = {}>(args?: Subset<T, User$auditLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AuditLogPayload<ExtArgs>, T, "findMany"> | Null>
@@ -4446,6 +4459,26 @@ export namespace Prisma {
      */
     include?: BranchInclude<ExtArgs> | null
     where?: BranchWhereInput
+  }
+
+  /**
+   * User.emailOtps
+   */
+  export type User$emailOtpsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the EmailVerificationOtp
+     */
+    select?: EmailVerificationOtpSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EmailVerificationOtpInclude<ExtArgs> | null
+    where?: EmailVerificationOtpWhereInput
+    orderBy?: EmailVerificationOtpOrderByWithRelationInput | EmailVerificationOtpOrderByWithRelationInput[]
+    cursor?: EmailVerificationOtpWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: EmailVerificationOtpScalarFieldEnum | EmailVerificationOtpScalarFieldEnum[]
   }
 
   /**
@@ -5591,14 +5624,17 @@ export namespace Prisma {
 
   export type EmailVerificationOtpAvgAggregateOutputType = {
     id: number | null
+    userId: number | null
   }
 
   export type EmailVerificationOtpSumAggregateOutputType = {
     id: number | null
+    userId: number | null
   }
 
   export type EmailVerificationOtpMinAggregateOutputType = {
     id: number | null
+    userId: number | null
     email: string | null
     otpHash: string | null
     expiresAt: Date | null
@@ -5608,6 +5644,7 @@ export namespace Prisma {
 
   export type EmailVerificationOtpMaxAggregateOutputType = {
     id: number | null
+    userId: number | null
     email: string | null
     otpHash: string | null
     expiresAt: Date | null
@@ -5617,6 +5654,7 @@ export namespace Prisma {
 
   export type EmailVerificationOtpCountAggregateOutputType = {
     id: number
+    userId: number
     email: number
     otpHash: number
     expiresAt: number
@@ -5628,14 +5666,17 @@ export namespace Prisma {
 
   export type EmailVerificationOtpAvgAggregateInputType = {
     id?: true
+    userId?: true
   }
 
   export type EmailVerificationOtpSumAggregateInputType = {
     id?: true
+    userId?: true
   }
 
   export type EmailVerificationOtpMinAggregateInputType = {
     id?: true
+    userId?: true
     email?: true
     otpHash?: true
     expiresAt?: true
@@ -5645,6 +5686,7 @@ export namespace Prisma {
 
   export type EmailVerificationOtpMaxAggregateInputType = {
     id?: true
+    userId?: true
     email?: true
     otpHash?: true
     expiresAt?: true
@@ -5654,6 +5696,7 @@ export namespace Prisma {
 
   export type EmailVerificationOtpCountAggregateInputType = {
     id?: true
+    userId?: true
     email?: true
     otpHash?: true
     expiresAt?: true
@@ -5750,6 +5793,7 @@ export namespace Prisma {
 
   export type EmailVerificationOtpGroupByOutputType = {
     id: number
+    userId: number
     email: string
     otpHash: string
     expiresAt: Date
@@ -5778,24 +5822,29 @@ export namespace Prisma {
 
   export type EmailVerificationOtpSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    userId?: boolean
     email?: boolean
     otpHash?: boolean
     expiresAt?: boolean
     used?: boolean
     createdAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["emailVerificationOtp"]>
 
   export type EmailVerificationOtpSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    userId?: boolean
     email?: boolean
     otpHash?: boolean
     expiresAt?: boolean
     used?: boolean
     createdAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["emailVerificationOtp"]>
 
   export type EmailVerificationOtpSelectScalar = {
     id?: boolean
+    userId?: boolean
     email?: boolean
     otpHash?: boolean
     expiresAt?: boolean
@@ -5803,12 +5852,21 @@ export namespace Prisma {
     createdAt?: boolean
   }
 
+  export type EmailVerificationOtpInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type EmailVerificationOtpIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
 
   export type $EmailVerificationOtpPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "EmailVerificationOtp"
-    objects: {}
+    objects: {
+      user: Prisma.$UserPayload<ExtArgs>
+    }
     scalars: $Extensions.GetPayloadResult<{
       id: number
+      userId: number
       email: string
       otpHash: string
       expiresAt: Date
@@ -6178,6 +6236,7 @@ export namespace Prisma {
    */
   export interface Prisma__EmailVerificationOtpClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -6208,6 +6267,7 @@ export namespace Prisma {
    */ 
   interface EmailVerificationOtpFieldRefs {
     readonly id: FieldRef<"EmailVerificationOtp", 'Int'>
+    readonly userId: FieldRef<"EmailVerificationOtp", 'Int'>
     readonly email: FieldRef<"EmailVerificationOtp", 'String'>
     readonly otpHash: FieldRef<"EmailVerificationOtp", 'String'>
     readonly expiresAt: FieldRef<"EmailVerificationOtp", 'DateTime'>
@@ -6226,6 +6286,10 @@ export namespace Prisma {
      */
     select?: EmailVerificationOtpSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EmailVerificationOtpInclude<ExtArgs> | null
+    /**
      * Filter, which EmailVerificationOtp to fetch.
      */
     where: EmailVerificationOtpWhereUniqueInput
@@ -6240,6 +6304,10 @@ export namespace Prisma {
      */
     select?: EmailVerificationOtpSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EmailVerificationOtpInclude<ExtArgs> | null
+    /**
      * Filter, which EmailVerificationOtp to fetch.
      */
     where: EmailVerificationOtpWhereUniqueInput
@@ -6253,6 +6321,10 @@ export namespace Prisma {
      * Select specific fields to fetch from the EmailVerificationOtp
      */
     select?: EmailVerificationOtpSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EmailVerificationOtpInclude<ExtArgs> | null
     /**
      * Filter, which EmailVerificationOtp to fetch.
      */
@@ -6298,6 +6370,10 @@ export namespace Prisma {
      */
     select?: EmailVerificationOtpSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EmailVerificationOtpInclude<ExtArgs> | null
+    /**
      * Filter, which EmailVerificationOtp to fetch.
      */
     where?: EmailVerificationOtpWhereInput
@@ -6342,6 +6418,10 @@ export namespace Prisma {
      */
     select?: EmailVerificationOtpSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EmailVerificationOtpInclude<ExtArgs> | null
+    /**
      * Filter, which EmailVerificationOtps to fetch.
      */
     where?: EmailVerificationOtpWhereInput
@@ -6381,6 +6461,10 @@ export namespace Prisma {
      */
     select?: EmailVerificationOtpSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EmailVerificationOtpInclude<ExtArgs> | null
+    /**
      * The data needed to create a EmailVerificationOtp.
      */
     data: XOR<EmailVerificationOtpCreateInput, EmailVerificationOtpUncheckedCreateInput>
@@ -6410,6 +6494,10 @@ export namespace Prisma {
      */
     data: EmailVerificationOtpCreateManyInput | EmailVerificationOtpCreateManyInput[]
     skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EmailVerificationOtpIncludeCreateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -6420,6 +6508,10 @@ export namespace Prisma {
      * Select specific fields to fetch from the EmailVerificationOtp
      */
     select?: EmailVerificationOtpSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EmailVerificationOtpInclude<ExtArgs> | null
     /**
      * The data needed to update a EmailVerificationOtp.
      */
@@ -6453,6 +6545,10 @@ export namespace Prisma {
      */
     select?: EmailVerificationOtpSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EmailVerificationOtpInclude<ExtArgs> | null
+    /**
      * The filter to search for the EmailVerificationOtp to update in case it exists.
      */
     where: EmailVerificationOtpWhereUniqueInput
@@ -6474,6 +6570,10 @@ export namespace Prisma {
      * Select specific fields to fetch from the EmailVerificationOtp
      */
     select?: EmailVerificationOtpSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EmailVerificationOtpInclude<ExtArgs> | null
     /**
      * Filter which EmailVerificationOtp to delete.
      */
@@ -6498,6 +6598,10 @@ export namespace Prisma {
      * Select specific fields to fetch from the EmailVerificationOtp
      */
     select?: EmailVerificationOtpSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EmailVerificationOtpInclude<ExtArgs> | null
   }
 
 
@@ -28010,6 +28114,7 @@ export namespace Prisma {
 
   export const EmailVerificationOtpScalarFieldEnum: {
     id: 'id',
+    userId: 'userId',
     email: 'email',
     otpHash: 'otpHash',
     expiresAt: 'expiresAt',
@@ -28616,6 +28721,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"User"> | Date | string
     deletedAt?: DateTimeNullableFilter<"User"> | Date | string | null
     branch?: XOR<BranchNullableRelationFilter, BranchWhereInput> | null
+    emailOtps?: EmailVerificationOtpListRelationFilter
     providers?: UserProviderListRelationFilter
     customerProfile?: XOR<CustomerNullableRelationFilter, CustomerWhereInput> | null
     auditLogs?: AuditLogListRelationFilter
@@ -28637,6 +28743,7 @@ export namespace Prisma {
     updatedAt?: SortOrder
     deletedAt?: SortOrderInput | SortOrder
     branch?: BranchOrderByWithRelationInput
+    emailOtps?: EmailVerificationOtpOrderByRelationAggregateInput
     providers?: UserProviderOrderByRelationAggregateInput
     customerProfile?: CustomerOrderByWithRelationInput
     auditLogs?: AuditLogOrderByRelationAggregateInput
@@ -28661,6 +28768,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"User"> | Date | string
     deletedAt?: DateTimeNullableFilter<"User"> | Date | string | null
     branch?: XOR<BranchNullableRelationFilter, BranchWhereInput> | null
+    emailOtps?: EmailVerificationOtpListRelationFilter
     providers?: UserProviderListRelationFilter
     customerProfile?: XOR<CustomerNullableRelationFilter, CustomerWhereInput> | null
     auditLogs?: AuditLogListRelationFilter
@@ -28788,24 +28896,29 @@ export namespace Prisma {
     OR?: EmailVerificationOtpWhereInput[]
     NOT?: EmailVerificationOtpWhereInput | EmailVerificationOtpWhereInput[]
     id?: IntFilter<"EmailVerificationOtp"> | number
+    userId?: IntFilter<"EmailVerificationOtp"> | number
     email?: StringFilter<"EmailVerificationOtp"> | string
     otpHash?: StringFilter<"EmailVerificationOtp"> | string
     expiresAt?: DateTimeFilter<"EmailVerificationOtp"> | Date | string
     used?: BoolFilter<"EmailVerificationOtp"> | boolean
     createdAt?: DateTimeFilter<"EmailVerificationOtp"> | Date | string
+    user?: XOR<UserRelationFilter, UserWhereInput>
   }
 
   export type EmailVerificationOtpOrderByWithRelationInput = {
     id?: SortOrder
+    userId?: SortOrder
     email?: SortOrder
     otpHash?: SortOrder
     expiresAt?: SortOrder
     used?: SortOrder
     createdAt?: SortOrder
+    user?: UserOrderByWithRelationInput
   }
 
   export type EmailVerificationOtpWhereUniqueInput = Prisma.AtLeast<{
     id?: number
+    userId?: number
     AND?: EmailVerificationOtpWhereInput | EmailVerificationOtpWhereInput[]
     OR?: EmailVerificationOtpWhereInput[]
     NOT?: EmailVerificationOtpWhereInput | EmailVerificationOtpWhereInput[]
@@ -28814,10 +28927,12 @@ export namespace Prisma {
     expiresAt?: DateTimeFilter<"EmailVerificationOtp"> | Date | string
     used?: BoolFilter<"EmailVerificationOtp"> | boolean
     createdAt?: DateTimeFilter<"EmailVerificationOtp"> | Date | string
-  }, "id">
+    user?: XOR<UserRelationFilter, UserWhereInput>
+  }, "id" | "userId">
 
   export type EmailVerificationOtpOrderByWithAggregationInput = {
     id?: SortOrder
+    userId?: SortOrder
     email?: SortOrder
     otpHash?: SortOrder
     expiresAt?: SortOrder
@@ -28835,6 +28950,7 @@ export namespace Prisma {
     OR?: EmailVerificationOtpScalarWhereWithAggregatesInput[]
     NOT?: EmailVerificationOtpScalarWhereWithAggregatesInput | EmailVerificationOtpScalarWhereWithAggregatesInput[]
     id?: IntWithAggregatesFilter<"EmailVerificationOtp"> | number
+    userId?: IntWithAggregatesFilter<"EmailVerificationOtp"> | number
     email?: StringWithAggregatesFilter<"EmailVerificationOtp"> | string
     otpHash?: StringWithAggregatesFilter<"EmailVerificationOtp"> | string
     expiresAt?: DateTimeWithAggregatesFilter<"EmailVerificationOtp"> | Date | string
@@ -30388,6 +30504,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
     providers?: UserProviderCreateNestedManyWithoutUserInput
     customerProfile?: CustomerCreateNestedOneWithoutUserInput
     auditLogs?: AuditLogCreateNestedManyWithoutUserInput
@@ -30408,6 +30525,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
     providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
     customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
@@ -30427,6 +30545,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
     providers?: UserProviderUpdateManyWithoutUserNestedInput
     customerProfile?: CustomerUpdateOneWithoutUserNestedInput
     auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
@@ -30447,6 +30566,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
     providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
     customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
@@ -30583,10 +30703,12 @@ export namespace Prisma {
     expiresAt: Date | string
     used?: boolean
     createdAt?: Date | string
+    user: UserCreateNestedOneWithoutEmailOtpsInput
   }
 
   export type EmailVerificationOtpUncheckedCreateInput = {
     id?: number
+    userId: number
     email: string
     otpHash: string
     expiresAt: Date | string
@@ -30600,10 +30722,12 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     used?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutEmailOtpsNestedInput
   }
 
   export type EmailVerificationOtpUncheckedUpdateInput = {
     id?: IntFieldUpdateOperationsInput | number
+    userId?: IntFieldUpdateOperationsInput | number
     email?: StringFieldUpdateOperationsInput | string
     otpHash?: StringFieldUpdateOperationsInput | string
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -30613,6 +30737,7 @@ export namespace Prisma {
 
   export type EmailVerificationOtpCreateManyInput = {
     id?: number
+    userId: number
     email: string
     otpHash: string
     expiresAt: Date | string
@@ -30630,6 +30755,7 @@ export namespace Prisma {
 
   export type EmailVerificationOtpUncheckedUpdateManyInput = {
     id?: IntFieldUpdateOperationsInput | number
+    userId?: IntFieldUpdateOperationsInput | number
     email?: StringFieldUpdateOperationsInput | string
     otpHash?: StringFieldUpdateOperationsInput | string
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -32278,6 +32404,12 @@ export namespace Prisma {
     isNot?: BranchWhereInput | null
   }
 
+  export type EmailVerificationOtpListRelationFilter = {
+    every?: EmailVerificationOtpWhereInput
+    some?: EmailVerificationOtpWhereInput
+    none?: EmailVerificationOtpWhereInput
+  }
+
   export type UserProviderListRelationFilter = {
     every?: UserProviderWhereInput
     some?: UserProviderWhereInput
@@ -32310,6 +32442,10 @@ export namespace Prisma {
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
+  }
+
+  export type EmailVerificationOtpOrderByRelationAggregateInput = {
+    _count?: SortOrder
   }
 
   export type UserProviderOrderByRelationAggregateInput = {
@@ -32557,6 +32693,7 @@ export namespace Prisma {
 
   export type EmailVerificationOtpCountOrderByAggregateInput = {
     id?: SortOrder
+    userId?: SortOrder
     email?: SortOrder
     otpHash?: SortOrder
     expiresAt?: SortOrder
@@ -32566,10 +32703,12 @@ export namespace Prisma {
 
   export type EmailVerificationOtpAvgOrderByAggregateInput = {
     id?: SortOrder
+    userId?: SortOrder
   }
 
   export type EmailVerificationOtpMaxOrderByAggregateInput = {
     id?: SortOrder
+    userId?: SortOrder
     email?: SortOrder
     otpHash?: SortOrder
     expiresAt?: SortOrder
@@ -32579,6 +32718,7 @@ export namespace Prisma {
 
   export type EmailVerificationOtpMinOrderByAggregateInput = {
     id?: SortOrder
+    userId?: SortOrder
     email?: SortOrder
     otpHash?: SortOrder
     expiresAt?: SortOrder
@@ -32588,6 +32728,7 @@ export namespace Prisma {
 
   export type EmailVerificationOtpSumOrderByAggregateInput = {
     id?: SortOrder
+    userId?: SortOrder
   }
 
   export type BoolWithAggregatesFilter<$PrismaModel = never> = {
@@ -33939,6 +34080,13 @@ export namespace Prisma {
     connect?: BranchWhereUniqueInput
   }
 
+  export type EmailVerificationOtpCreateNestedManyWithoutUserInput = {
+    create?: XOR<EmailVerificationOtpCreateWithoutUserInput, EmailVerificationOtpUncheckedCreateWithoutUserInput> | EmailVerificationOtpCreateWithoutUserInput[] | EmailVerificationOtpUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: EmailVerificationOtpCreateOrConnectWithoutUserInput | EmailVerificationOtpCreateOrConnectWithoutUserInput[]
+    createMany?: EmailVerificationOtpCreateManyUserInputEnvelope
+    connect?: EmailVerificationOtpWhereUniqueInput | EmailVerificationOtpWhereUniqueInput[]
+  }
+
   export type UserProviderCreateNestedManyWithoutUserInput = {
     create?: XOR<UserProviderCreateWithoutUserInput, UserProviderUncheckedCreateWithoutUserInput> | UserProviderCreateWithoutUserInput[] | UserProviderUncheckedCreateWithoutUserInput[]
     connectOrCreate?: UserProviderCreateOrConnectWithoutUserInput | UserProviderCreateOrConnectWithoutUserInput[]
@@ -33971,6 +34119,13 @@ export namespace Prisma {
     connectOrCreate?: DamageReportCreateOrConnectWithoutApprovedByInput | DamageReportCreateOrConnectWithoutApprovedByInput[]
     createMany?: DamageReportCreateManyApprovedByInputEnvelope
     connect?: DamageReportWhereUniqueInput | DamageReportWhereUniqueInput[]
+  }
+
+  export type EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<EmailVerificationOtpCreateWithoutUserInput, EmailVerificationOtpUncheckedCreateWithoutUserInput> | EmailVerificationOtpCreateWithoutUserInput[] | EmailVerificationOtpUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: EmailVerificationOtpCreateOrConnectWithoutUserInput | EmailVerificationOtpCreateOrConnectWithoutUserInput[]
+    createMany?: EmailVerificationOtpCreateManyUserInputEnvelope
+    connect?: EmailVerificationOtpWhereUniqueInput | EmailVerificationOtpWhereUniqueInput[]
   }
 
   export type UserProviderUncheckedCreateNestedManyWithoutUserInput = {
@@ -34039,6 +34194,20 @@ export namespace Prisma {
     delete?: BranchWhereInput | boolean
     connect?: BranchWhereUniqueInput
     update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutUsersInput, BranchUpdateWithoutUsersInput>, BranchUncheckedUpdateWithoutUsersInput>
+  }
+
+  export type EmailVerificationOtpUpdateManyWithoutUserNestedInput = {
+    create?: XOR<EmailVerificationOtpCreateWithoutUserInput, EmailVerificationOtpUncheckedCreateWithoutUserInput> | EmailVerificationOtpCreateWithoutUserInput[] | EmailVerificationOtpUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: EmailVerificationOtpCreateOrConnectWithoutUserInput | EmailVerificationOtpCreateOrConnectWithoutUserInput[]
+    upsert?: EmailVerificationOtpUpsertWithWhereUniqueWithoutUserInput | EmailVerificationOtpUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: EmailVerificationOtpCreateManyUserInputEnvelope
+    set?: EmailVerificationOtpWhereUniqueInput | EmailVerificationOtpWhereUniqueInput[]
+    disconnect?: EmailVerificationOtpWhereUniqueInput | EmailVerificationOtpWhereUniqueInput[]
+    delete?: EmailVerificationOtpWhereUniqueInput | EmailVerificationOtpWhereUniqueInput[]
+    connect?: EmailVerificationOtpWhereUniqueInput | EmailVerificationOtpWhereUniqueInput[]
+    update?: EmailVerificationOtpUpdateWithWhereUniqueWithoutUserInput | EmailVerificationOtpUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: EmailVerificationOtpUpdateManyWithWhereWithoutUserInput | EmailVerificationOtpUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: EmailVerificationOtpScalarWhereInput | EmailVerificationOtpScalarWhereInput[]
   }
 
   export type UserProviderUpdateManyWithoutUserNestedInput = {
@@ -34123,6 +34292,20 @@ export namespace Prisma {
     divide?: number
   }
 
+  export type EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<EmailVerificationOtpCreateWithoutUserInput, EmailVerificationOtpUncheckedCreateWithoutUserInput> | EmailVerificationOtpCreateWithoutUserInput[] | EmailVerificationOtpUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: EmailVerificationOtpCreateOrConnectWithoutUserInput | EmailVerificationOtpCreateOrConnectWithoutUserInput[]
+    upsert?: EmailVerificationOtpUpsertWithWhereUniqueWithoutUserInput | EmailVerificationOtpUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: EmailVerificationOtpCreateManyUserInputEnvelope
+    set?: EmailVerificationOtpWhereUniqueInput | EmailVerificationOtpWhereUniqueInput[]
+    disconnect?: EmailVerificationOtpWhereUniqueInput | EmailVerificationOtpWhereUniqueInput[]
+    delete?: EmailVerificationOtpWhereUniqueInput | EmailVerificationOtpWhereUniqueInput[]
+    connect?: EmailVerificationOtpWhereUniqueInput | EmailVerificationOtpWhereUniqueInput[]
+    update?: EmailVerificationOtpUpdateWithWhereUniqueWithoutUserInput | EmailVerificationOtpUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: EmailVerificationOtpUpdateManyWithWhereWithoutUserInput | EmailVerificationOtpUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: EmailVerificationOtpScalarWhereInput | EmailVerificationOtpScalarWhereInput[]
+  }
+
   export type UserProviderUncheckedUpdateManyWithoutUserNestedInput = {
     create?: XOR<UserProviderCreateWithoutUserInput, UserProviderUncheckedCreateWithoutUserInput> | UserProviderCreateWithoutUserInput[] | UserProviderUncheckedCreateWithoutUserInput[]
     connectOrCreate?: UserProviderCreateOrConnectWithoutUserInput | UserProviderCreateOrConnectWithoutUserInput[]
@@ -34203,8 +34386,22 @@ export namespace Prisma {
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutProvidersInput, UserUpdateWithoutProvidersInput>, UserUncheckedUpdateWithoutProvidersInput>
   }
 
+  export type UserCreateNestedOneWithoutEmailOtpsInput = {
+    create?: XOR<UserCreateWithoutEmailOtpsInput, UserUncheckedCreateWithoutEmailOtpsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutEmailOtpsInput
+    connect?: UserWhereUniqueInput
+  }
+
   export type BoolFieldUpdateOperationsInput = {
     set?: boolean
+  }
+
+  export type UserUpdateOneRequiredWithoutEmailOtpsNestedInput = {
+    create?: XOR<UserCreateWithoutEmailOtpsInput, UserUncheckedCreateWithoutEmailOtpsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutEmailOtpsInput
+    upsert?: UserUpsertWithoutEmailOtpsInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutEmailOtpsInput, UserUpdateWithoutEmailOtpsInput>, UserUncheckedUpdateWithoutEmailOtpsInput>
   }
 
   export type UserCreateNestedOneWithoutCustomerProfileInput = {
@@ -35884,6 +36081,33 @@ export namespace Prisma {
     create: XOR<BranchCreateWithoutUsersInput, BranchUncheckedCreateWithoutUsersInput>
   }
 
+  export type EmailVerificationOtpCreateWithoutUserInput = {
+    email: string
+    otpHash: string
+    expiresAt: Date | string
+    used?: boolean
+    createdAt?: Date | string
+  }
+
+  export type EmailVerificationOtpUncheckedCreateWithoutUserInput = {
+    id?: number
+    email: string
+    otpHash: string
+    expiresAt: Date | string
+    used?: boolean
+    createdAt?: Date | string
+  }
+
+  export type EmailVerificationOtpCreateOrConnectWithoutUserInput = {
+    where: EmailVerificationOtpWhereUniqueInput
+    create: XOR<EmailVerificationOtpCreateWithoutUserInput, EmailVerificationOtpUncheckedCreateWithoutUserInput>
+  }
+
+  export type EmailVerificationOtpCreateManyUserInputEnvelope = {
+    data: EmailVerificationOtpCreateManyUserInput | EmailVerificationOtpCreateManyUserInput[]
+    skipDuplicates?: boolean
+  }
+
   export type UserProviderCreateWithoutUserInput = {
     publicId: string
     provider: string
@@ -36090,6 +36314,35 @@ export namespace Prisma {
     bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
   }
 
+  export type EmailVerificationOtpUpsertWithWhereUniqueWithoutUserInput = {
+    where: EmailVerificationOtpWhereUniqueInput
+    update: XOR<EmailVerificationOtpUpdateWithoutUserInput, EmailVerificationOtpUncheckedUpdateWithoutUserInput>
+    create: XOR<EmailVerificationOtpCreateWithoutUserInput, EmailVerificationOtpUncheckedCreateWithoutUserInput>
+  }
+
+  export type EmailVerificationOtpUpdateWithWhereUniqueWithoutUserInput = {
+    where: EmailVerificationOtpWhereUniqueInput
+    data: XOR<EmailVerificationOtpUpdateWithoutUserInput, EmailVerificationOtpUncheckedUpdateWithoutUserInput>
+  }
+
+  export type EmailVerificationOtpUpdateManyWithWhereWithoutUserInput = {
+    where: EmailVerificationOtpScalarWhereInput
+    data: XOR<EmailVerificationOtpUpdateManyMutationInput, EmailVerificationOtpUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type EmailVerificationOtpScalarWhereInput = {
+    AND?: EmailVerificationOtpScalarWhereInput | EmailVerificationOtpScalarWhereInput[]
+    OR?: EmailVerificationOtpScalarWhereInput[]
+    NOT?: EmailVerificationOtpScalarWhereInput | EmailVerificationOtpScalarWhereInput[]
+    id?: IntFilter<"EmailVerificationOtp"> | number
+    userId?: IntFilter<"EmailVerificationOtp"> | number
+    email?: StringFilter<"EmailVerificationOtp"> | string
+    otpHash?: StringFilter<"EmailVerificationOtp"> | string
+    expiresAt?: DateTimeFilter<"EmailVerificationOtp"> | Date | string
+    used?: BoolFilter<"EmailVerificationOtp"> | boolean
+    createdAt?: DateTimeFilter<"EmailVerificationOtp"> | Date | string
+  }
+
   export type UserProviderUpsertWithWhereUniqueWithoutUserInput = {
     where: UserProviderWhereUniqueInput
     update: XOR<UserProviderUpdateWithoutUserInput, UserProviderUncheckedUpdateWithoutUserInput>
@@ -36264,6 +36517,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
     customerProfile?: CustomerCreateNestedOneWithoutUserInput
     auditLogs?: AuditLogCreateNestedManyWithoutUserInput
     bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
@@ -36283,6 +36537,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
     customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
     bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
@@ -36317,6 +36572,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
     customerProfile?: CustomerUpdateOneWithoutUserNestedInput
     auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
     bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
@@ -36336,6 +36592,101 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+  }
+
+  export type UserCreateWithoutEmailOtpsInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    auditLogs?: AuditLogCreateNestedManyWithoutUserInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+  }
+
+  export type UserUncheckedCreateWithoutEmailOtpsInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+  }
+
+  export type UserCreateOrConnectWithoutEmailOtpsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutEmailOtpsInput, UserUncheckedCreateWithoutEmailOtpsInput>
+  }
+
+  export type UserUpsertWithoutEmailOtpsInput = {
+    update: XOR<UserUpdateWithoutEmailOtpsInput, UserUncheckedUpdateWithoutEmailOtpsInput>
+    create: XOR<UserCreateWithoutEmailOtpsInput, UserUncheckedCreateWithoutEmailOtpsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutEmailOtpsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutEmailOtpsInput, UserUncheckedUpdateWithoutEmailOtpsInput>
+  }
+
+  export type UserUpdateWithoutEmailOtpsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutEmailOtpsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
     customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
     bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
@@ -36354,6 +36705,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
     providers?: UserProviderCreateNestedManyWithoutUserInput
     auditLogs?: AuditLogCreateNestedManyWithoutUserInput
     bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
@@ -36373,6 +36725,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
     providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
     bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
@@ -36489,6 +36842,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
     providers?: UserProviderUpdateManyWithoutUserNestedInput
     auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
     bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
@@ -36508,6 +36862,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
     providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
     bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
@@ -36778,6 +37133,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
     providers?: UserProviderCreateNestedManyWithoutUserInput
     customerProfile?: CustomerCreateNestedOneWithoutUserInput
     auditLogs?: AuditLogCreateNestedManyWithoutUserInput
@@ -36797,6 +37153,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
     providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
     customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
@@ -37872,6 +38229,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
     providers?: UserProviderCreateNestedManyWithoutUserInput
     customerProfile?: CustomerCreateNestedOneWithoutUserInput
     auditLogs?: AuditLogCreateNestedManyWithoutUserInput
@@ -37891,6 +38249,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
     providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
     customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
@@ -38177,6 +38536,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
     providers?: UserProviderUpdateManyWithoutUserNestedInput
     customerProfile?: CustomerUpdateOneWithoutUserNestedInput
     auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
@@ -38196,6 +38556,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
     providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
     customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
@@ -38572,6 +38933,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
     providers?: UserProviderCreateNestedManyWithoutUserInput
     customerProfile?: CustomerCreateNestedOneWithoutUserInput
     auditLogs?: AuditLogCreateNestedManyWithoutUserInput
@@ -38591,6 +38953,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
     providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
     customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
@@ -38729,6 +39092,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
     providers?: UserProviderUpdateManyWithoutUserNestedInput
     customerProfile?: CustomerUpdateOneWithoutUserNestedInput
     auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
@@ -38748,6 +39112,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
     providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
     customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
@@ -39230,6 +39595,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
     providers?: UserProviderCreateNestedManyWithoutUserInput
     customerProfile?: CustomerCreateNestedOneWithoutUserInput
     bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
@@ -39249,6 +39615,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
     providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
     customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
     bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
@@ -39283,6 +39650,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
     providers?: UserProviderUpdateManyWithoutUserNestedInput
     customerProfile?: CustomerUpdateOneWithoutUserNestedInput
     bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
@@ -39302,10 +39670,20 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
     providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
     customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
     bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+  }
+
+  export type EmailVerificationOtpCreateManyUserInput = {
+    id?: number
+    email: string
+    otpHash: string
+    expiresAt: Date | string
+    used?: boolean
+    createdAt?: Date | string
   }
 
   export type UserProviderCreateManyUserInput = {
@@ -39358,6 +39736,32 @@ export namespace Prisma {
     estimatedCost: Decimal | DecimalJsLike | number | string
     notes?: string | null
     createdAt?: Date | string
+  }
+
+  export type EmailVerificationOtpUpdateWithoutUserInput = {
+    email?: StringFieldUpdateOperationsInput | string
+    otpHash?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    used?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type EmailVerificationOtpUncheckedUpdateWithoutUserInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    email?: StringFieldUpdateOperationsInput | string
+    otpHash?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    used?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type EmailVerificationOtpUncheckedUpdateManyWithoutUserInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    email?: StringFieldUpdateOperationsInput | string
+    otpHash?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    used?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type UserProviderUpdateWithoutUserInput = {
@@ -39763,6 +40167,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
     providers?: UserProviderUpdateManyWithoutUserNestedInput
     customerProfile?: CustomerUpdateOneWithoutUserNestedInput
     auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
@@ -39782,6 +40187,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
     providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
     customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
