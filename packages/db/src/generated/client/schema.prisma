@@ -121,6 +121,8 @@ model UserProvider {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([provider, providerUserId], map: "provider_providerUserId_unique")
 }
 
 model EmailVerificationOtp {

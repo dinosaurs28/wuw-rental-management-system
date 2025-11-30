@@ -28846,6 +28846,7 @@ export namespace Prisma {
   export type UserProviderWhereUniqueInput = Prisma.AtLeast<{
     id?: number
     publicId?: string
+    provider_providerUserId?: UserProviderProviderProviderUserIdCompoundUniqueInput
     AND?: UserProviderWhereInput | UserProviderWhereInput[]
     OR?: UserProviderWhereInput[]
     NOT?: UserProviderWhereInput | UserProviderWhereInput[]
@@ -28857,7 +28858,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"UserProvider"> | Date | string
     updatedAt?: DateTimeFilter<"UserProvider"> | Date | string
     user?: XOR<UserRelationFilter, UserWhereInput>
-  }, "id" | "publicId">
+  }, "id" | "publicId" | "provider_providerUserId">
 
   export type UserProviderOrderByWithAggregationInput = {
     id?: SortOrder
@@ -32638,6 +32639,11 @@ export namespace Prisma {
   export type UserRelationFilter = {
     is?: UserWhereInput
     isNot?: UserWhereInput
+  }
+
+  export type UserProviderProviderProviderUserIdCompoundUniqueInput = {
+    provider: string
+    providerUserId: string
   }
 
   export type UserProviderCountOrderByAggregateInput = {

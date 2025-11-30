@@ -3,7 +3,7 @@ import { emailAuthSchema, emailAuthSchemaSignin } from "@repo/schemas"
 import { StatusCode } from "../types/statusCode.js"
 import { comparehash, hashpassword } from "../utils/PasswordCrypt/password.js"
 import { createID } from "../utils/nanoID.js"
-import { prisma,Role } from "@repo/database/client"
+import { AuthProvider, prisma,Role } from "@repo/database/client"
 import { jwtsign } from "../utils/token/tokensign.utlis.js"
 
 export const emailAuthController=async (req:Request,res:Response)=>{
@@ -15,9 +15,10 @@ export const emailAuthController=async (req:Request,res:Response)=>{
                     errors:parseddata.error.flatten()
                 })
             }
+            const email = parseddata.data.email.toLowerCase().trim();
             const isemailpresent=await prisma.user.findUnique({
                 where:{
-                    email:parseddata.data.email
+                    email:email
                 }
             })
             if(isemailpresent){
@@ -30,9 +31,19 @@ export const emailAuthController=async (req:Request,res:Response)=>{
                 data:{
                     publicId:createID(),
                     name:parseddata.data.name,
-                    email:parseddata.data.email,
+                    email:email,
                     passwordHash:hashedvalue,
                     role:Role.CUSTOMER
+                }
+            })
+            await prisma.userProvider.create({
+                data:{
+                    userId:response.id,
+                    publicId:createID(),
+                    provider:AuthProvider.PASSWORD,
+                    createdAt:new Date(),
+                    updatedAt:new Date(),
+                    providerUserId:response.email
                 }
             })
             if(!response){

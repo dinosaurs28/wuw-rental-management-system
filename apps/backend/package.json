@@ -21,7 +21,8 @@
     "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.2",
     "nanoid": "^5.1.6",
-    "passport": "^0.7.0"
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
@@ -35,6 +36,8 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/nanoid": "^3.0.0",
     "@types/node": "^20.10.5",
+    "@types/passport": "^1.0.17",
+    "@types/passport-google-oauth20": "^2.0.17",
     "cors": "^2.8.5",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3"
