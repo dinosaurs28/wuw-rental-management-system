@@ -4,6 +4,7 @@ import { StatusCode } from "./types/statusCode.js"
 import dotenv from "dotenv"
 import helmet from "helmet"
 import authrouter from "./routes/auth/auth.routes.js"
+import vehiclerouter from "./routes/public/vehicle.routes"
 import cookieParser from "cookie-parser"
 import passport from "./utils/passport/google"
 dotenv.config()
@@ -15,6 +16,7 @@ app.use(helmet())
 app.use(cookieParser())
 app.use(passport.initialize());
 app.use("/api/auth",authrouter)
+app.use("/api/public",vehiclerouter)
 
 
 app.get("/health",(req:Request,res:Response)=>{

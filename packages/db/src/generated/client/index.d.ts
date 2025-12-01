@@ -54,6 +54,11 @@ export type Branch = $Result.DefaultSelection<Prisma.$BranchPayload>
  */
 export type StaffActivityLog = $Result.DefaultSelection<Prisma.$StaffActivityLogPayload>
 /**
+ * Model BranchPricingSetting
+ * 
+ */
+export type BranchPricingSetting = $Result.DefaultSelection<Prisma.$BranchPricingSettingPayload>
+/**
  * Model VehicleCategory
  * 
  */
@@ -63,6 +68,11 @@ export type VehicleCategory = $Result.DefaultSelection<Prisma.$VehicleCategoryPa
  * 
  */
 export type Vehicle = $Result.DefaultSelection<Prisma.$VehiclePayload>
+/**
+ * Model VehiclePricingOverride
+ * 
+ */
+export type VehiclePricingOverride = $Result.DefaultSelection<Prisma.$VehiclePricingOverridePayload>
 /**
  * Model VehicleInsurance
  * 
@@ -493,6 +503,16 @@ export class PrismaClient<
   get staffActivityLog(): Prisma.StaffActivityLogDelegate<ExtArgs>;
 
   /**
+   * `prisma.branchPricingSetting`: Exposes CRUD operations for the **BranchPricingSetting** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more BranchPricingSettings
+    * const branchPricingSettings = await prisma.branchPricingSetting.findMany()
+    * ```
+    */
+  get branchPricingSetting(): Prisma.BranchPricingSettingDelegate<ExtArgs>;
+
+  /**
    * `prisma.vehicleCategory`: Exposes CRUD operations for the **VehicleCategory** model.
     * Example usage:
     * ```ts
@@ -511,6 +531,16 @@ export class PrismaClient<
     * ```
     */
   get vehicle(): Prisma.VehicleDelegate<ExtArgs>;
+
+  /**
+   * `prisma.vehiclePricingOverride`: Exposes CRUD operations for the **VehiclePricingOverride** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more VehiclePricingOverrides
+    * const vehiclePricingOverrides = await prisma.vehiclePricingOverride.findMany()
+    * ```
+    */
+  get vehiclePricingOverride(): Prisma.VehiclePricingOverrideDelegate<ExtArgs>;
 
   /**
    * `prisma.vehicleInsurance`: Exposes CRUD operations for the **VehicleInsurance** model.
@@ -1100,8 +1130,10 @@ export namespace Prisma {
     FileObject: 'FileObject',
     Branch: 'Branch',
     StaffActivityLog: 'StaffActivityLog',
+    BranchPricingSetting: 'BranchPricingSetting',
     VehicleCategory: 'VehicleCategory',
     Vehicle: 'Vehicle',
+    VehiclePricingOverride: 'VehiclePricingOverride',
     VehicleInsurance: 'VehicleInsurance',
     VehicleMaintenanceRecord: 'VehicleMaintenanceRecord',
     RentalPlan: 'RentalPlan',
@@ -1131,7 +1163,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "vehicleCategory" | "vehicle" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "rentalPlan" | "pricingRule" | "booking" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting"
+      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehicle" | "vehiclePricingOverride" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "rentalPlan" | "pricingRule" | "booking" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1695,6 +1727,76 @@ export namespace Prisma {
           }
         }
       }
+      BranchPricingSetting: {
+        payload: Prisma.$BranchPricingSettingPayload<ExtArgs>
+        fields: Prisma.BranchPricingSettingFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.BranchPricingSettingFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPricingSettingPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.BranchPricingSettingFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPricingSettingPayload>
+          }
+          findFirst: {
+            args: Prisma.BranchPricingSettingFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPricingSettingPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.BranchPricingSettingFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPricingSettingPayload>
+          }
+          findMany: {
+            args: Prisma.BranchPricingSettingFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPricingSettingPayload>[]
+          }
+          create: {
+            args: Prisma.BranchPricingSettingCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPricingSettingPayload>
+          }
+          createMany: {
+            args: Prisma.BranchPricingSettingCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.BranchPricingSettingCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPricingSettingPayload>[]
+          }
+          delete: {
+            args: Prisma.BranchPricingSettingDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPricingSettingPayload>
+          }
+          update: {
+            args: Prisma.BranchPricingSettingUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPricingSettingPayload>
+          }
+          deleteMany: {
+            args: Prisma.BranchPricingSettingDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.BranchPricingSettingUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.BranchPricingSettingUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPricingSettingPayload>
+          }
+          aggregate: {
+            args: Prisma.BranchPricingSettingAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateBranchPricingSetting>
+          }
+          groupBy: {
+            args: Prisma.BranchPricingSettingGroupByArgs<ExtArgs>
+            result: $Utils.Optional<BranchPricingSettingGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.BranchPricingSettingCountArgs<ExtArgs>
+            result: $Utils.Optional<BranchPricingSettingCountAggregateOutputType> | number
+          }
+        }
+      }
       VehicleCategory: {
         payload: Prisma.$VehicleCategoryPayload<ExtArgs>
         fields: Prisma.VehicleCategoryFieldRefs
@@ -1832,6 +1934,76 @@ export namespace Prisma {
           count: {
             args: Prisma.VehicleCountArgs<ExtArgs>
             result: $Utils.Optional<VehicleCountAggregateOutputType> | number
+          }
+        }
+      }
+      VehiclePricingOverride: {
+        payload: Prisma.$VehiclePricingOverridePayload<ExtArgs>
+        fields: Prisma.VehiclePricingOverrideFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.VehiclePricingOverrideFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehiclePricingOverridePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.VehiclePricingOverrideFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehiclePricingOverridePayload>
+          }
+          findFirst: {
+            args: Prisma.VehiclePricingOverrideFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehiclePricingOverridePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.VehiclePricingOverrideFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehiclePricingOverridePayload>
+          }
+          findMany: {
+            args: Prisma.VehiclePricingOverrideFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehiclePricingOverridePayload>[]
+          }
+          create: {
+            args: Prisma.VehiclePricingOverrideCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehiclePricingOverridePayload>
+          }
+          createMany: {
+            args: Prisma.VehiclePricingOverrideCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.VehiclePricingOverrideCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehiclePricingOverridePayload>[]
+          }
+          delete: {
+            args: Prisma.VehiclePricingOverrideDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehiclePricingOverridePayload>
+          }
+          update: {
+            args: Prisma.VehiclePricingOverrideUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehiclePricingOverridePayload>
+          }
+          deleteMany: {
+            args: Prisma.VehiclePricingOverrideDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.VehiclePricingOverrideUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.VehiclePricingOverrideUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehiclePricingOverridePayload>
+          }
+          aggregate: {
+            args: Prisma.VehiclePricingOverrideAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateVehiclePricingOverride>
+          }
+          groupBy: {
+            args: Prisma.VehiclePricingOverrideGroupByArgs<ExtArgs>
+            result: $Utils.Optional<VehiclePricingOverrideGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.VehiclePricingOverrideCountArgs<ExtArgs>
+            result: $Utils.Optional<VehiclePricingOverrideCountAggregateOutputType> | number
           }
         }
       }
@@ -4617,7 +4789,7 @@ export namespace Prisma {
     id: number | null
     publicId: string | null
     userId: number | null
-    provider: string | null
+    provider: $Enums.AuthProvider | null
     providerUserId: string | null
     accessToken: string | null
     refreshToken: string | null
@@ -4629,7 +4801,7 @@ export namespace Prisma {
     id: number | null
     publicId: string | null
     userId: number | null
-    provider: string | null
+    provider: $Enums.AuthProvider | null
     providerUserId: string | null
     accessToken: string | null
     refreshToken: string | null
@@ -4788,7 +4960,7 @@ export namespace Prisma {
     id: number
     publicId: string
     userId: number
-    provider: string
+    provider: $Enums.AuthProvider
     providerUserId: string
     accessToken: string | null
     refreshToken: string | null
@@ -4869,7 +5041,7 @@ export namespace Prisma {
       id: number
       publicId: string
       userId: number
-      provider: string
+      provider: $Enums.AuthProvider
       providerUserId: string
       accessToken: string | null
       refreshToken: string | null
@@ -5272,7 +5444,7 @@ export namespace Prisma {
     readonly id: FieldRef<"UserProvider", 'Int'>
     readonly publicId: FieldRef<"UserProvider", 'String'>
     readonly userId: FieldRef<"UserProvider", 'Int'>
-    readonly provider: FieldRef<"UserProvider", 'String'>
+    readonly provider: FieldRef<"UserProvider", 'AuthProvider'>
     readonly providerUserId: FieldRef<"UserProvider", 'String'>
     readonly accessToken: FieldRef<"UserProvider", 'String'>
     readonly refreshToken: FieldRef<"UserProvider", 'String'>
@@ -9894,6 +10066,7 @@ export namespace Prisma {
     users?: boolean | Branch$usersArgs<ExtArgs>
     vehicles?: boolean | Branch$vehiclesArgs<ExtArgs>
     bookings?: boolean | Branch$bookingsArgs<ExtArgs>
+    pricingSetting?: boolean | Branch$pricingSettingArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["branch"]>
 
@@ -9921,6 +10094,7 @@ export namespace Prisma {
     users?: boolean | Branch$usersArgs<ExtArgs>
     vehicles?: boolean | Branch$vehiclesArgs<ExtArgs>
     bookings?: boolean | Branch$bookingsArgs<ExtArgs>
+    pricingSetting?: boolean | Branch$pricingSettingArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type BranchIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -9931,6 +10105,7 @@ export namespace Prisma {
       users: Prisma.$UserPayload<ExtArgs>[]
       vehicles: Prisma.$VehiclePayload<ExtArgs>[]
       bookings: Prisma.$BookingPayload<ExtArgs>[]
+      pricingSetting: Prisma.$BranchPricingSettingPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -10307,6 +10482,7 @@ export namespace Prisma {
     users<T extends Branch$usersArgs<ExtArgs> = {}>(args?: Subset<T, Branch$usersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findMany"> | Null>
     vehicles<T extends Branch$vehiclesArgs<ExtArgs> = {}>(args?: Subset<T, Branch$vehiclesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehiclePayload<ExtArgs>, T, "findMany"> | Null>
     bookings<T extends Branch$bookingsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$bookingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findMany"> | Null>
+    pricingSetting<T extends Branch$pricingSettingArgs<ExtArgs> = {}>(args?: Subset<T, Branch$pricingSettingArgs<ExtArgs>>): Prisma__BranchPricingSettingClient<$Result.GetResult<Prisma.$BranchPricingSettingPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -10714,6 +10890,21 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: BookingScalarFieldEnum | BookingScalarFieldEnum[]
+  }
+
+  /**
+   * Branch.pricingSetting
+   */
+  export type Branch$pricingSettingArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingSetting
+     */
+    select?: BranchPricingSettingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingSettingInclude<ExtArgs> | null
+    where?: BranchPricingSettingWhereInput
   }
 
   /**
@@ -11668,6 +11859,1049 @@ export namespace Prisma {
      * Select specific fields to fetch from the StaffActivityLog
      */
     select?: StaffActivityLogSelect<ExtArgs> | null
+  }
+
+
+  /**
+   * Model BranchPricingSetting
+   */
+
+  export type AggregateBranchPricingSetting = {
+    _count: BranchPricingSettingCountAggregateOutputType | null
+    _avg: BranchPricingSettingAvgAggregateOutputType | null
+    _sum: BranchPricingSettingSumAggregateOutputType | null
+    _min: BranchPricingSettingMinAggregateOutputType | null
+    _max: BranchPricingSettingMaxAggregateOutputType | null
+  }
+
+  export type BranchPricingSettingAvgAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    weekendMultiplier: Decimal | null
+    peakMultiplier: Decimal | null
+    customMultiplier: Decimal | null
+  }
+
+  export type BranchPricingSettingSumAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    weekendMultiplier: Decimal | null
+    peakMultiplier: Decimal | null
+    customMultiplier: Decimal | null
+  }
+
+  export type BranchPricingSettingMinAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    weekendEnabled: boolean | null
+    peakEnabled: boolean | null
+    customEnabled: boolean | null
+    weekendMultiplier: Decimal | null
+    peakMultiplier: Decimal | null
+    customMultiplier: Decimal | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type BranchPricingSettingMaxAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    weekendEnabled: boolean | null
+    peakEnabled: boolean | null
+    customEnabled: boolean | null
+    weekendMultiplier: Decimal | null
+    peakMultiplier: Decimal | null
+    customMultiplier: Decimal | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type BranchPricingSettingCountAggregateOutputType = {
+    id: number
+    branchId: number
+    weekendEnabled: number
+    peakEnabled: number
+    customEnabled: number
+    weekendMultiplier: number
+    peakMultiplier: number
+    customMultiplier: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type BranchPricingSettingAvgAggregateInputType = {
+    id?: true
+    branchId?: true
+    weekendMultiplier?: true
+    peakMultiplier?: true
+    customMultiplier?: true
+  }
+
+  export type BranchPricingSettingSumAggregateInputType = {
+    id?: true
+    branchId?: true
+    weekendMultiplier?: true
+    peakMultiplier?: true
+    customMultiplier?: true
+  }
+
+  export type BranchPricingSettingMinAggregateInputType = {
+    id?: true
+    branchId?: true
+    weekendEnabled?: true
+    peakEnabled?: true
+    customEnabled?: true
+    weekendMultiplier?: true
+    peakMultiplier?: true
+    customMultiplier?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type BranchPricingSettingMaxAggregateInputType = {
+    id?: true
+    branchId?: true
+    weekendEnabled?: true
+    peakEnabled?: true
+    customEnabled?: true
+    weekendMultiplier?: true
+    peakMultiplier?: true
+    customMultiplier?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type BranchPricingSettingCountAggregateInputType = {
+    id?: true
+    branchId?: true
+    weekendEnabled?: true
+    peakEnabled?: true
+    customEnabled?: true
+    weekendMultiplier?: true
+    peakMultiplier?: true
+    customMultiplier?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type BranchPricingSettingAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which BranchPricingSetting to aggregate.
+     */
+    where?: BranchPricingSettingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchPricingSettings to fetch.
+     */
+    orderBy?: BranchPricingSettingOrderByWithRelationInput | BranchPricingSettingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: BranchPricingSettingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchPricingSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchPricingSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned BranchPricingSettings
+    **/
+    _count?: true | BranchPricingSettingCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: BranchPricingSettingAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: BranchPricingSettingSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: BranchPricingSettingMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: BranchPricingSettingMaxAggregateInputType
+  }
+
+  export type GetBranchPricingSettingAggregateType<T extends BranchPricingSettingAggregateArgs> = {
+        [P in keyof T & keyof AggregateBranchPricingSetting]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateBranchPricingSetting[P]>
+      : GetScalarType<T[P], AggregateBranchPricingSetting[P]>
+  }
+
+
+
+
+  export type BranchPricingSettingGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BranchPricingSettingWhereInput
+    orderBy?: BranchPricingSettingOrderByWithAggregationInput | BranchPricingSettingOrderByWithAggregationInput[]
+    by: BranchPricingSettingScalarFieldEnum[] | BranchPricingSettingScalarFieldEnum
+    having?: BranchPricingSettingScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: BranchPricingSettingCountAggregateInputType | true
+    _avg?: BranchPricingSettingAvgAggregateInputType
+    _sum?: BranchPricingSettingSumAggregateInputType
+    _min?: BranchPricingSettingMinAggregateInputType
+    _max?: BranchPricingSettingMaxAggregateInputType
+  }
+
+  export type BranchPricingSettingGroupByOutputType = {
+    id: number
+    branchId: number
+    weekendEnabled: boolean
+    peakEnabled: boolean
+    customEnabled: boolean
+    weekendMultiplier: Decimal
+    peakMultiplier: Decimal
+    customMultiplier: Decimal
+    createdAt: Date
+    updatedAt: Date
+    _count: BranchPricingSettingCountAggregateOutputType | null
+    _avg: BranchPricingSettingAvgAggregateOutputType | null
+    _sum: BranchPricingSettingSumAggregateOutputType | null
+    _min: BranchPricingSettingMinAggregateOutputType | null
+    _max: BranchPricingSettingMaxAggregateOutputType | null
+  }
+
+  type GetBranchPricingSettingGroupByPayload<T extends BranchPricingSettingGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<BranchPricingSettingGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof BranchPricingSettingGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], BranchPricingSettingGroupByOutputType[P]>
+            : GetScalarType<T[P], BranchPricingSettingGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type BranchPricingSettingSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    branchId?: boolean
+    weekendEnabled?: boolean
+    peakEnabled?: boolean
+    customEnabled?: boolean
+    weekendMultiplier?: boolean
+    peakMultiplier?: boolean
+    customMultiplier?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["branchPricingSetting"]>
+
+  export type BranchPricingSettingSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    branchId?: boolean
+    weekendEnabled?: boolean
+    peakEnabled?: boolean
+    customEnabled?: boolean
+    weekendMultiplier?: boolean
+    peakMultiplier?: boolean
+    customMultiplier?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["branchPricingSetting"]>
+
+  export type BranchPricingSettingSelectScalar = {
+    id?: boolean
+    branchId?: boolean
+    weekendEnabled?: boolean
+    peakEnabled?: boolean
+    customEnabled?: boolean
+    weekendMultiplier?: boolean
+    peakMultiplier?: boolean
+    customMultiplier?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type BranchPricingSettingInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }
+  export type BranchPricingSettingIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }
+
+  export type $BranchPricingSettingPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "BranchPricingSetting"
+    objects: {
+      branch: Prisma.$BranchPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      branchId: number
+      weekendEnabled: boolean
+      peakEnabled: boolean
+      customEnabled: boolean
+      weekendMultiplier: Prisma.Decimal
+      peakMultiplier: Prisma.Decimal
+      customMultiplier: Prisma.Decimal
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["branchPricingSetting"]>
+    composites: {}
+  }
+
+  type BranchPricingSettingGetPayload<S extends boolean | null | undefined | BranchPricingSettingDefaultArgs> = $Result.GetResult<Prisma.$BranchPricingSettingPayload, S>
+
+  type BranchPricingSettingCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<BranchPricingSettingFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: BranchPricingSettingCountAggregateInputType | true
+    }
+
+  export interface BranchPricingSettingDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['BranchPricingSetting'], meta: { name: 'BranchPricingSetting' } }
+    /**
+     * Find zero or one BranchPricingSetting that matches the filter.
+     * @param {BranchPricingSettingFindUniqueArgs} args - Arguments to find a BranchPricingSetting
+     * @example
+     * // Get one BranchPricingSetting
+     * const branchPricingSetting = await prisma.branchPricingSetting.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends BranchPricingSettingFindUniqueArgs>(args: SelectSubset<T, BranchPricingSettingFindUniqueArgs<ExtArgs>>): Prisma__BranchPricingSettingClient<$Result.GetResult<Prisma.$BranchPricingSettingPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one BranchPricingSetting that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {BranchPricingSettingFindUniqueOrThrowArgs} args - Arguments to find a BranchPricingSetting
+     * @example
+     * // Get one BranchPricingSetting
+     * const branchPricingSetting = await prisma.branchPricingSetting.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends BranchPricingSettingFindUniqueOrThrowArgs>(args: SelectSubset<T, BranchPricingSettingFindUniqueOrThrowArgs<ExtArgs>>): Prisma__BranchPricingSettingClient<$Result.GetResult<Prisma.$BranchPricingSettingPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first BranchPricingSetting that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchPricingSettingFindFirstArgs} args - Arguments to find a BranchPricingSetting
+     * @example
+     * // Get one BranchPricingSetting
+     * const branchPricingSetting = await prisma.branchPricingSetting.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends BranchPricingSettingFindFirstArgs>(args?: SelectSubset<T, BranchPricingSettingFindFirstArgs<ExtArgs>>): Prisma__BranchPricingSettingClient<$Result.GetResult<Prisma.$BranchPricingSettingPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first BranchPricingSetting that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchPricingSettingFindFirstOrThrowArgs} args - Arguments to find a BranchPricingSetting
+     * @example
+     * // Get one BranchPricingSetting
+     * const branchPricingSetting = await prisma.branchPricingSetting.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends BranchPricingSettingFindFirstOrThrowArgs>(args?: SelectSubset<T, BranchPricingSettingFindFirstOrThrowArgs<ExtArgs>>): Prisma__BranchPricingSettingClient<$Result.GetResult<Prisma.$BranchPricingSettingPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more BranchPricingSettings that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchPricingSettingFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all BranchPricingSettings
+     * const branchPricingSettings = await prisma.branchPricingSetting.findMany()
+     * 
+     * // Get first 10 BranchPricingSettings
+     * const branchPricingSettings = await prisma.branchPricingSetting.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const branchPricingSettingWithIdOnly = await prisma.branchPricingSetting.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends BranchPricingSettingFindManyArgs>(args?: SelectSubset<T, BranchPricingSettingFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BranchPricingSettingPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a BranchPricingSetting.
+     * @param {BranchPricingSettingCreateArgs} args - Arguments to create a BranchPricingSetting.
+     * @example
+     * // Create one BranchPricingSetting
+     * const BranchPricingSetting = await prisma.branchPricingSetting.create({
+     *   data: {
+     *     // ... data to create a BranchPricingSetting
+     *   }
+     * })
+     * 
+     */
+    create<T extends BranchPricingSettingCreateArgs>(args: SelectSubset<T, BranchPricingSettingCreateArgs<ExtArgs>>): Prisma__BranchPricingSettingClient<$Result.GetResult<Prisma.$BranchPricingSettingPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many BranchPricingSettings.
+     * @param {BranchPricingSettingCreateManyArgs} args - Arguments to create many BranchPricingSettings.
+     * @example
+     * // Create many BranchPricingSettings
+     * const branchPricingSetting = await prisma.branchPricingSetting.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends BranchPricingSettingCreateManyArgs>(args?: SelectSubset<T, BranchPricingSettingCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many BranchPricingSettings and returns the data saved in the database.
+     * @param {BranchPricingSettingCreateManyAndReturnArgs} args - Arguments to create many BranchPricingSettings.
+     * @example
+     * // Create many BranchPricingSettings
+     * const branchPricingSetting = await prisma.branchPricingSetting.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many BranchPricingSettings and only return the `id`
+     * const branchPricingSettingWithIdOnly = await prisma.branchPricingSetting.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends BranchPricingSettingCreateManyAndReturnArgs>(args?: SelectSubset<T, BranchPricingSettingCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BranchPricingSettingPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a BranchPricingSetting.
+     * @param {BranchPricingSettingDeleteArgs} args - Arguments to delete one BranchPricingSetting.
+     * @example
+     * // Delete one BranchPricingSetting
+     * const BranchPricingSetting = await prisma.branchPricingSetting.delete({
+     *   where: {
+     *     // ... filter to delete one BranchPricingSetting
+     *   }
+     * })
+     * 
+     */
+    delete<T extends BranchPricingSettingDeleteArgs>(args: SelectSubset<T, BranchPricingSettingDeleteArgs<ExtArgs>>): Prisma__BranchPricingSettingClient<$Result.GetResult<Prisma.$BranchPricingSettingPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one BranchPricingSetting.
+     * @param {BranchPricingSettingUpdateArgs} args - Arguments to update one BranchPricingSetting.
+     * @example
+     * // Update one BranchPricingSetting
+     * const branchPricingSetting = await prisma.branchPricingSetting.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends BranchPricingSettingUpdateArgs>(args: SelectSubset<T, BranchPricingSettingUpdateArgs<ExtArgs>>): Prisma__BranchPricingSettingClient<$Result.GetResult<Prisma.$BranchPricingSettingPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more BranchPricingSettings.
+     * @param {BranchPricingSettingDeleteManyArgs} args - Arguments to filter BranchPricingSettings to delete.
+     * @example
+     * // Delete a few BranchPricingSettings
+     * const { count } = await prisma.branchPricingSetting.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends BranchPricingSettingDeleteManyArgs>(args?: SelectSubset<T, BranchPricingSettingDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more BranchPricingSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchPricingSettingUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many BranchPricingSettings
+     * const branchPricingSetting = await prisma.branchPricingSetting.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends BranchPricingSettingUpdateManyArgs>(args: SelectSubset<T, BranchPricingSettingUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one BranchPricingSetting.
+     * @param {BranchPricingSettingUpsertArgs} args - Arguments to update or create a BranchPricingSetting.
+     * @example
+     * // Update or create a BranchPricingSetting
+     * const branchPricingSetting = await prisma.branchPricingSetting.upsert({
+     *   create: {
+     *     // ... data to create a BranchPricingSetting
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the BranchPricingSetting we want to update
+     *   }
+     * })
+     */
+    upsert<T extends BranchPricingSettingUpsertArgs>(args: SelectSubset<T, BranchPricingSettingUpsertArgs<ExtArgs>>): Prisma__BranchPricingSettingClient<$Result.GetResult<Prisma.$BranchPricingSettingPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of BranchPricingSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchPricingSettingCountArgs} args - Arguments to filter BranchPricingSettings to count.
+     * @example
+     * // Count the number of BranchPricingSettings
+     * const count = await prisma.branchPricingSetting.count({
+     *   where: {
+     *     // ... the filter for the BranchPricingSettings we want to count
+     *   }
+     * })
+    **/
+    count<T extends BranchPricingSettingCountArgs>(
+      args?: Subset<T, BranchPricingSettingCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], BranchPricingSettingCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a BranchPricingSetting.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchPricingSettingAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends BranchPricingSettingAggregateArgs>(args: Subset<T, BranchPricingSettingAggregateArgs>): Prisma.PrismaPromise<GetBranchPricingSettingAggregateType<T>>
+
+    /**
+     * Group by BranchPricingSetting.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchPricingSettingGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends BranchPricingSettingGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: BranchPricingSettingGroupByArgs['orderBy'] }
+        : { orderBy?: BranchPricingSettingGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, BranchPricingSettingGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetBranchPricingSettingGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the BranchPricingSetting model
+   */
+  readonly fields: BranchPricingSettingFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for BranchPricingSetting.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__BranchPricingSettingClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    branch<T extends BranchDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BranchDefaultArgs<ExtArgs>>): Prisma__BranchClient<$Result.GetResult<Prisma.$BranchPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the BranchPricingSetting model
+   */ 
+  interface BranchPricingSettingFieldRefs {
+    readonly id: FieldRef<"BranchPricingSetting", 'Int'>
+    readonly branchId: FieldRef<"BranchPricingSetting", 'Int'>
+    readonly weekendEnabled: FieldRef<"BranchPricingSetting", 'Boolean'>
+    readonly peakEnabled: FieldRef<"BranchPricingSetting", 'Boolean'>
+    readonly customEnabled: FieldRef<"BranchPricingSetting", 'Boolean'>
+    readonly weekendMultiplier: FieldRef<"BranchPricingSetting", 'Decimal'>
+    readonly peakMultiplier: FieldRef<"BranchPricingSetting", 'Decimal'>
+    readonly customMultiplier: FieldRef<"BranchPricingSetting", 'Decimal'>
+    readonly createdAt: FieldRef<"BranchPricingSetting", 'DateTime'>
+    readonly updatedAt: FieldRef<"BranchPricingSetting", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * BranchPricingSetting findUnique
+   */
+  export type BranchPricingSettingFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingSetting
+     */
+    select?: BranchPricingSettingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingSettingInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchPricingSetting to fetch.
+     */
+    where: BranchPricingSettingWhereUniqueInput
+  }
+
+  /**
+   * BranchPricingSetting findUniqueOrThrow
+   */
+  export type BranchPricingSettingFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingSetting
+     */
+    select?: BranchPricingSettingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingSettingInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchPricingSetting to fetch.
+     */
+    where: BranchPricingSettingWhereUniqueInput
+  }
+
+  /**
+   * BranchPricingSetting findFirst
+   */
+  export type BranchPricingSettingFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingSetting
+     */
+    select?: BranchPricingSettingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingSettingInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchPricingSetting to fetch.
+     */
+    where?: BranchPricingSettingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchPricingSettings to fetch.
+     */
+    orderBy?: BranchPricingSettingOrderByWithRelationInput | BranchPricingSettingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for BranchPricingSettings.
+     */
+    cursor?: BranchPricingSettingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchPricingSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchPricingSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of BranchPricingSettings.
+     */
+    distinct?: BranchPricingSettingScalarFieldEnum | BranchPricingSettingScalarFieldEnum[]
+  }
+
+  /**
+   * BranchPricingSetting findFirstOrThrow
+   */
+  export type BranchPricingSettingFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingSetting
+     */
+    select?: BranchPricingSettingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingSettingInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchPricingSetting to fetch.
+     */
+    where?: BranchPricingSettingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchPricingSettings to fetch.
+     */
+    orderBy?: BranchPricingSettingOrderByWithRelationInput | BranchPricingSettingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for BranchPricingSettings.
+     */
+    cursor?: BranchPricingSettingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchPricingSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchPricingSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of BranchPricingSettings.
+     */
+    distinct?: BranchPricingSettingScalarFieldEnum | BranchPricingSettingScalarFieldEnum[]
+  }
+
+  /**
+   * BranchPricingSetting findMany
+   */
+  export type BranchPricingSettingFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingSetting
+     */
+    select?: BranchPricingSettingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingSettingInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchPricingSettings to fetch.
+     */
+    where?: BranchPricingSettingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchPricingSettings to fetch.
+     */
+    orderBy?: BranchPricingSettingOrderByWithRelationInput | BranchPricingSettingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing BranchPricingSettings.
+     */
+    cursor?: BranchPricingSettingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchPricingSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchPricingSettings.
+     */
+    skip?: number
+    distinct?: BranchPricingSettingScalarFieldEnum | BranchPricingSettingScalarFieldEnum[]
+  }
+
+  /**
+   * BranchPricingSetting create
+   */
+  export type BranchPricingSettingCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingSetting
+     */
+    select?: BranchPricingSettingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingSettingInclude<ExtArgs> | null
+    /**
+     * The data needed to create a BranchPricingSetting.
+     */
+    data: XOR<BranchPricingSettingCreateInput, BranchPricingSettingUncheckedCreateInput>
+  }
+
+  /**
+   * BranchPricingSetting createMany
+   */
+  export type BranchPricingSettingCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many BranchPricingSettings.
+     */
+    data: BranchPricingSettingCreateManyInput | BranchPricingSettingCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * BranchPricingSetting createManyAndReturn
+   */
+  export type BranchPricingSettingCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingSetting
+     */
+    select?: BranchPricingSettingSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many BranchPricingSettings.
+     */
+    data: BranchPricingSettingCreateManyInput | BranchPricingSettingCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingSettingIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * BranchPricingSetting update
+   */
+  export type BranchPricingSettingUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingSetting
+     */
+    select?: BranchPricingSettingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingSettingInclude<ExtArgs> | null
+    /**
+     * The data needed to update a BranchPricingSetting.
+     */
+    data: XOR<BranchPricingSettingUpdateInput, BranchPricingSettingUncheckedUpdateInput>
+    /**
+     * Choose, which BranchPricingSetting to update.
+     */
+    where: BranchPricingSettingWhereUniqueInput
+  }
+
+  /**
+   * BranchPricingSetting updateMany
+   */
+  export type BranchPricingSettingUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update BranchPricingSettings.
+     */
+    data: XOR<BranchPricingSettingUpdateManyMutationInput, BranchPricingSettingUncheckedUpdateManyInput>
+    /**
+     * Filter which BranchPricingSettings to update
+     */
+    where?: BranchPricingSettingWhereInput
+  }
+
+  /**
+   * BranchPricingSetting upsert
+   */
+  export type BranchPricingSettingUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingSetting
+     */
+    select?: BranchPricingSettingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingSettingInclude<ExtArgs> | null
+    /**
+     * The filter to search for the BranchPricingSetting to update in case it exists.
+     */
+    where: BranchPricingSettingWhereUniqueInput
+    /**
+     * In case the BranchPricingSetting found by the `where` argument doesn't exist, create a new BranchPricingSetting with this data.
+     */
+    create: XOR<BranchPricingSettingCreateInput, BranchPricingSettingUncheckedCreateInput>
+    /**
+     * In case the BranchPricingSetting was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<BranchPricingSettingUpdateInput, BranchPricingSettingUncheckedUpdateInput>
+  }
+
+  /**
+   * BranchPricingSetting delete
+   */
+  export type BranchPricingSettingDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingSetting
+     */
+    select?: BranchPricingSettingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingSettingInclude<ExtArgs> | null
+    /**
+     * Filter which BranchPricingSetting to delete.
+     */
+    where: BranchPricingSettingWhereUniqueInput
+  }
+
+  /**
+   * BranchPricingSetting deleteMany
+   */
+  export type BranchPricingSettingDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which BranchPricingSettings to delete
+     */
+    where?: BranchPricingSettingWhereInput
+  }
+
+  /**
+   * BranchPricingSetting without action
+   */
+  export type BranchPricingSettingDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingSetting
+     */
+    select?: BranchPricingSettingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingSettingInclude<ExtArgs> | null
   }
 
 
@@ -12682,6 +13916,7 @@ export namespace Prisma {
     branchId: number | null
     categoryId: number | null
     odo: number | null
+    baseDailyPrice: Decimal | null
   }
 
   export type VehicleSumAggregateOutputType = {
@@ -12689,6 +13924,7 @@ export namespace Prisma {
     branchId: number | null
     categoryId: number | null
     odo: number | null
+    baseDailyPrice: Decimal | null
   }
 
   export type VehicleMinAggregateOutputType = {
@@ -12702,6 +13938,7 @@ export namespace Prisma {
     odo: number | null
     insuranceExpiry: Date | null
     status: $Enums.VehicleStatus | null
+    baseDailyPrice: Decimal | null
     createdAt: Date | null
     updatedAt: Date | null
     deletedAt: Date | null
@@ -12718,6 +13955,7 @@ export namespace Prisma {
     odo: number | null
     insuranceExpiry: Date | null
     status: $Enums.VehicleStatus | null
+    baseDailyPrice: Decimal | null
     createdAt: Date | null
     updatedAt: Date | null
     deletedAt: Date | null
@@ -12734,6 +13972,7 @@ export namespace Prisma {
     odo: number
     insuranceExpiry: number
     status: number
+    baseDailyPrice: number
     createdAt: number
     updatedAt: number
     deletedAt: number
@@ -12746,6 +13985,7 @@ export namespace Prisma {
     branchId?: true
     categoryId?: true
     odo?: true
+    baseDailyPrice?: true
   }
 
   export type VehicleSumAggregateInputType = {
@@ -12753,6 +13993,7 @@ export namespace Prisma {
     branchId?: true
     categoryId?: true
     odo?: true
+    baseDailyPrice?: true
   }
 
   export type VehicleMinAggregateInputType = {
@@ -12766,6 +14007,7 @@ export namespace Prisma {
     odo?: true
     insuranceExpiry?: true
     status?: true
+    baseDailyPrice?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -12782,6 +14024,7 @@ export namespace Prisma {
     odo?: true
     insuranceExpiry?: true
     status?: true
+    baseDailyPrice?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -12798,6 +14041,7 @@ export namespace Prisma {
     odo?: true
     insuranceExpiry?: true
     status?: true
+    baseDailyPrice?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -12901,6 +14145,7 @@ export namespace Prisma {
     odo: number
     insuranceExpiry: Date
     status: $Enums.VehicleStatus
+    baseDailyPrice: Decimal
     createdAt: Date
     updatedAt: Date
     deletedAt: Date | null
@@ -12936,6 +14181,7 @@ export namespace Prisma {
     odo?: boolean
     insuranceExpiry?: boolean
     status?: boolean
+    baseDailyPrice?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -12945,6 +14191,7 @@ export namespace Prisma {
     maintenance?: boolean | Vehicle$maintenanceArgs<ExtArgs>
     bookings?: boolean | Vehicle$bookingsArgs<ExtArgs>
     damageReports?: boolean | Vehicle$damageReportsArgs<ExtArgs>
+    pricingOverride?: boolean | Vehicle$pricingOverrideArgs<ExtArgs>
     _count?: boolean | VehicleCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["vehicle"]>
 
@@ -12959,6 +14206,7 @@ export namespace Prisma {
     odo?: boolean
     insuranceExpiry?: boolean
     status?: boolean
+    baseDailyPrice?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -12977,6 +14225,7 @@ export namespace Prisma {
     odo?: boolean
     insuranceExpiry?: boolean
     status?: boolean
+    baseDailyPrice?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -12989,6 +14238,7 @@ export namespace Prisma {
     maintenance?: boolean | Vehicle$maintenanceArgs<ExtArgs>
     bookings?: boolean | Vehicle$bookingsArgs<ExtArgs>
     damageReports?: boolean | Vehicle$damageReportsArgs<ExtArgs>
+    pricingOverride?: boolean | Vehicle$pricingOverrideArgs<ExtArgs>
     _count?: boolean | VehicleCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type VehicleIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -13005,6 +14255,7 @@ export namespace Prisma {
       maintenance: Prisma.$VehicleMaintenanceRecordPayload<ExtArgs>[]
       bookings: Prisma.$BookingPayload<ExtArgs>[]
       damageReports: Prisma.$DamageReportPayload<ExtArgs>[]
+      pricingOverride: Prisma.$VehiclePricingOverridePayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -13017,6 +14268,7 @@ export namespace Prisma {
       odo: number
       insuranceExpiry: Date
       status: $Enums.VehicleStatus
+      baseDailyPrice: Prisma.Decimal
       createdAt: Date
       updatedAt: Date
       deletedAt: Date | null
@@ -13390,6 +14642,7 @@ export namespace Prisma {
     maintenance<T extends Vehicle$maintenanceArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$maintenanceArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleMaintenanceRecordPayload<ExtArgs>, T, "findMany"> | Null>
     bookings<T extends Vehicle$bookingsArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$bookingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findMany"> | Null>
     damageReports<T extends Vehicle$damageReportsArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$damageReportsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DamageReportPayload<ExtArgs>, T, "findMany"> | Null>
+    pricingOverride<T extends Vehicle$pricingOverrideArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$pricingOverrideArgs<ExtArgs>>): Prisma__VehiclePricingOverrideClient<$Result.GetResult<Prisma.$VehiclePricingOverridePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -13429,6 +14682,7 @@ export namespace Prisma {
     readonly odo: FieldRef<"Vehicle", 'Int'>
     readonly insuranceExpiry: FieldRef<"Vehicle", 'DateTime'>
     readonly status: FieldRef<"Vehicle", 'VehicleStatus'>
+    readonly baseDailyPrice: FieldRef<"Vehicle", 'Decimal'>
     readonly createdAt: FieldRef<"Vehicle", 'DateTime'>
     readonly updatedAt: FieldRef<"Vehicle", 'DateTime'>
     readonly deletedAt: FieldRef<"Vehicle", 'DateTime'>
@@ -13830,6 +15084,21 @@ export namespace Prisma {
   }
 
   /**
+   * Vehicle.pricingOverride
+   */
+  export type Vehicle$pricingOverrideArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePricingOverride
+     */
+    select?: VehiclePricingOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePricingOverrideInclude<ExtArgs> | null
+    where?: VehiclePricingOverrideWhereInput
+  }
+
+  /**
    * Vehicle without action
    */
   export type VehicleDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -13841,6 +15110,985 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: VehicleInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model VehiclePricingOverride
+   */
+
+  export type AggregateVehiclePricingOverride = {
+    _count: VehiclePricingOverrideCountAggregateOutputType | null
+    _avg: VehiclePricingOverrideAvgAggregateOutputType | null
+    _sum: VehiclePricingOverrideSumAggregateOutputType | null
+    _min: VehiclePricingOverrideMinAggregateOutputType | null
+    _max: VehiclePricingOverrideMaxAggregateOutputType | null
+  }
+
+  export type VehiclePricingOverrideAvgAggregateOutputType = {
+    id: number | null
+    vehicleId: number | null
+    customPrice: Decimal | null
+    multiplier: Decimal | null
+  }
+
+  export type VehiclePricingOverrideSumAggregateOutputType = {
+    id: number | null
+    vehicleId: number | null
+    customPrice: Decimal | null
+    multiplier: Decimal | null
+  }
+
+  export type VehiclePricingOverrideMinAggregateOutputType = {
+    id: number | null
+    vehicleId: number | null
+    customPrice: Decimal | null
+    multiplier: Decimal | null
+    enabled: boolean | null
+  }
+
+  export type VehiclePricingOverrideMaxAggregateOutputType = {
+    id: number | null
+    vehicleId: number | null
+    customPrice: Decimal | null
+    multiplier: Decimal | null
+    enabled: boolean | null
+  }
+
+  export type VehiclePricingOverrideCountAggregateOutputType = {
+    id: number
+    vehicleId: number
+    customPrice: number
+    multiplier: number
+    enabled: number
+    _all: number
+  }
+
+
+  export type VehiclePricingOverrideAvgAggregateInputType = {
+    id?: true
+    vehicleId?: true
+    customPrice?: true
+    multiplier?: true
+  }
+
+  export type VehiclePricingOverrideSumAggregateInputType = {
+    id?: true
+    vehicleId?: true
+    customPrice?: true
+    multiplier?: true
+  }
+
+  export type VehiclePricingOverrideMinAggregateInputType = {
+    id?: true
+    vehicleId?: true
+    customPrice?: true
+    multiplier?: true
+    enabled?: true
+  }
+
+  export type VehiclePricingOverrideMaxAggregateInputType = {
+    id?: true
+    vehicleId?: true
+    customPrice?: true
+    multiplier?: true
+    enabled?: true
+  }
+
+  export type VehiclePricingOverrideCountAggregateInputType = {
+    id?: true
+    vehicleId?: true
+    customPrice?: true
+    multiplier?: true
+    enabled?: true
+    _all?: true
+  }
+
+  export type VehiclePricingOverrideAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which VehiclePricingOverride to aggregate.
+     */
+    where?: VehiclePricingOverrideWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehiclePricingOverrides to fetch.
+     */
+    orderBy?: VehiclePricingOverrideOrderByWithRelationInput | VehiclePricingOverrideOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: VehiclePricingOverrideWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehiclePricingOverrides from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehiclePricingOverrides.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned VehiclePricingOverrides
+    **/
+    _count?: true | VehiclePricingOverrideCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: VehiclePricingOverrideAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: VehiclePricingOverrideSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: VehiclePricingOverrideMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: VehiclePricingOverrideMaxAggregateInputType
+  }
+
+  export type GetVehiclePricingOverrideAggregateType<T extends VehiclePricingOverrideAggregateArgs> = {
+        [P in keyof T & keyof AggregateVehiclePricingOverride]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateVehiclePricingOverride[P]>
+      : GetScalarType<T[P], AggregateVehiclePricingOverride[P]>
+  }
+
+
+
+
+  export type VehiclePricingOverrideGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VehiclePricingOverrideWhereInput
+    orderBy?: VehiclePricingOverrideOrderByWithAggregationInput | VehiclePricingOverrideOrderByWithAggregationInput[]
+    by: VehiclePricingOverrideScalarFieldEnum[] | VehiclePricingOverrideScalarFieldEnum
+    having?: VehiclePricingOverrideScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: VehiclePricingOverrideCountAggregateInputType | true
+    _avg?: VehiclePricingOverrideAvgAggregateInputType
+    _sum?: VehiclePricingOverrideSumAggregateInputType
+    _min?: VehiclePricingOverrideMinAggregateInputType
+    _max?: VehiclePricingOverrideMaxAggregateInputType
+  }
+
+  export type VehiclePricingOverrideGroupByOutputType = {
+    id: number
+    vehicleId: number
+    customPrice: Decimal | null
+    multiplier: Decimal | null
+    enabled: boolean
+    _count: VehiclePricingOverrideCountAggregateOutputType | null
+    _avg: VehiclePricingOverrideAvgAggregateOutputType | null
+    _sum: VehiclePricingOverrideSumAggregateOutputType | null
+    _min: VehiclePricingOverrideMinAggregateOutputType | null
+    _max: VehiclePricingOverrideMaxAggregateOutputType | null
+  }
+
+  type GetVehiclePricingOverrideGroupByPayload<T extends VehiclePricingOverrideGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<VehiclePricingOverrideGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof VehiclePricingOverrideGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], VehiclePricingOverrideGroupByOutputType[P]>
+            : GetScalarType<T[P], VehiclePricingOverrideGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type VehiclePricingOverrideSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    vehicleId?: boolean
+    customPrice?: boolean
+    multiplier?: boolean
+    enabled?: boolean
+    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["vehiclePricingOverride"]>
+
+  export type VehiclePricingOverrideSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    vehicleId?: boolean
+    customPrice?: boolean
+    multiplier?: boolean
+    enabled?: boolean
+    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["vehiclePricingOverride"]>
+
+  export type VehiclePricingOverrideSelectScalar = {
+    id?: boolean
+    vehicleId?: boolean
+    customPrice?: boolean
+    multiplier?: boolean
+    enabled?: boolean
+  }
+
+  export type VehiclePricingOverrideInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+  }
+  export type VehiclePricingOverrideIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+  }
+
+  export type $VehiclePricingOverridePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "VehiclePricingOverride"
+    objects: {
+      vehicle: Prisma.$VehiclePayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      vehicleId: number
+      customPrice: Prisma.Decimal | null
+      multiplier: Prisma.Decimal | null
+      enabled: boolean
+    }, ExtArgs["result"]["vehiclePricingOverride"]>
+    composites: {}
+  }
+
+  type VehiclePricingOverrideGetPayload<S extends boolean | null | undefined | VehiclePricingOverrideDefaultArgs> = $Result.GetResult<Prisma.$VehiclePricingOverridePayload, S>
+
+  type VehiclePricingOverrideCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<VehiclePricingOverrideFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: VehiclePricingOverrideCountAggregateInputType | true
+    }
+
+  export interface VehiclePricingOverrideDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['VehiclePricingOverride'], meta: { name: 'VehiclePricingOverride' } }
+    /**
+     * Find zero or one VehiclePricingOverride that matches the filter.
+     * @param {VehiclePricingOverrideFindUniqueArgs} args - Arguments to find a VehiclePricingOverride
+     * @example
+     * // Get one VehiclePricingOverride
+     * const vehiclePricingOverride = await prisma.vehiclePricingOverride.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends VehiclePricingOverrideFindUniqueArgs>(args: SelectSubset<T, VehiclePricingOverrideFindUniqueArgs<ExtArgs>>): Prisma__VehiclePricingOverrideClient<$Result.GetResult<Prisma.$VehiclePricingOverridePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one VehiclePricingOverride that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {VehiclePricingOverrideFindUniqueOrThrowArgs} args - Arguments to find a VehiclePricingOverride
+     * @example
+     * // Get one VehiclePricingOverride
+     * const vehiclePricingOverride = await prisma.vehiclePricingOverride.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends VehiclePricingOverrideFindUniqueOrThrowArgs>(args: SelectSubset<T, VehiclePricingOverrideFindUniqueOrThrowArgs<ExtArgs>>): Prisma__VehiclePricingOverrideClient<$Result.GetResult<Prisma.$VehiclePricingOverridePayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first VehiclePricingOverride that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehiclePricingOverrideFindFirstArgs} args - Arguments to find a VehiclePricingOverride
+     * @example
+     * // Get one VehiclePricingOverride
+     * const vehiclePricingOverride = await prisma.vehiclePricingOverride.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends VehiclePricingOverrideFindFirstArgs>(args?: SelectSubset<T, VehiclePricingOverrideFindFirstArgs<ExtArgs>>): Prisma__VehiclePricingOverrideClient<$Result.GetResult<Prisma.$VehiclePricingOverridePayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first VehiclePricingOverride that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehiclePricingOverrideFindFirstOrThrowArgs} args - Arguments to find a VehiclePricingOverride
+     * @example
+     * // Get one VehiclePricingOverride
+     * const vehiclePricingOverride = await prisma.vehiclePricingOverride.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends VehiclePricingOverrideFindFirstOrThrowArgs>(args?: SelectSubset<T, VehiclePricingOverrideFindFirstOrThrowArgs<ExtArgs>>): Prisma__VehiclePricingOverrideClient<$Result.GetResult<Prisma.$VehiclePricingOverridePayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more VehiclePricingOverrides that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehiclePricingOverrideFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all VehiclePricingOverrides
+     * const vehiclePricingOverrides = await prisma.vehiclePricingOverride.findMany()
+     * 
+     * // Get first 10 VehiclePricingOverrides
+     * const vehiclePricingOverrides = await prisma.vehiclePricingOverride.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const vehiclePricingOverrideWithIdOnly = await prisma.vehiclePricingOverride.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends VehiclePricingOverrideFindManyArgs>(args?: SelectSubset<T, VehiclePricingOverrideFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehiclePricingOverridePayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a VehiclePricingOverride.
+     * @param {VehiclePricingOverrideCreateArgs} args - Arguments to create a VehiclePricingOverride.
+     * @example
+     * // Create one VehiclePricingOverride
+     * const VehiclePricingOverride = await prisma.vehiclePricingOverride.create({
+     *   data: {
+     *     // ... data to create a VehiclePricingOverride
+     *   }
+     * })
+     * 
+     */
+    create<T extends VehiclePricingOverrideCreateArgs>(args: SelectSubset<T, VehiclePricingOverrideCreateArgs<ExtArgs>>): Prisma__VehiclePricingOverrideClient<$Result.GetResult<Prisma.$VehiclePricingOverridePayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many VehiclePricingOverrides.
+     * @param {VehiclePricingOverrideCreateManyArgs} args - Arguments to create many VehiclePricingOverrides.
+     * @example
+     * // Create many VehiclePricingOverrides
+     * const vehiclePricingOverride = await prisma.vehiclePricingOverride.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends VehiclePricingOverrideCreateManyArgs>(args?: SelectSubset<T, VehiclePricingOverrideCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many VehiclePricingOverrides and returns the data saved in the database.
+     * @param {VehiclePricingOverrideCreateManyAndReturnArgs} args - Arguments to create many VehiclePricingOverrides.
+     * @example
+     * // Create many VehiclePricingOverrides
+     * const vehiclePricingOverride = await prisma.vehiclePricingOverride.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many VehiclePricingOverrides and only return the `id`
+     * const vehiclePricingOverrideWithIdOnly = await prisma.vehiclePricingOverride.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends VehiclePricingOverrideCreateManyAndReturnArgs>(args?: SelectSubset<T, VehiclePricingOverrideCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehiclePricingOverridePayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a VehiclePricingOverride.
+     * @param {VehiclePricingOverrideDeleteArgs} args - Arguments to delete one VehiclePricingOverride.
+     * @example
+     * // Delete one VehiclePricingOverride
+     * const VehiclePricingOverride = await prisma.vehiclePricingOverride.delete({
+     *   where: {
+     *     // ... filter to delete one VehiclePricingOverride
+     *   }
+     * })
+     * 
+     */
+    delete<T extends VehiclePricingOverrideDeleteArgs>(args: SelectSubset<T, VehiclePricingOverrideDeleteArgs<ExtArgs>>): Prisma__VehiclePricingOverrideClient<$Result.GetResult<Prisma.$VehiclePricingOverridePayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one VehiclePricingOverride.
+     * @param {VehiclePricingOverrideUpdateArgs} args - Arguments to update one VehiclePricingOverride.
+     * @example
+     * // Update one VehiclePricingOverride
+     * const vehiclePricingOverride = await prisma.vehiclePricingOverride.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends VehiclePricingOverrideUpdateArgs>(args: SelectSubset<T, VehiclePricingOverrideUpdateArgs<ExtArgs>>): Prisma__VehiclePricingOverrideClient<$Result.GetResult<Prisma.$VehiclePricingOverridePayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more VehiclePricingOverrides.
+     * @param {VehiclePricingOverrideDeleteManyArgs} args - Arguments to filter VehiclePricingOverrides to delete.
+     * @example
+     * // Delete a few VehiclePricingOverrides
+     * const { count } = await prisma.vehiclePricingOverride.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends VehiclePricingOverrideDeleteManyArgs>(args?: SelectSubset<T, VehiclePricingOverrideDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more VehiclePricingOverrides.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehiclePricingOverrideUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many VehiclePricingOverrides
+     * const vehiclePricingOverride = await prisma.vehiclePricingOverride.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends VehiclePricingOverrideUpdateManyArgs>(args: SelectSubset<T, VehiclePricingOverrideUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one VehiclePricingOverride.
+     * @param {VehiclePricingOverrideUpsertArgs} args - Arguments to update or create a VehiclePricingOverride.
+     * @example
+     * // Update or create a VehiclePricingOverride
+     * const vehiclePricingOverride = await prisma.vehiclePricingOverride.upsert({
+     *   create: {
+     *     // ... data to create a VehiclePricingOverride
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the VehiclePricingOverride we want to update
+     *   }
+     * })
+     */
+    upsert<T extends VehiclePricingOverrideUpsertArgs>(args: SelectSubset<T, VehiclePricingOverrideUpsertArgs<ExtArgs>>): Prisma__VehiclePricingOverrideClient<$Result.GetResult<Prisma.$VehiclePricingOverridePayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of VehiclePricingOverrides.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehiclePricingOverrideCountArgs} args - Arguments to filter VehiclePricingOverrides to count.
+     * @example
+     * // Count the number of VehiclePricingOverrides
+     * const count = await prisma.vehiclePricingOverride.count({
+     *   where: {
+     *     // ... the filter for the VehiclePricingOverrides we want to count
+     *   }
+     * })
+    **/
+    count<T extends VehiclePricingOverrideCountArgs>(
+      args?: Subset<T, VehiclePricingOverrideCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], VehiclePricingOverrideCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a VehiclePricingOverride.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehiclePricingOverrideAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends VehiclePricingOverrideAggregateArgs>(args: Subset<T, VehiclePricingOverrideAggregateArgs>): Prisma.PrismaPromise<GetVehiclePricingOverrideAggregateType<T>>
+
+    /**
+     * Group by VehiclePricingOverride.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehiclePricingOverrideGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends VehiclePricingOverrideGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: VehiclePricingOverrideGroupByArgs['orderBy'] }
+        : { orderBy?: VehiclePricingOverrideGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, VehiclePricingOverrideGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetVehiclePricingOverrideGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the VehiclePricingOverride model
+   */
+  readonly fields: VehiclePricingOverrideFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for VehiclePricingOverride.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__VehiclePricingOverrideClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    vehicle<T extends VehicleDefaultArgs<ExtArgs> = {}>(args?: Subset<T, VehicleDefaultArgs<ExtArgs>>): Prisma__VehicleClient<$Result.GetResult<Prisma.$VehiclePayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the VehiclePricingOverride model
+   */ 
+  interface VehiclePricingOverrideFieldRefs {
+    readonly id: FieldRef<"VehiclePricingOverride", 'Int'>
+    readonly vehicleId: FieldRef<"VehiclePricingOverride", 'Int'>
+    readonly customPrice: FieldRef<"VehiclePricingOverride", 'Decimal'>
+    readonly multiplier: FieldRef<"VehiclePricingOverride", 'Decimal'>
+    readonly enabled: FieldRef<"VehiclePricingOverride", 'Boolean'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * VehiclePricingOverride findUnique
+   */
+  export type VehiclePricingOverrideFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePricingOverride
+     */
+    select?: VehiclePricingOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePricingOverrideInclude<ExtArgs> | null
+    /**
+     * Filter, which VehiclePricingOverride to fetch.
+     */
+    where: VehiclePricingOverrideWhereUniqueInput
+  }
+
+  /**
+   * VehiclePricingOverride findUniqueOrThrow
+   */
+  export type VehiclePricingOverrideFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePricingOverride
+     */
+    select?: VehiclePricingOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePricingOverrideInclude<ExtArgs> | null
+    /**
+     * Filter, which VehiclePricingOverride to fetch.
+     */
+    where: VehiclePricingOverrideWhereUniqueInput
+  }
+
+  /**
+   * VehiclePricingOverride findFirst
+   */
+  export type VehiclePricingOverrideFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePricingOverride
+     */
+    select?: VehiclePricingOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePricingOverrideInclude<ExtArgs> | null
+    /**
+     * Filter, which VehiclePricingOverride to fetch.
+     */
+    where?: VehiclePricingOverrideWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehiclePricingOverrides to fetch.
+     */
+    orderBy?: VehiclePricingOverrideOrderByWithRelationInput | VehiclePricingOverrideOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for VehiclePricingOverrides.
+     */
+    cursor?: VehiclePricingOverrideWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehiclePricingOverrides from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehiclePricingOverrides.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of VehiclePricingOverrides.
+     */
+    distinct?: VehiclePricingOverrideScalarFieldEnum | VehiclePricingOverrideScalarFieldEnum[]
+  }
+
+  /**
+   * VehiclePricingOverride findFirstOrThrow
+   */
+  export type VehiclePricingOverrideFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePricingOverride
+     */
+    select?: VehiclePricingOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePricingOverrideInclude<ExtArgs> | null
+    /**
+     * Filter, which VehiclePricingOverride to fetch.
+     */
+    where?: VehiclePricingOverrideWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehiclePricingOverrides to fetch.
+     */
+    orderBy?: VehiclePricingOverrideOrderByWithRelationInput | VehiclePricingOverrideOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for VehiclePricingOverrides.
+     */
+    cursor?: VehiclePricingOverrideWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehiclePricingOverrides from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehiclePricingOverrides.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of VehiclePricingOverrides.
+     */
+    distinct?: VehiclePricingOverrideScalarFieldEnum | VehiclePricingOverrideScalarFieldEnum[]
+  }
+
+  /**
+   * VehiclePricingOverride findMany
+   */
+  export type VehiclePricingOverrideFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePricingOverride
+     */
+    select?: VehiclePricingOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePricingOverrideInclude<ExtArgs> | null
+    /**
+     * Filter, which VehiclePricingOverrides to fetch.
+     */
+    where?: VehiclePricingOverrideWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehiclePricingOverrides to fetch.
+     */
+    orderBy?: VehiclePricingOverrideOrderByWithRelationInput | VehiclePricingOverrideOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing VehiclePricingOverrides.
+     */
+    cursor?: VehiclePricingOverrideWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehiclePricingOverrides from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehiclePricingOverrides.
+     */
+    skip?: number
+    distinct?: VehiclePricingOverrideScalarFieldEnum | VehiclePricingOverrideScalarFieldEnum[]
+  }
+
+  /**
+   * VehiclePricingOverride create
+   */
+  export type VehiclePricingOverrideCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePricingOverride
+     */
+    select?: VehiclePricingOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePricingOverrideInclude<ExtArgs> | null
+    /**
+     * The data needed to create a VehiclePricingOverride.
+     */
+    data: XOR<VehiclePricingOverrideCreateInput, VehiclePricingOverrideUncheckedCreateInput>
+  }
+
+  /**
+   * VehiclePricingOverride createMany
+   */
+  export type VehiclePricingOverrideCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many VehiclePricingOverrides.
+     */
+    data: VehiclePricingOverrideCreateManyInput | VehiclePricingOverrideCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * VehiclePricingOverride createManyAndReturn
+   */
+  export type VehiclePricingOverrideCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePricingOverride
+     */
+    select?: VehiclePricingOverrideSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many VehiclePricingOverrides.
+     */
+    data: VehiclePricingOverrideCreateManyInput | VehiclePricingOverrideCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePricingOverrideIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * VehiclePricingOverride update
+   */
+  export type VehiclePricingOverrideUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePricingOverride
+     */
+    select?: VehiclePricingOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePricingOverrideInclude<ExtArgs> | null
+    /**
+     * The data needed to update a VehiclePricingOverride.
+     */
+    data: XOR<VehiclePricingOverrideUpdateInput, VehiclePricingOverrideUncheckedUpdateInput>
+    /**
+     * Choose, which VehiclePricingOverride to update.
+     */
+    where: VehiclePricingOverrideWhereUniqueInput
+  }
+
+  /**
+   * VehiclePricingOverride updateMany
+   */
+  export type VehiclePricingOverrideUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update VehiclePricingOverrides.
+     */
+    data: XOR<VehiclePricingOverrideUpdateManyMutationInput, VehiclePricingOverrideUncheckedUpdateManyInput>
+    /**
+     * Filter which VehiclePricingOverrides to update
+     */
+    where?: VehiclePricingOverrideWhereInput
+  }
+
+  /**
+   * VehiclePricingOverride upsert
+   */
+  export type VehiclePricingOverrideUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePricingOverride
+     */
+    select?: VehiclePricingOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePricingOverrideInclude<ExtArgs> | null
+    /**
+     * The filter to search for the VehiclePricingOverride to update in case it exists.
+     */
+    where: VehiclePricingOverrideWhereUniqueInput
+    /**
+     * In case the VehiclePricingOverride found by the `where` argument doesn't exist, create a new VehiclePricingOverride with this data.
+     */
+    create: XOR<VehiclePricingOverrideCreateInput, VehiclePricingOverrideUncheckedCreateInput>
+    /**
+     * In case the VehiclePricingOverride was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<VehiclePricingOverrideUpdateInput, VehiclePricingOverrideUncheckedUpdateInput>
+  }
+
+  /**
+   * VehiclePricingOverride delete
+   */
+  export type VehiclePricingOverrideDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePricingOverride
+     */
+    select?: VehiclePricingOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePricingOverrideInclude<ExtArgs> | null
+    /**
+     * Filter which VehiclePricingOverride to delete.
+     */
+    where: VehiclePricingOverrideWhereUniqueInput
+  }
+
+  /**
+   * VehiclePricingOverride deleteMany
+   */
+  export type VehiclePricingOverrideDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which VehiclePricingOverrides to delete
+     */
+    where?: VehiclePricingOverrideWhereInput
+  }
+
+  /**
+   * VehiclePricingOverride without action
+   */
+  export type VehiclePricingOverrideDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePricingOverride
+     */
+    select?: VehiclePricingOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePricingOverrideInclude<ExtArgs> | null
   }
 
 
@@ -28189,6 +30437,22 @@ export namespace Prisma {
   export type StaffActivityLogScalarFieldEnum = (typeof StaffActivityLogScalarFieldEnum)[keyof typeof StaffActivityLogScalarFieldEnum]
 
 
+  export const BranchPricingSettingScalarFieldEnum: {
+    id: 'id',
+    branchId: 'branchId',
+    weekendEnabled: 'weekendEnabled',
+    peakEnabled: 'peakEnabled',
+    customEnabled: 'customEnabled',
+    weekendMultiplier: 'weekendMultiplier',
+    peakMultiplier: 'peakMultiplier',
+    customMultiplier: 'customMultiplier',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type BranchPricingSettingScalarFieldEnum = (typeof BranchPricingSettingScalarFieldEnum)[keyof typeof BranchPricingSettingScalarFieldEnum]
+
+
   export const VehicleCategoryScalarFieldEnum: {
     id: 'id',
     publicId: 'publicId',
@@ -28210,12 +30474,24 @@ export namespace Prisma {
     odo: 'odo',
     insuranceExpiry: 'insuranceExpiry',
     status: 'status',
+    baseDailyPrice: 'baseDailyPrice',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
     deletedAt: 'deletedAt'
   };
 
   export type VehicleScalarFieldEnum = (typeof VehicleScalarFieldEnum)[keyof typeof VehicleScalarFieldEnum]
+
+
+  export const VehiclePricingOverrideScalarFieldEnum: {
+    id: 'id',
+    vehicleId: 'vehicleId',
+    customPrice: 'customPrice',
+    multiplier: 'multiplier',
+    enabled: 'enabled'
+  };
+
+  export type VehiclePricingOverrideScalarFieldEnum = (typeof VehiclePricingOverrideScalarFieldEnum)[keyof typeof VehiclePricingOverrideScalarFieldEnum]
 
 
   export const VehicleInsuranceScalarFieldEnum: {
@@ -28569,20 +30845,6 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'VehicleStatus'
-   */
-  export type EnumVehicleStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VehicleStatus'>
-    
-
-
-  /**
-   * Reference to a field of type 'VehicleStatus[]'
-   */
-  export type ListEnumVehicleStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VehicleStatus[]'>
-    
-
-
-  /**
    * Reference to a field of type 'Decimal'
    */
   export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
@@ -28593,6 +30855,20 @@ export namespace Prisma {
    * Reference to a field of type 'Decimal[]'
    */
   export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'VehicleStatus'
+   */
+  export type EnumVehicleStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VehicleStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'VehicleStatus[]'
+   */
+  export type ListEnumVehicleStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VehicleStatus[]'>
     
 
 
@@ -28821,7 +31097,7 @@ export namespace Prisma {
     id?: IntFilter<"UserProvider"> | number
     publicId?: StringFilter<"UserProvider"> | string
     userId?: IntFilter<"UserProvider"> | number
-    provider?: StringFilter<"UserProvider"> | string
+    provider?: EnumAuthProviderFilter<"UserProvider"> | $Enums.AuthProvider
     providerUserId?: StringFilter<"UserProvider"> | string
     accessToken?: StringNullableFilter<"UserProvider"> | string | null
     refreshToken?: StringNullableFilter<"UserProvider"> | string | null
@@ -28851,7 +31127,7 @@ export namespace Prisma {
     OR?: UserProviderWhereInput[]
     NOT?: UserProviderWhereInput | UserProviderWhereInput[]
     userId?: IntFilter<"UserProvider"> | number
-    provider?: StringFilter<"UserProvider"> | string
+    provider?: EnumAuthProviderFilter<"UserProvider"> | $Enums.AuthProvider
     providerUserId?: StringFilter<"UserProvider"> | string
     accessToken?: StringNullableFilter<"UserProvider"> | string | null
     refreshToken?: StringNullableFilter<"UserProvider"> | string | null
@@ -28884,7 +31160,7 @@ export namespace Prisma {
     id?: IntWithAggregatesFilter<"UserProvider"> | number
     publicId?: StringWithAggregatesFilter<"UserProvider"> | string
     userId?: IntWithAggregatesFilter<"UserProvider"> | number
-    provider?: StringWithAggregatesFilter<"UserProvider"> | string
+    provider?: EnumAuthProviderWithAggregatesFilter<"UserProvider"> | $Enums.AuthProvider
     providerUserId?: StringWithAggregatesFilter<"UserProvider"> | string
     accessToken?: StringNullableWithAggregatesFilter<"UserProvider"> | string | null
     refreshToken?: StringNullableWithAggregatesFilter<"UserProvider"> | string | null
@@ -29182,6 +31458,7 @@ export namespace Prisma {
     users?: UserListRelationFilter
     vehicles?: VehicleListRelationFilter
     bookings?: BookingListRelationFilter
+    pricingSetting?: XOR<BranchPricingSettingNullableRelationFilter, BranchPricingSettingWhereInput> | null
   }
 
   export type BranchOrderByWithRelationInput = {
@@ -29195,6 +31472,7 @@ export namespace Prisma {
     users?: UserOrderByRelationAggregateInput
     vehicles?: VehicleOrderByRelationAggregateInput
     bookings?: BookingOrderByRelationAggregateInput
+    pricingSetting?: BranchPricingSettingOrderByWithRelationInput
   }
 
   export type BranchWhereUniqueInput = Prisma.AtLeast<{
@@ -29211,6 +31489,7 @@ export namespace Prisma {
     users?: UserListRelationFilter
     vehicles?: VehicleListRelationFilter
     bookings?: BookingListRelationFilter
+    pricingSetting?: XOR<BranchPricingSettingNullableRelationFilter, BranchPricingSettingWhereInput> | null
   }, "id" | "publicId">
 
   export type BranchOrderByWithAggregationInput = {
@@ -29305,6 +31584,88 @@ export namespace Prisma {
     createdAt?: DateTimeWithAggregatesFilter<"StaffActivityLog"> | Date | string
   }
 
+  export type BranchPricingSettingWhereInput = {
+    AND?: BranchPricingSettingWhereInput | BranchPricingSettingWhereInput[]
+    OR?: BranchPricingSettingWhereInput[]
+    NOT?: BranchPricingSettingWhereInput | BranchPricingSettingWhereInput[]
+    id?: IntFilter<"BranchPricingSetting"> | number
+    branchId?: IntFilter<"BranchPricingSetting"> | number
+    weekendEnabled?: BoolFilter<"BranchPricingSetting"> | boolean
+    peakEnabled?: BoolFilter<"BranchPricingSetting"> | boolean
+    customEnabled?: BoolFilter<"BranchPricingSetting"> | boolean
+    weekendMultiplier?: DecimalFilter<"BranchPricingSetting"> | Decimal | DecimalJsLike | number | string
+    peakMultiplier?: DecimalFilter<"BranchPricingSetting"> | Decimal | DecimalJsLike | number | string
+    customMultiplier?: DecimalFilter<"BranchPricingSetting"> | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFilter<"BranchPricingSetting"> | Date | string
+    updatedAt?: DateTimeFilter<"BranchPricingSetting"> | Date | string
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+  }
+
+  export type BranchPricingSettingOrderByWithRelationInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    weekendEnabled?: SortOrder
+    peakEnabled?: SortOrder
+    customEnabled?: SortOrder
+    weekendMultiplier?: SortOrder
+    peakMultiplier?: SortOrder
+    customMultiplier?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    branch?: BranchOrderByWithRelationInput
+  }
+
+  export type BranchPricingSettingWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    branchId?: number
+    AND?: BranchPricingSettingWhereInput | BranchPricingSettingWhereInput[]
+    OR?: BranchPricingSettingWhereInput[]
+    NOT?: BranchPricingSettingWhereInput | BranchPricingSettingWhereInput[]
+    weekendEnabled?: BoolFilter<"BranchPricingSetting"> | boolean
+    peakEnabled?: BoolFilter<"BranchPricingSetting"> | boolean
+    customEnabled?: BoolFilter<"BranchPricingSetting"> | boolean
+    weekendMultiplier?: DecimalFilter<"BranchPricingSetting"> | Decimal | DecimalJsLike | number | string
+    peakMultiplier?: DecimalFilter<"BranchPricingSetting"> | Decimal | DecimalJsLike | number | string
+    customMultiplier?: DecimalFilter<"BranchPricingSetting"> | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFilter<"BranchPricingSetting"> | Date | string
+    updatedAt?: DateTimeFilter<"BranchPricingSetting"> | Date | string
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+  }, "id" | "branchId">
+
+  export type BranchPricingSettingOrderByWithAggregationInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    weekendEnabled?: SortOrder
+    peakEnabled?: SortOrder
+    customEnabled?: SortOrder
+    weekendMultiplier?: SortOrder
+    peakMultiplier?: SortOrder
+    customMultiplier?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: BranchPricingSettingCountOrderByAggregateInput
+    _avg?: BranchPricingSettingAvgOrderByAggregateInput
+    _max?: BranchPricingSettingMaxOrderByAggregateInput
+    _min?: BranchPricingSettingMinOrderByAggregateInput
+    _sum?: BranchPricingSettingSumOrderByAggregateInput
+  }
+
+  export type BranchPricingSettingScalarWhereWithAggregatesInput = {
+    AND?: BranchPricingSettingScalarWhereWithAggregatesInput | BranchPricingSettingScalarWhereWithAggregatesInput[]
+    OR?: BranchPricingSettingScalarWhereWithAggregatesInput[]
+    NOT?: BranchPricingSettingScalarWhereWithAggregatesInput | BranchPricingSettingScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"BranchPricingSetting"> | number
+    branchId?: IntWithAggregatesFilter<"BranchPricingSetting"> | number
+    weekendEnabled?: BoolWithAggregatesFilter<"BranchPricingSetting"> | boolean
+    peakEnabled?: BoolWithAggregatesFilter<"BranchPricingSetting"> | boolean
+    customEnabled?: BoolWithAggregatesFilter<"BranchPricingSetting"> | boolean
+    weekendMultiplier?: DecimalWithAggregatesFilter<"BranchPricingSetting"> | Decimal | DecimalJsLike | number | string
+    peakMultiplier?: DecimalWithAggregatesFilter<"BranchPricingSetting"> | Decimal | DecimalJsLike | number | string
+    customMultiplier?: DecimalWithAggregatesFilter<"BranchPricingSetting"> | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeWithAggregatesFilter<"BranchPricingSetting"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"BranchPricingSetting"> | Date | string
+  }
+
   export type VehicleCategoryWhereInput = {
     AND?: VehicleCategoryWhereInput | VehicleCategoryWhereInput[]
     OR?: VehicleCategoryWhereInput[]
@@ -29374,6 +31735,7 @@ export namespace Prisma {
     odo?: IntFilter<"Vehicle"> | number
     insuranceExpiry?: DateTimeFilter<"Vehicle"> | Date | string
     status?: EnumVehicleStatusFilter<"Vehicle"> | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFilter<"Vehicle"> | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFilter<"Vehicle"> | Date | string
     updatedAt?: DateTimeFilter<"Vehicle"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Vehicle"> | Date | string | null
@@ -29383,6 +31745,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordListRelationFilter
     bookings?: BookingListRelationFilter
     damageReports?: DamageReportListRelationFilter
+    pricingOverride?: XOR<VehiclePricingOverrideNullableRelationFilter, VehiclePricingOverrideWhereInput> | null
   }
 
   export type VehicleOrderByWithRelationInput = {
@@ -29396,6 +31759,7 @@ export namespace Prisma {
     odo?: SortOrder
     insuranceExpiry?: SortOrder
     status?: SortOrder
+    baseDailyPrice?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrderInput | SortOrder
@@ -29405,6 +31769,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordOrderByRelationAggregateInput
     bookings?: BookingOrderByRelationAggregateInput
     damageReports?: DamageReportOrderByRelationAggregateInput
+    pricingOverride?: VehiclePricingOverrideOrderByWithRelationInput
   }
 
   export type VehicleWhereUniqueInput = Prisma.AtLeast<{
@@ -29421,6 +31786,7 @@ export namespace Prisma {
     odo?: IntFilter<"Vehicle"> | number
     insuranceExpiry?: DateTimeFilter<"Vehicle"> | Date | string
     status?: EnumVehicleStatusFilter<"Vehicle"> | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFilter<"Vehicle"> | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFilter<"Vehicle"> | Date | string
     updatedAt?: DateTimeFilter<"Vehicle"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Vehicle"> | Date | string | null
@@ -29430,6 +31796,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordListRelationFilter
     bookings?: BookingListRelationFilter
     damageReports?: DamageReportListRelationFilter
+    pricingOverride?: XOR<VehiclePricingOverrideNullableRelationFilter, VehiclePricingOverrideWhereInput> | null
   }, "id" | "publicId" | "regNo">
 
   export type VehicleOrderByWithAggregationInput = {
@@ -29443,6 +31810,7 @@ export namespace Prisma {
     odo?: SortOrder
     insuranceExpiry?: SortOrder
     status?: SortOrder
+    baseDailyPrice?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrderInput | SortOrder
@@ -29467,9 +31835,67 @@ export namespace Prisma {
     odo?: IntWithAggregatesFilter<"Vehicle"> | number
     insuranceExpiry?: DateTimeWithAggregatesFilter<"Vehicle"> | Date | string
     status?: EnumVehicleStatusWithAggregatesFilter<"Vehicle"> | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalWithAggregatesFilter<"Vehicle"> | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeWithAggregatesFilter<"Vehicle"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Vehicle"> | Date | string
     deletedAt?: DateTimeNullableWithAggregatesFilter<"Vehicle"> | Date | string | null
+  }
+
+  export type VehiclePricingOverrideWhereInput = {
+    AND?: VehiclePricingOverrideWhereInput | VehiclePricingOverrideWhereInput[]
+    OR?: VehiclePricingOverrideWhereInput[]
+    NOT?: VehiclePricingOverrideWhereInput | VehiclePricingOverrideWhereInput[]
+    id?: IntFilter<"VehiclePricingOverride"> | number
+    vehicleId?: IntFilter<"VehiclePricingOverride"> | number
+    customPrice?: DecimalNullableFilter<"VehiclePricingOverride"> | Decimal | DecimalJsLike | number | string | null
+    multiplier?: DecimalNullableFilter<"VehiclePricingOverride"> | Decimal | DecimalJsLike | number | string | null
+    enabled?: BoolFilter<"VehiclePricingOverride"> | boolean
+    vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
+  }
+
+  export type VehiclePricingOverrideOrderByWithRelationInput = {
+    id?: SortOrder
+    vehicleId?: SortOrder
+    customPrice?: SortOrderInput | SortOrder
+    multiplier?: SortOrderInput | SortOrder
+    enabled?: SortOrder
+    vehicle?: VehicleOrderByWithRelationInput
+  }
+
+  export type VehiclePricingOverrideWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    vehicleId?: number
+    AND?: VehiclePricingOverrideWhereInput | VehiclePricingOverrideWhereInput[]
+    OR?: VehiclePricingOverrideWhereInput[]
+    NOT?: VehiclePricingOverrideWhereInput | VehiclePricingOverrideWhereInput[]
+    customPrice?: DecimalNullableFilter<"VehiclePricingOverride"> | Decimal | DecimalJsLike | number | string | null
+    multiplier?: DecimalNullableFilter<"VehiclePricingOverride"> | Decimal | DecimalJsLike | number | string | null
+    enabled?: BoolFilter<"VehiclePricingOverride"> | boolean
+    vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
+  }, "id" | "vehicleId">
+
+  export type VehiclePricingOverrideOrderByWithAggregationInput = {
+    id?: SortOrder
+    vehicleId?: SortOrder
+    customPrice?: SortOrderInput | SortOrder
+    multiplier?: SortOrderInput | SortOrder
+    enabled?: SortOrder
+    _count?: VehiclePricingOverrideCountOrderByAggregateInput
+    _avg?: VehiclePricingOverrideAvgOrderByAggregateInput
+    _max?: VehiclePricingOverrideMaxOrderByAggregateInput
+    _min?: VehiclePricingOverrideMinOrderByAggregateInput
+    _sum?: VehiclePricingOverrideSumOrderByAggregateInput
+  }
+
+  export type VehiclePricingOverrideScalarWhereWithAggregatesInput = {
+    AND?: VehiclePricingOverrideScalarWhereWithAggregatesInput | VehiclePricingOverrideScalarWhereWithAggregatesInput[]
+    OR?: VehiclePricingOverrideScalarWhereWithAggregatesInput[]
+    NOT?: VehiclePricingOverrideScalarWhereWithAggregatesInput | VehiclePricingOverrideScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"VehiclePricingOverride"> | number
+    vehicleId?: IntWithAggregatesFilter<"VehiclePricingOverride"> | number
+    customPrice?: DecimalNullableWithAggregatesFilter<"VehiclePricingOverride"> | Decimal | DecimalJsLike | number | string | null
+    multiplier?: DecimalNullableWithAggregatesFilter<"VehiclePricingOverride"> | Decimal | DecimalJsLike | number | string | null
+    enabled?: BoolWithAggregatesFilter<"VehiclePricingOverride"> | boolean
   }
 
   export type VehicleInsuranceWhereInput = {
@@ -30620,7 +33046,7 @@ export namespace Prisma {
 
   export type UserProviderCreateInput = {
     publicId: string
-    provider: string
+    provider: $Enums.AuthProvider
     providerUserId: string
     accessToken?: string | null
     refreshToken?: string | null
@@ -30633,7 +33059,7 @@ export namespace Prisma {
     id?: number
     publicId: string
     userId: number
-    provider: string
+    provider: $Enums.AuthProvider
     providerUserId: string
     accessToken?: string | null
     refreshToken?: string | null
@@ -30643,7 +33069,7 @@ export namespace Prisma {
 
   export type UserProviderUpdateInput = {
     publicId?: StringFieldUpdateOperationsInput | string
-    provider?: StringFieldUpdateOperationsInput | string
+    provider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
     providerUserId?: StringFieldUpdateOperationsInput | string
     accessToken?: NullableStringFieldUpdateOperationsInput | string | null
     refreshToken?: NullableStringFieldUpdateOperationsInput | string | null
@@ -30656,7 +33082,7 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
     userId?: IntFieldUpdateOperationsInput | number
-    provider?: StringFieldUpdateOperationsInput | string
+    provider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
     providerUserId?: StringFieldUpdateOperationsInput | string
     accessToken?: NullableStringFieldUpdateOperationsInput | string | null
     refreshToken?: NullableStringFieldUpdateOperationsInput | string | null
@@ -30668,7 +33094,7 @@ export namespace Prisma {
     id?: number
     publicId: string
     userId: number
-    provider: string
+    provider: $Enums.AuthProvider
     providerUserId: string
     accessToken?: string | null
     refreshToken?: string | null
@@ -30678,7 +33104,7 @@ export namespace Prisma {
 
   export type UserProviderUpdateManyMutationInput = {
     publicId?: StringFieldUpdateOperationsInput | string
-    provider?: StringFieldUpdateOperationsInput | string
+    provider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
     providerUserId?: StringFieldUpdateOperationsInput | string
     accessToken?: NullableStringFieldUpdateOperationsInput | string | null
     refreshToken?: NullableStringFieldUpdateOperationsInput | string | null
@@ -30690,7 +33116,7 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
     userId?: IntFieldUpdateOperationsInput | number
-    provider?: StringFieldUpdateOperationsInput | string
+    provider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
     providerUserId?: StringFieldUpdateOperationsInput | string
     accessToken?: NullableStringFieldUpdateOperationsInput | string | null
     refreshToken?: NullableStringFieldUpdateOperationsInput | string | null
@@ -30981,6 +33407,7 @@ export namespace Prisma {
     users?: UserCreateNestedManyWithoutBranchInput
     vehicles?: VehicleCreateNestedManyWithoutBranchInput
     bookings?: BookingCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateInput = {
@@ -30994,6 +33421,7 @@ export namespace Prisma {
     users?: UserUncheckedCreateNestedManyWithoutBranchInput
     vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
     bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUpdateInput = {
@@ -31006,6 +33434,7 @@ export namespace Prisma {
     users?: UserUpdateManyWithoutBranchNestedInput
     vehicles?: VehicleUpdateManyWithoutBranchNestedInput
     bookings?: BookingUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateInput = {
@@ -31019,6 +33448,7 @@ export namespace Prisma {
     users?: UserUncheckedUpdateManyWithoutBranchNestedInput
     vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
     bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchCreateManyInput = {
@@ -31117,6 +33547,93 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type BranchPricingSettingCreateInput = {
+    weekendEnabled?: boolean
+    peakEnabled?: boolean
+    customEnabled?: boolean
+    weekendMultiplier?: Decimal | DecimalJsLike | number | string
+    peakMultiplier?: Decimal | DecimalJsLike | number | string
+    customMultiplier?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    branch: BranchCreateNestedOneWithoutPricingSettingInput
+  }
+
+  export type BranchPricingSettingUncheckedCreateInput = {
+    id?: number
+    branchId: number
+    weekendEnabled?: boolean
+    peakEnabled?: boolean
+    customEnabled?: boolean
+    weekendMultiplier?: Decimal | DecimalJsLike | number | string
+    peakMultiplier?: Decimal | DecimalJsLike | number | string
+    customMultiplier?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchPricingSettingUpdateInput = {
+    weekendEnabled?: BoolFieldUpdateOperationsInput | boolean
+    peakEnabled?: BoolFieldUpdateOperationsInput | boolean
+    customEnabled?: BoolFieldUpdateOperationsInput | boolean
+    weekendMultiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    peakMultiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    customMultiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    branch?: BranchUpdateOneRequiredWithoutPricingSettingNestedInput
+  }
+
+  export type BranchPricingSettingUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    weekendEnabled?: BoolFieldUpdateOperationsInput | boolean
+    peakEnabled?: BoolFieldUpdateOperationsInput | boolean
+    customEnabled?: BoolFieldUpdateOperationsInput | boolean
+    weekendMultiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    peakMultiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    customMultiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchPricingSettingCreateManyInput = {
+    id?: number
+    branchId: number
+    weekendEnabled?: boolean
+    peakEnabled?: boolean
+    customEnabled?: boolean
+    weekendMultiplier?: Decimal | DecimalJsLike | number | string
+    peakMultiplier?: Decimal | DecimalJsLike | number | string
+    customMultiplier?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchPricingSettingUpdateManyMutationInput = {
+    weekendEnabled?: BoolFieldUpdateOperationsInput | boolean
+    peakEnabled?: BoolFieldUpdateOperationsInput | boolean
+    customEnabled?: BoolFieldUpdateOperationsInput | boolean
+    weekendMultiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    peakMultiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    customMultiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchPricingSettingUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    weekendEnabled?: BoolFieldUpdateOperationsInput | boolean
+    peakEnabled?: BoolFieldUpdateOperationsInput | boolean
+    customEnabled?: BoolFieldUpdateOperationsInput | boolean
+    weekendMultiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    peakMultiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    customMultiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type VehicleCategoryCreateInput = {
     publicId: string
     name: string
@@ -31179,6 +33696,7 @@ export namespace Prisma {
     odo: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -31188,6 +33706,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
     bookings?: BookingCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateInput = {
@@ -31201,6 +33720,7 @@ export namespace Prisma {
     odo: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -31208,6 +33728,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
     bookings?: BookingUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
   }
 
   export type VehicleUpdateInput = {
@@ -31218,6 +33739,7 @@ export namespace Prisma {
     odo?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -31227,6 +33749,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
     bookings?: BookingUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateInput = {
@@ -31240,6 +33763,7 @@ export namespace Prisma {
     odo?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -31247,6 +33771,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
     bookings?: BookingUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
   }
 
   export type VehicleCreateManyInput = {
@@ -31260,6 +33785,7 @@ export namespace Prisma {
     odo: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -31273,6 +33799,7 @@ export namespace Prisma {
     odo?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -31289,9 +33816,62 @@ export namespace Prisma {
     odo?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type VehiclePricingOverrideCreateInput = {
+    customPrice?: Decimal | DecimalJsLike | number | string | null
+    multiplier?: Decimal | DecimalJsLike | number | string | null
+    enabled?: boolean
+    vehicle: VehicleCreateNestedOneWithoutPricingOverrideInput
+  }
+
+  export type VehiclePricingOverrideUncheckedCreateInput = {
+    id?: number
+    vehicleId: number
+    customPrice?: Decimal | DecimalJsLike | number | string | null
+    multiplier?: Decimal | DecimalJsLike | number | string | null
+    enabled?: boolean
+  }
+
+  export type VehiclePricingOverrideUpdateInput = {
+    customPrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    multiplier?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    vehicle?: VehicleUpdateOneRequiredWithoutPricingOverrideNestedInput
+  }
+
+  export type VehiclePricingOverrideUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    vehicleId?: IntFieldUpdateOperationsInput | number
+    customPrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    multiplier?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+  }
+
+  export type VehiclePricingOverrideCreateManyInput = {
+    id?: number
+    vehicleId: number
+    customPrice?: Decimal | DecimalJsLike | number | string | null
+    multiplier?: Decimal | DecimalJsLike | number | string | null
+    enabled?: boolean
+  }
+
+  export type VehiclePricingOverrideUpdateManyMutationInput = {
+    customPrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    multiplier?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+  }
+
+  export type VehiclePricingOverrideUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    vehicleId?: IntFieldUpdateOperationsInput | number
+    customPrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    multiplier?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    enabled?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type VehicleInsuranceCreateInput = {
@@ -32642,7 +35222,7 @@ export namespace Prisma {
   }
 
   export type UserProviderProviderProviderUserIdCompoundUniqueInput = {
-    provider: string
+    provider: $Enums.AuthProvider
     providerUserId: string
   }
 
@@ -32945,6 +35525,11 @@ export namespace Prisma {
     none?: VehicleWhereInput
   }
 
+  export type BranchPricingSettingNullableRelationFilter = {
+    is?: BranchPricingSettingWhereInput | null
+    isNot?: BranchPricingSettingWhereInput | null
+  }
+
   export type UserOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -33031,6 +35616,93 @@ export namespace Prisma {
     staffId?: SortOrder
   }
 
+  export type DecimalFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
+  }
+
+  export type BranchRelationFilter = {
+    is?: BranchWhereInput
+    isNot?: BranchWhereInput
+  }
+
+  export type BranchPricingSettingCountOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    weekendEnabled?: SortOrder
+    peakEnabled?: SortOrder
+    customEnabled?: SortOrder
+    weekendMultiplier?: SortOrder
+    peakMultiplier?: SortOrder
+    customMultiplier?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BranchPricingSettingAvgOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    weekendMultiplier?: SortOrder
+    peakMultiplier?: SortOrder
+    customMultiplier?: SortOrder
+  }
+
+  export type BranchPricingSettingMaxOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    weekendEnabled?: SortOrder
+    peakEnabled?: SortOrder
+    customEnabled?: SortOrder
+    weekendMultiplier?: SortOrder
+    peakMultiplier?: SortOrder
+    customMultiplier?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BranchPricingSettingMinOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    weekendEnabled?: SortOrder
+    peakEnabled?: SortOrder
+    customEnabled?: SortOrder
+    weekendMultiplier?: SortOrder
+    peakMultiplier?: SortOrder
+    customMultiplier?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BranchPricingSettingSumOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    weekendMultiplier?: SortOrder
+    peakMultiplier?: SortOrder
+    customMultiplier?: SortOrder
+  }
+
+  export type DecimalWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedDecimalFilter<$PrismaModel>
+    _sum?: NestedDecimalFilter<$PrismaModel>
+    _min?: NestedDecimalFilter<$PrismaModel>
+    _max?: NestedDecimalFilter<$PrismaModel>
+  }
+
   export type PricingRuleListRelationFilter = {
     every?: PricingRuleWhereInput
     some?: PricingRuleWhereInput
@@ -33077,11 +35749,6 @@ export namespace Prisma {
     not?: NestedEnumVehicleStatusFilter<$PrismaModel> | $Enums.VehicleStatus
   }
 
-  export type BranchRelationFilter = {
-    is?: BranchWhereInput
-    isNot?: BranchWhereInput
-  }
-
   export type VehicleCategoryRelationFilter = {
     is?: VehicleCategoryWhereInput
     isNot?: VehicleCategoryWhereInput
@@ -33097,6 +35764,11 @@ export namespace Prisma {
     every?: VehicleMaintenanceRecordWhereInput
     some?: VehicleMaintenanceRecordWhereInput
     none?: VehicleMaintenanceRecordWhereInput
+  }
+
+  export type VehiclePricingOverrideNullableRelationFilter = {
+    is?: VehiclePricingOverrideWhereInput | null
+    isNot?: VehiclePricingOverrideWhereInput | null
   }
 
   export type VehicleInsuranceOrderByRelationAggregateInput = {
@@ -33118,6 +35790,7 @@ export namespace Prisma {
     odo?: SortOrder
     insuranceExpiry?: SortOrder
     status?: SortOrder
+    baseDailyPrice?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -33128,6 +35801,7 @@ export namespace Prisma {
     branchId?: SortOrder
     categoryId?: SortOrder
     odo?: SortOrder
+    baseDailyPrice?: SortOrder
   }
 
   export type VehicleMaxOrderByAggregateInput = {
@@ -33141,6 +35815,7 @@ export namespace Prisma {
     odo?: SortOrder
     insuranceExpiry?: SortOrder
     status?: SortOrder
+    baseDailyPrice?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -33157,6 +35832,7 @@ export namespace Prisma {
     odo?: SortOrder
     insuranceExpiry?: SortOrder
     status?: SortOrder
+    baseDailyPrice?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -33167,6 +35843,7 @@ export namespace Prisma {
     branchId?: SortOrder
     categoryId?: SortOrder
     odo?: SortOrder
+    baseDailyPrice?: SortOrder
   }
 
   export type EnumVehicleStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -33179,9 +35856,74 @@ export namespace Prisma {
     _max?: NestedEnumVehicleStatusFilter<$PrismaModel>
   }
 
+  export type DecimalNullableFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+  }
+
   export type VehicleRelationFilter = {
     is?: VehicleWhereInput
     isNot?: VehicleWhereInput
+  }
+
+  export type VehiclePricingOverrideCountOrderByAggregateInput = {
+    id?: SortOrder
+    vehicleId?: SortOrder
+    customPrice?: SortOrder
+    multiplier?: SortOrder
+    enabled?: SortOrder
+  }
+
+  export type VehiclePricingOverrideAvgOrderByAggregateInput = {
+    id?: SortOrder
+    vehicleId?: SortOrder
+    customPrice?: SortOrder
+    multiplier?: SortOrder
+  }
+
+  export type VehiclePricingOverrideMaxOrderByAggregateInput = {
+    id?: SortOrder
+    vehicleId?: SortOrder
+    customPrice?: SortOrder
+    multiplier?: SortOrder
+    enabled?: SortOrder
+  }
+
+  export type VehiclePricingOverrideMinOrderByAggregateInput = {
+    id?: SortOrder
+    vehicleId?: SortOrder
+    customPrice?: SortOrder
+    multiplier?: SortOrder
+    enabled?: SortOrder
+  }
+
+  export type VehiclePricingOverrideSumOrderByAggregateInput = {
+    id?: SortOrder
+    vehicleId?: SortOrder
+    customPrice?: SortOrder
+    multiplier?: SortOrder
+  }
+
+  export type DecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedDecimalNullableFilter<$PrismaModel>
+    _sum?: NestedDecimalNullableFilter<$PrismaModel>
+    _min?: NestedDecimalNullableFilter<$PrismaModel>
+    _max?: NestedDecimalNullableFilter<$PrismaModel>
   }
 
   export type VehicleInsuranceCountOrderByAggregateInput = {
@@ -33221,17 +35963,6 @@ export namespace Prisma {
     vehicleId?: SortOrder
   }
 
-  export type DecimalFilter<$PrismaModel = never> = {
-    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
-    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
-    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    not?: NestedDecimalFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
-  }
-
   export type VehicleMaintenanceRecordCountOrderByAggregateInput = {
     id?: SortOrder
     publicId?: SortOrder
@@ -33269,22 +36000,6 @@ export namespace Prisma {
     id?: SortOrder
     vehicleId?: SortOrder
     cost?: SortOrder
-  }
-
-  export type DecimalWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
-    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
-    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    not?: NestedDecimalWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedDecimalFilter<$PrismaModel>
-    _sum?: NestedDecimalFilter<$PrismaModel>
-    _min?: NestedDecimalFilter<$PrismaModel>
-    _max?: NestedDecimalFilter<$PrismaModel>
   }
 
   export type RentalPlanCountOrderByAggregateInput = {
@@ -34649,6 +37364,12 @@ export namespace Prisma {
     connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
   }
 
+  export type BranchPricingSettingCreateNestedOneWithoutBranchInput = {
+    create?: XOR<BranchPricingSettingCreateWithoutBranchInput, BranchPricingSettingUncheckedCreateWithoutBranchInput>
+    connectOrCreate?: BranchPricingSettingCreateOrConnectWithoutBranchInput
+    connect?: BranchPricingSettingWhereUniqueInput
+  }
+
   export type UserUncheckedCreateNestedManyWithoutBranchInput = {
     create?: XOR<UserCreateWithoutBranchInput, UserUncheckedCreateWithoutBranchInput> | UserCreateWithoutBranchInput[] | UserUncheckedCreateWithoutBranchInput[]
     connectOrCreate?: UserCreateOrConnectWithoutBranchInput | UserCreateOrConnectWithoutBranchInput[]
@@ -34668,6 +37389,12 @@ export namespace Prisma {
     connectOrCreate?: BookingCreateOrConnectWithoutBranchInput | BookingCreateOrConnectWithoutBranchInput[]
     createMany?: BookingCreateManyBranchInputEnvelope
     connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+  }
+
+  export type BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput = {
+    create?: XOR<BranchPricingSettingCreateWithoutBranchInput, BranchPricingSettingUncheckedCreateWithoutBranchInput>
+    connectOrCreate?: BranchPricingSettingCreateOrConnectWithoutBranchInput
+    connect?: BranchPricingSettingWhereUniqueInput
   }
 
   export type UserUpdateManyWithoutBranchNestedInput = {
@@ -34712,6 +37439,16 @@ export namespace Prisma {
     deleteMany?: BookingScalarWhereInput | BookingScalarWhereInput[]
   }
 
+  export type BranchPricingSettingUpdateOneWithoutBranchNestedInput = {
+    create?: XOR<BranchPricingSettingCreateWithoutBranchInput, BranchPricingSettingUncheckedCreateWithoutBranchInput>
+    connectOrCreate?: BranchPricingSettingCreateOrConnectWithoutBranchInput
+    upsert?: BranchPricingSettingUpsertWithoutBranchInput
+    disconnect?: BranchPricingSettingWhereInput | boolean
+    delete?: BranchPricingSettingWhereInput | boolean
+    connect?: BranchPricingSettingWhereUniqueInput
+    update?: XOR<XOR<BranchPricingSettingUpdateToOneWithWhereWithoutBranchInput, BranchPricingSettingUpdateWithoutBranchInput>, BranchPricingSettingUncheckedUpdateWithoutBranchInput>
+  }
+
   export type UserUncheckedUpdateManyWithoutBranchNestedInput = {
     create?: XOR<UserCreateWithoutBranchInput, UserUncheckedCreateWithoutBranchInput> | UserCreateWithoutBranchInput[] | UserUncheckedCreateWithoutBranchInput[]
     connectOrCreate?: UserCreateOrConnectWithoutBranchInput | UserCreateOrConnectWithoutBranchInput[]
@@ -34752,6 +37489,38 @@ export namespace Prisma {
     update?: BookingUpdateWithWhereUniqueWithoutBranchInput | BookingUpdateWithWhereUniqueWithoutBranchInput[]
     updateMany?: BookingUpdateManyWithWhereWithoutBranchInput | BookingUpdateManyWithWhereWithoutBranchInput[]
     deleteMany?: BookingScalarWhereInput | BookingScalarWhereInput[]
+  }
+
+  export type BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput = {
+    create?: XOR<BranchPricingSettingCreateWithoutBranchInput, BranchPricingSettingUncheckedCreateWithoutBranchInput>
+    connectOrCreate?: BranchPricingSettingCreateOrConnectWithoutBranchInput
+    upsert?: BranchPricingSettingUpsertWithoutBranchInput
+    disconnect?: BranchPricingSettingWhereInput | boolean
+    delete?: BranchPricingSettingWhereInput | boolean
+    connect?: BranchPricingSettingWhereUniqueInput
+    update?: XOR<XOR<BranchPricingSettingUpdateToOneWithWhereWithoutBranchInput, BranchPricingSettingUpdateWithoutBranchInput>, BranchPricingSettingUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type BranchCreateNestedOneWithoutPricingSettingInput = {
+    create?: XOR<BranchCreateWithoutPricingSettingInput, BranchUncheckedCreateWithoutPricingSettingInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutPricingSettingInput
+    connect?: BranchWhereUniqueInput
+  }
+
+  export type DecimalFieldUpdateOperationsInput = {
+    set?: Decimal | DecimalJsLike | number | string
+    increment?: Decimal | DecimalJsLike | number | string
+    decrement?: Decimal | DecimalJsLike | number | string
+    multiply?: Decimal | DecimalJsLike | number | string
+    divide?: Decimal | DecimalJsLike | number | string
+  }
+
+  export type BranchUpdateOneRequiredWithoutPricingSettingNestedInput = {
+    create?: XOR<BranchCreateWithoutPricingSettingInput, BranchUncheckedCreateWithoutPricingSettingInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutPricingSettingInput
+    upsert?: BranchUpsertWithoutPricingSettingInput
+    connect?: BranchWhereUniqueInput
+    update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutPricingSettingInput, BranchUpdateWithoutPricingSettingInput>, BranchUncheckedUpdateWithoutPricingSettingInput>
   }
 
   export type VehicleCreateNestedManyWithoutCategoryInput = {
@@ -34878,6 +37647,12 @@ export namespace Prisma {
     connect?: DamageReportWhereUniqueInput | DamageReportWhereUniqueInput[]
   }
 
+  export type VehiclePricingOverrideCreateNestedOneWithoutVehicleInput = {
+    create?: XOR<VehiclePricingOverrideCreateWithoutVehicleInput, VehiclePricingOverrideUncheckedCreateWithoutVehicleInput>
+    connectOrCreate?: VehiclePricingOverrideCreateOrConnectWithoutVehicleInput
+    connect?: VehiclePricingOverrideWhereUniqueInput
+  }
+
   export type VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput = {
     create?: XOR<VehicleInsuranceCreateWithoutVehicleInput, VehicleInsuranceUncheckedCreateWithoutVehicleInput> | VehicleInsuranceCreateWithoutVehicleInput[] | VehicleInsuranceUncheckedCreateWithoutVehicleInput[]
     connectOrCreate?: VehicleInsuranceCreateOrConnectWithoutVehicleInput | VehicleInsuranceCreateOrConnectWithoutVehicleInput[]
@@ -34904,6 +37679,12 @@ export namespace Prisma {
     connectOrCreate?: DamageReportCreateOrConnectWithoutVehicleInput | DamageReportCreateOrConnectWithoutVehicleInput[]
     createMany?: DamageReportCreateManyVehicleInputEnvelope
     connect?: DamageReportWhereUniqueInput | DamageReportWhereUniqueInput[]
+  }
+
+  export type VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput = {
+    create?: XOR<VehiclePricingOverrideCreateWithoutVehicleInput, VehiclePricingOverrideUncheckedCreateWithoutVehicleInput>
+    connectOrCreate?: VehiclePricingOverrideCreateOrConnectWithoutVehicleInput
+    connect?: VehiclePricingOverrideWhereUniqueInput
   }
 
   export type EnumVehicleStatusFieldUpdateOperationsInput = {
@@ -34982,6 +37763,16 @@ export namespace Prisma {
     deleteMany?: DamageReportScalarWhereInput | DamageReportScalarWhereInput[]
   }
 
+  export type VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput = {
+    create?: XOR<VehiclePricingOverrideCreateWithoutVehicleInput, VehiclePricingOverrideUncheckedCreateWithoutVehicleInput>
+    connectOrCreate?: VehiclePricingOverrideCreateOrConnectWithoutVehicleInput
+    upsert?: VehiclePricingOverrideUpsertWithoutVehicleInput
+    disconnect?: VehiclePricingOverrideWhereInput | boolean
+    delete?: VehiclePricingOverrideWhereInput | boolean
+    connect?: VehiclePricingOverrideWhereUniqueInput
+    update?: XOR<XOR<VehiclePricingOverrideUpdateToOneWithWhereWithoutVehicleInput, VehiclePricingOverrideUpdateWithoutVehicleInput>, VehiclePricingOverrideUncheckedUpdateWithoutVehicleInput>
+  }
+
   export type VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput = {
     create?: XOR<VehicleInsuranceCreateWithoutVehicleInput, VehicleInsuranceUncheckedCreateWithoutVehicleInput> | VehicleInsuranceCreateWithoutVehicleInput[] | VehicleInsuranceUncheckedCreateWithoutVehicleInput[]
     connectOrCreate?: VehicleInsuranceCreateOrConnectWithoutVehicleInput | VehicleInsuranceCreateOrConnectWithoutVehicleInput[]
@@ -35038,6 +37829,38 @@ export namespace Prisma {
     deleteMany?: DamageReportScalarWhereInput | DamageReportScalarWhereInput[]
   }
 
+  export type VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput = {
+    create?: XOR<VehiclePricingOverrideCreateWithoutVehicleInput, VehiclePricingOverrideUncheckedCreateWithoutVehicleInput>
+    connectOrCreate?: VehiclePricingOverrideCreateOrConnectWithoutVehicleInput
+    upsert?: VehiclePricingOverrideUpsertWithoutVehicleInput
+    disconnect?: VehiclePricingOverrideWhereInput | boolean
+    delete?: VehiclePricingOverrideWhereInput | boolean
+    connect?: VehiclePricingOverrideWhereUniqueInput
+    update?: XOR<XOR<VehiclePricingOverrideUpdateToOneWithWhereWithoutVehicleInput, VehiclePricingOverrideUpdateWithoutVehicleInput>, VehiclePricingOverrideUncheckedUpdateWithoutVehicleInput>
+  }
+
+  export type VehicleCreateNestedOneWithoutPricingOverrideInput = {
+    create?: XOR<VehicleCreateWithoutPricingOverrideInput, VehicleUncheckedCreateWithoutPricingOverrideInput>
+    connectOrCreate?: VehicleCreateOrConnectWithoutPricingOverrideInput
+    connect?: VehicleWhereUniqueInput
+  }
+
+  export type NullableDecimalFieldUpdateOperationsInput = {
+    set?: Decimal | DecimalJsLike | number | string | null
+    increment?: Decimal | DecimalJsLike | number | string
+    decrement?: Decimal | DecimalJsLike | number | string
+    multiply?: Decimal | DecimalJsLike | number | string
+    divide?: Decimal | DecimalJsLike | number | string
+  }
+
+  export type VehicleUpdateOneRequiredWithoutPricingOverrideNestedInput = {
+    create?: XOR<VehicleCreateWithoutPricingOverrideInput, VehicleUncheckedCreateWithoutPricingOverrideInput>
+    connectOrCreate?: VehicleCreateOrConnectWithoutPricingOverrideInput
+    upsert?: VehicleUpsertWithoutPricingOverrideInput
+    connect?: VehicleWhereUniqueInput
+    update?: XOR<XOR<VehicleUpdateToOneWithWhereWithoutPricingOverrideInput, VehicleUpdateWithoutPricingOverrideInput>, VehicleUncheckedUpdateWithoutPricingOverrideInput>
+  }
+
   export type VehicleCreateNestedOneWithoutInsuranceRecordsInput = {
     create?: XOR<VehicleCreateWithoutInsuranceRecordsInput, VehicleUncheckedCreateWithoutInsuranceRecordsInput>
     connectOrCreate?: VehicleCreateOrConnectWithoutInsuranceRecordsInput
@@ -35056,14 +37879,6 @@ export namespace Prisma {
     create?: XOR<VehicleCreateWithoutMaintenanceInput, VehicleUncheckedCreateWithoutMaintenanceInput>
     connectOrCreate?: VehicleCreateOrConnectWithoutMaintenanceInput
     connect?: VehicleWhereUniqueInput
-  }
-
-  export type DecimalFieldUpdateOperationsInput = {
-    set?: Decimal | DecimalJsLike | number | string
-    increment?: Decimal | DecimalJsLike | number | string
-    decrement?: Decimal | DecimalJsLike | number | string
-    multiply?: Decimal | DecimalJsLike | number | string
-    divide?: Decimal | DecimalJsLike | number | string
   }
 
   export type VehicleUpdateOneRequiredWithoutMaintenanceNestedInput = {
@@ -35869,23 +38684,6 @@ export namespace Prisma {
     _max?: NestedEnumKycStatusFilter<$PrismaModel>
   }
 
-  export type NestedEnumVehicleStatusFilter<$PrismaModel = never> = {
-    equals?: $Enums.VehicleStatus | EnumVehicleStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.VehicleStatus[] | ListEnumVehicleStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.VehicleStatus[] | ListEnumVehicleStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumVehicleStatusFilter<$PrismaModel> | $Enums.VehicleStatus
-  }
-
-  export type NestedEnumVehicleStatusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.VehicleStatus | EnumVehicleStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.VehicleStatus[] | ListEnumVehicleStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.VehicleStatus[] | ListEnumVehicleStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumVehicleStatusWithAggregatesFilter<$PrismaModel> | $Enums.VehicleStatus
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumVehicleStatusFilter<$PrismaModel>
-    _max?: NestedEnumVehicleStatusFilter<$PrismaModel>
-  }
-
   export type NestedDecimalFilter<$PrismaModel = never> = {
     equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
     in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
@@ -35911,6 +38709,50 @@ export namespace Prisma {
     _sum?: NestedDecimalFilter<$PrismaModel>
     _min?: NestedDecimalFilter<$PrismaModel>
     _max?: NestedDecimalFilter<$PrismaModel>
+  }
+
+  export type NestedEnumVehicleStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.VehicleStatus | EnumVehicleStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.VehicleStatus[] | ListEnumVehicleStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.VehicleStatus[] | ListEnumVehicleStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumVehicleStatusFilter<$PrismaModel> | $Enums.VehicleStatus
+  }
+
+  export type NestedEnumVehicleStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.VehicleStatus | EnumVehicleStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.VehicleStatus[] | ListEnumVehicleStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.VehicleStatus[] | ListEnumVehicleStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumVehicleStatusWithAggregatesFilter<$PrismaModel> | $Enums.VehicleStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumVehicleStatusFilter<$PrismaModel>
+    _max?: NestedEnumVehicleStatusFilter<$PrismaModel>
+  }
+
+  export type NestedDecimalNullableFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+  }
+
+  export type NestedDecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedDecimalNullableFilter<$PrismaModel>
+    _sum?: NestedDecimalNullableFilter<$PrismaModel>
+    _min?: NestedDecimalNullableFilter<$PrismaModel>
+    _max?: NestedDecimalNullableFilter<$PrismaModel>
   }
 
   export type NestedEnumPricingRuleTypeFilter<$PrismaModel = never> = {
@@ -36068,6 +38910,7 @@ export namespace Prisma {
     deletedAt?: Date | string | null
     vehicles?: VehicleCreateNestedManyWithoutBranchInput
     bookings?: BookingCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutUsersInput = {
@@ -36080,6 +38923,7 @@ export namespace Prisma {
     deletedAt?: Date | string | null
     vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
     bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutUsersInput = {
@@ -36116,7 +38960,7 @@ export namespace Prisma {
 
   export type UserProviderCreateWithoutUserInput = {
     publicId: string
-    provider: string
+    provider: $Enums.AuthProvider
     providerUserId: string
     accessToken?: string | null
     refreshToken?: string | null
@@ -36127,7 +38971,7 @@ export namespace Prisma {
   export type UserProviderUncheckedCreateWithoutUserInput = {
     id?: number
     publicId: string
-    provider: string
+    provider: $Enums.AuthProvider
     providerUserId: string
     accessToken?: string | null
     refreshToken?: string | null
@@ -36306,6 +39150,7 @@ export namespace Prisma {
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     vehicles?: VehicleUpdateManyWithoutBranchNestedInput
     bookings?: BookingUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutUsersInput = {
@@ -36318,6 +39163,7 @@ export namespace Prisma {
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
     bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type EmailVerificationOtpUpsertWithWhereUniqueWithoutUserInput = {
@@ -36372,7 +39218,7 @@ export namespace Prisma {
     id?: IntFilter<"UserProvider"> | number
     publicId?: StringFilter<"UserProvider"> | string
     userId?: IntFilter<"UserProvider"> | number
-    provider?: StringFilter<"UserProvider"> | string
+    provider?: EnumAuthProviderFilter<"UserProvider"> | $Enums.AuthProvider
     providerUserId?: StringFilter<"UserProvider"> | string
     accessToken?: StringNullableFilter<"UserProvider"> | string | null
     refreshToken?: StringNullableFilter<"UserProvider"> | string | null
@@ -37185,6 +40031,7 @@ export namespace Prisma {
     odo: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -37193,6 +40040,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
     bookings?: BookingCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutBranchInput = {
@@ -37205,6 +40053,7 @@ export namespace Prisma {
     odo: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -37212,6 +40061,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
     bookings?: BookingUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutBranchInput = {
@@ -37279,6 +40129,34 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type BranchPricingSettingCreateWithoutBranchInput = {
+    weekendEnabled?: boolean
+    peakEnabled?: boolean
+    customEnabled?: boolean
+    weekendMultiplier?: Decimal | DecimalJsLike | number | string
+    peakMultiplier?: Decimal | DecimalJsLike | number | string
+    customMultiplier?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchPricingSettingUncheckedCreateWithoutBranchInput = {
+    id?: number
+    weekendEnabled?: boolean
+    peakEnabled?: boolean
+    customEnabled?: boolean
+    weekendMultiplier?: Decimal | DecimalJsLike | number | string
+    peakMultiplier?: Decimal | DecimalJsLike | number | string
+    customMultiplier?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchPricingSettingCreateOrConnectWithoutBranchInput = {
+    where: BranchPricingSettingWhereUniqueInput
+    create: XOR<BranchPricingSettingCreateWithoutBranchInput, BranchPricingSettingUncheckedCreateWithoutBranchInput>
+  }
+
   export type UserUpsertWithWhereUniqueWithoutBranchInput = {
     where: UserWhereUniqueInput
     update: XOR<UserUpdateWithoutBranchInput, UserUncheckedUpdateWithoutBranchInput>
@@ -37343,6 +40221,7 @@ export namespace Prisma {
     odo?: IntFilter<"Vehicle"> | number
     insuranceExpiry?: DateTimeFilter<"Vehicle"> | Date | string
     status?: EnumVehicleStatusFilter<"Vehicle"> | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFilter<"Vehicle"> | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFilter<"Vehicle"> | Date | string
     updatedAt?: DateTimeFilter<"Vehicle"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Vehicle"> | Date | string | null
@@ -37364,6 +40243,106 @@ export namespace Prisma {
     data: XOR<BookingUpdateManyMutationInput, BookingUncheckedUpdateManyWithoutBranchInput>
   }
 
+  export type BranchPricingSettingUpsertWithoutBranchInput = {
+    update: XOR<BranchPricingSettingUpdateWithoutBranchInput, BranchPricingSettingUncheckedUpdateWithoutBranchInput>
+    create: XOR<BranchPricingSettingCreateWithoutBranchInput, BranchPricingSettingUncheckedCreateWithoutBranchInput>
+    where?: BranchPricingSettingWhereInput
+  }
+
+  export type BranchPricingSettingUpdateToOneWithWhereWithoutBranchInput = {
+    where?: BranchPricingSettingWhereInput
+    data: XOR<BranchPricingSettingUpdateWithoutBranchInput, BranchPricingSettingUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type BranchPricingSettingUpdateWithoutBranchInput = {
+    weekendEnabled?: BoolFieldUpdateOperationsInput | boolean
+    peakEnabled?: BoolFieldUpdateOperationsInput | boolean
+    customEnabled?: BoolFieldUpdateOperationsInput | boolean
+    weekendMultiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    peakMultiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    customMultiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchPricingSettingUncheckedUpdateWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    weekendEnabled?: BoolFieldUpdateOperationsInput | boolean
+    peakEnabled?: BoolFieldUpdateOperationsInput | boolean
+    customEnabled?: BoolFieldUpdateOperationsInput | boolean
+    weekendMultiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    peakMultiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    customMultiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchCreateWithoutPricingSettingInput = {
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleCreateNestedManyWithoutBranchInput
+    bookings?: BookingCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchUncheckedCreateWithoutPricingSettingInput = {
+    id?: number
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserUncheckedCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchCreateOrConnectWithoutPricingSettingInput = {
+    where: BranchWhereUniqueInput
+    create: XOR<BranchCreateWithoutPricingSettingInput, BranchUncheckedCreateWithoutPricingSettingInput>
+  }
+
+  export type BranchUpsertWithoutPricingSettingInput = {
+    update: XOR<BranchUpdateWithoutPricingSettingInput, BranchUncheckedUpdateWithoutPricingSettingInput>
+    create: XOR<BranchCreateWithoutPricingSettingInput, BranchUncheckedCreateWithoutPricingSettingInput>
+    where?: BranchWhereInput
+  }
+
+  export type BranchUpdateToOneWithWhereWithoutPricingSettingInput = {
+    where?: BranchWhereInput
+    data: XOR<BranchUpdateWithoutPricingSettingInput, BranchUncheckedUpdateWithoutPricingSettingInput>
+  }
+
+  export type BranchUpdateWithoutPricingSettingInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUpdateManyWithoutBranchNestedInput
+  }
+
+  export type BranchUncheckedUpdateWithoutPricingSettingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUncheckedUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
+  }
+
   export type VehicleCreateWithoutCategoryInput = {
     publicId: string
     make: string
@@ -37372,6 +40351,7 @@ export namespace Prisma {
     odo: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -37380,6 +40360,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
     bookings?: BookingCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutCategoryInput = {
@@ -37392,6 +40373,7 @@ export namespace Prisma {
     odo: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -37399,6 +40381,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
     bookings?: BookingUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutCategoryInput = {
@@ -37489,6 +40472,7 @@ export namespace Prisma {
     deletedAt?: Date | string | null
     users?: UserCreateNestedManyWithoutBranchInput
     bookings?: BookingCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutVehiclesInput = {
@@ -37501,6 +40485,7 @@ export namespace Prisma {
     deletedAt?: Date | string | null
     users?: UserUncheckedCreateNestedManyWithoutBranchInput
     bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutVehiclesInput = {
@@ -37664,6 +40649,24 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type VehiclePricingOverrideCreateWithoutVehicleInput = {
+    customPrice?: Decimal | DecimalJsLike | number | string | null
+    multiplier?: Decimal | DecimalJsLike | number | string | null
+    enabled?: boolean
+  }
+
+  export type VehiclePricingOverrideUncheckedCreateWithoutVehicleInput = {
+    id?: number
+    customPrice?: Decimal | DecimalJsLike | number | string | null
+    multiplier?: Decimal | DecimalJsLike | number | string | null
+    enabled?: boolean
+  }
+
+  export type VehiclePricingOverrideCreateOrConnectWithoutVehicleInput = {
+    where: VehiclePricingOverrideWhereUniqueInput
+    create: XOR<VehiclePricingOverrideCreateWithoutVehicleInput, VehiclePricingOverrideUncheckedCreateWithoutVehicleInput>
+  }
+
   export type BranchUpsertWithoutVehiclesInput = {
     update: XOR<BranchUpdateWithoutVehiclesInput, BranchUncheckedUpdateWithoutVehiclesInput>
     create: XOR<BranchCreateWithoutVehiclesInput, BranchUncheckedCreateWithoutVehiclesInput>
@@ -37684,6 +40687,7 @@ export namespace Prisma {
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     users?: UserUpdateManyWithoutBranchNestedInput
     bookings?: BookingUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutVehiclesInput = {
@@ -37696,6 +40700,7 @@ export namespace Prisma {
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     users?: UserUncheckedUpdateManyWithoutBranchNestedInput
     bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutVehiclesInput = {
@@ -37812,6 +40817,128 @@ export namespace Prisma {
     data: XOR<DamageReportUpdateManyMutationInput, DamageReportUncheckedUpdateManyWithoutVehicleInput>
   }
 
+  export type VehiclePricingOverrideUpsertWithoutVehicleInput = {
+    update: XOR<VehiclePricingOverrideUpdateWithoutVehicleInput, VehiclePricingOverrideUncheckedUpdateWithoutVehicleInput>
+    create: XOR<VehiclePricingOverrideCreateWithoutVehicleInput, VehiclePricingOverrideUncheckedCreateWithoutVehicleInput>
+    where?: VehiclePricingOverrideWhereInput
+  }
+
+  export type VehiclePricingOverrideUpdateToOneWithWhereWithoutVehicleInput = {
+    where?: VehiclePricingOverrideWhereInput
+    data: XOR<VehiclePricingOverrideUpdateWithoutVehicleInput, VehiclePricingOverrideUncheckedUpdateWithoutVehicleInput>
+  }
+
+  export type VehiclePricingOverrideUpdateWithoutVehicleInput = {
+    customPrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    multiplier?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+  }
+
+  export type VehiclePricingOverrideUncheckedUpdateWithoutVehicleInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    customPrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    multiplier?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+  }
+
+  export type VehicleCreateWithoutPricingOverrideInput = {
+    publicId: string
+    make: string
+    model: string
+    regNo: string
+    odo: number
+    insuranceExpiry: Date | string
+    status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch: BranchCreateNestedOneWithoutVehiclesInput
+    category: VehicleCategoryCreateNestedOneWithoutVehiclesInput
+    insuranceRecords?: VehicleInsuranceCreateNestedManyWithoutVehicleInput
+    maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
+    bookings?: BookingCreateNestedManyWithoutVehicleInput
+    damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
+  }
+
+  export type VehicleUncheckedCreateWithoutPricingOverrideInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    categoryId: number
+    make: string
+    model: string
+    regNo: string
+    odo: number
+    insuranceExpiry: Date | string
+    status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    insuranceRecords?: VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput
+    maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutVehicleInput
+    damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
+  }
+
+  export type VehicleCreateOrConnectWithoutPricingOverrideInput = {
+    where: VehicleWhereUniqueInput
+    create: XOR<VehicleCreateWithoutPricingOverrideInput, VehicleUncheckedCreateWithoutPricingOverrideInput>
+  }
+
+  export type VehicleUpsertWithoutPricingOverrideInput = {
+    update: XOR<VehicleUpdateWithoutPricingOverrideInput, VehicleUncheckedUpdateWithoutPricingOverrideInput>
+    create: XOR<VehicleCreateWithoutPricingOverrideInput, VehicleUncheckedCreateWithoutPricingOverrideInput>
+    where?: VehicleWhereInput
+  }
+
+  export type VehicleUpdateToOneWithWhereWithoutPricingOverrideInput = {
+    where?: VehicleWhereInput
+    data: XOR<VehicleUpdateWithoutPricingOverrideInput, VehicleUncheckedUpdateWithoutPricingOverrideInput>
+  }
+
+  export type VehicleUpdateWithoutPricingOverrideInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    make?: StringFieldUpdateOperationsInput | string
+    model?: StringFieldUpdateOperationsInput | string
+    regNo?: StringFieldUpdateOperationsInput | string
+    odo?: IntFieldUpdateOperationsInput | number
+    insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneRequiredWithoutVehiclesNestedInput
+    category?: VehicleCategoryUpdateOneRequiredWithoutVehiclesNestedInput
+    insuranceRecords?: VehicleInsuranceUpdateManyWithoutVehicleNestedInput
+    maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
+    bookings?: BookingUpdateManyWithoutVehicleNestedInput
+    damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
+  }
+
+  export type VehicleUncheckedUpdateWithoutPricingOverrideInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    categoryId?: IntFieldUpdateOperationsInput | number
+    make?: StringFieldUpdateOperationsInput | string
+    model?: StringFieldUpdateOperationsInput | string
+    regNo?: StringFieldUpdateOperationsInput | string
+    odo?: IntFieldUpdateOperationsInput | number
+    insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    insuranceRecords?: VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput
+    maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutVehicleNestedInput
+    damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
+  }
+
   export type VehicleCreateWithoutInsuranceRecordsInput = {
     publicId: string
     make: string
@@ -37820,6 +40947,7 @@ export namespace Prisma {
     odo: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -37828,6 +40956,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
     bookings?: BookingCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutInsuranceRecordsInput = {
@@ -37841,12 +40970,14 @@ export namespace Prisma {
     odo: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
     bookings?: BookingUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutInsuranceRecordsInput = {
@@ -37873,6 +41004,7 @@ export namespace Prisma {
     odo?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -37881,6 +41013,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
     bookings?: BookingUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutInsuranceRecordsInput = {
@@ -37894,12 +41027,14 @@ export namespace Prisma {
     odo?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
     bookings?: BookingUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
   }
 
   export type VehicleCreateWithoutMaintenanceInput = {
@@ -37910,6 +41045,7 @@ export namespace Prisma {
     odo: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -37918,6 +41054,7 @@ export namespace Prisma {
     insuranceRecords?: VehicleInsuranceCreateNestedManyWithoutVehicleInput
     bookings?: BookingCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutMaintenanceInput = {
@@ -37931,12 +41068,14 @@ export namespace Prisma {
     odo: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     insuranceRecords?: VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput
     bookings?: BookingUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutMaintenanceInput = {
@@ -37963,6 +41102,7 @@ export namespace Prisma {
     odo?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -37971,6 +41111,7 @@ export namespace Prisma {
     insuranceRecords?: VehicleInsuranceUpdateManyWithoutVehicleNestedInput
     bookings?: BookingUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutMaintenanceInput = {
@@ -37984,12 +41125,14 @@ export namespace Prisma {
     odo?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     insuranceRecords?: VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput
     bookings?: BookingUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
   }
 
   export type BookingCreateWithoutRentalPlanInput = {
@@ -38141,6 +41284,7 @@ export namespace Prisma {
     odo: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -38149,6 +41293,7 @@ export namespace Prisma {
     insuranceRecords?: VehicleInsuranceCreateNestedManyWithoutVehicleInput
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutBookingsInput = {
@@ -38162,12 +41307,14 @@ export namespace Prisma {
     odo: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     insuranceRecords?: VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutBookingsInput = {
@@ -38184,6 +41331,7 @@ export namespace Prisma {
     deletedAt?: Date | string | null
     users?: UserCreateNestedManyWithoutBranchInput
     vehicles?: VehicleCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutBookingsInput = {
@@ -38196,6 +41344,7 @@ export namespace Prisma {
     deletedAt?: Date | string | null
     users?: UserUncheckedCreateNestedManyWithoutBranchInput
     vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutBookingsInput = {
@@ -38430,6 +41579,7 @@ export namespace Prisma {
     odo?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -38438,6 +41588,7 @@ export namespace Prisma {
     insuranceRecords?: VehicleInsuranceUpdateManyWithoutVehicleNestedInput
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutBookingsInput = {
@@ -38451,12 +41602,14 @@ export namespace Prisma {
     odo?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     insuranceRecords?: VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
   }
 
   export type BranchUpsertWithoutBookingsInput = {
@@ -38479,6 +41632,7 @@ export namespace Prisma {
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     users?: UserUpdateManyWithoutBranchNestedInput
     vehicles?: VehicleUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutBookingsInput = {
@@ -38491,6 +41645,7 @@ export namespace Prisma {
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     users?: UserUncheckedUpdateManyWithoutBranchNestedInput
     vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type RentalPlanUpsertWithoutBookingsInput = {
@@ -38893,6 +42048,7 @@ export namespace Prisma {
     odo: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -38901,6 +42057,7 @@ export namespace Prisma {
     insuranceRecords?: VehicleInsuranceCreateNestedManyWithoutVehicleInput
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
     bookings?: BookingCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutDamageReportsInput = {
@@ -38914,12 +42071,14 @@ export namespace Prisma {
     odo: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     insuranceRecords?: VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
     bookings?: BookingUncheckedCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutDamageReportsInput = {
@@ -39046,6 +42205,7 @@ export namespace Prisma {
     odo?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -39054,6 +42214,7 @@ export namespace Prisma {
     insuranceRecords?: VehicleInsuranceUpdateManyWithoutVehicleNestedInput
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
     bookings?: BookingUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutDamageReportsInput = {
@@ -39067,12 +42228,14 @@ export namespace Prisma {
     odo?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     insuranceRecords?: VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
     bookings?: BookingUncheckedUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
   }
 
   export type UserUpsertWithoutApprovedDamageReportsInput = {
@@ -39695,7 +42858,7 @@ export namespace Prisma {
   export type UserProviderCreateManyUserInput = {
     id?: number
     publicId: string
-    provider: string
+    provider: $Enums.AuthProvider
     providerUserId: string
     accessToken?: string | null
     refreshToken?: string | null
@@ -39772,7 +42935,7 @@ export namespace Prisma {
 
   export type UserProviderUpdateWithoutUserInput = {
     publicId?: StringFieldUpdateOperationsInput | string
-    provider?: StringFieldUpdateOperationsInput | string
+    provider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
     providerUserId?: StringFieldUpdateOperationsInput | string
     accessToken?: NullableStringFieldUpdateOperationsInput | string | null
     refreshToken?: NullableStringFieldUpdateOperationsInput | string | null
@@ -39783,7 +42946,7 @@ export namespace Prisma {
   export type UserProviderUncheckedUpdateWithoutUserInput = {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
-    provider?: StringFieldUpdateOperationsInput | string
+    provider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
     providerUserId?: StringFieldUpdateOperationsInput | string
     accessToken?: NullableStringFieldUpdateOperationsInput | string | null
     refreshToken?: NullableStringFieldUpdateOperationsInput | string | null
@@ -39794,7 +42957,7 @@ export namespace Prisma {
   export type UserProviderUncheckedUpdateManyWithoutUserInput = {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
-    provider?: StringFieldUpdateOperationsInput | string
+    provider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
     providerUserId?: StringFieldUpdateOperationsInput | string
     accessToken?: NullableStringFieldUpdateOperationsInput | string | null
     refreshToken?: NullableStringFieldUpdateOperationsInput | string | null
@@ -40138,6 +43301,7 @@ export namespace Prisma {
     odo: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -40223,6 +43387,7 @@ export namespace Prisma {
     odo?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -40231,6 +43396,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
     bookings?: BookingUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutBranchInput = {
@@ -40243,6 +43409,7 @@ export namespace Prisma {
     odo?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -40250,6 +43417,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
     bookings?: BookingUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateManyWithoutBranchInput = {
@@ -40262,6 +43430,7 @@ export namespace Prisma {
     odo?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -40341,6 +43510,7 @@ export namespace Prisma {
     odo: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -40362,6 +43532,7 @@ export namespace Prisma {
     odo?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -40370,6 +43541,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
     bookings?: BookingUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutCategoryInput = {
@@ -40382,6 +43554,7 @@ export namespace Prisma {
     odo?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -40389,6 +43562,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
     bookings?: BookingUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateManyWithoutCategoryInput = {
@@ -40401,6 +43575,7 @@ export namespace Prisma {
     odo?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -40918,6 +44093,10 @@ export namespace Prisma {
      */
     export type StaffActivityLogArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = StaffActivityLogDefaultArgs<ExtArgs>
     /**
+     * @deprecated Use BranchPricingSettingDefaultArgs instead
+     */
+    export type BranchPricingSettingArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = BranchPricingSettingDefaultArgs<ExtArgs>
+    /**
      * @deprecated Use VehicleCategoryDefaultArgs instead
      */
     export type VehicleCategoryArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = VehicleCategoryDefaultArgs<ExtArgs>
@@ -40925,6 +44104,10 @@ export namespace Prisma {
      * @deprecated Use VehicleDefaultArgs instead
      */
     export type VehicleArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = VehicleDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use VehiclePricingOverrideDefaultArgs instead
+     */
+    export type VehiclePricingOverrideArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = VehiclePricingOverrideDefaultArgs<ExtArgs>
     /**
      * @deprecated Use VehicleInsuranceDefaultArgs instead
      */

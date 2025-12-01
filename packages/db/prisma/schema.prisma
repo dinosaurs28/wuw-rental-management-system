@@ -116,7 +116,7 @@ model UserProvider {
   id              Int      @id @default(autoincrement())
   publicId        String   @unique
   userId          Int
-  provider        String
+  provider        AuthProvider
   providerUserId  String
   accessToken     String?
   refreshToken    String?
@@ -206,7 +206,7 @@ model Branch {
   users     User[]
   vehicles  Vehicle[]
   bookings  Booking[]
-  
+  pricingSetting BranchPricingSetting?
   createdAt DateTime  @default(now())
   deletedAt DateTime?
 }
@@ -221,6 +221,22 @@ model StaffActivityLog {
   createdAt DateTime @default(now())
 }
 
+model BranchPricingSetting {
+  id                 Int      @id @default(autoincrement())
+  branchId           Int      @unique
+  weekendEnabled     Boolean  @default(true)
+  peakEnabled        Boolean  @default(false)
+  customEnabled      Boolean  @default(false)
+
+  weekendMultiplier  Decimal  @default(1.2)
+  peakMultiplier     Decimal  @default(1.5)
+  customMultiplier   Decimal  @default(1.0)
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  
+  branch             Branch   @relation(fields: [branchId], references: [id])
+}
 
 
 // VEHICLES
@@ -247,6 +263,7 @@ model Vehicle {
   odo              Int
   insuranceExpiry  DateTime
   status           VehicleStatus      @default(AVAILABLE)
+  baseDailyPrice    Decimal           @default(500)
 
   branch           Branch             @relation(fields: [branchId], references: [id])
   category         VehicleCategory    @relation(fields: [categoryId], references: [id])
@@ -254,12 +271,23 @@ model Vehicle {
   maintenance      VehicleMaintenanceRecord[]
   bookings         Booking[]
   damageReports    DamageReport[]
+  pricingOverride  VehiclePricingOverride?
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   deletedAt        DateTime?
   @@index([branchId])
   @@index([categoryId])
   @@index([status])
+}
+
+model VehiclePricingOverride {
+  id             Int      @id @default(autoincrement())
+  vehicleId      Int      @unique
+  customPrice    Decimal?
+  multiplier     Decimal?
+  enabled        Boolean  @default(false)
+
+  vehicle        Vehicle  @relation(fields: [vehicleId], references: [id])
 }
 
 model VehicleInsurance {

@@ -208,6 +208,19 @@ exports.Prisma.StaffActivityLogScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.BranchPricingSettingScalarFieldEnum = {
+  id: 'id',
+  branchId: 'branchId',
+  weekendEnabled: 'weekendEnabled',
+  peakEnabled: 'peakEnabled',
+  customEnabled: 'customEnabled',
+  weekendMultiplier: 'weekendMultiplier',
+  peakMultiplier: 'peakMultiplier',
+  customMultiplier: 'customMultiplier',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.VehicleCategoryScalarFieldEnum = {
   id: 'id',
   publicId: 'publicId',
@@ -226,9 +239,18 @@ exports.Prisma.VehicleScalarFieldEnum = {
   odo: 'odo',
   insuranceExpiry: 'insuranceExpiry',
   status: 'status',
+  baseDailyPrice: 'baseDailyPrice',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   deletedAt: 'deletedAt'
+};
+
+exports.Prisma.VehiclePricingOverrideScalarFieldEnum = {
+  id: 'id',
+  vehicleId: 'vehicleId',
+  customPrice: 'customPrice',
+  multiplier: 'multiplier',
+  enabled: 'enabled'
 };
 
 exports.Prisma.VehicleInsuranceScalarFieldEnum = {
@@ -492,8 +514,10 @@ exports.Prisma.ModelName = {
   FileObject: 'FileObject',
   Branch: 'Branch',
   StaffActivityLog: 'StaffActivityLog',
+  BranchPricingSetting: 'BranchPricingSetting',
   VehicleCategory: 'VehicleCategory',
   Vehicle: 'Vehicle',
+  VehiclePricingOverride: 'VehiclePricingOverride',
   VehicleInsurance: 'VehicleInsurance',
   VehicleMaintenanceRecord: 'VehicleMaintenanceRecord',
   RentalPlan: 'RentalPlan',
