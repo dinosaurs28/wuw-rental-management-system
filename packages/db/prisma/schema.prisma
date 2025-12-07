@@ -321,7 +321,8 @@ model VehicleImage {
   publicId  String     @unique
   vehicleId Int
   fileId    Int
-
+  isThumbnail Boolean @default(false)
+  
   vehicle   Vehicle    @relation(fields: [vehicleId], references: [id])
   file      FileObject @relation(fields: [fileId], references: [id])
 

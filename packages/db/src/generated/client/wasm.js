@@ -276,6 +276,7 @@ exports.Prisma.VehicleImageScalarFieldEnum = {
   publicId: 'publicId',
   vehicleId: 'vehicleId',
   fileId: 'fileId',
+  isThumbnail: 'isThumbnail',
   createdAt: 'createdAt'
 };
 

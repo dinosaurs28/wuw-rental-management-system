@@ -71,6 +71,15 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       include: {
         category: true,
         branch: true,
+        images:{
+          where:{
+            isThumbnail:true
+          },select:{
+            file:{
+              select:{url:true}
+            }
+          }
+        }
       },
       orderBy:
         sort === "price_low_to_high"
@@ -120,7 +129,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
         category: v.category.name,
         branch: v.branch.name,
         odo: v.odo,
-        imageUrl: null,
+        imageUrl: v.images,
         pricing,
       });
     }

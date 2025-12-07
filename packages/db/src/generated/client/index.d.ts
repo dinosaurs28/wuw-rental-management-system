@@ -18243,6 +18243,7 @@ export namespace Prisma {
     publicId: string | null
     vehicleId: number | null
     fileId: number | null
+    isThumbnail: boolean | null
     createdAt: Date | null
   }
 
@@ -18251,6 +18252,7 @@ export namespace Prisma {
     publicId: string | null
     vehicleId: number | null
     fileId: number | null
+    isThumbnail: boolean | null
     createdAt: Date | null
   }
 
@@ -18259,6 +18261,7 @@ export namespace Prisma {
     publicId: number
     vehicleId: number
     fileId: number
+    isThumbnail: number
     createdAt: number
     _all: number
   }
@@ -18281,6 +18284,7 @@ export namespace Prisma {
     publicId?: true
     vehicleId?: true
     fileId?: true
+    isThumbnail?: true
     createdAt?: true
   }
 
@@ -18289,6 +18293,7 @@ export namespace Prisma {
     publicId?: true
     vehicleId?: true
     fileId?: true
+    isThumbnail?: true
     createdAt?: true
   }
 
@@ -18297,6 +18302,7 @@ export namespace Prisma {
     publicId?: true
     vehicleId?: true
     fileId?: true
+    isThumbnail?: true
     createdAt?: true
     _all?: true
   }
@@ -18392,6 +18398,7 @@ export namespace Prisma {
     publicId: string
     vehicleId: number
     fileId: number
+    isThumbnail: boolean
     createdAt: Date
     _count: VehicleImageCountAggregateOutputType | null
     _avg: VehicleImageAvgAggregateOutputType | null
@@ -18419,6 +18426,7 @@ export namespace Prisma {
     publicId?: boolean
     vehicleId?: boolean
     fileId?: boolean
+    isThumbnail?: boolean
     createdAt?: boolean
     vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
     file?: boolean | FileObjectDefaultArgs<ExtArgs>
@@ -18429,6 +18437,7 @@ export namespace Prisma {
     publicId?: boolean
     vehicleId?: boolean
     fileId?: boolean
+    isThumbnail?: boolean
     createdAt?: boolean
     vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
     file?: boolean | FileObjectDefaultArgs<ExtArgs>
@@ -18439,6 +18448,7 @@ export namespace Prisma {
     publicId?: boolean
     vehicleId?: boolean
     fileId?: boolean
+    isThumbnail?: boolean
     createdAt?: boolean
   }
 
@@ -18462,6 +18472,7 @@ export namespace Prisma {
       publicId: string
       vehicleId: number
       fileId: number
+      isThumbnail: boolean
       createdAt: Date
     }, ExtArgs["result"]["vehicleImage"]>
     composites: {}
@@ -18862,6 +18873,7 @@ export namespace Prisma {
     readonly publicId: FieldRef<"VehicleImage", 'String'>
     readonly vehicleId: FieldRef<"VehicleImage", 'Int'>
     readonly fileId: FieldRef<"VehicleImage", 'Int'>
+    readonly isThumbnail: FieldRef<"VehicleImage", 'Boolean'>
     readonly createdAt: FieldRef<"VehicleImage", 'DateTime'>
   }
     
@@ -31656,6 +31668,7 @@ export namespace Prisma {
     publicId: 'publicId',
     vehicleId: 'vehicleId',
     fileId: 'fileId',
+    isThumbnail: 'isThumbnail',
     createdAt: 'createdAt'
   };
 
@@ -33180,6 +33193,7 @@ export namespace Prisma {
     publicId?: StringFilter<"VehicleImage"> | string
     vehicleId?: IntFilter<"VehicleImage"> | number
     fileId?: IntFilter<"VehicleImage"> | number
+    isThumbnail?: BoolFilter<"VehicleImage"> | boolean
     createdAt?: DateTimeFilter<"VehicleImage"> | Date | string
     vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
     file?: XOR<FileObjectRelationFilter, FileObjectWhereInput>
@@ -33190,6 +33204,7 @@ export namespace Prisma {
     publicId?: SortOrder
     vehicleId?: SortOrder
     fileId?: SortOrder
+    isThumbnail?: SortOrder
     createdAt?: SortOrder
     vehicle?: VehicleOrderByWithRelationInput
     file?: FileObjectOrderByWithRelationInput
@@ -33203,6 +33218,7 @@ export namespace Prisma {
     NOT?: VehicleImageWhereInput | VehicleImageWhereInput[]
     vehicleId?: IntFilter<"VehicleImage"> | number
     fileId?: IntFilter<"VehicleImage"> | number
+    isThumbnail?: BoolFilter<"VehicleImage"> | boolean
     createdAt?: DateTimeFilter<"VehicleImage"> | Date | string
     vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
     file?: XOR<FileObjectRelationFilter, FileObjectWhereInput>
@@ -33213,6 +33229,7 @@ export namespace Prisma {
     publicId?: SortOrder
     vehicleId?: SortOrder
     fileId?: SortOrder
+    isThumbnail?: SortOrder
     createdAt?: SortOrder
     _count?: VehicleImageCountOrderByAggregateInput
     _avg?: VehicleImageAvgOrderByAggregateInput
@@ -33229,6 +33246,7 @@ export namespace Prisma {
     publicId?: StringWithAggregatesFilter<"VehicleImage"> | string
     vehicleId?: IntWithAggregatesFilter<"VehicleImage"> | number
     fileId?: IntWithAggregatesFilter<"VehicleImage"> | number
+    isThumbnail?: BoolWithAggregatesFilter<"VehicleImage"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"VehicleImage"> | Date | string
   }
 
@@ -35212,6 +35230,7 @@ export namespace Prisma {
 
   export type VehicleImageCreateInput = {
     publicId: string
+    isThumbnail?: boolean
     createdAt?: Date | string
     vehicle: VehicleCreateNestedOneWithoutImagesInput
     file: FileObjectCreateNestedOneWithoutVehicleImagesInput
@@ -35222,11 +35241,13 @@ export namespace Prisma {
     publicId: string
     vehicleId: number
     fileId: number
+    isThumbnail?: boolean
     createdAt?: Date | string
   }
 
   export type VehicleImageUpdateInput = {
     publicId?: StringFieldUpdateOperationsInput | string
+    isThumbnail?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     vehicle?: VehicleUpdateOneRequiredWithoutImagesNestedInput
     file?: FileObjectUpdateOneRequiredWithoutVehicleImagesNestedInput
@@ -35237,6 +35258,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     vehicleId?: IntFieldUpdateOperationsInput | number
     fileId?: IntFieldUpdateOperationsInput | number
+    isThumbnail?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -35245,11 +35267,13 @@ export namespace Prisma {
     publicId: string
     vehicleId: number
     fileId: number
+    isThumbnail?: boolean
     createdAt?: Date | string
   }
 
   export type VehicleImageUpdateManyMutationInput = {
     publicId?: StringFieldUpdateOperationsInput | string
+    isThumbnail?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -35258,6 +35282,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     vehicleId?: IntFieldUpdateOperationsInput | number
     fileId?: IntFieldUpdateOperationsInput | number
+    isThumbnail?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -37286,6 +37311,7 @@ export namespace Prisma {
     publicId?: SortOrder
     vehicleId?: SortOrder
     fileId?: SortOrder
+    isThumbnail?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -37300,6 +37326,7 @@ export namespace Prisma {
     publicId?: SortOrder
     vehicleId?: SortOrder
     fileId?: SortOrder
+    isThumbnail?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -37308,6 +37335,7 @@ export namespace Prisma {
     publicId?: SortOrder
     vehicleId?: SortOrder
     fileId?: SortOrder
+    isThumbnail?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -41363,6 +41391,7 @@ export namespace Prisma {
 
   export type VehicleImageCreateWithoutFileInput = {
     publicId: string
+    isThumbnail?: boolean
     createdAt?: Date | string
     vehicle: VehicleCreateNestedOneWithoutImagesInput
   }
@@ -41371,6 +41400,7 @@ export namespace Prisma {
     id?: number
     publicId: string
     vehicleId: number
+    isThumbnail?: boolean
     createdAt?: Date | string
   }
 
@@ -41452,6 +41482,7 @@ export namespace Prisma {
     publicId?: StringFilter<"VehicleImage"> | string
     vehicleId?: IntFilter<"VehicleImage"> | number
     fileId?: IntFilter<"VehicleImage"> | number
+    isThumbnail?: BoolFilter<"VehicleImage"> | boolean
     createdAt?: DateTimeFilter<"VehicleImage"> | Date | string
   }
 
@@ -42154,6 +42185,7 @@ export namespace Prisma {
 
   export type VehicleImageCreateWithoutVehicleInput = {
     publicId: string
+    isThumbnail?: boolean
     createdAt?: Date | string
     file: FileObjectCreateNestedOneWithoutVehicleImagesInput
   }
@@ -42162,6 +42194,7 @@ export namespace Prisma {
     id?: number
     publicId: string
     fileId: number
+    isThumbnail?: boolean
     createdAt?: Date | string
   }
 
@@ -44944,6 +44977,7 @@ export namespace Prisma {
     id?: number
     publicId: string
     vehicleId: number
+    isThumbnail?: boolean
     createdAt?: Date | string
   }
 
@@ -44998,6 +45032,7 @@ export namespace Prisma {
 
   export type VehicleImageUpdateWithoutFileInput = {
     publicId?: StringFieldUpdateOperationsInput | string
+    isThumbnail?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     vehicle?: VehicleUpdateOneRequiredWithoutImagesNestedInput
   }
@@ -45006,6 +45041,7 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
     vehicleId?: IntFieldUpdateOperationsInput | number
+    isThumbnail?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -45013,6 +45049,7 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
     vehicleId?: IntFieldUpdateOperationsInput | number
+    isThumbnail?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -45397,6 +45434,7 @@ export namespace Prisma {
     id?: number
     publicId: string
     fileId: number
+    isThumbnail?: boolean
     createdAt?: Date | string
   }
 
@@ -45544,6 +45582,7 @@ export namespace Prisma {
 
   export type VehicleImageUpdateWithoutVehicleInput = {
     publicId?: StringFieldUpdateOperationsInput | string
+    isThumbnail?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     file?: FileObjectUpdateOneRequiredWithoutVehicleImagesNestedInput
   }
@@ -45552,6 +45591,7 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
     fileId?: IntFieldUpdateOperationsInput | number
+    isThumbnail?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -45559,6 +45599,7 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
     fileId?: IntFieldUpdateOperationsInput | number
+    isThumbnail?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
