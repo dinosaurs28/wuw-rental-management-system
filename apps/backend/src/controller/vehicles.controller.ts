@@ -3,6 +3,10 @@ import { prisma } from "@repo/database/client";
 import { StatusCode } from "../types/statusCode";
 import { redis } from "../lib/redisconfig";
 import { calculatePricingForVehicle } from "../utils/pricing/calcPricing";
+import { getVehicleDetailsSchema } from "@repo/schemas";
+import { calculatePricingForVehicleFromRecord } from "../utils/pricing/calcPricingInd";
+import { calculateMultiDayTotalPrice } from "../utils/pricing/calcMultiDayPrice";
+import { checkVehicleAvailability } from "../utils/availability/checkAvailability";
 
 export const getPublicVehicles = async (req: Request, res: Response) => {
   try {
@@ -144,3 +148,88 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
+  try {
+    const parasedData = getVehicleDetailsSchema.safeParse(req.params)
+    if (!parasedData.success) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        message: parasedData.error.flatten()
+      })
+    }
+    const { start, end } = req.query as { start?: string; end?: string };
+
+    let startDate: Date | null = null;
+    let endDate: Date | null = null;
+
+    if (start && end) {
+      startDate = new Date(start);
+      endDate = new Date(end);
+
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+          message: "Invalid start or end date format",
+        });
+      }
+    }
+    const vehicleData = await prisma.vehicle.findUnique({
+      where: { publicId: parasedData.data.id },
+      include: {
+        category: true,
+        branch: {
+          include: { pricingSetting: true },
+        },
+        images:{
+          include:{
+            file:true
+          }
+        },
+        pricingOverride: true,
+        
+      },
+    });
+    if (!vehicleData) {
+      return res.status(StatusCode.NOT_FOUND).json({
+        message: "Vehicle details could not be found for the provided ID."
+      })
+    }
+    const pricing = await calculatePricingForVehicleFromRecord(vehicleData)
+    let availability: boolean | null = null;
+    let totalPrice: number | null = null;
+    let totalDays: number | null = null;
+
+    if (startDate && endDate) {
+      availability = await checkVehicleAvailability(vehicleData.id, startDate, endDate);
+
+      const multi = calculateMultiDayTotalPrice(startDate, endDate, pricing.daily);
+
+      totalPrice = multi.total;
+      totalDays = multi.days;
+    }
+    const imageUrls = vehicleData.images.map(img => img.file.url);
+    const response = {
+      publicId: vehicleData.publicId,
+      make: vehicleData.make,
+      model: vehicleData.model,
+      status: vehicleData.status,
+      category: vehicleData.category.name,
+      branch: vehicleData.branch.name,
+      images:imageUrls,
+      pricing,
+      availability,
+      totalDays,
+      totalPrice,
+    };
+
+    return res.status(StatusCode.OK).json({
+      message: "Success",
+      data: response
+    });
+  } catch (e: any) {
+    console.log("Internal Error While Fetching the Vehicle Details", e)
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+      message: "Internal Error While Fetching the Vehicle Details"
+    })
+  }
+
+}

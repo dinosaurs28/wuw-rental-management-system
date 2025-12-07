@@ -271,6 +271,14 @@ exports.Prisma.VehicleMaintenanceRecordScalarFieldEnum = {
   servicedAt: 'servicedAt'
 };
 
+exports.Prisma.VehicleImageScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  vehicleId: 'vehicleId',
+  fileId: 'fileId',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.RentalPlanScalarFieldEnum = {
   id: 'id',
   publicId: 'publicId',
@@ -520,6 +528,7 @@ exports.Prisma.ModelName = {
   VehiclePricingOverride: 'VehiclePricingOverride',
   VehicleInsurance: 'VehicleInsurance',
   VehicleMaintenanceRecord: 'VehicleMaintenanceRecord',
+  VehicleImage: 'VehicleImage',
   RentalPlan: 'RentalPlan',
   PricingRule: 'PricingRule',
   Booking: 'Booking',

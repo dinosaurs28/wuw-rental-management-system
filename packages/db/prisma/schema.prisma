@@ -191,6 +191,7 @@ model FileObject {
   createdAt DateTime @default(now())
   bookingPhotos BookingPhoto[]
   customerKycs CustomerKyc[]
+  vehicleImages VehicleImage[]
   @@index([publicId])
 }
 
@@ -272,6 +273,7 @@ model Vehicle {
   bookings         Booking[]
   damageReports    DamageReport[]
   pricingOverride  VehiclePricingOverride?
+  images           VehicleImage[]
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   deletedAt        DateTime?
@@ -314,6 +316,20 @@ model VehicleMaintenanceRecord {
   @@index([vehicleId])
 }
 
+model VehicleImage {
+  id        Int        @id @default(autoincrement())
+  publicId  String     @unique
+  vehicleId Int
+  fileId    Int
+
+  vehicle   Vehicle    @relation(fields: [vehicleId], references: [id])
+  file      FileObject @relation(fields: [fileId], references: [id])
+
+  createdAt DateTime   @default(now())
+
+  @@index([vehicleId])
+  @@index([fileId])
+}
 
 
 // BOOKINGS

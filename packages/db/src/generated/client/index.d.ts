@@ -84,6 +84,11 @@ export type VehicleInsurance = $Result.DefaultSelection<Prisma.$VehicleInsurance
  */
 export type VehicleMaintenanceRecord = $Result.DefaultSelection<Prisma.$VehicleMaintenanceRecordPayload>
 /**
+ * Model VehicleImage
+ * 
+ */
+export type VehicleImage = $Result.DefaultSelection<Prisma.$VehicleImagePayload>
+/**
  * Model RentalPlan
  * 
  */
@@ -561,6 +566,16 @@ export class PrismaClient<
     * ```
     */
   get vehicleMaintenanceRecord(): Prisma.VehicleMaintenanceRecordDelegate<ExtArgs>;
+
+  /**
+   * `prisma.vehicleImage`: Exposes CRUD operations for the **VehicleImage** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more VehicleImages
+    * const vehicleImages = await prisma.vehicleImage.findMany()
+    * ```
+    */
+  get vehicleImage(): Prisma.VehicleImageDelegate<ExtArgs>;
 
   /**
    * `prisma.rentalPlan`: Exposes CRUD operations for the **RentalPlan** model.
@@ -1136,6 +1151,7 @@ export namespace Prisma {
     VehiclePricingOverride: 'VehiclePricingOverride',
     VehicleInsurance: 'VehicleInsurance',
     VehicleMaintenanceRecord: 'VehicleMaintenanceRecord',
+    VehicleImage: 'VehicleImage',
     RentalPlan: 'RentalPlan',
     PricingRule: 'PricingRule',
     Booking: 'Booking',
@@ -1163,7 +1179,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehicle" | "vehiclePricingOverride" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "rentalPlan" | "pricingRule" | "booking" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting"
+      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehicle" | "vehiclePricingOverride" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "rentalPlan" | "pricingRule" | "booking" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -2144,6 +2160,76 @@ export namespace Prisma {
           count: {
             args: Prisma.VehicleMaintenanceRecordCountArgs<ExtArgs>
             result: $Utils.Optional<VehicleMaintenanceRecordCountAggregateOutputType> | number
+          }
+        }
+      }
+      VehicleImage: {
+        payload: Prisma.$VehicleImagePayload<ExtArgs>
+        fields: Prisma.VehicleImageFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.VehicleImageFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleImagePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.VehicleImageFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleImagePayload>
+          }
+          findFirst: {
+            args: Prisma.VehicleImageFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleImagePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.VehicleImageFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleImagePayload>
+          }
+          findMany: {
+            args: Prisma.VehicleImageFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleImagePayload>[]
+          }
+          create: {
+            args: Prisma.VehicleImageCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleImagePayload>
+          }
+          createMany: {
+            args: Prisma.VehicleImageCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.VehicleImageCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleImagePayload>[]
+          }
+          delete: {
+            args: Prisma.VehicleImageDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleImagePayload>
+          }
+          update: {
+            args: Prisma.VehicleImageUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleImagePayload>
+          }
+          deleteMany: {
+            args: Prisma.VehicleImageDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.VehicleImageUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.VehicleImageUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleImagePayload>
+          }
+          aggregate: {
+            args: Prisma.VehicleImageAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateVehicleImage>
+          }
+          groupBy: {
+            args: Prisma.VehicleImageGroupByArgs<ExtArgs>
+            result: $Utils.Optional<VehicleImageGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.VehicleImageCountArgs<ExtArgs>
+            result: $Utils.Optional<VehicleImageCountAggregateOutputType> | number
           }
         }
       }
@@ -3257,11 +3343,13 @@ export namespace Prisma {
   export type FileObjectCountOutputType = {
     bookingPhotos: number
     customerKycs: number
+    vehicleImages: number
   }
 
   export type FileObjectCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     bookingPhotos?: boolean | FileObjectCountOutputTypeCountBookingPhotosArgs
     customerKycs?: boolean | FileObjectCountOutputTypeCountCustomerKycsArgs
+    vehicleImages?: boolean | FileObjectCountOutputTypeCountVehicleImagesArgs
   }
 
   // Custom InputTypes
@@ -3287,6 +3375,13 @@ export namespace Prisma {
    */
   export type FileObjectCountOutputTypeCountCustomerKycsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: CustomerKycWhereInput
+  }
+
+  /**
+   * FileObjectCountOutputType without action
+   */
+  export type FileObjectCountOutputTypeCountVehicleImagesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VehicleImageWhereInput
   }
 
 
@@ -3388,6 +3483,7 @@ export namespace Prisma {
     maintenance: number
     bookings: number
     damageReports: number
+    images: number
   }
 
   export type VehicleCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3395,6 +3491,7 @@ export namespace Prisma {
     maintenance?: boolean | VehicleCountOutputTypeCountMaintenanceArgs
     bookings?: boolean | VehicleCountOutputTypeCountBookingsArgs
     damageReports?: boolean | VehicleCountOutputTypeCountDamageReportsArgs
+    images?: boolean | VehicleCountOutputTypeCountImagesArgs
   }
 
   // Custom InputTypes
@@ -3434,6 +3531,13 @@ export namespace Prisma {
    */
   export type VehicleCountOutputTypeCountDamageReportsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: DamageReportWhereInput
+  }
+
+  /**
+   * VehicleCountOutputType without action
+   */
+  export type VehicleCountOutputTypeCountImagesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VehicleImageWhereInput
   }
 
 
@@ -9035,6 +9139,7 @@ export namespace Prisma {
     createdAt?: boolean
     bookingPhotos?: boolean | FileObject$bookingPhotosArgs<ExtArgs>
     customerKycs?: boolean | FileObject$customerKycsArgs<ExtArgs>
+    vehicleImages?: boolean | FileObject$vehicleImagesArgs<ExtArgs>
     _count?: boolean | FileObjectCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["fileObject"]>
 
@@ -9061,6 +9166,7 @@ export namespace Prisma {
   export type FileObjectInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     bookingPhotos?: boolean | FileObject$bookingPhotosArgs<ExtArgs>
     customerKycs?: boolean | FileObject$customerKycsArgs<ExtArgs>
+    vehicleImages?: boolean | FileObject$vehicleImagesArgs<ExtArgs>
     _count?: boolean | FileObjectCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type FileObjectIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -9070,6 +9176,7 @@ export namespace Prisma {
     objects: {
       bookingPhotos: Prisma.$BookingPhotoPayload<ExtArgs>[]
       customerKycs: Prisma.$CustomerKycPayload<ExtArgs>[]
+      vehicleImages: Prisma.$VehicleImagePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -9445,6 +9552,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     bookingPhotos<T extends FileObject$bookingPhotosArgs<ExtArgs> = {}>(args?: Subset<T, FileObject$bookingPhotosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingPhotoPayload<ExtArgs>, T, "findMany"> | Null>
     customerKycs<T extends FileObject$customerKycsArgs<ExtArgs> = {}>(args?: Subset<T, FileObject$customerKycsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CustomerKycPayload<ExtArgs>, T, "findMany"> | Null>
+    vehicleImages<T extends FileObject$vehicleImagesArgs<ExtArgs> = {}>(args?: Subset<T, FileObject$vehicleImagesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleImagePayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -9832,6 +9940,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: CustomerKycScalarFieldEnum | CustomerKycScalarFieldEnum[]
+  }
+
+  /**
+   * FileObject.vehicleImages
+   */
+  export type FileObject$vehicleImagesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleImage
+     */
+    select?: VehicleImageSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleImageInclude<ExtArgs> | null
+    where?: VehicleImageWhereInput
+    orderBy?: VehicleImageOrderByWithRelationInput | VehicleImageOrderByWithRelationInput[]
+    cursor?: VehicleImageWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: VehicleImageScalarFieldEnum | VehicleImageScalarFieldEnum[]
   }
 
   /**
@@ -14192,6 +14320,7 @@ export namespace Prisma {
     bookings?: boolean | Vehicle$bookingsArgs<ExtArgs>
     damageReports?: boolean | Vehicle$damageReportsArgs<ExtArgs>
     pricingOverride?: boolean | Vehicle$pricingOverrideArgs<ExtArgs>
+    images?: boolean | Vehicle$imagesArgs<ExtArgs>
     _count?: boolean | VehicleCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["vehicle"]>
 
@@ -14239,6 +14368,7 @@ export namespace Prisma {
     bookings?: boolean | Vehicle$bookingsArgs<ExtArgs>
     damageReports?: boolean | Vehicle$damageReportsArgs<ExtArgs>
     pricingOverride?: boolean | Vehicle$pricingOverrideArgs<ExtArgs>
+    images?: boolean | Vehicle$imagesArgs<ExtArgs>
     _count?: boolean | VehicleCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type VehicleIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -14256,6 +14386,7 @@ export namespace Prisma {
       bookings: Prisma.$BookingPayload<ExtArgs>[]
       damageReports: Prisma.$DamageReportPayload<ExtArgs>[]
       pricingOverride: Prisma.$VehiclePricingOverridePayload<ExtArgs> | null
+      images: Prisma.$VehicleImagePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -14643,6 +14774,7 @@ export namespace Prisma {
     bookings<T extends Vehicle$bookingsArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$bookingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findMany"> | Null>
     damageReports<T extends Vehicle$damageReportsArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$damageReportsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DamageReportPayload<ExtArgs>, T, "findMany"> | Null>
     pricingOverride<T extends Vehicle$pricingOverrideArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$pricingOverrideArgs<ExtArgs>>): Prisma__VehiclePricingOverrideClient<$Result.GetResult<Prisma.$VehiclePricingOverridePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    images<T extends Vehicle$imagesArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$imagesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleImagePayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -15096,6 +15228,26 @@ export namespace Prisma {
      */
     include?: VehiclePricingOverrideInclude<ExtArgs> | null
     where?: VehiclePricingOverrideWhereInput
+  }
+
+  /**
+   * Vehicle.images
+   */
+  export type Vehicle$imagesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleImage
+     */
+    select?: VehicleImageSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleImageInclude<ExtArgs> | null
+    where?: VehicleImageWhereInput
+    orderBy?: VehicleImageOrderByWithRelationInput | VehicleImageOrderByWithRelationInput[]
+    cursor?: VehicleImageWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: VehicleImageScalarFieldEnum | VehicleImageScalarFieldEnum[]
   }
 
   /**
@@ -18059,6 +18211,987 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: VehicleMaintenanceRecordInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model VehicleImage
+   */
+
+  export type AggregateVehicleImage = {
+    _count: VehicleImageCountAggregateOutputType | null
+    _avg: VehicleImageAvgAggregateOutputType | null
+    _sum: VehicleImageSumAggregateOutputType | null
+    _min: VehicleImageMinAggregateOutputType | null
+    _max: VehicleImageMaxAggregateOutputType | null
+  }
+
+  export type VehicleImageAvgAggregateOutputType = {
+    id: number | null
+    vehicleId: number | null
+    fileId: number | null
+  }
+
+  export type VehicleImageSumAggregateOutputType = {
+    id: number | null
+    vehicleId: number | null
+    fileId: number | null
+  }
+
+  export type VehicleImageMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    vehicleId: number | null
+    fileId: number | null
+    createdAt: Date | null
+  }
+
+  export type VehicleImageMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    vehicleId: number | null
+    fileId: number | null
+    createdAt: Date | null
+  }
+
+  export type VehicleImageCountAggregateOutputType = {
+    id: number
+    publicId: number
+    vehicleId: number
+    fileId: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type VehicleImageAvgAggregateInputType = {
+    id?: true
+    vehicleId?: true
+    fileId?: true
+  }
+
+  export type VehicleImageSumAggregateInputType = {
+    id?: true
+    vehicleId?: true
+    fileId?: true
+  }
+
+  export type VehicleImageMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    vehicleId?: true
+    fileId?: true
+    createdAt?: true
+  }
+
+  export type VehicleImageMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    vehicleId?: true
+    fileId?: true
+    createdAt?: true
+  }
+
+  export type VehicleImageCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    vehicleId?: true
+    fileId?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type VehicleImageAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which VehicleImage to aggregate.
+     */
+    where?: VehicleImageWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehicleImages to fetch.
+     */
+    orderBy?: VehicleImageOrderByWithRelationInput | VehicleImageOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: VehicleImageWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehicleImages from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehicleImages.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned VehicleImages
+    **/
+    _count?: true | VehicleImageCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: VehicleImageAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: VehicleImageSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: VehicleImageMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: VehicleImageMaxAggregateInputType
+  }
+
+  export type GetVehicleImageAggregateType<T extends VehicleImageAggregateArgs> = {
+        [P in keyof T & keyof AggregateVehicleImage]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateVehicleImage[P]>
+      : GetScalarType<T[P], AggregateVehicleImage[P]>
+  }
+
+
+
+
+  export type VehicleImageGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VehicleImageWhereInput
+    orderBy?: VehicleImageOrderByWithAggregationInput | VehicleImageOrderByWithAggregationInput[]
+    by: VehicleImageScalarFieldEnum[] | VehicleImageScalarFieldEnum
+    having?: VehicleImageScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: VehicleImageCountAggregateInputType | true
+    _avg?: VehicleImageAvgAggregateInputType
+    _sum?: VehicleImageSumAggregateInputType
+    _min?: VehicleImageMinAggregateInputType
+    _max?: VehicleImageMaxAggregateInputType
+  }
+
+  export type VehicleImageGroupByOutputType = {
+    id: number
+    publicId: string
+    vehicleId: number
+    fileId: number
+    createdAt: Date
+    _count: VehicleImageCountAggregateOutputType | null
+    _avg: VehicleImageAvgAggregateOutputType | null
+    _sum: VehicleImageSumAggregateOutputType | null
+    _min: VehicleImageMinAggregateOutputType | null
+    _max: VehicleImageMaxAggregateOutputType | null
+  }
+
+  type GetVehicleImageGroupByPayload<T extends VehicleImageGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<VehicleImageGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof VehicleImageGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], VehicleImageGroupByOutputType[P]>
+            : GetScalarType<T[P], VehicleImageGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type VehicleImageSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    vehicleId?: boolean
+    fileId?: boolean
+    createdAt?: boolean
+    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+    file?: boolean | FileObjectDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["vehicleImage"]>
+
+  export type VehicleImageSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    vehicleId?: boolean
+    fileId?: boolean
+    createdAt?: boolean
+    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+    file?: boolean | FileObjectDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["vehicleImage"]>
+
+  export type VehicleImageSelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    vehicleId?: boolean
+    fileId?: boolean
+    createdAt?: boolean
+  }
+
+  export type VehicleImageInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+    file?: boolean | FileObjectDefaultArgs<ExtArgs>
+  }
+  export type VehicleImageIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+    file?: boolean | FileObjectDefaultArgs<ExtArgs>
+  }
+
+  export type $VehicleImagePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "VehicleImage"
+    objects: {
+      vehicle: Prisma.$VehiclePayload<ExtArgs>
+      file: Prisma.$FileObjectPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      vehicleId: number
+      fileId: number
+      createdAt: Date
+    }, ExtArgs["result"]["vehicleImage"]>
+    composites: {}
+  }
+
+  type VehicleImageGetPayload<S extends boolean | null | undefined | VehicleImageDefaultArgs> = $Result.GetResult<Prisma.$VehicleImagePayload, S>
+
+  type VehicleImageCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<VehicleImageFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: VehicleImageCountAggregateInputType | true
+    }
+
+  export interface VehicleImageDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['VehicleImage'], meta: { name: 'VehicleImage' } }
+    /**
+     * Find zero or one VehicleImage that matches the filter.
+     * @param {VehicleImageFindUniqueArgs} args - Arguments to find a VehicleImage
+     * @example
+     * // Get one VehicleImage
+     * const vehicleImage = await prisma.vehicleImage.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends VehicleImageFindUniqueArgs>(args: SelectSubset<T, VehicleImageFindUniqueArgs<ExtArgs>>): Prisma__VehicleImageClient<$Result.GetResult<Prisma.$VehicleImagePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one VehicleImage that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {VehicleImageFindUniqueOrThrowArgs} args - Arguments to find a VehicleImage
+     * @example
+     * // Get one VehicleImage
+     * const vehicleImage = await prisma.vehicleImage.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends VehicleImageFindUniqueOrThrowArgs>(args: SelectSubset<T, VehicleImageFindUniqueOrThrowArgs<ExtArgs>>): Prisma__VehicleImageClient<$Result.GetResult<Prisma.$VehicleImagePayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first VehicleImage that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleImageFindFirstArgs} args - Arguments to find a VehicleImage
+     * @example
+     * // Get one VehicleImage
+     * const vehicleImage = await prisma.vehicleImage.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends VehicleImageFindFirstArgs>(args?: SelectSubset<T, VehicleImageFindFirstArgs<ExtArgs>>): Prisma__VehicleImageClient<$Result.GetResult<Prisma.$VehicleImagePayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first VehicleImage that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleImageFindFirstOrThrowArgs} args - Arguments to find a VehicleImage
+     * @example
+     * // Get one VehicleImage
+     * const vehicleImage = await prisma.vehicleImage.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends VehicleImageFindFirstOrThrowArgs>(args?: SelectSubset<T, VehicleImageFindFirstOrThrowArgs<ExtArgs>>): Prisma__VehicleImageClient<$Result.GetResult<Prisma.$VehicleImagePayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more VehicleImages that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleImageFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all VehicleImages
+     * const vehicleImages = await prisma.vehicleImage.findMany()
+     * 
+     * // Get first 10 VehicleImages
+     * const vehicleImages = await prisma.vehicleImage.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const vehicleImageWithIdOnly = await prisma.vehicleImage.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends VehicleImageFindManyArgs>(args?: SelectSubset<T, VehicleImageFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleImagePayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a VehicleImage.
+     * @param {VehicleImageCreateArgs} args - Arguments to create a VehicleImage.
+     * @example
+     * // Create one VehicleImage
+     * const VehicleImage = await prisma.vehicleImage.create({
+     *   data: {
+     *     // ... data to create a VehicleImage
+     *   }
+     * })
+     * 
+     */
+    create<T extends VehicleImageCreateArgs>(args: SelectSubset<T, VehicleImageCreateArgs<ExtArgs>>): Prisma__VehicleImageClient<$Result.GetResult<Prisma.$VehicleImagePayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many VehicleImages.
+     * @param {VehicleImageCreateManyArgs} args - Arguments to create many VehicleImages.
+     * @example
+     * // Create many VehicleImages
+     * const vehicleImage = await prisma.vehicleImage.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends VehicleImageCreateManyArgs>(args?: SelectSubset<T, VehicleImageCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many VehicleImages and returns the data saved in the database.
+     * @param {VehicleImageCreateManyAndReturnArgs} args - Arguments to create many VehicleImages.
+     * @example
+     * // Create many VehicleImages
+     * const vehicleImage = await prisma.vehicleImage.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many VehicleImages and only return the `id`
+     * const vehicleImageWithIdOnly = await prisma.vehicleImage.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends VehicleImageCreateManyAndReturnArgs>(args?: SelectSubset<T, VehicleImageCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleImagePayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a VehicleImage.
+     * @param {VehicleImageDeleteArgs} args - Arguments to delete one VehicleImage.
+     * @example
+     * // Delete one VehicleImage
+     * const VehicleImage = await prisma.vehicleImage.delete({
+     *   where: {
+     *     // ... filter to delete one VehicleImage
+     *   }
+     * })
+     * 
+     */
+    delete<T extends VehicleImageDeleteArgs>(args: SelectSubset<T, VehicleImageDeleteArgs<ExtArgs>>): Prisma__VehicleImageClient<$Result.GetResult<Prisma.$VehicleImagePayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one VehicleImage.
+     * @param {VehicleImageUpdateArgs} args - Arguments to update one VehicleImage.
+     * @example
+     * // Update one VehicleImage
+     * const vehicleImage = await prisma.vehicleImage.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends VehicleImageUpdateArgs>(args: SelectSubset<T, VehicleImageUpdateArgs<ExtArgs>>): Prisma__VehicleImageClient<$Result.GetResult<Prisma.$VehicleImagePayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more VehicleImages.
+     * @param {VehicleImageDeleteManyArgs} args - Arguments to filter VehicleImages to delete.
+     * @example
+     * // Delete a few VehicleImages
+     * const { count } = await prisma.vehicleImage.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends VehicleImageDeleteManyArgs>(args?: SelectSubset<T, VehicleImageDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more VehicleImages.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleImageUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many VehicleImages
+     * const vehicleImage = await prisma.vehicleImage.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends VehicleImageUpdateManyArgs>(args: SelectSubset<T, VehicleImageUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one VehicleImage.
+     * @param {VehicleImageUpsertArgs} args - Arguments to update or create a VehicleImage.
+     * @example
+     * // Update or create a VehicleImage
+     * const vehicleImage = await prisma.vehicleImage.upsert({
+     *   create: {
+     *     // ... data to create a VehicleImage
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the VehicleImage we want to update
+     *   }
+     * })
+     */
+    upsert<T extends VehicleImageUpsertArgs>(args: SelectSubset<T, VehicleImageUpsertArgs<ExtArgs>>): Prisma__VehicleImageClient<$Result.GetResult<Prisma.$VehicleImagePayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of VehicleImages.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleImageCountArgs} args - Arguments to filter VehicleImages to count.
+     * @example
+     * // Count the number of VehicleImages
+     * const count = await prisma.vehicleImage.count({
+     *   where: {
+     *     // ... the filter for the VehicleImages we want to count
+     *   }
+     * })
+    **/
+    count<T extends VehicleImageCountArgs>(
+      args?: Subset<T, VehicleImageCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], VehicleImageCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a VehicleImage.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleImageAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends VehicleImageAggregateArgs>(args: Subset<T, VehicleImageAggregateArgs>): Prisma.PrismaPromise<GetVehicleImageAggregateType<T>>
+
+    /**
+     * Group by VehicleImage.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleImageGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends VehicleImageGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: VehicleImageGroupByArgs['orderBy'] }
+        : { orderBy?: VehicleImageGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, VehicleImageGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetVehicleImageGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the VehicleImage model
+   */
+  readonly fields: VehicleImageFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for VehicleImage.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__VehicleImageClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    vehicle<T extends VehicleDefaultArgs<ExtArgs> = {}>(args?: Subset<T, VehicleDefaultArgs<ExtArgs>>): Prisma__VehicleClient<$Result.GetResult<Prisma.$VehiclePayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    file<T extends FileObjectDefaultArgs<ExtArgs> = {}>(args?: Subset<T, FileObjectDefaultArgs<ExtArgs>>): Prisma__FileObjectClient<$Result.GetResult<Prisma.$FileObjectPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the VehicleImage model
+   */ 
+  interface VehicleImageFieldRefs {
+    readonly id: FieldRef<"VehicleImage", 'Int'>
+    readonly publicId: FieldRef<"VehicleImage", 'String'>
+    readonly vehicleId: FieldRef<"VehicleImage", 'Int'>
+    readonly fileId: FieldRef<"VehicleImage", 'Int'>
+    readonly createdAt: FieldRef<"VehicleImage", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * VehicleImage findUnique
+   */
+  export type VehicleImageFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleImage
+     */
+    select?: VehicleImageSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleImageInclude<ExtArgs> | null
+    /**
+     * Filter, which VehicleImage to fetch.
+     */
+    where: VehicleImageWhereUniqueInput
+  }
+
+  /**
+   * VehicleImage findUniqueOrThrow
+   */
+  export type VehicleImageFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleImage
+     */
+    select?: VehicleImageSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleImageInclude<ExtArgs> | null
+    /**
+     * Filter, which VehicleImage to fetch.
+     */
+    where: VehicleImageWhereUniqueInput
+  }
+
+  /**
+   * VehicleImage findFirst
+   */
+  export type VehicleImageFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleImage
+     */
+    select?: VehicleImageSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleImageInclude<ExtArgs> | null
+    /**
+     * Filter, which VehicleImage to fetch.
+     */
+    where?: VehicleImageWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehicleImages to fetch.
+     */
+    orderBy?: VehicleImageOrderByWithRelationInput | VehicleImageOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for VehicleImages.
+     */
+    cursor?: VehicleImageWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehicleImages from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehicleImages.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of VehicleImages.
+     */
+    distinct?: VehicleImageScalarFieldEnum | VehicleImageScalarFieldEnum[]
+  }
+
+  /**
+   * VehicleImage findFirstOrThrow
+   */
+  export type VehicleImageFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleImage
+     */
+    select?: VehicleImageSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleImageInclude<ExtArgs> | null
+    /**
+     * Filter, which VehicleImage to fetch.
+     */
+    where?: VehicleImageWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehicleImages to fetch.
+     */
+    orderBy?: VehicleImageOrderByWithRelationInput | VehicleImageOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for VehicleImages.
+     */
+    cursor?: VehicleImageWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehicleImages from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehicleImages.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of VehicleImages.
+     */
+    distinct?: VehicleImageScalarFieldEnum | VehicleImageScalarFieldEnum[]
+  }
+
+  /**
+   * VehicleImage findMany
+   */
+  export type VehicleImageFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleImage
+     */
+    select?: VehicleImageSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleImageInclude<ExtArgs> | null
+    /**
+     * Filter, which VehicleImages to fetch.
+     */
+    where?: VehicleImageWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehicleImages to fetch.
+     */
+    orderBy?: VehicleImageOrderByWithRelationInput | VehicleImageOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing VehicleImages.
+     */
+    cursor?: VehicleImageWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehicleImages from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehicleImages.
+     */
+    skip?: number
+    distinct?: VehicleImageScalarFieldEnum | VehicleImageScalarFieldEnum[]
+  }
+
+  /**
+   * VehicleImage create
+   */
+  export type VehicleImageCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleImage
+     */
+    select?: VehicleImageSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleImageInclude<ExtArgs> | null
+    /**
+     * The data needed to create a VehicleImage.
+     */
+    data: XOR<VehicleImageCreateInput, VehicleImageUncheckedCreateInput>
+  }
+
+  /**
+   * VehicleImage createMany
+   */
+  export type VehicleImageCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many VehicleImages.
+     */
+    data: VehicleImageCreateManyInput | VehicleImageCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * VehicleImage createManyAndReturn
+   */
+  export type VehicleImageCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleImage
+     */
+    select?: VehicleImageSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many VehicleImages.
+     */
+    data: VehicleImageCreateManyInput | VehicleImageCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleImageIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * VehicleImage update
+   */
+  export type VehicleImageUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleImage
+     */
+    select?: VehicleImageSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleImageInclude<ExtArgs> | null
+    /**
+     * The data needed to update a VehicleImage.
+     */
+    data: XOR<VehicleImageUpdateInput, VehicleImageUncheckedUpdateInput>
+    /**
+     * Choose, which VehicleImage to update.
+     */
+    where: VehicleImageWhereUniqueInput
+  }
+
+  /**
+   * VehicleImage updateMany
+   */
+  export type VehicleImageUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update VehicleImages.
+     */
+    data: XOR<VehicleImageUpdateManyMutationInput, VehicleImageUncheckedUpdateManyInput>
+    /**
+     * Filter which VehicleImages to update
+     */
+    where?: VehicleImageWhereInput
+  }
+
+  /**
+   * VehicleImage upsert
+   */
+  export type VehicleImageUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleImage
+     */
+    select?: VehicleImageSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleImageInclude<ExtArgs> | null
+    /**
+     * The filter to search for the VehicleImage to update in case it exists.
+     */
+    where: VehicleImageWhereUniqueInput
+    /**
+     * In case the VehicleImage found by the `where` argument doesn't exist, create a new VehicleImage with this data.
+     */
+    create: XOR<VehicleImageCreateInput, VehicleImageUncheckedCreateInput>
+    /**
+     * In case the VehicleImage was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<VehicleImageUpdateInput, VehicleImageUncheckedUpdateInput>
+  }
+
+  /**
+   * VehicleImage delete
+   */
+  export type VehicleImageDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleImage
+     */
+    select?: VehicleImageSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleImageInclude<ExtArgs> | null
+    /**
+     * Filter which VehicleImage to delete.
+     */
+    where: VehicleImageWhereUniqueInput
+  }
+
+  /**
+   * VehicleImage deleteMany
+   */
+  export type VehicleImageDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which VehicleImages to delete
+     */
+    where?: VehicleImageWhereInput
+  }
+
+  /**
+   * VehicleImage without action
+   */
+  export type VehicleImageDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleImage
+     */
+    select?: VehicleImageSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleImageInclude<ExtArgs> | null
   }
 
 
@@ -30518,6 +31651,17 @@ export namespace Prisma {
   export type VehicleMaintenanceRecordScalarFieldEnum = (typeof VehicleMaintenanceRecordScalarFieldEnum)[keyof typeof VehicleMaintenanceRecordScalarFieldEnum]
 
 
+  export const VehicleImageScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    vehicleId: 'vehicleId',
+    fileId: 'fileId',
+    createdAt: 'createdAt'
+  };
+
+  export type VehicleImageScalarFieldEnum = (typeof VehicleImageScalarFieldEnum)[keyof typeof VehicleImageScalarFieldEnum]
+
+
   export const RentalPlanScalarFieldEnum: {
     id: 'id',
     publicId: 'publicId',
@@ -31387,6 +32531,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"FileObject"> | Date | string
     bookingPhotos?: BookingPhotoListRelationFilter
     customerKycs?: CustomerKycListRelationFilter
+    vehicleImages?: VehicleImageListRelationFilter
   }
 
   export type FileObjectOrderByWithRelationInput = {
@@ -31399,6 +32544,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     bookingPhotos?: BookingPhotoOrderByRelationAggregateInput
     customerKycs?: CustomerKycOrderByRelationAggregateInput
+    vehicleImages?: VehicleImageOrderByRelationAggregateInput
   }
 
   export type FileObjectWhereUniqueInput = Prisma.AtLeast<{
@@ -31414,6 +32560,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"FileObject"> | Date | string
     bookingPhotos?: BookingPhotoListRelationFilter
     customerKycs?: CustomerKycListRelationFilter
+    vehicleImages?: VehicleImageListRelationFilter
   }, "id" | "publicId">
 
   export type FileObjectOrderByWithAggregationInput = {
@@ -31746,6 +32893,7 @@ export namespace Prisma {
     bookings?: BookingListRelationFilter
     damageReports?: DamageReportListRelationFilter
     pricingOverride?: XOR<VehiclePricingOverrideNullableRelationFilter, VehiclePricingOverrideWhereInput> | null
+    images?: VehicleImageListRelationFilter
   }
 
   export type VehicleOrderByWithRelationInput = {
@@ -31770,6 +32918,7 @@ export namespace Prisma {
     bookings?: BookingOrderByRelationAggregateInput
     damageReports?: DamageReportOrderByRelationAggregateInput
     pricingOverride?: VehiclePricingOverrideOrderByWithRelationInput
+    images?: VehicleImageOrderByRelationAggregateInput
   }
 
   export type VehicleWhereUniqueInput = Prisma.AtLeast<{
@@ -31797,6 +32946,7 @@ export namespace Prisma {
     bookings?: BookingListRelationFilter
     damageReports?: DamageReportListRelationFilter
     pricingOverride?: XOR<VehiclePricingOverrideNullableRelationFilter, VehiclePricingOverrideWhereInput> | null
+    images?: VehicleImageListRelationFilter
   }, "id" | "publicId" | "regNo">
 
   export type VehicleOrderByWithAggregationInput = {
@@ -32020,6 +33170,66 @@ export namespace Prisma {
     description?: StringWithAggregatesFilter<"VehicleMaintenanceRecord"> | string
     cost?: DecimalWithAggregatesFilter<"VehicleMaintenanceRecord"> | Decimal | DecimalJsLike | number | string
     servicedAt?: DateTimeWithAggregatesFilter<"VehicleMaintenanceRecord"> | Date | string
+  }
+
+  export type VehicleImageWhereInput = {
+    AND?: VehicleImageWhereInput | VehicleImageWhereInput[]
+    OR?: VehicleImageWhereInput[]
+    NOT?: VehicleImageWhereInput | VehicleImageWhereInput[]
+    id?: IntFilter<"VehicleImage"> | number
+    publicId?: StringFilter<"VehicleImage"> | string
+    vehicleId?: IntFilter<"VehicleImage"> | number
+    fileId?: IntFilter<"VehicleImage"> | number
+    createdAt?: DateTimeFilter<"VehicleImage"> | Date | string
+    vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
+    file?: XOR<FileObjectRelationFilter, FileObjectWhereInput>
+  }
+
+  export type VehicleImageOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    vehicleId?: SortOrder
+    fileId?: SortOrder
+    createdAt?: SortOrder
+    vehicle?: VehicleOrderByWithRelationInput
+    file?: FileObjectOrderByWithRelationInput
+  }
+
+  export type VehicleImageWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    AND?: VehicleImageWhereInput | VehicleImageWhereInput[]
+    OR?: VehicleImageWhereInput[]
+    NOT?: VehicleImageWhereInput | VehicleImageWhereInput[]
+    vehicleId?: IntFilter<"VehicleImage"> | number
+    fileId?: IntFilter<"VehicleImage"> | number
+    createdAt?: DateTimeFilter<"VehicleImage"> | Date | string
+    vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
+    file?: XOR<FileObjectRelationFilter, FileObjectWhereInput>
+  }, "id" | "publicId">
+
+  export type VehicleImageOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    vehicleId?: SortOrder
+    fileId?: SortOrder
+    createdAt?: SortOrder
+    _count?: VehicleImageCountOrderByAggregateInput
+    _avg?: VehicleImageAvgOrderByAggregateInput
+    _max?: VehicleImageMaxOrderByAggregateInput
+    _min?: VehicleImageMinOrderByAggregateInput
+    _sum?: VehicleImageSumOrderByAggregateInput
+  }
+
+  export type VehicleImageScalarWhereWithAggregatesInput = {
+    AND?: VehicleImageScalarWhereWithAggregatesInput | VehicleImageScalarWhereWithAggregatesInput[]
+    OR?: VehicleImageScalarWhereWithAggregatesInput[]
+    NOT?: VehicleImageScalarWhereWithAggregatesInput | VehicleImageScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"VehicleImage"> | number
+    publicId?: StringWithAggregatesFilter<"VehicleImage"> | string
+    vehicleId?: IntWithAggregatesFilter<"VehicleImage"> | number
+    fileId?: IntWithAggregatesFilter<"VehicleImage"> | number
+    createdAt?: DateTimeWithAggregatesFilter<"VehicleImage"> | Date | string
   }
 
   export type RentalPlanWhereInput = {
@@ -33331,6 +34541,7 @@ export namespace Prisma {
     createdAt?: Date | string
     bookingPhotos?: BookingPhotoCreateNestedManyWithoutFileInput
     customerKycs?: CustomerKycCreateNestedManyWithoutFileInput
+    vehicleImages?: VehicleImageCreateNestedManyWithoutFileInput
   }
 
   export type FileObjectUncheckedCreateInput = {
@@ -33343,6 +34554,7 @@ export namespace Prisma {
     createdAt?: Date | string
     bookingPhotos?: BookingPhotoUncheckedCreateNestedManyWithoutFileInput
     customerKycs?: CustomerKycUncheckedCreateNestedManyWithoutFileInput
+    vehicleImages?: VehicleImageUncheckedCreateNestedManyWithoutFileInput
   }
 
   export type FileObjectUpdateInput = {
@@ -33354,6 +34566,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     bookingPhotos?: BookingPhotoUpdateManyWithoutFileNestedInput
     customerKycs?: CustomerKycUpdateManyWithoutFileNestedInput
+    vehicleImages?: VehicleImageUpdateManyWithoutFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateInput = {
@@ -33366,6 +34579,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     bookingPhotos?: BookingPhotoUncheckedUpdateManyWithoutFileNestedInput
     customerKycs?: CustomerKycUncheckedUpdateManyWithoutFileNestedInput
+    vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
   }
 
   export type FileObjectCreateManyInput = {
@@ -33707,6 +34921,7 @@ export namespace Prisma {
     bookings?: BookingCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateInput = {
@@ -33729,6 +34944,7 @@ export namespace Prisma {
     bookings?: BookingUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUpdateInput = {
@@ -33750,6 +34966,7 @@ export namespace Prisma {
     bookings?: BookingUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateInput = {
@@ -33772,6 +34989,7 @@ export namespace Prisma {
     bookings?: BookingUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleCreateManyInput = {
@@ -33990,6 +35208,57 @@ export namespace Prisma {
     description?: StringFieldUpdateOperationsInput | string
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     servicedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleImageCreateInput = {
+    publicId: string
+    createdAt?: Date | string
+    vehicle: VehicleCreateNestedOneWithoutImagesInput
+    file: FileObjectCreateNestedOneWithoutVehicleImagesInput
+  }
+
+  export type VehicleImageUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    vehicleId: number
+    fileId: number
+    createdAt?: Date | string
+  }
+
+  export type VehicleImageUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    vehicle?: VehicleUpdateOneRequiredWithoutImagesNestedInput
+    file?: FileObjectUpdateOneRequiredWithoutVehicleImagesNestedInput
+  }
+
+  export type VehicleImageUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    vehicleId?: IntFieldUpdateOperationsInput | number
+    fileId?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleImageCreateManyInput = {
+    id?: number
+    publicId: string
+    vehicleId: number
+    fileId: number
+    createdAt?: Date | string
+  }
+
+  export type VehicleImageUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleImageUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    vehicleId?: IntFieldUpdateOperationsInput | number
+    fileId?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type RentalPlanCreateInput = {
@@ -35469,7 +36738,17 @@ export namespace Prisma {
     none?: BookingPhotoWhereInput
   }
 
+  export type VehicleImageListRelationFilter = {
+    every?: VehicleImageWhereInput
+    some?: VehicleImageWhereInput
+    none?: VehicleImageWhereInput
+  }
+
   export type BookingPhotoOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type VehicleImageOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -36000,6 +37279,42 @@ export namespace Prisma {
     id?: SortOrder
     vehicleId?: SortOrder
     cost?: SortOrder
+  }
+
+  export type VehicleImageCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    vehicleId?: SortOrder
+    fileId?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type VehicleImageAvgOrderByAggregateInput = {
+    id?: SortOrder
+    vehicleId?: SortOrder
+    fileId?: SortOrder
+  }
+
+  export type VehicleImageMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    vehicleId?: SortOrder
+    fileId?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type VehicleImageMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    vehicleId?: SortOrder
+    fileId?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type VehicleImageSumOrderByAggregateInput = {
+    id?: SortOrder
+    vehicleId?: SortOrder
+    fileId?: SortOrder
   }
 
   export type RentalPlanCountOrderByAggregateInput = {
@@ -37273,6 +38588,13 @@ export namespace Prisma {
     connect?: CustomerKycWhereUniqueInput | CustomerKycWhereUniqueInput[]
   }
 
+  export type VehicleImageCreateNestedManyWithoutFileInput = {
+    create?: XOR<VehicleImageCreateWithoutFileInput, VehicleImageUncheckedCreateWithoutFileInput> | VehicleImageCreateWithoutFileInput[] | VehicleImageUncheckedCreateWithoutFileInput[]
+    connectOrCreate?: VehicleImageCreateOrConnectWithoutFileInput | VehicleImageCreateOrConnectWithoutFileInput[]
+    createMany?: VehicleImageCreateManyFileInputEnvelope
+    connect?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
+  }
+
   export type BookingPhotoUncheckedCreateNestedManyWithoutFileInput = {
     create?: XOR<BookingPhotoCreateWithoutFileInput, BookingPhotoUncheckedCreateWithoutFileInput> | BookingPhotoCreateWithoutFileInput[] | BookingPhotoUncheckedCreateWithoutFileInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutFileInput | BookingPhotoCreateOrConnectWithoutFileInput[]
@@ -37285,6 +38607,13 @@ export namespace Prisma {
     connectOrCreate?: CustomerKycCreateOrConnectWithoutFileInput | CustomerKycCreateOrConnectWithoutFileInput[]
     createMany?: CustomerKycCreateManyFileInputEnvelope
     connect?: CustomerKycWhereUniqueInput | CustomerKycWhereUniqueInput[]
+  }
+
+  export type VehicleImageUncheckedCreateNestedManyWithoutFileInput = {
+    create?: XOR<VehicleImageCreateWithoutFileInput, VehicleImageUncheckedCreateWithoutFileInput> | VehicleImageCreateWithoutFileInput[] | VehicleImageUncheckedCreateWithoutFileInput[]
+    connectOrCreate?: VehicleImageCreateOrConnectWithoutFileInput | VehicleImageCreateOrConnectWithoutFileInput[]
+    createMany?: VehicleImageCreateManyFileInputEnvelope
+    connect?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
   }
 
   export type BookingPhotoUpdateManyWithoutFileNestedInput = {
@@ -37315,6 +38644,20 @@ export namespace Prisma {
     deleteMany?: CustomerKycScalarWhereInput | CustomerKycScalarWhereInput[]
   }
 
+  export type VehicleImageUpdateManyWithoutFileNestedInput = {
+    create?: XOR<VehicleImageCreateWithoutFileInput, VehicleImageUncheckedCreateWithoutFileInput> | VehicleImageCreateWithoutFileInput[] | VehicleImageUncheckedCreateWithoutFileInput[]
+    connectOrCreate?: VehicleImageCreateOrConnectWithoutFileInput | VehicleImageCreateOrConnectWithoutFileInput[]
+    upsert?: VehicleImageUpsertWithWhereUniqueWithoutFileInput | VehicleImageUpsertWithWhereUniqueWithoutFileInput[]
+    createMany?: VehicleImageCreateManyFileInputEnvelope
+    set?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
+    disconnect?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
+    delete?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
+    connect?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
+    update?: VehicleImageUpdateWithWhereUniqueWithoutFileInput | VehicleImageUpdateWithWhereUniqueWithoutFileInput[]
+    updateMany?: VehicleImageUpdateManyWithWhereWithoutFileInput | VehicleImageUpdateManyWithWhereWithoutFileInput[]
+    deleteMany?: VehicleImageScalarWhereInput | VehicleImageScalarWhereInput[]
+  }
+
   export type BookingPhotoUncheckedUpdateManyWithoutFileNestedInput = {
     create?: XOR<BookingPhotoCreateWithoutFileInput, BookingPhotoUncheckedCreateWithoutFileInput> | BookingPhotoCreateWithoutFileInput[] | BookingPhotoUncheckedCreateWithoutFileInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutFileInput | BookingPhotoCreateOrConnectWithoutFileInput[]
@@ -37341,6 +38684,20 @@ export namespace Prisma {
     update?: CustomerKycUpdateWithWhereUniqueWithoutFileInput | CustomerKycUpdateWithWhereUniqueWithoutFileInput[]
     updateMany?: CustomerKycUpdateManyWithWhereWithoutFileInput | CustomerKycUpdateManyWithWhereWithoutFileInput[]
     deleteMany?: CustomerKycScalarWhereInput | CustomerKycScalarWhereInput[]
+  }
+
+  export type VehicleImageUncheckedUpdateManyWithoutFileNestedInput = {
+    create?: XOR<VehicleImageCreateWithoutFileInput, VehicleImageUncheckedCreateWithoutFileInput> | VehicleImageCreateWithoutFileInput[] | VehicleImageUncheckedCreateWithoutFileInput[]
+    connectOrCreate?: VehicleImageCreateOrConnectWithoutFileInput | VehicleImageCreateOrConnectWithoutFileInput[]
+    upsert?: VehicleImageUpsertWithWhereUniqueWithoutFileInput | VehicleImageUpsertWithWhereUniqueWithoutFileInput[]
+    createMany?: VehicleImageCreateManyFileInputEnvelope
+    set?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
+    disconnect?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
+    delete?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
+    connect?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
+    update?: VehicleImageUpdateWithWhereUniqueWithoutFileInput | VehicleImageUpdateWithWhereUniqueWithoutFileInput[]
+    updateMany?: VehicleImageUpdateManyWithWhereWithoutFileInput | VehicleImageUpdateManyWithWhereWithoutFileInput[]
+    deleteMany?: VehicleImageScalarWhereInput | VehicleImageScalarWhereInput[]
   }
 
   export type UserCreateNestedManyWithoutBranchInput = {
@@ -37653,6 +39010,13 @@ export namespace Prisma {
     connect?: VehiclePricingOverrideWhereUniqueInput
   }
 
+  export type VehicleImageCreateNestedManyWithoutVehicleInput = {
+    create?: XOR<VehicleImageCreateWithoutVehicleInput, VehicleImageUncheckedCreateWithoutVehicleInput> | VehicleImageCreateWithoutVehicleInput[] | VehicleImageUncheckedCreateWithoutVehicleInput[]
+    connectOrCreate?: VehicleImageCreateOrConnectWithoutVehicleInput | VehicleImageCreateOrConnectWithoutVehicleInput[]
+    createMany?: VehicleImageCreateManyVehicleInputEnvelope
+    connect?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
+  }
+
   export type VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput = {
     create?: XOR<VehicleInsuranceCreateWithoutVehicleInput, VehicleInsuranceUncheckedCreateWithoutVehicleInput> | VehicleInsuranceCreateWithoutVehicleInput[] | VehicleInsuranceUncheckedCreateWithoutVehicleInput[]
     connectOrCreate?: VehicleInsuranceCreateOrConnectWithoutVehicleInput | VehicleInsuranceCreateOrConnectWithoutVehicleInput[]
@@ -37685,6 +39049,13 @@ export namespace Prisma {
     create?: XOR<VehiclePricingOverrideCreateWithoutVehicleInput, VehiclePricingOverrideUncheckedCreateWithoutVehicleInput>
     connectOrCreate?: VehiclePricingOverrideCreateOrConnectWithoutVehicleInput
     connect?: VehiclePricingOverrideWhereUniqueInput
+  }
+
+  export type VehicleImageUncheckedCreateNestedManyWithoutVehicleInput = {
+    create?: XOR<VehicleImageCreateWithoutVehicleInput, VehicleImageUncheckedCreateWithoutVehicleInput> | VehicleImageCreateWithoutVehicleInput[] | VehicleImageUncheckedCreateWithoutVehicleInput[]
+    connectOrCreate?: VehicleImageCreateOrConnectWithoutVehicleInput | VehicleImageCreateOrConnectWithoutVehicleInput[]
+    createMany?: VehicleImageCreateManyVehicleInputEnvelope
+    connect?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
   }
 
   export type EnumVehicleStatusFieldUpdateOperationsInput = {
@@ -37773,6 +39144,20 @@ export namespace Prisma {
     update?: XOR<XOR<VehiclePricingOverrideUpdateToOneWithWhereWithoutVehicleInput, VehiclePricingOverrideUpdateWithoutVehicleInput>, VehiclePricingOverrideUncheckedUpdateWithoutVehicleInput>
   }
 
+  export type VehicleImageUpdateManyWithoutVehicleNestedInput = {
+    create?: XOR<VehicleImageCreateWithoutVehicleInput, VehicleImageUncheckedCreateWithoutVehicleInput> | VehicleImageCreateWithoutVehicleInput[] | VehicleImageUncheckedCreateWithoutVehicleInput[]
+    connectOrCreate?: VehicleImageCreateOrConnectWithoutVehicleInput | VehicleImageCreateOrConnectWithoutVehicleInput[]
+    upsert?: VehicleImageUpsertWithWhereUniqueWithoutVehicleInput | VehicleImageUpsertWithWhereUniqueWithoutVehicleInput[]
+    createMany?: VehicleImageCreateManyVehicleInputEnvelope
+    set?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
+    disconnect?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
+    delete?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
+    connect?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
+    update?: VehicleImageUpdateWithWhereUniqueWithoutVehicleInput | VehicleImageUpdateWithWhereUniqueWithoutVehicleInput[]
+    updateMany?: VehicleImageUpdateManyWithWhereWithoutVehicleInput | VehicleImageUpdateManyWithWhereWithoutVehicleInput[]
+    deleteMany?: VehicleImageScalarWhereInput | VehicleImageScalarWhereInput[]
+  }
+
   export type VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput = {
     create?: XOR<VehicleInsuranceCreateWithoutVehicleInput, VehicleInsuranceUncheckedCreateWithoutVehicleInput> | VehicleInsuranceCreateWithoutVehicleInput[] | VehicleInsuranceUncheckedCreateWithoutVehicleInput[]
     connectOrCreate?: VehicleInsuranceCreateOrConnectWithoutVehicleInput | VehicleInsuranceCreateOrConnectWithoutVehicleInput[]
@@ -37839,6 +39224,20 @@ export namespace Prisma {
     update?: XOR<XOR<VehiclePricingOverrideUpdateToOneWithWhereWithoutVehicleInput, VehiclePricingOverrideUpdateWithoutVehicleInput>, VehiclePricingOverrideUncheckedUpdateWithoutVehicleInput>
   }
 
+  export type VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput = {
+    create?: XOR<VehicleImageCreateWithoutVehicleInput, VehicleImageUncheckedCreateWithoutVehicleInput> | VehicleImageCreateWithoutVehicleInput[] | VehicleImageUncheckedCreateWithoutVehicleInput[]
+    connectOrCreate?: VehicleImageCreateOrConnectWithoutVehicleInput | VehicleImageCreateOrConnectWithoutVehicleInput[]
+    upsert?: VehicleImageUpsertWithWhereUniqueWithoutVehicleInput | VehicleImageUpsertWithWhereUniqueWithoutVehicleInput[]
+    createMany?: VehicleImageCreateManyVehicleInputEnvelope
+    set?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
+    disconnect?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
+    delete?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
+    connect?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
+    update?: VehicleImageUpdateWithWhereUniqueWithoutVehicleInput | VehicleImageUpdateWithWhereUniqueWithoutVehicleInput[]
+    updateMany?: VehicleImageUpdateManyWithWhereWithoutVehicleInput | VehicleImageUpdateManyWithWhereWithoutVehicleInput[]
+    deleteMany?: VehicleImageScalarWhereInput | VehicleImageScalarWhereInput[]
+  }
+
   export type VehicleCreateNestedOneWithoutPricingOverrideInput = {
     create?: XOR<VehicleCreateWithoutPricingOverrideInput, VehicleUncheckedCreateWithoutPricingOverrideInput>
     connectOrCreate?: VehicleCreateOrConnectWithoutPricingOverrideInput
@@ -37887,6 +39286,34 @@ export namespace Prisma {
     upsert?: VehicleUpsertWithoutMaintenanceInput
     connect?: VehicleWhereUniqueInput
     update?: XOR<XOR<VehicleUpdateToOneWithWhereWithoutMaintenanceInput, VehicleUpdateWithoutMaintenanceInput>, VehicleUncheckedUpdateWithoutMaintenanceInput>
+  }
+
+  export type VehicleCreateNestedOneWithoutImagesInput = {
+    create?: XOR<VehicleCreateWithoutImagesInput, VehicleUncheckedCreateWithoutImagesInput>
+    connectOrCreate?: VehicleCreateOrConnectWithoutImagesInput
+    connect?: VehicleWhereUniqueInput
+  }
+
+  export type FileObjectCreateNestedOneWithoutVehicleImagesInput = {
+    create?: XOR<FileObjectCreateWithoutVehicleImagesInput, FileObjectUncheckedCreateWithoutVehicleImagesInput>
+    connectOrCreate?: FileObjectCreateOrConnectWithoutVehicleImagesInput
+    connect?: FileObjectWhereUniqueInput
+  }
+
+  export type VehicleUpdateOneRequiredWithoutImagesNestedInput = {
+    create?: XOR<VehicleCreateWithoutImagesInput, VehicleUncheckedCreateWithoutImagesInput>
+    connectOrCreate?: VehicleCreateOrConnectWithoutImagesInput
+    upsert?: VehicleUpsertWithoutImagesInput
+    connect?: VehicleWhereUniqueInput
+    update?: XOR<XOR<VehicleUpdateToOneWithWhereWithoutImagesInput, VehicleUpdateWithoutImagesInput>, VehicleUncheckedUpdateWithoutImagesInput>
+  }
+
+  export type FileObjectUpdateOneRequiredWithoutVehicleImagesNestedInput = {
+    create?: XOR<FileObjectCreateWithoutVehicleImagesInput, FileObjectUncheckedCreateWithoutVehicleImagesInput>
+    connectOrCreate?: FileObjectCreateOrConnectWithoutVehicleImagesInput
+    upsert?: FileObjectUpsertWithoutVehicleImagesInput
+    connect?: FileObjectWhereUniqueInput
+    update?: XOR<XOR<FileObjectUpdateToOneWithWhereWithoutVehicleImagesInput, FileObjectUpdateWithoutVehicleImagesInput>, FileObjectUncheckedUpdateWithoutVehicleImagesInput>
   }
 
   export type BookingCreateNestedManyWithoutRentalPlanInput = {
@@ -39798,6 +41225,7 @@ export namespace Prisma {
     size: number
     createdAt?: Date | string
     bookingPhotos?: BookingPhotoCreateNestedManyWithoutFileInput
+    vehicleImages?: VehicleImageCreateNestedManyWithoutFileInput
   }
 
   export type FileObjectUncheckedCreateWithoutCustomerKycsInput = {
@@ -39809,6 +41237,7 @@ export namespace Prisma {
     size: number
     createdAt?: Date | string
     bookingPhotos?: BookingPhotoUncheckedCreateNestedManyWithoutFileInput
+    vehicleImages?: VehicleImageUncheckedCreateNestedManyWithoutFileInput
   }
 
   export type FileObjectCreateOrConnectWithoutCustomerKycsInput = {
@@ -39865,6 +41294,7 @@ export namespace Prisma {
     size?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     bookingPhotos?: BookingPhotoUpdateManyWithoutFileNestedInput
+    vehicleImages?: VehicleImageUpdateManyWithoutFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateWithoutCustomerKycsInput = {
@@ -39876,6 +41306,7 @@ export namespace Prisma {
     size?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     bookingPhotos?: BookingPhotoUncheckedUpdateManyWithoutFileNestedInput
+    vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
   }
 
   export type BookingPhotoCreateWithoutFileInput = {
@@ -39930,6 +41361,29 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type VehicleImageCreateWithoutFileInput = {
+    publicId: string
+    createdAt?: Date | string
+    vehicle: VehicleCreateNestedOneWithoutImagesInput
+  }
+
+  export type VehicleImageUncheckedCreateWithoutFileInput = {
+    id?: number
+    publicId: string
+    vehicleId: number
+    createdAt?: Date | string
+  }
+
+  export type VehicleImageCreateOrConnectWithoutFileInput = {
+    where: VehicleImageWhereUniqueInput
+    create: XOR<VehicleImageCreateWithoutFileInput, VehicleImageUncheckedCreateWithoutFileInput>
+  }
+
+  export type VehicleImageCreateManyFileInputEnvelope = {
+    data: VehicleImageCreateManyFileInput | VehicleImageCreateManyFileInput[]
+    skipDuplicates?: boolean
+  }
+
   export type BookingPhotoUpsertWithWhereUniqueWithoutFileInput = {
     where: BookingPhotoWhereUniqueInput
     update: XOR<BookingPhotoUpdateWithoutFileInput, BookingPhotoUncheckedUpdateWithoutFileInput>
@@ -39972,6 +41426,33 @@ export namespace Prisma {
   export type CustomerKycUpdateManyWithWhereWithoutFileInput = {
     where: CustomerKycScalarWhereInput
     data: XOR<CustomerKycUpdateManyMutationInput, CustomerKycUncheckedUpdateManyWithoutFileInput>
+  }
+
+  export type VehicleImageUpsertWithWhereUniqueWithoutFileInput = {
+    where: VehicleImageWhereUniqueInput
+    update: XOR<VehicleImageUpdateWithoutFileInput, VehicleImageUncheckedUpdateWithoutFileInput>
+    create: XOR<VehicleImageCreateWithoutFileInput, VehicleImageUncheckedCreateWithoutFileInput>
+  }
+
+  export type VehicleImageUpdateWithWhereUniqueWithoutFileInput = {
+    where: VehicleImageWhereUniqueInput
+    data: XOR<VehicleImageUpdateWithoutFileInput, VehicleImageUncheckedUpdateWithoutFileInput>
+  }
+
+  export type VehicleImageUpdateManyWithWhereWithoutFileInput = {
+    where: VehicleImageScalarWhereInput
+    data: XOR<VehicleImageUpdateManyMutationInput, VehicleImageUncheckedUpdateManyWithoutFileInput>
+  }
+
+  export type VehicleImageScalarWhereInput = {
+    AND?: VehicleImageScalarWhereInput | VehicleImageScalarWhereInput[]
+    OR?: VehicleImageScalarWhereInput[]
+    NOT?: VehicleImageScalarWhereInput | VehicleImageScalarWhereInput[]
+    id?: IntFilter<"VehicleImage"> | number
+    publicId?: StringFilter<"VehicleImage"> | string
+    vehicleId?: IntFilter<"VehicleImage"> | number
+    fileId?: IntFilter<"VehicleImage"> | number
+    createdAt?: DateTimeFilter<"VehicleImage"> | Date | string
   }
 
   export type UserCreateWithoutBranchInput = {
@@ -40041,6 +41522,7 @@ export namespace Prisma {
     bookings?: BookingCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutBranchInput = {
@@ -40062,6 +41544,7 @@ export namespace Prisma {
     bookings?: BookingUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutBranchInput = {
@@ -40361,6 +41844,7 @@ export namespace Prisma {
     bookings?: BookingCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutCategoryInput = {
@@ -40382,6 +41866,7 @@ export namespace Prisma {
     bookings?: BookingUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutCategoryInput = {
@@ -40667,6 +42152,29 @@ export namespace Prisma {
     create: XOR<VehiclePricingOverrideCreateWithoutVehicleInput, VehiclePricingOverrideUncheckedCreateWithoutVehicleInput>
   }
 
+  export type VehicleImageCreateWithoutVehicleInput = {
+    publicId: string
+    createdAt?: Date | string
+    file: FileObjectCreateNestedOneWithoutVehicleImagesInput
+  }
+
+  export type VehicleImageUncheckedCreateWithoutVehicleInput = {
+    id?: number
+    publicId: string
+    fileId: number
+    createdAt?: Date | string
+  }
+
+  export type VehicleImageCreateOrConnectWithoutVehicleInput = {
+    where: VehicleImageWhereUniqueInput
+    create: XOR<VehicleImageCreateWithoutVehicleInput, VehicleImageUncheckedCreateWithoutVehicleInput>
+  }
+
+  export type VehicleImageCreateManyVehicleInputEnvelope = {
+    data: VehicleImageCreateManyVehicleInput | VehicleImageCreateManyVehicleInput[]
+    skipDuplicates?: boolean
+  }
+
   export type BranchUpsertWithoutVehiclesInput = {
     update: XOR<BranchUpdateWithoutVehiclesInput, BranchUncheckedUpdateWithoutVehiclesInput>
     create: XOR<BranchCreateWithoutVehiclesInput, BranchUncheckedCreateWithoutVehiclesInput>
@@ -40841,6 +42349,22 @@ export namespace Prisma {
     enabled?: BoolFieldUpdateOperationsInput | boolean
   }
 
+  export type VehicleImageUpsertWithWhereUniqueWithoutVehicleInput = {
+    where: VehicleImageWhereUniqueInput
+    update: XOR<VehicleImageUpdateWithoutVehicleInput, VehicleImageUncheckedUpdateWithoutVehicleInput>
+    create: XOR<VehicleImageCreateWithoutVehicleInput, VehicleImageUncheckedCreateWithoutVehicleInput>
+  }
+
+  export type VehicleImageUpdateWithWhereUniqueWithoutVehicleInput = {
+    where: VehicleImageWhereUniqueInput
+    data: XOR<VehicleImageUpdateWithoutVehicleInput, VehicleImageUncheckedUpdateWithoutVehicleInput>
+  }
+
+  export type VehicleImageUpdateManyWithWhereWithoutVehicleInput = {
+    where: VehicleImageScalarWhereInput
+    data: XOR<VehicleImageUpdateManyMutationInput, VehicleImageUncheckedUpdateManyWithoutVehicleInput>
+  }
+
   export type VehicleCreateWithoutPricingOverrideInput = {
     publicId: string
     make: string
@@ -40859,6 +42383,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
     bookings?: BookingCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
+    images?: VehicleImageCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutPricingOverrideInput = {
@@ -40880,6 +42405,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
     bookings?: BookingUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
+    images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutPricingOverrideInput = {
@@ -40916,6 +42442,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
     bookings?: BookingUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
+    images?: VehicleImageUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutPricingOverrideInput = {
@@ -40937,6 +42464,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
     bookings?: BookingUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
+    images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleCreateWithoutInsuranceRecordsInput = {
@@ -40957,6 +42485,7 @@ export namespace Prisma {
     bookings?: BookingCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutInsuranceRecordsInput = {
@@ -40978,6 +42507,7 @@ export namespace Prisma {
     bookings?: BookingUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutInsuranceRecordsInput = {
@@ -41014,6 +42544,7 @@ export namespace Prisma {
     bookings?: BookingUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutInsuranceRecordsInput = {
@@ -41035,6 +42566,7 @@ export namespace Prisma {
     bookings?: BookingUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleCreateWithoutMaintenanceInput = {
@@ -41055,6 +42587,7 @@ export namespace Prisma {
     bookings?: BookingCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutMaintenanceInput = {
@@ -41076,6 +42609,7 @@ export namespace Prisma {
     bookings?: BookingUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutMaintenanceInput = {
@@ -41112,6 +42646,7 @@ export namespace Prisma {
     bookings?: BookingUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutMaintenanceInput = {
@@ -41133,6 +42668,171 @@ export namespace Prisma {
     bookings?: BookingUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
+  }
+
+  export type VehicleCreateWithoutImagesInput = {
+    publicId: string
+    make: string
+    model: string
+    regNo: string
+    odo: number
+    insuranceExpiry: Date | string
+    status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch: BranchCreateNestedOneWithoutVehiclesInput
+    category: VehicleCategoryCreateNestedOneWithoutVehiclesInput
+    insuranceRecords?: VehicleInsuranceCreateNestedManyWithoutVehicleInput
+    maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
+    bookings?: BookingCreateNestedManyWithoutVehicleInput
+    damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
+  }
+
+  export type VehicleUncheckedCreateWithoutImagesInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    categoryId: number
+    make: string
+    model: string
+    regNo: string
+    odo: number
+    insuranceExpiry: Date | string
+    status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    insuranceRecords?: VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput
+    maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutVehicleInput
+    damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
+  }
+
+  export type VehicleCreateOrConnectWithoutImagesInput = {
+    where: VehicleWhereUniqueInput
+    create: XOR<VehicleCreateWithoutImagesInput, VehicleUncheckedCreateWithoutImagesInput>
+  }
+
+  export type FileObjectCreateWithoutVehicleImagesInput = {
+    publicId: string
+    key: string
+    url: string
+    mime: string
+    size: number
+    createdAt?: Date | string
+    bookingPhotos?: BookingPhotoCreateNestedManyWithoutFileInput
+    customerKycs?: CustomerKycCreateNestedManyWithoutFileInput
+  }
+
+  export type FileObjectUncheckedCreateWithoutVehicleImagesInput = {
+    id?: number
+    publicId: string
+    key: string
+    url: string
+    mime: string
+    size: number
+    createdAt?: Date | string
+    bookingPhotos?: BookingPhotoUncheckedCreateNestedManyWithoutFileInput
+    customerKycs?: CustomerKycUncheckedCreateNestedManyWithoutFileInput
+  }
+
+  export type FileObjectCreateOrConnectWithoutVehicleImagesInput = {
+    where: FileObjectWhereUniqueInput
+    create: XOR<FileObjectCreateWithoutVehicleImagesInput, FileObjectUncheckedCreateWithoutVehicleImagesInput>
+  }
+
+  export type VehicleUpsertWithoutImagesInput = {
+    update: XOR<VehicleUpdateWithoutImagesInput, VehicleUncheckedUpdateWithoutImagesInput>
+    create: XOR<VehicleCreateWithoutImagesInput, VehicleUncheckedCreateWithoutImagesInput>
+    where?: VehicleWhereInput
+  }
+
+  export type VehicleUpdateToOneWithWhereWithoutImagesInput = {
+    where?: VehicleWhereInput
+    data: XOR<VehicleUpdateWithoutImagesInput, VehicleUncheckedUpdateWithoutImagesInput>
+  }
+
+  export type VehicleUpdateWithoutImagesInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    make?: StringFieldUpdateOperationsInput | string
+    model?: StringFieldUpdateOperationsInput | string
+    regNo?: StringFieldUpdateOperationsInput | string
+    odo?: IntFieldUpdateOperationsInput | number
+    insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneRequiredWithoutVehiclesNestedInput
+    category?: VehicleCategoryUpdateOneRequiredWithoutVehiclesNestedInput
+    insuranceRecords?: VehicleInsuranceUpdateManyWithoutVehicleNestedInput
+    maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
+    bookings?: BookingUpdateManyWithoutVehicleNestedInput
+    damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
+  }
+
+  export type VehicleUncheckedUpdateWithoutImagesInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    categoryId?: IntFieldUpdateOperationsInput | number
+    make?: StringFieldUpdateOperationsInput | string
+    model?: StringFieldUpdateOperationsInput | string
+    regNo?: StringFieldUpdateOperationsInput | string
+    odo?: IntFieldUpdateOperationsInput | number
+    insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    insuranceRecords?: VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput
+    maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutVehicleNestedInput
+    damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
+  }
+
+  export type FileObjectUpsertWithoutVehicleImagesInput = {
+    update: XOR<FileObjectUpdateWithoutVehicleImagesInput, FileObjectUncheckedUpdateWithoutVehicleImagesInput>
+    create: XOR<FileObjectCreateWithoutVehicleImagesInput, FileObjectUncheckedCreateWithoutVehicleImagesInput>
+    where?: FileObjectWhereInput
+  }
+
+  export type FileObjectUpdateToOneWithWhereWithoutVehicleImagesInput = {
+    where?: FileObjectWhereInput
+    data: XOR<FileObjectUpdateWithoutVehicleImagesInput, FileObjectUncheckedUpdateWithoutVehicleImagesInput>
+  }
+
+  export type FileObjectUpdateWithoutVehicleImagesInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    url?: StringFieldUpdateOperationsInput | string
+    mime?: StringFieldUpdateOperationsInput | string
+    size?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    bookingPhotos?: BookingPhotoUpdateManyWithoutFileNestedInput
+    customerKycs?: CustomerKycUpdateManyWithoutFileNestedInput
+  }
+
+  export type FileObjectUncheckedUpdateWithoutVehicleImagesInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    url?: StringFieldUpdateOperationsInput | string
+    mime?: StringFieldUpdateOperationsInput | string
+    size?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    bookingPhotos?: BookingPhotoUncheckedUpdateManyWithoutFileNestedInput
+    customerKycs?: CustomerKycUncheckedUpdateManyWithoutFileNestedInput
   }
 
   export type BookingCreateWithoutRentalPlanInput = {
@@ -41294,6 +42994,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutBookingsInput = {
@@ -41315,6 +43016,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutBookingsInput = {
@@ -41589,6 +43291,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutBookingsInput = {
@@ -41610,6 +43313,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type BranchUpsertWithoutBookingsInput = {
@@ -41884,6 +43588,7 @@ export namespace Prisma {
     size: number
     createdAt?: Date | string
     customerKycs?: CustomerKycCreateNestedManyWithoutFileInput
+    vehicleImages?: VehicleImageCreateNestedManyWithoutFileInput
   }
 
   export type FileObjectUncheckedCreateWithoutBookingPhotosInput = {
@@ -41895,6 +43600,7 @@ export namespace Prisma {
     size: number
     createdAt?: Date | string
     customerKycs?: CustomerKycUncheckedCreateNestedManyWithoutFileInput
+    vehicleImages?: VehicleImageUncheckedCreateNestedManyWithoutFileInput
   }
 
   export type FileObjectCreateOrConnectWithoutBookingPhotosInput = {
@@ -41977,6 +43683,7 @@ export namespace Prisma {
     size?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customerKycs?: CustomerKycUpdateManyWithoutFileNestedInput
+    vehicleImages?: VehicleImageUpdateManyWithoutFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateWithoutBookingPhotosInput = {
@@ -41988,6 +43695,7 @@ export namespace Prisma {
     size?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customerKycs?: CustomerKycUncheckedUpdateManyWithoutFileNestedInput
+    vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
   }
 
   export type BookingCreateWithoutDamagesInput = {
@@ -42058,6 +43766,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
     bookings?: BookingCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutDamageReportsInput = {
@@ -42079,6 +43788,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
     bookings?: BookingUncheckedCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutDamageReportsInput = {
@@ -42215,6 +43925,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
     bookings?: BookingUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutDamageReportsInput = {
@@ -42236,6 +43947,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
     bookings?: BookingUncheckedUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type UserUpsertWithoutApprovedDamageReportsInput = {
@@ -43228,6 +44940,13 @@ export namespace Prisma {
     createdAt?: Date | string
   }
 
+  export type VehicleImageCreateManyFileInput = {
+    id?: number
+    publicId: string
+    vehicleId: number
+    createdAt?: Date | string
+  }
+
   export type BookingPhotoUpdateWithoutFileInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
@@ -43274,6 +44993,26 @@ export namespace Prisma {
     customerId?: IntFieldUpdateOperationsInput | number
     type?: EnumKycTypeFieldUpdateOperationsInput | $Enums.KycType
     status?: EnumKycStatusFieldUpdateOperationsInput | $Enums.KycStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleImageUpdateWithoutFileInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    vehicle?: VehicleUpdateOneRequiredWithoutImagesNestedInput
+  }
+
+  export type VehicleImageUncheckedUpdateWithoutFileInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    vehicleId?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleImageUncheckedUpdateManyWithoutFileInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    vehicleId?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -43397,6 +45136,7 @@ export namespace Prisma {
     bookings?: BookingUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutBranchInput = {
@@ -43418,6 +45158,7 @@ export namespace Prisma {
     bookings?: BookingUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateManyWithoutBranchInput = {
@@ -43542,6 +45283,7 @@ export namespace Prisma {
     bookings?: BookingUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutCategoryInput = {
@@ -43563,6 +45305,7 @@ export namespace Prisma {
     bookings?: BookingUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateManyWithoutCategoryInput = {
@@ -43647,6 +45390,13 @@ export namespace Prisma {
     estimatedCost: Decimal | DecimalJsLike | number | string
     notes?: string | null
     approvedById?: number | null
+    createdAt?: Date | string
+  }
+
+  export type VehicleImageCreateManyVehicleInput = {
+    id?: number
+    publicId: string
+    fileId: number
     createdAt?: Date | string
   }
 
@@ -43789,6 +45539,26 @@ export namespace Prisma {
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleImageUpdateWithoutVehicleInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    file?: FileObjectUpdateOneRequiredWithoutVehicleImagesNestedInput
+  }
+
+  export type VehicleImageUncheckedUpdateWithoutVehicleInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    fileId?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleImageUncheckedUpdateManyWithoutVehicleInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    fileId?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -44116,6 +45886,10 @@ export namespace Prisma {
      * @deprecated Use VehicleMaintenanceRecordDefaultArgs instead
      */
     export type VehicleMaintenanceRecordArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = VehicleMaintenanceRecordDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use VehicleImageDefaultArgs instead
+     */
+    export type VehicleImageArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = VehicleImageDefaultArgs<ExtArgs>
     /**
      * @deprecated Use RentalPlanDefaultArgs instead
      */
