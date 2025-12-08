@@ -1,11 +1,11 @@
 import { prisma } from "@repo/database/client";
-import { StatusCode } from "../types/statusCode"
+import { StatusCode } from "../../types/statusCode"
 import { Request, Response } from "express"
-import { rateLimit } from "../utils/rateLimiter";
-import { comparehash, hashpassword } from "../utils/PasswordCrypt/password";
-import { sendOTPEmail } from "../services/email/emailservice";
+import { rateLimit } from "../../utils/rateLimiter";
+import { comparehash, hashpassword } from "../../utils/PasswordCrypt/password";
+import { sendOTPEmail } from "../../services/email/emailservice";
 import { otpSchema } from "@repo/schemas";
-import { jwtsign } from "../utils/token/tokensign.utlis";
+import { jwtsign } from "../../utils/token/tokensign.utlis";
 export const generateemailotp = async (req: Request, res: Response) => {
     try {
         const publicId = req.cookies.verifySession;

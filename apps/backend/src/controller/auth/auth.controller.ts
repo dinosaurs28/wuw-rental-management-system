@@ -1,10 +1,10 @@
 import { Request,Response } from "express"
 import { emailAuthSchema, emailAuthSchemaSignin } from "@repo/schemas"
-import { StatusCode } from "../types/statusCode.js"
-import { comparehash, hashpassword } from "../utils/PasswordCrypt/password.js"
-import { createID } from "../utils/nanoID.js"
+import { StatusCode } from "../../types/statusCode.js"
+import { comparehash, hashpassword } from "../../utils/PasswordCrypt/password.js"
+import { createID } from "../../utils/nanoID.js"
 import { AuthProvider, prisma,Role } from "@repo/database/client"
-import { jwtsign } from "../utils/token/tokensign.utlis.js"
+import { jwtsign } from "../../utils/token/tokensign.utlis.js"
 
 export const emailAuthController=async (req:Request,res:Response)=>{
         try{

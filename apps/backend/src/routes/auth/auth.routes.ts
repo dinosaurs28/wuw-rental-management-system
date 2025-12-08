@@ -1,8 +1,9 @@
     import {Router} from "express"
-    import { emailAuthController, emailAuthControllerSignin } from "../../controller/auth.controller.js"
-    import { emailverify, generateemailotp } from "../../controller/email-verify.controller.js"
+    import { emailAuthController, emailAuthControllerSignin } from "../../controller/auth/auth.controller.js"
+    import { emailverify, generateemailotp } from "../../controller/auth/email-verify.controller.js"
     import passport from "../../utils/passport/google"
-    import { googleSignIn } from "../../controller/google.controller.js"
+    import { googleSignIn } from "../../controller/auth/google.controller.js"
+   
 
     const router:Router=Router()
 

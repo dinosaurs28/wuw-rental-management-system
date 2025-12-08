@@ -99,6 +99,16 @@ export type RentalPlan = $Result.DefaultSelection<Prisma.$RentalPlanPayload>
  */
 export type PricingRule = $Result.DefaultSelection<Prisma.$PricingRulePayload>
 /**
+ * Model PricingDiscountSlab
+ * 
+ */
+export type PricingDiscountSlab = $Result.DefaultSelection<Prisma.$PricingDiscountSlabPayload>
+/**
+ * Model CategoryDepositSetting
+ * 
+ */
+export type CategoryDepositSetting = $Result.DefaultSelection<Prisma.$CategoryDepositSettingPayload>
+/**
  * Model Booking
  * 
  */
@@ -596,6 +606,26 @@ export class PrismaClient<
     * ```
     */
   get pricingRule(): Prisma.PricingRuleDelegate<ExtArgs>;
+
+  /**
+   * `prisma.pricingDiscountSlab`: Exposes CRUD operations for the **PricingDiscountSlab** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more PricingDiscountSlabs
+    * const pricingDiscountSlabs = await prisma.pricingDiscountSlab.findMany()
+    * ```
+    */
+  get pricingDiscountSlab(): Prisma.PricingDiscountSlabDelegate<ExtArgs>;
+
+  /**
+   * `prisma.categoryDepositSetting`: Exposes CRUD operations for the **CategoryDepositSetting** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more CategoryDepositSettings
+    * const categoryDepositSettings = await prisma.categoryDepositSetting.findMany()
+    * ```
+    */
+  get categoryDepositSetting(): Prisma.CategoryDepositSettingDelegate<ExtArgs>;
 
   /**
    * `prisma.booking`: Exposes CRUD operations for the **Booking** model.
@@ -1154,6 +1184,8 @@ export namespace Prisma {
     VehicleImage: 'VehicleImage',
     RentalPlan: 'RentalPlan',
     PricingRule: 'PricingRule',
+    PricingDiscountSlab: 'PricingDiscountSlab',
+    CategoryDepositSetting: 'CategoryDepositSetting',
     Booking: 'Booking',
     BookingPhoto: 'BookingPhoto',
     DamageReport: 'DamageReport',
@@ -1179,7 +1211,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehicle" | "vehiclePricingOverride" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "rentalPlan" | "pricingRule" | "booking" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting"
+      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehicle" | "vehiclePricingOverride" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "rentalPlan" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -2373,6 +2405,146 @@ export namespace Prisma {
           }
         }
       }
+      PricingDiscountSlab: {
+        payload: Prisma.$PricingDiscountSlabPayload<ExtArgs>
+        fields: Prisma.PricingDiscountSlabFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.PricingDiscountSlabFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PricingDiscountSlabPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.PricingDiscountSlabFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PricingDiscountSlabPayload>
+          }
+          findFirst: {
+            args: Prisma.PricingDiscountSlabFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PricingDiscountSlabPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.PricingDiscountSlabFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PricingDiscountSlabPayload>
+          }
+          findMany: {
+            args: Prisma.PricingDiscountSlabFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PricingDiscountSlabPayload>[]
+          }
+          create: {
+            args: Prisma.PricingDiscountSlabCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PricingDiscountSlabPayload>
+          }
+          createMany: {
+            args: Prisma.PricingDiscountSlabCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.PricingDiscountSlabCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PricingDiscountSlabPayload>[]
+          }
+          delete: {
+            args: Prisma.PricingDiscountSlabDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PricingDiscountSlabPayload>
+          }
+          update: {
+            args: Prisma.PricingDiscountSlabUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PricingDiscountSlabPayload>
+          }
+          deleteMany: {
+            args: Prisma.PricingDiscountSlabDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.PricingDiscountSlabUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.PricingDiscountSlabUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PricingDiscountSlabPayload>
+          }
+          aggregate: {
+            args: Prisma.PricingDiscountSlabAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregatePricingDiscountSlab>
+          }
+          groupBy: {
+            args: Prisma.PricingDiscountSlabGroupByArgs<ExtArgs>
+            result: $Utils.Optional<PricingDiscountSlabGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.PricingDiscountSlabCountArgs<ExtArgs>
+            result: $Utils.Optional<PricingDiscountSlabCountAggregateOutputType> | number
+          }
+        }
+      }
+      CategoryDepositSetting: {
+        payload: Prisma.$CategoryDepositSettingPayload<ExtArgs>
+        fields: Prisma.CategoryDepositSettingFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.CategoryDepositSettingFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CategoryDepositSettingPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.CategoryDepositSettingFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CategoryDepositSettingPayload>
+          }
+          findFirst: {
+            args: Prisma.CategoryDepositSettingFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CategoryDepositSettingPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.CategoryDepositSettingFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CategoryDepositSettingPayload>
+          }
+          findMany: {
+            args: Prisma.CategoryDepositSettingFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CategoryDepositSettingPayload>[]
+          }
+          create: {
+            args: Prisma.CategoryDepositSettingCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CategoryDepositSettingPayload>
+          }
+          createMany: {
+            args: Prisma.CategoryDepositSettingCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.CategoryDepositSettingCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CategoryDepositSettingPayload>[]
+          }
+          delete: {
+            args: Prisma.CategoryDepositSettingDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CategoryDepositSettingPayload>
+          }
+          update: {
+            args: Prisma.CategoryDepositSettingUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CategoryDepositSettingPayload>
+          }
+          deleteMany: {
+            args: Prisma.CategoryDepositSettingDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.CategoryDepositSettingUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.CategoryDepositSettingUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CategoryDepositSettingPayload>
+          }
+          aggregate: {
+            args: Prisma.CategoryDepositSettingAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateCategoryDepositSetting>
+          }
+          groupBy: {
+            args: Prisma.CategoryDepositSettingGroupByArgs<ExtArgs>
+            result: $Utils.Optional<CategoryDepositSettingGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.CategoryDepositSettingCountArgs<ExtArgs>
+            result: $Utils.Optional<CategoryDepositSettingCountAggregateOutputType> | number
+          }
+        }
+      }
       Booking: {
         payload: Prisma.$BookingPayload<ExtArgs>
         fields: Prisma.BookingFieldRefs
@@ -3393,12 +3565,16 @@ export namespace Prisma {
     users: number
     vehicles: number
     bookings: number
+    pricingDiscountSlabs: number
+    categoryDepositSettings: number
   }
 
   export type BranchCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     users?: boolean | BranchCountOutputTypeCountUsersArgs
     vehicles?: boolean | BranchCountOutputTypeCountVehiclesArgs
     bookings?: boolean | BranchCountOutputTypeCountBookingsArgs
+    pricingDiscountSlabs?: boolean | BranchCountOutputTypeCountPricingDiscountSlabsArgs
+    categoryDepositSettings?: boolean | BranchCountOutputTypeCountCategoryDepositSettingsArgs
   }
 
   // Custom InputTypes
@@ -3433,17 +3609,35 @@ export namespace Prisma {
     where?: BookingWhereInput
   }
 
+  /**
+   * BranchCountOutputType without action
+   */
+  export type BranchCountOutputTypeCountPricingDiscountSlabsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PricingDiscountSlabWhereInput
+  }
+
+  /**
+   * BranchCountOutputType without action
+   */
+  export type BranchCountOutputTypeCountCategoryDepositSettingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CategoryDepositSettingWhereInput
+  }
+
 
   /**
    * Count Type VehicleCategoryCountOutputType
    */
 
   export type VehicleCategoryCountOutputType = {
+    pricingDiscountSlabs: number
+    categoryDepositSettings: number
     vehicles: number
     pricingRules: number
   }
 
   export type VehicleCategoryCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    pricingDiscountSlabs?: boolean | VehicleCategoryCountOutputTypeCountPricingDiscountSlabsArgs
+    categoryDepositSettings?: boolean | VehicleCategoryCountOutputTypeCountCategoryDepositSettingsArgs
     vehicles?: boolean | VehicleCategoryCountOutputTypeCountVehiclesArgs
     pricingRules?: boolean | VehicleCategoryCountOutputTypeCountPricingRulesArgs
   }
@@ -3457,6 +3651,20 @@ export namespace Prisma {
      * Select specific fields to fetch from the VehicleCategoryCountOutputType
      */
     select?: VehicleCategoryCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * VehicleCategoryCountOutputType without action
+   */
+  export type VehicleCategoryCountOutputTypeCountPricingDiscountSlabsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PricingDiscountSlabWhereInput
+  }
+
+  /**
+   * VehicleCategoryCountOutputType without action
+   */
+  export type VehicleCategoryCountOutputTypeCountCategoryDepositSettingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CategoryDepositSettingWhereInput
   }
 
   /**
@@ -10195,6 +10403,8 @@ export namespace Prisma {
     vehicles?: boolean | Branch$vehiclesArgs<ExtArgs>
     bookings?: boolean | Branch$bookingsArgs<ExtArgs>
     pricingSetting?: boolean | Branch$pricingSettingArgs<ExtArgs>
+    pricingDiscountSlabs?: boolean | Branch$pricingDiscountSlabsArgs<ExtArgs>
+    categoryDepositSettings?: boolean | Branch$categoryDepositSettingsArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["branch"]>
 
@@ -10223,6 +10433,8 @@ export namespace Prisma {
     vehicles?: boolean | Branch$vehiclesArgs<ExtArgs>
     bookings?: boolean | Branch$bookingsArgs<ExtArgs>
     pricingSetting?: boolean | Branch$pricingSettingArgs<ExtArgs>
+    pricingDiscountSlabs?: boolean | Branch$pricingDiscountSlabsArgs<ExtArgs>
+    categoryDepositSettings?: boolean | Branch$categoryDepositSettingsArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type BranchIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -10234,6 +10446,8 @@ export namespace Prisma {
       vehicles: Prisma.$VehiclePayload<ExtArgs>[]
       bookings: Prisma.$BookingPayload<ExtArgs>[]
       pricingSetting: Prisma.$BranchPricingSettingPayload<ExtArgs> | null
+      pricingDiscountSlabs: Prisma.$PricingDiscountSlabPayload<ExtArgs>[]
+      categoryDepositSettings: Prisma.$CategoryDepositSettingPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -10611,6 +10825,8 @@ export namespace Prisma {
     vehicles<T extends Branch$vehiclesArgs<ExtArgs> = {}>(args?: Subset<T, Branch$vehiclesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehiclePayload<ExtArgs>, T, "findMany"> | Null>
     bookings<T extends Branch$bookingsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$bookingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findMany"> | Null>
     pricingSetting<T extends Branch$pricingSettingArgs<ExtArgs> = {}>(args?: Subset<T, Branch$pricingSettingArgs<ExtArgs>>): Prisma__BranchPricingSettingClient<$Result.GetResult<Prisma.$BranchPricingSettingPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    pricingDiscountSlabs<T extends Branch$pricingDiscountSlabsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$pricingDiscountSlabsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PricingDiscountSlabPayload<ExtArgs>, T, "findMany"> | Null>
+    categoryDepositSettings<T extends Branch$categoryDepositSettingsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$categoryDepositSettingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CategoryDepositSettingPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -11033,6 +11249,46 @@ export namespace Prisma {
      */
     include?: BranchPricingSettingInclude<ExtArgs> | null
     where?: BranchPricingSettingWhereInput
+  }
+
+  /**
+   * Branch.pricingDiscountSlabs
+   */
+  export type Branch$pricingDiscountSlabsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PricingDiscountSlab
+     */
+    select?: PricingDiscountSlabSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PricingDiscountSlabInclude<ExtArgs> | null
+    where?: PricingDiscountSlabWhereInput
+    orderBy?: PricingDiscountSlabOrderByWithRelationInput | PricingDiscountSlabOrderByWithRelationInput[]
+    cursor?: PricingDiscountSlabWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PricingDiscountSlabScalarFieldEnum | PricingDiscountSlabScalarFieldEnum[]
+  }
+
+  /**
+   * Branch.categoryDepositSettings
+   */
+  export type Branch$categoryDepositSettingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CategoryDepositSetting
+     */
+    select?: CategoryDepositSettingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CategoryDepositSettingInclude<ExtArgs> | null
+    where?: CategoryDepositSettingWhereInput
+    orderBy?: CategoryDepositSettingOrderByWithRelationInput | CategoryDepositSettingOrderByWithRelationInput[]
+    cursor?: CategoryDepositSettingWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CategoryDepositSettingScalarFieldEnum | CategoryDepositSettingScalarFieldEnum[]
   }
 
   /**
@@ -13223,6 +13479,8 @@ export namespace Prisma {
     publicId?: boolean
     name?: boolean
     description?: boolean
+    pricingDiscountSlabs?: boolean | VehicleCategory$pricingDiscountSlabsArgs<ExtArgs>
+    categoryDepositSettings?: boolean | VehicleCategory$categoryDepositSettingsArgs<ExtArgs>
     vehicles?: boolean | VehicleCategory$vehiclesArgs<ExtArgs>
     pricingRules?: boolean | VehicleCategory$pricingRulesArgs<ExtArgs>
     _count?: boolean | VehicleCategoryCountOutputTypeDefaultArgs<ExtArgs>
@@ -13243,6 +13501,8 @@ export namespace Prisma {
   }
 
   export type VehicleCategoryInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    pricingDiscountSlabs?: boolean | VehicleCategory$pricingDiscountSlabsArgs<ExtArgs>
+    categoryDepositSettings?: boolean | VehicleCategory$categoryDepositSettingsArgs<ExtArgs>
     vehicles?: boolean | VehicleCategory$vehiclesArgs<ExtArgs>
     pricingRules?: boolean | VehicleCategory$pricingRulesArgs<ExtArgs>
     _count?: boolean | VehicleCategoryCountOutputTypeDefaultArgs<ExtArgs>
@@ -13252,6 +13512,8 @@ export namespace Prisma {
   export type $VehicleCategoryPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "VehicleCategory"
     objects: {
+      pricingDiscountSlabs: Prisma.$PricingDiscountSlabPayload<ExtArgs>[]
+      categoryDepositSettings: Prisma.$CategoryDepositSettingPayload<ExtArgs>[]
       vehicles: Prisma.$VehiclePayload<ExtArgs>[]
       pricingRules: Prisma.$PricingRulePayload<ExtArgs>[]
     }
@@ -13624,6 +13886,8 @@ export namespace Prisma {
    */
   export interface Prisma__VehicleCategoryClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    pricingDiscountSlabs<T extends VehicleCategory$pricingDiscountSlabsArgs<ExtArgs> = {}>(args?: Subset<T, VehicleCategory$pricingDiscountSlabsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PricingDiscountSlabPayload<ExtArgs>, T, "findMany"> | Null>
+    categoryDepositSettings<T extends VehicleCategory$categoryDepositSettingsArgs<ExtArgs> = {}>(args?: Subset<T, VehicleCategory$categoryDepositSettingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CategoryDepositSettingPayload<ExtArgs>, T, "findMany"> | Null>
     vehicles<T extends VehicleCategory$vehiclesArgs<ExtArgs> = {}>(args?: Subset<T, VehicleCategory$vehiclesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehiclePayload<ExtArgs>, T, "findMany"> | Null>
     pricingRules<T extends VehicleCategory$pricingRulesArgs<ExtArgs> = {}>(args?: Subset<T, VehicleCategory$pricingRulesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PricingRulePayload<ExtArgs>, T, "findMany"> | Null>
     /**
@@ -13970,6 +14234,46 @@ export namespace Prisma {
      * Filter which VehicleCategories to delete
      */
     where?: VehicleCategoryWhereInput
+  }
+
+  /**
+   * VehicleCategory.pricingDiscountSlabs
+   */
+  export type VehicleCategory$pricingDiscountSlabsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PricingDiscountSlab
+     */
+    select?: PricingDiscountSlabSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PricingDiscountSlabInclude<ExtArgs> | null
+    where?: PricingDiscountSlabWhereInput
+    orderBy?: PricingDiscountSlabOrderByWithRelationInput | PricingDiscountSlabOrderByWithRelationInput[]
+    cursor?: PricingDiscountSlabWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PricingDiscountSlabScalarFieldEnum | PricingDiscountSlabScalarFieldEnum[]
+  }
+
+  /**
+   * VehicleCategory.categoryDepositSettings
+   */
+  export type VehicleCategory$categoryDepositSettingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CategoryDepositSetting
+     */
+    select?: CategoryDepositSettingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CategoryDepositSettingInclude<ExtArgs> | null
+    where?: CategoryDepositSettingWhereInput
+    orderBy?: CategoryDepositSettingOrderByWithRelationInput | CategoryDepositSettingOrderByWithRelationInput[]
+    cursor?: CategoryDepositSettingWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CategoryDepositSettingScalarFieldEnum | CategoryDepositSettingScalarFieldEnum[]
   }
 
   /**
@@ -21196,6 +21500,1998 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: PricingRuleInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model PricingDiscountSlab
+   */
+
+  export type AggregatePricingDiscountSlab = {
+    _count: PricingDiscountSlabCountAggregateOutputType | null
+    _avg: PricingDiscountSlabAvgAggregateOutputType | null
+    _sum: PricingDiscountSlabSumAggregateOutputType | null
+    _min: PricingDiscountSlabMinAggregateOutputType | null
+    _max: PricingDiscountSlabMaxAggregateOutputType | null
+  }
+
+  export type PricingDiscountSlabAvgAggregateOutputType = {
+    id: number | null
+    days: number | null
+    multiplier: Decimal | null
+    branchId: number | null
+    categoryId: number | null
+  }
+
+  export type PricingDiscountSlabSumAggregateOutputType = {
+    id: number | null
+    days: number | null
+    multiplier: Decimal | null
+    branchId: number | null
+    categoryId: number | null
+  }
+
+  export type PricingDiscountSlabMinAggregateOutputType = {
+    id: number | null
+    days: number | null
+    multiplier: Decimal | null
+    branchId: number | null
+    categoryId: number | null
+  }
+
+  export type PricingDiscountSlabMaxAggregateOutputType = {
+    id: number | null
+    days: number | null
+    multiplier: Decimal | null
+    branchId: number | null
+    categoryId: number | null
+  }
+
+  export type PricingDiscountSlabCountAggregateOutputType = {
+    id: number
+    days: number
+    multiplier: number
+    branchId: number
+    categoryId: number
+    _all: number
+  }
+
+
+  export type PricingDiscountSlabAvgAggregateInputType = {
+    id?: true
+    days?: true
+    multiplier?: true
+    branchId?: true
+    categoryId?: true
+  }
+
+  export type PricingDiscountSlabSumAggregateInputType = {
+    id?: true
+    days?: true
+    multiplier?: true
+    branchId?: true
+    categoryId?: true
+  }
+
+  export type PricingDiscountSlabMinAggregateInputType = {
+    id?: true
+    days?: true
+    multiplier?: true
+    branchId?: true
+    categoryId?: true
+  }
+
+  export type PricingDiscountSlabMaxAggregateInputType = {
+    id?: true
+    days?: true
+    multiplier?: true
+    branchId?: true
+    categoryId?: true
+  }
+
+  export type PricingDiscountSlabCountAggregateInputType = {
+    id?: true
+    days?: true
+    multiplier?: true
+    branchId?: true
+    categoryId?: true
+    _all?: true
+  }
+
+  export type PricingDiscountSlabAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PricingDiscountSlab to aggregate.
+     */
+    where?: PricingDiscountSlabWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PricingDiscountSlabs to fetch.
+     */
+    orderBy?: PricingDiscountSlabOrderByWithRelationInput | PricingDiscountSlabOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: PricingDiscountSlabWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PricingDiscountSlabs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PricingDiscountSlabs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned PricingDiscountSlabs
+    **/
+    _count?: true | PricingDiscountSlabCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: PricingDiscountSlabAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: PricingDiscountSlabSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: PricingDiscountSlabMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: PricingDiscountSlabMaxAggregateInputType
+  }
+
+  export type GetPricingDiscountSlabAggregateType<T extends PricingDiscountSlabAggregateArgs> = {
+        [P in keyof T & keyof AggregatePricingDiscountSlab]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePricingDiscountSlab[P]>
+      : GetScalarType<T[P], AggregatePricingDiscountSlab[P]>
+  }
+
+
+
+
+  export type PricingDiscountSlabGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PricingDiscountSlabWhereInput
+    orderBy?: PricingDiscountSlabOrderByWithAggregationInput | PricingDiscountSlabOrderByWithAggregationInput[]
+    by: PricingDiscountSlabScalarFieldEnum[] | PricingDiscountSlabScalarFieldEnum
+    having?: PricingDiscountSlabScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: PricingDiscountSlabCountAggregateInputType | true
+    _avg?: PricingDiscountSlabAvgAggregateInputType
+    _sum?: PricingDiscountSlabSumAggregateInputType
+    _min?: PricingDiscountSlabMinAggregateInputType
+    _max?: PricingDiscountSlabMaxAggregateInputType
+  }
+
+  export type PricingDiscountSlabGroupByOutputType = {
+    id: number
+    days: number
+    multiplier: Decimal
+    branchId: number | null
+    categoryId: number | null
+    _count: PricingDiscountSlabCountAggregateOutputType | null
+    _avg: PricingDiscountSlabAvgAggregateOutputType | null
+    _sum: PricingDiscountSlabSumAggregateOutputType | null
+    _min: PricingDiscountSlabMinAggregateOutputType | null
+    _max: PricingDiscountSlabMaxAggregateOutputType | null
+  }
+
+  type GetPricingDiscountSlabGroupByPayload<T extends PricingDiscountSlabGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<PricingDiscountSlabGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof PricingDiscountSlabGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], PricingDiscountSlabGroupByOutputType[P]>
+            : GetScalarType<T[P], PricingDiscountSlabGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type PricingDiscountSlabSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    days?: boolean
+    multiplier?: boolean
+    branchId?: boolean
+    categoryId?: boolean
+    branch?: boolean | PricingDiscountSlab$branchArgs<ExtArgs>
+    category?: boolean | PricingDiscountSlab$categoryArgs<ExtArgs>
+  }, ExtArgs["result"]["pricingDiscountSlab"]>
+
+  export type PricingDiscountSlabSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    days?: boolean
+    multiplier?: boolean
+    branchId?: boolean
+    categoryId?: boolean
+    branch?: boolean | PricingDiscountSlab$branchArgs<ExtArgs>
+    category?: boolean | PricingDiscountSlab$categoryArgs<ExtArgs>
+  }, ExtArgs["result"]["pricingDiscountSlab"]>
+
+  export type PricingDiscountSlabSelectScalar = {
+    id?: boolean
+    days?: boolean
+    multiplier?: boolean
+    branchId?: boolean
+    categoryId?: boolean
+  }
+
+  export type PricingDiscountSlabInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | PricingDiscountSlab$branchArgs<ExtArgs>
+    category?: boolean | PricingDiscountSlab$categoryArgs<ExtArgs>
+  }
+  export type PricingDiscountSlabIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | PricingDiscountSlab$branchArgs<ExtArgs>
+    category?: boolean | PricingDiscountSlab$categoryArgs<ExtArgs>
+  }
+
+  export type $PricingDiscountSlabPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "PricingDiscountSlab"
+    objects: {
+      branch: Prisma.$BranchPayload<ExtArgs> | null
+      category: Prisma.$VehicleCategoryPayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      days: number
+      multiplier: Prisma.Decimal
+      branchId: number | null
+      categoryId: number | null
+    }, ExtArgs["result"]["pricingDiscountSlab"]>
+    composites: {}
+  }
+
+  type PricingDiscountSlabGetPayload<S extends boolean | null | undefined | PricingDiscountSlabDefaultArgs> = $Result.GetResult<Prisma.$PricingDiscountSlabPayload, S>
+
+  type PricingDiscountSlabCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<PricingDiscountSlabFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: PricingDiscountSlabCountAggregateInputType | true
+    }
+
+  export interface PricingDiscountSlabDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['PricingDiscountSlab'], meta: { name: 'PricingDiscountSlab' } }
+    /**
+     * Find zero or one PricingDiscountSlab that matches the filter.
+     * @param {PricingDiscountSlabFindUniqueArgs} args - Arguments to find a PricingDiscountSlab
+     * @example
+     * // Get one PricingDiscountSlab
+     * const pricingDiscountSlab = await prisma.pricingDiscountSlab.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends PricingDiscountSlabFindUniqueArgs>(args: SelectSubset<T, PricingDiscountSlabFindUniqueArgs<ExtArgs>>): Prisma__PricingDiscountSlabClient<$Result.GetResult<Prisma.$PricingDiscountSlabPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one PricingDiscountSlab that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {PricingDiscountSlabFindUniqueOrThrowArgs} args - Arguments to find a PricingDiscountSlab
+     * @example
+     * // Get one PricingDiscountSlab
+     * const pricingDiscountSlab = await prisma.pricingDiscountSlab.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends PricingDiscountSlabFindUniqueOrThrowArgs>(args: SelectSubset<T, PricingDiscountSlabFindUniqueOrThrowArgs<ExtArgs>>): Prisma__PricingDiscountSlabClient<$Result.GetResult<Prisma.$PricingDiscountSlabPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first PricingDiscountSlab that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PricingDiscountSlabFindFirstArgs} args - Arguments to find a PricingDiscountSlab
+     * @example
+     * // Get one PricingDiscountSlab
+     * const pricingDiscountSlab = await prisma.pricingDiscountSlab.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends PricingDiscountSlabFindFirstArgs>(args?: SelectSubset<T, PricingDiscountSlabFindFirstArgs<ExtArgs>>): Prisma__PricingDiscountSlabClient<$Result.GetResult<Prisma.$PricingDiscountSlabPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first PricingDiscountSlab that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PricingDiscountSlabFindFirstOrThrowArgs} args - Arguments to find a PricingDiscountSlab
+     * @example
+     * // Get one PricingDiscountSlab
+     * const pricingDiscountSlab = await prisma.pricingDiscountSlab.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends PricingDiscountSlabFindFirstOrThrowArgs>(args?: SelectSubset<T, PricingDiscountSlabFindFirstOrThrowArgs<ExtArgs>>): Prisma__PricingDiscountSlabClient<$Result.GetResult<Prisma.$PricingDiscountSlabPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more PricingDiscountSlabs that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PricingDiscountSlabFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all PricingDiscountSlabs
+     * const pricingDiscountSlabs = await prisma.pricingDiscountSlab.findMany()
+     * 
+     * // Get first 10 PricingDiscountSlabs
+     * const pricingDiscountSlabs = await prisma.pricingDiscountSlab.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const pricingDiscountSlabWithIdOnly = await prisma.pricingDiscountSlab.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends PricingDiscountSlabFindManyArgs>(args?: SelectSubset<T, PricingDiscountSlabFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PricingDiscountSlabPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a PricingDiscountSlab.
+     * @param {PricingDiscountSlabCreateArgs} args - Arguments to create a PricingDiscountSlab.
+     * @example
+     * // Create one PricingDiscountSlab
+     * const PricingDiscountSlab = await prisma.pricingDiscountSlab.create({
+     *   data: {
+     *     // ... data to create a PricingDiscountSlab
+     *   }
+     * })
+     * 
+     */
+    create<T extends PricingDiscountSlabCreateArgs>(args: SelectSubset<T, PricingDiscountSlabCreateArgs<ExtArgs>>): Prisma__PricingDiscountSlabClient<$Result.GetResult<Prisma.$PricingDiscountSlabPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many PricingDiscountSlabs.
+     * @param {PricingDiscountSlabCreateManyArgs} args - Arguments to create many PricingDiscountSlabs.
+     * @example
+     * // Create many PricingDiscountSlabs
+     * const pricingDiscountSlab = await prisma.pricingDiscountSlab.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends PricingDiscountSlabCreateManyArgs>(args?: SelectSubset<T, PricingDiscountSlabCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many PricingDiscountSlabs and returns the data saved in the database.
+     * @param {PricingDiscountSlabCreateManyAndReturnArgs} args - Arguments to create many PricingDiscountSlabs.
+     * @example
+     * // Create many PricingDiscountSlabs
+     * const pricingDiscountSlab = await prisma.pricingDiscountSlab.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many PricingDiscountSlabs and only return the `id`
+     * const pricingDiscountSlabWithIdOnly = await prisma.pricingDiscountSlab.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends PricingDiscountSlabCreateManyAndReturnArgs>(args?: SelectSubset<T, PricingDiscountSlabCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PricingDiscountSlabPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a PricingDiscountSlab.
+     * @param {PricingDiscountSlabDeleteArgs} args - Arguments to delete one PricingDiscountSlab.
+     * @example
+     * // Delete one PricingDiscountSlab
+     * const PricingDiscountSlab = await prisma.pricingDiscountSlab.delete({
+     *   where: {
+     *     // ... filter to delete one PricingDiscountSlab
+     *   }
+     * })
+     * 
+     */
+    delete<T extends PricingDiscountSlabDeleteArgs>(args: SelectSubset<T, PricingDiscountSlabDeleteArgs<ExtArgs>>): Prisma__PricingDiscountSlabClient<$Result.GetResult<Prisma.$PricingDiscountSlabPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one PricingDiscountSlab.
+     * @param {PricingDiscountSlabUpdateArgs} args - Arguments to update one PricingDiscountSlab.
+     * @example
+     * // Update one PricingDiscountSlab
+     * const pricingDiscountSlab = await prisma.pricingDiscountSlab.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends PricingDiscountSlabUpdateArgs>(args: SelectSubset<T, PricingDiscountSlabUpdateArgs<ExtArgs>>): Prisma__PricingDiscountSlabClient<$Result.GetResult<Prisma.$PricingDiscountSlabPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more PricingDiscountSlabs.
+     * @param {PricingDiscountSlabDeleteManyArgs} args - Arguments to filter PricingDiscountSlabs to delete.
+     * @example
+     * // Delete a few PricingDiscountSlabs
+     * const { count } = await prisma.pricingDiscountSlab.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends PricingDiscountSlabDeleteManyArgs>(args?: SelectSubset<T, PricingDiscountSlabDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PricingDiscountSlabs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PricingDiscountSlabUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many PricingDiscountSlabs
+     * const pricingDiscountSlab = await prisma.pricingDiscountSlab.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends PricingDiscountSlabUpdateManyArgs>(args: SelectSubset<T, PricingDiscountSlabUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one PricingDiscountSlab.
+     * @param {PricingDiscountSlabUpsertArgs} args - Arguments to update or create a PricingDiscountSlab.
+     * @example
+     * // Update or create a PricingDiscountSlab
+     * const pricingDiscountSlab = await prisma.pricingDiscountSlab.upsert({
+     *   create: {
+     *     // ... data to create a PricingDiscountSlab
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the PricingDiscountSlab we want to update
+     *   }
+     * })
+     */
+    upsert<T extends PricingDiscountSlabUpsertArgs>(args: SelectSubset<T, PricingDiscountSlabUpsertArgs<ExtArgs>>): Prisma__PricingDiscountSlabClient<$Result.GetResult<Prisma.$PricingDiscountSlabPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of PricingDiscountSlabs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PricingDiscountSlabCountArgs} args - Arguments to filter PricingDiscountSlabs to count.
+     * @example
+     * // Count the number of PricingDiscountSlabs
+     * const count = await prisma.pricingDiscountSlab.count({
+     *   where: {
+     *     // ... the filter for the PricingDiscountSlabs we want to count
+     *   }
+     * })
+    **/
+    count<T extends PricingDiscountSlabCountArgs>(
+      args?: Subset<T, PricingDiscountSlabCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], PricingDiscountSlabCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a PricingDiscountSlab.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PricingDiscountSlabAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends PricingDiscountSlabAggregateArgs>(args: Subset<T, PricingDiscountSlabAggregateArgs>): Prisma.PrismaPromise<GetPricingDiscountSlabAggregateType<T>>
+
+    /**
+     * Group by PricingDiscountSlab.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PricingDiscountSlabGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends PricingDiscountSlabGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: PricingDiscountSlabGroupByArgs['orderBy'] }
+        : { orderBy?: PricingDiscountSlabGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, PricingDiscountSlabGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPricingDiscountSlabGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the PricingDiscountSlab model
+   */
+  readonly fields: PricingDiscountSlabFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for PricingDiscountSlab.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__PricingDiscountSlabClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    branch<T extends PricingDiscountSlab$branchArgs<ExtArgs> = {}>(args?: Subset<T, PricingDiscountSlab$branchArgs<ExtArgs>>): Prisma__BranchClient<$Result.GetResult<Prisma.$BranchPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    category<T extends PricingDiscountSlab$categoryArgs<ExtArgs> = {}>(args?: Subset<T, PricingDiscountSlab$categoryArgs<ExtArgs>>): Prisma__VehicleCategoryClient<$Result.GetResult<Prisma.$VehicleCategoryPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the PricingDiscountSlab model
+   */ 
+  interface PricingDiscountSlabFieldRefs {
+    readonly id: FieldRef<"PricingDiscountSlab", 'Int'>
+    readonly days: FieldRef<"PricingDiscountSlab", 'Int'>
+    readonly multiplier: FieldRef<"PricingDiscountSlab", 'Decimal'>
+    readonly branchId: FieldRef<"PricingDiscountSlab", 'Int'>
+    readonly categoryId: FieldRef<"PricingDiscountSlab", 'Int'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * PricingDiscountSlab findUnique
+   */
+  export type PricingDiscountSlabFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PricingDiscountSlab
+     */
+    select?: PricingDiscountSlabSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PricingDiscountSlabInclude<ExtArgs> | null
+    /**
+     * Filter, which PricingDiscountSlab to fetch.
+     */
+    where: PricingDiscountSlabWhereUniqueInput
+  }
+
+  /**
+   * PricingDiscountSlab findUniqueOrThrow
+   */
+  export type PricingDiscountSlabFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PricingDiscountSlab
+     */
+    select?: PricingDiscountSlabSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PricingDiscountSlabInclude<ExtArgs> | null
+    /**
+     * Filter, which PricingDiscountSlab to fetch.
+     */
+    where: PricingDiscountSlabWhereUniqueInput
+  }
+
+  /**
+   * PricingDiscountSlab findFirst
+   */
+  export type PricingDiscountSlabFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PricingDiscountSlab
+     */
+    select?: PricingDiscountSlabSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PricingDiscountSlabInclude<ExtArgs> | null
+    /**
+     * Filter, which PricingDiscountSlab to fetch.
+     */
+    where?: PricingDiscountSlabWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PricingDiscountSlabs to fetch.
+     */
+    orderBy?: PricingDiscountSlabOrderByWithRelationInput | PricingDiscountSlabOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PricingDiscountSlabs.
+     */
+    cursor?: PricingDiscountSlabWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PricingDiscountSlabs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PricingDiscountSlabs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PricingDiscountSlabs.
+     */
+    distinct?: PricingDiscountSlabScalarFieldEnum | PricingDiscountSlabScalarFieldEnum[]
+  }
+
+  /**
+   * PricingDiscountSlab findFirstOrThrow
+   */
+  export type PricingDiscountSlabFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PricingDiscountSlab
+     */
+    select?: PricingDiscountSlabSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PricingDiscountSlabInclude<ExtArgs> | null
+    /**
+     * Filter, which PricingDiscountSlab to fetch.
+     */
+    where?: PricingDiscountSlabWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PricingDiscountSlabs to fetch.
+     */
+    orderBy?: PricingDiscountSlabOrderByWithRelationInput | PricingDiscountSlabOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PricingDiscountSlabs.
+     */
+    cursor?: PricingDiscountSlabWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PricingDiscountSlabs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PricingDiscountSlabs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PricingDiscountSlabs.
+     */
+    distinct?: PricingDiscountSlabScalarFieldEnum | PricingDiscountSlabScalarFieldEnum[]
+  }
+
+  /**
+   * PricingDiscountSlab findMany
+   */
+  export type PricingDiscountSlabFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PricingDiscountSlab
+     */
+    select?: PricingDiscountSlabSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PricingDiscountSlabInclude<ExtArgs> | null
+    /**
+     * Filter, which PricingDiscountSlabs to fetch.
+     */
+    where?: PricingDiscountSlabWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PricingDiscountSlabs to fetch.
+     */
+    orderBy?: PricingDiscountSlabOrderByWithRelationInput | PricingDiscountSlabOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing PricingDiscountSlabs.
+     */
+    cursor?: PricingDiscountSlabWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PricingDiscountSlabs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PricingDiscountSlabs.
+     */
+    skip?: number
+    distinct?: PricingDiscountSlabScalarFieldEnum | PricingDiscountSlabScalarFieldEnum[]
+  }
+
+  /**
+   * PricingDiscountSlab create
+   */
+  export type PricingDiscountSlabCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PricingDiscountSlab
+     */
+    select?: PricingDiscountSlabSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PricingDiscountSlabInclude<ExtArgs> | null
+    /**
+     * The data needed to create a PricingDiscountSlab.
+     */
+    data: XOR<PricingDiscountSlabCreateInput, PricingDiscountSlabUncheckedCreateInput>
+  }
+
+  /**
+   * PricingDiscountSlab createMany
+   */
+  export type PricingDiscountSlabCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many PricingDiscountSlabs.
+     */
+    data: PricingDiscountSlabCreateManyInput | PricingDiscountSlabCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PricingDiscountSlab createManyAndReturn
+   */
+  export type PricingDiscountSlabCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PricingDiscountSlab
+     */
+    select?: PricingDiscountSlabSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many PricingDiscountSlabs.
+     */
+    data: PricingDiscountSlabCreateManyInput | PricingDiscountSlabCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PricingDiscountSlabIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * PricingDiscountSlab update
+   */
+  export type PricingDiscountSlabUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PricingDiscountSlab
+     */
+    select?: PricingDiscountSlabSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PricingDiscountSlabInclude<ExtArgs> | null
+    /**
+     * The data needed to update a PricingDiscountSlab.
+     */
+    data: XOR<PricingDiscountSlabUpdateInput, PricingDiscountSlabUncheckedUpdateInput>
+    /**
+     * Choose, which PricingDiscountSlab to update.
+     */
+    where: PricingDiscountSlabWhereUniqueInput
+  }
+
+  /**
+   * PricingDiscountSlab updateMany
+   */
+  export type PricingDiscountSlabUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update PricingDiscountSlabs.
+     */
+    data: XOR<PricingDiscountSlabUpdateManyMutationInput, PricingDiscountSlabUncheckedUpdateManyInput>
+    /**
+     * Filter which PricingDiscountSlabs to update
+     */
+    where?: PricingDiscountSlabWhereInput
+  }
+
+  /**
+   * PricingDiscountSlab upsert
+   */
+  export type PricingDiscountSlabUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PricingDiscountSlab
+     */
+    select?: PricingDiscountSlabSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PricingDiscountSlabInclude<ExtArgs> | null
+    /**
+     * The filter to search for the PricingDiscountSlab to update in case it exists.
+     */
+    where: PricingDiscountSlabWhereUniqueInput
+    /**
+     * In case the PricingDiscountSlab found by the `where` argument doesn't exist, create a new PricingDiscountSlab with this data.
+     */
+    create: XOR<PricingDiscountSlabCreateInput, PricingDiscountSlabUncheckedCreateInput>
+    /**
+     * In case the PricingDiscountSlab was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<PricingDiscountSlabUpdateInput, PricingDiscountSlabUncheckedUpdateInput>
+  }
+
+  /**
+   * PricingDiscountSlab delete
+   */
+  export type PricingDiscountSlabDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PricingDiscountSlab
+     */
+    select?: PricingDiscountSlabSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PricingDiscountSlabInclude<ExtArgs> | null
+    /**
+     * Filter which PricingDiscountSlab to delete.
+     */
+    where: PricingDiscountSlabWhereUniqueInput
+  }
+
+  /**
+   * PricingDiscountSlab deleteMany
+   */
+  export type PricingDiscountSlabDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PricingDiscountSlabs to delete
+     */
+    where?: PricingDiscountSlabWhereInput
+  }
+
+  /**
+   * PricingDiscountSlab.branch
+   */
+  export type PricingDiscountSlab$branchArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Branch
+     */
+    select?: BranchSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchInclude<ExtArgs> | null
+    where?: BranchWhereInput
+  }
+
+  /**
+   * PricingDiscountSlab.category
+   */
+  export type PricingDiscountSlab$categoryArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleCategory
+     */
+    select?: VehicleCategorySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleCategoryInclude<ExtArgs> | null
+    where?: VehicleCategoryWhereInput
+  }
+
+  /**
+   * PricingDiscountSlab without action
+   */
+  export type PricingDiscountSlabDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PricingDiscountSlab
+     */
+    select?: PricingDiscountSlabSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PricingDiscountSlabInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model CategoryDepositSetting
+   */
+
+  export type AggregateCategoryDepositSetting = {
+    _count: CategoryDepositSettingCountAggregateOutputType | null
+    _avg: CategoryDepositSettingAvgAggregateOutputType | null
+    _sum: CategoryDepositSettingSumAggregateOutputType | null
+    _min: CategoryDepositSettingMinAggregateOutputType | null
+    _max: CategoryDepositSettingMaxAggregateOutputType | null
+  }
+
+  export type CategoryDepositSettingAvgAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    categoryId: number | null
+    amount: Decimal | null
+  }
+
+  export type CategoryDepositSettingSumAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    categoryId: number | null
+    amount: Decimal | null
+  }
+
+  export type CategoryDepositSettingMinAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    categoryId: number | null
+    amount: Decimal | null
+  }
+
+  export type CategoryDepositSettingMaxAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    categoryId: number | null
+    amount: Decimal | null
+  }
+
+  export type CategoryDepositSettingCountAggregateOutputType = {
+    id: number
+    branchId: number
+    categoryId: number
+    amount: number
+    _all: number
+  }
+
+
+  export type CategoryDepositSettingAvgAggregateInputType = {
+    id?: true
+    branchId?: true
+    categoryId?: true
+    amount?: true
+  }
+
+  export type CategoryDepositSettingSumAggregateInputType = {
+    id?: true
+    branchId?: true
+    categoryId?: true
+    amount?: true
+  }
+
+  export type CategoryDepositSettingMinAggregateInputType = {
+    id?: true
+    branchId?: true
+    categoryId?: true
+    amount?: true
+  }
+
+  export type CategoryDepositSettingMaxAggregateInputType = {
+    id?: true
+    branchId?: true
+    categoryId?: true
+    amount?: true
+  }
+
+  export type CategoryDepositSettingCountAggregateInputType = {
+    id?: true
+    branchId?: true
+    categoryId?: true
+    amount?: true
+    _all?: true
+  }
+
+  export type CategoryDepositSettingAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CategoryDepositSetting to aggregate.
+     */
+    where?: CategoryDepositSettingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CategoryDepositSettings to fetch.
+     */
+    orderBy?: CategoryDepositSettingOrderByWithRelationInput | CategoryDepositSettingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: CategoryDepositSettingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CategoryDepositSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CategoryDepositSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned CategoryDepositSettings
+    **/
+    _count?: true | CategoryDepositSettingCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: CategoryDepositSettingAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: CategoryDepositSettingSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: CategoryDepositSettingMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: CategoryDepositSettingMaxAggregateInputType
+  }
+
+  export type GetCategoryDepositSettingAggregateType<T extends CategoryDepositSettingAggregateArgs> = {
+        [P in keyof T & keyof AggregateCategoryDepositSetting]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateCategoryDepositSetting[P]>
+      : GetScalarType<T[P], AggregateCategoryDepositSetting[P]>
+  }
+
+
+
+
+  export type CategoryDepositSettingGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CategoryDepositSettingWhereInput
+    orderBy?: CategoryDepositSettingOrderByWithAggregationInput | CategoryDepositSettingOrderByWithAggregationInput[]
+    by: CategoryDepositSettingScalarFieldEnum[] | CategoryDepositSettingScalarFieldEnum
+    having?: CategoryDepositSettingScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: CategoryDepositSettingCountAggregateInputType | true
+    _avg?: CategoryDepositSettingAvgAggregateInputType
+    _sum?: CategoryDepositSettingSumAggregateInputType
+    _min?: CategoryDepositSettingMinAggregateInputType
+    _max?: CategoryDepositSettingMaxAggregateInputType
+  }
+
+  export type CategoryDepositSettingGroupByOutputType = {
+    id: number
+    branchId: number
+    categoryId: number
+    amount: Decimal
+    _count: CategoryDepositSettingCountAggregateOutputType | null
+    _avg: CategoryDepositSettingAvgAggregateOutputType | null
+    _sum: CategoryDepositSettingSumAggregateOutputType | null
+    _min: CategoryDepositSettingMinAggregateOutputType | null
+    _max: CategoryDepositSettingMaxAggregateOutputType | null
+  }
+
+  type GetCategoryDepositSettingGroupByPayload<T extends CategoryDepositSettingGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<CategoryDepositSettingGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof CategoryDepositSettingGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], CategoryDepositSettingGroupByOutputType[P]>
+            : GetScalarType<T[P], CategoryDepositSettingGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type CategoryDepositSettingSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    branchId?: boolean
+    categoryId?: boolean
+    amount?: boolean
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    category?: boolean | VehicleCategoryDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["categoryDepositSetting"]>
+
+  export type CategoryDepositSettingSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    branchId?: boolean
+    categoryId?: boolean
+    amount?: boolean
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    category?: boolean | VehicleCategoryDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["categoryDepositSetting"]>
+
+  export type CategoryDepositSettingSelectScalar = {
+    id?: boolean
+    branchId?: boolean
+    categoryId?: boolean
+    amount?: boolean
+  }
+
+  export type CategoryDepositSettingInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    category?: boolean | VehicleCategoryDefaultArgs<ExtArgs>
+  }
+  export type CategoryDepositSettingIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    category?: boolean | VehicleCategoryDefaultArgs<ExtArgs>
+  }
+
+  export type $CategoryDepositSettingPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "CategoryDepositSetting"
+    objects: {
+      branch: Prisma.$BranchPayload<ExtArgs>
+      category: Prisma.$VehicleCategoryPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      branchId: number
+      categoryId: number
+      amount: Prisma.Decimal
+    }, ExtArgs["result"]["categoryDepositSetting"]>
+    composites: {}
+  }
+
+  type CategoryDepositSettingGetPayload<S extends boolean | null | undefined | CategoryDepositSettingDefaultArgs> = $Result.GetResult<Prisma.$CategoryDepositSettingPayload, S>
+
+  type CategoryDepositSettingCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<CategoryDepositSettingFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: CategoryDepositSettingCountAggregateInputType | true
+    }
+
+  export interface CategoryDepositSettingDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['CategoryDepositSetting'], meta: { name: 'CategoryDepositSetting' } }
+    /**
+     * Find zero or one CategoryDepositSetting that matches the filter.
+     * @param {CategoryDepositSettingFindUniqueArgs} args - Arguments to find a CategoryDepositSetting
+     * @example
+     * // Get one CategoryDepositSetting
+     * const categoryDepositSetting = await prisma.categoryDepositSetting.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends CategoryDepositSettingFindUniqueArgs>(args: SelectSubset<T, CategoryDepositSettingFindUniqueArgs<ExtArgs>>): Prisma__CategoryDepositSettingClient<$Result.GetResult<Prisma.$CategoryDepositSettingPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one CategoryDepositSetting that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {CategoryDepositSettingFindUniqueOrThrowArgs} args - Arguments to find a CategoryDepositSetting
+     * @example
+     * // Get one CategoryDepositSetting
+     * const categoryDepositSetting = await prisma.categoryDepositSetting.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends CategoryDepositSettingFindUniqueOrThrowArgs>(args: SelectSubset<T, CategoryDepositSettingFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CategoryDepositSettingClient<$Result.GetResult<Prisma.$CategoryDepositSettingPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first CategoryDepositSetting that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CategoryDepositSettingFindFirstArgs} args - Arguments to find a CategoryDepositSetting
+     * @example
+     * // Get one CategoryDepositSetting
+     * const categoryDepositSetting = await prisma.categoryDepositSetting.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends CategoryDepositSettingFindFirstArgs>(args?: SelectSubset<T, CategoryDepositSettingFindFirstArgs<ExtArgs>>): Prisma__CategoryDepositSettingClient<$Result.GetResult<Prisma.$CategoryDepositSettingPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first CategoryDepositSetting that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CategoryDepositSettingFindFirstOrThrowArgs} args - Arguments to find a CategoryDepositSetting
+     * @example
+     * // Get one CategoryDepositSetting
+     * const categoryDepositSetting = await prisma.categoryDepositSetting.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends CategoryDepositSettingFindFirstOrThrowArgs>(args?: SelectSubset<T, CategoryDepositSettingFindFirstOrThrowArgs<ExtArgs>>): Prisma__CategoryDepositSettingClient<$Result.GetResult<Prisma.$CategoryDepositSettingPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more CategoryDepositSettings that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CategoryDepositSettingFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all CategoryDepositSettings
+     * const categoryDepositSettings = await prisma.categoryDepositSetting.findMany()
+     * 
+     * // Get first 10 CategoryDepositSettings
+     * const categoryDepositSettings = await prisma.categoryDepositSetting.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const categoryDepositSettingWithIdOnly = await prisma.categoryDepositSetting.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends CategoryDepositSettingFindManyArgs>(args?: SelectSubset<T, CategoryDepositSettingFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CategoryDepositSettingPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a CategoryDepositSetting.
+     * @param {CategoryDepositSettingCreateArgs} args - Arguments to create a CategoryDepositSetting.
+     * @example
+     * // Create one CategoryDepositSetting
+     * const CategoryDepositSetting = await prisma.categoryDepositSetting.create({
+     *   data: {
+     *     // ... data to create a CategoryDepositSetting
+     *   }
+     * })
+     * 
+     */
+    create<T extends CategoryDepositSettingCreateArgs>(args: SelectSubset<T, CategoryDepositSettingCreateArgs<ExtArgs>>): Prisma__CategoryDepositSettingClient<$Result.GetResult<Prisma.$CategoryDepositSettingPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many CategoryDepositSettings.
+     * @param {CategoryDepositSettingCreateManyArgs} args - Arguments to create many CategoryDepositSettings.
+     * @example
+     * // Create many CategoryDepositSettings
+     * const categoryDepositSetting = await prisma.categoryDepositSetting.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends CategoryDepositSettingCreateManyArgs>(args?: SelectSubset<T, CategoryDepositSettingCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many CategoryDepositSettings and returns the data saved in the database.
+     * @param {CategoryDepositSettingCreateManyAndReturnArgs} args - Arguments to create many CategoryDepositSettings.
+     * @example
+     * // Create many CategoryDepositSettings
+     * const categoryDepositSetting = await prisma.categoryDepositSetting.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many CategoryDepositSettings and only return the `id`
+     * const categoryDepositSettingWithIdOnly = await prisma.categoryDepositSetting.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends CategoryDepositSettingCreateManyAndReturnArgs>(args?: SelectSubset<T, CategoryDepositSettingCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CategoryDepositSettingPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a CategoryDepositSetting.
+     * @param {CategoryDepositSettingDeleteArgs} args - Arguments to delete one CategoryDepositSetting.
+     * @example
+     * // Delete one CategoryDepositSetting
+     * const CategoryDepositSetting = await prisma.categoryDepositSetting.delete({
+     *   where: {
+     *     // ... filter to delete one CategoryDepositSetting
+     *   }
+     * })
+     * 
+     */
+    delete<T extends CategoryDepositSettingDeleteArgs>(args: SelectSubset<T, CategoryDepositSettingDeleteArgs<ExtArgs>>): Prisma__CategoryDepositSettingClient<$Result.GetResult<Prisma.$CategoryDepositSettingPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one CategoryDepositSetting.
+     * @param {CategoryDepositSettingUpdateArgs} args - Arguments to update one CategoryDepositSetting.
+     * @example
+     * // Update one CategoryDepositSetting
+     * const categoryDepositSetting = await prisma.categoryDepositSetting.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends CategoryDepositSettingUpdateArgs>(args: SelectSubset<T, CategoryDepositSettingUpdateArgs<ExtArgs>>): Prisma__CategoryDepositSettingClient<$Result.GetResult<Prisma.$CategoryDepositSettingPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more CategoryDepositSettings.
+     * @param {CategoryDepositSettingDeleteManyArgs} args - Arguments to filter CategoryDepositSettings to delete.
+     * @example
+     * // Delete a few CategoryDepositSettings
+     * const { count } = await prisma.categoryDepositSetting.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends CategoryDepositSettingDeleteManyArgs>(args?: SelectSubset<T, CategoryDepositSettingDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more CategoryDepositSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CategoryDepositSettingUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many CategoryDepositSettings
+     * const categoryDepositSetting = await prisma.categoryDepositSetting.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends CategoryDepositSettingUpdateManyArgs>(args: SelectSubset<T, CategoryDepositSettingUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one CategoryDepositSetting.
+     * @param {CategoryDepositSettingUpsertArgs} args - Arguments to update or create a CategoryDepositSetting.
+     * @example
+     * // Update or create a CategoryDepositSetting
+     * const categoryDepositSetting = await prisma.categoryDepositSetting.upsert({
+     *   create: {
+     *     // ... data to create a CategoryDepositSetting
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the CategoryDepositSetting we want to update
+     *   }
+     * })
+     */
+    upsert<T extends CategoryDepositSettingUpsertArgs>(args: SelectSubset<T, CategoryDepositSettingUpsertArgs<ExtArgs>>): Prisma__CategoryDepositSettingClient<$Result.GetResult<Prisma.$CategoryDepositSettingPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of CategoryDepositSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CategoryDepositSettingCountArgs} args - Arguments to filter CategoryDepositSettings to count.
+     * @example
+     * // Count the number of CategoryDepositSettings
+     * const count = await prisma.categoryDepositSetting.count({
+     *   where: {
+     *     // ... the filter for the CategoryDepositSettings we want to count
+     *   }
+     * })
+    **/
+    count<T extends CategoryDepositSettingCountArgs>(
+      args?: Subset<T, CategoryDepositSettingCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], CategoryDepositSettingCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a CategoryDepositSetting.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CategoryDepositSettingAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends CategoryDepositSettingAggregateArgs>(args: Subset<T, CategoryDepositSettingAggregateArgs>): Prisma.PrismaPromise<GetCategoryDepositSettingAggregateType<T>>
+
+    /**
+     * Group by CategoryDepositSetting.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CategoryDepositSettingGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends CategoryDepositSettingGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: CategoryDepositSettingGroupByArgs['orderBy'] }
+        : { orderBy?: CategoryDepositSettingGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, CategoryDepositSettingGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCategoryDepositSettingGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the CategoryDepositSetting model
+   */
+  readonly fields: CategoryDepositSettingFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for CategoryDepositSetting.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__CategoryDepositSettingClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    branch<T extends BranchDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BranchDefaultArgs<ExtArgs>>): Prisma__BranchClient<$Result.GetResult<Prisma.$BranchPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    category<T extends VehicleCategoryDefaultArgs<ExtArgs> = {}>(args?: Subset<T, VehicleCategoryDefaultArgs<ExtArgs>>): Prisma__VehicleCategoryClient<$Result.GetResult<Prisma.$VehicleCategoryPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the CategoryDepositSetting model
+   */ 
+  interface CategoryDepositSettingFieldRefs {
+    readonly id: FieldRef<"CategoryDepositSetting", 'Int'>
+    readonly branchId: FieldRef<"CategoryDepositSetting", 'Int'>
+    readonly categoryId: FieldRef<"CategoryDepositSetting", 'Int'>
+    readonly amount: FieldRef<"CategoryDepositSetting", 'Decimal'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * CategoryDepositSetting findUnique
+   */
+  export type CategoryDepositSettingFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CategoryDepositSetting
+     */
+    select?: CategoryDepositSettingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CategoryDepositSettingInclude<ExtArgs> | null
+    /**
+     * Filter, which CategoryDepositSetting to fetch.
+     */
+    where: CategoryDepositSettingWhereUniqueInput
+  }
+
+  /**
+   * CategoryDepositSetting findUniqueOrThrow
+   */
+  export type CategoryDepositSettingFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CategoryDepositSetting
+     */
+    select?: CategoryDepositSettingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CategoryDepositSettingInclude<ExtArgs> | null
+    /**
+     * Filter, which CategoryDepositSetting to fetch.
+     */
+    where: CategoryDepositSettingWhereUniqueInput
+  }
+
+  /**
+   * CategoryDepositSetting findFirst
+   */
+  export type CategoryDepositSettingFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CategoryDepositSetting
+     */
+    select?: CategoryDepositSettingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CategoryDepositSettingInclude<ExtArgs> | null
+    /**
+     * Filter, which CategoryDepositSetting to fetch.
+     */
+    where?: CategoryDepositSettingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CategoryDepositSettings to fetch.
+     */
+    orderBy?: CategoryDepositSettingOrderByWithRelationInput | CategoryDepositSettingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CategoryDepositSettings.
+     */
+    cursor?: CategoryDepositSettingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CategoryDepositSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CategoryDepositSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CategoryDepositSettings.
+     */
+    distinct?: CategoryDepositSettingScalarFieldEnum | CategoryDepositSettingScalarFieldEnum[]
+  }
+
+  /**
+   * CategoryDepositSetting findFirstOrThrow
+   */
+  export type CategoryDepositSettingFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CategoryDepositSetting
+     */
+    select?: CategoryDepositSettingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CategoryDepositSettingInclude<ExtArgs> | null
+    /**
+     * Filter, which CategoryDepositSetting to fetch.
+     */
+    where?: CategoryDepositSettingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CategoryDepositSettings to fetch.
+     */
+    orderBy?: CategoryDepositSettingOrderByWithRelationInput | CategoryDepositSettingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CategoryDepositSettings.
+     */
+    cursor?: CategoryDepositSettingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CategoryDepositSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CategoryDepositSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CategoryDepositSettings.
+     */
+    distinct?: CategoryDepositSettingScalarFieldEnum | CategoryDepositSettingScalarFieldEnum[]
+  }
+
+  /**
+   * CategoryDepositSetting findMany
+   */
+  export type CategoryDepositSettingFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CategoryDepositSetting
+     */
+    select?: CategoryDepositSettingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CategoryDepositSettingInclude<ExtArgs> | null
+    /**
+     * Filter, which CategoryDepositSettings to fetch.
+     */
+    where?: CategoryDepositSettingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CategoryDepositSettings to fetch.
+     */
+    orderBy?: CategoryDepositSettingOrderByWithRelationInput | CategoryDepositSettingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing CategoryDepositSettings.
+     */
+    cursor?: CategoryDepositSettingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CategoryDepositSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CategoryDepositSettings.
+     */
+    skip?: number
+    distinct?: CategoryDepositSettingScalarFieldEnum | CategoryDepositSettingScalarFieldEnum[]
+  }
+
+  /**
+   * CategoryDepositSetting create
+   */
+  export type CategoryDepositSettingCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CategoryDepositSetting
+     */
+    select?: CategoryDepositSettingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CategoryDepositSettingInclude<ExtArgs> | null
+    /**
+     * The data needed to create a CategoryDepositSetting.
+     */
+    data: XOR<CategoryDepositSettingCreateInput, CategoryDepositSettingUncheckedCreateInput>
+  }
+
+  /**
+   * CategoryDepositSetting createMany
+   */
+  export type CategoryDepositSettingCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many CategoryDepositSettings.
+     */
+    data: CategoryDepositSettingCreateManyInput | CategoryDepositSettingCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * CategoryDepositSetting createManyAndReturn
+   */
+  export type CategoryDepositSettingCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CategoryDepositSetting
+     */
+    select?: CategoryDepositSettingSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many CategoryDepositSettings.
+     */
+    data: CategoryDepositSettingCreateManyInput | CategoryDepositSettingCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CategoryDepositSettingIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * CategoryDepositSetting update
+   */
+  export type CategoryDepositSettingUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CategoryDepositSetting
+     */
+    select?: CategoryDepositSettingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CategoryDepositSettingInclude<ExtArgs> | null
+    /**
+     * The data needed to update a CategoryDepositSetting.
+     */
+    data: XOR<CategoryDepositSettingUpdateInput, CategoryDepositSettingUncheckedUpdateInput>
+    /**
+     * Choose, which CategoryDepositSetting to update.
+     */
+    where: CategoryDepositSettingWhereUniqueInput
+  }
+
+  /**
+   * CategoryDepositSetting updateMany
+   */
+  export type CategoryDepositSettingUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update CategoryDepositSettings.
+     */
+    data: XOR<CategoryDepositSettingUpdateManyMutationInput, CategoryDepositSettingUncheckedUpdateManyInput>
+    /**
+     * Filter which CategoryDepositSettings to update
+     */
+    where?: CategoryDepositSettingWhereInput
+  }
+
+  /**
+   * CategoryDepositSetting upsert
+   */
+  export type CategoryDepositSettingUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CategoryDepositSetting
+     */
+    select?: CategoryDepositSettingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CategoryDepositSettingInclude<ExtArgs> | null
+    /**
+     * The filter to search for the CategoryDepositSetting to update in case it exists.
+     */
+    where: CategoryDepositSettingWhereUniqueInput
+    /**
+     * In case the CategoryDepositSetting found by the `where` argument doesn't exist, create a new CategoryDepositSetting with this data.
+     */
+    create: XOR<CategoryDepositSettingCreateInput, CategoryDepositSettingUncheckedCreateInput>
+    /**
+     * In case the CategoryDepositSetting was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<CategoryDepositSettingUpdateInput, CategoryDepositSettingUncheckedUpdateInput>
+  }
+
+  /**
+   * CategoryDepositSetting delete
+   */
+  export type CategoryDepositSettingDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CategoryDepositSetting
+     */
+    select?: CategoryDepositSettingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CategoryDepositSettingInclude<ExtArgs> | null
+    /**
+     * Filter which CategoryDepositSetting to delete.
+     */
+    where: CategoryDepositSettingWhereUniqueInput
+  }
+
+  /**
+   * CategoryDepositSetting deleteMany
+   */
+  export type CategoryDepositSettingDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CategoryDepositSettings to delete
+     */
+    where?: CategoryDepositSettingWhereInput
+  }
+
+  /**
+   * CategoryDepositSetting without action
+   */
+  export type CategoryDepositSettingDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CategoryDepositSetting
+     */
+    select?: CategoryDepositSettingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CategoryDepositSettingInclude<ExtArgs> | null
   }
 
 
@@ -31698,6 +33994,27 @@ export namespace Prisma {
   export type PricingRuleScalarFieldEnum = (typeof PricingRuleScalarFieldEnum)[keyof typeof PricingRuleScalarFieldEnum]
 
 
+  export const PricingDiscountSlabScalarFieldEnum: {
+    id: 'id',
+    days: 'days',
+    multiplier: 'multiplier',
+    branchId: 'branchId',
+    categoryId: 'categoryId'
+  };
+
+  export type PricingDiscountSlabScalarFieldEnum = (typeof PricingDiscountSlabScalarFieldEnum)[keyof typeof PricingDiscountSlabScalarFieldEnum]
+
+
+  export const CategoryDepositSettingScalarFieldEnum: {
+    id: 'id',
+    branchId: 'branchId',
+    categoryId: 'categoryId',
+    amount: 'amount'
+  };
+
+  export type CategoryDepositSettingScalarFieldEnum = (typeof CategoryDepositSettingScalarFieldEnum)[keyof typeof CategoryDepositSettingScalarFieldEnum]
+
+
   export const BookingScalarFieldEnum: {
     id: 'id',
     publicId: 'publicId',
@@ -32619,6 +34936,8 @@ export namespace Prisma {
     vehicles?: VehicleListRelationFilter
     bookings?: BookingListRelationFilter
     pricingSetting?: XOR<BranchPricingSettingNullableRelationFilter, BranchPricingSettingWhereInput> | null
+    pricingDiscountSlabs?: PricingDiscountSlabListRelationFilter
+    categoryDepositSettings?: CategoryDepositSettingListRelationFilter
   }
 
   export type BranchOrderByWithRelationInput = {
@@ -32633,6 +34952,8 @@ export namespace Prisma {
     vehicles?: VehicleOrderByRelationAggregateInput
     bookings?: BookingOrderByRelationAggregateInput
     pricingSetting?: BranchPricingSettingOrderByWithRelationInput
+    pricingDiscountSlabs?: PricingDiscountSlabOrderByRelationAggregateInput
+    categoryDepositSettings?: CategoryDepositSettingOrderByRelationAggregateInput
   }
 
   export type BranchWhereUniqueInput = Prisma.AtLeast<{
@@ -32650,6 +34971,8 @@ export namespace Prisma {
     vehicles?: VehicleListRelationFilter
     bookings?: BookingListRelationFilter
     pricingSetting?: XOR<BranchPricingSettingNullableRelationFilter, BranchPricingSettingWhereInput> | null
+    pricingDiscountSlabs?: PricingDiscountSlabListRelationFilter
+    categoryDepositSettings?: CategoryDepositSettingListRelationFilter
   }, "id" | "publicId">
 
   export type BranchOrderByWithAggregationInput = {
@@ -32834,6 +35157,8 @@ export namespace Prisma {
     publicId?: StringFilter<"VehicleCategory"> | string
     name?: StringFilter<"VehicleCategory"> | string
     description?: StringNullableFilter<"VehicleCategory"> | string | null
+    pricingDiscountSlabs?: PricingDiscountSlabListRelationFilter
+    categoryDepositSettings?: CategoryDepositSettingListRelationFilter
     vehicles?: VehicleListRelationFilter
     pricingRules?: PricingRuleListRelationFilter
   }
@@ -32843,6 +35168,8 @@ export namespace Prisma {
     publicId?: SortOrder
     name?: SortOrder
     description?: SortOrderInput | SortOrder
+    pricingDiscountSlabs?: PricingDiscountSlabOrderByRelationAggregateInput
+    categoryDepositSettings?: CategoryDepositSettingOrderByRelationAggregateInput
     vehicles?: VehicleOrderByRelationAggregateInput
     pricingRules?: PricingRuleOrderByRelationAggregateInput
   }
@@ -32855,6 +35182,8 @@ export namespace Prisma {
     NOT?: VehicleCategoryWhereInput | VehicleCategoryWhereInput[]
     name?: StringFilter<"VehicleCategory"> | string
     description?: StringNullableFilter<"VehicleCategory"> | string | null
+    pricingDiscountSlabs?: PricingDiscountSlabListRelationFilter
+    categoryDepositSettings?: CategoryDepositSettingListRelationFilter
     vehicles?: VehicleListRelationFilter
     pricingRules?: PricingRuleListRelationFilter
   }, "id" | "publicId">
@@ -33367,6 +35696,122 @@ export namespace Prisma {
     multiplier?: DecimalWithAggregatesFilter<"PricingRule"> | Decimal | DecimalJsLike | number | string
     categoryId?: IntNullableWithAggregatesFilter<"PricingRule"> | number | null
     createdAt?: DateTimeWithAggregatesFilter<"PricingRule"> | Date | string
+  }
+
+  export type PricingDiscountSlabWhereInput = {
+    AND?: PricingDiscountSlabWhereInput | PricingDiscountSlabWhereInput[]
+    OR?: PricingDiscountSlabWhereInput[]
+    NOT?: PricingDiscountSlabWhereInput | PricingDiscountSlabWhereInput[]
+    id?: IntFilter<"PricingDiscountSlab"> | number
+    days?: IntFilter<"PricingDiscountSlab"> | number
+    multiplier?: DecimalFilter<"PricingDiscountSlab"> | Decimal | DecimalJsLike | number | string
+    branchId?: IntNullableFilter<"PricingDiscountSlab"> | number | null
+    categoryId?: IntNullableFilter<"PricingDiscountSlab"> | number | null
+    branch?: XOR<BranchNullableRelationFilter, BranchWhereInput> | null
+    category?: XOR<VehicleCategoryNullableRelationFilter, VehicleCategoryWhereInput> | null
+  }
+
+  export type PricingDiscountSlabOrderByWithRelationInput = {
+    id?: SortOrder
+    days?: SortOrder
+    multiplier?: SortOrder
+    branchId?: SortOrderInput | SortOrder
+    categoryId?: SortOrderInput | SortOrder
+    branch?: BranchOrderByWithRelationInput
+    category?: VehicleCategoryOrderByWithRelationInput
+  }
+
+  export type PricingDiscountSlabWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    AND?: PricingDiscountSlabWhereInput | PricingDiscountSlabWhereInput[]
+    OR?: PricingDiscountSlabWhereInput[]
+    NOT?: PricingDiscountSlabWhereInput | PricingDiscountSlabWhereInput[]
+    days?: IntFilter<"PricingDiscountSlab"> | number
+    multiplier?: DecimalFilter<"PricingDiscountSlab"> | Decimal | DecimalJsLike | number | string
+    branchId?: IntNullableFilter<"PricingDiscountSlab"> | number | null
+    categoryId?: IntNullableFilter<"PricingDiscountSlab"> | number | null
+    branch?: XOR<BranchNullableRelationFilter, BranchWhereInput> | null
+    category?: XOR<VehicleCategoryNullableRelationFilter, VehicleCategoryWhereInput> | null
+  }, "id">
+
+  export type PricingDiscountSlabOrderByWithAggregationInput = {
+    id?: SortOrder
+    days?: SortOrder
+    multiplier?: SortOrder
+    branchId?: SortOrderInput | SortOrder
+    categoryId?: SortOrderInput | SortOrder
+    _count?: PricingDiscountSlabCountOrderByAggregateInput
+    _avg?: PricingDiscountSlabAvgOrderByAggregateInput
+    _max?: PricingDiscountSlabMaxOrderByAggregateInput
+    _min?: PricingDiscountSlabMinOrderByAggregateInput
+    _sum?: PricingDiscountSlabSumOrderByAggregateInput
+  }
+
+  export type PricingDiscountSlabScalarWhereWithAggregatesInput = {
+    AND?: PricingDiscountSlabScalarWhereWithAggregatesInput | PricingDiscountSlabScalarWhereWithAggregatesInput[]
+    OR?: PricingDiscountSlabScalarWhereWithAggregatesInput[]
+    NOT?: PricingDiscountSlabScalarWhereWithAggregatesInput | PricingDiscountSlabScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"PricingDiscountSlab"> | number
+    days?: IntWithAggregatesFilter<"PricingDiscountSlab"> | number
+    multiplier?: DecimalWithAggregatesFilter<"PricingDiscountSlab"> | Decimal | DecimalJsLike | number | string
+    branchId?: IntNullableWithAggregatesFilter<"PricingDiscountSlab"> | number | null
+    categoryId?: IntNullableWithAggregatesFilter<"PricingDiscountSlab"> | number | null
+  }
+
+  export type CategoryDepositSettingWhereInput = {
+    AND?: CategoryDepositSettingWhereInput | CategoryDepositSettingWhereInput[]
+    OR?: CategoryDepositSettingWhereInput[]
+    NOT?: CategoryDepositSettingWhereInput | CategoryDepositSettingWhereInput[]
+    id?: IntFilter<"CategoryDepositSetting"> | number
+    branchId?: IntFilter<"CategoryDepositSetting"> | number
+    categoryId?: IntFilter<"CategoryDepositSetting"> | number
+    amount?: DecimalFilter<"CategoryDepositSetting"> | Decimal | DecimalJsLike | number | string
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+    category?: XOR<VehicleCategoryRelationFilter, VehicleCategoryWhereInput>
+  }
+
+  export type CategoryDepositSettingOrderByWithRelationInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+    amount?: SortOrder
+    branch?: BranchOrderByWithRelationInput
+    category?: VehicleCategoryOrderByWithRelationInput
+  }
+
+  export type CategoryDepositSettingWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    branchId_categoryId?: CategoryDepositSettingBranchIdCategoryIdCompoundUniqueInput
+    AND?: CategoryDepositSettingWhereInput | CategoryDepositSettingWhereInput[]
+    OR?: CategoryDepositSettingWhereInput[]
+    NOT?: CategoryDepositSettingWhereInput | CategoryDepositSettingWhereInput[]
+    branchId?: IntFilter<"CategoryDepositSetting"> | number
+    categoryId?: IntFilter<"CategoryDepositSetting"> | number
+    amount?: DecimalFilter<"CategoryDepositSetting"> | Decimal | DecimalJsLike | number | string
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+    category?: XOR<VehicleCategoryRelationFilter, VehicleCategoryWhereInput>
+  }, "id" | "branchId_categoryId">
+
+  export type CategoryDepositSettingOrderByWithAggregationInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+    amount?: SortOrder
+    _count?: CategoryDepositSettingCountOrderByAggregateInput
+    _avg?: CategoryDepositSettingAvgOrderByAggregateInput
+    _max?: CategoryDepositSettingMaxOrderByAggregateInput
+    _min?: CategoryDepositSettingMinOrderByAggregateInput
+    _sum?: CategoryDepositSettingSumOrderByAggregateInput
+  }
+
+  export type CategoryDepositSettingScalarWhereWithAggregatesInput = {
+    AND?: CategoryDepositSettingScalarWhereWithAggregatesInput | CategoryDepositSettingScalarWhereWithAggregatesInput[]
+    OR?: CategoryDepositSettingScalarWhereWithAggregatesInput[]
+    NOT?: CategoryDepositSettingScalarWhereWithAggregatesInput | CategoryDepositSettingScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"CategoryDepositSetting"> | number
+    branchId?: IntWithAggregatesFilter<"CategoryDepositSetting"> | number
+    categoryId?: IntWithAggregatesFilter<"CategoryDepositSetting"> | number
+    amount?: DecimalWithAggregatesFilter<"CategoryDepositSetting"> | Decimal | DecimalJsLike | number | string
   }
 
   export type BookingWhereInput = {
@@ -34640,6 +37085,8 @@ export namespace Prisma {
     vehicles?: VehicleCreateNestedManyWithoutBranchInput
     bookings?: BookingCreateNestedManyWithoutBranchInput
     pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateInput = {
@@ -34654,6 +37101,8 @@ export namespace Prisma {
     vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
     bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
     pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUpdateInput = {
@@ -34667,6 +37116,8 @@ export namespace Prisma {
     vehicles?: VehicleUpdateManyWithoutBranchNestedInput
     bookings?: BookingUpdateManyWithoutBranchNestedInput
     pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateInput = {
@@ -34681,6 +37132,8 @@ export namespace Prisma {
     vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
     bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
     pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchCreateManyInput = {
@@ -34870,6 +37323,8 @@ export namespace Prisma {
     publicId: string
     name: string
     description?: string | null
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutCategoryInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleCreateNestedManyWithoutCategoryInput
   }
@@ -34879,6 +37334,8 @@ export namespace Prisma {
     publicId: string
     name: string
     description?: string | null
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutCategoryInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleUncheckedCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleUncheckedCreateNestedManyWithoutCategoryInput
   }
@@ -34887,6 +37344,8 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutCategoryNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUpdateManyWithoutCategoryNestedInput
   }
@@ -34896,6 +37355,8 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutCategoryNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUncheckedUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUncheckedUpdateManyWithoutCategoryNestedInput
   }
@@ -35400,6 +37861,101 @@ export namespace Prisma {
     multiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     categoryId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PricingDiscountSlabCreateInput = {
+    days: number
+    multiplier: Decimal | DecimalJsLike | number | string
+    branch?: BranchCreateNestedOneWithoutPricingDiscountSlabsInput
+    category?: VehicleCategoryCreateNestedOneWithoutPricingDiscountSlabsInput
+  }
+
+  export type PricingDiscountSlabUncheckedCreateInput = {
+    id?: number
+    days: number
+    multiplier: Decimal | DecimalJsLike | number | string
+    branchId?: number | null
+    categoryId?: number | null
+  }
+
+  export type PricingDiscountSlabUpdateInput = {
+    days?: IntFieldUpdateOperationsInput | number
+    multiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    branch?: BranchUpdateOneWithoutPricingDiscountSlabsNestedInput
+    category?: VehicleCategoryUpdateOneWithoutPricingDiscountSlabsNestedInput
+  }
+
+  export type PricingDiscountSlabUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    days?: IntFieldUpdateOperationsInput | number
+    multiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    categoryId?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type PricingDiscountSlabCreateManyInput = {
+    id?: number
+    days: number
+    multiplier: Decimal | DecimalJsLike | number | string
+    branchId?: number | null
+    categoryId?: number | null
+  }
+
+  export type PricingDiscountSlabUpdateManyMutationInput = {
+    days?: IntFieldUpdateOperationsInput | number
+    multiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+  }
+
+  export type PricingDiscountSlabUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    days?: IntFieldUpdateOperationsInput | number
+    multiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    categoryId?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type CategoryDepositSettingCreateInput = {
+    amount: Decimal | DecimalJsLike | number | string
+    branch: BranchCreateNestedOneWithoutCategoryDepositSettingsInput
+    category: VehicleCategoryCreateNestedOneWithoutCategoryDepositSettingsInput
+  }
+
+  export type CategoryDepositSettingUncheckedCreateInput = {
+    id?: number
+    branchId: number
+    categoryId: number
+    amount: Decimal | DecimalJsLike | number | string
+  }
+
+  export type CategoryDepositSettingUpdateInput = {
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    branch?: BranchUpdateOneRequiredWithoutCategoryDepositSettingsNestedInput
+    category?: VehicleCategoryUpdateOneRequiredWithoutCategoryDepositSettingsNestedInput
+  }
+
+  export type CategoryDepositSettingUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    categoryId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+  }
+
+  export type CategoryDepositSettingCreateManyInput = {
+    id?: number
+    branchId: number
+    categoryId: number
+    amount: Decimal | DecimalJsLike | number | string
+  }
+
+  export type CategoryDepositSettingUpdateManyMutationInput = {
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+  }
+
+  export type CategoryDepositSettingUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    categoryId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type BookingCreateInput = {
@@ -36834,11 +39390,31 @@ export namespace Prisma {
     isNot?: BranchPricingSettingWhereInput | null
   }
 
+  export type PricingDiscountSlabListRelationFilter = {
+    every?: PricingDiscountSlabWhereInput
+    some?: PricingDiscountSlabWhereInput
+    none?: PricingDiscountSlabWhereInput
+  }
+
+  export type CategoryDepositSettingListRelationFilter = {
+    every?: CategoryDepositSettingWhereInput
+    some?: CategoryDepositSettingWhereInput
+    none?: CategoryDepositSettingWhereInput
+  }
+
   export type UserOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
   export type VehicleOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type PricingDiscountSlabOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type CategoryDepositSettingOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -37440,6 +40016,86 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumPricingRuleTypeFilter<$PrismaModel>
     _max?: NestedEnumPricingRuleTypeFilter<$PrismaModel>
+  }
+
+  export type PricingDiscountSlabCountOrderByAggregateInput = {
+    id?: SortOrder
+    days?: SortOrder
+    multiplier?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+  }
+
+  export type PricingDiscountSlabAvgOrderByAggregateInput = {
+    id?: SortOrder
+    days?: SortOrder
+    multiplier?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+  }
+
+  export type PricingDiscountSlabMaxOrderByAggregateInput = {
+    id?: SortOrder
+    days?: SortOrder
+    multiplier?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+  }
+
+  export type PricingDiscountSlabMinOrderByAggregateInput = {
+    id?: SortOrder
+    days?: SortOrder
+    multiplier?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+  }
+
+  export type PricingDiscountSlabSumOrderByAggregateInput = {
+    id?: SortOrder
+    days?: SortOrder
+    multiplier?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+  }
+
+  export type CategoryDepositSettingBranchIdCategoryIdCompoundUniqueInput = {
+    branchId: number
+    categoryId: number
+  }
+
+  export type CategoryDepositSettingCountOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+    amount?: SortOrder
+  }
+
+  export type CategoryDepositSettingAvgOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+    amount?: SortOrder
+  }
+
+  export type CategoryDepositSettingMaxOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+    amount?: SortOrder
+  }
+
+  export type CategoryDepositSettingMinOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+    amount?: SortOrder
+  }
+
+  export type CategoryDepositSettingSumOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+    amount?: SortOrder
   }
 
   export type EnumBookingStatusFilter<$PrismaModel = never> = {
@@ -38755,6 +41411,20 @@ export namespace Prisma {
     connect?: BranchPricingSettingWhereUniqueInput
   }
 
+  export type PricingDiscountSlabCreateNestedManyWithoutBranchInput = {
+    create?: XOR<PricingDiscountSlabCreateWithoutBranchInput, PricingDiscountSlabUncheckedCreateWithoutBranchInput> | PricingDiscountSlabCreateWithoutBranchInput[] | PricingDiscountSlabUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: PricingDiscountSlabCreateOrConnectWithoutBranchInput | PricingDiscountSlabCreateOrConnectWithoutBranchInput[]
+    createMany?: PricingDiscountSlabCreateManyBranchInputEnvelope
+    connect?: PricingDiscountSlabWhereUniqueInput | PricingDiscountSlabWhereUniqueInput[]
+  }
+
+  export type CategoryDepositSettingCreateNestedManyWithoutBranchInput = {
+    create?: XOR<CategoryDepositSettingCreateWithoutBranchInput, CategoryDepositSettingUncheckedCreateWithoutBranchInput> | CategoryDepositSettingCreateWithoutBranchInput[] | CategoryDepositSettingUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: CategoryDepositSettingCreateOrConnectWithoutBranchInput | CategoryDepositSettingCreateOrConnectWithoutBranchInput[]
+    createMany?: CategoryDepositSettingCreateManyBranchInputEnvelope
+    connect?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
+  }
+
   export type UserUncheckedCreateNestedManyWithoutBranchInput = {
     create?: XOR<UserCreateWithoutBranchInput, UserUncheckedCreateWithoutBranchInput> | UserCreateWithoutBranchInput[] | UserUncheckedCreateWithoutBranchInput[]
     connectOrCreate?: UserCreateOrConnectWithoutBranchInput | UserCreateOrConnectWithoutBranchInput[]
@@ -38780,6 +41450,20 @@ export namespace Prisma {
     create?: XOR<BranchPricingSettingCreateWithoutBranchInput, BranchPricingSettingUncheckedCreateWithoutBranchInput>
     connectOrCreate?: BranchPricingSettingCreateOrConnectWithoutBranchInput
     connect?: BranchPricingSettingWhereUniqueInput
+  }
+
+  export type PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput = {
+    create?: XOR<PricingDiscountSlabCreateWithoutBranchInput, PricingDiscountSlabUncheckedCreateWithoutBranchInput> | PricingDiscountSlabCreateWithoutBranchInput[] | PricingDiscountSlabUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: PricingDiscountSlabCreateOrConnectWithoutBranchInput | PricingDiscountSlabCreateOrConnectWithoutBranchInput[]
+    createMany?: PricingDiscountSlabCreateManyBranchInputEnvelope
+    connect?: PricingDiscountSlabWhereUniqueInput | PricingDiscountSlabWhereUniqueInput[]
+  }
+
+  export type CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput = {
+    create?: XOR<CategoryDepositSettingCreateWithoutBranchInput, CategoryDepositSettingUncheckedCreateWithoutBranchInput> | CategoryDepositSettingCreateWithoutBranchInput[] | CategoryDepositSettingUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: CategoryDepositSettingCreateOrConnectWithoutBranchInput | CategoryDepositSettingCreateOrConnectWithoutBranchInput[]
+    createMany?: CategoryDepositSettingCreateManyBranchInputEnvelope
+    connect?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
   }
 
   export type UserUpdateManyWithoutBranchNestedInput = {
@@ -38834,6 +41518,34 @@ export namespace Prisma {
     update?: XOR<XOR<BranchPricingSettingUpdateToOneWithWhereWithoutBranchInput, BranchPricingSettingUpdateWithoutBranchInput>, BranchPricingSettingUncheckedUpdateWithoutBranchInput>
   }
 
+  export type PricingDiscountSlabUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<PricingDiscountSlabCreateWithoutBranchInput, PricingDiscountSlabUncheckedCreateWithoutBranchInput> | PricingDiscountSlabCreateWithoutBranchInput[] | PricingDiscountSlabUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: PricingDiscountSlabCreateOrConnectWithoutBranchInput | PricingDiscountSlabCreateOrConnectWithoutBranchInput[]
+    upsert?: PricingDiscountSlabUpsertWithWhereUniqueWithoutBranchInput | PricingDiscountSlabUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: PricingDiscountSlabCreateManyBranchInputEnvelope
+    set?: PricingDiscountSlabWhereUniqueInput | PricingDiscountSlabWhereUniqueInput[]
+    disconnect?: PricingDiscountSlabWhereUniqueInput | PricingDiscountSlabWhereUniqueInput[]
+    delete?: PricingDiscountSlabWhereUniqueInput | PricingDiscountSlabWhereUniqueInput[]
+    connect?: PricingDiscountSlabWhereUniqueInput | PricingDiscountSlabWhereUniqueInput[]
+    update?: PricingDiscountSlabUpdateWithWhereUniqueWithoutBranchInput | PricingDiscountSlabUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: PricingDiscountSlabUpdateManyWithWhereWithoutBranchInput | PricingDiscountSlabUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: PricingDiscountSlabScalarWhereInput | PricingDiscountSlabScalarWhereInput[]
+  }
+
+  export type CategoryDepositSettingUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<CategoryDepositSettingCreateWithoutBranchInput, CategoryDepositSettingUncheckedCreateWithoutBranchInput> | CategoryDepositSettingCreateWithoutBranchInput[] | CategoryDepositSettingUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: CategoryDepositSettingCreateOrConnectWithoutBranchInput | CategoryDepositSettingCreateOrConnectWithoutBranchInput[]
+    upsert?: CategoryDepositSettingUpsertWithWhereUniqueWithoutBranchInput | CategoryDepositSettingUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: CategoryDepositSettingCreateManyBranchInputEnvelope
+    set?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
+    disconnect?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
+    delete?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
+    connect?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
+    update?: CategoryDepositSettingUpdateWithWhereUniqueWithoutBranchInput | CategoryDepositSettingUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: CategoryDepositSettingUpdateManyWithWhereWithoutBranchInput | CategoryDepositSettingUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: CategoryDepositSettingScalarWhereInput | CategoryDepositSettingScalarWhereInput[]
+  }
+
   export type UserUncheckedUpdateManyWithoutBranchNestedInput = {
     create?: XOR<UserCreateWithoutBranchInput, UserUncheckedCreateWithoutBranchInput> | UserCreateWithoutBranchInput[] | UserUncheckedCreateWithoutBranchInput[]
     connectOrCreate?: UserCreateOrConnectWithoutBranchInput | UserCreateOrConnectWithoutBranchInput[]
@@ -38886,6 +41598,34 @@ export namespace Prisma {
     update?: XOR<XOR<BranchPricingSettingUpdateToOneWithWhereWithoutBranchInput, BranchPricingSettingUpdateWithoutBranchInput>, BranchPricingSettingUncheckedUpdateWithoutBranchInput>
   }
 
+  export type PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<PricingDiscountSlabCreateWithoutBranchInput, PricingDiscountSlabUncheckedCreateWithoutBranchInput> | PricingDiscountSlabCreateWithoutBranchInput[] | PricingDiscountSlabUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: PricingDiscountSlabCreateOrConnectWithoutBranchInput | PricingDiscountSlabCreateOrConnectWithoutBranchInput[]
+    upsert?: PricingDiscountSlabUpsertWithWhereUniqueWithoutBranchInput | PricingDiscountSlabUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: PricingDiscountSlabCreateManyBranchInputEnvelope
+    set?: PricingDiscountSlabWhereUniqueInput | PricingDiscountSlabWhereUniqueInput[]
+    disconnect?: PricingDiscountSlabWhereUniqueInput | PricingDiscountSlabWhereUniqueInput[]
+    delete?: PricingDiscountSlabWhereUniqueInput | PricingDiscountSlabWhereUniqueInput[]
+    connect?: PricingDiscountSlabWhereUniqueInput | PricingDiscountSlabWhereUniqueInput[]
+    update?: PricingDiscountSlabUpdateWithWhereUniqueWithoutBranchInput | PricingDiscountSlabUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: PricingDiscountSlabUpdateManyWithWhereWithoutBranchInput | PricingDiscountSlabUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: PricingDiscountSlabScalarWhereInput | PricingDiscountSlabScalarWhereInput[]
+  }
+
+  export type CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<CategoryDepositSettingCreateWithoutBranchInput, CategoryDepositSettingUncheckedCreateWithoutBranchInput> | CategoryDepositSettingCreateWithoutBranchInput[] | CategoryDepositSettingUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: CategoryDepositSettingCreateOrConnectWithoutBranchInput | CategoryDepositSettingCreateOrConnectWithoutBranchInput[]
+    upsert?: CategoryDepositSettingUpsertWithWhereUniqueWithoutBranchInput | CategoryDepositSettingUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: CategoryDepositSettingCreateManyBranchInputEnvelope
+    set?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
+    disconnect?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
+    delete?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
+    connect?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
+    update?: CategoryDepositSettingUpdateWithWhereUniqueWithoutBranchInput | CategoryDepositSettingUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: CategoryDepositSettingUpdateManyWithWhereWithoutBranchInput | CategoryDepositSettingUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: CategoryDepositSettingScalarWhereInput | CategoryDepositSettingScalarWhereInput[]
+  }
+
   export type BranchCreateNestedOneWithoutPricingSettingInput = {
     create?: XOR<BranchCreateWithoutPricingSettingInput, BranchUncheckedCreateWithoutPricingSettingInput>
     connectOrCreate?: BranchCreateOrConnectWithoutPricingSettingInput
@@ -38908,6 +41648,20 @@ export namespace Prisma {
     update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutPricingSettingInput, BranchUpdateWithoutPricingSettingInput>, BranchUncheckedUpdateWithoutPricingSettingInput>
   }
 
+  export type PricingDiscountSlabCreateNestedManyWithoutCategoryInput = {
+    create?: XOR<PricingDiscountSlabCreateWithoutCategoryInput, PricingDiscountSlabUncheckedCreateWithoutCategoryInput> | PricingDiscountSlabCreateWithoutCategoryInput[] | PricingDiscountSlabUncheckedCreateWithoutCategoryInput[]
+    connectOrCreate?: PricingDiscountSlabCreateOrConnectWithoutCategoryInput | PricingDiscountSlabCreateOrConnectWithoutCategoryInput[]
+    createMany?: PricingDiscountSlabCreateManyCategoryInputEnvelope
+    connect?: PricingDiscountSlabWhereUniqueInput | PricingDiscountSlabWhereUniqueInput[]
+  }
+
+  export type CategoryDepositSettingCreateNestedManyWithoutCategoryInput = {
+    create?: XOR<CategoryDepositSettingCreateWithoutCategoryInput, CategoryDepositSettingUncheckedCreateWithoutCategoryInput> | CategoryDepositSettingCreateWithoutCategoryInput[] | CategoryDepositSettingUncheckedCreateWithoutCategoryInput[]
+    connectOrCreate?: CategoryDepositSettingCreateOrConnectWithoutCategoryInput | CategoryDepositSettingCreateOrConnectWithoutCategoryInput[]
+    createMany?: CategoryDepositSettingCreateManyCategoryInputEnvelope
+    connect?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
+  }
+
   export type VehicleCreateNestedManyWithoutCategoryInput = {
     create?: XOR<VehicleCreateWithoutCategoryInput, VehicleUncheckedCreateWithoutCategoryInput> | VehicleCreateWithoutCategoryInput[] | VehicleUncheckedCreateWithoutCategoryInput[]
     connectOrCreate?: VehicleCreateOrConnectWithoutCategoryInput | VehicleCreateOrConnectWithoutCategoryInput[]
@@ -38922,6 +41676,20 @@ export namespace Prisma {
     connect?: PricingRuleWhereUniqueInput | PricingRuleWhereUniqueInput[]
   }
 
+  export type PricingDiscountSlabUncheckedCreateNestedManyWithoutCategoryInput = {
+    create?: XOR<PricingDiscountSlabCreateWithoutCategoryInput, PricingDiscountSlabUncheckedCreateWithoutCategoryInput> | PricingDiscountSlabCreateWithoutCategoryInput[] | PricingDiscountSlabUncheckedCreateWithoutCategoryInput[]
+    connectOrCreate?: PricingDiscountSlabCreateOrConnectWithoutCategoryInput | PricingDiscountSlabCreateOrConnectWithoutCategoryInput[]
+    createMany?: PricingDiscountSlabCreateManyCategoryInputEnvelope
+    connect?: PricingDiscountSlabWhereUniqueInput | PricingDiscountSlabWhereUniqueInput[]
+  }
+
+  export type CategoryDepositSettingUncheckedCreateNestedManyWithoutCategoryInput = {
+    create?: XOR<CategoryDepositSettingCreateWithoutCategoryInput, CategoryDepositSettingUncheckedCreateWithoutCategoryInput> | CategoryDepositSettingCreateWithoutCategoryInput[] | CategoryDepositSettingUncheckedCreateWithoutCategoryInput[]
+    connectOrCreate?: CategoryDepositSettingCreateOrConnectWithoutCategoryInput | CategoryDepositSettingCreateOrConnectWithoutCategoryInput[]
+    createMany?: CategoryDepositSettingCreateManyCategoryInputEnvelope
+    connect?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
+  }
+
   export type VehicleUncheckedCreateNestedManyWithoutCategoryInput = {
     create?: XOR<VehicleCreateWithoutCategoryInput, VehicleUncheckedCreateWithoutCategoryInput> | VehicleCreateWithoutCategoryInput[] | VehicleUncheckedCreateWithoutCategoryInput[]
     connectOrCreate?: VehicleCreateOrConnectWithoutCategoryInput | VehicleCreateOrConnectWithoutCategoryInput[]
@@ -38934,6 +41702,34 @@ export namespace Prisma {
     connectOrCreate?: PricingRuleCreateOrConnectWithoutCategoryInput | PricingRuleCreateOrConnectWithoutCategoryInput[]
     createMany?: PricingRuleCreateManyCategoryInputEnvelope
     connect?: PricingRuleWhereUniqueInput | PricingRuleWhereUniqueInput[]
+  }
+
+  export type PricingDiscountSlabUpdateManyWithoutCategoryNestedInput = {
+    create?: XOR<PricingDiscountSlabCreateWithoutCategoryInput, PricingDiscountSlabUncheckedCreateWithoutCategoryInput> | PricingDiscountSlabCreateWithoutCategoryInput[] | PricingDiscountSlabUncheckedCreateWithoutCategoryInput[]
+    connectOrCreate?: PricingDiscountSlabCreateOrConnectWithoutCategoryInput | PricingDiscountSlabCreateOrConnectWithoutCategoryInput[]
+    upsert?: PricingDiscountSlabUpsertWithWhereUniqueWithoutCategoryInput | PricingDiscountSlabUpsertWithWhereUniqueWithoutCategoryInput[]
+    createMany?: PricingDiscountSlabCreateManyCategoryInputEnvelope
+    set?: PricingDiscountSlabWhereUniqueInput | PricingDiscountSlabWhereUniqueInput[]
+    disconnect?: PricingDiscountSlabWhereUniqueInput | PricingDiscountSlabWhereUniqueInput[]
+    delete?: PricingDiscountSlabWhereUniqueInput | PricingDiscountSlabWhereUniqueInput[]
+    connect?: PricingDiscountSlabWhereUniqueInput | PricingDiscountSlabWhereUniqueInput[]
+    update?: PricingDiscountSlabUpdateWithWhereUniqueWithoutCategoryInput | PricingDiscountSlabUpdateWithWhereUniqueWithoutCategoryInput[]
+    updateMany?: PricingDiscountSlabUpdateManyWithWhereWithoutCategoryInput | PricingDiscountSlabUpdateManyWithWhereWithoutCategoryInput[]
+    deleteMany?: PricingDiscountSlabScalarWhereInput | PricingDiscountSlabScalarWhereInput[]
+  }
+
+  export type CategoryDepositSettingUpdateManyWithoutCategoryNestedInput = {
+    create?: XOR<CategoryDepositSettingCreateWithoutCategoryInput, CategoryDepositSettingUncheckedCreateWithoutCategoryInput> | CategoryDepositSettingCreateWithoutCategoryInput[] | CategoryDepositSettingUncheckedCreateWithoutCategoryInput[]
+    connectOrCreate?: CategoryDepositSettingCreateOrConnectWithoutCategoryInput | CategoryDepositSettingCreateOrConnectWithoutCategoryInput[]
+    upsert?: CategoryDepositSettingUpsertWithWhereUniqueWithoutCategoryInput | CategoryDepositSettingUpsertWithWhereUniqueWithoutCategoryInput[]
+    createMany?: CategoryDepositSettingCreateManyCategoryInputEnvelope
+    set?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
+    disconnect?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
+    delete?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
+    connect?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
+    update?: CategoryDepositSettingUpdateWithWhereUniqueWithoutCategoryInput | CategoryDepositSettingUpdateWithWhereUniqueWithoutCategoryInput[]
+    updateMany?: CategoryDepositSettingUpdateManyWithWhereWithoutCategoryInput | CategoryDepositSettingUpdateManyWithWhereWithoutCategoryInput[]
+    deleteMany?: CategoryDepositSettingScalarWhereInput | CategoryDepositSettingScalarWhereInput[]
   }
 
   export type VehicleUpdateManyWithoutCategoryNestedInput = {
@@ -38962,6 +41758,34 @@ export namespace Prisma {
     update?: PricingRuleUpdateWithWhereUniqueWithoutCategoryInput | PricingRuleUpdateWithWhereUniqueWithoutCategoryInput[]
     updateMany?: PricingRuleUpdateManyWithWhereWithoutCategoryInput | PricingRuleUpdateManyWithWhereWithoutCategoryInput[]
     deleteMany?: PricingRuleScalarWhereInput | PricingRuleScalarWhereInput[]
+  }
+
+  export type PricingDiscountSlabUncheckedUpdateManyWithoutCategoryNestedInput = {
+    create?: XOR<PricingDiscountSlabCreateWithoutCategoryInput, PricingDiscountSlabUncheckedCreateWithoutCategoryInput> | PricingDiscountSlabCreateWithoutCategoryInput[] | PricingDiscountSlabUncheckedCreateWithoutCategoryInput[]
+    connectOrCreate?: PricingDiscountSlabCreateOrConnectWithoutCategoryInput | PricingDiscountSlabCreateOrConnectWithoutCategoryInput[]
+    upsert?: PricingDiscountSlabUpsertWithWhereUniqueWithoutCategoryInput | PricingDiscountSlabUpsertWithWhereUniqueWithoutCategoryInput[]
+    createMany?: PricingDiscountSlabCreateManyCategoryInputEnvelope
+    set?: PricingDiscountSlabWhereUniqueInput | PricingDiscountSlabWhereUniqueInput[]
+    disconnect?: PricingDiscountSlabWhereUniqueInput | PricingDiscountSlabWhereUniqueInput[]
+    delete?: PricingDiscountSlabWhereUniqueInput | PricingDiscountSlabWhereUniqueInput[]
+    connect?: PricingDiscountSlabWhereUniqueInput | PricingDiscountSlabWhereUniqueInput[]
+    update?: PricingDiscountSlabUpdateWithWhereUniqueWithoutCategoryInput | PricingDiscountSlabUpdateWithWhereUniqueWithoutCategoryInput[]
+    updateMany?: PricingDiscountSlabUpdateManyWithWhereWithoutCategoryInput | PricingDiscountSlabUpdateManyWithWhereWithoutCategoryInput[]
+    deleteMany?: PricingDiscountSlabScalarWhereInput | PricingDiscountSlabScalarWhereInput[]
+  }
+
+  export type CategoryDepositSettingUncheckedUpdateManyWithoutCategoryNestedInput = {
+    create?: XOR<CategoryDepositSettingCreateWithoutCategoryInput, CategoryDepositSettingUncheckedCreateWithoutCategoryInput> | CategoryDepositSettingCreateWithoutCategoryInput[] | CategoryDepositSettingUncheckedCreateWithoutCategoryInput[]
+    connectOrCreate?: CategoryDepositSettingCreateOrConnectWithoutCategoryInput | CategoryDepositSettingCreateOrConnectWithoutCategoryInput[]
+    upsert?: CategoryDepositSettingUpsertWithWhereUniqueWithoutCategoryInput | CategoryDepositSettingUpsertWithWhereUniqueWithoutCategoryInput[]
+    createMany?: CategoryDepositSettingCreateManyCategoryInputEnvelope
+    set?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
+    disconnect?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
+    delete?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
+    connect?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
+    update?: CategoryDepositSettingUpdateWithWhereUniqueWithoutCategoryInput | CategoryDepositSettingUpdateWithWhereUniqueWithoutCategoryInput[]
+    updateMany?: CategoryDepositSettingUpdateManyWithWhereWithoutCategoryInput | CategoryDepositSettingUpdateManyWithWhereWithoutCategoryInput[]
+    deleteMany?: CategoryDepositSettingScalarWhereInput | CategoryDepositSettingScalarWhereInput[]
   }
 
   export type VehicleUncheckedUpdateManyWithoutCategoryNestedInput = {
@@ -39404,6 +42228,66 @@ export namespace Prisma {
     delete?: VehicleCategoryWhereInput | boolean
     connect?: VehicleCategoryWhereUniqueInput
     update?: XOR<XOR<VehicleCategoryUpdateToOneWithWhereWithoutPricingRulesInput, VehicleCategoryUpdateWithoutPricingRulesInput>, VehicleCategoryUncheckedUpdateWithoutPricingRulesInput>
+  }
+
+  export type BranchCreateNestedOneWithoutPricingDiscountSlabsInput = {
+    create?: XOR<BranchCreateWithoutPricingDiscountSlabsInput, BranchUncheckedCreateWithoutPricingDiscountSlabsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutPricingDiscountSlabsInput
+    connect?: BranchWhereUniqueInput
+  }
+
+  export type VehicleCategoryCreateNestedOneWithoutPricingDiscountSlabsInput = {
+    create?: XOR<VehicleCategoryCreateWithoutPricingDiscountSlabsInput, VehicleCategoryUncheckedCreateWithoutPricingDiscountSlabsInput>
+    connectOrCreate?: VehicleCategoryCreateOrConnectWithoutPricingDiscountSlabsInput
+    connect?: VehicleCategoryWhereUniqueInput
+  }
+
+  export type BranchUpdateOneWithoutPricingDiscountSlabsNestedInput = {
+    create?: XOR<BranchCreateWithoutPricingDiscountSlabsInput, BranchUncheckedCreateWithoutPricingDiscountSlabsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutPricingDiscountSlabsInput
+    upsert?: BranchUpsertWithoutPricingDiscountSlabsInput
+    disconnect?: BranchWhereInput | boolean
+    delete?: BranchWhereInput | boolean
+    connect?: BranchWhereUniqueInput
+    update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutPricingDiscountSlabsInput, BranchUpdateWithoutPricingDiscountSlabsInput>, BranchUncheckedUpdateWithoutPricingDiscountSlabsInput>
+  }
+
+  export type VehicleCategoryUpdateOneWithoutPricingDiscountSlabsNestedInput = {
+    create?: XOR<VehicleCategoryCreateWithoutPricingDiscountSlabsInput, VehicleCategoryUncheckedCreateWithoutPricingDiscountSlabsInput>
+    connectOrCreate?: VehicleCategoryCreateOrConnectWithoutPricingDiscountSlabsInput
+    upsert?: VehicleCategoryUpsertWithoutPricingDiscountSlabsInput
+    disconnect?: VehicleCategoryWhereInput | boolean
+    delete?: VehicleCategoryWhereInput | boolean
+    connect?: VehicleCategoryWhereUniqueInput
+    update?: XOR<XOR<VehicleCategoryUpdateToOneWithWhereWithoutPricingDiscountSlabsInput, VehicleCategoryUpdateWithoutPricingDiscountSlabsInput>, VehicleCategoryUncheckedUpdateWithoutPricingDiscountSlabsInput>
+  }
+
+  export type BranchCreateNestedOneWithoutCategoryDepositSettingsInput = {
+    create?: XOR<BranchCreateWithoutCategoryDepositSettingsInput, BranchUncheckedCreateWithoutCategoryDepositSettingsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutCategoryDepositSettingsInput
+    connect?: BranchWhereUniqueInput
+  }
+
+  export type VehicleCategoryCreateNestedOneWithoutCategoryDepositSettingsInput = {
+    create?: XOR<VehicleCategoryCreateWithoutCategoryDepositSettingsInput, VehicleCategoryUncheckedCreateWithoutCategoryDepositSettingsInput>
+    connectOrCreate?: VehicleCategoryCreateOrConnectWithoutCategoryDepositSettingsInput
+    connect?: VehicleCategoryWhereUniqueInput
+  }
+
+  export type BranchUpdateOneRequiredWithoutCategoryDepositSettingsNestedInput = {
+    create?: XOR<BranchCreateWithoutCategoryDepositSettingsInput, BranchUncheckedCreateWithoutCategoryDepositSettingsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutCategoryDepositSettingsInput
+    upsert?: BranchUpsertWithoutCategoryDepositSettingsInput
+    connect?: BranchWhereUniqueInput
+    update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutCategoryDepositSettingsInput, BranchUpdateWithoutCategoryDepositSettingsInput>, BranchUncheckedUpdateWithoutCategoryDepositSettingsInput>
+  }
+
+  export type VehicleCategoryUpdateOneRequiredWithoutCategoryDepositSettingsNestedInput = {
+    create?: XOR<VehicleCategoryCreateWithoutCategoryDepositSettingsInput, VehicleCategoryUncheckedCreateWithoutCategoryDepositSettingsInput>
+    connectOrCreate?: VehicleCategoryCreateOrConnectWithoutCategoryDepositSettingsInput
+    upsert?: VehicleCategoryUpsertWithoutCategoryDepositSettingsInput
+    connect?: VehicleCategoryWhereUniqueInput
+    update?: XOR<XOR<VehicleCategoryUpdateToOneWithWhereWithoutCategoryDepositSettingsInput, VehicleCategoryUpdateWithoutCategoryDepositSettingsInput>, VehicleCategoryUncheckedUpdateWithoutCategoryDepositSettingsInput>
   }
 
   export type CustomerCreateNestedOneWithoutBookingsInput = {
@@ -40366,6 +43250,8 @@ export namespace Prisma {
     vehicles?: VehicleCreateNestedManyWithoutBranchInput
     bookings?: BookingCreateNestedManyWithoutBranchInput
     pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutUsersInput = {
@@ -40379,6 +43265,8 @@ export namespace Prisma {
     vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
     bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
     pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutUsersInput = {
@@ -40606,6 +43494,8 @@ export namespace Prisma {
     vehicles?: VehicleUpdateManyWithoutBranchNestedInput
     bookings?: BookingUpdateManyWithoutBranchNestedInput
     pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutUsersInput = {
@@ -40619,6 +43509,8 @@ export namespace Prisma {
     vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
     bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
     pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type EmailVerificationOtpUpsertWithWhereUniqueWithoutUserInput = {
@@ -41671,6 +44563,50 @@ export namespace Prisma {
     create: XOR<BranchPricingSettingCreateWithoutBranchInput, BranchPricingSettingUncheckedCreateWithoutBranchInput>
   }
 
+  export type PricingDiscountSlabCreateWithoutBranchInput = {
+    days: number
+    multiplier: Decimal | DecimalJsLike | number | string
+    category?: VehicleCategoryCreateNestedOneWithoutPricingDiscountSlabsInput
+  }
+
+  export type PricingDiscountSlabUncheckedCreateWithoutBranchInput = {
+    id?: number
+    days: number
+    multiplier: Decimal | DecimalJsLike | number | string
+    categoryId?: number | null
+  }
+
+  export type PricingDiscountSlabCreateOrConnectWithoutBranchInput = {
+    where: PricingDiscountSlabWhereUniqueInput
+    create: XOR<PricingDiscountSlabCreateWithoutBranchInput, PricingDiscountSlabUncheckedCreateWithoutBranchInput>
+  }
+
+  export type PricingDiscountSlabCreateManyBranchInputEnvelope = {
+    data: PricingDiscountSlabCreateManyBranchInput | PricingDiscountSlabCreateManyBranchInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type CategoryDepositSettingCreateWithoutBranchInput = {
+    amount: Decimal | DecimalJsLike | number | string
+    category: VehicleCategoryCreateNestedOneWithoutCategoryDepositSettingsInput
+  }
+
+  export type CategoryDepositSettingUncheckedCreateWithoutBranchInput = {
+    id?: number
+    categoryId: number
+    amount: Decimal | DecimalJsLike | number | string
+  }
+
+  export type CategoryDepositSettingCreateOrConnectWithoutBranchInput = {
+    where: CategoryDepositSettingWhereUniqueInput
+    create: XOR<CategoryDepositSettingCreateWithoutBranchInput, CategoryDepositSettingUncheckedCreateWithoutBranchInput>
+  }
+
+  export type CategoryDepositSettingCreateManyBranchInputEnvelope = {
+    data: CategoryDepositSettingCreateManyBranchInput | CategoryDepositSettingCreateManyBranchInput[]
+    skipDuplicates?: boolean
+  }
+
   export type UserUpsertWithWhereUniqueWithoutBranchInput = {
     where: UserWhereUniqueInput
     update: XOR<UserUpdateWithoutBranchInput, UserUncheckedUpdateWithoutBranchInput>
@@ -41791,6 +44727,59 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type PricingDiscountSlabUpsertWithWhereUniqueWithoutBranchInput = {
+    where: PricingDiscountSlabWhereUniqueInput
+    update: XOR<PricingDiscountSlabUpdateWithoutBranchInput, PricingDiscountSlabUncheckedUpdateWithoutBranchInput>
+    create: XOR<PricingDiscountSlabCreateWithoutBranchInput, PricingDiscountSlabUncheckedCreateWithoutBranchInput>
+  }
+
+  export type PricingDiscountSlabUpdateWithWhereUniqueWithoutBranchInput = {
+    where: PricingDiscountSlabWhereUniqueInput
+    data: XOR<PricingDiscountSlabUpdateWithoutBranchInput, PricingDiscountSlabUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type PricingDiscountSlabUpdateManyWithWhereWithoutBranchInput = {
+    where: PricingDiscountSlabScalarWhereInput
+    data: XOR<PricingDiscountSlabUpdateManyMutationInput, PricingDiscountSlabUncheckedUpdateManyWithoutBranchInput>
+  }
+
+  export type PricingDiscountSlabScalarWhereInput = {
+    AND?: PricingDiscountSlabScalarWhereInput | PricingDiscountSlabScalarWhereInput[]
+    OR?: PricingDiscountSlabScalarWhereInput[]
+    NOT?: PricingDiscountSlabScalarWhereInput | PricingDiscountSlabScalarWhereInput[]
+    id?: IntFilter<"PricingDiscountSlab"> | number
+    days?: IntFilter<"PricingDiscountSlab"> | number
+    multiplier?: DecimalFilter<"PricingDiscountSlab"> | Decimal | DecimalJsLike | number | string
+    branchId?: IntNullableFilter<"PricingDiscountSlab"> | number | null
+    categoryId?: IntNullableFilter<"PricingDiscountSlab"> | number | null
+  }
+
+  export type CategoryDepositSettingUpsertWithWhereUniqueWithoutBranchInput = {
+    where: CategoryDepositSettingWhereUniqueInput
+    update: XOR<CategoryDepositSettingUpdateWithoutBranchInput, CategoryDepositSettingUncheckedUpdateWithoutBranchInput>
+    create: XOR<CategoryDepositSettingCreateWithoutBranchInput, CategoryDepositSettingUncheckedCreateWithoutBranchInput>
+  }
+
+  export type CategoryDepositSettingUpdateWithWhereUniqueWithoutBranchInput = {
+    where: CategoryDepositSettingWhereUniqueInput
+    data: XOR<CategoryDepositSettingUpdateWithoutBranchInput, CategoryDepositSettingUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type CategoryDepositSettingUpdateManyWithWhereWithoutBranchInput = {
+    where: CategoryDepositSettingScalarWhereInput
+    data: XOR<CategoryDepositSettingUpdateManyMutationInput, CategoryDepositSettingUncheckedUpdateManyWithoutBranchInput>
+  }
+
+  export type CategoryDepositSettingScalarWhereInput = {
+    AND?: CategoryDepositSettingScalarWhereInput | CategoryDepositSettingScalarWhereInput[]
+    OR?: CategoryDepositSettingScalarWhereInput[]
+    NOT?: CategoryDepositSettingScalarWhereInput | CategoryDepositSettingScalarWhereInput[]
+    id?: IntFilter<"CategoryDepositSetting"> | number
+    branchId?: IntFilter<"CategoryDepositSetting"> | number
+    categoryId?: IntFilter<"CategoryDepositSetting"> | number
+    amount?: DecimalFilter<"CategoryDepositSetting"> | Decimal | DecimalJsLike | number | string
+  }
+
   export type BranchCreateWithoutPricingSettingInput = {
     publicId: string
     name: string
@@ -41801,6 +44790,8 @@ export namespace Prisma {
     users?: UserCreateNestedManyWithoutBranchInput
     vehicles?: VehicleCreateNestedManyWithoutBranchInput
     bookings?: BookingCreateNestedManyWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPricingSettingInput = {
@@ -41814,6 +44805,8 @@ export namespace Prisma {
     users?: UserUncheckedCreateNestedManyWithoutBranchInput
     vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
     bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPricingSettingInput = {
@@ -41842,6 +44835,8 @@ export namespace Prisma {
     users?: UserUpdateManyWithoutBranchNestedInput
     vehicles?: VehicleUpdateManyWithoutBranchNestedInput
     bookings?: BookingUpdateManyWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPricingSettingInput = {
@@ -41855,6 +44850,52 @@ export namespace Prisma {
     users?: UserUncheckedUpdateManyWithoutBranchNestedInput
     vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
     bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+  }
+
+  export type PricingDiscountSlabCreateWithoutCategoryInput = {
+    days: number
+    multiplier: Decimal | DecimalJsLike | number | string
+    branch?: BranchCreateNestedOneWithoutPricingDiscountSlabsInput
+  }
+
+  export type PricingDiscountSlabUncheckedCreateWithoutCategoryInput = {
+    id?: number
+    days: number
+    multiplier: Decimal | DecimalJsLike | number | string
+    branchId?: number | null
+  }
+
+  export type PricingDiscountSlabCreateOrConnectWithoutCategoryInput = {
+    where: PricingDiscountSlabWhereUniqueInput
+    create: XOR<PricingDiscountSlabCreateWithoutCategoryInput, PricingDiscountSlabUncheckedCreateWithoutCategoryInput>
+  }
+
+  export type PricingDiscountSlabCreateManyCategoryInputEnvelope = {
+    data: PricingDiscountSlabCreateManyCategoryInput | PricingDiscountSlabCreateManyCategoryInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type CategoryDepositSettingCreateWithoutCategoryInput = {
+    amount: Decimal | DecimalJsLike | number | string
+    branch: BranchCreateNestedOneWithoutCategoryDepositSettingsInput
+  }
+
+  export type CategoryDepositSettingUncheckedCreateWithoutCategoryInput = {
+    id?: number
+    branchId: number
+    amount: Decimal | DecimalJsLike | number | string
+  }
+
+  export type CategoryDepositSettingCreateOrConnectWithoutCategoryInput = {
+    where: CategoryDepositSettingWhereUniqueInput
+    create: XOR<CategoryDepositSettingCreateWithoutCategoryInput, CategoryDepositSettingUncheckedCreateWithoutCategoryInput>
+  }
+
+  export type CategoryDepositSettingCreateManyCategoryInputEnvelope = {
+    data: CategoryDepositSettingCreateManyCategoryInput | CategoryDepositSettingCreateManyCategoryInput[]
+    skipDuplicates?: boolean
   }
 
   export type VehicleCreateWithoutCategoryInput = {
@@ -41935,6 +44976,38 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type PricingDiscountSlabUpsertWithWhereUniqueWithoutCategoryInput = {
+    where: PricingDiscountSlabWhereUniqueInput
+    update: XOR<PricingDiscountSlabUpdateWithoutCategoryInput, PricingDiscountSlabUncheckedUpdateWithoutCategoryInput>
+    create: XOR<PricingDiscountSlabCreateWithoutCategoryInput, PricingDiscountSlabUncheckedCreateWithoutCategoryInput>
+  }
+
+  export type PricingDiscountSlabUpdateWithWhereUniqueWithoutCategoryInput = {
+    where: PricingDiscountSlabWhereUniqueInput
+    data: XOR<PricingDiscountSlabUpdateWithoutCategoryInput, PricingDiscountSlabUncheckedUpdateWithoutCategoryInput>
+  }
+
+  export type PricingDiscountSlabUpdateManyWithWhereWithoutCategoryInput = {
+    where: PricingDiscountSlabScalarWhereInput
+    data: XOR<PricingDiscountSlabUpdateManyMutationInput, PricingDiscountSlabUncheckedUpdateManyWithoutCategoryInput>
+  }
+
+  export type CategoryDepositSettingUpsertWithWhereUniqueWithoutCategoryInput = {
+    where: CategoryDepositSettingWhereUniqueInput
+    update: XOR<CategoryDepositSettingUpdateWithoutCategoryInput, CategoryDepositSettingUncheckedUpdateWithoutCategoryInput>
+    create: XOR<CategoryDepositSettingCreateWithoutCategoryInput, CategoryDepositSettingUncheckedCreateWithoutCategoryInput>
+  }
+
+  export type CategoryDepositSettingUpdateWithWhereUniqueWithoutCategoryInput = {
+    where: CategoryDepositSettingWhereUniqueInput
+    data: XOR<CategoryDepositSettingUpdateWithoutCategoryInput, CategoryDepositSettingUncheckedUpdateWithoutCategoryInput>
+  }
+
+  export type CategoryDepositSettingUpdateManyWithWhereWithoutCategoryInput = {
+    where: CategoryDepositSettingScalarWhereInput
+    data: XOR<CategoryDepositSettingUpdateManyMutationInput, CategoryDepositSettingUncheckedUpdateManyWithoutCategoryInput>
+  }
+
   export type VehicleUpsertWithWhereUniqueWithoutCategoryInput = {
     where: VehicleWhereUniqueInput
     update: XOR<VehicleUpdateWithoutCategoryInput, VehicleUncheckedUpdateWithoutCategoryInput>
@@ -41989,6 +45062,8 @@ export namespace Prisma {
     users?: UserCreateNestedManyWithoutBranchInput
     bookings?: BookingCreateNestedManyWithoutBranchInput
     pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutVehiclesInput = {
@@ -42002,6 +45077,8 @@ export namespace Prisma {
     users?: UserUncheckedCreateNestedManyWithoutBranchInput
     bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
     pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutVehiclesInput = {
@@ -42013,6 +45090,8 @@ export namespace Prisma {
     publicId: string
     name: string
     description?: string | null
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutCategoryInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleCreateNestedManyWithoutCategoryInput
   }
 
@@ -42021,6 +45100,8 @@ export namespace Prisma {
     publicId: string
     name: string
     description?: string | null
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutCategoryInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleUncheckedCreateNestedManyWithoutCategoryInput
   }
 
@@ -42229,6 +45310,8 @@ export namespace Prisma {
     users?: UserUpdateManyWithoutBranchNestedInput
     bookings?: BookingUpdateManyWithoutBranchNestedInput
     pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutVehiclesInput = {
@@ -42242,6 +45325,8 @@ export namespace Prisma {
     users?: UserUncheckedUpdateManyWithoutBranchNestedInput
     bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
     pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutVehiclesInput = {
@@ -42259,6 +45344,8 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutCategoryNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUpdateManyWithoutCategoryNestedInput
   }
 
@@ -42267,6 +45354,8 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutCategoryNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUncheckedUpdateManyWithoutCategoryNestedInput
   }
 
@@ -42943,6 +46032,8 @@ export namespace Prisma {
     publicId: string
     name: string
     description?: string | null
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutCategoryInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleCreateNestedManyWithoutCategoryInput
   }
 
@@ -42951,6 +46042,8 @@ export namespace Prisma {
     publicId: string
     name: string
     description?: string | null
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutCategoryInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleUncheckedCreateNestedManyWithoutCategoryInput
   }
 
@@ -42974,6 +46067,8 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutCategoryNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUpdateManyWithoutCategoryNestedInput
   }
 
@@ -42982,7 +46077,265 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutCategoryNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUncheckedUpdateManyWithoutCategoryNestedInput
+  }
+
+  export type BranchCreateWithoutPricingDiscountSlabsInput = {
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleCreateNestedManyWithoutBranchInput
+    bookings?: BookingCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchUncheckedCreateWithoutPricingDiscountSlabsInput = {
+    id?: number
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserUncheckedCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchCreateOrConnectWithoutPricingDiscountSlabsInput = {
+    where: BranchWhereUniqueInput
+    create: XOR<BranchCreateWithoutPricingDiscountSlabsInput, BranchUncheckedCreateWithoutPricingDiscountSlabsInput>
+  }
+
+  export type VehicleCategoryCreateWithoutPricingDiscountSlabsInput = {
+    publicId: string
+    name: string
+    description?: string | null
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutCategoryInput
+    vehicles?: VehicleCreateNestedManyWithoutCategoryInput
+    pricingRules?: PricingRuleCreateNestedManyWithoutCategoryInput
+  }
+
+  export type VehicleCategoryUncheckedCreateWithoutPricingDiscountSlabsInput = {
+    id?: number
+    publicId: string
+    name: string
+    description?: string | null
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutCategoryInput
+    vehicles?: VehicleUncheckedCreateNestedManyWithoutCategoryInput
+    pricingRules?: PricingRuleUncheckedCreateNestedManyWithoutCategoryInput
+  }
+
+  export type VehicleCategoryCreateOrConnectWithoutPricingDiscountSlabsInput = {
+    where: VehicleCategoryWhereUniqueInput
+    create: XOR<VehicleCategoryCreateWithoutPricingDiscountSlabsInput, VehicleCategoryUncheckedCreateWithoutPricingDiscountSlabsInput>
+  }
+
+  export type BranchUpsertWithoutPricingDiscountSlabsInput = {
+    update: XOR<BranchUpdateWithoutPricingDiscountSlabsInput, BranchUncheckedUpdateWithoutPricingDiscountSlabsInput>
+    create: XOR<BranchCreateWithoutPricingDiscountSlabsInput, BranchUncheckedCreateWithoutPricingDiscountSlabsInput>
+    where?: BranchWhereInput
+  }
+
+  export type BranchUpdateToOneWithWhereWithoutPricingDiscountSlabsInput = {
+    where?: BranchWhereInput
+    data: XOR<BranchUpdateWithoutPricingDiscountSlabsInput, BranchUncheckedUpdateWithoutPricingDiscountSlabsInput>
+  }
+
+  export type BranchUpdateWithoutPricingDiscountSlabsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+  }
+
+  export type BranchUncheckedUpdateWithoutPricingDiscountSlabsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUncheckedUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+  }
+
+  export type VehicleCategoryUpsertWithoutPricingDiscountSlabsInput = {
+    update: XOR<VehicleCategoryUpdateWithoutPricingDiscountSlabsInput, VehicleCategoryUncheckedUpdateWithoutPricingDiscountSlabsInput>
+    create: XOR<VehicleCategoryCreateWithoutPricingDiscountSlabsInput, VehicleCategoryUncheckedCreateWithoutPricingDiscountSlabsInput>
+    where?: VehicleCategoryWhereInput
+  }
+
+  export type VehicleCategoryUpdateToOneWithWhereWithoutPricingDiscountSlabsInput = {
+    where?: VehicleCategoryWhereInput
+    data: XOR<VehicleCategoryUpdateWithoutPricingDiscountSlabsInput, VehicleCategoryUncheckedUpdateWithoutPricingDiscountSlabsInput>
+  }
+
+  export type VehicleCategoryUpdateWithoutPricingDiscountSlabsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutCategoryNestedInput
+    vehicles?: VehicleUpdateManyWithoutCategoryNestedInput
+    pricingRules?: PricingRuleUpdateManyWithoutCategoryNestedInput
+  }
+
+  export type VehicleCategoryUncheckedUpdateWithoutPricingDiscountSlabsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutCategoryNestedInput
+    vehicles?: VehicleUncheckedUpdateManyWithoutCategoryNestedInput
+    pricingRules?: PricingRuleUncheckedUpdateManyWithoutCategoryNestedInput
+  }
+
+  export type BranchCreateWithoutCategoryDepositSettingsInput = {
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleCreateNestedManyWithoutBranchInput
+    bookings?: BookingCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchUncheckedCreateWithoutCategoryDepositSettingsInput = {
+    id?: number
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserUncheckedCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchCreateOrConnectWithoutCategoryDepositSettingsInput = {
+    where: BranchWhereUniqueInput
+    create: XOR<BranchCreateWithoutCategoryDepositSettingsInput, BranchUncheckedCreateWithoutCategoryDepositSettingsInput>
+  }
+
+  export type VehicleCategoryCreateWithoutCategoryDepositSettingsInput = {
+    publicId: string
+    name: string
+    description?: string | null
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutCategoryInput
+    vehicles?: VehicleCreateNestedManyWithoutCategoryInput
+    pricingRules?: PricingRuleCreateNestedManyWithoutCategoryInput
+  }
+
+  export type VehicleCategoryUncheckedCreateWithoutCategoryDepositSettingsInput = {
+    id?: number
+    publicId: string
+    name: string
+    description?: string | null
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutCategoryInput
+    vehicles?: VehicleUncheckedCreateNestedManyWithoutCategoryInput
+    pricingRules?: PricingRuleUncheckedCreateNestedManyWithoutCategoryInput
+  }
+
+  export type VehicleCategoryCreateOrConnectWithoutCategoryDepositSettingsInput = {
+    where: VehicleCategoryWhereUniqueInput
+    create: XOR<VehicleCategoryCreateWithoutCategoryDepositSettingsInput, VehicleCategoryUncheckedCreateWithoutCategoryDepositSettingsInput>
+  }
+
+  export type BranchUpsertWithoutCategoryDepositSettingsInput = {
+    update: XOR<BranchUpdateWithoutCategoryDepositSettingsInput, BranchUncheckedUpdateWithoutCategoryDepositSettingsInput>
+    create: XOR<BranchCreateWithoutCategoryDepositSettingsInput, BranchUncheckedCreateWithoutCategoryDepositSettingsInput>
+    where?: BranchWhereInput
+  }
+
+  export type BranchUpdateToOneWithWhereWithoutCategoryDepositSettingsInput = {
+    where?: BranchWhereInput
+    data: XOR<BranchUpdateWithoutCategoryDepositSettingsInput, BranchUncheckedUpdateWithoutCategoryDepositSettingsInput>
+  }
+
+  export type BranchUpdateWithoutCategoryDepositSettingsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
+  }
+
+  export type BranchUncheckedUpdateWithoutCategoryDepositSettingsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUncheckedUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+  }
+
+  export type VehicleCategoryUpsertWithoutCategoryDepositSettingsInput = {
+    update: XOR<VehicleCategoryUpdateWithoutCategoryDepositSettingsInput, VehicleCategoryUncheckedUpdateWithoutCategoryDepositSettingsInput>
+    create: XOR<VehicleCategoryCreateWithoutCategoryDepositSettingsInput, VehicleCategoryUncheckedCreateWithoutCategoryDepositSettingsInput>
+    where?: VehicleCategoryWhereInput
+  }
+
+  export type VehicleCategoryUpdateToOneWithWhereWithoutCategoryDepositSettingsInput = {
+    where?: VehicleCategoryWhereInput
+    data: XOR<VehicleCategoryUpdateWithoutCategoryDepositSettingsInput, VehicleCategoryUncheckedUpdateWithoutCategoryDepositSettingsInput>
+  }
+
+  export type VehicleCategoryUpdateWithoutCategoryDepositSettingsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutCategoryNestedInput
+    vehicles?: VehicleUpdateManyWithoutCategoryNestedInput
+    pricingRules?: PricingRuleUpdateManyWithoutCategoryNestedInput
+  }
+
+  export type VehicleCategoryUncheckedUpdateWithoutCategoryDepositSettingsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutCategoryNestedInput
+    vehicles?: VehicleUncheckedUpdateManyWithoutCategoryNestedInput
+    pricingRules?: PricingRuleUncheckedUpdateManyWithoutCategoryNestedInput
   }
 
   export type CustomerCreateWithoutBookingsInput = {
@@ -43067,6 +46420,8 @@ export namespace Prisma {
     users?: UserCreateNestedManyWithoutBranchInput
     vehicles?: VehicleCreateNestedManyWithoutBranchInput
     pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutBookingsInput = {
@@ -43080,6 +46435,8 @@ export namespace Prisma {
     users?: UserUncheckedCreateNestedManyWithoutBranchInput
     vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
     pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutBookingsInput = {
@@ -43370,6 +46727,8 @@ export namespace Prisma {
     users?: UserUpdateManyWithoutBranchNestedInput
     vehicles?: VehicleUpdateManyWithoutBranchNestedInput
     pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutBookingsInput = {
@@ -43383,6 +46742,8 @@ export namespace Prisma {
     users?: UserUncheckedUpdateManyWithoutBranchNestedInput
     vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
     pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type RentalPlanUpsertWithoutBookingsInput = {
@@ -45102,6 +48463,19 @@ export namespace Prisma {
     deletedAt?: Date | string | null
   }
 
+  export type PricingDiscountSlabCreateManyBranchInput = {
+    id?: number
+    days: number
+    multiplier: Decimal | DecimalJsLike | number | string
+    categoryId?: number | null
+  }
+
+  export type CategoryDepositSettingCreateManyBranchInput = {
+    id?: number
+    categoryId: number
+    amount: Decimal | DecimalJsLike | number | string
+  }
+
   export type UserUpdateWithoutBranchInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
@@ -45278,6 +48652,56 @@ export namespace Prisma {
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
+  export type PricingDiscountSlabUpdateWithoutBranchInput = {
+    days?: IntFieldUpdateOperationsInput | number
+    multiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    category?: VehicleCategoryUpdateOneWithoutPricingDiscountSlabsNestedInput
+  }
+
+  export type PricingDiscountSlabUncheckedUpdateWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    days?: IntFieldUpdateOperationsInput | number
+    multiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    categoryId?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type PricingDiscountSlabUncheckedUpdateManyWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    days?: IntFieldUpdateOperationsInput | number
+    multiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    categoryId?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type CategoryDepositSettingUpdateWithoutBranchInput = {
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    category?: VehicleCategoryUpdateOneRequiredWithoutCategoryDepositSettingsNestedInput
+  }
+
+  export type CategoryDepositSettingUncheckedUpdateWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    categoryId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+  }
+
+  export type CategoryDepositSettingUncheckedUpdateManyWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    categoryId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+  }
+
+  export type PricingDiscountSlabCreateManyCategoryInput = {
+    id?: number
+    days: number
+    multiplier: Decimal | DecimalJsLike | number | string
+    branchId?: number | null
+  }
+
+  export type CategoryDepositSettingCreateManyCategoryInput = {
+    id?: number
+    branchId: number
+    amount: Decimal | DecimalJsLike | number | string
+  }
+
   export type VehicleCreateManyCategoryInput = {
     id?: number
     publicId: string
@@ -45300,6 +48724,43 @@ export namespace Prisma {
     ruleType: $Enums.PricingRuleType
     multiplier: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
+  }
+
+  export type PricingDiscountSlabUpdateWithoutCategoryInput = {
+    days?: IntFieldUpdateOperationsInput | number
+    multiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    branch?: BranchUpdateOneWithoutPricingDiscountSlabsNestedInput
+  }
+
+  export type PricingDiscountSlabUncheckedUpdateWithoutCategoryInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    days?: IntFieldUpdateOperationsInput | number
+    multiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type PricingDiscountSlabUncheckedUpdateManyWithoutCategoryInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    days?: IntFieldUpdateOperationsInput | number
+    multiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type CategoryDepositSettingUpdateWithoutCategoryInput = {
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    branch?: BranchUpdateOneRequiredWithoutCategoryDepositSettingsNestedInput
+  }
+
+  export type CategoryDepositSettingUncheckedUpdateWithoutCategoryInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+  }
+
+  export type CategoryDepositSettingUncheckedUpdateManyWithoutCategoryInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type VehicleUpdateWithoutCategoryInput = {
@@ -45939,6 +49400,14 @@ export namespace Prisma {
      * @deprecated Use PricingRuleDefaultArgs instead
      */
     export type PricingRuleArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = PricingRuleDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use PricingDiscountSlabDefaultArgs instead
+     */
+    export type PricingDiscountSlabArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = PricingDiscountSlabDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use CategoryDepositSettingDefaultArgs instead
+     */
+    export type CategoryDepositSettingArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CategoryDepositSettingDefaultArgs<ExtArgs>
     /**
      * @deprecated Use BookingDefaultArgs instead
      */

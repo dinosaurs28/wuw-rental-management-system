@@ -1,12 +1,14 @@
 import { Request, Response } from "express";
 import { prisma } from "@repo/database/client";
-import { StatusCode } from "../types/statusCode";
-import { redis } from "../lib/redisconfig";
-import { calculatePricingForVehicle } from "../utils/pricing/calcPricing";
+import { StatusCode } from "../../types/statusCode";
+import { redis } from "../../lib/redisconfig";
+import { calculatePricingForVehicle } from "../../utils/pricing/calcPricing";
 import { getVehicleDetailsSchema } from "@repo/schemas";
-import { calculatePricingForVehicleFromRecord } from "../utils/pricing/calcPricingInd";
-import { calculateMultiDayTotalPrice } from "../utils/pricing/calcMultiDayPrice";
-import { checkVehicleAvailability } from "../utils/availability/checkAvailability";
+import { calculatePricingForVehicleFromRecord } from "../../utils/pricing/calcPricingInd";
+import { calculateMultiDayTotalPrice } from "../../utils/pricing/calcMultiDayPrice";
+import { checkVehicleAvailability } from "../../utils/availability/checkAvailability";
+import { getDepositAmount } from "../../utils/pricing/getDepositAmount"; 
+import { getDiscountForDays } from "../../utils/pricing/getDiscountForDays";
 
 export const getPublicVehicles = async (req: Request, res: Response) => {
   try {
@@ -203,17 +205,21 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
       })
     }
     const pricing = await calculatePricingForVehicleFromRecord(vehicleData)
+    const deposit = await getDepositAmount(vehicleData.branchId, vehicleData.categoryId);
     let availability: boolean | null = null;
     let totalPrice: number | null = null;
     let totalDays: number | null = null;
-
+    let baseTotal:number |null =null;
+    let discountPrice:number | null=null
     if (startDate && endDate) {
       availability = await checkVehicleAvailability(vehicleData.id, startDate, endDate);
-
       const multi = calculateMultiDayTotalPrice(startDate, endDate, pricing.daily);
-
-      totalPrice = multi.total;
+      baseTotal = multi.total;
       totalDays = multi.days;
+      const discountPercent = await getDiscountForDays(vehicleData.branchId,vehicleData.categoryId,totalDays);
+      const finalTotal = baseTotal * (1 - discountPercent);
+      totalPrice = Number(finalTotal.toFixed(2));
+      discountPrice = Number((baseTotal - finalTotal).toFixed(2));
     }
     const imageUrls = vehicleData.images.map(img => img.file.url);
     const response = {
@@ -225,9 +231,11 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
       branch: vehicleData.branch.name,
       images:imageUrls,
       pricing,
+      deposit,
       availability,
       totalDays,
-      totalPrice,
+      baseTotal,
+      discountPrice
     };
 
     return res.status(StatusCode.OK).json({

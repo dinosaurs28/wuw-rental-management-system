@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getPublicVehicles, getPublicVehiclesDetails } from "../../controller/vehicles.controller";
+import { getPublicVehicles, getPublicVehiclesDetails } from "../../controller/public/vehicles.controller";
 
 const router:Router=Router()
 

@@ -297,6 +297,21 @@ exports.Prisma.PricingRuleScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.PricingDiscountSlabScalarFieldEnum = {
+  id: 'id',
+  days: 'days',
+  multiplier: 'multiplier',
+  branchId: 'branchId',
+  categoryId: 'categoryId'
+};
+
+exports.Prisma.CategoryDepositSettingScalarFieldEnum = {
+  id: 'id',
+  branchId: 'branchId',
+  categoryId: 'categoryId',
+  amount: 'amount'
+};
+
 exports.Prisma.BookingScalarFieldEnum = {
   id: 'id',
   publicId: 'publicId',
@@ -532,6 +547,8 @@ exports.Prisma.ModelName = {
   VehicleImage: 'VehicleImage',
   RentalPlan: 'RentalPlan',
   PricingRule: 'PricingRule',
+  PricingDiscountSlab: 'PricingDiscountSlab',
+  CategoryDepositSetting: 'CategoryDepositSetting',
   Booking: 'Booking',
   BookingPhoto: 'BookingPhoto',
   DamageReport: 'DamageReport',

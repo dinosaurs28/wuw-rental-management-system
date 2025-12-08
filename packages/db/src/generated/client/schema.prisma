@@ -190,17 +190,19 @@ model FileObject {
 // BRANCH & STAFF
 
 model Branch {
-  id             Int                   @id @default(autoincrement())
-  publicId       String                @unique
-  name           String
-  address        String
-  phone          String?
-  users          User[]
-  vehicles       Vehicle[]
-  bookings       Booking[]
-  pricingSetting BranchPricingSetting?
-  createdAt      DateTime              @default(now())
-  deletedAt      DateTime?
+  id                      Int                      @id @default(autoincrement())
+  publicId                String                   @unique
+  name                    String
+  address                 String
+  phone                   String?
+  users                   User[]
+  vehicles                Vehicle[]
+  bookings                Booking[]
+  pricingSetting          BranchPricingSetting?
+  pricingDiscountSlabs    PricingDiscountSlab[]
+  categoryDepositSettings CategoryDepositSetting[]
+  createdAt               DateTime                 @default(now())
+  deletedAt               DateTime?
 }
 
 model StaffActivityLog {
@@ -238,8 +240,10 @@ model VehicleCategory {
   name        String
   description String?
 
-  vehicles     Vehicle[]
-  pricingRules PricingRule[]
+  pricingDiscountSlabs    PricingDiscountSlab[]
+  categoryDepositSettings CategoryDepositSetting[]
+  vehicles                Vehicle[]
+  pricingRules            PricingRule[]
 }
 
 model Vehicle {
@@ -309,10 +313,11 @@ model VehicleMaintenanceRecord {
 }
 
 model VehicleImage {
-  id        Int    @id @default(autoincrement())
-  publicId  String @unique
-  vehicleId Int
-  fileId    Int
+  id          Int     @id @default(autoincrement())
+  publicId    String  @unique
+  vehicleId   Int
+  fileId      Int
+  isThumbnail Boolean @default(false)
 
   vehicle Vehicle    @relation(fields: [vehicleId], references: [id])
   file    FileObject @relation(fields: [fileId], references: [id])
@@ -343,6 +348,29 @@ model PricingRule {
 
   category  VehicleCategory? @relation(fields: [categoryId], references: [id])
   createdAt DateTime         @default(now())
+}
+
+model PricingDiscountSlab {
+  id         Int     @id @default(autoincrement())
+  days       Int
+  multiplier Decimal
+  branchId   Int?
+  categoryId Int?
+
+  branch   Branch?          @relation(fields: [branchId], references: [id])
+  category VehicleCategory? @relation(fields: [categoryId], references: [id])
+}
+
+model CategoryDepositSetting {
+  id         Int     @id @default(autoincrement())
+  branchId   Int
+  categoryId Int
+  amount     Decimal
+
+  branch   Branch          @relation(fields: [branchId], references: [id])
+  category VehicleCategory @relation(fields: [categoryId], references: [id])
+
+  @@unique([branchId, categoryId])
 }
 
 model Booking {

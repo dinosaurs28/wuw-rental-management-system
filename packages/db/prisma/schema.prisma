@@ -208,6 +208,8 @@ model Branch {
   vehicles  Vehicle[]
   bookings  Booking[]
   pricingSetting BranchPricingSetting?
+  pricingDiscountSlabs PricingDiscountSlab[]
+  categoryDepositSettings CategoryDepositSetting[]
   createdAt DateTime  @default(now())
   deletedAt DateTime?
 }
@@ -249,6 +251,8 @@ model VehicleCategory {
   name        String
   description String?
 
+  pricingDiscountSlabs PricingDiscountSlab[]
+  categoryDepositSettings CategoryDepositSetting[]
   vehicles    Vehicle[]
   pricingRules PricingRule[]
 }
@@ -356,6 +360,27 @@ model PricingRule {
   createdAt  DateTime         @default(now())
 }
 
+model PricingDiscountSlab {
+  id           Int      @id @default(autoincrement())
+  days         Int
+  multiplier   Decimal
+  branchId     Int?
+  categoryId   Int?
+
+  branch       Branch?  @relation(fields: [branchId], references: [id])
+  category     VehicleCategory? @relation(fields: [categoryId], references: [id])
+}
+model CategoryDepositSetting {
+  id         Int      @id @default(autoincrement())
+  branchId   Int
+  categoryId Int
+  amount     Decimal
+
+  branch     Branch   @relation(fields: [branchId], references: [id])
+  category   VehicleCategory @relation(fields: [categoryId], references: [id])
+
+  @@unique([branchId, categoryId])
+}
 model Booking {
   id                Int            @id @default(autoincrement())
   publicId          String         @unique

@@ -1,6 +1,7 @@
-import { StatusCode } from "../types/statusCode"
+import { StatusCode } from "../../types/statusCode";
+import { jwtsign } from "../../utils/token/tokensign.utlis";
+
 import { Request,Response } from "express"
-import { jwtsign } from "../utils/token/tokensign.utlis"
 
 declare global {
   namespace Express {
