@@ -206,6 +206,7 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
     }
     const pricing = await calculatePricingForVehicleFromRecord(vehicleData)
     const deposit = await getDepositAmount(vehicleData.branchId, vehicleData.categoryId);
+    console.log("deposit",deposit)
     let availability: boolean | null = null;
     let totalPrice: number | null = null;
     let totalDays: number | null = null;

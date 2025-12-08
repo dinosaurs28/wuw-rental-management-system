@@ -9,12 +9,22 @@ export const kycCheck=async(req:Request,res:Response,next:NextFunction)=>{
                 message:"The Public Id Is Missing"
             })
         }
-        const isKycUpload=await prisma.customerKyc.findUnique({
+        const isKycUpload=await prisma.user.findUnique({
             where:{
                 publicId:public_Id
+            },select:{
+                customerProfile:{
+                    select:{
+                        kycs:{
+                            select:{
+                                status:true
+                            }
+                        }
+                    }
+                }
             }
         })
-        if(!isKycUpload){
+        if(!isKycUpload?.customerProfile?.kycs || isKycUpload.customerProfile.kycs.length===0){
             return res.status(StatusCode.FORBIDDEN).json({
                 message:"Please ensure you upload a valid, clear image of your Driver's License."
             })
