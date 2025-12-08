@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken"
 
-interface jwtinterface{
+export interface jwtinterface{
     sub:string,
     role:"ADMIN" | "MANAGER" | "STAFF" | "CUSTOMER",
     verified:boolean,
