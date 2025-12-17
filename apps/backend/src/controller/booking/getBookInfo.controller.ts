@@ -8,19 +8,38 @@ import { checkVehicleAvailability } from "../../utils/availability/checkAvailabi
 import { getDepositAmount } from "../../utils/pricing/getDepositAmount";
 import { calculateMultiDayTotalPrice } from "../../utils/pricing/calcMultiDayPrice";
 import { getDiscountForDays } from "../../utils/pricing/getDiscountForDays";
+import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils";
+import { createID } from "../../utils/nanoID";
 
 export const createBookingSummary = async (req: Request, res: Response) => {
   try {
     const parsed = bookingSummarySchema.safeParse(req.body);
+    const customerpubId=req.public_Id
     if (!parsed.success) {
       return res.status(StatusCode.BAD_REQUEST).json({
         message: "Invalid request data",
         errors: parsed.error.flatten()
       });
     }
-
+     const userData=await prisma.user.findUnique({
+      where:{
+        publicId:customerpubId
+      },select:{
+        id:true,
+        customerProfile:{
+          select:{
+            id:true
+          }
+        }
+      }
+    })
+    if(!userData?.customerProfile){
+      return res.status(StatusCode.BAD_REQUEST).json({
+        message:"Customer doesnt Exists"
+      })
+    }
     const { vehicles, start, end } = parsed.data;
-
+    const customerId=userData.customerProfile.id
    
     const startDate = new Date(start);
     const endDate = new Date(end);
@@ -67,7 +86,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       });
     }
 
-    const items = [];
+    const items:any = [];
     let grandBaseTotal = 0;
     let grandDiscountTotal = 0;
     let grandFinalTotal = 0;
@@ -120,6 +139,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         model: v.model,
         category: v.category.name,
         branch: v.branch.name,
+        vehicleId:v.id,
         days,
         baseTotal,
         discountAmount,
@@ -139,10 +159,54 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     grandDiscountTotal = Number(grandDiscountTotal.toFixed(2));
     grandDeposit = Number(grandDeposit.toFixed(2));
     grandFinalTotal = Number(grandFinalTotal.toFixed(2));
+    const paymentDetails=await initiatePhonePePayment(grandFinalTotal)
+    const transactionId=paymentDetails.merchantTransactionId
+    const paymentURL=paymentDetails.instrumentResponse.redirectInfo.url
+    const booking = await prisma.$transaction(async (tx) => {
+      const newBooking = await tx.booking.create({
+        data: {
+          publicId: createID(),
+          customerId:customerId,
+          branchId: vehiclesData[0]!.branchId ,
+          startAt: startDate,
+          endAt: endDate,
+          days: items[0]!.days,
+          holdExpiresAt: new Date(Date.now() + 10 * 60 * 1000), 
+          totalBase: grandBaseTotal,
+          totalDiscount: grandDiscountTotal,
+          totalDeposit: grandDeposit,
+          totalFinal: grandFinalTotal,
+          transactionId,
+          pricingSnapshot: {
+            items,
+            totals: {
+              grandBaseTotal,
+              grandDiscountTotal,
+              grandDeposit,
+              grandFinalTotal,
+            },
+          },
+          createdById: userData.id,
+        },
+      });
+      await tx.bookingItem.createMany({
+        data: items.map((i:any) => ({
+          bookingId: newBooking.id,
+          vehicleId: i.vehicleId,
+          days: i.days,
+          baseTotal: i.baseTotal,
+          discountAmount: i.discountAmount,
+          discountPercent: i.discountPercent,
+          deposit: i.deposit,
+          finalTotal: i.finalTotal,
+        })),
+      });
 
+      return newBooking;
+    });
 
-    const holdId = `hold_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const holdExpiry = 1800; 
+    const holdId = booking.publicId
+    const holdExpiry = 18; 
 
     const holdData = {
       vehicles: items,
@@ -181,7 +245,8 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           grandBaseTotal,
           grandDiscountTotal,
           grandDeposit,
-          grandFinalTotal
+          grandFinalTotal,
+          paymentURL
         }
       }
     });

@@ -89,11 +89,6 @@ export type VehicleMaintenanceRecord = $Result.DefaultSelection<Prisma.$VehicleM
  */
 export type VehicleImage = $Result.DefaultSelection<Prisma.$VehicleImagePayload>
 /**
- * Model RentalPlan
- * 
- */
-export type RentalPlan = $Result.DefaultSelection<Prisma.$RentalPlanPayload>
-/**
  * Model PricingRule
  * 
  */
@@ -113,6 +108,11 @@ export type CategoryDepositSetting = $Result.DefaultSelection<Prisma.$CategoryDe
  * 
  */
 export type Booking = $Result.DefaultSelection<Prisma.$BookingPayload>
+/**
+ * Model BookingItem
+ * 
+ */
+export type BookingItem = $Result.DefaultSelection<Prisma.$BookingItemPayload>
 /**
  * Model BookingPhoto
  * 
@@ -231,6 +231,16 @@ export const BookingStatus: {
 export type BookingStatus = (typeof BookingStatus)[keyof typeof BookingStatus]
 
 
+export const PaymentStatus: {
+  CREATED: 'CREATED',
+  SUCCESS: 'SUCCESS',
+  FAILED: 'FAILED',
+  REFUNDED: 'REFUNDED'
+};
+
+export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus]
+
+
 export const DepositMethod: {
   ONLINE_RAZORPAY: 'ONLINE_RAZORPAY',
   CASH: 'CASH',
@@ -247,16 +257,6 @@ export const BookingPhotoType: {
 };
 
 export type BookingPhotoType = (typeof BookingPhotoType)[keyof typeof BookingPhotoType]
-
-
-export const PaymentStatus: {
-  CREATED: 'CREATED',
-  SUCCESS: 'SUCCESS',
-  FAILED: 'FAILED',
-  REFUNDED: 'REFUNDED'
-};
-
-export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus]
 
 
 export const InvoiceStatus: {
@@ -298,6 +298,10 @@ export type BookingStatus = $Enums.BookingStatus
 
 export const BookingStatus: typeof $Enums.BookingStatus
 
+export type PaymentStatus = $Enums.PaymentStatus
+
+export const PaymentStatus: typeof $Enums.PaymentStatus
+
 export type DepositMethod = $Enums.DepositMethod
 
 export const DepositMethod: typeof $Enums.DepositMethod
@@ -305,10 +309,6 @@ export const DepositMethod: typeof $Enums.DepositMethod
 export type BookingPhotoType = $Enums.BookingPhotoType
 
 export const BookingPhotoType: typeof $Enums.BookingPhotoType
-
-export type PaymentStatus = $Enums.PaymentStatus
-
-export const PaymentStatus: typeof $Enums.PaymentStatus
 
 export type InvoiceStatus = $Enums.InvoiceStatus
 
@@ -588,16 +588,6 @@ export class PrismaClient<
   get vehicleImage(): Prisma.VehicleImageDelegate<ExtArgs>;
 
   /**
-   * `prisma.rentalPlan`: Exposes CRUD operations for the **RentalPlan** model.
-    * Example usage:
-    * ```ts
-    * // Fetch zero or more RentalPlans
-    * const rentalPlans = await prisma.rentalPlan.findMany()
-    * ```
-    */
-  get rentalPlan(): Prisma.RentalPlanDelegate<ExtArgs>;
-
-  /**
    * `prisma.pricingRule`: Exposes CRUD operations for the **PricingRule** model.
     * Example usage:
     * ```ts
@@ -636,6 +626,16 @@ export class PrismaClient<
     * ```
     */
   get booking(): Prisma.BookingDelegate<ExtArgs>;
+
+  /**
+   * `prisma.bookingItem`: Exposes CRUD operations for the **BookingItem** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more BookingItems
+    * const bookingItems = await prisma.bookingItem.findMany()
+    * ```
+    */
+  get bookingItem(): Prisma.BookingItemDelegate<ExtArgs>;
 
   /**
    * `prisma.bookingPhoto`: Exposes CRUD operations for the **BookingPhoto** model.
@@ -1182,11 +1182,11 @@ export namespace Prisma {
     VehicleInsurance: 'VehicleInsurance',
     VehicleMaintenanceRecord: 'VehicleMaintenanceRecord',
     VehicleImage: 'VehicleImage',
-    RentalPlan: 'RentalPlan',
     PricingRule: 'PricingRule',
     PricingDiscountSlab: 'PricingDiscountSlab',
     CategoryDepositSetting: 'CategoryDepositSetting',
     Booking: 'Booking',
+    BookingItem: 'BookingItem',
     BookingPhoto: 'BookingPhoto',
     DamageReport: 'DamageReport',
     Deposit: 'Deposit',
@@ -1211,7 +1211,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehicle" | "vehiclePricingOverride" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "rentalPlan" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting"
+      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehicle" | "vehiclePricingOverride" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -2265,76 +2265,6 @@ export namespace Prisma {
           }
         }
       }
-      RentalPlan: {
-        payload: Prisma.$RentalPlanPayload<ExtArgs>
-        fields: Prisma.RentalPlanFieldRefs
-        operations: {
-          findUnique: {
-            args: Prisma.RentalPlanFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RentalPlanPayload> | null
-          }
-          findUniqueOrThrow: {
-            args: Prisma.RentalPlanFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RentalPlanPayload>
-          }
-          findFirst: {
-            args: Prisma.RentalPlanFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RentalPlanPayload> | null
-          }
-          findFirstOrThrow: {
-            args: Prisma.RentalPlanFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RentalPlanPayload>
-          }
-          findMany: {
-            args: Prisma.RentalPlanFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RentalPlanPayload>[]
-          }
-          create: {
-            args: Prisma.RentalPlanCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RentalPlanPayload>
-          }
-          createMany: {
-            args: Prisma.RentalPlanCreateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          createManyAndReturn: {
-            args: Prisma.RentalPlanCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RentalPlanPayload>[]
-          }
-          delete: {
-            args: Prisma.RentalPlanDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RentalPlanPayload>
-          }
-          update: {
-            args: Prisma.RentalPlanUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RentalPlanPayload>
-          }
-          deleteMany: {
-            args: Prisma.RentalPlanDeleteManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateMany: {
-            args: Prisma.RentalPlanUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          upsert: {
-            args: Prisma.RentalPlanUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RentalPlanPayload>
-          }
-          aggregate: {
-            args: Prisma.RentalPlanAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateRentalPlan>
-          }
-          groupBy: {
-            args: Prisma.RentalPlanGroupByArgs<ExtArgs>
-            result: $Utils.Optional<RentalPlanGroupByOutputType>[]
-          }
-          count: {
-            args: Prisma.RentalPlanCountArgs<ExtArgs>
-            result: $Utils.Optional<RentalPlanCountAggregateOutputType> | number
-          }
-        }
-      }
       PricingRule: {
         payload: Prisma.$PricingRulePayload<ExtArgs>
         fields: Prisma.PricingRuleFieldRefs
@@ -2612,6 +2542,76 @@ export namespace Prisma {
           count: {
             args: Prisma.BookingCountArgs<ExtArgs>
             result: $Utils.Optional<BookingCountAggregateOutputType> | number
+          }
+        }
+      }
+      BookingItem: {
+        payload: Prisma.$BookingItemPayload<ExtArgs>
+        fields: Prisma.BookingItemFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.BookingItemFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BookingItemPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.BookingItemFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BookingItemPayload>
+          }
+          findFirst: {
+            args: Prisma.BookingItemFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BookingItemPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.BookingItemFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BookingItemPayload>
+          }
+          findMany: {
+            args: Prisma.BookingItemFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BookingItemPayload>[]
+          }
+          create: {
+            args: Prisma.BookingItemCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BookingItemPayload>
+          }
+          createMany: {
+            args: Prisma.BookingItemCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.BookingItemCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BookingItemPayload>[]
+          }
+          delete: {
+            args: Prisma.BookingItemDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BookingItemPayload>
+          }
+          update: {
+            args: Prisma.BookingItemUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BookingItemPayload>
+          }
+          deleteMany: {
+            args: Prisma.BookingItemDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.BookingItemUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.BookingItemUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BookingItemPayload>
+          }
+          aggregate: {
+            args: Prisma.BookingItemAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateBookingItem>
+          }
+          groupBy: {
+            args: Prisma.BookingItemGroupByArgs<ExtArgs>
+            result: $Utils.Optional<BookingItemGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.BookingItemCountArgs<ExtArgs>
+            result: $Utils.Optional<BookingItemCountAggregateOutputType> | number
           }
         }
       }
@@ -3689,17 +3689,17 @@ export namespace Prisma {
   export type VehicleCountOutputType = {
     insuranceRecords: number
     maintenance: number
-    bookings: number
     damageReports: number
     images: number
+    bookingItems: number
   }
 
   export type VehicleCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     insuranceRecords?: boolean | VehicleCountOutputTypeCountInsuranceRecordsArgs
     maintenance?: boolean | VehicleCountOutputTypeCountMaintenanceArgs
-    bookings?: boolean | VehicleCountOutputTypeCountBookingsArgs
     damageReports?: boolean | VehicleCountOutputTypeCountDamageReportsArgs
     images?: boolean | VehicleCountOutputTypeCountImagesArgs
+    bookingItems?: boolean | VehicleCountOutputTypeCountBookingItemsArgs
   }
 
   // Custom InputTypes
@@ -3730,13 +3730,6 @@ export namespace Prisma {
   /**
    * VehicleCountOutputType without action
    */
-  export type VehicleCountOutputTypeCountBookingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: BookingWhereInput
-  }
-
-  /**
-   * VehicleCountOutputType without action
-   */
   export type VehicleCountOutputTypeCountDamageReportsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: DamageReportWhereInput
   }
@@ -3748,35 +3741,11 @@ export namespace Prisma {
     where?: VehicleImageWhereInput
   }
 
-
   /**
-   * Count Type RentalPlanCountOutputType
+   * VehicleCountOutputType without action
    */
-
-  export type RentalPlanCountOutputType = {
-    bookings: number
-  }
-
-  export type RentalPlanCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    bookings?: boolean | RentalPlanCountOutputTypeCountBookingsArgs
-  }
-
-  // Custom InputTypes
-  /**
-   * RentalPlanCountOutputType without action
-   */
-  export type RentalPlanCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RentalPlanCountOutputType
-     */
-    select?: RentalPlanCountOutputTypeSelect<ExtArgs> | null
-  }
-
-  /**
-   * RentalPlanCountOutputType without action
-   */
-  export type RentalPlanCountOutputTypeCountBookingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: BookingWhereInput
+  export type VehicleCountOutputTypeCountBookingItemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BookingItemWhereInput
   }
 
 
@@ -3787,11 +3756,13 @@ export namespace Prisma {
   export type BookingCountOutputType = {
     photos: number
     damages: number
+    items: number
   }
 
   export type BookingCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     photos?: boolean | BookingCountOutputTypeCountPhotosArgs
     damages?: boolean | BookingCountOutputTypeCountDamagesArgs
+    items?: boolean | BookingCountOutputTypeCountItemsArgs
   }
 
   // Custom InputTypes
@@ -3817,6 +3788,13 @@ export namespace Prisma {
    */
   export type BookingCountOutputTypeCountDamagesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: DamageReportWhereInput
+  }
+
+  /**
+   * BookingCountOutputType without action
+   */
+  export type BookingCountOutputTypeCountItemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BookingItemWhereInput
   }
 
 
@@ -14621,10 +14599,10 @@ export namespace Prisma {
     category?: boolean | VehicleCategoryDefaultArgs<ExtArgs>
     insuranceRecords?: boolean | Vehicle$insuranceRecordsArgs<ExtArgs>
     maintenance?: boolean | Vehicle$maintenanceArgs<ExtArgs>
-    bookings?: boolean | Vehicle$bookingsArgs<ExtArgs>
     damageReports?: boolean | Vehicle$damageReportsArgs<ExtArgs>
     pricingOverride?: boolean | Vehicle$pricingOverrideArgs<ExtArgs>
     images?: boolean | Vehicle$imagesArgs<ExtArgs>
+    bookingItems?: boolean | Vehicle$bookingItemsArgs<ExtArgs>
     _count?: boolean | VehicleCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["vehicle"]>
 
@@ -14669,10 +14647,10 @@ export namespace Prisma {
     category?: boolean | VehicleCategoryDefaultArgs<ExtArgs>
     insuranceRecords?: boolean | Vehicle$insuranceRecordsArgs<ExtArgs>
     maintenance?: boolean | Vehicle$maintenanceArgs<ExtArgs>
-    bookings?: boolean | Vehicle$bookingsArgs<ExtArgs>
     damageReports?: boolean | Vehicle$damageReportsArgs<ExtArgs>
     pricingOverride?: boolean | Vehicle$pricingOverrideArgs<ExtArgs>
     images?: boolean | Vehicle$imagesArgs<ExtArgs>
+    bookingItems?: boolean | Vehicle$bookingItemsArgs<ExtArgs>
     _count?: boolean | VehicleCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type VehicleIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -14687,10 +14665,10 @@ export namespace Prisma {
       category: Prisma.$VehicleCategoryPayload<ExtArgs>
       insuranceRecords: Prisma.$VehicleInsurancePayload<ExtArgs>[]
       maintenance: Prisma.$VehicleMaintenanceRecordPayload<ExtArgs>[]
-      bookings: Prisma.$BookingPayload<ExtArgs>[]
       damageReports: Prisma.$DamageReportPayload<ExtArgs>[]
       pricingOverride: Prisma.$VehiclePricingOverridePayload<ExtArgs> | null
       images: Prisma.$VehicleImagePayload<ExtArgs>[]
+      bookingItems: Prisma.$BookingItemPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -15075,10 +15053,10 @@ export namespace Prisma {
     category<T extends VehicleCategoryDefaultArgs<ExtArgs> = {}>(args?: Subset<T, VehicleCategoryDefaultArgs<ExtArgs>>): Prisma__VehicleCategoryClient<$Result.GetResult<Prisma.$VehicleCategoryPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     insuranceRecords<T extends Vehicle$insuranceRecordsArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$insuranceRecordsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleInsurancePayload<ExtArgs>, T, "findMany"> | Null>
     maintenance<T extends Vehicle$maintenanceArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$maintenanceArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleMaintenanceRecordPayload<ExtArgs>, T, "findMany"> | Null>
-    bookings<T extends Vehicle$bookingsArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$bookingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findMany"> | Null>
     damageReports<T extends Vehicle$damageReportsArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$damageReportsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DamageReportPayload<ExtArgs>, T, "findMany"> | Null>
     pricingOverride<T extends Vehicle$pricingOverrideArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$pricingOverrideArgs<ExtArgs>>): Prisma__VehiclePricingOverrideClient<$Result.GetResult<Prisma.$VehiclePricingOverridePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     images<T extends Vehicle$imagesArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$imagesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleImagePayload<ExtArgs>, T, "findMany"> | Null>
+    bookingItems<T extends Vehicle$bookingItemsArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$bookingItemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingItemPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -15480,26 +15458,6 @@ export namespace Prisma {
   }
 
   /**
-   * Vehicle.bookings
-   */
-  export type Vehicle$bookingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Booking
-     */
-    select?: BookingSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: BookingInclude<ExtArgs> | null
-    where?: BookingWhereInput
-    orderBy?: BookingOrderByWithRelationInput | BookingOrderByWithRelationInput[]
-    cursor?: BookingWhereUniqueInput
-    take?: number
-    skip?: number
-    distinct?: BookingScalarFieldEnum | BookingScalarFieldEnum[]
-  }
-
-  /**
    * Vehicle.damageReports
    */
   export type Vehicle$damageReportsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -15552,6 +15510,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: VehicleImageScalarFieldEnum | VehicleImageScalarFieldEnum[]
+  }
+
+  /**
+   * Vehicle.bookingItems
+   */
+  export type Vehicle$bookingItemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingItem
+     */
+    select?: BookingItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingItemInclude<ExtArgs> | null
+    where?: BookingItemWhereInput
+    orderBy?: BookingItemOrderByWithRelationInput | BookingItemOrderByWithRelationInput[]
+    cursor?: BookingItemWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: BookingItemScalarFieldEnum | BookingItemScalarFieldEnum[]
   }
 
   /**
@@ -19512,996 +19490,6 @@ export namespace Prisma {
 
 
   /**
-   * Model RentalPlan
-   */
-
-  export type AggregateRentalPlan = {
-    _count: RentalPlanCountAggregateOutputType | null
-    _avg: RentalPlanAvgAggregateOutputType | null
-    _sum: RentalPlanSumAggregateOutputType | null
-    _min: RentalPlanMinAggregateOutputType | null
-    _max: RentalPlanMaxAggregateOutputType | null
-  }
-
-  export type RentalPlanAvgAggregateOutputType = {
-    id: number | null
-    durationHours: number | null
-    basePrice: Decimal | null
-  }
-
-  export type RentalPlanSumAggregateOutputType = {
-    id: number | null
-    durationHours: number | null
-    basePrice: Decimal | null
-  }
-
-  export type RentalPlanMinAggregateOutputType = {
-    id: number | null
-    publicId: string | null
-    name: string | null
-    durationHours: number | null
-    basePrice: Decimal | null
-  }
-
-  export type RentalPlanMaxAggregateOutputType = {
-    id: number | null
-    publicId: string | null
-    name: string | null
-    durationHours: number | null
-    basePrice: Decimal | null
-  }
-
-  export type RentalPlanCountAggregateOutputType = {
-    id: number
-    publicId: number
-    name: number
-    durationHours: number
-    basePrice: number
-    _all: number
-  }
-
-
-  export type RentalPlanAvgAggregateInputType = {
-    id?: true
-    durationHours?: true
-    basePrice?: true
-  }
-
-  export type RentalPlanSumAggregateInputType = {
-    id?: true
-    durationHours?: true
-    basePrice?: true
-  }
-
-  export type RentalPlanMinAggregateInputType = {
-    id?: true
-    publicId?: true
-    name?: true
-    durationHours?: true
-    basePrice?: true
-  }
-
-  export type RentalPlanMaxAggregateInputType = {
-    id?: true
-    publicId?: true
-    name?: true
-    durationHours?: true
-    basePrice?: true
-  }
-
-  export type RentalPlanCountAggregateInputType = {
-    id?: true
-    publicId?: true
-    name?: true
-    durationHours?: true
-    basePrice?: true
-    _all?: true
-  }
-
-  export type RentalPlanAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which RentalPlan to aggregate.
-     */
-    where?: RentalPlanWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of RentalPlans to fetch.
-     */
-    orderBy?: RentalPlanOrderByWithRelationInput | RentalPlanOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the start position
-     */
-    cursor?: RentalPlanWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` RentalPlans from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` RentalPlans.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Count returned RentalPlans
-    **/
-    _count?: true | RentalPlanCountAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to average
-    **/
-    _avg?: RentalPlanAvgAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to sum
-    **/
-    _sum?: RentalPlanSumAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the minimum value
-    **/
-    _min?: RentalPlanMinAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the maximum value
-    **/
-    _max?: RentalPlanMaxAggregateInputType
-  }
-
-  export type GetRentalPlanAggregateType<T extends RentalPlanAggregateArgs> = {
-        [P in keyof T & keyof AggregateRentalPlan]: P extends '_count' | 'count'
-      ? T[P] extends true
-        ? number
-        : GetScalarType<T[P], AggregateRentalPlan[P]>
-      : GetScalarType<T[P], AggregateRentalPlan[P]>
-  }
-
-
-
-
-  export type RentalPlanGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: RentalPlanWhereInput
-    orderBy?: RentalPlanOrderByWithAggregationInput | RentalPlanOrderByWithAggregationInput[]
-    by: RentalPlanScalarFieldEnum[] | RentalPlanScalarFieldEnum
-    having?: RentalPlanScalarWhereWithAggregatesInput
-    take?: number
-    skip?: number
-    _count?: RentalPlanCountAggregateInputType | true
-    _avg?: RentalPlanAvgAggregateInputType
-    _sum?: RentalPlanSumAggregateInputType
-    _min?: RentalPlanMinAggregateInputType
-    _max?: RentalPlanMaxAggregateInputType
-  }
-
-  export type RentalPlanGroupByOutputType = {
-    id: number
-    publicId: string
-    name: string
-    durationHours: number
-    basePrice: Decimal
-    _count: RentalPlanCountAggregateOutputType | null
-    _avg: RentalPlanAvgAggregateOutputType | null
-    _sum: RentalPlanSumAggregateOutputType | null
-    _min: RentalPlanMinAggregateOutputType | null
-    _max: RentalPlanMaxAggregateOutputType | null
-  }
-
-  type GetRentalPlanGroupByPayload<T extends RentalPlanGroupByArgs> = Prisma.PrismaPromise<
-    Array<
-      PickEnumerable<RentalPlanGroupByOutputType, T['by']> &
-        {
-          [P in ((keyof T) & (keyof RentalPlanGroupByOutputType))]: P extends '_count'
-            ? T[P] extends boolean
-              ? number
-              : GetScalarType<T[P], RentalPlanGroupByOutputType[P]>
-            : GetScalarType<T[P], RentalPlanGroupByOutputType[P]>
-        }
-      >
-    >
-
-
-  export type RentalPlanSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    publicId?: boolean
-    name?: boolean
-    durationHours?: boolean
-    basePrice?: boolean
-    bookings?: boolean | RentalPlan$bookingsArgs<ExtArgs>
-    _count?: boolean | RentalPlanCountOutputTypeDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["rentalPlan"]>
-
-  export type RentalPlanSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    publicId?: boolean
-    name?: boolean
-    durationHours?: boolean
-    basePrice?: boolean
-  }, ExtArgs["result"]["rentalPlan"]>
-
-  export type RentalPlanSelectScalar = {
-    id?: boolean
-    publicId?: boolean
-    name?: boolean
-    durationHours?: boolean
-    basePrice?: boolean
-  }
-
-  export type RentalPlanInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    bookings?: boolean | RentalPlan$bookingsArgs<ExtArgs>
-    _count?: boolean | RentalPlanCountOutputTypeDefaultArgs<ExtArgs>
-  }
-  export type RentalPlanIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
-
-  export type $RentalPlanPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "RentalPlan"
-    objects: {
-      bookings: Prisma.$BookingPayload<ExtArgs>[]
-    }
-    scalars: $Extensions.GetPayloadResult<{
-      id: number
-      publicId: string
-      name: string
-      durationHours: number
-      basePrice: Prisma.Decimal
-    }, ExtArgs["result"]["rentalPlan"]>
-    composites: {}
-  }
-
-  type RentalPlanGetPayload<S extends boolean | null | undefined | RentalPlanDefaultArgs> = $Result.GetResult<Prisma.$RentalPlanPayload, S>
-
-  type RentalPlanCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
-    Omit<RentalPlanFindManyArgs, 'select' | 'include' | 'distinct'> & {
-      select?: RentalPlanCountAggregateInputType | true
-    }
-
-  export interface RentalPlanDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['RentalPlan'], meta: { name: 'RentalPlan' } }
-    /**
-     * Find zero or one RentalPlan that matches the filter.
-     * @param {RentalPlanFindUniqueArgs} args - Arguments to find a RentalPlan
-     * @example
-     * // Get one RentalPlan
-     * const rentalPlan = await prisma.rentalPlan.findUnique({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUnique<T extends RentalPlanFindUniqueArgs>(args: SelectSubset<T, RentalPlanFindUniqueArgs<ExtArgs>>): Prisma__RentalPlanClient<$Result.GetResult<Prisma.$RentalPlanPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
-
-    /**
-     * Find one RentalPlan that matches the filter or throw an error with `error.code='P2025'` 
-     * if no matches were found.
-     * @param {RentalPlanFindUniqueOrThrowArgs} args - Arguments to find a RentalPlan
-     * @example
-     * // Get one RentalPlan
-     * const rentalPlan = await prisma.rentalPlan.findUniqueOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUniqueOrThrow<T extends RentalPlanFindUniqueOrThrowArgs>(args: SelectSubset<T, RentalPlanFindUniqueOrThrowArgs<ExtArgs>>): Prisma__RentalPlanClient<$Result.GetResult<Prisma.$RentalPlanPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
-
-    /**
-     * Find the first RentalPlan that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {RentalPlanFindFirstArgs} args - Arguments to find a RentalPlan
-     * @example
-     * // Get one RentalPlan
-     * const rentalPlan = await prisma.rentalPlan.findFirst({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirst<T extends RentalPlanFindFirstArgs>(args?: SelectSubset<T, RentalPlanFindFirstArgs<ExtArgs>>): Prisma__RentalPlanClient<$Result.GetResult<Prisma.$RentalPlanPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
-
-    /**
-     * Find the first RentalPlan that matches the filter or
-     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {RentalPlanFindFirstOrThrowArgs} args - Arguments to find a RentalPlan
-     * @example
-     * // Get one RentalPlan
-     * const rentalPlan = await prisma.rentalPlan.findFirstOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirstOrThrow<T extends RentalPlanFindFirstOrThrowArgs>(args?: SelectSubset<T, RentalPlanFindFirstOrThrowArgs<ExtArgs>>): Prisma__RentalPlanClient<$Result.GetResult<Prisma.$RentalPlanPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
-
-    /**
-     * Find zero or more RentalPlans that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {RentalPlanFindManyArgs} args - Arguments to filter and select certain fields only.
-     * @example
-     * // Get all RentalPlans
-     * const rentalPlans = await prisma.rentalPlan.findMany()
-     * 
-     * // Get first 10 RentalPlans
-     * const rentalPlans = await prisma.rentalPlan.findMany({ take: 10 })
-     * 
-     * // Only select the `id`
-     * const rentalPlanWithIdOnly = await prisma.rentalPlan.findMany({ select: { id: true } })
-     * 
-     */
-    findMany<T extends RentalPlanFindManyArgs>(args?: SelectSubset<T, RentalPlanFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RentalPlanPayload<ExtArgs>, T, "findMany">>
-
-    /**
-     * Create a RentalPlan.
-     * @param {RentalPlanCreateArgs} args - Arguments to create a RentalPlan.
-     * @example
-     * // Create one RentalPlan
-     * const RentalPlan = await prisma.rentalPlan.create({
-     *   data: {
-     *     // ... data to create a RentalPlan
-     *   }
-     * })
-     * 
-     */
-    create<T extends RentalPlanCreateArgs>(args: SelectSubset<T, RentalPlanCreateArgs<ExtArgs>>): Prisma__RentalPlanClient<$Result.GetResult<Prisma.$RentalPlanPayload<ExtArgs>, T, "create">, never, ExtArgs>
-
-    /**
-     * Create many RentalPlans.
-     * @param {RentalPlanCreateManyArgs} args - Arguments to create many RentalPlans.
-     * @example
-     * // Create many RentalPlans
-     * const rentalPlan = await prisma.rentalPlan.createMany({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     *     
-     */
-    createMany<T extends RentalPlanCreateManyArgs>(args?: SelectSubset<T, RentalPlanCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create many RentalPlans and returns the data saved in the database.
-     * @param {RentalPlanCreateManyAndReturnArgs} args - Arguments to create many RentalPlans.
-     * @example
-     * // Create many RentalPlans
-     * const rentalPlan = await prisma.rentalPlan.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many RentalPlans and only return the `id`
-     * const rentalPlanWithIdOnly = await prisma.rentalPlan.createManyAndReturn({ 
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends RentalPlanCreateManyAndReturnArgs>(args?: SelectSubset<T, RentalPlanCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RentalPlanPayload<ExtArgs>, T, "createManyAndReturn">>
-
-    /**
-     * Delete a RentalPlan.
-     * @param {RentalPlanDeleteArgs} args - Arguments to delete one RentalPlan.
-     * @example
-     * // Delete one RentalPlan
-     * const RentalPlan = await prisma.rentalPlan.delete({
-     *   where: {
-     *     // ... filter to delete one RentalPlan
-     *   }
-     * })
-     * 
-     */
-    delete<T extends RentalPlanDeleteArgs>(args: SelectSubset<T, RentalPlanDeleteArgs<ExtArgs>>): Prisma__RentalPlanClient<$Result.GetResult<Prisma.$RentalPlanPayload<ExtArgs>, T, "delete">, never, ExtArgs>
-
-    /**
-     * Update one RentalPlan.
-     * @param {RentalPlanUpdateArgs} args - Arguments to update one RentalPlan.
-     * @example
-     * // Update one RentalPlan
-     * const rentalPlan = await prisma.rentalPlan.update({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    update<T extends RentalPlanUpdateArgs>(args: SelectSubset<T, RentalPlanUpdateArgs<ExtArgs>>): Prisma__RentalPlanClient<$Result.GetResult<Prisma.$RentalPlanPayload<ExtArgs>, T, "update">, never, ExtArgs>
-
-    /**
-     * Delete zero or more RentalPlans.
-     * @param {RentalPlanDeleteManyArgs} args - Arguments to filter RentalPlans to delete.
-     * @example
-     * // Delete a few RentalPlans
-     * const { count } = await prisma.rentalPlan.deleteMany({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     * 
-     */
-    deleteMany<T extends RentalPlanDeleteManyArgs>(args?: SelectSubset<T, RentalPlanDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more RentalPlans.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {RentalPlanUpdateManyArgs} args - Arguments to update one or more rows.
-     * @example
-     * // Update many RentalPlans
-     * const rentalPlan = await prisma.rentalPlan.updateMany({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    updateMany<T extends RentalPlanUpdateManyArgs>(args: SelectSubset<T, RentalPlanUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create or update one RentalPlan.
-     * @param {RentalPlanUpsertArgs} args - Arguments to update or create a RentalPlan.
-     * @example
-     * // Update or create a RentalPlan
-     * const rentalPlan = await prisma.rentalPlan.upsert({
-     *   create: {
-     *     // ... data to create a RentalPlan
-     *   },
-     *   update: {
-     *     // ... in case it already exists, update
-     *   },
-     *   where: {
-     *     // ... the filter for the RentalPlan we want to update
-     *   }
-     * })
-     */
-    upsert<T extends RentalPlanUpsertArgs>(args: SelectSubset<T, RentalPlanUpsertArgs<ExtArgs>>): Prisma__RentalPlanClient<$Result.GetResult<Prisma.$RentalPlanPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
-
-
-    /**
-     * Count the number of RentalPlans.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {RentalPlanCountArgs} args - Arguments to filter RentalPlans to count.
-     * @example
-     * // Count the number of RentalPlans
-     * const count = await prisma.rentalPlan.count({
-     *   where: {
-     *     // ... the filter for the RentalPlans we want to count
-     *   }
-     * })
-    **/
-    count<T extends RentalPlanCountArgs>(
-      args?: Subset<T, RentalPlanCountArgs>,
-    ): Prisma.PrismaPromise<
-      T extends $Utils.Record<'select', any>
-        ? T['select'] extends true
-          ? number
-          : GetScalarType<T['select'], RentalPlanCountAggregateOutputType>
-        : number
-    >
-
-    /**
-     * Allows you to perform aggregations operations on a RentalPlan.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {RentalPlanAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
-     * @example
-     * // Ordered by age ascending
-     * // Where email contains prisma.io
-     * // Limited to the 10 users
-     * const aggregations = await prisma.user.aggregate({
-     *   _avg: {
-     *     age: true,
-     *   },
-     *   where: {
-     *     email: {
-     *       contains: "prisma.io",
-     *     },
-     *   },
-     *   orderBy: {
-     *     age: "asc",
-     *   },
-     *   take: 10,
-     * })
-    **/
-    aggregate<T extends RentalPlanAggregateArgs>(args: Subset<T, RentalPlanAggregateArgs>): Prisma.PrismaPromise<GetRentalPlanAggregateType<T>>
-
-    /**
-     * Group by RentalPlan.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {RentalPlanGroupByArgs} args - Group by arguments.
-     * @example
-     * // Group by city, order by createdAt, get count
-     * const result = await prisma.user.groupBy({
-     *   by: ['city', 'createdAt'],
-     *   orderBy: {
-     *     createdAt: true
-     *   },
-     *   _count: {
-     *     _all: true
-     *   },
-     * })
-     * 
-    **/
-    groupBy<
-      T extends RentalPlanGroupByArgs,
-      HasSelectOrTake extends Or<
-        Extends<'skip', Keys<T>>,
-        Extends<'take', Keys<T>>
-      >,
-      OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: RentalPlanGroupByArgs['orderBy'] }
-        : { orderBy?: RentalPlanGroupByArgs['orderBy'] },
-      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
-      ByFields extends MaybeTupleToUnion<T['by']>,
-      ByValid extends Has<ByFields, OrderFields>,
-      HavingFields extends GetHavingFields<T['having']>,
-      HavingValid extends Has<ByFields, HavingFields>,
-      ByEmpty extends T['by'] extends never[] ? True : False,
-      InputErrors extends ByEmpty extends True
-      ? `Error: "by" must not be empty.`
-      : HavingValid extends False
-      ? {
-          [P in HavingFields]: P extends ByFields
-            ? never
-            : P extends string
-            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
-            : [
-                Error,
-                'Field ',
-                P,
-                ` in "having" needs to be provided in "by"`,
-              ]
-        }[HavingFields]
-      : 'take' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "take", you also need to provide "orderBy"'
-      : 'skip' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "skip", you also need to provide "orderBy"'
-      : ByValid extends True
-      ? {}
-      : {
-          [P in OrderFields]: P extends ByFields
-            ? never
-            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-        }[OrderFields]
-    >(args: SubsetIntersection<T, RentalPlanGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetRentalPlanGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
-  /**
-   * Fields of the RentalPlan model
-   */
-  readonly fields: RentalPlanFieldRefs;
-  }
-
-  /**
-   * The delegate class that acts as a "Promise-like" for RentalPlan.
-   * Why is this prefixed with `Prisma__`?
-   * Because we want to prevent naming conflicts as mentioned in
-   * https://github.com/prisma/prisma-client-js/issues/707
-   */
-  export interface Prisma__RentalPlanClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    bookings<T extends RentalPlan$bookingsArgs<ExtArgs> = {}>(args?: Subset<T, RentalPlan$bookingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findMany"> | Null>
-    /**
-     * Attaches callbacks for the resolution and/or rejection of the Promise.
-     * @param onfulfilled The callback to execute when the Promise is resolved.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of which ever callback is executed.
-     */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
-    /**
-     * Attaches a callback for only the rejection of the Promise.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of the callback.
-     */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
-    /**
-     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
-     * resolved value cannot be modified from the callback.
-     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
-     * @returns A Promise for the completion of the callback.
-     */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
-  }
-
-
-
-
-  /**
-   * Fields of the RentalPlan model
-   */ 
-  interface RentalPlanFieldRefs {
-    readonly id: FieldRef<"RentalPlan", 'Int'>
-    readonly publicId: FieldRef<"RentalPlan", 'String'>
-    readonly name: FieldRef<"RentalPlan", 'String'>
-    readonly durationHours: FieldRef<"RentalPlan", 'Int'>
-    readonly basePrice: FieldRef<"RentalPlan", 'Decimal'>
-  }
-    
-
-  // Custom InputTypes
-  /**
-   * RentalPlan findUnique
-   */
-  export type RentalPlanFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RentalPlan
-     */
-    select?: RentalPlanSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: RentalPlanInclude<ExtArgs> | null
-    /**
-     * Filter, which RentalPlan to fetch.
-     */
-    where: RentalPlanWhereUniqueInput
-  }
-
-  /**
-   * RentalPlan findUniqueOrThrow
-   */
-  export type RentalPlanFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RentalPlan
-     */
-    select?: RentalPlanSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: RentalPlanInclude<ExtArgs> | null
-    /**
-     * Filter, which RentalPlan to fetch.
-     */
-    where: RentalPlanWhereUniqueInput
-  }
-
-  /**
-   * RentalPlan findFirst
-   */
-  export type RentalPlanFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RentalPlan
-     */
-    select?: RentalPlanSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: RentalPlanInclude<ExtArgs> | null
-    /**
-     * Filter, which RentalPlan to fetch.
-     */
-    where?: RentalPlanWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of RentalPlans to fetch.
-     */
-    orderBy?: RentalPlanOrderByWithRelationInput | RentalPlanOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for RentalPlans.
-     */
-    cursor?: RentalPlanWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` RentalPlans from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` RentalPlans.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of RentalPlans.
-     */
-    distinct?: RentalPlanScalarFieldEnum | RentalPlanScalarFieldEnum[]
-  }
-
-  /**
-   * RentalPlan findFirstOrThrow
-   */
-  export type RentalPlanFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RentalPlan
-     */
-    select?: RentalPlanSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: RentalPlanInclude<ExtArgs> | null
-    /**
-     * Filter, which RentalPlan to fetch.
-     */
-    where?: RentalPlanWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of RentalPlans to fetch.
-     */
-    orderBy?: RentalPlanOrderByWithRelationInput | RentalPlanOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for RentalPlans.
-     */
-    cursor?: RentalPlanWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` RentalPlans from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` RentalPlans.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of RentalPlans.
-     */
-    distinct?: RentalPlanScalarFieldEnum | RentalPlanScalarFieldEnum[]
-  }
-
-  /**
-   * RentalPlan findMany
-   */
-  export type RentalPlanFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RentalPlan
-     */
-    select?: RentalPlanSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: RentalPlanInclude<ExtArgs> | null
-    /**
-     * Filter, which RentalPlans to fetch.
-     */
-    where?: RentalPlanWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of RentalPlans to fetch.
-     */
-    orderBy?: RentalPlanOrderByWithRelationInput | RentalPlanOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for listing RentalPlans.
-     */
-    cursor?: RentalPlanWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` RentalPlans from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` RentalPlans.
-     */
-    skip?: number
-    distinct?: RentalPlanScalarFieldEnum | RentalPlanScalarFieldEnum[]
-  }
-
-  /**
-   * RentalPlan create
-   */
-  export type RentalPlanCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RentalPlan
-     */
-    select?: RentalPlanSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: RentalPlanInclude<ExtArgs> | null
-    /**
-     * The data needed to create a RentalPlan.
-     */
-    data: XOR<RentalPlanCreateInput, RentalPlanUncheckedCreateInput>
-  }
-
-  /**
-   * RentalPlan createMany
-   */
-  export type RentalPlanCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to create many RentalPlans.
-     */
-    data: RentalPlanCreateManyInput | RentalPlanCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * RentalPlan createManyAndReturn
-   */
-  export type RentalPlanCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RentalPlan
-     */
-    select?: RentalPlanSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * The data used to create many RentalPlans.
-     */
-    data: RentalPlanCreateManyInput | RentalPlanCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * RentalPlan update
-   */
-  export type RentalPlanUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RentalPlan
-     */
-    select?: RentalPlanSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: RentalPlanInclude<ExtArgs> | null
-    /**
-     * The data needed to update a RentalPlan.
-     */
-    data: XOR<RentalPlanUpdateInput, RentalPlanUncheckedUpdateInput>
-    /**
-     * Choose, which RentalPlan to update.
-     */
-    where: RentalPlanWhereUniqueInput
-  }
-
-  /**
-   * RentalPlan updateMany
-   */
-  export type RentalPlanUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update RentalPlans.
-     */
-    data: XOR<RentalPlanUpdateManyMutationInput, RentalPlanUncheckedUpdateManyInput>
-    /**
-     * Filter which RentalPlans to update
-     */
-    where?: RentalPlanWhereInput
-  }
-
-  /**
-   * RentalPlan upsert
-   */
-  export type RentalPlanUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RentalPlan
-     */
-    select?: RentalPlanSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: RentalPlanInclude<ExtArgs> | null
-    /**
-     * The filter to search for the RentalPlan to update in case it exists.
-     */
-    where: RentalPlanWhereUniqueInput
-    /**
-     * In case the RentalPlan found by the `where` argument doesn't exist, create a new RentalPlan with this data.
-     */
-    create: XOR<RentalPlanCreateInput, RentalPlanUncheckedCreateInput>
-    /**
-     * In case the RentalPlan was found with the provided `where` argument, update it with this data.
-     */
-    update: XOR<RentalPlanUpdateInput, RentalPlanUncheckedUpdateInput>
-  }
-
-  /**
-   * RentalPlan delete
-   */
-  export type RentalPlanDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RentalPlan
-     */
-    select?: RentalPlanSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: RentalPlanInclude<ExtArgs> | null
-    /**
-     * Filter which RentalPlan to delete.
-     */
-    where: RentalPlanWhereUniqueInput
-  }
-
-  /**
-   * RentalPlan deleteMany
-   */
-  export type RentalPlanDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which RentalPlans to delete
-     */
-    where?: RentalPlanWhereInput
-  }
-
-  /**
-   * RentalPlan.bookings
-   */
-  export type RentalPlan$bookingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Booking
-     */
-    select?: BookingSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: BookingInclude<ExtArgs> | null
-    where?: BookingWhereInput
-    orderBy?: BookingOrderByWithRelationInput | BookingOrderByWithRelationInput[]
-    cursor?: BookingWhereUniqueInput
-    take?: number
-    skip?: number
-    distinct?: BookingScalarFieldEnum | BookingScalarFieldEnum[]
-  }
-
-  /**
-   * RentalPlan without action
-   */
-  export type RentalPlanDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RentalPlan
-     */
-    select?: RentalPlanSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: RentalPlanInclude<ExtArgs> | null
-  }
-
-
-  /**
    * Model PricingRule
    */
 
@@ -23510,22 +22498,24 @@ export namespace Prisma {
   export type BookingAvgAggregateOutputType = {
     id: number | null
     customerId: number | null
-    vehicleId: number | null
     branchId: number | null
-    rentalPlanId: number | null
-    rentalPrice: Decimal | null
-    depositRequired: Decimal | null
+    days: number | null
+    totalBase: Decimal | null
+    totalDiscount: Decimal | null
+    totalDeposit: Decimal | null
+    totalFinal: Decimal | null
     createdById: number | null
   }
 
   export type BookingSumAggregateOutputType = {
     id: number | null
     customerId: number | null
-    vehicleId: number | null
     branchId: number | null
-    rentalPlanId: number | null
-    rentalPrice: Decimal | null
-    depositRequired: Decimal | null
+    days: number | null
+    totalBase: Decimal | null
+    totalDiscount: Decimal | null
+    totalDeposit: Decimal | null
+    totalFinal: Decimal | null
     createdById: number | null
   }
 
@@ -23533,16 +22523,20 @@ export namespace Prisma {
     id: number | null
     publicId: string | null
     customerId: number | null
-    vehicleId: number | null
     branchId: number | null
-    rentalPlanId: number | null
     startAt: Date | null
     endAt: Date | null
+    days: number | null
+    holdExpiresAt: Date | null
+    totalBase: Decimal | null
+    totalDiscount: Decimal | null
+    totalDeposit: Decimal | null
+    totalFinal: Decimal | null
     status: $Enums.BookingStatus | null
-    rentalPrice: Decimal | null
-    depositRequired: Decimal | null
-    depositMethod: $Enums.DepositMethod | null
+    transactionId: string | null
+    paymentStatus: $Enums.PaymentStatus | null
     createdById: number | null
+    depositMethod: $Enums.DepositMethod | null
     createdAt: Date | null
     updatedAt: Date | null
     deletedAt: Date | null
@@ -23552,16 +22546,20 @@ export namespace Prisma {
     id: number | null
     publicId: string | null
     customerId: number | null
-    vehicleId: number | null
     branchId: number | null
-    rentalPlanId: number | null
     startAt: Date | null
     endAt: Date | null
+    days: number | null
+    holdExpiresAt: Date | null
+    totalBase: Decimal | null
+    totalDiscount: Decimal | null
+    totalDeposit: Decimal | null
+    totalFinal: Decimal | null
     status: $Enums.BookingStatus | null
-    rentalPrice: Decimal | null
-    depositRequired: Decimal | null
-    depositMethod: $Enums.DepositMethod | null
+    transactionId: string | null
+    paymentStatus: $Enums.PaymentStatus | null
     createdById: number | null
+    depositMethod: $Enums.DepositMethod | null
     createdAt: Date | null
     updatedAt: Date | null
     deletedAt: Date | null
@@ -23571,17 +22569,21 @@ export namespace Prisma {
     id: number
     publicId: number
     customerId: number
-    vehicleId: number
     branchId: number
-    rentalPlanId: number
     startAt: number
     endAt: number
+    days: number
+    holdExpiresAt: number
+    totalBase: number
+    totalDiscount: number
+    totalDeposit: number
+    totalFinal: number
     status: number
-    rentalPrice: number
-    depositRequired: number
-    depositMethod: number
+    transactionId: number
+    paymentStatus: number
     pricingSnapshot: number
     createdById: number
+    depositMethod: number
     createdAt: number
     updatedAt: number
     deletedAt: number
@@ -23592,22 +22594,24 @@ export namespace Prisma {
   export type BookingAvgAggregateInputType = {
     id?: true
     customerId?: true
-    vehicleId?: true
     branchId?: true
-    rentalPlanId?: true
-    rentalPrice?: true
-    depositRequired?: true
+    days?: true
+    totalBase?: true
+    totalDiscount?: true
+    totalDeposit?: true
+    totalFinal?: true
     createdById?: true
   }
 
   export type BookingSumAggregateInputType = {
     id?: true
     customerId?: true
-    vehicleId?: true
     branchId?: true
-    rentalPlanId?: true
-    rentalPrice?: true
-    depositRequired?: true
+    days?: true
+    totalBase?: true
+    totalDiscount?: true
+    totalDeposit?: true
+    totalFinal?: true
     createdById?: true
   }
 
@@ -23615,16 +22619,20 @@ export namespace Prisma {
     id?: true
     publicId?: true
     customerId?: true
-    vehicleId?: true
     branchId?: true
-    rentalPlanId?: true
     startAt?: true
     endAt?: true
+    days?: true
+    holdExpiresAt?: true
+    totalBase?: true
+    totalDiscount?: true
+    totalDeposit?: true
+    totalFinal?: true
     status?: true
-    rentalPrice?: true
-    depositRequired?: true
-    depositMethod?: true
+    transactionId?: true
+    paymentStatus?: true
     createdById?: true
+    depositMethod?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -23634,16 +22642,20 @@ export namespace Prisma {
     id?: true
     publicId?: true
     customerId?: true
-    vehicleId?: true
     branchId?: true
-    rentalPlanId?: true
     startAt?: true
     endAt?: true
+    days?: true
+    holdExpiresAt?: true
+    totalBase?: true
+    totalDiscount?: true
+    totalDeposit?: true
+    totalFinal?: true
     status?: true
-    rentalPrice?: true
-    depositRequired?: true
-    depositMethod?: true
+    transactionId?: true
+    paymentStatus?: true
     createdById?: true
+    depositMethod?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -23653,17 +22665,21 @@ export namespace Prisma {
     id?: true
     publicId?: true
     customerId?: true
-    vehicleId?: true
     branchId?: true
-    rentalPlanId?: true
     startAt?: true
     endAt?: true
+    days?: true
+    holdExpiresAt?: true
+    totalBase?: true
+    totalDiscount?: true
+    totalDeposit?: true
+    totalFinal?: true
     status?: true
-    rentalPrice?: true
-    depositRequired?: true
-    depositMethod?: true
+    transactionId?: true
+    paymentStatus?: true
     pricingSnapshot?: true
     createdById?: true
+    depositMethod?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -23760,17 +22776,21 @@ export namespace Prisma {
     id: number
     publicId: string
     customerId: number
-    vehicleId: number
     branchId: number
-    rentalPlanId: number
     startAt: Date
     endAt: Date
+    days: number
+    holdExpiresAt: Date | null
+    totalBase: Decimal
+    totalDiscount: Decimal
+    totalDeposit: Decimal
+    totalFinal: Decimal
     status: $Enums.BookingStatus
-    rentalPrice: Decimal
-    depositRequired: Decimal
-    depositMethod: $Enums.DepositMethod
+    transactionId: string | null
+    paymentStatus: $Enums.PaymentStatus
     pricingSnapshot: JsonValue
     createdById: number
+    depositMethod: $Enums.DepositMethod | null
     createdAt: Date
     updatedAt: Date
     deletedAt: Date | null
@@ -23799,27 +22819,30 @@ export namespace Prisma {
     id?: boolean
     publicId?: boolean
     customerId?: boolean
-    vehicleId?: boolean
     branchId?: boolean
-    rentalPlanId?: boolean
     startAt?: boolean
     endAt?: boolean
+    days?: boolean
+    holdExpiresAt?: boolean
+    totalBase?: boolean
+    totalDiscount?: boolean
+    totalDeposit?: boolean
+    totalFinal?: boolean
     status?: boolean
-    rentalPrice?: boolean
-    depositRequired?: boolean
-    depositMethod?: boolean
+    transactionId?: boolean
+    paymentStatus?: boolean
     pricingSnapshot?: boolean
     createdById?: boolean
+    depositMethod?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
     customer?: boolean | CustomerDefaultArgs<ExtArgs>
-    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
     branch?: boolean | BranchDefaultArgs<ExtArgs>
-    rentalPlan?: boolean | RentalPlanDefaultArgs<ExtArgs>
     createdBy?: boolean | UserDefaultArgs<ExtArgs>
     photos?: boolean | Booking$photosArgs<ExtArgs>
     damages?: boolean | Booking$damagesArgs<ExtArgs>
+    items?: boolean | Booking$itemsArgs<ExtArgs>
     deposit?: boolean | Booking$depositArgs<ExtArgs>
     invoice?: boolean | Booking$invoiceArgs<ExtArgs>
     _count?: boolean | BookingCountOutputTypeDefaultArgs<ExtArgs>
@@ -23829,24 +22852,26 @@ export namespace Prisma {
     id?: boolean
     publicId?: boolean
     customerId?: boolean
-    vehicleId?: boolean
     branchId?: boolean
-    rentalPlanId?: boolean
     startAt?: boolean
     endAt?: boolean
+    days?: boolean
+    holdExpiresAt?: boolean
+    totalBase?: boolean
+    totalDiscount?: boolean
+    totalDeposit?: boolean
+    totalFinal?: boolean
     status?: boolean
-    rentalPrice?: boolean
-    depositRequired?: boolean
-    depositMethod?: boolean
+    transactionId?: boolean
+    paymentStatus?: boolean
     pricingSnapshot?: boolean
     createdById?: boolean
+    depositMethod?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
     customer?: boolean | CustomerDefaultArgs<ExtArgs>
-    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
     branch?: boolean | BranchDefaultArgs<ExtArgs>
-    rentalPlan?: boolean | RentalPlanDefaultArgs<ExtArgs>
     createdBy?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["booking"]>
 
@@ -23854,17 +22879,21 @@ export namespace Prisma {
     id?: boolean
     publicId?: boolean
     customerId?: boolean
-    vehicleId?: boolean
     branchId?: boolean
-    rentalPlanId?: boolean
     startAt?: boolean
     endAt?: boolean
+    days?: boolean
+    holdExpiresAt?: boolean
+    totalBase?: boolean
+    totalDiscount?: boolean
+    totalDeposit?: boolean
+    totalFinal?: boolean
     status?: boolean
-    rentalPrice?: boolean
-    depositRequired?: boolean
-    depositMethod?: boolean
+    transactionId?: boolean
+    paymentStatus?: boolean
     pricingSnapshot?: boolean
     createdById?: boolean
+    depositMethod?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -23872,21 +22901,18 @@ export namespace Prisma {
 
   export type BookingInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     customer?: boolean | CustomerDefaultArgs<ExtArgs>
-    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
     branch?: boolean | BranchDefaultArgs<ExtArgs>
-    rentalPlan?: boolean | RentalPlanDefaultArgs<ExtArgs>
     createdBy?: boolean | UserDefaultArgs<ExtArgs>
     photos?: boolean | Booking$photosArgs<ExtArgs>
     damages?: boolean | Booking$damagesArgs<ExtArgs>
+    items?: boolean | Booking$itemsArgs<ExtArgs>
     deposit?: boolean | Booking$depositArgs<ExtArgs>
     invoice?: boolean | Booking$invoiceArgs<ExtArgs>
     _count?: boolean | BookingCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type BookingIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     customer?: boolean | CustomerDefaultArgs<ExtArgs>
-    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
     branch?: boolean | BranchDefaultArgs<ExtArgs>
-    rentalPlan?: boolean | RentalPlanDefaultArgs<ExtArgs>
     createdBy?: boolean | UserDefaultArgs<ExtArgs>
   }
 
@@ -23894,12 +22920,11 @@ export namespace Prisma {
     name: "Booking"
     objects: {
       customer: Prisma.$CustomerPayload<ExtArgs>
-      vehicle: Prisma.$VehiclePayload<ExtArgs>
       branch: Prisma.$BranchPayload<ExtArgs>
-      rentalPlan: Prisma.$RentalPlanPayload<ExtArgs>
       createdBy: Prisma.$UserPayload<ExtArgs>
       photos: Prisma.$BookingPhotoPayload<ExtArgs>[]
       damages: Prisma.$DamageReportPayload<ExtArgs>[]
+      items: Prisma.$BookingItemPayload<ExtArgs>[]
       deposit: Prisma.$DepositPayload<ExtArgs> | null
       invoice: Prisma.$InvoicePayload<ExtArgs> | null
     }
@@ -23907,17 +22932,21 @@ export namespace Prisma {
       id: number
       publicId: string
       customerId: number
-      vehicleId: number
       branchId: number
-      rentalPlanId: number
       startAt: Date
       endAt: Date
+      days: number
+      holdExpiresAt: Date | null
+      totalBase: Prisma.Decimal
+      totalDiscount: Prisma.Decimal
+      totalDeposit: Prisma.Decimal
+      totalFinal: Prisma.Decimal
       status: $Enums.BookingStatus
-      rentalPrice: Prisma.Decimal
-      depositRequired: Prisma.Decimal
-      depositMethod: $Enums.DepositMethod
+      transactionId: string | null
+      paymentStatus: $Enums.PaymentStatus
       pricingSnapshot: Prisma.JsonValue
       createdById: number
+      depositMethod: $Enums.DepositMethod | null
       createdAt: Date
       updatedAt: Date
       deletedAt: Date | null
@@ -24286,12 +23315,11 @@ export namespace Prisma {
   export interface Prisma__BookingClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     customer<T extends CustomerDefaultArgs<ExtArgs> = {}>(args?: Subset<T, CustomerDefaultArgs<ExtArgs>>): Prisma__CustomerClient<$Result.GetResult<Prisma.$CustomerPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
-    vehicle<T extends VehicleDefaultArgs<ExtArgs> = {}>(args?: Subset<T, VehicleDefaultArgs<ExtArgs>>): Prisma__VehicleClient<$Result.GetResult<Prisma.$VehiclePayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     branch<T extends BranchDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BranchDefaultArgs<ExtArgs>>): Prisma__BranchClient<$Result.GetResult<Prisma.$BranchPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
-    rentalPlan<T extends RentalPlanDefaultArgs<ExtArgs> = {}>(args?: Subset<T, RentalPlanDefaultArgs<ExtArgs>>): Prisma__RentalPlanClient<$Result.GetResult<Prisma.$RentalPlanPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     createdBy<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     photos<T extends Booking$photosArgs<ExtArgs> = {}>(args?: Subset<T, Booking$photosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingPhotoPayload<ExtArgs>, T, "findMany"> | Null>
     damages<T extends Booking$damagesArgs<ExtArgs> = {}>(args?: Subset<T, Booking$damagesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DamageReportPayload<ExtArgs>, T, "findMany"> | Null>
+    items<T extends Booking$itemsArgs<ExtArgs> = {}>(args?: Subset<T, Booking$itemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingItemPayload<ExtArgs>, T, "findMany"> | Null>
     deposit<T extends Booking$depositArgs<ExtArgs> = {}>(args?: Subset<T, Booking$depositArgs<ExtArgs>>): Prisma__DepositClient<$Result.GetResult<Prisma.$DepositPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     invoice<T extends Booking$invoiceArgs<ExtArgs> = {}>(args?: Subset<T, Booking$invoiceArgs<ExtArgs>>): Prisma__InvoiceClient<$Result.GetResult<Prisma.$InvoicePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
@@ -24326,17 +23354,21 @@ export namespace Prisma {
     readonly id: FieldRef<"Booking", 'Int'>
     readonly publicId: FieldRef<"Booking", 'String'>
     readonly customerId: FieldRef<"Booking", 'Int'>
-    readonly vehicleId: FieldRef<"Booking", 'Int'>
     readonly branchId: FieldRef<"Booking", 'Int'>
-    readonly rentalPlanId: FieldRef<"Booking", 'Int'>
     readonly startAt: FieldRef<"Booking", 'DateTime'>
     readonly endAt: FieldRef<"Booking", 'DateTime'>
+    readonly days: FieldRef<"Booking", 'Int'>
+    readonly holdExpiresAt: FieldRef<"Booking", 'DateTime'>
+    readonly totalBase: FieldRef<"Booking", 'Decimal'>
+    readonly totalDiscount: FieldRef<"Booking", 'Decimal'>
+    readonly totalDeposit: FieldRef<"Booking", 'Decimal'>
+    readonly totalFinal: FieldRef<"Booking", 'Decimal'>
     readonly status: FieldRef<"Booking", 'BookingStatus'>
-    readonly rentalPrice: FieldRef<"Booking", 'Decimal'>
-    readonly depositRequired: FieldRef<"Booking", 'Decimal'>
-    readonly depositMethod: FieldRef<"Booking", 'DepositMethod'>
+    readonly transactionId: FieldRef<"Booking", 'String'>
+    readonly paymentStatus: FieldRef<"Booking", 'PaymentStatus'>
     readonly pricingSnapshot: FieldRef<"Booking", 'Json'>
     readonly createdById: FieldRef<"Booking", 'Int'>
+    readonly depositMethod: FieldRef<"Booking", 'DepositMethod'>
     readonly createdAt: FieldRef<"Booking", 'DateTime'>
     readonly updatedAt: FieldRef<"Booking", 'DateTime'>
     readonly deletedAt: FieldRef<"Booking", 'DateTime'>
@@ -24698,6 +23730,26 @@ export namespace Prisma {
   }
 
   /**
+   * Booking.items
+   */
+  export type Booking$itemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingItem
+     */
+    select?: BookingItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingItemInclude<ExtArgs> | null
+    where?: BookingItemWhereInput
+    orderBy?: BookingItemOrderByWithRelationInput | BookingItemOrderByWithRelationInput[]
+    cursor?: BookingItemWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: BookingItemScalarFieldEnum | BookingItemScalarFieldEnum[]
+  }
+
+  /**
    * Booking.deposit
    */
   export type Booking$depositArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -24739,6 +23791,1059 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: BookingInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model BookingItem
+   */
+
+  export type AggregateBookingItem = {
+    _count: BookingItemCountAggregateOutputType | null
+    _avg: BookingItemAvgAggregateOutputType | null
+    _sum: BookingItemSumAggregateOutputType | null
+    _min: BookingItemMinAggregateOutputType | null
+    _max: BookingItemMaxAggregateOutputType | null
+  }
+
+  export type BookingItemAvgAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    vehicleId: number | null
+    days: number | null
+    baseTotal: Decimal | null
+    discountAmount: Decimal | null
+    discountPercent: Decimal | null
+    deposit: Decimal | null
+    finalTotal: Decimal | null
+  }
+
+  export type BookingItemSumAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    vehicleId: number | null
+    days: number | null
+    baseTotal: Decimal | null
+    discountAmount: Decimal | null
+    discountPercent: Decimal | null
+    deposit: Decimal | null
+    finalTotal: Decimal | null
+  }
+
+  export type BookingItemMinAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    vehicleId: number | null
+    days: number | null
+    baseTotal: Decimal | null
+    discountAmount: Decimal | null
+    discountPercent: Decimal | null
+    deposit: Decimal | null
+    finalTotal: Decimal | null
+  }
+
+  export type BookingItemMaxAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    vehicleId: number | null
+    days: number | null
+    baseTotal: Decimal | null
+    discountAmount: Decimal | null
+    discountPercent: Decimal | null
+    deposit: Decimal | null
+    finalTotal: Decimal | null
+  }
+
+  export type BookingItemCountAggregateOutputType = {
+    id: number
+    bookingId: number
+    vehicleId: number
+    days: number
+    baseTotal: number
+    discountAmount: number
+    discountPercent: number
+    deposit: number
+    finalTotal: number
+    _all: number
+  }
+
+
+  export type BookingItemAvgAggregateInputType = {
+    id?: true
+    bookingId?: true
+    vehicleId?: true
+    days?: true
+    baseTotal?: true
+    discountAmount?: true
+    discountPercent?: true
+    deposit?: true
+    finalTotal?: true
+  }
+
+  export type BookingItemSumAggregateInputType = {
+    id?: true
+    bookingId?: true
+    vehicleId?: true
+    days?: true
+    baseTotal?: true
+    discountAmount?: true
+    discountPercent?: true
+    deposit?: true
+    finalTotal?: true
+  }
+
+  export type BookingItemMinAggregateInputType = {
+    id?: true
+    bookingId?: true
+    vehicleId?: true
+    days?: true
+    baseTotal?: true
+    discountAmount?: true
+    discountPercent?: true
+    deposit?: true
+    finalTotal?: true
+  }
+
+  export type BookingItemMaxAggregateInputType = {
+    id?: true
+    bookingId?: true
+    vehicleId?: true
+    days?: true
+    baseTotal?: true
+    discountAmount?: true
+    discountPercent?: true
+    deposit?: true
+    finalTotal?: true
+  }
+
+  export type BookingItemCountAggregateInputType = {
+    id?: true
+    bookingId?: true
+    vehicleId?: true
+    days?: true
+    baseTotal?: true
+    discountAmount?: true
+    discountPercent?: true
+    deposit?: true
+    finalTotal?: true
+    _all?: true
+  }
+
+  export type BookingItemAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which BookingItem to aggregate.
+     */
+    where?: BookingItemWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BookingItems to fetch.
+     */
+    orderBy?: BookingItemOrderByWithRelationInput | BookingItemOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: BookingItemWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BookingItems from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BookingItems.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned BookingItems
+    **/
+    _count?: true | BookingItemCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: BookingItemAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: BookingItemSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: BookingItemMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: BookingItemMaxAggregateInputType
+  }
+
+  export type GetBookingItemAggregateType<T extends BookingItemAggregateArgs> = {
+        [P in keyof T & keyof AggregateBookingItem]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateBookingItem[P]>
+      : GetScalarType<T[P], AggregateBookingItem[P]>
+  }
+
+
+
+
+  export type BookingItemGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BookingItemWhereInput
+    orderBy?: BookingItemOrderByWithAggregationInput | BookingItemOrderByWithAggregationInput[]
+    by: BookingItemScalarFieldEnum[] | BookingItemScalarFieldEnum
+    having?: BookingItemScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: BookingItemCountAggregateInputType | true
+    _avg?: BookingItemAvgAggregateInputType
+    _sum?: BookingItemSumAggregateInputType
+    _min?: BookingItemMinAggregateInputType
+    _max?: BookingItemMaxAggregateInputType
+  }
+
+  export type BookingItemGroupByOutputType = {
+    id: number
+    bookingId: number
+    vehicleId: number
+    days: number
+    baseTotal: Decimal
+    discountAmount: Decimal
+    discountPercent: Decimal
+    deposit: Decimal
+    finalTotal: Decimal
+    _count: BookingItemCountAggregateOutputType | null
+    _avg: BookingItemAvgAggregateOutputType | null
+    _sum: BookingItemSumAggregateOutputType | null
+    _min: BookingItemMinAggregateOutputType | null
+    _max: BookingItemMaxAggregateOutputType | null
+  }
+
+  type GetBookingItemGroupByPayload<T extends BookingItemGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<BookingItemGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof BookingItemGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], BookingItemGroupByOutputType[P]>
+            : GetScalarType<T[P], BookingItemGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type BookingItemSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    bookingId?: boolean
+    vehicleId?: boolean
+    days?: boolean
+    baseTotal?: boolean
+    discountAmount?: boolean
+    discountPercent?: boolean
+    deposit?: boolean
+    finalTotal?: boolean
+    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["bookingItem"]>
+
+  export type BookingItemSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    bookingId?: boolean
+    vehicleId?: boolean
+    days?: boolean
+    baseTotal?: boolean
+    discountAmount?: boolean
+    discountPercent?: boolean
+    deposit?: boolean
+    finalTotal?: boolean
+    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["bookingItem"]>
+
+  export type BookingItemSelectScalar = {
+    id?: boolean
+    bookingId?: boolean
+    vehicleId?: boolean
+    days?: boolean
+    baseTotal?: boolean
+    discountAmount?: boolean
+    discountPercent?: boolean
+    deposit?: boolean
+    finalTotal?: boolean
+  }
+
+  export type BookingItemInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+  }
+  export type BookingItemIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+  }
+
+  export type $BookingItemPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "BookingItem"
+    objects: {
+      vehicle: Prisma.$VehiclePayload<ExtArgs>
+      booking: Prisma.$BookingPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      bookingId: number
+      vehicleId: number
+      days: number
+      baseTotal: Prisma.Decimal
+      discountAmount: Prisma.Decimal
+      discountPercent: Prisma.Decimal
+      deposit: Prisma.Decimal
+      finalTotal: Prisma.Decimal
+    }, ExtArgs["result"]["bookingItem"]>
+    composites: {}
+  }
+
+  type BookingItemGetPayload<S extends boolean | null | undefined | BookingItemDefaultArgs> = $Result.GetResult<Prisma.$BookingItemPayload, S>
+
+  type BookingItemCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<BookingItemFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: BookingItemCountAggregateInputType | true
+    }
+
+  export interface BookingItemDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['BookingItem'], meta: { name: 'BookingItem' } }
+    /**
+     * Find zero or one BookingItem that matches the filter.
+     * @param {BookingItemFindUniqueArgs} args - Arguments to find a BookingItem
+     * @example
+     * // Get one BookingItem
+     * const bookingItem = await prisma.bookingItem.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends BookingItemFindUniqueArgs>(args: SelectSubset<T, BookingItemFindUniqueArgs<ExtArgs>>): Prisma__BookingItemClient<$Result.GetResult<Prisma.$BookingItemPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one BookingItem that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {BookingItemFindUniqueOrThrowArgs} args - Arguments to find a BookingItem
+     * @example
+     * // Get one BookingItem
+     * const bookingItem = await prisma.bookingItem.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends BookingItemFindUniqueOrThrowArgs>(args: SelectSubset<T, BookingItemFindUniqueOrThrowArgs<ExtArgs>>): Prisma__BookingItemClient<$Result.GetResult<Prisma.$BookingItemPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first BookingItem that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BookingItemFindFirstArgs} args - Arguments to find a BookingItem
+     * @example
+     * // Get one BookingItem
+     * const bookingItem = await prisma.bookingItem.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends BookingItemFindFirstArgs>(args?: SelectSubset<T, BookingItemFindFirstArgs<ExtArgs>>): Prisma__BookingItemClient<$Result.GetResult<Prisma.$BookingItemPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first BookingItem that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BookingItemFindFirstOrThrowArgs} args - Arguments to find a BookingItem
+     * @example
+     * // Get one BookingItem
+     * const bookingItem = await prisma.bookingItem.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends BookingItemFindFirstOrThrowArgs>(args?: SelectSubset<T, BookingItemFindFirstOrThrowArgs<ExtArgs>>): Prisma__BookingItemClient<$Result.GetResult<Prisma.$BookingItemPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more BookingItems that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BookingItemFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all BookingItems
+     * const bookingItems = await prisma.bookingItem.findMany()
+     * 
+     * // Get first 10 BookingItems
+     * const bookingItems = await prisma.bookingItem.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const bookingItemWithIdOnly = await prisma.bookingItem.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends BookingItemFindManyArgs>(args?: SelectSubset<T, BookingItemFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingItemPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a BookingItem.
+     * @param {BookingItemCreateArgs} args - Arguments to create a BookingItem.
+     * @example
+     * // Create one BookingItem
+     * const BookingItem = await prisma.bookingItem.create({
+     *   data: {
+     *     // ... data to create a BookingItem
+     *   }
+     * })
+     * 
+     */
+    create<T extends BookingItemCreateArgs>(args: SelectSubset<T, BookingItemCreateArgs<ExtArgs>>): Prisma__BookingItemClient<$Result.GetResult<Prisma.$BookingItemPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many BookingItems.
+     * @param {BookingItemCreateManyArgs} args - Arguments to create many BookingItems.
+     * @example
+     * // Create many BookingItems
+     * const bookingItem = await prisma.bookingItem.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends BookingItemCreateManyArgs>(args?: SelectSubset<T, BookingItemCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many BookingItems and returns the data saved in the database.
+     * @param {BookingItemCreateManyAndReturnArgs} args - Arguments to create many BookingItems.
+     * @example
+     * // Create many BookingItems
+     * const bookingItem = await prisma.bookingItem.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many BookingItems and only return the `id`
+     * const bookingItemWithIdOnly = await prisma.bookingItem.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends BookingItemCreateManyAndReturnArgs>(args?: SelectSubset<T, BookingItemCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingItemPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a BookingItem.
+     * @param {BookingItemDeleteArgs} args - Arguments to delete one BookingItem.
+     * @example
+     * // Delete one BookingItem
+     * const BookingItem = await prisma.bookingItem.delete({
+     *   where: {
+     *     // ... filter to delete one BookingItem
+     *   }
+     * })
+     * 
+     */
+    delete<T extends BookingItemDeleteArgs>(args: SelectSubset<T, BookingItemDeleteArgs<ExtArgs>>): Prisma__BookingItemClient<$Result.GetResult<Prisma.$BookingItemPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one BookingItem.
+     * @param {BookingItemUpdateArgs} args - Arguments to update one BookingItem.
+     * @example
+     * // Update one BookingItem
+     * const bookingItem = await prisma.bookingItem.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends BookingItemUpdateArgs>(args: SelectSubset<T, BookingItemUpdateArgs<ExtArgs>>): Prisma__BookingItemClient<$Result.GetResult<Prisma.$BookingItemPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more BookingItems.
+     * @param {BookingItemDeleteManyArgs} args - Arguments to filter BookingItems to delete.
+     * @example
+     * // Delete a few BookingItems
+     * const { count } = await prisma.bookingItem.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends BookingItemDeleteManyArgs>(args?: SelectSubset<T, BookingItemDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more BookingItems.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BookingItemUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many BookingItems
+     * const bookingItem = await prisma.bookingItem.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends BookingItemUpdateManyArgs>(args: SelectSubset<T, BookingItemUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one BookingItem.
+     * @param {BookingItemUpsertArgs} args - Arguments to update or create a BookingItem.
+     * @example
+     * // Update or create a BookingItem
+     * const bookingItem = await prisma.bookingItem.upsert({
+     *   create: {
+     *     // ... data to create a BookingItem
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the BookingItem we want to update
+     *   }
+     * })
+     */
+    upsert<T extends BookingItemUpsertArgs>(args: SelectSubset<T, BookingItemUpsertArgs<ExtArgs>>): Prisma__BookingItemClient<$Result.GetResult<Prisma.$BookingItemPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of BookingItems.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BookingItemCountArgs} args - Arguments to filter BookingItems to count.
+     * @example
+     * // Count the number of BookingItems
+     * const count = await prisma.bookingItem.count({
+     *   where: {
+     *     // ... the filter for the BookingItems we want to count
+     *   }
+     * })
+    **/
+    count<T extends BookingItemCountArgs>(
+      args?: Subset<T, BookingItemCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], BookingItemCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a BookingItem.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BookingItemAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends BookingItemAggregateArgs>(args: Subset<T, BookingItemAggregateArgs>): Prisma.PrismaPromise<GetBookingItemAggregateType<T>>
+
+    /**
+     * Group by BookingItem.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BookingItemGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends BookingItemGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: BookingItemGroupByArgs['orderBy'] }
+        : { orderBy?: BookingItemGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, BookingItemGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetBookingItemGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the BookingItem model
+   */
+  readonly fields: BookingItemFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for BookingItem.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__BookingItemClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    vehicle<T extends VehicleDefaultArgs<ExtArgs> = {}>(args?: Subset<T, VehicleDefaultArgs<ExtArgs>>): Prisma__VehicleClient<$Result.GetResult<Prisma.$VehiclePayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    booking<T extends BookingDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BookingDefaultArgs<ExtArgs>>): Prisma__BookingClient<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the BookingItem model
+   */ 
+  interface BookingItemFieldRefs {
+    readonly id: FieldRef<"BookingItem", 'Int'>
+    readonly bookingId: FieldRef<"BookingItem", 'Int'>
+    readonly vehicleId: FieldRef<"BookingItem", 'Int'>
+    readonly days: FieldRef<"BookingItem", 'Int'>
+    readonly baseTotal: FieldRef<"BookingItem", 'Decimal'>
+    readonly discountAmount: FieldRef<"BookingItem", 'Decimal'>
+    readonly discountPercent: FieldRef<"BookingItem", 'Decimal'>
+    readonly deposit: FieldRef<"BookingItem", 'Decimal'>
+    readonly finalTotal: FieldRef<"BookingItem", 'Decimal'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * BookingItem findUnique
+   */
+  export type BookingItemFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingItem
+     */
+    select?: BookingItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingItemInclude<ExtArgs> | null
+    /**
+     * Filter, which BookingItem to fetch.
+     */
+    where: BookingItemWhereUniqueInput
+  }
+
+  /**
+   * BookingItem findUniqueOrThrow
+   */
+  export type BookingItemFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingItem
+     */
+    select?: BookingItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingItemInclude<ExtArgs> | null
+    /**
+     * Filter, which BookingItem to fetch.
+     */
+    where: BookingItemWhereUniqueInput
+  }
+
+  /**
+   * BookingItem findFirst
+   */
+  export type BookingItemFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingItem
+     */
+    select?: BookingItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingItemInclude<ExtArgs> | null
+    /**
+     * Filter, which BookingItem to fetch.
+     */
+    where?: BookingItemWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BookingItems to fetch.
+     */
+    orderBy?: BookingItemOrderByWithRelationInput | BookingItemOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for BookingItems.
+     */
+    cursor?: BookingItemWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BookingItems from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BookingItems.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of BookingItems.
+     */
+    distinct?: BookingItemScalarFieldEnum | BookingItemScalarFieldEnum[]
+  }
+
+  /**
+   * BookingItem findFirstOrThrow
+   */
+  export type BookingItemFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingItem
+     */
+    select?: BookingItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingItemInclude<ExtArgs> | null
+    /**
+     * Filter, which BookingItem to fetch.
+     */
+    where?: BookingItemWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BookingItems to fetch.
+     */
+    orderBy?: BookingItemOrderByWithRelationInput | BookingItemOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for BookingItems.
+     */
+    cursor?: BookingItemWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BookingItems from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BookingItems.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of BookingItems.
+     */
+    distinct?: BookingItemScalarFieldEnum | BookingItemScalarFieldEnum[]
+  }
+
+  /**
+   * BookingItem findMany
+   */
+  export type BookingItemFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingItem
+     */
+    select?: BookingItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingItemInclude<ExtArgs> | null
+    /**
+     * Filter, which BookingItems to fetch.
+     */
+    where?: BookingItemWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BookingItems to fetch.
+     */
+    orderBy?: BookingItemOrderByWithRelationInput | BookingItemOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing BookingItems.
+     */
+    cursor?: BookingItemWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BookingItems from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BookingItems.
+     */
+    skip?: number
+    distinct?: BookingItemScalarFieldEnum | BookingItemScalarFieldEnum[]
+  }
+
+  /**
+   * BookingItem create
+   */
+  export type BookingItemCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingItem
+     */
+    select?: BookingItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingItemInclude<ExtArgs> | null
+    /**
+     * The data needed to create a BookingItem.
+     */
+    data: XOR<BookingItemCreateInput, BookingItemUncheckedCreateInput>
+  }
+
+  /**
+   * BookingItem createMany
+   */
+  export type BookingItemCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many BookingItems.
+     */
+    data: BookingItemCreateManyInput | BookingItemCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * BookingItem createManyAndReturn
+   */
+  export type BookingItemCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingItem
+     */
+    select?: BookingItemSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many BookingItems.
+     */
+    data: BookingItemCreateManyInput | BookingItemCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingItemIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * BookingItem update
+   */
+  export type BookingItemUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingItem
+     */
+    select?: BookingItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingItemInclude<ExtArgs> | null
+    /**
+     * The data needed to update a BookingItem.
+     */
+    data: XOR<BookingItemUpdateInput, BookingItemUncheckedUpdateInput>
+    /**
+     * Choose, which BookingItem to update.
+     */
+    where: BookingItemWhereUniqueInput
+  }
+
+  /**
+   * BookingItem updateMany
+   */
+  export type BookingItemUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update BookingItems.
+     */
+    data: XOR<BookingItemUpdateManyMutationInput, BookingItemUncheckedUpdateManyInput>
+    /**
+     * Filter which BookingItems to update
+     */
+    where?: BookingItemWhereInput
+  }
+
+  /**
+   * BookingItem upsert
+   */
+  export type BookingItemUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingItem
+     */
+    select?: BookingItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingItemInclude<ExtArgs> | null
+    /**
+     * The filter to search for the BookingItem to update in case it exists.
+     */
+    where: BookingItemWhereUniqueInput
+    /**
+     * In case the BookingItem found by the `where` argument doesn't exist, create a new BookingItem with this data.
+     */
+    create: XOR<BookingItemCreateInput, BookingItemUncheckedCreateInput>
+    /**
+     * In case the BookingItem was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<BookingItemUpdateInput, BookingItemUncheckedUpdateInput>
+  }
+
+  /**
+   * BookingItem delete
+   */
+  export type BookingItemDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingItem
+     */
+    select?: BookingItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingItemInclude<ExtArgs> | null
+    /**
+     * Filter which BookingItem to delete.
+     */
+    where: BookingItemWhereUniqueInput
+  }
+
+  /**
+   * BookingItem deleteMany
+   */
+  export type BookingItemDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which BookingItems to delete
+     */
+    where?: BookingItemWhereInput
+  }
+
+  /**
+   * BookingItem without action
+   */
+  export type BookingItemDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingItem
+     */
+    select?: BookingItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingItemInclude<ExtArgs> | null
   }
 
 
@@ -33971,17 +34076,6 @@ export namespace Prisma {
   export type VehicleImageScalarFieldEnum = (typeof VehicleImageScalarFieldEnum)[keyof typeof VehicleImageScalarFieldEnum]
 
 
-  export const RentalPlanScalarFieldEnum: {
-    id: 'id',
-    publicId: 'publicId',
-    name: 'name',
-    durationHours: 'durationHours',
-    basePrice: 'basePrice'
-  };
-
-  export type RentalPlanScalarFieldEnum = (typeof RentalPlanScalarFieldEnum)[keyof typeof RentalPlanScalarFieldEnum]
-
-
   export const PricingRuleScalarFieldEnum: {
     id: 'id',
     publicId: 'publicId',
@@ -34019,23 +34113,42 @@ export namespace Prisma {
     id: 'id',
     publicId: 'publicId',
     customerId: 'customerId',
-    vehicleId: 'vehicleId',
     branchId: 'branchId',
-    rentalPlanId: 'rentalPlanId',
     startAt: 'startAt',
     endAt: 'endAt',
+    days: 'days',
+    holdExpiresAt: 'holdExpiresAt',
+    totalBase: 'totalBase',
+    totalDiscount: 'totalDiscount',
+    totalDeposit: 'totalDeposit',
+    totalFinal: 'totalFinal',
     status: 'status',
-    rentalPrice: 'rentalPrice',
-    depositRequired: 'depositRequired',
-    depositMethod: 'depositMethod',
+    transactionId: 'transactionId',
+    paymentStatus: 'paymentStatus',
     pricingSnapshot: 'pricingSnapshot',
     createdById: 'createdById',
+    depositMethod: 'depositMethod',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
     deletedAt: 'deletedAt'
   };
 
   export type BookingScalarFieldEnum = (typeof BookingScalarFieldEnum)[keyof typeof BookingScalarFieldEnum]
+
+
+  export const BookingItemScalarFieldEnum: {
+    id: 'id',
+    bookingId: 'bookingId',
+    vehicleId: 'vehicleId',
+    days: 'days',
+    baseTotal: 'baseTotal',
+    discountAmount: 'discountAmount',
+    discountPercent: 'discountPercent',
+    deposit: 'deposit',
+    finalTotal: 'finalTotal'
+  };
+
+  export type BookingItemScalarFieldEnum = (typeof BookingItemScalarFieldEnum)[keyof typeof BookingItemScalarFieldEnum]
 
 
   export const BookingPhotoScalarFieldEnum: {
@@ -34375,6 +34488,27 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'PaymentStatus'
+   */
+  export type EnumPaymentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaymentStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'PaymentStatus[]'
+   */
+  export type ListEnumPaymentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaymentStatus[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'Json'
+   */
+  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+  /**
    * Reference to a field of type 'DepositMethod'
    */
   export type EnumDepositMethodFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DepositMethod'>
@@ -34389,13 +34523,6 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'Json'
-   */
-  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
-    
-
-
-  /**
    * Reference to a field of type 'BookingPhotoType'
    */
   export type EnumBookingPhotoTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BookingPhotoType'>
@@ -34406,20 +34533,6 @@ export namespace Prisma {
    * Reference to a field of type 'BookingPhotoType[]'
    */
   export type ListEnumBookingPhotoTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BookingPhotoType[]'>
-    
-
-
-  /**
-   * Reference to a field of type 'PaymentStatus'
-   */
-  export type EnumPaymentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaymentStatus'>
-    
-
-
-  /**
-   * Reference to a field of type 'PaymentStatus[]'
-   */
-  export type ListEnumPaymentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaymentStatus[]'>
     
 
 
@@ -35232,10 +35345,10 @@ export namespace Prisma {
     category?: XOR<VehicleCategoryRelationFilter, VehicleCategoryWhereInput>
     insuranceRecords?: VehicleInsuranceListRelationFilter
     maintenance?: VehicleMaintenanceRecordListRelationFilter
-    bookings?: BookingListRelationFilter
     damageReports?: DamageReportListRelationFilter
     pricingOverride?: XOR<VehiclePricingOverrideNullableRelationFilter, VehiclePricingOverrideWhereInput> | null
     images?: VehicleImageListRelationFilter
+    bookingItems?: BookingItemListRelationFilter
   }
 
   export type VehicleOrderByWithRelationInput = {
@@ -35257,10 +35370,10 @@ export namespace Prisma {
     category?: VehicleCategoryOrderByWithRelationInput
     insuranceRecords?: VehicleInsuranceOrderByRelationAggregateInput
     maintenance?: VehicleMaintenanceRecordOrderByRelationAggregateInput
-    bookings?: BookingOrderByRelationAggregateInput
     damageReports?: DamageReportOrderByRelationAggregateInput
     pricingOverride?: VehiclePricingOverrideOrderByWithRelationInput
     images?: VehicleImageOrderByRelationAggregateInput
+    bookingItems?: BookingItemOrderByRelationAggregateInput
   }
 
   export type VehicleWhereUniqueInput = Prisma.AtLeast<{
@@ -35285,10 +35398,10 @@ export namespace Prisma {
     category?: XOR<VehicleCategoryRelationFilter, VehicleCategoryWhereInput>
     insuranceRecords?: VehicleInsuranceListRelationFilter
     maintenance?: VehicleMaintenanceRecordListRelationFilter
-    bookings?: BookingListRelationFilter
     damageReports?: DamageReportListRelationFilter
     pricingOverride?: XOR<VehiclePricingOverrideNullableRelationFilter, VehiclePricingOverrideWhereInput> | null
     images?: VehicleImageListRelationFilter
+    bookingItems?: BookingItemListRelationFilter
   }, "id" | "publicId" | "regNo">
 
   export type VehicleOrderByWithAggregationInput = {
@@ -35579,63 +35692,6 @@ export namespace Prisma {
     createdAt?: DateTimeWithAggregatesFilter<"VehicleImage"> | Date | string
   }
 
-  export type RentalPlanWhereInput = {
-    AND?: RentalPlanWhereInput | RentalPlanWhereInput[]
-    OR?: RentalPlanWhereInput[]
-    NOT?: RentalPlanWhereInput | RentalPlanWhereInput[]
-    id?: IntFilter<"RentalPlan"> | number
-    publicId?: StringFilter<"RentalPlan"> | string
-    name?: StringFilter<"RentalPlan"> | string
-    durationHours?: IntFilter<"RentalPlan"> | number
-    basePrice?: DecimalFilter<"RentalPlan"> | Decimal | DecimalJsLike | number | string
-    bookings?: BookingListRelationFilter
-  }
-
-  export type RentalPlanOrderByWithRelationInput = {
-    id?: SortOrder
-    publicId?: SortOrder
-    name?: SortOrder
-    durationHours?: SortOrder
-    basePrice?: SortOrder
-    bookings?: BookingOrderByRelationAggregateInput
-  }
-
-  export type RentalPlanWhereUniqueInput = Prisma.AtLeast<{
-    id?: number
-    publicId?: string
-    AND?: RentalPlanWhereInput | RentalPlanWhereInput[]
-    OR?: RentalPlanWhereInput[]
-    NOT?: RentalPlanWhereInput | RentalPlanWhereInput[]
-    name?: StringFilter<"RentalPlan"> | string
-    durationHours?: IntFilter<"RentalPlan"> | number
-    basePrice?: DecimalFilter<"RentalPlan"> | Decimal | DecimalJsLike | number | string
-    bookings?: BookingListRelationFilter
-  }, "id" | "publicId">
-
-  export type RentalPlanOrderByWithAggregationInput = {
-    id?: SortOrder
-    publicId?: SortOrder
-    name?: SortOrder
-    durationHours?: SortOrder
-    basePrice?: SortOrder
-    _count?: RentalPlanCountOrderByAggregateInput
-    _avg?: RentalPlanAvgOrderByAggregateInput
-    _max?: RentalPlanMaxOrderByAggregateInput
-    _min?: RentalPlanMinOrderByAggregateInput
-    _sum?: RentalPlanSumOrderByAggregateInput
-  }
-
-  export type RentalPlanScalarWhereWithAggregatesInput = {
-    AND?: RentalPlanScalarWhereWithAggregatesInput | RentalPlanScalarWhereWithAggregatesInput[]
-    OR?: RentalPlanScalarWhereWithAggregatesInput[]
-    NOT?: RentalPlanScalarWhereWithAggregatesInput | RentalPlanScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"RentalPlan"> | number
-    publicId?: StringWithAggregatesFilter<"RentalPlan"> | string
-    name?: StringWithAggregatesFilter<"RentalPlan"> | string
-    durationHours?: IntWithAggregatesFilter<"RentalPlan"> | number
-    basePrice?: DecimalWithAggregatesFilter<"RentalPlan"> | Decimal | DecimalJsLike | number | string
-  }
-
   export type PricingRuleWhereInput = {
     AND?: PricingRuleWhereInput | PricingRuleWhereInput[]
     OR?: PricingRuleWhereInput[]
@@ -35821,27 +35877,30 @@ export namespace Prisma {
     id?: IntFilter<"Booking"> | number
     publicId?: StringFilter<"Booking"> | string
     customerId?: IntFilter<"Booking"> | number
-    vehicleId?: IntFilter<"Booking"> | number
     branchId?: IntFilter<"Booking"> | number
-    rentalPlanId?: IntFilter<"Booking"> | number
     startAt?: DateTimeFilter<"Booking"> | Date | string
     endAt?: DateTimeFilter<"Booking"> | Date | string
+    days?: IntFilter<"Booking"> | number
+    holdExpiresAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
+    totalBase?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFilter<"Booking"> | $Enums.BookingStatus
-    rentalPrice?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFilter<"Booking"> | $Enums.DepositMethod
+    transactionId?: StringNullableFilter<"Booking"> | string | null
+    paymentStatus?: EnumPaymentStatusFilter<"Booking"> | $Enums.PaymentStatus
     pricingSnapshot?: JsonFilter<"Booking">
     createdById?: IntFilter<"Booking"> | number
+    depositMethod?: EnumDepositMethodNullableFilter<"Booking"> | $Enums.DepositMethod | null
     createdAt?: DateTimeFilter<"Booking"> | Date | string
     updatedAt?: DateTimeFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     customer?: XOR<CustomerRelationFilter, CustomerWhereInput>
-    vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
     branch?: XOR<BranchRelationFilter, BranchWhereInput>
-    rentalPlan?: XOR<RentalPlanRelationFilter, RentalPlanWhereInput>
     createdBy?: XOR<UserRelationFilter, UserWhereInput>
     photos?: BookingPhotoListRelationFilter
     damages?: DamageReportListRelationFilter
+    items?: BookingItemListRelationFilter
     deposit?: XOR<DepositNullableRelationFilter, DepositWhereInput> | null
     invoice?: XOR<InvoiceNullableRelationFilter, InvoiceWhereInput> | null
   }
@@ -35850,27 +35909,30 @@ export namespace Prisma {
     id?: SortOrder
     publicId?: SortOrder
     customerId?: SortOrder
-    vehicleId?: SortOrder
     branchId?: SortOrder
-    rentalPlanId?: SortOrder
     startAt?: SortOrder
     endAt?: SortOrder
+    days?: SortOrder
+    holdExpiresAt?: SortOrderInput | SortOrder
+    totalBase?: SortOrder
+    totalDiscount?: SortOrder
+    totalDeposit?: SortOrder
+    totalFinal?: SortOrder
     status?: SortOrder
-    rentalPrice?: SortOrder
-    depositRequired?: SortOrder
-    depositMethod?: SortOrder
+    transactionId?: SortOrderInput | SortOrder
+    paymentStatus?: SortOrder
     pricingSnapshot?: SortOrder
     createdById?: SortOrder
+    depositMethod?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrderInput | SortOrder
     customer?: CustomerOrderByWithRelationInput
-    vehicle?: VehicleOrderByWithRelationInput
     branch?: BranchOrderByWithRelationInput
-    rentalPlan?: RentalPlanOrderByWithRelationInput
     createdBy?: UserOrderByWithRelationInput
     photos?: BookingPhotoOrderByRelationAggregateInput
     damages?: DamageReportOrderByRelationAggregateInput
+    items?: BookingItemOrderByRelationAggregateInput
     deposit?: DepositOrderByWithRelationInput
     invoice?: InvoiceOrderByWithRelationInput
   }
@@ -35878,50 +35940,57 @@ export namespace Prisma {
   export type BookingWhereUniqueInput = Prisma.AtLeast<{
     id?: number
     publicId?: string
+    transactionId?: string
     AND?: BookingWhereInput | BookingWhereInput[]
     OR?: BookingWhereInput[]
     NOT?: BookingWhereInput | BookingWhereInput[]
     customerId?: IntFilter<"Booking"> | number
-    vehicleId?: IntFilter<"Booking"> | number
     branchId?: IntFilter<"Booking"> | number
-    rentalPlanId?: IntFilter<"Booking"> | number
     startAt?: DateTimeFilter<"Booking"> | Date | string
     endAt?: DateTimeFilter<"Booking"> | Date | string
+    days?: IntFilter<"Booking"> | number
+    holdExpiresAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
+    totalBase?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFilter<"Booking"> | $Enums.BookingStatus
-    rentalPrice?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFilter<"Booking"> | $Enums.DepositMethod
+    paymentStatus?: EnumPaymentStatusFilter<"Booking"> | $Enums.PaymentStatus
     pricingSnapshot?: JsonFilter<"Booking">
     createdById?: IntFilter<"Booking"> | number
+    depositMethod?: EnumDepositMethodNullableFilter<"Booking"> | $Enums.DepositMethod | null
     createdAt?: DateTimeFilter<"Booking"> | Date | string
     updatedAt?: DateTimeFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     customer?: XOR<CustomerRelationFilter, CustomerWhereInput>
-    vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
     branch?: XOR<BranchRelationFilter, BranchWhereInput>
-    rentalPlan?: XOR<RentalPlanRelationFilter, RentalPlanWhereInput>
     createdBy?: XOR<UserRelationFilter, UserWhereInput>
     photos?: BookingPhotoListRelationFilter
     damages?: DamageReportListRelationFilter
+    items?: BookingItemListRelationFilter
     deposit?: XOR<DepositNullableRelationFilter, DepositWhereInput> | null
     invoice?: XOR<InvoiceNullableRelationFilter, InvoiceWhereInput> | null
-  }, "id" | "publicId">
+  }, "id" | "publicId" | "transactionId">
 
   export type BookingOrderByWithAggregationInput = {
     id?: SortOrder
     publicId?: SortOrder
     customerId?: SortOrder
-    vehicleId?: SortOrder
     branchId?: SortOrder
-    rentalPlanId?: SortOrder
     startAt?: SortOrder
     endAt?: SortOrder
+    days?: SortOrder
+    holdExpiresAt?: SortOrderInput | SortOrder
+    totalBase?: SortOrder
+    totalDiscount?: SortOrder
+    totalDeposit?: SortOrder
+    totalFinal?: SortOrder
     status?: SortOrder
-    rentalPrice?: SortOrder
-    depositRequired?: SortOrder
-    depositMethod?: SortOrder
+    transactionId?: SortOrderInput | SortOrder
+    paymentStatus?: SortOrder
     pricingSnapshot?: SortOrder
     createdById?: SortOrder
+    depositMethod?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrderInput | SortOrder
@@ -35939,20 +36008,104 @@ export namespace Prisma {
     id?: IntWithAggregatesFilter<"Booking"> | number
     publicId?: StringWithAggregatesFilter<"Booking"> | string
     customerId?: IntWithAggregatesFilter<"Booking"> | number
-    vehicleId?: IntWithAggregatesFilter<"Booking"> | number
     branchId?: IntWithAggregatesFilter<"Booking"> | number
-    rentalPlanId?: IntWithAggregatesFilter<"Booking"> | number
     startAt?: DateTimeWithAggregatesFilter<"Booking"> | Date | string
     endAt?: DateTimeWithAggregatesFilter<"Booking"> | Date | string
+    days?: IntWithAggregatesFilter<"Booking"> | number
+    holdExpiresAt?: DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
+    totalBase?: DecimalWithAggregatesFilter<"Booking"> | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalWithAggregatesFilter<"Booking"> | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalWithAggregatesFilter<"Booking"> | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalWithAggregatesFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusWithAggregatesFilter<"Booking"> | $Enums.BookingStatus
-    rentalPrice?: DecimalWithAggregatesFilter<"Booking"> | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalWithAggregatesFilter<"Booking"> | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodWithAggregatesFilter<"Booking"> | $Enums.DepositMethod
+    transactionId?: StringNullableWithAggregatesFilter<"Booking"> | string | null
+    paymentStatus?: EnumPaymentStatusWithAggregatesFilter<"Booking"> | $Enums.PaymentStatus
     pricingSnapshot?: JsonWithAggregatesFilter<"Booking">
     createdById?: IntWithAggregatesFilter<"Booking"> | number
+    depositMethod?: EnumDepositMethodNullableWithAggregatesFilter<"Booking"> | $Enums.DepositMethod | null
     createdAt?: DateTimeWithAggregatesFilter<"Booking"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
+  }
+
+  export type BookingItemWhereInput = {
+    AND?: BookingItemWhereInput | BookingItemWhereInput[]
+    OR?: BookingItemWhereInput[]
+    NOT?: BookingItemWhereInput | BookingItemWhereInput[]
+    id?: IntFilter<"BookingItem"> | number
+    bookingId?: IntFilter<"BookingItem"> | number
+    vehicleId?: IntFilter<"BookingItem"> | number
+    days?: IntFilter<"BookingItem"> | number
+    baseTotal?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    discountPercent?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    deposit?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    finalTotal?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+  }
+
+  export type BookingItemOrderByWithRelationInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    vehicleId?: SortOrder
+    days?: SortOrder
+    baseTotal?: SortOrder
+    discountAmount?: SortOrder
+    discountPercent?: SortOrder
+    deposit?: SortOrder
+    finalTotal?: SortOrder
+    vehicle?: VehicleOrderByWithRelationInput
+    booking?: BookingOrderByWithRelationInput
+  }
+
+  export type BookingItemWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    AND?: BookingItemWhereInput | BookingItemWhereInput[]
+    OR?: BookingItemWhereInput[]
+    NOT?: BookingItemWhereInput | BookingItemWhereInput[]
+    bookingId?: IntFilter<"BookingItem"> | number
+    vehicleId?: IntFilter<"BookingItem"> | number
+    days?: IntFilter<"BookingItem"> | number
+    baseTotal?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    discountPercent?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    deposit?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    finalTotal?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+  }, "id">
+
+  export type BookingItemOrderByWithAggregationInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    vehicleId?: SortOrder
+    days?: SortOrder
+    baseTotal?: SortOrder
+    discountAmount?: SortOrder
+    discountPercent?: SortOrder
+    deposit?: SortOrder
+    finalTotal?: SortOrder
+    _count?: BookingItemCountOrderByAggregateInput
+    _avg?: BookingItemAvgOrderByAggregateInput
+    _max?: BookingItemMaxOrderByAggregateInput
+    _min?: BookingItemMinOrderByAggregateInput
+    _sum?: BookingItemSumOrderByAggregateInput
+  }
+
+  export type BookingItemScalarWhereWithAggregatesInput = {
+    AND?: BookingItemScalarWhereWithAggregatesInput | BookingItemScalarWhereWithAggregatesInput[]
+    OR?: BookingItemScalarWhereWithAggregatesInput[]
+    NOT?: BookingItemScalarWhereWithAggregatesInput | BookingItemScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"BookingItem"> | number
+    bookingId?: IntWithAggregatesFilter<"BookingItem"> | number
+    vehicleId?: IntWithAggregatesFilter<"BookingItem"> | number
+    days?: IntWithAggregatesFilter<"BookingItem"> | number
+    baseTotal?: DecimalWithAggregatesFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalWithAggregatesFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    discountPercent?: DecimalWithAggregatesFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    deposit?: DecimalWithAggregatesFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    finalTotal?: DecimalWithAggregatesFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
   }
 
   export type BookingPhotoWhereInput = {
@@ -37397,10 +37550,10 @@ export namespace Prisma {
     category: VehicleCategoryCreateNestedOneWithoutVehiclesInput
     insuranceRecords?: VehicleInsuranceCreateNestedManyWithoutVehicleInput
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
-    bookings?: BookingCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateInput = {
@@ -37420,10 +37573,10 @@ export namespace Prisma {
     deletedAt?: Date | string | null
     insuranceRecords?: VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
-    bookings?: BookingUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUpdateInput = {
@@ -37442,10 +37595,10 @@ export namespace Prisma {
     category?: VehicleCategoryUpdateOneRequiredWithoutVehiclesNestedInput
     insuranceRecords?: VehicleInsuranceUpdateManyWithoutVehicleNestedInput
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
-    bookings?: BookingUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateInput = {
@@ -37465,10 +37618,10 @@ export namespace Prisma {
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     insuranceRecords?: VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
-    bookings?: BookingUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleCreateManyInput = {
@@ -37747,63 +37900,6 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type RentalPlanCreateInput = {
-    publicId: string
-    name: string
-    durationHours: number
-    basePrice: Decimal | DecimalJsLike | number | string
-    bookings?: BookingCreateNestedManyWithoutRentalPlanInput
-  }
-
-  export type RentalPlanUncheckedCreateInput = {
-    id?: number
-    publicId: string
-    name: string
-    durationHours: number
-    basePrice: Decimal | DecimalJsLike | number | string
-    bookings?: BookingUncheckedCreateNestedManyWithoutRentalPlanInput
-  }
-
-  export type RentalPlanUpdateInput = {
-    publicId?: StringFieldUpdateOperationsInput | string
-    name?: StringFieldUpdateOperationsInput | string
-    durationHours?: IntFieldUpdateOperationsInput | number
-    basePrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    bookings?: BookingUpdateManyWithoutRentalPlanNestedInput
-  }
-
-  export type RentalPlanUncheckedUpdateInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    publicId?: StringFieldUpdateOperationsInput | string
-    name?: StringFieldUpdateOperationsInput | string
-    durationHours?: IntFieldUpdateOperationsInput | number
-    basePrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    bookings?: BookingUncheckedUpdateManyWithoutRentalPlanNestedInput
-  }
-
-  export type RentalPlanCreateManyInput = {
-    id?: number
-    publicId: string
-    name: string
-    durationHours: number
-    basePrice: Decimal | DecimalJsLike | number | string
-  }
-
-  export type RentalPlanUpdateManyMutationInput = {
-    publicId?: StringFieldUpdateOperationsInput | string
-    name?: StringFieldUpdateOperationsInput | string
-    durationHours?: IntFieldUpdateOperationsInput | number
-    basePrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-  }
-
-  export type RentalPlanUncheckedUpdateManyInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    publicId?: StringFieldUpdateOperationsInput | string
-    name?: StringFieldUpdateOperationsInput | string
-    durationHours?: IntFieldUpdateOperationsInput | number
-    basePrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-  }
-
   export type PricingRuleCreateInput = {
     publicId: string
     ruleType: $Enums.PricingRuleType
@@ -37962,21 +38058,26 @@ export namespace Prisma {
     publicId: string
     startAt: Date | string
     endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     customer: CustomerCreateNestedOneWithoutBookingsInput
-    vehicle: VehicleCreateNestedOneWithoutBookingsInput
     branch: BranchCreateNestedOneWithoutBookingsInput
-    rentalPlan: RentalPlanCreateNestedOneWithoutBookingsInput
     createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
     photos?: BookingPhotoCreateNestedManyWithoutBookingInput
     damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
   }
@@ -37985,22 +38086,27 @@ export namespace Prisma {
     id?: number
     publicId: string
     customerId: number
-    vehicleId: number
     branchId: number
-    rentalPlanId: number
     startAt: Date | string
     endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     createdById: number
+    depositMethod?: $Enums.DepositMethod | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
     damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
   }
@@ -38009,21 +38115,26 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
-    vehicle?: VehicleUpdateOneRequiredWithoutBookingsNestedInput
     branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
-    rentalPlan?: RentalPlanUpdateOneRequiredWithoutBookingsNestedInput
     createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
     photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
     damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
   }
@@ -38032,22 +38143,27 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
     customerId?: IntFieldUpdateOperationsInput | number
-    vehicleId?: IntFieldUpdateOperationsInput | number
     branchId?: IntFieldUpdateOperationsInput | number
-    rentalPlanId?: IntFieldUpdateOperationsInput | number
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
     damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
   }
@@ -38056,17 +38172,21 @@ export namespace Prisma {
     id?: number
     publicId: string
     customerId: number
-    vehicleId: number
     branchId: number
-    rentalPlanId: number
     startAt: Date | string
     endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     createdById: number
+    depositMethod?: $Enums.DepositMethod | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -38076,11 +38196,17 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -38090,20 +38216,103 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
     customerId?: IntFieldUpdateOperationsInput | number
-    vehicleId?: IntFieldUpdateOperationsInput | number
     branchId?: IntFieldUpdateOperationsInput | number
-    rentalPlanId?: IntFieldUpdateOperationsInput | number
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type BookingItemCreateInput = {
+    days: number
+    baseTotal: Decimal | DecimalJsLike | number | string
+    discountAmount: Decimal | DecimalJsLike | number | string
+    discountPercent: Decimal | DecimalJsLike | number | string
+    deposit: Decimal | DecimalJsLike | number | string
+    finalTotal: Decimal | DecimalJsLike | number | string
+    vehicle: VehicleCreateNestedOneWithoutBookingItemsInput
+    booking: BookingCreateNestedOneWithoutItemsInput
+  }
+
+  export type BookingItemUncheckedCreateInput = {
+    id?: number
+    bookingId: number
+    vehicleId: number
+    days: number
+    baseTotal: Decimal | DecimalJsLike | number | string
+    discountAmount: Decimal | DecimalJsLike | number | string
+    discountPercent: Decimal | DecimalJsLike | number | string
+    deposit: Decimal | DecimalJsLike | number | string
+    finalTotal: Decimal | DecimalJsLike | number | string
+  }
+
+  export type BookingItemUpdateInput = {
+    days?: IntFieldUpdateOperationsInput | number
+    baseTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    vehicle?: VehicleUpdateOneRequiredWithoutBookingItemsNestedInput
+    booking?: BookingUpdateOneRequiredWithoutItemsNestedInput
+  }
+
+  export type BookingItemUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    bookingId?: IntFieldUpdateOperationsInput | number
+    vehicleId?: IntFieldUpdateOperationsInput | number
+    days?: IntFieldUpdateOperationsInput | number
+    baseTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+  }
+
+  export type BookingItemCreateManyInput = {
+    id?: number
+    bookingId: number
+    vehicleId: number
+    days: number
+    baseTotal: Decimal | DecimalJsLike | number | string
+    discountAmount: Decimal | DecimalJsLike | number | string
+    discountPercent: Decimal | DecimalJsLike | number | string
+    deposit: Decimal | DecimalJsLike | number | string
+    finalTotal: Decimal | DecimalJsLike | number | string
+  }
+
+  export type BookingItemUpdateManyMutationInput = {
+    days?: IntFieldUpdateOperationsInput | number
+    baseTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+  }
+
+  export type BookingItemUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    bookingId?: IntFieldUpdateOperationsInput | number
+    vehicleId?: IntFieldUpdateOperationsInput | number
+    days?: IntFieldUpdateOperationsInput | number
+    baseTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type BookingPhotoCreateInput = {
@@ -39651,11 +39860,21 @@ export namespace Prisma {
     isNot?: VehiclePricingOverrideWhereInput | null
   }
 
+  export type BookingItemListRelationFilter = {
+    every?: BookingItemWhereInput
+    some?: BookingItemWhereInput
+    none?: BookingItemWhereInput
+  }
+
   export type VehicleInsuranceOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
   export type VehicleMaintenanceRecordOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type BookingItemOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -39921,42 +40140,6 @@ export namespace Prisma {
     fileId?: SortOrder
   }
 
-  export type RentalPlanCountOrderByAggregateInput = {
-    id?: SortOrder
-    publicId?: SortOrder
-    name?: SortOrder
-    durationHours?: SortOrder
-    basePrice?: SortOrder
-  }
-
-  export type RentalPlanAvgOrderByAggregateInput = {
-    id?: SortOrder
-    durationHours?: SortOrder
-    basePrice?: SortOrder
-  }
-
-  export type RentalPlanMaxOrderByAggregateInput = {
-    id?: SortOrder
-    publicId?: SortOrder
-    name?: SortOrder
-    durationHours?: SortOrder
-    basePrice?: SortOrder
-  }
-
-  export type RentalPlanMinOrderByAggregateInput = {
-    id?: SortOrder
-    publicId?: SortOrder
-    name?: SortOrder
-    durationHours?: SortOrder
-    basePrice?: SortOrder
-  }
-
-  export type RentalPlanSumOrderByAggregateInput = {
-    id?: SortOrder
-    durationHours?: SortOrder
-    basePrice?: SortOrder
-  }
-
   export type EnumPricingRuleTypeFilter<$PrismaModel = never> = {
     equals?: $Enums.PricingRuleType | EnumPricingRuleTypeFieldRefInput<$PrismaModel>
     in?: $Enums.PricingRuleType[] | ListEnumPricingRuleTypeFieldRefInput<$PrismaModel>
@@ -40105,11 +40288,11 @@ export namespace Prisma {
     not?: NestedEnumBookingStatusFilter<$PrismaModel> | $Enums.BookingStatus
   }
 
-  export type EnumDepositMethodFilter<$PrismaModel = never> = {
-    equals?: $Enums.DepositMethod | EnumDepositMethodFieldRefInput<$PrismaModel>
-    in?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel>
-    notIn?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel>
-    not?: NestedEnumDepositMethodFilter<$PrismaModel> | $Enums.DepositMethod
+  export type EnumPaymentStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentStatus | EnumPaymentStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentStatus[] | ListEnumPaymentStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentStatus[] | ListEnumPaymentStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentStatusFilter<$PrismaModel> | $Enums.PaymentStatus
   }
   export type JsonFilter<$PrismaModel = never> = 
     | PatchUndefined<
@@ -40134,9 +40317,11 @@ export namespace Prisma {
     not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
   }
 
-  export type RentalPlanRelationFilter = {
-    is?: RentalPlanWhereInput
-    isNot?: RentalPlanWhereInput
+  export type EnumDepositMethodNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.DepositMethod | EnumDepositMethodFieldRefInput<$PrismaModel> | null
+    in?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumDepositMethodNullableFilter<$PrismaModel> | $Enums.DepositMethod | null
   }
 
   export type DepositNullableRelationFilter = {
@@ -40153,17 +40338,21 @@ export namespace Prisma {
     id?: SortOrder
     publicId?: SortOrder
     customerId?: SortOrder
-    vehicleId?: SortOrder
     branchId?: SortOrder
-    rentalPlanId?: SortOrder
     startAt?: SortOrder
     endAt?: SortOrder
+    days?: SortOrder
+    holdExpiresAt?: SortOrder
+    totalBase?: SortOrder
+    totalDiscount?: SortOrder
+    totalDeposit?: SortOrder
+    totalFinal?: SortOrder
     status?: SortOrder
-    rentalPrice?: SortOrder
-    depositRequired?: SortOrder
-    depositMethod?: SortOrder
+    transactionId?: SortOrder
+    paymentStatus?: SortOrder
     pricingSnapshot?: SortOrder
     createdById?: SortOrder
+    depositMethod?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -40172,11 +40361,12 @@ export namespace Prisma {
   export type BookingAvgOrderByAggregateInput = {
     id?: SortOrder
     customerId?: SortOrder
-    vehicleId?: SortOrder
     branchId?: SortOrder
-    rentalPlanId?: SortOrder
-    rentalPrice?: SortOrder
-    depositRequired?: SortOrder
+    days?: SortOrder
+    totalBase?: SortOrder
+    totalDiscount?: SortOrder
+    totalDeposit?: SortOrder
+    totalFinal?: SortOrder
     createdById?: SortOrder
   }
 
@@ -40184,16 +40374,20 @@ export namespace Prisma {
     id?: SortOrder
     publicId?: SortOrder
     customerId?: SortOrder
-    vehicleId?: SortOrder
     branchId?: SortOrder
-    rentalPlanId?: SortOrder
     startAt?: SortOrder
     endAt?: SortOrder
+    days?: SortOrder
+    holdExpiresAt?: SortOrder
+    totalBase?: SortOrder
+    totalDiscount?: SortOrder
+    totalDeposit?: SortOrder
+    totalFinal?: SortOrder
     status?: SortOrder
-    rentalPrice?: SortOrder
-    depositRequired?: SortOrder
-    depositMethod?: SortOrder
+    transactionId?: SortOrder
+    paymentStatus?: SortOrder
     createdById?: SortOrder
+    depositMethod?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -40203,16 +40397,20 @@ export namespace Prisma {
     id?: SortOrder
     publicId?: SortOrder
     customerId?: SortOrder
-    vehicleId?: SortOrder
     branchId?: SortOrder
-    rentalPlanId?: SortOrder
     startAt?: SortOrder
     endAt?: SortOrder
+    days?: SortOrder
+    holdExpiresAt?: SortOrder
+    totalBase?: SortOrder
+    totalDiscount?: SortOrder
+    totalDeposit?: SortOrder
+    totalFinal?: SortOrder
     status?: SortOrder
-    rentalPrice?: SortOrder
-    depositRequired?: SortOrder
-    depositMethod?: SortOrder
+    transactionId?: SortOrder
+    paymentStatus?: SortOrder
     createdById?: SortOrder
+    depositMethod?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -40221,11 +40419,12 @@ export namespace Prisma {
   export type BookingSumOrderByAggregateInput = {
     id?: SortOrder
     customerId?: SortOrder
-    vehicleId?: SortOrder
     branchId?: SortOrder
-    rentalPlanId?: SortOrder
-    rentalPrice?: SortOrder
-    depositRequired?: SortOrder
+    days?: SortOrder
+    totalBase?: SortOrder
+    totalDiscount?: SortOrder
+    totalDeposit?: SortOrder
+    totalFinal?: SortOrder
     createdById?: SortOrder
   }
 
@@ -40239,14 +40438,14 @@ export namespace Prisma {
     _max?: NestedEnumBookingStatusFilter<$PrismaModel>
   }
 
-  export type EnumDepositMethodWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.DepositMethod | EnumDepositMethodFieldRefInput<$PrismaModel>
-    in?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel>
-    notIn?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel>
-    not?: NestedEnumDepositMethodWithAggregatesFilter<$PrismaModel> | $Enums.DepositMethod
+  export type EnumPaymentStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentStatus | EnumPaymentStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentStatus[] | ListEnumPaymentStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentStatus[] | ListEnumPaymentStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentStatusWithAggregatesFilter<$PrismaModel> | $Enums.PaymentStatus
     _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumDepositMethodFilter<$PrismaModel>
-    _max?: NestedEnumDepositMethodFilter<$PrismaModel>
+    _min?: NestedEnumPaymentStatusFilter<$PrismaModel>
+    _max?: NestedEnumPaymentStatusFilter<$PrismaModel>
   }
   export type JsonWithAggregatesFilter<$PrismaModel = never> = 
     | PatchUndefined<
@@ -40274,16 +40473,86 @@ export namespace Prisma {
     _max?: NestedJsonFilter<$PrismaModel>
   }
 
-  export type EnumBookingPhotoTypeFilter<$PrismaModel = never> = {
-    equals?: $Enums.BookingPhotoType | EnumBookingPhotoTypeFieldRefInput<$PrismaModel>
-    in?: $Enums.BookingPhotoType[] | ListEnumBookingPhotoTypeFieldRefInput<$PrismaModel>
-    notIn?: $Enums.BookingPhotoType[] | ListEnumBookingPhotoTypeFieldRefInput<$PrismaModel>
-    not?: NestedEnumBookingPhotoTypeFilter<$PrismaModel> | $Enums.BookingPhotoType
+  export type EnumDepositMethodNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.DepositMethod | EnumDepositMethodFieldRefInput<$PrismaModel> | null
+    in?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumDepositMethodNullableWithAggregatesFilter<$PrismaModel> | $Enums.DepositMethod | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumDepositMethodNullableFilter<$PrismaModel>
+    _max?: NestedEnumDepositMethodNullableFilter<$PrismaModel>
   }
 
   export type BookingRelationFilter = {
     is?: BookingWhereInput
     isNot?: BookingWhereInput
+  }
+
+  export type BookingItemCountOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    vehicleId?: SortOrder
+    days?: SortOrder
+    baseTotal?: SortOrder
+    discountAmount?: SortOrder
+    discountPercent?: SortOrder
+    deposit?: SortOrder
+    finalTotal?: SortOrder
+  }
+
+  export type BookingItemAvgOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    vehicleId?: SortOrder
+    days?: SortOrder
+    baseTotal?: SortOrder
+    discountAmount?: SortOrder
+    discountPercent?: SortOrder
+    deposit?: SortOrder
+    finalTotal?: SortOrder
+  }
+
+  export type BookingItemMaxOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    vehicleId?: SortOrder
+    days?: SortOrder
+    baseTotal?: SortOrder
+    discountAmount?: SortOrder
+    discountPercent?: SortOrder
+    deposit?: SortOrder
+    finalTotal?: SortOrder
+  }
+
+  export type BookingItemMinOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    vehicleId?: SortOrder
+    days?: SortOrder
+    baseTotal?: SortOrder
+    discountAmount?: SortOrder
+    discountPercent?: SortOrder
+    deposit?: SortOrder
+    finalTotal?: SortOrder
+  }
+
+  export type BookingItemSumOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    vehicleId?: SortOrder
+    days?: SortOrder
+    baseTotal?: SortOrder
+    discountAmount?: SortOrder
+    discountPercent?: SortOrder
+    deposit?: SortOrder
+    finalTotal?: SortOrder
+  }
+
+  export type EnumBookingPhotoTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.BookingPhotoType | EnumBookingPhotoTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.BookingPhotoType[] | ListEnumBookingPhotoTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.BookingPhotoType[] | ListEnumBookingPhotoTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumBookingPhotoTypeFilter<$PrismaModel> | $Enums.BookingPhotoType
   }
 
   export type BookingPhotoCountOrderByAggregateInput = {
@@ -40392,6 +40661,13 @@ export namespace Prisma {
     approvedById?: SortOrder
   }
 
+  export type EnumDepositMethodFilter<$PrismaModel = never> = {
+    equals?: $Enums.DepositMethod | EnumDepositMethodFieldRefInput<$PrismaModel>
+    in?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel>
+    not?: NestedEnumDepositMethodFilter<$PrismaModel> | $Enums.DepositMethod
+  }
+
   export type DepositCountOrderByAggregateInput = {
     id?: SortOrder
     publicId?: SortOrder
@@ -40440,11 +40716,14 @@ export namespace Prisma {
     amount?: SortOrder
   }
 
-  export type EnumPaymentStatusFilter<$PrismaModel = never> = {
-    equals?: $Enums.PaymentStatus | EnumPaymentStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.PaymentStatus[] | ListEnumPaymentStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.PaymentStatus[] | ListEnumPaymentStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumPaymentStatusFilter<$PrismaModel> | $Enums.PaymentStatus
+  export type EnumDepositMethodWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.DepositMethod | EnumDepositMethodFieldRefInput<$PrismaModel>
+    in?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel>
+    not?: NestedEnumDepositMethodWithAggregatesFilter<$PrismaModel> | $Enums.DepositMethod
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumDepositMethodFilter<$PrismaModel>
+    _max?: NestedEnumDepositMethodFilter<$PrismaModel>
   }
 
   export type InvoiceRelationFilter = {
@@ -40498,16 +40777,6 @@ export namespace Prisma {
     id?: SortOrder
     invoiceId?: SortOrder
     amount?: SortOrder
-  }
-
-  export type EnumPaymentStatusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.PaymentStatus | EnumPaymentStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.PaymentStatus[] | ListEnumPaymentStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.PaymentStatus[] | ListEnumPaymentStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumPaymentStatusWithAggregatesFilter<$PrismaModel> | $Enums.PaymentStatus
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumPaymentStatusFilter<$PrismaModel>
-    _max?: NestedEnumPaymentStatusFilter<$PrismaModel>
   }
 
   export type PaymentWebhookLogCountOrderByAggregateInput = {
@@ -41842,13 +42111,6 @@ export namespace Prisma {
     connect?: VehicleMaintenanceRecordWhereUniqueInput | VehicleMaintenanceRecordWhereUniqueInput[]
   }
 
-  export type BookingCreateNestedManyWithoutVehicleInput = {
-    create?: XOR<BookingCreateWithoutVehicleInput, BookingUncheckedCreateWithoutVehicleInput> | BookingCreateWithoutVehicleInput[] | BookingUncheckedCreateWithoutVehicleInput[]
-    connectOrCreate?: BookingCreateOrConnectWithoutVehicleInput | BookingCreateOrConnectWithoutVehicleInput[]
-    createMany?: BookingCreateManyVehicleInputEnvelope
-    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
-  }
-
   export type DamageReportCreateNestedManyWithoutVehicleInput = {
     create?: XOR<DamageReportCreateWithoutVehicleInput, DamageReportUncheckedCreateWithoutVehicleInput> | DamageReportCreateWithoutVehicleInput[] | DamageReportUncheckedCreateWithoutVehicleInput[]
     connectOrCreate?: DamageReportCreateOrConnectWithoutVehicleInput | DamageReportCreateOrConnectWithoutVehicleInput[]
@@ -41869,6 +42131,13 @@ export namespace Prisma {
     connect?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
   }
 
+  export type BookingItemCreateNestedManyWithoutVehicleInput = {
+    create?: XOR<BookingItemCreateWithoutVehicleInput, BookingItemUncheckedCreateWithoutVehicleInput> | BookingItemCreateWithoutVehicleInput[] | BookingItemUncheckedCreateWithoutVehicleInput[]
+    connectOrCreate?: BookingItemCreateOrConnectWithoutVehicleInput | BookingItemCreateOrConnectWithoutVehicleInput[]
+    createMany?: BookingItemCreateManyVehicleInputEnvelope
+    connect?: BookingItemWhereUniqueInput | BookingItemWhereUniqueInput[]
+  }
+
   export type VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput = {
     create?: XOR<VehicleInsuranceCreateWithoutVehicleInput, VehicleInsuranceUncheckedCreateWithoutVehicleInput> | VehicleInsuranceCreateWithoutVehicleInput[] | VehicleInsuranceUncheckedCreateWithoutVehicleInput[]
     connectOrCreate?: VehicleInsuranceCreateOrConnectWithoutVehicleInput | VehicleInsuranceCreateOrConnectWithoutVehicleInput[]
@@ -41881,13 +42150,6 @@ export namespace Prisma {
     connectOrCreate?: VehicleMaintenanceRecordCreateOrConnectWithoutVehicleInput | VehicleMaintenanceRecordCreateOrConnectWithoutVehicleInput[]
     createMany?: VehicleMaintenanceRecordCreateManyVehicleInputEnvelope
     connect?: VehicleMaintenanceRecordWhereUniqueInput | VehicleMaintenanceRecordWhereUniqueInput[]
-  }
-
-  export type BookingUncheckedCreateNestedManyWithoutVehicleInput = {
-    create?: XOR<BookingCreateWithoutVehicleInput, BookingUncheckedCreateWithoutVehicleInput> | BookingCreateWithoutVehicleInput[] | BookingUncheckedCreateWithoutVehicleInput[]
-    connectOrCreate?: BookingCreateOrConnectWithoutVehicleInput | BookingCreateOrConnectWithoutVehicleInput[]
-    createMany?: BookingCreateManyVehicleInputEnvelope
-    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
   }
 
   export type DamageReportUncheckedCreateNestedManyWithoutVehicleInput = {
@@ -41908,6 +42170,13 @@ export namespace Prisma {
     connectOrCreate?: VehicleImageCreateOrConnectWithoutVehicleInput | VehicleImageCreateOrConnectWithoutVehicleInput[]
     createMany?: VehicleImageCreateManyVehicleInputEnvelope
     connect?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
+  }
+
+  export type BookingItemUncheckedCreateNestedManyWithoutVehicleInput = {
+    create?: XOR<BookingItemCreateWithoutVehicleInput, BookingItemUncheckedCreateWithoutVehicleInput> | BookingItemCreateWithoutVehicleInput[] | BookingItemUncheckedCreateWithoutVehicleInput[]
+    connectOrCreate?: BookingItemCreateOrConnectWithoutVehicleInput | BookingItemCreateOrConnectWithoutVehicleInput[]
+    createMany?: BookingItemCreateManyVehicleInputEnvelope
+    connect?: BookingItemWhereUniqueInput | BookingItemWhereUniqueInput[]
   }
 
   export type EnumVehicleStatusFieldUpdateOperationsInput = {
@@ -41958,20 +42227,6 @@ export namespace Prisma {
     deleteMany?: VehicleMaintenanceRecordScalarWhereInput | VehicleMaintenanceRecordScalarWhereInput[]
   }
 
-  export type BookingUpdateManyWithoutVehicleNestedInput = {
-    create?: XOR<BookingCreateWithoutVehicleInput, BookingUncheckedCreateWithoutVehicleInput> | BookingCreateWithoutVehicleInput[] | BookingUncheckedCreateWithoutVehicleInput[]
-    connectOrCreate?: BookingCreateOrConnectWithoutVehicleInput | BookingCreateOrConnectWithoutVehicleInput[]
-    upsert?: BookingUpsertWithWhereUniqueWithoutVehicleInput | BookingUpsertWithWhereUniqueWithoutVehicleInput[]
-    createMany?: BookingCreateManyVehicleInputEnvelope
-    set?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
-    disconnect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
-    delete?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
-    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
-    update?: BookingUpdateWithWhereUniqueWithoutVehicleInput | BookingUpdateWithWhereUniqueWithoutVehicleInput[]
-    updateMany?: BookingUpdateManyWithWhereWithoutVehicleInput | BookingUpdateManyWithWhereWithoutVehicleInput[]
-    deleteMany?: BookingScalarWhereInput | BookingScalarWhereInput[]
-  }
-
   export type DamageReportUpdateManyWithoutVehicleNestedInput = {
     create?: XOR<DamageReportCreateWithoutVehicleInput, DamageReportUncheckedCreateWithoutVehicleInput> | DamageReportCreateWithoutVehicleInput[] | DamageReportUncheckedCreateWithoutVehicleInput[]
     connectOrCreate?: DamageReportCreateOrConnectWithoutVehicleInput | DamageReportCreateOrConnectWithoutVehicleInput[]
@@ -42010,6 +42265,20 @@ export namespace Prisma {
     deleteMany?: VehicleImageScalarWhereInput | VehicleImageScalarWhereInput[]
   }
 
+  export type BookingItemUpdateManyWithoutVehicleNestedInput = {
+    create?: XOR<BookingItemCreateWithoutVehicleInput, BookingItemUncheckedCreateWithoutVehicleInput> | BookingItemCreateWithoutVehicleInput[] | BookingItemUncheckedCreateWithoutVehicleInput[]
+    connectOrCreate?: BookingItemCreateOrConnectWithoutVehicleInput | BookingItemCreateOrConnectWithoutVehicleInput[]
+    upsert?: BookingItemUpsertWithWhereUniqueWithoutVehicleInput | BookingItemUpsertWithWhereUniqueWithoutVehicleInput[]
+    createMany?: BookingItemCreateManyVehicleInputEnvelope
+    set?: BookingItemWhereUniqueInput | BookingItemWhereUniqueInput[]
+    disconnect?: BookingItemWhereUniqueInput | BookingItemWhereUniqueInput[]
+    delete?: BookingItemWhereUniqueInput | BookingItemWhereUniqueInput[]
+    connect?: BookingItemWhereUniqueInput | BookingItemWhereUniqueInput[]
+    update?: BookingItemUpdateWithWhereUniqueWithoutVehicleInput | BookingItemUpdateWithWhereUniqueWithoutVehicleInput[]
+    updateMany?: BookingItemUpdateManyWithWhereWithoutVehicleInput | BookingItemUpdateManyWithWhereWithoutVehicleInput[]
+    deleteMany?: BookingItemScalarWhereInput | BookingItemScalarWhereInput[]
+  }
+
   export type VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput = {
     create?: XOR<VehicleInsuranceCreateWithoutVehicleInput, VehicleInsuranceUncheckedCreateWithoutVehicleInput> | VehicleInsuranceCreateWithoutVehicleInput[] | VehicleInsuranceUncheckedCreateWithoutVehicleInput[]
     connectOrCreate?: VehicleInsuranceCreateOrConnectWithoutVehicleInput | VehicleInsuranceCreateOrConnectWithoutVehicleInput[]
@@ -42036,20 +42305,6 @@ export namespace Prisma {
     update?: VehicleMaintenanceRecordUpdateWithWhereUniqueWithoutVehicleInput | VehicleMaintenanceRecordUpdateWithWhereUniqueWithoutVehicleInput[]
     updateMany?: VehicleMaintenanceRecordUpdateManyWithWhereWithoutVehicleInput | VehicleMaintenanceRecordUpdateManyWithWhereWithoutVehicleInput[]
     deleteMany?: VehicleMaintenanceRecordScalarWhereInput | VehicleMaintenanceRecordScalarWhereInput[]
-  }
-
-  export type BookingUncheckedUpdateManyWithoutVehicleNestedInput = {
-    create?: XOR<BookingCreateWithoutVehicleInput, BookingUncheckedCreateWithoutVehicleInput> | BookingCreateWithoutVehicleInput[] | BookingUncheckedCreateWithoutVehicleInput[]
-    connectOrCreate?: BookingCreateOrConnectWithoutVehicleInput | BookingCreateOrConnectWithoutVehicleInput[]
-    upsert?: BookingUpsertWithWhereUniqueWithoutVehicleInput | BookingUpsertWithWhereUniqueWithoutVehicleInput[]
-    createMany?: BookingCreateManyVehicleInputEnvelope
-    set?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
-    disconnect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
-    delete?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
-    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
-    update?: BookingUpdateWithWhereUniqueWithoutVehicleInput | BookingUpdateWithWhereUniqueWithoutVehicleInput[]
-    updateMany?: BookingUpdateManyWithWhereWithoutVehicleInput | BookingUpdateManyWithWhereWithoutVehicleInput[]
-    deleteMany?: BookingScalarWhereInput | BookingScalarWhereInput[]
   }
 
   export type DamageReportUncheckedUpdateManyWithoutVehicleNestedInput = {
@@ -42088,6 +42343,20 @@ export namespace Prisma {
     update?: VehicleImageUpdateWithWhereUniqueWithoutVehicleInput | VehicleImageUpdateWithWhereUniqueWithoutVehicleInput[]
     updateMany?: VehicleImageUpdateManyWithWhereWithoutVehicleInput | VehicleImageUpdateManyWithWhereWithoutVehicleInput[]
     deleteMany?: VehicleImageScalarWhereInput | VehicleImageScalarWhereInput[]
+  }
+
+  export type BookingItemUncheckedUpdateManyWithoutVehicleNestedInput = {
+    create?: XOR<BookingItemCreateWithoutVehicleInput, BookingItemUncheckedCreateWithoutVehicleInput> | BookingItemCreateWithoutVehicleInput[] | BookingItemUncheckedCreateWithoutVehicleInput[]
+    connectOrCreate?: BookingItemCreateOrConnectWithoutVehicleInput | BookingItemCreateOrConnectWithoutVehicleInput[]
+    upsert?: BookingItemUpsertWithWhereUniqueWithoutVehicleInput | BookingItemUpsertWithWhereUniqueWithoutVehicleInput[]
+    createMany?: BookingItemCreateManyVehicleInputEnvelope
+    set?: BookingItemWhereUniqueInput | BookingItemWhereUniqueInput[]
+    disconnect?: BookingItemWhereUniqueInput | BookingItemWhereUniqueInput[]
+    delete?: BookingItemWhereUniqueInput | BookingItemWhereUniqueInput[]
+    connect?: BookingItemWhereUniqueInput | BookingItemWhereUniqueInput[]
+    update?: BookingItemUpdateWithWhereUniqueWithoutVehicleInput | BookingItemUpdateWithWhereUniqueWithoutVehicleInput[]
+    updateMany?: BookingItemUpdateManyWithWhereWithoutVehicleInput | BookingItemUpdateManyWithWhereWithoutVehicleInput[]
+    deleteMany?: BookingItemScalarWhereInput | BookingItemScalarWhereInput[]
   }
 
   export type VehicleCreateNestedOneWithoutPricingOverrideInput = {
@@ -42166,48 +42435,6 @@ export namespace Prisma {
     upsert?: FileObjectUpsertWithoutVehicleImagesInput
     connect?: FileObjectWhereUniqueInput
     update?: XOR<XOR<FileObjectUpdateToOneWithWhereWithoutVehicleImagesInput, FileObjectUpdateWithoutVehicleImagesInput>, FileObjectUncheckedUpdateWithoutVehicleImagesInput>
-  }
-
-  export type BookingCreateNestedManyWithoutRentalPlanInput = {
-    create?: XOR<BookingCreateWithoutRentalPlanInput, BookingUncheckedCreateWithoutRentalPlanInput> | BookingCreateWithoutRentalPlanInput[] | BookingUncheckedCreateWithoutRentalPlanInput[]
-    connectOrCreate?: BookingCreateOrConnectWithoutRentalPlanInput | BookingCreateOrConnectWithoutRentalPlanInput[]
-    createMany?: BookingCreateManyRentalPlanInputEnvelope
-    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
-  }
-
-  export type BookingUncheckedCreateNestedManyWithoutRentalPlanInput = {
-    create?: XOR<BookingCreateWithoutRentalPlanInput, BookingUncheckedCreateWithoutRentalPlanInput> | BookingCreateWithoutRentalPlanInput[] | BookingUncheckedCreateWithoutRentalPlanInput[]
-    connectOrCreate?: BookingCreateOrConnectWithoutRentalPlanInput | BookingCreateOrConnectWithoutRentalPlanInput[]
-    createMany?: BookingCreateManyRentalPlanInputEnvelope
-    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
-  }
-
-  export type BookingUpdateManyWithoutRentalPlanNestedInput = {
-    create?: XOR<BookingCreateWithoutRentalPlanInput, BookingUncheckedCreateWithoutRentalPlanInput> | BookingCreateWithoutRentalPlanInput[] | BookingUncheckedCreateWithoutRentalPlanInput[]
-    connectOrCreate?: BookingCreateOrConnectWithoutRentalPlanInput | BookingCreateOrConnectWithoutRentalPlanInput[]
-    upsert?: BookingUpsertWithWhereUniqueWithoutRentalPlanInput | BookingUpsertWithWhereUniqueWithoutRentalPlanInput[]
-    createMany?: BookingCreateManyRentalPlanInputEnvelope
-    set?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
-    disconnect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
-    delete?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
-    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
-    update?: BookingUpdateWithWhereUniqueWithoutRentalPlanInput | BookingUpdateWithWhereUniqueWithoutRentalPlanInput[]
-    updateMany?: BookingUpdateManyWithWhereWithoutRentalPlanInput | BookingUpdateManyWithWhereWithoutRentalPlanInput[]
-    deleteMany?: BookingScalarWhereInput | BookingScalarWhereInput[]
-  }
-
-  export type BookingUncheckedUpdateManyWithoutRentalPlanNestedInput = {
-    create?: XOR<BookingCreateWithoutRentalPlanInput, BookingUncheckedCreateWithoutRentalPlanInput> | BookingCreateWithoutRentalPlanInput[] | BookingUncheckedCreateWithoutRentalPlanInput[]
-    connectOrCreate?: BookingCreateOrConnectWithoutRentalPlanInput | BookingCreateOrConnectWithoutRentalPlanInput[]
-    upsert?: BookingUpsertWithWhereUniqueWithoutRentalPlanInput | BookingUpsertWithWhereUniqueWithoutRentalPlanInput[]
-    createMany?: BookingCreateManyRentalPlanInputEnvelope
-    set?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
-    disconnect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
-    delete?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
-    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
-    update?: BookingUpdateWithWhereUniqueWithoutRentalPlanInput | BookingUpdateWithWhereUniqueWithoutRentalPlanInput[]
-    updateMany?: BookingUpdateManyWithWhereWithoutRentalPlanInput | BookingUpdateManyWithWhereWithoutRentalPlanInput[]
-    deleteMany?: BookingScalarWhereInput | BookingScalarWhereInput[]
   }
 
   export type VehicleCategoryCreateNestedOneWithoutPricingRulesInput = {
@@ -42296,22 +42523,10 @@ export namespace Prisma {
     connect?: CustomerWhereUniqueInput
   }
 
-  export type VehicleCreateNestedOneWithoutBookingsInput = {
-    create?: XOR<VehicleCreateWithoutBookingsInput, VehicleUncheckedCreateWithoutBookingsInput>
-    connectOrCreate?: VehicleCreateOrConnectWithoutBookingsInput
-    connect?: VehicleWhereUniqueInput
-  }
-
   export type BranchCreateNestedOneWithoutBookingsInput = {
     create?: XOR<BranchCreateWithoutBookingsInput, BranchUncheckedCreateWithoutBookingsInput>
     connectOrCreate?: BranchCreateOrConnectWithoutBookingsInput
     connect?: BranchWhereUniqueInput
-  }
-
-  export type RentalPlanCreateNestedOneWithoutBookingsInput = {
-    create?: XOR<RentalPlanCreateWithoutBookingsInput, RentalPlanUncheckedCreateWithoutBookingsInput>
-    connectOrCreate?: RentalPlanCreateOrConnectWithoutBookingsInput
-    connect?: RentalPlanWhereUniqueInput
   }
 
   export type UserCreateNestedOneWithoutBookingsCreatedInput = {
@@ -42332,6 +42547,13 @@ export namespace Prisma {
     connectOrCreate?: DamageReportCreateOrConnectWithoutBookingInput | DamageReportCreateOrConnectWithoutBookingInput[]
     createMany?: DamageReportCreateManyBookingInputEnvelope
     connect?: DamageReportWhereUniqueInput | DamageReportWhereUniqueInput[]
+  }
+
+  export type BookingItemCreateNestedManyWithoutBookingInput = {
+    create?: XOR<BookingItemCreateWithoutBookingInput, BookingItemUncheckedCreateWithoutBookingInput> | BookingItemCreateWithoutBookingInput[] | BookingItemUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: BookingItemCreateOrConnectWithoutBookingInput | BookingItemCreateOrConnectWithoutBookingInput[]
+    createMany?: BookingItemCreateManyBookingInputEnvelope
+    connect?: BookingItemWhereUniqueInput | BookingItemWhereUniqueInput[]
   }
 
   export type DepositCreateNestedOneWithoutBookingInput = {
@@ -42360,6 +42582,13 @@ export namespace Prisma {
     connect?: DamageReportWhereUniqueInput | DamageReportWhereUniqueInput[]
   }
 
+  export type BookingItemUncheckedCreateNestedManyWithoutBookingInput = {
+    create?: XOR<BookingItemCreateWithoutBookingInput, BookingItemUncheckedCreateWithoutBookingInput> | BookingItemCreateWithoutBookingInput[] | BookingItemUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: BookingItemCreateOrConnectWithoutBookingInput | BookingItemCreateOrConnectWithoutBookingInput[]
+    createMany?: BookingItemCreateManyBookingInputEnvelope
+    connect?: BookingItemWhereUniqueInput | BookingItemWhereUniqueInput[]
+  }
+
   export type DepositUncheckedCreateNestedOneWithoutBookingInput = {
     create?: XOR<DepositCreateWithoutBookingInput, DepositUncheckedCreateWithoutBookingInput>
     connectOrCreate?: DepositCreateOrConnectWithoutBookingInput
@@ -42376,8 +42605,12 @@ export namespace Prisma {
     set?: $Enums.BookingStatus
   }
 
-  export type EnumDepositMethodFieldUpdateOperationsInput = {
-    set?: $Enums.DepositMethod
+  export type EnumPaymentStatusFieldUpdateOperationsInput = {
+    set?: $Enums.PaymentStatus
+  }
+
+  export type NullableEnumDepositMethodFieldUpdateOperationsInput = {
+    set?: $Enums.DepositMethod | null
   }
 
   export type CustomerUpdateOneRequiredWithoutBookingsNestedInput = {
@@ -42388,28 +42621,12 @@ export namespace Prisma {
     update?: XOR<XOR<CustomerUpdateToOneWithWhereWithoutBookingsInput, CustomerUpdateWithoutBookingsInput>, CustomerUncheckedUpdateWithoutBookingsInput>
   }
 
-  export type VehicleUpdateOneRequiredWithoutBookingsNestedInput = {
-    create?: XOR<VehicleCreateWithoutBookingsInput, VehicleUncheckedCreateWithoutBookingsInput>
-    connectOrCreate?: VehicleCreateOrConnectWithoutBookingsInput
-    upsert?: VehicleUpsertWithoutBookingsInput
-    connect?: VehicleWhereUniqueInput
-    update?: XOR<XOR<VehicleUpdateToOneWithWhereWithoutBookingsInput, VehicleUpdateWithoutBookingsInput>, VehicleUncheckedUpdateWithoutBookingsInput>
-  }
-
   export type BranchUpdateOneRequiredWithoutBookingsNestedInput = {
     create?: XOR<BranchCreateWithoutBookingsInput, BranchUncheckedCreateWithoutBookingsInput>
     connectOrCreate?: BranchCreateOrConnectWithoutBookingsInput
     upsert?: BranchUpsertWithoutBookingsInput
     connect?: BranchWhereUniqueInput
     update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutBookingsInput, BranchUpdateWithoutBookingsInput>, BranchUncheckedUpdateWithoutBookingsInput>
-  }
-
-  export type RentalPlanUpdateOneRequiredWithoutBookingsNestedInput = {
-    create?: XOR<RentalPlanCreateWithoutBookingsInput, RentalPlanUncheckedCreateWithoutBookingsInput>
-    connectOrCreate?: RentalPlanCreateOrConnectWithoutBookingsInput
-    upsert?: RentalPlanUpsertWithoutBookingsInput
-    connect?: RentalPlanWhereUniqueInput
-    update?: XOR<XOR<RentalPlanUpdateToOneWithWhereWithoutBookingsInput, RentalPlanUpdateWithoutBookingsInput>, RentalPlanUncheckedUpdateWithoutBookingsInput>
   }
 
   export type UserUpdateOneRequiredWithoutBookingsCreatedNestedInput = {
@@ -42446,6 +42663,20 @@ export namespace Prisma {
     update?: DamageReportUpdateWithWhereUniqueWithoutBookingInput | DamageReportUpdateWithWhereUniqueWithoutBookingInput[]
     updateMany?: DamageReportUpdateManyWithWhereWithoutBookingInput | DamageReportUpdateManyWithWhereWithoutBookingInput[]
     deleteMany?: DamageReportScalarWhereInput | DamageReportScalarWhereInput[]
+  }
+
+  export type BookingItemUpdateManyWithoutBookingNestedInput = {
+    create?: XOR<BookingItemCreateWithoutBookingInput, BookingItemUncheckedCreateWithoutBookingInput> | BookingItemCreateWithoutBookingInput[] | BookingItemUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: BookingItemCreateOrConnectWithoutBookingInput | BookingItemCreateOrConnectWithoutBookingInput[]
+    upsert?: BookingItemUpsertWithWhereUniqueWithoutBookingInput | BookingItemUpsertWithWhereUniqueWithoutBookingInput[]
+    createMany?: BookingItemCreateManyBookingInputEnvelope
+    set?: BookingItemWhereUniqueInput | BookingItemWhereUniqueInput[]
+    disconnect?: BookingItemWhereUniqueInput | BookingItemWhereUniqueInput[]
+    delete?: BookingItemWhereUniqueInput | BookingItemWhereUniqueInput[]
+    connect?: BookingItemWhereUniqueInput | BookingItemWhereUniqueInput[]
+    update?: BookingItemUpdateWithWhereUniqueWithoutBookingInput | BookingItemUpdateWithWhereUniqueWithoutBookingInput[]
+    updateMany?: BookingItemUpdateManyWithWhereWithoutBookingInput | BookingItemUpdateManyWithWhereWithoutBookingInput[]
+    deleteMany?: BookingItemScalarWhereInput | BookingItemScalarWhereInput[]
   }
 
   export type DepositUpdateOneWithoutBookingNestedInput = {
@@ -42496,6 +42727,20 @@ export namespace Prisma {
     deleteMany?: DamageReportScalarWhereInput | DamageReportScalarWhereInput[]
   }
 
+  export type BookingItemUncheckedUpdateManyWithoutBookingNestedInput = {
+    create?: XOR<BookingItemCreateWithoutBookingInput, BookingItemUncheckedCreateWithoutBookingInput> | BookingItemCreateWithoutBookingInput[] | BookingItemUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: BookingItemCreateOrConnectWithoutBookingInput | BookingItemCreateOrConnectWithoutBookingInput[]
+    upsert?: BookingItemUpsertWithWhereUniqueWithoutBookingInput | BookingItemUpsertWithWhereUniqueWithoutBookingInput[]
+    createMany?: BookingItemCreateManyBookingInputEnvelope
+    set?: BookingItemWhereUniqueInput | BookingItemWhereUniqueInput[]
+    disconnect?: BookingItemWhereUniqueInput | BookingItemWhereUniqueInput[]
+    delete?: BookingItemWhereUniqueInput | BookingItemWhereUniqueInput[]
+    connect?: BookingItemWhereUniqueInput | BookingItemWhereUniqueInput[]
+    update?: BookingItemUpdateWithWhereUniqueWithoutBookingInput | BookingItemUpdateWithWhereUniqueWithoutBookingInput[]
+    updateMany?: BookingItemUpdateManyWithWhereWithoutBookingInput | BookingItemUpdateManyWithWhereWithoutBookingInput[]
+    deleteMany?: BookingItemScalarWhereInput | BookingItemScalarWhereInput[]
+  }
+
   export type DepositUncheckedUpdateOneWithoutBookingNestedInput = {
     create?: XOR<DepositCreateWithoutBookingInput, DepositUncheckedCreateWithoutBookingInput>
     connectOrCreate?: DepositCreateOrConnectWithoutBookingInput
@@ -42514,6 +42759,34 @@ export namespace Prisma {
     delete?: InvoiceWhereInput | boolean
     connect?: InvoiceWhereUniqueInput
     update?: XOR<XOR<InvoiceUpdateToOneWithWhereWithoutBookingInput, InvoiceUpdateWithoutBookingInput>, InvoiceUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type VehicleCreateNestedOneWithoutBookingItemsInput = {
+    create?: XOR<VehicleCreateWithoutBookingItemsInput, VehicleUncheckedCreateWithoutBookingItemsInput>
+    connectOrCreate?: VehicleCreateOrConnectWithoutBookingItemsInput
+    connect?: VehicleWhereUniqueInput
+  }
+
+  export type BookingCreateNestedOneWithoutItemsInput = {
+    create?: XOR<BookingCreateWithoutItemsInput, BookingUncheckedCreateWithoutItemsInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutItemsInput
+    connect?: BookingWhereUniqueInput
+  }
+
+  export type VehicleUpdateOneRequiredWithoutBookingItemsNestedInput = {
+    create?: XOR<VehicleCreateWithoutBookingItemsInput, VehicleUncheckedCreateWithoutBookingItemsInput>
+    connectOrCreate?: VehicleCreateOrConnectWithoutBookingItemsInput
+    upsert?: VehicleUpsertWithoutBookingItemsInput
+    connect?: VehicleWhereUniqueInput
+    update?: XOR<XOR<VehicleUpdateToOneWithWhereWithoutBookingItemsInput, VehicleUpdateWithoutBookingItemsInput>, VehicleUncheckedUpdateWithoutBookingItemsInput>
+  }
+
+  export type BookingUpdateOneRequiredWithoutItemsNestedInput = {
+    create?: XOR<BookingCreateWithoutItemsInput, BookingUncheckedCreateWithoutItemsInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutItemsInput
+    upsert?: BookingUpsertWithoutItemsInput
+    connect?: BookingWhereUniqueInput
+    update?: XOR<XOR<BookingUpdateToOneWithWhereWithoutItemsInput, BookingUpdateWithoutItemsInput>, BookingUncheckedUpdateWithoutItemsInput>
   }
 
   export type BookingCreateNestedOneWithoutPhotosInput = {
@@ -42598,6 +42871,10 @@ export namespace Prisma {
     connect?: BookingWhereUniqueInput
   }
 
+  export type EnumDepositMethodFieldUpdateOperationsInput = {
+    set?: $Enums.DepositMethod
+  }
+
   export type BookingUpdateOneRequiredWithoutDepositNestedInput = {
     create?: XOR<BookingCreateWithoutDepositInput, BookingUncheckedCreateWithoutDepositInput>
     connectOrCreate?: BookingCreateOrConnectWithoutDepositInput
@@ -42610,10 +42887,6 @@ export namespace Prisma {
     create?: XOR<InvoiceCreateWithoutPaymentsInput, InvoiceUncheckedCreateWithoutPaymentsInput>
     connectOrCreate?: InvoiceCreateOrConnectWithoutPaymentsInput
     connect?: InvoiceWhereUniqueInput
-  }
-
-  export type EnumPaymentStatusFieldUpdateOperationsInput = {
-    set?: $Enums.PaymentStatus
   }
 
   export type InvoiceUpdateOneRequiredWithoutPaymentsNestedInput = {
@@ -43118,11 +43391,18 @@ export namespace Prisma {
     not?: NestedEnumBookingStatusFilter<$PrismaModel> | $Enums.BookingStatus
   }
 
-  export type NestedEnumDepositMethodFilter<$PrismaModel = never> = {
-    equals?: $Enums.DepositMethod | EnumDepositMethodFieldRefInput<$PrismaModel>
-    in?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel>
-    notIn?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel>
-    not?: NestedEnumDepositMethodFilter<$PrismaModel> | $Enums.DepositMethod
+  export type NestedEnumPaymentStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentStatus | EnumPaymentStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentStatus[] | ListEnumPaymentStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentStatus[] | ListEnumPaymentStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentStatusFilter<$PrismaModel> | $Enums.PaymentStatus
+  }
+
+  export type NestedEnumDepositMethodNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.DepositMethod | EnumDepositMethodFieldRefInput<$PrismaModel> | null
+    in?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumDepositMethodNullableFilter<$PrismaModel> | $Enums.DepositMethod | null
   }
 
   export type NestedEnumBookingStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -43135,14 +43415,14 @@ export namespace Prisma {
     _max?: NestedEnumBookingStatusFilter<$PrismaModel>
   }
 
-  export type NestedEnumDepositMethodWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.DepositMethod | EnumDepositMethodFieldRefInput<$PrismaModel>
-    in?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel>
-    notIn?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel>
-    not?: NestedEnumDepositMethodWithAggregatesFilter<$PrismaModel> | $Enums.DepositMethod
+  export type NestedEnumPaymentStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentStatus | EnumPaymentStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentStatus[] | ListEnumPaymentStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentStatus[] | ListEnumPaymentStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentStatusWithAggregatesFilter<$PrismaModel> | $Enums.PaymentStatus
     _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumDepositMethodFilter<$PrismaModel>
-    _max?: NestedEnumDepositMethodFilter<$PrismaModel>
+    _min?: NestedEnumPaymentStatusFilter<$PrismaModel>
+    _max?: NestedEnumPaymentStatusFilter<$PrismaModel>
   }
   export type NestedJsonFilter<$PrismaModel = never> = 
     | PatchUndefined<
@@ -43167,6 +43447,16 @@ export namespace Prisma {
     not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
   }
 
+  export type NestedEnumDepositMethodNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.DepositMethod | EnumDepositMethodFieldRefInput<$PrismaModel> | null
+    in?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumDepositMethodNullableWithAggregatesFilter<$PrismaModel> | $Enums.DepositMethod | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumDepositMethodNullableFilter<$PrismaModel>
+    _max?: NestedEnumDepositMethodNullableFilter<$PrismaModel>
+  }
+
   export type NestedEnumBookingPhotoTypeFilter<$PrismaModel = never> = {
     equals?: $Enums.BookingPhotoType | EnumBookingPhotoTypeFieldRefInput<$PrismaModel>
     in?: $Enums.BookingPhotoType[] | ListEnumBookingPhotoTypeFieldRefInput<$PrismaModel>
@@ -43184,21 +43474,21 @@ export namespace Prisma {
     _max?: NestedEnumBookingPhotoTypeFilter<$PrismaModel>
   }
 
-  export type NestedEnumPaymentStatusFilter<$PrismaModel = never> = {
-    equals?: $Enums.PaymentStatus | EnumPaymentStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.PaymentStatus[] | ListEnumPaymentStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.PaymentStatus[] | ListEnumPaymentStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumPaymentStatusFilter<$PrismaModel> | $Enums.PaymentStatus
+  export type NestedEnumDepositMethodFilter<$PrismaModel = never> = {
+    equals?: $Enums.DepositMethod | EnumDepositMethodFieldRefInput<$PrismaModel>
+    in?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel>
+    not?: NestedEnumDepositMethodFilter<$PrismaModel> | $Enums.DepositMethod
   }
 
-  export type NestedEnumPaymentStatusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.PaymentStatus | EnumPaymentStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.PaymentStatus[] | ListEnumPaymentStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.PaymentStatus[] | ListEnumPaymentStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumPaymentStatusWithAggregatesFilter<$PrismaModel> | $Enums.PaymentStatus
+  export type NestedEnumDepositMethodWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.DepositMethod | EnumDepositMethodFieldRefInput<$PrismaModel>
+    in?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel>
+    not?: NestedEnumDepositMethodWithAggregatesFilter<$PrismaModel> | $Enums.DepositMethod
     _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumPaymentStatusFilter<$PrismaModel>
-    _max?: NestedEnumPaymentStatusFilter<$PrismaModel>
+    _min?: NestedEnumDepositMethodFilter<$PrismaModel>
+    _max?: NestedEnumDepositMethodFilter<$PrismaModel>
   }
 
   export type NestedEnumInvoiceStatusFilter<$PrismaModel = never> = {
@@ -43391,20 +43681,25 @@ export namespace Prisma {
     publicId: string
     startAt: Date | string
     endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     customer: CustomerCreateNestedOneWithoutBookingsInput
-    vehicle: VehicleCreateNestedOneWithoutBookingsInput
     branch: BranchCreateNestedOneWithoutBookingsInput
-    rentalPlan: RentalPlanCreateNestedOneWithoutBookingsInput
     photos?: BookingPhotoCreateNestedManyWithoutBookingInput
     damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
   }
@@ -43413,21 +43708,26 @@ export namespace Prisma {
     id?: number
     publicId: string
     customerId: number
-    vehicleId: number
     branchId: number
-    rentalPlanId: number
     startAt: Date | string
     endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
     damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
   }
@@ -43657,17 +43957,21 @@ export namespace Prisma {
     id?: IntFilter<"Booking"> | number
     publicId?: StringFilter<"Booking"> | string
     customerId?: IntFilter<"Booking"> | number
-    vehicleId?: IntFilter<"Booking"> | number
     branchId?: IntFilter<"Booking"> | number
-    rentalPlanId?: IntFilter<"Booking"> | number
     startAt?: DateTimeFilter<"Booking"> | Date | string
     endAt?: DateTimeFilter<"Booking"> | Date | string
+    days?: IntFilter<"Booking"> | number
+    holdExpiresAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
+    totalBase?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFilter<"Booking"> | $Enums.BookingStatus
-    rentalPrice?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFilter<"Booking"> | $Enums.DepositMethod
+    transactionId?: StringNullableFilter<"Booking"> | string | null
+    paymentStatus?: EnumPaymentStatusFilter<"Booking"> | $Enums.PaymentStatus
     pricingSnapshot?: JsonFilter<"Booking">
     createdById?: IntFilter<"Booking"> | number
+    depositMethod?: EnumDepositMethodNullableFilter<"Booking"> | $Enums.DepositMethod | null
     createdAt?: DateTimeFilter<"Booking"> | Date | string
     updatedAt?: DateTimeFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
@@ -43967,20 +44271,25 @@ export namespace Prisma {
     publicId: string
     startAt: Date | string
     endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
-    vehicle: VehicleCreateNestedOneWithoutBookingsInput
     branch: BranchCreateNestedOneWithoutBookingsInput
-    rentalPlan: RentalPlanCreateNestedOneWithoutBookingsInput
     createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
     photos?: BookingPhotoCreateNestedManyWithoutBookingInput
     damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
   }
@@ -43988,22 +44297,27 @@ export namespace Prisma {
   export type BookingUncheckedCreateWithoutCustomerInput = {
     id?: number
     publicId: string
-    vehicleId: number
     branchId: number
-    rentalPlanId: number
     startAt: Date | string
     endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     createdById: number
+    depositMethod?: $Enums.DepositMethod | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
     damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
   }
@@ -44442,10 +44756,10 @@ export namespace Prisma {
     category: VehicleCategoryCreateNestedOneWithoutVehiclesInput
     insuranceRecords?: VehicleInsuranceCreateNestedManyWithoutVehicleInput
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
-    bookings?: BookingCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutBranchInput = {
@@ -44464,10 +44778,10 @@ export namespace Prisma {
     deletedAt?: Date | string | null
     insuranceRecords?: VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
-    bookings?: BookingUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutBranchInput = {
@@ -44484,20 +44798,25 @@ export namespace Prisma {
     publicId: string
     startAt: Date | string
     endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     customer: CustomerCreateNestedOneWithoutBookingsInput
-    vehicle: VehicleCreateNestedOneWithoutBookingsInput
-    rentalPlan: RentalPlanCreateNestedOneWithoutBookingsInput
     createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
     photos?: BookingPhotoCreateNestedManyWithoutBookingInput
     damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
   }
@@ -44506,21 +44825,26 @@ export namespace Prisma {
     id?: number
     publicId: string
     customerId: number
-    vehicleId: number
-    rentalPlanId: number
     startAt: Date | string
     endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     createdById: number
+    depositMethod?: $Enums.DepositMethod | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
     damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
   }
@@ -44913,10 +45237,10 @@ export namespace Prisma {
     branch: BranchCreateNestedOneWithoutVehiclesInput
     insuranceRecords?: VehicleInsuranceCreateNestedManyWithoutVehicleInput
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
-    bookings?: BookingCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutCategoryInput = {
@@ -44935,10 +45259,10 @@ export namespace Prisma {
     deletedAt?: Date | string | null
     insuranceRecords?: VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
-    bookings?: BookingUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutCategoryInput = {
@@ -45160,61 +45484,6 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
-  export type BookingCreateWithoutVehicleInput = {
-    publicId: string
-    startAt: Date | string
-    endAt: Date | string
-    status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
-    pricingSnapshot: JsonNullValueInput | InputJsonValue
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    deletedAt?: Date | string | null
-    customer: CustomerCreateNestedOneWithoutBookingsInput
-    branch: BranchCreateNestedOneWithoutBookingsInput
-    rentalPlan: RentalPlanCreateNestedOneWithoutBookingsInput
-    createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
-    photos?: BookingPhotoCreateNestedManyWithoutBookingInput
-    damages?: DamageReportCreateNestedManyWithoutBookingInput
-    deposit?: DepositCreateNestedOneWithoutBookingInput
-    invoice?: InvoiceCreateNestedOneWithoutBookingInput
-  }
-
-  export type BookingUncheckedCreateWithoutVehicleInput = {
-    id?: number
-    publicId: string
-    customerId: number
-    branchId: number
-    rentalPlanId: number
-    startAt: Date | string
-    endAt: Date | string
-    status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
-    pricingSnapshot: JsonNullValueInput | InputJsonValue
-    createdById: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    deletedAt?: Date | string | null
-    photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
-    damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
-    deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
-    invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
-  }
-
-  export type BookingCreateOrConnectWithoutVehicleInput = {
-    where: BookingWhereUniqueInput
-    create: XOR<BookingCreateWithoutVehicleInput, BookingUncheckedCreateWithoutVehicleInput>
-  }
-
-  export type BookingCreateManyVehicleInputEnvelope = {
-    data: BookingCreateManyVehicleInput | BookingCreateManyVehicleInput[]
-    skipDuplicates?: boolean
-  }
-
   export type DamageReportCreateWithoutVehicleInput = {
     publicId: string
     severity: string
@@ -45286,6 +45555,37 @@ export namespace Prisma {
 
   export type VehicleImageCreateManyVehicleInputEnvelope = {
     data: VehicleImageCreateManyVehicleInput | VehicleImageCreateManyVehicleInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type BookingItemCreateWithoutVehicleInput = {
+    days: number
+    baseTotal: Decimal | DecimalJsLike | number | string
+    discountAmount: Decimal | DecimalJsLike | number | string
+    discountPercent: Decimal | DecimalJsLike | number | string
+    deposit: Decimal | DecimalJsLike | number | string
+    finalTotal: Decimal | DecimalJsLike | number | string
+    booking: BookingCreateNestedOneWithoutItemsInput
+  }
+
+  export type BookingItemUncheckedCreateWithoutVehicleInput = {
+    id?: number
+    bookingId: number
+    days: number
+    baseTotal: Decimal | DecimalJsLike | number | string
+    discountAmount: Decimal | DecimalJsLike | number | string
+    discountPercent: Decimal | DecimalJsLike | number | string
+    deposit: Decimal | DecimalJsLike | number | string
+    finalTotal: Decimal | DecimalJsLike | number | string
+  }
+
+  export type BookingItemCreateOrConnectWithoutVehicleInput = {
+    where: BookingItemWhereUniqueInput
+    create: XOR<BookingItemCreateWithoutVehicleInput, BookingItemUncheckedCreateWithoutVehicleInput>
+  }
+
+  export type BookingItemCreateManyVehicleInputEnvelope = {
+    data: BookingItemCreateManyVehicleInput | BookingItemCreateManyVehicleInput[]
     skipDuplicates?: boolean
   }
 
@@ -45415,22 +45715,6 @@ export namespace Prisma {
     servicedAt?: DateTimeFilter<"VehicleMaintenanceRecord"> | Date | string
   }
 
-  export type BookingUpsertWithWhereUniqueWithoutVehicleInput = {
-    where: BookingWhereUniqueInput
-    update: XOR<BookingUpdateWithoutVehicleInput, BookingUncheckedUpdateWithoutVehicleInput>
-    create: XOR<BookingCreateWithoutVehicleInput, BookingUncheckedCreateWithoutVehicleInput>
-  }
-
-  export type BookingUpdateWithWhereUniqueWithoutVehicleInput = {
-    where: BookingWhereUniqueInput
-    data: XOR<BookingUpdateWithoutVehicleInput, BookingUncheckedUpdateWithoutVehicleInput>
-  }
-
-  export type BookingUpdateManyWithWhereWithoutVehicleInput = {
-    where: BookingScalarWhereInput
-    data: XOR<BookingUpdateManyMutationInput, BookingUncheckedUpdateManyWithoutVehicleInput>
-  }
-
   export type DamageReportUpsertWithWhereUniqueWithoutVehicleInput = {
     where: DamageReportWhereUniqueInput
     update: XOR<DamageReportUpdateWithoutVehicleInput, DamageReportUncheckedUpdateWithoutVehicleInput>
@@ -45487,6 +45771,37 @@ export namespace Prisma {
     data: XOR<VehicleImageUpdateManyMutationInput, VehicleImageUncheckedUpdateManyWithoutVehicleInput>
   }
 
+  export type BookingItemUpsertWithWhereUniqueWithoutVehicleInput = {
+    where: BookingItemWhereUniqueInput
+    update: XOR<BookingItemUpdateWithoutVehicleInput, BookingItemUncheckedUpdateWithoutVehicleInput>
+    create: XOR<BookingItemCreateWithoutVehicleInput, BookingItemUncheckedCreateWithoutVehicleInput>
+  }
+
+  export type BookingItemUpdateWithWhereUniqueWithoutVehicleInput = {
+    where: BookingItemWhereUniqueInput
+    data: XOR<BookingItemUpdateWithoutVehicleInput, BookingItemUncheckedUpdateWithoutVehicleInput>
+  }
+
+  export type BookingItemUpdateManyWithWhereWithoutVehicleInput = {
+    where: BookingItemScalarWhereInput
+    data: XOR<BookingItemUpdateManyMutationInput, BookingItemUncheckedUpdateManyWithoutVehicleInput>
+  }
+
+  export type BookingItemScalarWhereInput = {
+    AND?: BookingItemScalarWhereInput | BookingItemScalarWhereInput[]
+    OR?: BookingItemScalarWhereInput[]
+    NOT?: BookingItemScalarWhereInput | BookingItemScalarWhereInput[]
+    id?: IntFilter<"BookingItem"> | number
+    bookingId?: IntFilter<"BookingItem"> | number
+    vehicleId?: IntFilter<"BookingItem"> | number
+    days?: IntFilter<"BookingItem"> | number
+    baseTotal?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    discountPercent?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    deposit?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    finalTotal?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+  }
+
   export type VehicleCreateWithoutPricingOverrideInput = {
     publicId: string
     make: string
@@ -45503,9 +45818,9 @@ export namespace Prisma {
     category: VehicleCategoryCreateNestedOneWithoutVehiclesInput
     insuranceRecords?: VehicleInsuranceCreateNestedManyWithoutVehicleInput
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
-    bookings?: BookingCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutPricingOverrideInput = {
@@ -45525,9 +45840,9 @@ export namespace Prisma {
     deletedAt?: Date | string | null
     insuranceRecords?: VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
-    bookings?: BookingUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutPricingOverrideInput = {
@@ -45562,9 +45877,9 @@ export namespace Prisma {
     category?: VehicleCategoryUpdateOneRequiredWithoutVehiclesNestedInput
     insuranceRecords?: VehicleInsuranceUpdateManyWithoutVehicleNestedInput
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
-    bookings?: BookingUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutPricingOverrideInput = {
@@ -45584,9 +45899,9 @@ export namespace Prisma {
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     insuranceRecords?: VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
-    bookings?: BookingUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleCreateWithoutInsuranceRecordsInput = {
@@ -45604,10 +45919,10 @@ export namespace Prisma {
     branch: BranchCreateNestedOneWithoutVehiclesInput
     category: VehicleCategoryCreateNestedOneWithoutVehiclesInput
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
-    bookings?: BookingCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutInsuranceRecordsInput = {
@@ -45626,10 +45941,10 @@ export namespace Prisma {
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
-    bookings?: BookingUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutInsuranceRecordsInput = {
@@ -45663,10 +45978,10 @@ export namespace Prisma {
     branch?: BranchUpdateOneRequiredWithoutVehiclesNestedInput
     category?: VehicleCategoryUpdateOneRequiredWithoutVehiclesNestedInput
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
-    bookings?: BookingUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutInsuranceRecordsInput = {
@@ -45685,10 +46000,10 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
-    bookings?: BookingUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleCreateWithoutMaintenanceInput = {
@@ -45706,10 +46021,10 @@ export namespace Prisma {
     branch: BranchCreateNestedOneWithoutVehiclesInput
     category: VehicleCategoryCreateNestedOneWithoutVehiclesInput
     insuranceRecords?: VehicleInsuranceCreateNestedManyWithoutVehicleInput
-    bookings?: BookingCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutMaintenanceInput = {
@@ -45728,10 +46043,10 @@ export namespace Prisma {
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     insuranceRecords?: VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput
-    bookings?: BookingUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutMaintenanceInput = {
@@ -45765,10 +46080,10 @@ export namespace Prisma {
     branch?: BranchUpdateOneRequiredWithoutVehiclesNestedInput
     category?: VehicleCategoryUpdateOneRequiredWithoutVehiclesNestedInput
     insuranceRecords?: VehicleInsuranceUpdateManyWithoutVehicleNestedInput
-    bookings?: BookingUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutMaintenanceInput = {
@@ -45787,10 +46102,10 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     insuranceRecords?: VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput
-    bookings?: BookingUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleCreateWithoutImagesInput = {
@@ -45809,9 +46124,9 @@ export namespace Prisma {
     category: VehicleCategoryCreateNestedOneWithoutVehiclesInput
     insuranceRecords?: VehicleInsuranceCreateNestedManyWithoutVehicleInput
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
-    bookings?: BookingCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
+    bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutImagesInput = {
@@ -45831,9 +46146,9 @@ export namespace Prisma {
     deletedAt?: Date | string | null
     insuranceRecords?: VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
-    bookings?: BookingUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
+    bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutImagesInput = {
@@ -45896,9 +46211,9 @@ export namespace Prisma {
     category?: VehicleCategoryUpdateOneRequiredWithoutVehiclesNestedInput
     insuranceRecords?: VehicleInsuranceUpdateManyWithoutVehicleNestedInput
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
-    bookings?: BookingUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
+    bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutImagesInput = {
@@ -45918,9 +46233,9 @@ export namespace Prisma {
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     insuranceRecords?: VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
-    bookings?: BookingUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
+    bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type FileObjectUpsertWithoutVehicleImagesInput = {
@@ -45955,77 +46270,6 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     bookingPhotos?: BookingPhotoUncheckedUpdateManyWithoutFileNestedInput
     customerKycs?: CustomerKycUncheckedUpdateManyWithoutFileNestedInput
-  }
-
-  export type BookingCreateWithoutRentalPlanInput = {
-    publicId: string
-    startAt: Date | string
-    endAt: Date | string
-    status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
-    pricingSnapshot: JsonNullValueInput | InputJsonValue
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    deletedAt?: Date | string | null
-    customer: CustomerCreateNestedOneWithoutBookingsInput
-    vehicle: VehicleCreateNestedOneWithoutBookingsInput
-    branch: BranchCreateNestedOneWithoutBookingsInput
-    createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
-    photos?: BookingPhotoCreateNestedManyWithoutBookingInput
-    damages?: DamageReportCreateNestedManyWithoutBookingInput
-    deposit?: DepositCreateNestedOneWithoutBookingInput
-    invoice?: InvoiceCreateNestedOneWithoutBookingInput
-  }
-
-  export type BookingUncheckedCreateWithoutRentalPlanInput = {
-    id?: number
-    publicId: string
-    customerId: number
-    vehicleId: number
-    branchId: number
-    startAt: Date | string
-    endAt: Date | string
-    status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
-    pricingSnapshot: JsonNullValueInput | InputJsonValue
-    createdById: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    deletedAt?: Date | string | null
-    photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
-    damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
-    deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
-    invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
-  }
-
-  export type BookingCreateOrConnectWithoutRentalPlanInput = {
-    where: BookingWhereUniqueInput
-    create: XOR<BookingCreateWithoutRentalPlanInput, BookingUncheckedCreateWithoutRentalPlanInput>
-  }
-
-  export type BookingCreateManyRentalPlanInputEnvelope = {
-    data: BookingCreateManyRentalPlanInput | BookingCreateManyRentalPlanInput[]
-    skipDuplicates?: boolean
-  }
-
-  export type BookingUpsertWithWhereUniqueWithoutRentalPlanInput = {
-    where: BookingWhereUniqueInput
-    update: XOR<BookingUpdateWithoutRentalPlanInput, BookingUncheckedUpdateWithoutRentalPlanInput>
-    create: XOR<BookingCreateWithoutRentalPlanInput, BookingUncheckedCreateWithoutRentalPlanInput>
-  }
-
-  export type BookingUpdateWithWhereUniqueWithoutRentalPlanInput = {
-    where: BookingWhereUniqueInput
-    data: XOR<BookingUpdateWithoutRentalPlanInput, BookingUncheckedUpdateWithoutRentalPlanInput>
-  }
-
-  export type BookingUpdateManyWithWhereWithoutRentalPlanInput = {
-    where: BookingScalarWhereInput
-    data: XOR<BookingUpdateManyMutationInput, BookingUncheckedUpdateManyWithoutRentalPlanInput>
   }
 
   export type VehicleCategoryCreateWithoutPricingRulesInput = {
@@ -46362,54 +46606,6 @@ export namespace Prisma {
     create: XOR<CustomerCreateWithoutBookingsInput, CustomerUncheckedCreateWithoutBookingsInput>
   }
 
-  export type VehicleCreateWithoutBookingsInput = {
-    publicId: string
-    make: string
-    model: string
-    regNo: string
-    odo: number
-    insuranceExpiry: Date | string
-    status?: $Enums.VehicleStatus
-    baseDailyPrice?: Decimal | DecimalJsLike | number | string
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    deletedAt?: Date | string | null
-    branch: BranchCreateNestedOneWithoutVehiclesInput
-    category: VehicleCategoryCreateNestedOneWithoutVehiclesInput
-    insuranceRecords?: VehicleInsuranceCreateNestedManyWithoutVehicleInput
-    maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
-    damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
-    pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
-    images?: VehicleImageCreateNestedManyWithoutVehicleInput
-  }
-
-  export type VehicleUncheckedCreateWithoutBookingsInput = {
-    id?: number
-    publicId: string
-    branchId: number
-    categoryId: number
-    make: string
-    model: string
-    regNo: string
-    odo: number
-    insuranceExpiry: Date | string
-    status?: $Enums.VehicleStatus
-    baseDailyPrice?: Decimal | DecimalJsLike | number | string
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    deletedAt?: Date | string | null
-    insuranceRecords?: VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput
-    maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
-    damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
-    pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
-    images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
-  }
-
-  export type VehicleCreateOrConnectWithoutBookingsInput = {
-    where: VehicleWhereUniqueInput
-    create: XOR<VehicleCreateWithoutBookingsInput, VehicleUncheckedCreateWithoutBookingsInput>
-  }
-
   export type BranchCreateWithoutBookingsInput = {
     publicId: string
     name: string
@@ -46442,26 +46638,6 @@ export namespace Prisma {
   export type BranchCreateOrConnectWithoutBookingsInput = {
     where: BranchWhereUniqueInput
     create: XOR<BranchCreateWithoutBookingsInput, BranchUncheckedCreateWithoutBookingsInput>
-  }
-
-  export type RentalPlanCreateWithoutBookingsInput = {
-    publicId: string
-    name: string
-    durationHours: number
-    basePrice: Decimal | DecimalJsLike | number | string
-  }
-
-  export type RentalPlanUncheckedCreateWithoutBookingsInput = {
-    id?: number
-    publicId: string
-    name: string
-    durationHours: number
-    basePrice: Decimal | DecimalJsLike | number | string
-  }
-
-  export type RentalPlanCreateOrConnectWithoutBookingsInput = {
-    where: RentalPlanWhereUniqueInput
-    create: XOR<RentalPlanCreateWithoutBookingsInput, RentalPlanUncheckedCreateWithoutBookingsInput>
   }
 
   export type UserCreateWithoutBookingsCreatedInput = {
@@ -46564,6 +46740,37 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type BookingItemCreateWithoutBookingInput = {
+    days: number
+    baseTotal: Decimal | DecimalJsLike | number | string
+    discountAmount: Decimal | DecimalJsLike | number | string
+    discountPercent: Decimal | DecimalJsLike | number | string
+    deposit: Decimal | DecimalJsLike | number | string
+    finalTotal: Decimal | DecimalJsLike | number | string
+    vehicle: VehicleCreateNestedOneWithoutBookingItemsInput
+  }
+
+  export type BookingItemUncheckedCreateWithoutBookingInput = {
+    id?: number
+    vehicleId: number
+    days: number
+    baseTotal: Decimal | DecimalJsLike | number | string
+    discountAmount: Decimal | DecimalJsLike | number | string
+    discountPercent: Decimal | DecimalJsLike | number | string
+    deposit: Decimal | DecimalJsLike | number | string
+    finalTotal: Decimal | DecimalJsLike | number | string
+  }
+
+  export type BookingItemCreateOrConnectWithoutBookingInput = {
+    where: BookingItemWhereUniqueInput
+    create: XOR<BookingItemCreateWithoutBookingInput, BookingItemUncheckedCreateWithoutBookingInput>
+  }
+
+  export type BookingItemCreateManyBookingInputEnvelope = {
+    data: BookingItemCreateManyBookingInput | BookingItemCreateManyBookingInput[]
+    skipDuplicates?: boolean
+  }
+
   export type DepositCreateWithoutBookingInput = {
     publicId: string
     amount: Decimal | DecimalJsLike | number | string
@@ -46652,60 +46859,6 @@ export namespace Prisma {
     kycs?: CustomerKycUncheckedUpdateManyWithoutCustomerNestedInput
   }
 
-  export type VehicleUpsertWithoutBookingsInput = {
-    update: XOR<VehicleUpdateWithoutBookingsInput, VehicleUncheckedUpdateWithoutBookingsInput>
-    create: XOR<VehicleCreateWithoutBookingsInput, VehicleUncheckedCreateWithoutBookingsInput>
-    where?: VehicleWhereInput
-  }
-
-  export type VehicleUpdateToOneWithWhereWithoutBookingsInput = {
-    where?: VehicleWhereInput
-    data: XOR<VehicleUpdateWithoutBookingsInput, VehicleUncheckedUpdateWithoutBookingsInput>
-  }
-
-  export type VehicleUpdateWithoutBookingsInput = {
-    publicId?: StringFieldUpdateOperationsInput | string
-    make?: StringFieldUpdateOperationsInput | string
-    model?: StringFieldUpdateOperationsInput | string
-    regNo?: StringFieldUpdateOperationsInput | string
-    odo?: IntFieldUpdateOperationsInput | number
-    insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
-    status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
-    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    branch?: BranchUpdateOneRequiredWithoutVehiclesNestedInput
-    category?: VehicleCategoryUpdateOneRequiredWithoutVehiclesNestedInput
-    insuranceRecords?: VehicleInsuranceUpdateManyWithoutVehicleNestedInput
-    maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
-    damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
-    pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
-    images?: VehicleImageUpdateManyWithoutVehicleNestedInput
-  }
-
-  export type VehicleUncheckedUpdateWithoutBookingsInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    publicId?: StringFieldUpdateOperationsInput | string
-    branchId?: IntFieldUpdateOperationsInput | number
-    categoryId?: IntFieldUpdateOperationsInput | number
-    make?: StringFieldUpdateOperationsInput | string
-    model?: StringFieldUpdateOperationsInput | string
-    regNo?: StringFieldUpdateOperationsInput | string
-    odo?: IntFieldUpdateOperationsInput | number
-    insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
-    status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
-    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    insuranceRecords?: VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput
-    maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
-    damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
-    pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
-    images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
-  }
-
   export type BranchUpsertWithoutBookingsInput = {
     update: XOR<BranchUpdateWithoutBookingsInput, BranchUncheckedUpdateWithoutBookingsInput>
     create: XOR<BranchCreateWithoutBookingsInput, BranchUncheckedCreateWithoutBookingsInput>
@@ -46744,32 +46897,6 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
-  }
-
-  export type RentalPlanUpsertWithoutBookingsInput = {
-    update: XOR<RentalPlanUpdateWithoutBookingsInput, RentalPlanUncheckedUpdateWithoutBookingsInput>
-    create: XOR<RentalPlanCreateWithoutBookingsInput, RentalPlanUncheckedCreateWithoutBookingsInput>
-    where?: RentalPlanWhereInput
-  }
-
-  export type RentalPlanUpdateToOneWithWhereWithoutBookingsInput = {
-    where?: RentalPlanWhereInput
-    data: XOR<RentalPlanUpdateWithoutBookingsInput, RentalPlanUncheckedUpdateWithoutBookingsInput>
-  }
-
-  export type RentalPlanUpdateWithoutBookingsInput = {
-    publicId?: StringFieldUpdateOperationsInput | string
-    name?: StringFieldUpdateOperationsInput | string
-    durationHours?: IntFieldUpdateOperationsInput | number
-    basePrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-  }
-
-  export type RentalPlanUncheckedUpdateWithoutBookingsInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    publicId?: StringFieldUpdateOperationsInput | string
-    name?: StringFieldUpdateOperationsInput | string
-    durationHours?: IntFieldUpdateOperationsInput | number
-    basePrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type UserUpsertWithoutBookingsCreatedInput = {
@@ -46854,6 +46981,22 @@ export namespace Prisma {
     data: XOR<DamageReportUpdateManyMutationInput, DamageReportUncheckedUpdateManyWithoutBookingInput>
   }
 
+  export type BookingItemUpsertWithWhereUniqueWithoutBookingInput = {
+    where: BookingItemWhereUniqueInput
+    update: XOR<BookingItemUpdateWithoutBookingInput, BookingItemUncheckedUpdateWithoutBookingInput>
+    create: XOR<BookingItemCreateWithoutBookingInput, BookingItemUncheckedCreateWithoutBookingInput>
+  }
+
+  export type BookingItemUpdateWithWhereUniqueWithoutBookingInput = {
+    where: BookingItemWhereUniqueInput
+    data: XOR<BookingItemUpdateWithoutBookingInput, BookingItemUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type BookingItemUpdateManyWithWhereWithoutBookingInput = {
+    where: BookingItemScalarWhereInput
+    data: XOR<BookingItemUpdateManyMutationInput, BookingItemUncheckedUpdateManyWithoutBookingInput>
+  }
+
   export type DepositUpsertWithoutBookingInput = {
     update: XOR<DepositUpdateWithoutBookingInput, DepositUncheckedUpdateWithoutBookingInput>
     create: XOR<DepositCreateWithoutBookingInput, DepositUncheckedCreateWithoutBookingInput>
@@ -46924,24 +47067,257 @@ export namespace Prisma {
     payments?: PaymentUncheckedUpdateManyWithoutInvoiceNestedInput
   }
 
-  export type BookingCreateWithoutPhotosInput = {
+  export type VehicleCreateWithoutBookingItemsInput = {
+    publicId: string
+    make: string
+    model: string
+    regNo: string
+    odo: number
+    insuranceExpiry: Date | string
+    status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch: BranchCreateNestedOneWithoutVehiclesInput
+    category: VehicleCategoryCreateNestedOneWithoutVehiclesInput
+    insuranceRecords?: VehicleInsuranceCreateNestedManyWithoutVehicleInput
+    maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
+    damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageCreateNestedManyWithoutVehicleInput
+  }
+
+  export type VehicleUncheckedCreateWithoutBookingItemsInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    categoryId: number
+    make: string
+    model: string
+    regNo: string
+    odo: number
+    insuranceExpiry: Date | string
+    status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    insuranceRecords?: VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput
+    maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
+    damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
+  }
+
+  export type VehicleCreateOrConnectWithoutBookingItemsInput = {
+    where: VehicleWhereUniqueInput
+    create: XOR<VehicleCreateWithoutBookingItemsInput, VehicleUncheckedCreateWithoutBookingItemsInput>
+  }
+
+  export type BookingCreateWithoutItemsInput = {
     publicId: string
     startAt: Date | string
     endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     customer: CustomerCreateNestedOneWithoutBookingsInput
-    vehicle: VehicleCreateNestedOneWithoutBookingsInput
     branch: BranchCreateNestedOneWithoutBookingsInput
-    rentalPlan: RentalPlanCreateNestedOneWithoutBookingsInput
+    createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
+    photos?: BookingPhotoCreateNestedManyWithoutBookingInput
+    damages?: DamageReportCreateNestedManyWithoutBookingInput
+    deposit?: DepositCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingUncheckedCreateWithoutItemsInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
+    damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingCreateOrConnectWithoutItemsInput = {
+    where: BookingWhereUniqueInput
+    create: XOR<BookingCreateWithoutItemsInput, BookingUncheckedCreateWithoutItemsInput>
+  }
+
+  export type VehicleUpsertWithoutBookingItemsInput = {
+    update: XOR<VehicleUpdateWithoutBookingItemsInput, VehicleUncheckedUpdateWithoutBookingItemsInput>
+    create: XOR<VehicleCreateWithoutBookingItemsInput, VehicleUncheckedCreateWithoutBookingItemsInput>
+    where?: VehicleWhereInput
+  }
+
+  export type VehicleUpdateToOneWithWhereWithoutBookingItemsInput = {
+    where?: VehicleWhereInput
+    data: XOR<VehicleUpdateWithoutBookingItemsInput, VehicleUncheckedUpdateWithoutBookingItemsInput>
+  }
+
+  export type VehicleUpdateWithoutBookingItemsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    make?: StringFieldUpdateOperationsInput | string
+    model?: StringFieldUpdateOperationsInput | string
+    regNo?: StringFieldUpdateOperationsInput | string
+    odo?: IntFieldUpdateOperationsInput | number
+    insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneRequiredWithoutVehiclesNestedInput
+    category?: VehicleCategoryUpdateOneRequiredWithoutVehiclesNestedInput
+    insuranceRecords?: VehicleInsuranceUpdateManyWithoutVehicleNestedInput
+    maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
+    damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUpdateManyWithoutVehicleNestedInput
+  }
+
+  export type VehicleUncheckedUpdateWithoutBookingItemsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    categoryId?: IntFieldUpdateOperationsInput | number
+    make?: StringFieldUpdateOperationsInput | string
+    model?: StringFieldUpdateOperationsInput | string
+    regNo?: StringFieldUpdateOperationsInput | string
+    odo?: IntFieldUpdateOperationsInput | number
+    insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    insuranceRecords?: VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput
+    maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
+    damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
+  }
+
+  export type BookingUpsertWithoutItemsInput = {
+    update: XOR<BookingUpdateWithoutItemsInput, BookingUncheckedUpdateWithoutItemsInput>
+    create: XOR<BookingCreateWithoutItemsInput, BookingUncheckedCreateWithoutItemsInput>
+    where?: BookingWhereInput
+  }
+
+  export type BookingUpdateToOneWithWhereWithoutItemsInput = {
+    where?: BookingWhereInput
+    data: XOR<BookingUpdateWithoutItemsInput, BookingUncheckedUpdateWithoutItemsInput>
+  }
+
+  export type BookingUpdateWithoutItemsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
+    photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUpdateOneWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateWithoutItemsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
+  }
+
+  export type BookingCreateWithoutPhotosInput = {
+    publicId: string
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    customer: CustomerCreateNestedOneWithoutBookingsInput
+    branch: BranchCreateNestedOneWithoutBookingsInput
     createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
     damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
   }
@@ -46950,21 +47326,26 @@ export namespace Prisma {
     id?: number
     publicId: string
     customerId: number
-    vehicleId: number
     branchId: number
-    rentalPlanId: number
     startAt: Date | string
     endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     createdById: number
+    depositMethod?: $Enums.DepositMethod | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
   }
@@ -47017,20 +47398,25 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
-    vehicle?: VehicleUpdateOneRequiredWithoutBookingsNestedInput
     branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
-    rentalPlan?: RentalPlanUpdateOneRequiredWithoutBookingsNestedInput
     createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
     damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
   }
@@ -47039,21 +47425,26 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
     customerId?: IntFieldUpdateOperationsInput | number
-    vehicleId?: IntFieldUpdateOperationsInput | number
     branchId?: IntFieldUpdateOperationsInput | number
-    rentalPlanId?: IntFieldUpdateOperationsInput | number
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
   }
@@ -47096,20 +47487,25 @@ export namespace Prisma {
     publicId: string
     startAt: Date | string
     endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     customer: CustomerCreateNestedOneWithoutBookingsInput
-    vehicle: VehicleCreateNestedOneWithoutBookingsInput
     branch: BranchCreateNestedOneWithoutBookingsInput
-    rentalPlan: RentalPlanCreateNestedOneWithoutBookingsInput
     createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
     photos?: BookingPhotoCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
   }
@@ -47118,21 +47514,26 @@ export namespace Prisma {
     id?: number
     publicId: string
     customerId: number
-    vehicleId: number
     branchId: number
-    rentalPlanId: number
     startAt: Date | string
     endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     createdById: number
+    depositMethod?: $Enums.DepositMethod | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
   }
@@ -47158,9 +47559,9 @@ export namespace Prisma {
     category: VehicleCategoryCreateNestedOneWithoutVehiclesInput
     insuranceRecords?: VehicleInsuranceCreateNestedManyWithoutVehicleInput
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
-    bookings?: BookingCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutDamageReportsInput = {
@@ -47180,9 +47581,9 @@ export namespace Prisma {
     deletedAt?: Date | string | null
     insuranceRecords?: VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
-    bookings?: BookingUncheckedCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutDamageReportsInput = {
@@ -47249,20 +47650,25 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
-    vehicle?: VehicleUpdateOneRequiredWithoutBookingsNestedInput
     branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
-    rentalPlan?: RentalPlanUpdateOneRequiredWithoutBookingsNestedInput
     createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
     photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
   }
@@ -47271,21 +47677,26 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
     customerId?: IntFieldUpdateOperationsInput | number
-    vehicleId?: IntFieldUpdateOperationsInput | number
     branchId?: IntFieldUpdateOperationsInput | number
-    rentalPlanId?: IntFieldUpdateOperationsInput | number
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
   }
@@ -47317,9 +47728,9 @@ export namespace Prisma {
     category?: VehicleCategoryUpdateOneRequiredWithoutVehiclesNestedInput
     insuranceRecords?: VehicleInsuranceUpdateManyWithoutVehicleNestedInput
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
-    bookings?: BookingUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutDamageReportsInput = {
@@ -47339,9 +47750,9 @@ export namespace Prisma {
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     insuranceRecords?: VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
-    bookings?: BookingUncheckedUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type UserUpsertWithoutApprovedDamageReportsInput = {
@@ -47398,21 +47809,26 @@ export namespace Prisma {
     publicId: string
     startAt: Date | string
     endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     customer: CustomerCreateNestedOneWithoutBookingsInput
-    vehicle: VehicleCreateNestedOneWithoutBookingsInput
     branch: BranchCreateNestedOneWithoutBookingsInput
-    rentalPlan: RentalPlanCreateNestedOneWithoutBookingsInput
     createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
     photos?: BookingPhotoCreateNestedManyWithoutBookingInput
     damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
   }
 
@@ -47420,22 +47836,27 @@ export namespace Prisma {
     id?: number
     publicId: string
     customerId: number
-    vehicleId: number
     branchId: number
-    rentalPlanId: number
     startAt: Date | string
     endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     createdById: number
+    depositMethod?: $Enums.DepositMethod | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
     damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
   }
 
@@ -47459,21 +47880,26 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
-    vehicle?: VehicleUpdateOneRequiredWithoutBookingsNestedInput
     branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
-    rentalPlan?: RentalPlanUpdateOneRequiredWithoutBookingsNestedInput
     createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
     photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
     damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
   }
 
@@ -47481,22 +47907,27 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
     customerId?: IntFieldUpdateOperationsInput | number
-    vehicleId?: IntFieldUpdateOperationsInput | number
     branchId?: IntFieldUpdateOperationsInput | number
-    rentalPlanId?: IntFieldUpdateOperationsInput | number
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
     damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
   }
 
@@ -47574,21 +48005,26 @@ export namespace Prisma {
     publicId: string
     startAt: Date | string
     endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     customer: CustomerCreateNestedOneWithoutBookingsInput
-    vehicle: VehicleCreateNestedOneWithoutBookingsInput
     branch: BranchCreateNestedOneWithoutBookingsInput
-    rentalPlan: RentalPlanCreateNestedOneWithoutBookingsInput
     createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
     photos?: BookingPhotoCreateNestedManyWithoutBookingInput
     damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
     deposit?: DepositCreateNestedOneWithoutBookingInput
   }
 
@@ -47596,22 +48032,27 @@ export namespace Prisma {
     id?: number
     publicId: string
     customerId: number
-    vehicleId: number
     branchId: number
-    rentalPlanId: number
     startAt: Date | string
     endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     createdById: number
+    depositMethod?: $Enums.DepositMethod | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
     photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
     damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
   }
 
@@ -47689,21 +48130,26 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
-    vehicle?: VehicleUpdateOneRequiredWithoutBookingsNestedInput
     branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
-    rentalPlan?: RentalPlanUpdateOneRequiredWithoutBookingsNestedInput
     createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
     photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
     damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
     deposit?: DepositUpdateOneWithoutBookingNestedInput
   }
 
@@ -47711,22 +48157,27 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
     customerId?: IntFieldUpdateOperationsInput | number
-    vehicleId?: IntFieldUpdateOperationsInput | number
     branchId?: IntFieldUpdateOperationsInput | number
-    rentalPlanId?: IntFieldUpdateOperationsInput | number
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
     damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
   }
 
@@ -47987,16 +48438,20 @@ export namespace Prisma {
     id?: number
     publicId: string
     customerId: number
-    vehicleId: number
     branchId: number
-    rentalPlanId: number
     startAt: Date | string
     endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -48107,20 +48562,25 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
-    vehicle?: VehicleUpdateOneRequiredWithoutBookingsNestedInput
     branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
-    rentalPlan?: RentalPlanUpdateOneRequiredWithoutBookingsNestedInput
     photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
     damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
   }
@@ -48129,21 +48589,26 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
     customerId?: IntFieldUpdateOperationsInput | number
-    vehicleId?: IntFieldUpdateOperationsInput | number
     branchId?: IntFieldUpdateOperationsInput | number
-    rentalPlanId?: IntFieldUpdateOperationsInput | number
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
     damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
   }
@@ -48152,16 +48617,20 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
     customerId?: IntFieldUpdateOperationsInput | number
-    vehicleId?: IntFieldUpdateOperationsInput | number
     branchId?: IntFieldUpdateOperationsInput | number
-    rentalPlanId?: IntFieldUpdateOperationsInput | number
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -48211,17 +48680,21 @@ export namespace Prisma {
   export type BookingCreateManyCustomerInput = {
     id?: number
     publicId: string
-    vehicleId: number
     branchId: number
-    rentalPlanId: number
     startAt: Date | string
     endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     createdById: number
+    depositMethod?: $Enums.DepositMethod | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -48257,20 +48730,25 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    vehicle?: VehicleUpdateOneRequiredWithoutBookingsNestedInput
     branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
-    rentalPlan?: RentalPlanUpdateOneRequiredWithoutBookingsNestedInput
     createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
     photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
     damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
   }
@@ -48278,22 +48756,27 @@ export namespace Prisma {
   export type BookingUncheckedUpdateWithoutCustomerInput = {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
-    vehicleId?: IntFieldUpdateOperationsInput | number
     branchId?: IntFieldUpdateOperationsInput | number
-    rentalPlanId?: IntFieldUpdateOperationsInput | number
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
     damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
   }
@@ -48301,17 +48784,21 @@ export namespace Prisma {
   export type BookingUncheckedUpdateManyWithoutCustomerInput = {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
-    vehicleId?: IntFieldUpdateOperationsInput | number
     branchId?: IntFieldUpdateOperationsInput | number
-    rentalPlanId?: IntFieldUpdateOperationsInput | number
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -48448,16 +48935,20 @@ export namespace Prisma {
     id?: number
     publicId: string
     customerId: number
-    vehicleId: number
-    rentalPlanId: number
     startAt: Date | string
     endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     createdById: number
+    depositMethod?: $Enums.DepositMethod | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -48544,10 +49035,10 @@ export namespace Prisma {
     category?: VehicleCategoryUpdateOneRequiredWithoutVehiclesNestedInput
     insuranceRecords?: VehicleInsuranceUpdateManyWithoutVehicleNestedInput
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
-    bookings?: BookingUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutBranchInput = {
@@ -48566,10 +49057,10 @@ export namespace Prisma {
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     insuranceRecords?: VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
-    bookings?: BookingUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateManyWithoutBranchInput = {
@@ -48592,20 +49083,25 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
-    vehicle?: VehicleUpdateOneRequiredWithoutBookingsNestedInput
-    rentalPlan?: RentalPlanUpdateOneRequiredWithoutBookingsNestedInput
     createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
     photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
     damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
   }
@@ -48614,21 +49110,26 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
     customerId?: IntFieldUpdateOperationsInput | number
-    vehicleId?: IntFieldUpdateOperationsInput | number
-    rentalPlanId?: IntFieldUpdateOperationsInput | number
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
     damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
   }
@@ -48637,16 +49138,20 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
     customerId?: IntFieldUpdateOperationsInput | number
-    vehicleId?: IntFieldUpdateOperationsInput | number
-    rentalPlanId?: IntFieldUpdateOperationsInput | number
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -48778,10 +49283,10 @@ export namespace Prisma {
     branch?: BranchUpdateOneRequiredWithoutVehiclesNestedInput
     insuranceRecords?: VehicleInsuranceUpdateManyWithoutVehicleNestedInput
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
-    bookings?: BookingUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutCategoryInput = {
@@ -48800,10 +49305,10 @@ export namespace Prisma {
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     insuranceRecords?: VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
-    bookings?: BookingUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateManyWithoutCategoryInput = {
@@ -48861,25 +49366,6 @@ export namespace Prisma {
     servicedAt: Date | string
   }
 
-  export type BookingCreateManyVehicleInput = {
-    id?: number
-    publicId: string
-    customerId: number
-    branchId: number
-    rentalPlanId: number
-    startAt: Date | string
-    endAt: Date | string
-    status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
-    pricingSnapshot: JsonNullValueInput | InputJsonValue
-    createdById: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    deletedAt?: Date | string | null
-  }
-
   export type DamageReportCreateManyVehicleInput = {
     id?: number
     publicId: string
@@ -48897,6 +49383,17 @@ export namespace Prisma {
     fileId: number
     isThumbnail?: boolean
     createdAt?: Date | string
+  }
+
+  export type BookingItemCreateManyVehicleInput = {
+    id?: number
+    bookingId: number
+    days: number
+    baseTotal: Decimal | DecimalJsLike | number | string
+    discountAmount: Decimal | DecimalJsLike | number | string
+    discountPercent: Decimal | DecimalJsLike | number | string
+    deposit: Decimal | DecimalJsLike | number | string
+    finalTotal: Decimal | DecimalJsLike | number | string
   }
 
   export type VehicleInsuranceUpdateWithoutVehicleInput = {
@@ -48943,70 +49440,6 @@ export namespace Prisma {
     description?: StringFieldUpdateOperationsInput | string
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     servicedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type BookingUpdateWithoutVehicleInput = {
-    publicId?: StringFieldUpdateOperationsInput | string
-    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
-    pricingSnapshot?: JsonNullValueInput | InputJsonValue
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
-    branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
-    rentalPlan?: RentalPlanUpdateOneRequiredWithoutBookingsNestedInput
-    createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
-    photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
-    damages?: DamageReportUpdateManyWithoutBookingNestedInput
-    deposit?: DepositUpdateOneWithoutBookingNestedInput
-    invoice?: InvoiceUpdateOneWithoutBookingNestedInput
-  }
-
-  export type BookingUncheckedUpdateWithoutVehicleInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    publicId?: StringFieldUpdateOperationsInput | string
-    customerId?: IntFieldUpdateOperationsInput | number
-    branchId?: IntFieldUpdateOperationsInput | number
-    rentalPlanId?: IntFieldUpdateOperationsInput | number
-    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
-    pricingSnapshot?: JsonNullValueInput | InputJsonValue
-    createdById?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
-    damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
-    deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
-    invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
-  }
-
-  export type BookingUncheckedUpdateManyWithoutVehicleInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    publicId?: StringFieldUpdateOperationsInput | string
-    customerId?: IntFieldUpdateOperationsInput | number
-    branchId?: IntFieldUpdateOperationsInput | number
-    rentalPlanId?: IntFieldUpdateOperationsInput | number
-    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
-    pricingSnapshot?: JsonNullValueInput | InputJsonValue
-    createdById?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type DamageReportUpdateWithoutVehicleInput = {
@@ -49064,87 +49497,36 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type BookingCreateManyRentalPlanInput = {
-    id?: number
-    publicId: string
-    customerId: number
-    vehicleId: number
-    branchId: number
-    startAt: Date | string
-    endAt: Date | string
-    status?: $Enums.BookingStatus
-    rentalPrice: Decimal | DecimalJsLike | number | string
-    depositRequired: Decimal | DecimalJsLike | number | string
-    depositMethod: $Enums.DepositMethod
-    pricingSnapshot: JsonNullValueInput | InputJsonValue
-    createdById: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    deletedAt?: Date | string | null
+  export type BookingItemUpdateWithoutVehicleInput = {
+    days?: IntFieldUpdateOperationsInput | number
+    baseTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    booking?: BookingUpdateOneRequiredWithoutItemsNestedInput
   }
 
-  export type BookingUpdateWithoutRentalPlanInput = {
-    publicId?: StringFieldUpdateOperationsInput | string
-    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
-    pricingSnapshot?: JsonNullValueInput | InputJsonValue
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
-    vehicle?: VehicleUpdateOneRequiredWithoutBookingsNestedInput
-    branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
-    createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
-    photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
-    damages?: DamageReportUpdateManyWithoutBookingNestedInput
-    deposit?: DepositUpdateOneWithoutBookingNestedInput
-    invoice?: InvoiceUpdateOneWithoutBookingNestedInput
-  }
-
-  export type BookingUncheckedUpdateWithoutRentalPlanInput = {
+  export type BookingItemUncheckedUpdateWithoutVehicleInput = {
     id?: IntFieldUpdateOperationsInput | number
-    publicId?: StringFieldUpdateOperationsInput | string
-    customerId?: IntFieldUpdateOperationsInput | number
-    vehicleId?: IntFieldUpdateOperationsInput | number
-    branchId?: IntFieldUpdateOperationsInput | number
-    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
-    pricingSnapshot?: JsonNullValueInput | InputJsonValue
-    createdById?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
-    damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
-    deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
-    invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    bookingId?: IntFieldUpdateOperationsInput | number
+    days?: IntFieldUpdateOperationsInput | number
+    baseTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
-  export type BookingUncheckedUpdateManyWithoutRentalPlanInput = {
+  export type BookingItemUncheckedUpdateManyWithoutVehicleInput = {
     id?: IntFieldUpdateOperationsInput | number
-    publicId?: StringFieldUpdateOperationsInput | string
-    customerId?: IntFieldUpdateOperationsInput | number
-    vehicleId?: IntFieldUpdateOperationsInput | number
-    branchId?: IntFieldUpdateOperationsInput | number
-    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
-    rentalPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    depositMethod?: EnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod
-    pricingSnapshot?: JsonNullValueInput | InputJsonValue
-    createdById?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    bookingId?: IntFieldUpdateOperationsInput | number
+    days?: IntFieldUpdateOperationsInput | number
+    baseTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type BookingPhotoCreateManyBookingInput = {
@@ -49164,6 +49546,17 @@ export namespace Prisma {
     notes?: string | null
     approvedById?: number | null
     createdAt?: Date | string
+  }
+
+  export type BookingItemCreateManyBookingInput = {
+    id?: number
+    vehicleId: number
+    days: number
+    baseTotal: Decimal | DecimalJsLike | number | string
+    discountAmount: Decimal | DecimalJsLike | number | string
+    discountPercent: Decimal | DecimalJsLike | number | string
+    deposit: Decimal | DecimalJsLike | number | string
+    finalTotal: Decimal | DecimalJsLike | number | string
   }
 
   export type BookingPhotoUpdateWithoutBookingInput = {
@@ -49219,6 +49612,38 @@ export namespace Prisma {
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BookingItemUpdateWithoutBookingInput = {
+    days?: IntFieldUpdateOperationsInput | number
+    baseTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    vehicle?: VehicleUpdateOneRequiredWithoutBookingItemsNestedInput
+  }
+
+  export type BookingItemUncheckedUpdateWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    vehicleId?: IntFieldUpdateOperationsInput | number
+    days?: IntFieldUpdateOperationsInput | number
+    baseTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+  }
+
+  export type BookingItemUncheckedUpdateManyWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    vehicleId?: IntFieldUpdateOperationsInput | number
+    days?: IntFieldUpdateOperationsInput | number
+    baseTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type InvoiceItemCreateManyInvoiceInput = {
@@ -49321,10 +49746,6 @@ export namespace Prisma {
      */
     export type VehicleCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = VehicleCountOutputTypeDefaultArgs<ExtArgs>
     /**
-     * @deprecated Use RentalPlanCountOutputTypeDefaultArgs instead
-     */
-    export type RentalPlanCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = RentalPlanCountOutputTypeDefaultArgs<ExtArgs>
-    /**
      * @deprecated Use BookingCountOutputTypeDefaultArgs instead
      */
     export type BookingCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = BookingCountOutputTypeDefaultArgs<ExtArgs>
@@ -49393,10 +49814,6 @@ export namespace Prisma {
      */
     export type VehicleImageArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = VehicleImageDefaultArgs<ExtArgs>
     /**
-     * @deprecated Use RentalPlanDefaultArgs instead
-     */
-    export type RentalPlanArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = RentalPlanDefaultArgs<ExtArgs>
-    /**
      * @deprecated Use PricingRuleDefaultArgs instead
      */
     export type PricingRuleArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = PricingRuleDefaultArgs<ExtArgs>
@@ -49412,6 +49829,10 @@ export namespace Prisma {
      * @deprecated Use BookingDefaultArgs instead
      */
     export type BookingArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = BookingDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use BookingItemDefaultArgs instead
+     */
+    export type BookingItemArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = BookingItemDefaultArgs<ExtArgs>
     /**
      * @deprecated Use BookingPhotoDefaultArgs instead
      */

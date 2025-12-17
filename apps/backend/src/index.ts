@@ -7,6 +7,7 @@ import authrouter from "./routes/auth/auth.routes.js"
 import vehiclerouter from "./routes/public/vehicle.routes"
 import cookieParser from "cookie-parser"
 import passport from "./utils/passport/google"
+import paymentrouter from "./routes/payment/payment.routes"
 dotenv.config()
 const app=express()
 
@@ -17,6 +18,7 @@ app.use(cookieParser())
 app.use(passport.initialize());
 app.use("/api/auth",authrouter)
 app.use("/api/public",vehiclerouter)
+app.use("/api/payment",paymentrouter)
 
 
 app.get("/health",(req:Request,res:Response)=>{

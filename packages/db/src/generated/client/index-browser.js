@@ -280,14 +280,6 @@ exports.Prisma.VehicleImageScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
-exports.Prisma.RentalPlanScalarFieldEnum = {
-  id: 'id',
-  publicId: 'publicId',
-  name: 'name',
-  durationHours: 'durationHours',
-  basePrice: 'basePrice'
-};
-
 exports.Prisma.PricingRuleScalarFieldEnum = {
   id: 'id',
   publicId: 'publicId',
@@ -316,20 +308,36 @@ exports.Prisma.BookingScalarFieldEnum = {
   id: 'id',
   publicId: 'publicId',
   customerId: 'customerId',
-  vehicleId: 'vehicleId',
   branchId: 'branchId',
-  rentalPlanId: 'rentalPlanId',
   startAt: 'startAt',
   endAt: 'endAt',
+  days: 'days',
+  holdExpiresAt: 'holdExpiresAt',
+  totalBase: 'totalBase',
+  totalDiscount: 'totalDiscount',
+  totalDeposit: 'totalDeposit',
+  totalFinal: 'totalFinal',
   status: 'status',
-  rentalPrice: 'rentalPrice',
-  depositRequired: 'depositRequired',
-  depositMethod: 'depositMethod',
+  transactionId: 'transactionId',
+  paymentStatus: 'paymentStatus',
   pricingSnapshot: 'pricingSnapshot',
   createdById: 'createdById',
+  depositMethod: 'depositMethod',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   deletedAt: 'deletedAt'
+};
+
+exports.Prisma.BookingItemScalarFieldEnum = {
+  id: 'id',
+  bookingId: 'bookingId',
+  vehicleId: 'vehicleId',
+  days: 'days',
+  baseTotal: 'baseTotal',
+  discountAmount: 'discountAmount',
+  discountPercent: 'discountPercent',
+  deposit: 'deposit',
+  finalTotal: 'finalTotal'
 };
 
 exports.Prisma.BookingPhotoScalarFieldEnum = {
@@ -503,6 +511,13 @@ exports.BookingStatus = exports.$Enums.BookingStatus = {
   CANCELLED: 'CANCELLED'
 };
 
+exports.PaymentStatus = exports.$Enums.PaymentStatus = {
+  CREATED: 'CREATED',
+  SUCCESS: 'SUCCESS',
+  FAILED: 'FAILED',
+  REFUNDED: 'REFUNDED'
+};
+
 exports.DepositMethod = exports.$Enums.DepositMethod = {
   ONLINE_RAZORPAY: 'ONLINE_RAZORPAY',
   CASH: 'CASH',
@@ -513,13 +528,6 @@ exports.BookingPhotoType = exports.$Enums.BookingPhotoType = {
   PRE_DELIVERY: 'PRE_DELIVERY',
   POST_RETURN: 'POST_RETURN',
   DAMAGE: 'DAMAGE'
-};
-
-exports.PaymentStatus = exports.$Enums.PaymentStatus = {
-  CREATED: 'CREATED',
-  SUCCESS: 'SUCCESS',
-  FAILED: 'FAILED',
-  REFUNDED: 'REFUNDED'
 };
 
 exports.InvoiceStatus = exports.$Enums.InvoiceStatus = {
@@ -545,11 +553,11 @@ exports.Prisma.ModelName = {
   VehicleInsurance: 'VehicleInsurance',
   VehicleMaintenanceRecord: 'VehicleMaintenanceRecord',
   VehicleImage: 'VehicleImage',
-  RentalPlan: 'RentalPlan',
   PricingRule: 'PricingRule',
   PricingDiscountSlab: 'PricingDiscountSlab',
   CategoryDepositSetting: 'CategoryDepositSetting',
   Booking: 'Booking',
+  BookingItem: 'BookingItem',
   BookingPhoto: 'BookingPhoto',
   DamageReport: 'DamageReport',
   Deposit: 'Deposit',
