@@ -1,10 +1,9 @@
 import { Request, Response } from "express";
-import bcrypt from "bcrypt";
 import { jwtsign } from "../../utils/token/tokensign.utlis.js";
 import { StatusCode } from "../../types/statusCode.js";
 import { emailAuthSchemaSignin } from "@repo/schemas";
 import { prisma, Role } from "@repo/database/client";
-import { comparehash, hashpassword } from "../../utils/PasswordCrypt/password.js";
+import { comparehash } from "../../utils/PasswordCrypt/password.js";
 
 export const Login = async (req: Request, res: Response) => {
     const body = req.body;
@@ -48,7 +47,8 @@ export const Login = async (req: Request, res: Response) => {
             sub: user.publicId,
             role: user.role,
             verified: !!user.emailVerifiedAt,
-            provider: user.authProvider
+            provider: user.authProvider,
+            branchId:user.branchId as number
         });
 
         res.cookie("accessToken", token, {
