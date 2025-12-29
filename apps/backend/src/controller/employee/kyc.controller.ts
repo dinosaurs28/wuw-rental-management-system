@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
+import { createID } from "../../utils/nanoID.js";
 
 export const GetBookingKyc = async (req: Request, res: Response) => {
     const { bookingId } = req.params;
@@ -82,6 +83,18 @@ export const VerifyKyc = async (req: Request, res: Response) => {
     }
 
     try {
+        const actingUserPublicId = req.public_Id;
+        const actingUser = await prisma.user.findUnique({
+            where: { publicId: actingUserPublicId },
+            select: { id: true }
+        });
+
+        if (!actingUser) {
+            return res.status(StatusCode.UNAUTHORIZED).json({
+                message: "Unauthorized: User not found"
+            });
+        }
+
         const kyc = await prisma.customerKyc.findUnique({
             where: { publicId: kycId }
         });
@@ -92,18 +105,30 @@ export const VerifyKyc = async (req: Request, res: Response) => {
             });
         }
 
-        const updatedKyc = await prisma.customerKyc.update({
-            where: { publicId: kycId },
-            data: {
-                status: status
-            }
+        const result = await prisma.$transaction(async (tx) => {
+            const updated = await tx.customerKyc.update({
+                where: { publicId: kycId },
+                data: { status: status }
+            });
+
+            await tx.staffActivityLog.create({
+                data: {
+                    publicId: createID(),
+                    staffId: actingUser.id,
+                    action: `KYC_${status}`,
+                    entity: "CustomerKyc",
+                    entityId: kyc.publicId,
+                }
+            });
+
+            return updated;
         });
 
         return res.status(StatusCode.OK).json({
             message: "KYC Status Updated Successfully",
             data: {
-                id: updatedKyc.publicId,
-                status: updatedKyc.status
+                id: result.publicId,
+                status: result.status
             }
         });
 

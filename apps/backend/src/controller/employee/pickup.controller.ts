@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus, KycType, KycStatus, VehicleStatus } from "@repo/database/client";
+import { createID } from "../../utils/nanoID.js";
 
 export const PickupController = async (req: Request, res: Response) => {
     const { bookingId } = req.params;
@@ -44,7 +45,7 @@ export const PickupController = async (req: Request, res: Response) => {
             });
         }
 
-        
+
         if (!booking.customer.kycs || booking.customer.kycs.length === 0) {
             return res.status(StatusCode.FORBIDDEN).json({
                 message: "Pickup Denied: Customer does not have an APPROVED Driving License (DL)."
@@ -52,6 +53,18 @@ export const PickupController = async (req: Request, res: Response) => {
         }
 
         const vehicleIds = booking.items.map(item => item.vehicleId);
+
+        const actingUserPublicId = req.public_Id;
+        const actingUser = await prisma.user.findUnique({
+            where: { publicId: actingUserPublicId },
+            select: { id: true }
+        });
+
+        if (!actingUser) {
+            return res.status(StatusCode.UNAUTHORIZED).json({
+                message: "Unauthorized: User not found"
+            });
+        }
 
         await prisma.$transaction(async (tx) => {
             await tx.booking.update({
@@ -67,6 +80,16 @@ export const PickupController = async (req: Request, res: Response) => {
                 },
                 data: {
                     status: VehicleStatus.OUT_FOR_RENTAL
+                }
+            });
+
+            await tx.staffActivityLog.create({
+                data: {
+                    publicId: createID(),
+                    staffId: actingUser.id,
+                    action: "VEHICLE_PICKUP",
+                    entity: "Booking",
+                    entityId: booking.publicId
                 }
             });
         });
