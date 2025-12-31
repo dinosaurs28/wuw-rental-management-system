@@ -4,6 +4,8 @@ import { ManagerCheck } from "../../middlewares/managerCheck.middlewares";
 import { GetRevenueStats } from "../../controller/branchManager/revenue.controller";
 import { GetActiveBookings, GetPendingApprovals } from "../../controller/branchManager/bookings.controller";
 import { GetDamageReports } from "../../controller/branchManager/damage.controller";
+import { AddVehicle } from "../../controller/branchManager/vehicle.controller";
+import { upload } from "../../middlewares/upload.middleware";
 
 const router:Router=Router()
 
@@ -12,5 +14,6 @@ router.get("/dashboard/revenue", ManagerCheck, GetRevenueStats)
 router.get("/dashboard/bookings/active", ManagerCheck, GetActiveBookings)
 router.get("/dashboard/bookings/pending", ManagerCheck, GetPendingApprovals)
 router.get("/dashboard/damage-reports", ManagerCheck, GetDamageReports)
+router.post("/dashboard/vehicle/add", ManagerCheck, upload.array('images', 5), AddVehicle)
 
 export default router

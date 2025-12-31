@@ -11,6 +11,7 @@ import paymentrouter from "./routes/payment/payment.routes"
 import userrouter from "./routes/user/user.routes"
 import employeerouter from "./routes/employee/employee.routes"
 import branchManagerRouter from "./routes/branchManger/branchManager.routes"
+import "./jobs/image.worker.js";
 dotenv.config()
 const app=express()
 
