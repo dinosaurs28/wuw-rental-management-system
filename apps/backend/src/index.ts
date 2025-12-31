@@ -10,6 +10,7 @@ import passport from "./utils/passport/google"
 import paymentrouter from "./routes/payment/payment.routes"
 import userrouter from "./routes/user/user.routes"
 import employeerouter from "./routes/employee/employee.routes"
+import branchManagerRouter from "./routes/branchManger/branchManager.routes"
 dotenv.config()
 const app=express()
 
@@ -23,6 +24,7 @@ app.use("/api/public",vehiclerouter)
 app.use("/api/payment",paymentrouter)
 app.use("/api/user",userrouter)
 app.use("/api/employee",employeerouter)
+app.use("/api/branchManager",branchManagerRouter)
 
 
 app.get("/health",(req:Request,res:Response)=>{
