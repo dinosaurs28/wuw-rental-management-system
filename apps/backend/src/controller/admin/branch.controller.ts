@@ -3,7 +3,7 @@ import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
 import { hashpassword } from "../../utils/PasswordCrypt/password.js";
-import { createBranchSchema } from "@repo/schemas";
+import { createBranchSchema, editBranchSchema } from "@repo/schemas";
 import { Role } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
 
@@ -123,3 +123,70 @@ export const GetAllBranches = async (req: Request, res: Response) => {
         });
     }
 }
+export const EditBranch = async (req: Request, res: Response) => {
+    try {
+        const { branchId } = req.params;
+        const validation = editBranchSchema.safeParse(req.body);
+        if (!validation.success) {
+            return res.status(StatusCode.BAD_REQUEST).json({
+                message: "Invalid Inputs",
+                error: validation.error
+            });
+        }
+
+        const data = validation.data;
+
+        const branch = await prisma.branch.findUnique({
+            where: { publicId: branchId },
+            include: { users: { where: { role: Role.MANAGER } } }
+        });
+
+        if (!branch) {
+            return res.status(StatusCode.NOT_FOUND).json({ message: "Branch not found" });
+        }
+
+        const manager = branch.users[0];
+
+        await prisma.$transaction(async (tx) => {
+            if (data.name || data.address || data.phone) {
+                await tx.branch.update({
+                    where: { id: branch.id },
+                    data: {
+                        name: data.name,
+                        address: data.address,
+                        phone: data.phone
+                    }
+                });
+            }
+
+            // Update Manager Details
+            if ((data.managerName || data.managerEmail || data.managerPassword) && manager) {
+                const updateData: any = {};
+                if (data.managerName) updateData.name = data.managerName;
+                if (data.managerEmail) updateData.email = data.managerEmail;
+                if (data.managerPassword) {
+                    updateData.passwordHash = await hashpassword(data.managerPassword);
+                }
+
+                await tx.user.update({
+                    where: { id: manager.id },
+                    data: updateData
+                });
+            }
+        });
+
+        // Invalidate Cache
+        await redis.del("admin:all_branches");
+
+        return res.status(StatusCode.OK).json({
+            message: "Branch updated successfully"
+        });
+
+    } catch (error) {
+        console.error("Edit Branch Error:", error);
+        return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+            message: "Internal Server Error"
+        });
+    }
+}
+

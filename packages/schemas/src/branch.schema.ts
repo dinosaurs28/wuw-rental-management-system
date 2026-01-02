@@ -8,3 +8,5 @@ export const createBranchSchema = z.object({
     managerEmail: z.string().email("Invalid manager email"),
     managerPassword: z.string().min(6, "Password must be at least 6 characters")
 });
+
+export const editBranchSchema = createBranchSchema.partial();
