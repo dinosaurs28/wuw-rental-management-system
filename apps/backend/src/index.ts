@@ -13,6 +13,7 @@ import employeerouter from "./routes/employee/employee.routes"
 import branchManagerRouter from "./routes/branchManger/branchManager.routes"
 import adminRouter from "./routes/admin/admin.routes"
 import "./jobs/image.worker.js";
+import "./jobs/cleanup.worker.js";
 dotenv.config()
 const app=express()
 

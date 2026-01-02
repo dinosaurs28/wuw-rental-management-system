@@ -20,3 +20,16 @@ export const imageQueue = new Queue("image-processing", {
         removeOnFail: false
     }
 });
+
+export const cleanupQueue = new Queue("cleanup-processing", {
+    connection,
+    defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+            type: "exponential",
+            delay: 1000,
+        },
+        removeOnComplete: true,
+        removeOnFail: false
+    }
+});

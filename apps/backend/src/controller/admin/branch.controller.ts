@@ -6,6 +6,7 @@ import { hashpassword } from "../../utils/PasswordCrypt/password.js";
 import { createBranchSchema, editBranchSchema } from "@repo/schemas";
 import { Role } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
+import { cleanupQueue } from "../../lib/queue.client.js";
 
 export const CreateBranch = async (req: Request, res: Response) => {
     try {
@@ -184,6 +185,53 @@ export const EditBranch = async (req: Request, res: Response) => {
 
     } catch (error) {
         console.error("Edit Branch Error:", error);
+        return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+            message: "Internal Server Error"
+        });
+
+    }
+}
+
+export const DeleteBranch = async (req: Request, res: Response) => {
+    try {
+        const { branchId } = req.params;
+
+        const branch = await prisma.branch.findUnique({
+            where: { publicId: branchId },
+            include: { users: { where: { role: Role.MANAGER } } }
+        });
+
+        if (!branch) {
+            return res.status(StatusCode.NOT_FOUND).json({ message: "Branch not found" });
+        }
+
+        await prisma.$transaction(async (tx) => {
+            await tx.branch.update({
+                where: { id: branch.id },
+                data: { deletedAt: new Date() }
+            });
+
+            await tx.user.updateMany({
+                where: {
+                    branchId: branch.id,
+                    role: Role.MANAGER
+                },
+                data: { deletedAt: new Date() }
+            });
+        });
+
+        await cleanupQueue.add("delete-branch-cascading", { branchId: branch.id }, {
+            delay: 500
+        });
+
+        await redis.del("admin:all_branches");
+
+        return res.status(StatusCode.OK).json({
+            message: "Branch deleted successfully. Associated data will be removed in the background."
+        });
+
+    } catch (error) {
+        console.error("Delete Branch Error:", error);
         return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
             message: "Internal Server Error"
         });
