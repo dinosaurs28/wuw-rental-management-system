@@ -139,13 +139,22 @@ model EmailVerificationOtp {
 // CUSTOMER & KYC
 
 model Customer {
-  id       Int    @id @default(autoincrement())
-  publicId String @unique
-  userId   Int    @unique
-  user     User   @relation(fields: [userId], references: [id])
-
-  kycs     CustomerKyc[]
-  bookings Booking[]
+  id                 Int           @id @default(autoincrement())
+  publicId           String        @unique
+  userId             Int           @unique
+  user               User          @relation(fields: [userId], references: [id])
+  fullName           String        @default("")
+  phone              String        @default("")
+  alternatePhone     String?
+  dob                DateTime?
+  addressLine1       String        @default("")
+  city               String        @default("")
+  state              String        @default("")
+  country            String        @default("India")
+  zipCode            String        @default("")
+  isProfileCompleted Boolean       @default(false)
+  kycs               CustomerKyc[]
+  bookings           Booking[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -263,10 +272,10 @@ model Vehicle {
   category         VehicleCategory            @relation(fields: [categoryId], references: [id])
   insuranceRecords VehicleInsurance[]
   maintenance      VehicleMaintenanceRecord[]
-  bookings         Booking[]
   damageReports    DamageReport[]
   pricingOverride  VehiclePricingOverride?
   images           VehicleImage[]
+  bookingItems     BookingItem[]
   createdAt        DateTime                   @default(now())
   updatedAt        DateTime                   @updatedAt
   deletedAt        DateTime?
@@ -330,15 +339,6 @@ model VehicleImage {
 
 // BOOKINGS
 
-model RentalPlan {
-  id            Int       @id @default(autoincrement())
-  publicId      String    @unique
-  name          String
-  durationHours Int
-  basePrice     Decimal
-  bookings      Booking[]
-}
-
 model PricingRule {
   id         Int             @id @default(autoincrement())
   publicId   String          @unique
@@ -374,29 +374,32 @@ model CategoryDepositSetting {
 }
 
 model Booking {
-  id              Int           @id @default(autoincrement())
-  publicId        String        @unique
+  id              Int            @id @default(autoincrement())
+  publicId        String         @unique
   customerId      Int
-  vehicleId       Int
   branchId        Int
-  rentalPlanId    Int
   startAt         DateTime
   endAt           DateTime
-  status          BookingStatus @default(HOLD)
-  rentalPrice     Decimal
-  depositRequired Decimal
-  depositMethod   DepositMethod
+  days            Int
+  holdExpiresAt   DateTime?
+  totalBase       Decimal
+  totalDiscount   Decimal
+  totalDeposit    Decimal
+  totalFinal      Decimal
+  status          BookingStatus  @default(HOLD)
+  transactionId   String?        @unique
+  paymentStatus   PaymentStatus  @default(CREATED)
   pricingSnapshot Json
   createdById     Int
+  depositMethod   DepositMethod?
 
-  customer   Customer   @relation(fields: [customerId], references: [id])
-  vehicle    Vehicle    @relation(fields: [vehicleId], references: [id])
-  branch     Branch     @relation(fields: [branchId], references: [id])
-  rentalPlan RentalPlan @relation(fields: [rentalPlanId], references: [id])
-  createdBy  User       @relation("BookingCreator", fields: [createdById], references: [id])
+  customer  Customer @relation(fields: [customerId], references: [id])
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  createdBy User     @relation("BookingCreator", fields: [createdById], references: [id])
 
   photos  BookingPhoto[]
   damages DamageReport[]
+  items   BookingItem[]
   deposit Deposit?
   invoice Invoice?
 
@@ -405,11 +408,29 @@ model Booking {
   deletedAt DateTime?
 
   @@index([customerId])
-  @@index([vehicleId])
   @@index([branchId])
   @@index([createdById])
   @@index([status])
   @@index([startAt, endAt])
+}
+
+model BookingItem {
+  id        Int @id @default(autoincrement())
+  bookingId Int
+  vehicleId Int
+
+  days            Int
+  baseTotal       Decimal
+  discountAmount  Decimal
+  discountPercent Decimal
+  deposit         Decimal
+  finalTotal      Decimal
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+  booking Booking @relation(fields: [bookingId], references: [id])
+
+  @@index([bookingId])
+  @@index([vehicleId])
 }
 
 model BookingPhoto {

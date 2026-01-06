@@ -1,0 +1,11 @@
+-- AlterTable
+ALTER TABLE "Customer" ADD COLUMN     "addressLine1" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "alternatePhone" TEXT,
+ADD COLUMN     "city" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "country" TEXT NOT NULL DEFAULT 'India',
+ADD COLUMN     "dob" TIMESTAMP(3),
+ADD COLUMN     "fullName" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "isProfileCompleted" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "phone" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "state" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "zipCode" TEXT NOT NULL DEFAULT '';

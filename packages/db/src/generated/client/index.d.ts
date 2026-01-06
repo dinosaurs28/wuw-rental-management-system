@@ -7093,6 +7093,16 @@ export namespace Prisma {
     id: number | null
     publicId: string | null
     userId: number | null
+    fullName: string | null
+    phone: string | null
+    alternatePhone: string | null
+    dob: Date | null
+    addressLine1: string | null
+    city: string | null
+    state: string | null
+    country: string | null
+    zipCode: string | null
+    isProfileCompleted: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
     deletedAt: Date | null
@@ -7102,6 +7112,16 @@ export namespace Prisma {
     id: number | null
     publicId: string | null
     userId: number | null
+    fullName: string | null
+    phone: string | null
+    alternatePhone: string | null
+    dob: Date | null
+    addressLine1: string | null
+    city: string | null
+    state: string | null
+    country: string | null
+    zipCode: string | null
+    isProfileCompleted: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
     deletedAt: Date | null
@@ -7111,6 +7131,16 @@ export namespace Prisma {
     id: number
     publicId: number
     userId: number
+    fullName: number
+    phone: number
+    alternatePhone: number
+    dob: number
+    addressLine1: number
+    city: number
+    state: number
+    country: number
+    zipCode: number
+    isProfileCompleted: number
     createdAt: number
     updatedAt: number
     deletedAt: number
@@ -7132,6 +7162,16 @@ export namespace Prisma {
     id?: true
     publicId?: true
     userId?: true
+    fullName?: true
+    phone?: true
+    alternatePhone?: true
+    dob?: true
+    addressLine1?: true
+    city?: true
+    state?: true
+    country?: true
+    zipCode?: true
+    isProfileCompleted?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -7141,6 +7181,16 @@ export namespace Prisma {
     id?: true
     publicId?: true
     userId?: true
+    fullName?: true
+    phone?: true
+    alternatePhone?: true
+    dob?: true
+    addressLine1?: true
+    city?: true
+    state?: true
+    country?: true
+    zipCode?: true
+    isProfileCompleted?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -7150,6 +7200,16 @@ export namespace Prisma {
     id?: true
     publicId?: true
     userId?: true
+    fullName?: true
+    phone?: true
+    alternatePhone?: true
+    dob?: true
+    addressLine1?: true
+    city?: true
+    state?: true
+    country?: true
+    zipCode?: true
+    isProfileCompleted?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -7246,6 +7306,16 @@ export namespace Prisma {
     id: number
     publicId: string
     userId: number
+    fullName: string
+    phone: string
+    alternatePhone: string | null
+    dob: Date | null
+    addressLine1: string
+    city: string
+    state: string
+    country: string
+    zipCode: string
+    isProfileCompleted: boolean
     createdAt: Date
     updatedAt: Date
     deletedAt: Date | null
@@ -7274,6 +7344,16 @@ export namespace Prisma {
     id?: boolean
     publicId?: boolean
     userId?: boolean
+    fullName?: boolean
+    phone?: boolean
+    alternatePhone?: boolean
+    dob?: boolean
+    addressLine1?: boolean
+    city?: boolean
+    state?: boolean
+    country?: boolean
+    zipCode?: boolean
+    isProfileCompleted?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -7287,6 +7367,16 @@ export namespace Prisma {
     id?: boolean
     publicId?: boolean
     userId?: boolean
+    fullName?: boolean
+    phone?: boolean
+    alternatePhone?: boolean
+    dob?: boolean
+    addressLine1?: boolean
+    city?: boolean
+    state?: boolean
+    country?: boolean
+    zipCode?: boolean
+    isProfileCompleted?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -7297,6 +7387,16 @@ export namespace Prisma {
     id?: boolean
     publicId?: boolean
     userId?: boolean
+    fullName?: boolean
+    phone?: boolean
+    alternatePhone?: boolean
+    dob?: boolean
+    addressLine1?: boolean
+    city?: boolean
+    state?: boolean
+    country?: boolean
+    zipCode?: boolean
+    isProfileCompleted?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -7323,6 +7423,16 @@ export namespace Prisma {
       id: number
       publicId: string
       userId: number
+      fullName: string
+      phone: string
+      alternatePhone: string | null
+      dob: Date | null
+      addressLine1: string
+      city: string
+      state: string
+      country: string
+      zipCode: string
+      isProfileCompleted: boolean
       createdAt: Date
       updatedAt: Date
       deletedAt: Date | null
@@ -7725,6 +7835,16 @@ export namespace Prisma {
     readonly id: FieldRef<"Customer", 'Int'>
     readonly publicId: FieldRef<"Customer", 'String'>
     readonly userId: FieldRef<"Customer", 'Int'>
+    readonly fullName: FieldRef<"Customer", 'String'>
+    readonly phone: FieldRef<"Customer", 'String'>
+    readonly alternatePhone: FieldRef<"Customer", 'String'>
+    readonly dob: FieldRef<"Customer", 'DateTime'>
+    readonly addressLine1: FieldRef<"Customer", 'String'>
+    readonly city: FieldRef<"Customer", 'String'>
+    readonly state: FieldRef<"Customer", 'String'>
+    readonly country: FieldRef<"Customer", 'String'>
+    readonly zipCode: FieldRef<"Customer", 'String'>
+    readonly isProfileCompleted: FieldRef<"Customer", 'Boolean'>
     readonly createdAt: FieldRef<"Customer", 'DateTime'>
     readonly updatedAt: FieldRef<"Customer", 'DateTime'>
     readonly deletedAt: FieldRef<"Customer", 'DateTime'>
@@ -33923,6 +34043,16 @@ export namespace Prisma {
     id: 'id',
     publicId: 'publicId',
     userId: 'userId',
+    fullName: 'fullName',
+    phone: 'phone',
+    alternatePhone: 'alternatePhone',
+    dob: 'dob',
+    addressLine1: 'addressLine1',
+    city: 'city',
+    state: 'state',
+    country: 'country',
+    zipCode: 'zipCode',
+    isProfileCompleted: 'isProfileCompleted',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
     deletedAt: 'deletedAt'
@@ -34829,6 +34959,16 @@ export namespace Prisma {
     id?: IntFilter<"Customer"> | number
     publicId?: StringFilter<"Customer"> | string
     userId?: IntFilter<"Customer"> | number
+    fullName?: StringFilter<"Customer"> | string
+    phone?: StringFilter<"Customer"> | string
+    alternatePhone?: StringNullableFilter<"Customer"> | string | null
+    dob?: DateTimeNullableFilter<"Customer"> | Date | string | null
+    addressLine1?: StringFilter<"Customer"> | string
+    city?: StringFilter<"Customer"> | string
+    state?: StringFilter<"Customer"> | string
+    country?: StringFilter<"Customer"> | string
+    zipCode?: StringFilter<"Customer"> | string
+    isProfileCompleted?: BoolFilter<"Customer"> | boolean
     createdAt?: DateTimeFilter<"Customer"> | Date | string
     updatedAt?: DateTimeFilter<"Customer"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Customer"> | Date | string | null
@@ -34841,6 +34981,16 @@ export namespace Prisma {
     id?: SortOrder
     publicId?: SortOrder
     userId?: SortOrder
+    fullName?: SortOrder
+    phone?: SortOrder
+    alternatePhone?: SortOrderInput | SortOrder
+    dob?: SortOrderInput | SortOrder
+    addressLine1?: SortOrder
+    city?: SortOrder
+    state?: SortOrder
+    country?: SortOrder
+    zipCode?: SortOrder
+    isProfileCompleted?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrderInput | SortOrder
@@ -34856,6 +35006,16 @@ export namespace Prisma {
     AND?: CustomerWhereInput | CustomerWhereInput[]
     OR?: CustomerWhereInput[]
     NOT?: CustomerWhereInput | CustomerWhereInput[]
+    fullName?: StringFilter<"Customer"> | string
+    phone?: StringFilter<"Customer"> | string
+    alternatePhone?: StringNullableFilter<"Customer"> | string | null
+    dob?: DateTimeNullableFilter<"Customer"> | Date | string | null
+    addressLine1?: StringFilter<"Customer"> | string
+    city?: StringFilter<"Customer"> | string
+    state?: StringFilter<"Customer"> | string
+    country?: StringFilter<"Customer"> | string
+    zipCode?: StringFilter<"Customer"> | string
+    isProfileCompleted?: BoolFilter<"Customer"> | boolean
     createdAt?: DateTimeFilter<"Customer"> | Date | string
     updatedAt?: DateTimeFilter<"Customer"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Customer"> | Date | string | null
@@ -34868,6 +35028,16 @@ export namespace Prisma {
     id?: SortOrder
     publicId?: SortOrder
     userId?: SortOrder
+    fullName?: SortOrder
+    phone?: SortOrder
+    alternatePhone?: SortOrderInput | SortOrder
+    dob?: SortOrderInput | SortOrder
+    addressLine1?: SortOrder
+    city?: SortOrder
+    state?: SortOrder
+    country?: SortOrder
+    zipCode?: SortOrder
+    isProfileCompleted?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrderInput | SortOrder
@@ -34885,6 +35055,16 @@ export namespace Prisma {
     id?: IntWithAggregatesFilter<"Customer"> | number
     publicId?: StringWithAggregatesFilter<"Customer"> | string
     userId?: IntWithAggregatesFilter<"Customer"> | number
+    fullName?: StringWithAggregatesFilter<"Customer"> | string
+    phone?: StringWithAggregatesFilter<"Customer"> | string
+    alternatePhone?: StringNullableWithAggregatesFilter<"Customer"> | string | null
+    dob?: DateTimeNullableWithAggregatesFilter<"Customer"> | Date | string | null
+    addressLine1?: StringWithAggregatesFilter<"Customer"> | string
+    city?: StringWithAggregatesFilter<"Customer"> | string
+    state?: StringWithAggregatesFilter<"Customer"> | string
+    country?: StringWithAggregatesFilter<"Customer"> | string
+    zipCode?: StringWithAggregatesFilter<"Customer"> | string
+    isProfileCompleted?: BoolWithAggregatesFilter<"Customer"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"Customer"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Customer"> | Date | string
     deletedAt?: DateTimeNullableWithAggregatesFilter<"Customer"> | Date | string | null
@@ -37018,6 +37198,16 @@ export namespace Prisma {
 
   export type CustomerCreateInput = {
     publicId: string
+    fullName?: string
+    phone?: string
+    alternatePhone?: string | null
+    dob?: Date | string | null
+    addressLine1?: string
+    city?: string
+    state?: string
+    country?: string
+    zipCode?: string
+    isProfileCompleted?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -37030,6 +37220,16 @@ export namespace Prisma {
     id?: number
     publicId: string
     userId: number
+    fullName?: string
+    phone?: string
+    alternatePhone?: string | null
+    dob?: Date | string | null
+    addressLine1?: string
+    city?: string
+    state?: string
+    country?: string
+    zipCode?: string
+    isProfileCompleted?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -37039,6 +37239,16 @@ export namespace Prisma {
 
   export type CustomerUpdateInput = {
     publicId?: StringFieldUpdateOperationsInput | string
+    fullName?: StringFieldUpdateOperationsInput | string
+    phone?: StringFieldUpdateOperationsInput | string
+    alternatePhone?: NullableStringFieldUpdateOperationsInput | string | null
+    dob?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    addressLine1?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    zipCode?: StringFieldUpdateOperationsInput | string
+    isProfileCompleted?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -37051,6 +37261,16 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
     userId?: IntFieldUpdateOperationsInput | number
+    fullName?: StringFieldUpdateOperationsInput | string
+    phone?: StringFieldUpdateOperationsInput | string
+    alternatePhone?: NullableStringFieldUpdateOperationsInput | string | null
+    dob?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    addressLine1?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    zipCode?: StringFieldUpdateOperationsInput | string
+    isProfileCompleted?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -37062,6 +37282,16 @@ export namespace Prisma {
     id?: number
     publicId: string
     userId: number
+    fullName?: string
+    phone?: string
+    alternatePhone?: string | null
+    dob?: Date | string | null
+    addressLine1?: string
+    city?: string
+    state?: string
+    country?: string
+    zipCode?: string
+    isProfileCompleted?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -37069,6 +37299,16 @@ export namespace Prisma {
 
   export type CustomerUpdateManyMutationInput = {
     publicId?: StringFieldUpdateOperationsInput | string
+    fullName?: StringFieldUpdateOperationsInput | string
+    phone?: StringFieldUpdateOperationsInput | string
+    alternatePhone?: NullableStringFieldUpdateOperationsInput | string | null
+    dob?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    addressLine1?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    zipCode?: StringFieldUpdateOperationsInput | string
+    isProfileCompleted?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -37078,6 +37318,16 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
     userId?: IntFieldUpdateOperationsInput | number
+    fullName?: StringFieldUpdateOperationsInput | string
+    phone?: StringFieldUpdateOperationsInput | string
+    alternatePhone?: NullableStringFieldUpdateOperationsInput | string | null
+    dob?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    addressLine1?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    zipCode?: StringFieldUpdateOperationsInput | string
+    isProfileCompleted?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -39398,6 +39648,16 @@ export namespace Prisma {
     id?: SortOrder
     publicId?: SortOrder
     userId?: SortOrder
+    fullName?: SortOrder
+    phone?: SortOrder
+    alternatePhone?: SortOrder
+    dob?: SortOrder
+    addressLine1?: SortOrder
+    city?: SortOrder
+    state?: SortOrder
+    country?: SortOrder
+    zipCode?: SortOrder
+    isProfileCompleted?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -39412,6 +39672,16 @@ export namespace Prisma {
     id?: SortOrder
     publicId?: SortOrder
     userId?: SortOrder
+    fullName?: SortOrder
+    phone?: SortOrder
+    alternatePhone?: SortOrder
+    dob?: SortOrder
+    addressLine1?: SortOrder
+    city?: SortOrder
+    state?: SortOrder
+    country?: SortOrder
+    zipCode?: SortOrder
+    isProfileCompleted?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -39421,6 +39691,16 @@ export namespace Prisma {
     id?: SortOrder
     publicId?: SortOrder
     userId?: SortOrder
+    fullName?: SortOrder
+    phone?: SortOrder
+    alternatePhone?: SortOrder
+    dob?: SortOrder
+    addressLine1?: SortOrder
+    city?: SortOrder
+    state?: SortOrder
+    country?: SortOrder
+    zipCode?: SortOrder
+    isProfileCompleted?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -43624,6 +43904,16 @@ export namespace Prisma {
 
   export type CustomerCreateWithoutUserInput = {
     publicId: string
+    fullName?: string
+    phone?: string
+    alternatePhone?: string | null
+    dob?: Date | string | null
+    addressLine1?: string
+    city?: string
+    state?: string
+    country?: string
+    zipCode?: string
+    isProfileCompleted?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -43634,6 +43924,16 @@ export namespace Prisma {
   export type CustomerUncheckedCreateWithoutUserInput = {
     id?: number
     publicId: string
+    fullName?: string
+    phone?: string
+    alternatePhone?: string | null
+    dob?: Date | string | null
+    addressLine1?: string
+    city?: string
+    state?: string
+    country?: string
+    zipCode?: string
+    isProfileCompleted?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -43886,6 +44186,16 @@ export namespace Prisma {
 
   export type CustomerUpdateWithoutUserInput = {
     publicId?: StringFieldUpdateOperationsInput | string
+    fullName?: StringFieldUpdateOperationsInput | string
+    phone?: StringFieldUpdateOperationsInput | string
+    alternatePhone?: NullableStringFieldUpdateOperationsInput | string | null
+    dob?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    addressLine1?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    zipCode?: StringFieldUpdateOperationsInput | string
+    isProfileCompleted?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -43896,6 +44206,16 @@ export namespace Prisma {
   export type CustomerUncheckedUpdateWithoutUserInput = {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
+    fullName?: StringFieldUpdateOperationsInput | string
+    phone?: StringFieldUpdateOperationsInput | string
+    alternatePhone?: NullableStringFieldUpdateOperationsInput | string | null
+    dob?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    addressLine1?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    zipCode?: StringFieldUpdateOperationsInput | string
+    isProfileCompleted?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -44429,6 +44749,16 @@ export namespace Prisma {
 
   export type CustomerCreateWithoutKycsInput = {
     publicId: string
+    fullName?: string
+    phone?: string
+    alternatePhone?: string | null
+    dob?: Date | string | null
+    addressLine1?: string
+    city?: string
+    state?: string
+    country?: string
+    zipCode?: string
+    isProfileCompleted?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -44440,6 +44770,16 @@ export namespace Prisma {
     id?: number
     publicId: string
     userId: number
+    fullName?: string
+    phone?: string
+    alternatePhone?: string | null
+    dob?: Date | string | null
+    addressLine1?: string
+    city?: string
+    state?: string
+    country?: string
+    zipCode?: string
+    isProfileCompleted?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -44492,6 +44832,16 @@ export namespace Prisma {
 
   export type CustomerUpdateWithoutKycsInput = {
     publicId?: StringFieldUpdateOperationsInput | string
+    fullName?: StringFieldUpdateOperationsInput | string
+    phone?: StringFieldUpdateOperationsInput | string
+    alternatePhone?: NullableStringFieldUpdateOperationsInput | string | null
+    dob?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    addressLine1?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    zipCode?: StringFieldUpdateOperationsInput | string
+    isProfileCompleted?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -44503,6 +44853,16 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
     userId?: IntFieldUpdateOperationsInput | number
+    fullName?: StringFieldUpdateOperationsInput | string
+    phone?: StringFieldUpdateOperationsInput | string
+    alternatePhone?: NullableStringFieldUpdateOperationsInput | string | null
+    dob?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    addressLine1?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    zipCode?: StringFieldUpdateOperationsInput | string
+    isProfileCompleted?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -46584,6 +46944,16 @@ export namespace Prisma {
 
   export type CustomerCreateWithoutBookingsInput = {
     publicId: string
+    fullName?: string
+    phone?: string
+    alternatePhone?: string | null
+    dob?: Date | string | null
+    addressLine1?: string
+    city?: string
+    state?: string
+    country?: string
+    zipCode?: string
+    isProfileCompleted?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -46595,6 +46965,16 @@ export namespace Prisma {
     id?: number
     publicId: string
     userId: number
+    fullName?: string
+    phone?: string
+    alternatePhone?: string | null
+    dob?: Date | string | null
+    addressLine1?: string
+    city?: string
+    state?: string
+    country?: string
+    zipCode?: string
+    isProfileCompleted?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -46842,6 +47222,16 @@ export namespace Prisma {
 
   export type CustomerUpdateWithoutBookingsInput = {
     publicId?: StringFieldUpdateOperationsInput | string
+    fullName?: StringFieldUpdateOperationsInput | string
+    phone?: StringFieldUpdateOperationsInput | string
+    alternatePhone?: NullableStringFieldUpdateOperationsInput | string | null
+    dob?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    addressLine1?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    zipCode?: StringFieldUpdateOperationsInput | string
+    isProfileCompleted?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -46853,6 +47243,16 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
     userId?: IntFieldUpdateOperationsInput | number
+    fullName?: StringFieldUpdateOperationsInput | string
+    phone?: StringFieldUpdateOperationsInput | string
+    alternatePhone?: NullableStringFieldUpdateOperationsInput | string | null
+    dob?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    addressLine1?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    zipCode?: StringFieldUpdateOperationsInput | string
+    isProfileCompleted?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null

@@ -149,7 +149,16 @@ model Customer {
   publicId     String    @unique
   userId       Int       @unique
   user         User      @relation(fields: [userId], references: [id])
-
+  fullName         String @default("")
+  phone            String @default("")
+  alternatePhone   String? 
+  dob              DateTime?
+  addressLine1     String  @default("")
+  city             String  @default("")
+  state            String  @default("")
+  country          String  @default("India")
+  zipCode          String  @default("")
+  isProfileCompleted Boolean @default(false)
   kycs         CustomerKyc[]
   bookings     Booking[]
 
