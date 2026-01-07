@@ -93,6 +93,7 @@ model User {
   name             String
   email            String        @unique
   passwordHash     String?
+  phone            String        @default("")
   authProvider     AuthProvider  @default(PASSWORD)
   emailVerifiedAt  DateTime?
   role             Role
@@ -130,7 +131,7 @@ model UserProvider {
 model EmailVerificationOtp {
   id         Int      @id @default(autoincrement())
   userId     Int      @unique
-  email      String
+  phone      String
   otpHash    String
   expiresAt  DateTime
   used       Boolean  @default(false)
@@ -150,7 +151,6 @@ model Customer {
   userId       Int       @unique
   user         User      @relation(fields: [userId], references: [id])
   fullName         String @default("")
-  phone            String @default("")
   alternatePhone   String? 
   dob              DateTime?
   addressLine1     String  @default("")

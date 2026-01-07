@@ -23,13 +23,9 @@ passport.use(
         let user = await prisma.user.findUnique({
           where: { email },
         });
-         if (user) {
-          if (!user.emailVerifiedAt) {
-            user = await prisma.user.update({
-              where: { email },
-              data: { emailVerifiedAt: new Date() },
-            });
-          }
+
+        if (user) {
+          // Logic to update provider info but verify status is NOT updated automatically
           await prisma.userProvider.upsert({
             where: {
               provider_providerUserId: {
@@ -48,14 +44,12 @@ passport.use(
 
           return done(null, user);
         }
-        
         const newUser = await prisma.user.create({
           data: {
             publicId: createID(),
             name: profile.displayName,
             email,
-            authProvider:AuthProvider.GOOGLE,
-            emailVerifiedAt: new Date(),
+            authProvider: AuthProvider.GOOGLE,
             role: Role.CUSTOMER,
           },
         });
