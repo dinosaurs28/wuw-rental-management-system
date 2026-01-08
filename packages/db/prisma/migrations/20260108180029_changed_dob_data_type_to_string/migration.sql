@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Customer" ALTER COLUMN "dob" SET DATA TYPE TEXT;

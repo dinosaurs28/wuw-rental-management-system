@@ -8,7 +8,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 enum Role {
   ADMIN
   MANAGER
@@ -82,145 +81,136 @@ enum PricingRuleType {
   CUSTOM
 }
 
-
-
 // USER & AUTH
 
-
 model User {
-  id               Int           @id @default(autoincrement())
-  publicId         String        @unique
-  name             String
-  email            String        @unique
-  passwordHash     String?
-  phone            String        @default("")
-  authProvider     AuthProvider  @default(PASSWORD)
-  emailVerifiedAt  DateTime?
-  role             Role
-  branchId         Int?
-  branch           Branch?       @relation(fields: [branchId], references: [id],onDelete: Restrict)
+  id              Int          @id @default(autoincrement())
+  publicId        String       @unique
+  name            String
+  email           String       @unique
+  passwordHash    String?
+  phone           String       @default("")
+  authProvider    AuthProvider @default(PASSWORD)
+  emailVerifiedAt DateTime?
+  role            Role
+  branchId        Int?
+  branch          Branch?      @relation(fields: [branchId], references: [id], onDelete: Restrict)
 
-  emailOtps        EmailVerificationOtp[]
-  providers        UserProvider[]
-  customerProfile  Customer?
-  auditLogs        AuditLog[]
-  bookingsCreated  Booking[]     @relation("BookingCreator")
+  emailOtps             EmailVerificationOtp[]
+  providers             UserProvider[]
+  customerProfile       Customer?
+  auditLogs             AuditLog[]
+  bookingsCreated       Booking[]              @relation("BookingCreator")
   approvedDamageReports DamageReport[]
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  deletedAt        DateTime?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  deletedAt             DateTime?
+
   @@index([branchId])
   @@index([role])
 }
 
 model UserProvider {
-  id              Int      @id @default(autoincrement())
-  publicId        String   @unique
-  userId          Int
-  provider        AuthProvider
-  providerUserId  String
-  accessToken     String?
-  refreshToken    String?
-  user            User     @relation(fields: [userId], references: [id])
+  id             Int          @id @default(autoincrement())
+  publicId       String       @unique
+  userId         Int
+  provider       AuthProvider
+  providerUserId String
+  accessToken    String?
+  refreshToken   String?
+  user           User         @relation(fields: [userId], references: [id])
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([provider, providerUserId], map: "provider_providerUserId_unique")
 }
 
 model EmailVerificationOtp {
-  id         Int      @id @default(autoincrement())
-  userId     Int      @unique
-  phone      String
-  otpHash    String
-  expiresAt  DateTime
-  used       Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id])
-  
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  phone     String
+  otpHash   String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
-
-
 
 // CUSTOMER & KYC
 
-
 model Customer {
-  id           Int       @id @default(autoincrement())
-  publicId     String    @unique
-  userId       Int       @unique
-  user         User      @relation(fields: [userId], references: [id])
-  fullName         String @default("")
-  alternatePhone   String? 
-  dob              DateTime?
-  addressLine1     String  @default("")
-  city             String  @default("")
-  state            String  @default("")
-  country          String  @default("India")
-  zipCode          String  @default("")
-  isProfileCompleted Boolean @default(false)
-  kycs         CustomerKyc[]
-  bookings     Booking[]
+  id                 Int           @id @default(autoincrement())
+  publicId           String        @unique
+  userId             Int           @unique
+  user               User          @relation(fields: [userId], references: [id])
+  alternatePhone     String?
+  dob                String?
+  addressLine1       String        @default("")
+  city               String        @default("")
+  state              String        @default("")
+  country            String        @default("India")
+  zipCode            String        @default("")
+  isProfileCompleted Boolean       @default(false)
+  kycs               CustomerKyc[]
+  bookings           Booking[]
 
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  deletedAt    DateTime?
-
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 }
 
 model CustomerKyc {
-  id         Int        @id @default(autoincrement())
-  publicId   String     @unique
+  id         Int       @id @default(autoincrement())
+  publicId   String    @unique
   customerId Int
   type       KycType
   fileId     Int
-  status     KycStatus  @default(PENDING)
+  status     KycStatus @default(PENDING)
 
-  customer   Customer   @relation(fields: [customerId], references: [id])
-  file       FileObject @relation(fields: [fileId], references: [id])
+  customer Customer   @relation(fields: [customerId], references: [id])
+  file     FileObject @relation(fields: [fileId], references: [id])
 
-  createdAt  DateTime   @default(now())
+  createdAt DateTime @default(now())
+
   @@unique([customerId, type])
   @@index([customerId])
   @@index([fileId])
 }
 
-
-
 // FILE STORAGE (Cloudflare R2)
 
-
 model FileObject {
-  id        Int      @id @default(autoincrement())
-  publicId  String   @unique
-  key       String
-  url       String
-  mime      String
-  size      Int
-  createdAt DateTime @default(now())
+  id            Int            @id @default(autoincrement())
+  publicId      String         @unique
+  key           String
+  url           String
+  mime          String
+  size          Int
+  createdAt     DateTime       @default(now())
   bookingPhotos BookingPhoto[]
-  customerKycs CustomerKyc[]
+  customerKycs  CustomerKyc[]
   vehicleImages VehicleImage[]
+
   @@index([publicId])
 }
 
 // BRANCH & STAFF
 
-
 model Branch {
-  id        Int       @id @default(autoincrement())
-  publicId  String    @unique
-  name      String
-  address   String
-  phone     String?
-  users     User[]
-  vehicles  Vehicle[]
-  bookings  Booking[]
-  pricingSetting BranchPricingSetting?
-  pricingDiscountSlabs PricingDiscountSlab[]
+  id                      Int                      @id @default(autoincrement())
+  publicId                String                   @unique
+  name                    String
+  address                 String
+  phone                   String?
+  users                   User[]
+  vehicles                Vehicle[]
+  bookings                Booking[]
+  pricingSetting          BranchPricingSetting?
+  pricingDiscountSlabs    PricingDiscountSlab[]
   categoryDepositSettings CategoryDepositSetting[]
-  createdAt DateTime  @default(now())
-  deletedAt DateTime?
+  createdAt               DateTime                 @default(now())
+  deletedAt               DateTime?
 }
 
 model StaffActivityLog {
@@ -234,75 +224,74 @@ model StaffActivityLog {
 }
 
 model BranchPricingSetting {
-  id                 Int      @id @default(autoincrement())
-  branchId           Int      @unique
-  weekendEnabled     Boolean  @default(true)
-  peakEnabled        Boolean  @default(false)
-  customEnabled      Boolean  @default(false)
+  id             Int     @id @default(autoincrement())
+  branchId       Int     @unique
+  weekendEnabled Boolean @default(true)
+  peakEnabled    Boolean @default(false)
+  customEnabled  Boolean @default(false)
 
-  weekendMultiplier  Decimal  @default(1.2)
-  peakMultiplier     Decimal  @default(1.5)
-  customMultiplier   Decimal  @default(1.0)
+  weekendMultiplier Decimal @default(1.2)
+  peakMultiplier    Decimal @default(1.5)
+  customMultiplier  Decimal @default(1.0)
 
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  
-  branch             Branch   @relation(fields: [branchId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branch Branch @relation(fields: [branchId], references: [id])
 }
-
 
 // VEHICLES
 
-
 model VehicleCategory {
-  id          Int       @id @default(autoincrement())
-  publicId    String    @unique
+  id          Int     @id @default(autoincrement())
+  publicId    String  @unique
   name        String
   description String?
 
-  pricingDiscountSlabs PricingDiscountSlab[]
+  pricingDiscountSlabs    PricingDiscountSlab[]
   categoryDepositSettings CategoryDepositSetting[]
-  vehicles    Vehicle[]
-  pricingRules PricingRule[]
+  vehicles                Vehicle[]
+  pricingRules            PricingRule[]
 }
 
 model Vehicle {
-  id               Int                @id @default(autoincrement())
-  publicId         String             @unique
-  branchId         Int
-  categoryId       Int
-  make             String
-  model            String
-  regNo            String             @unique
-  odo              Int
-  insuranceExpiry  DateTime
-  status           VehicleStatus      @default(AVAILABLE)
-  baseDailyPrice    Decimal           @default(500)
+  id              Int           @id @default(autoincrement())
+  publicId        String        @unique
+  branchId        Int
+  categoryId      Int
+  make            String
+  model           String
+  regNo           String        @unique
+  odo             Int
+  insuranceExpiry DateTime
+  status          VehicleStatus @default(AVAILABLE)
+  baseDailyPrice  Decimal       @default(500)
 
-  branch           Branch             @relation(fields: [branchId], references: [id])
-  category         VehicleCategory    @relation(fields: [categoryId], references: [id])
+  branch           Branch                     @relation(fields: [branchId], references: [id])
+  category         VehicleCategory            @relation(fields: [categoryId], references: [id])
   insuranceRecords VehicleInsurance[]
   maintenance      VehicleMaintenanceRecord[]
   damageReports    DamageReport[]
   pricingOverride  VehiclePricingOverride?
   images           VehicleImage[]
   bookingItems     BookingItem[]
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
   deletedAt        DateTime?
+
   @@index([branchId])
   @@index([categoryId])
   @@index([status])
 }
 
 model VehiclePricingOverride {
-  id             Int      @id @default(autoincrement())
-  vehicleId      Int      @unique
-  customPrice    Decimal?
-  multiplier     Decimal?
-  enabled        Boolean  @default(false)
+  id          Int      @id @default(autoincrement())
+  vehicleId   Int      @unique
+  customPrice Decimal?
+  multiplier  Decimal?
+  enabled     Boolean  @default(false)
 
-  vehicle        Vehicle  @relation(fields: [vehicleId], references: [id])
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
 }
 
 model VehicleInsurance {
@@ -313,149 +302,154 @@ model VehicleInsurance {
   provider     String
   validTill    DateTime
 
-  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id])
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+
   @@index([vehicleId])
 }
 
 model VehicleMaintenanceRecord {
-  id           Int      @id @default(autoincrement())
-  publicId     String   @unique
-  vehicleId    Int
-  description  String
-  cost         Decimal
-  servicedAt   DateTime
+  id          Int      @id @default(autoincrement())
+  publicId    String   @unique
+  vehicleId   Int
+  description String
+  cost        Decimal
+  servicedAt  DateTime
 
-  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id])
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+
   @@index([vehicleId])
 }
 
 model VehicleImage {
-  id        Int        @id @default(autoincrement())
-  publicId  String     @unique
-  vehicleId Int
-  fileId    Int
+  id          Int     @id @default(autoincrement())
+  publicId    String  @unique
+  vehicleId   Int
+  fileId      Int
   isThumbnail Boolean @default(false)
-  
-  vehicle   Vehicle    @relation(fields: [vehicleId], references: [id])
-  file      FileObject @relation(fields: [fileId], references: [id])
 
-  createdAt DateTime   @default(now())
+  vehicle Vehicle    @relation(fields: [vehicleId], references: [id])
+  file    FileObject @relation(fields: [fileId], references: [id])
+
+  createdAt DateTime @default(now())
 
   @@index([vehicleId])
   @@index([fileId])
 }
 
-
 // BOOKINGS
 
-
-
 model PricingRule {
-  id         Int              @id @default(autoincrement())
-  publicId   String           @unique
+  id         Int             @id @default(autoincrement())
+  publicId   String          @unique
   ruleType   PricingRuleType
   multiplier Decimal
   categoryId Int?
 
-  category   VehicleCategory? @relation(fields: [categoryId], references: [id])
-  createdAt  DateTime         @default(now())
+  category  VehicleCategory? @relation(fields: [categoryId], references: [id])
+  createdAt DateTime         @default(now())
 }
 
 model PricingDiscountSlab {
-  id           Int      @id @default(autoincrement())
-  days         Int
-  multiplier   Decimal
-  branchId     Int?
-  categoryId   Int?
+  id         Int     @id @default(autoincrement())
+  days       Int
+  multiplier Decimal
+  branchId   Int?
+  categoryId Int?
 
-  branch       Branch?  @relation(fields: [branchId], references: [id])
-  category     VehicleCategory? @relation(fields: [categoryId], references: [id])
+  branch   Branch?          @relation(fields: [branchId], references: [id])
+  category VehicleCategory? @relation(fields: [categoryId], references: [id])
 }
+
 model CategoryDepositSetting {
-  id         Int      @id @default(autoincrement())
+  id         Int     @id @default(autoincrement())
   branchId   Int
   categoryId Int
   amount     Decimal
 
-  branch     Branch   @relation(fields: [branchId], references: [id])
-  category   VehicleCategory @relation(fields: [categoryId], references: [id])
+  branch   Branch          @relation(fields: [branchId], references: [id])
+  category VehicleCategory @relation(fields: [categoryId], references: [id])
 
   @@unique([branchId, categoryId])
 }
+
 model Booking {
-  id                Int            @id @default(autoincrement())
-  publicId          String         @unique
-  customerId        Int            
-  branchId          Int
-  startAt           DateTime
-  endAt             DateTime
-  days              Int
-  holdExpiresAt     DateTime?
-  totalBase         Decimal
-  totalDiscount     Decimal
-  totalDeposit      Decimal
-  totalFinal        Decimal
-  status            BookingStatus  @default(HOLD)
-  transactionId     String?        @unique
-  paymentStatus     PaymentStatus  @default(CREATED)
-  pricingSnapshot   Json
-  createdById       Int
-  depositMethod     DepositMethod?
+  id              Int            @id @default(autoincrement())
+  publicId        String         @unique
+  customerId      Int
+  branchId        Int
+  startAt         DateTime
+  endAt           DateTime
+  days            Int
+  holdExpiresAt   DateTime?
+  totalBase       Decimal
+  totalDiscount   Decimal
+  totalDeposit    Decimal
+  totalFinal      Decimal
+  status          BookingStatus  @default(HOLD)
+  transactionId   String?        @unique
+  paymentStatus   PaymentStatus  @default(CREATED)
+  pricingSnapshot Json
+  createdById     Int
+  depositMethod   DepositMethod?
 
-  customer          Customer       @relation(fields: [customerId], references: [id])
-  branch            Branch         @relation(fields: [branchId], references: [id])
-  createdBy         User           @relation("BookingCreator", fields: [createdById], references: [id])
+  customer  Customer @relation(fields: [customerId], references: [id])
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  createdBy User     @relation("BookingCreator", fields: [createdById], references: [id])
 
-  photos            BookingPhoto[]
-  damages           DamageReport[]
-  items             BookingItem[]
-  deposit           Deposit?
-  invoice           Invoice?
+  photos  BookingPhoto[]
+  damages DamageReport[]
+  items   BookingItem[]
+  deposit Deposit?
+  invoice Invoice?
 
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  deletedAt         DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
   @@index([customerId])
   @@index([branchId])
   @@index([createdById])
   @@index([status])
   @@index([startAt, endAt])
 }
-model BookingItem{
-  id            Int      @id @default(autoincrement())
-  bookingId     Int
-  vehicleId     Int
 
-  days          Int
-  baseTotal     Decimal
-  discountAmount Decimal
+model BookingItem {
+  id        Int @id @default(autoincrement())
+  bookingId Int
+  vehicleId Int
+
+  days            Int
+  baseTotal       Decimal
+  discountAmount  Decimal
   discountPercent Decimal
-  deposit       Decimal
-  finalTotal    Decimal
+  deposit         Decimal
+  finalTotal      Decimal
 
-  vehicle       Vehicle @relation(fields: [vehicleId], references: [id])
-  booking       Booking @relation(fields: [bookingId], references: [id])
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+  booking Booking @relation(fields: [bookingId], references: [id])
 
   @@index([bookingId])
   @@index([vehicleId])
 }
-model BookingPhoto {
-  id         Int            @id @default(autoincrement())
-  publicId   String         @unique
-  bookingId  Int
-  fileId     Int
-  type       BookingPhotoType
 
-  booking    Booking        @relation(fields: [bookingId], references: [id])
-  file       FileObject     @relation(fields: [fileId], references: [id])
-  createdAt  DateTime       @default(now())
+model BookingPhoto {
+  id        Int              @id @default(autoincrement())
+  publicId  String           @unique
+  bookingId Int
+  fileId    Int
+  type      BookingPhotoType
+
+  booking   Booking    @relation(fields: [bookingId], references: [id])
+  file      FileObject @relation(fields: [fileId], references: [id])
+  createdAt DateTime   @default(now())
+
   @@index([bookingId])
   @@index([fileId])
 }
 
 model DamageReport {
-  id            Int       @id @default(autoincrement())
-  publicId      String    @unique
+  id            Int     @id @default(autoincrement())
+  publicId      String  @unique
   bookingId     Int
   vehicleId     Int
   severity      String
@@ -463,95 +457,87 @@ model DamageReport {
   notes         String?
   approvedById  Int?
 
-  booking       Booking    @relation(fields: [bookingId], references: [id])
-  vehicle       Vehicle    @relation(fields: [vehicleId], references: [id])
-  approvedBy    User?      @relation(fields: [approvedById], references: [id],onDelete: SetNull)
+  booking    Booking @relation(fields: [bookingId], references: [id])
+  vehicle    Vehicle @relation(fields: [vehicleId], references: [id])
+  approvedBy User?   @relation(fields: [approvedById], references: [id], onDelete: SetNull)
 
-  createdAt     DateTime   @default(now())
+  createdAt DateTime @default(now())
 }
-
-
 
 // DEPOSIT & PAYMENTS
 
-
 model Deposit {
-  id            Int            @id @default(autoincrement())
-  publicId      String         @unique
-  bookingId     Int            @unique
-  amount        Decimal
-  method        DepositMethod
-  isRefunded    Boolean        @default(false)
-  refundedAt    DateTime?
-  refundMethod  String?
+  id           Int           @id @default(autoincrement())
+  publicId     String        @unique
+  bookingId    Int           @unique
+  amount       Decimal
+  method       DepositMethod
+  isRefunded   Boolean       @default(false)
+  refundedAt   DateTime?
+  refundMethod String?
 
-  booking       Booking        @relation(fields: [bookingId], references: [id])
-  createdAt     DateTime       @default(now())
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  createdAt DateTime @default(now())
 }
 
 model Payment {
-  id                Int            @id @default(autoincrement())
-  publicId          String         @unique
+  id                Int           @id @default(autoincrement())
+  publicId          String        @unique
   invoiceId         Int
-  method            DepositMethod  // ONLINE_RAZORPAY or CASH/UPI
+  method            DepositMethod // ONLINE_RAZORPAY or CASH/UPI
   razorpayOrderId   String?
   razorpayPaymentId String?
   status            PaymentStatus
   amount            Decimal
 
-  createdAt         DateTime       @default(now())
-  invoice           Invoice        @relation(fields: [invoiceId], references: [id])
+  createdAt DateTime @default(now())
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id])
+
   @@index([invoiceId])
   @@index([status])
 }
 
 model PaymentWebhookLog {
-  id         Int      @id @default(autoincrement())
-  publicId   String   @unique
-  payload    Json
-  signature  String
-  processed  Boolean  @default(false)
-  createdAt  DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  publicId  String   @unique
+  payload   Json
+  signature String
+  processed Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
-
-
 
 // INVOICE
 
-
 model Invoice {
-  id             Int           @id @default(autoincrement())
-  publicId       String        @unique
-  bookingId      Int           @unique
-  subtotal       Decimal
-  discount       Decimal
-  tax            Decimal
-  damageCharges  Decimal
-  total          Decimal
-  status         InvoiceStatus @default(PENDING)
+  id            Int           @id @default(autoincrement())
+  publicId      String        @unique
+  bookingId     Int           @unique
+  subtotal      Decimal
+  discount      Decimal
+  tax           Decimal
+  damageCharges Decimal
+  total         Decimal
+  status        InvoiceStatus @default(PENDING)
 
-  booking        Booking       @relation(fields: [bookingId], references: [id],onDelete: Cascade)
-  items          InvoiceItem[]
-  payments       Payment[]
-  createdAt      DateTime      @default(now())
+  booking   Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  items     InvoiceItem[]
+  payments  Payment[]
+  createdAt DateTime      @default(now())
+
   @@index([bookingId])
 }
 
 model InvoiceItem {
-  id         Int       @id @default(autoincrement())
-  publicId   String    @unique
-  invoiceId  Int
-  label      String
-  amount     Decimal
+  id        Int     @id @default(autoincrement())
+  publicId  String  @unique
+  invoiceId Int
+  label     String
+  amount    Decimal
 
-  invoice    Invoice   @relation(fields: [invoiceId], references: [id])
-  
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
 }
 
-
-
 // AUDIT LOG
-
 
 model AuditLog {
   id        Int      @id @default(autoincrement())
@@ -563,14 +549,11 @@ model AuditLog {
   before    Json?
   after     Json?
   createdAt DateTime @default(now())
-  
-  user      User     @relation(fields: [userId], references: [id])
+
+  user User @relation(fields: [userId], references: [id])
 }
 
-
-
 // SYSTEM SETTINGS
-
 
 model SystemSetting {
   id        Int      @id @default(autoincrement())

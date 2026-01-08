@@ -144,9 +144,8 @@ model Customer {
   publicId           String        @unique
   userId             Int           @unique
   user               User          @relation(fields: [userId], references: [id])
-  fullName           String        @default("")
   alternatePhone     String?
-  dob                DateTime?
+  dob                String?
   addressLine1       String        @default("")
   city               String        @default("")
   state              String        @default("")
