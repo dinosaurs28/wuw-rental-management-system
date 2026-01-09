@@ -87,11 +87,6 @@ export const updateUserProfile = async (req: Request, res: Response) => {
                     phone: data.phone,
                 },
             });
-
-            // Log data for debugging
-            console.log("Upserting Customer Profile for User:", user.id);
-            console.log("Data:", data);
-
             const updatedCustomer = await tx.customer.upsert({
                 where: { userId: user.id },
                 update: {

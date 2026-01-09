@@ -33,3 +33,17 @@ export const cleanupQueue = new Queue("cleanup-processing", {
         removeOnFail: false
     }
 });
+
+export const fileCleanupQueue = new Queue("file-cleanup", {
+    connection,
+    defaultJobOptions: {
+        attempts: 5,
+        backoff: {
+            type: "exponential",
+            delay: 2000,
+        },
+        removeOnComplete: true,
+        removeOnFail: false
+    }
+});
+
