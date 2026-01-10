@@ -9,6 +9,7 @@ import { CompleteReturn } from "../../controller/employee/returnAction.controlle
 import { InitiateWalkin } from "../../controller/employee/walkin/initiate.controller";
 import { VerifyWalkinOtp } from "../../controller/employee/walkin/verify.controller";
 import { CompleteWalkinProfile } from "../../controller/employee/walkin/complete.controller";
+import { SearchCustomer } from "../../controller/employee/customer/search.controller";
 const router:Router=Router()
 
 router.post("/auth/login", Login)
@@ -21,5 +22,6 @@ router.post("/return/:bookingId/complete", EmployeeCheck, CompleteReturn)
 router.post("/walkin/initiate", EmployeeCheck, InitiateWalkin)
 router.post("/walkin/verify", EmployeeCheck, VerifyWalkinOtp)
 router.post("/walkin/complete", EmployeeCheck, CompleteWalkinProfile)
+router.get("/customer/search", EmployeeCheck, SearchCustomer)
 
 export default router
