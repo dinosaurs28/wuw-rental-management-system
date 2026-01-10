@@ -38,9 +38,18 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         message:"Customer doesnt Exists"
       })
     }
-    const { vehicles, start, end } = parsed.data;
+    const { vehicles, start, end,file_public_id } = parsed.data;
     const customerId=userData.customerProfile.id
-   
+    const kycFile = await prisma.fileObject.findUnique({
+      where: { publicId: file_public_id },
+      select: { id: true }
+    });
+
+    if (!kycFile) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        message: "Invalid KYC document"
+      });
+    }
     const startDate = new Date(start);
     const endDate = new Date(end);
 
@@ -50,7 +59,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       });
     }
 
-    
+
     if (endDate <= startDate) {
       return res.status(StatusCode.BAD_REQUEST).json({
         message: "End date must be after start date"
@@ -64,7 +73,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       });
     }
 
-    
+
     const vehiclesData = await prisma.vehicle.findMany({
       where: { publicId: { in: vehicles } },
       include: {
@@ -76,7 +85,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       }
     });
 
-    
+
     if (vehiclesData.length !== vehicles.length) {
       const foundIds = vehiclesData.map(v => v.publicId);
       const missingIds = vehicles.filter(id => !foundIds.includes(id));
@@ -91,10 +100,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     let grandDiscountTotal = 0;
     let grandFinalTotal = 0;
     let grandDeposit = 0;
-
-    
     for (const v of vehiclesData) {
-      
       const availability = await checkVehicleAvailability(
         v.id,
         startDate,
@@ -106,26 +112,17 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           message: `Vehicle ${v.make} ${v.model} is not available for selected dates`
         });
       }
-
-      
       const vehicleHolds = await redis.smembers(`vehicle_holds:${v.publicId}`);
       if (vehicleHolds && vehicleHolds.length > 0) {
-        
         return res.status(StatusCode.CONFLICT).json({
           message: `Vehicle ${v.make} ${v.model} is currently being booked by another user. Please try again in a few minutes.`
         });
       }
-
-      
       const pricing = await calculatePricingForVehicleFromRecord(v);
       const multi = calculateMultiDayTotalPrice(startDate, endDate, pricing.daily);
       const baseTotal = multi.total;
       const days = multi.days;
-
-      
       const discountPercent = (await getDiscountForDays(v.branchId, v.categoryId, days)) || 0;
-      
-    
       const discountedTotal = Number((baseTotal * (1 - discountPercent)).toFixed(2));
       const discountAmount = Number((baseTotal - discountedTotal).toFixed(2));
 
@@ -154,7 +151,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       grandFinalTotal += finalTotal;
     }
 
- 
+
     grandBaseTotal = Number(grandBaseTotal.toFixed(2));
     grandDiscountTotal = Number(grandDiscountTotal.toFixed(2));
     grandDeposit = Number(grandDeposit.toFixed(2));
@@ -167,11 +164,12 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         data: {
           publicId: createID(),
           customerId:customerId,
+          kycFileId: kycFile.id,
           branchId: vehiclesData[0]!.branchId ,
           startAt: startDate,
           endAt: endDate,
           days: items[0]!.days,
-          holdExpiresAt: new Date(Date.now() + 10 * 60 * 1000), 
+          holdExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
           totalBase: grandBaseTotal,
           totalDiscount: grandDiscountTotal,
           totalDeposit: grandDeposit,

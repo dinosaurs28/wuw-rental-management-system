@@ -25,31 +25,50 @@ export const GetBookingKyc = async (req: Request, res: Response) => {
                             }
                         }
                     }
-                }
-            }
-        });
-
-        if (!booking) {
-            return res.status(StatusCode.NOT_FOUND).json({
-                message: "Booking not found or access denied"
-            });
-        }
-        const kycDocs = await prisma.customerKyc.findMany({
-            where: {
-                customerId: booking.customer.id
-            },
-            select: {
-                publicId: true,
-                type: true,
-                status: true,
-                file: {
+                },
+                kycFile: {
                     select: {
+                        publicId: true,
                         url: true,
                         mime: true
                     }
                 }
             }
         });
+
+        if (!booking) {
+            return res.status(StatusCode.NOT_FOUND).json({
+                message: "Booking not found"
+            });
+        }
+        if (!booking.kycFile) {
+            return res.status(StatusCode.NOT_FOUND).json({
+                message: "No KYC document linked to this booking"
+            });
+        }
+
+        const kycRecord = await prisma.customerKyc.findFirst({
+            where: {
+                file: {
+                    publicId: booking.kycFile.publicId
+                },
+                customerId: booking.customer.id
+            },
+            select: {
+                type: true,
+                status: true
+            }
+        });
+
+        const kycDocs = [{
+            publicId: booking.kycFile.publicId,
+            type: kycRecord?.type || "UNKNOWN",
+            status: kycRecord?.status || "UNKNOWN",
+            file: {
+                url: booking.kycFile.url,
+                mime: booking.kycFile.mime
+            }
+        }];
 
         if (kycDocs.length === 0) {
             return res.status(StatusCode.NOT_FOUND).json({

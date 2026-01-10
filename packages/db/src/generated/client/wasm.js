@@ -332,6 +332,7 @@ exports.Prisma.BookingScalarFieldEnum = {
   pricingSnapshot: 'pricingSnapshot',
   createdById: 'createdById',
   depositMethod: 'depositMethod',
+  kycFileId: 'kycFileId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   deletedAt: 'deletedAt'

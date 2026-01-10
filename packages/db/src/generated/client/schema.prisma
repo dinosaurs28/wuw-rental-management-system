@@ -190,6 +190,7 @@ model FileObject {
   createdAt     DateTime       @default(now())
   bookingPhotos BookingPhoto[]
   customerKycs  CustomerKyc[]
+  bookingKycs   Booking[]      @relation("BookingKyc")
   vehicleImages VehicleImage[]
 
   @@index([publicId])
@@ -391,10 +392,11 @@ model Booking {
   pricingSnapshot Json
   createdById     Int
   depositMethod   DepositMethod?
-
-  customer  Customer @relation(fields: [customerId], references: [id])
-  branch    Branch   @relation(fields: [branchId], references: [id])
-  createdBy User     @relation("BookingCreator", fields: [createdById], references: [id])
+  kycFileId       Int?
+  kycFile         FileObject?    @relation("BookingKyc", fields: [kycFileId], references: [id])
+  customer        Customer       @relation(fields: [customerId], references: [id])
+  branch          Branch         @relation(fields: [branchId], references: [id])
+  createdBy       User           @relation("BookingCreator", fields: [createdById], references: [id])
 
   photos  BookingPhoto[]
   damages DamageReport[]

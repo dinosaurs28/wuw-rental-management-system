@@ -3515,12 +3515,14 @@ export namespace Prisma {
   export type FileObjectCountOutputType = {
     bookingPhotos: number
     customerKycs: number
+    bookingKycs: number
     vehicleImages: number
   }
 
   export type FileObjectCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     bookingPhotos?: boolean | FileObjectCountOutputTypeCountBookingPhotosArgs
     customerKycs?: boolean | FileObjectCountOutputTypeCountCustomerKycsArgs
+    bookingKycs?: boolean | FileObjectCountOutputTypeCountBookingKycsArgs
     vehicleImages?: boolean | FileObjectCountOutputTypeCountVehicleImagesArgs
   }
 
@@ -3547,6 +3549,13 @@ export namespace Prisma {
    */
   export type FileObjectCountOutputTypeCountCustomerKycsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: CustomerKycWhereInput
+  }
+
+  /**
+   * FileObjectCountOutputType without action
+   */
+  export type FileObjectCountOutputTypeCountBookingKycsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BookingWhereInput
   }
 
   /**
@@ -9433,6 +9442,7 @@ export namespace Prisma {
     createdAt?: boolean
     bookingPhotos?: boolean | FileObject$bookingPhotosArgs<ExtArgs>
     customerKycs?: boolean | FileObject$customerKycsArgs<ExtArgs>
+    bookingKycs?: boolean | FileObject$bookingKycsArgs<ExtArgs>
     vehicleImages?: boolean | FileObject$vehicleImagesArgs<ExtArgs>
     _count?: boolean | FileObjectCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["fileObject"]>
@@ -9460,6 +9470,7 @@ export namespace Prisma {
   export type FileObjectInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     bookingPhotos?: boolean | FileObject$bookingPhotosArgs<ExtArgs>
     customerKycs?: boolean | FileObject$customerKycsArgs<ExtArgs>
+    bookingKycs?: boolean | FileObject$bookingKycsArgs<ExtArgs>
     vehicleImages?: boolean | FileObject$vehicleImagesArgs<ExtArgs>
     _count?: boolean | FileObjectCountOutputTypeDefaultArgs<ExtArgs>
   }
@@ -9470,6 +9481,7 @@ export namespace Prisma {
     objects: {
       bookingPhotos: Prisma.$BookingPhotoPayload<ExtArgs>[]
       customerKycs: Prisma.$CustomerKycPayload<ExtArgs>[]
+      bookingKycs: Prisma.$BookingPayload<ExtArgs>[]
       vehicleImages: Prisma.$VehicleImagePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
@@ -9846,6 +9858,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     bookingPhotos<T extends FileObject$bookingPhotosArgs<ExtArgs> = {}>(args?: Subset<T, FileObject$bookingPhotosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingPhotoPayload<ExtArgs>, T, "findMany"> | Null>
     customerKycs<T extends FileObject$customerKycsArgs<ExtArgs> = {}>(args?: Subset<T, FileObject$customerKycsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CustomerKycPayload<ExtArgs>, T, "findMany"> | Null>
+    bookingKycs<T extends FileObject$bookingKycsArgs<ExtArgs> = {}>(args?: Subset<T, FileObject$bookingKycsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findMany"> | Null>
     vehicleImages<T extends FileObject$vehicleImagesArgs<ExtArgs> = {}>(args?: Subset<T, FileObject$vehicleImagesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleImagePayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -10234,6 +10247,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: CustomerKycScalarFieldEnum | CustomerKycScalarFieldEnum[]
+  }
+
+  /**
+   * FileObject.bookingKycs
+   */
+  export type FileObject$bookingKycsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Booking
+     */
+    select?: BookingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingInclude<ExtArgs> | null
+    where?: BookingWhereInput
+    orderBy?: BookingOrderByWithRelationInput | BookingOrderByWithRelationInput[]
+    cursor?: BookingWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: BookingScalarFieldEnum | BookingScalarFieldEnum[]
   }
 
   /**
@@ -22613,6 +22646,7 @@ export namespace Prisma {
     totalDeposit: Decimal | null
     totalFinal: Decimal | null
     createdById: number | null
+    kycFileId: number | null
   }
 
   export type BookingSumAggregateOutputType = {
@@ -22625,6 +22659,7 @@ export namespace Prisma {
     totalDeposit: Decimal | null
     totalFinal: Decimal | null
     createdById: number | null
+    kycFileId: number | null
   }
 
   export type BookingMinAggregateOutputType = {
@@ -22645,6 +22680,7 @@ export namespace Prisma {
     paymentStatus: $Enums.PaymentStatus | null
     createdById: number | null
     depositMethod: $Enums.DepositMethod | null
+    kycFileId: number | null
     createdAt: Date | null
     updatedAt: Date | null
     deletedAt: Date | null
@@ -22668,6 +22704,7 @@ export namespace Prisma {
     paymentStatus: $Enums.PaymentStatus | null
     createdById: number | null
     depositMethod: $Enums.DepositMethod | null
+    kycFileId: number | null
     createdAt: Date | null
     updatedAt: Date | null
     deletedAt: Date | null
@@ -22692,6 +22729,7 @@ export namespace Prisma {
     pricingSnapshot: number
     createdById: number
     depositMethod: number
+    kycFileId: number
     createdAt: number
     updatedAt: number
     deletedAt: number
@@ -22709,6 +22747,7 @@ export namespace Prisma {
     totalDeposit?: true
     totalFinal?: true
     createdById?: true
+    kycFileId?: true
   }
 
   export type BookingSumAggregateInputType = {
@@ -22721,6 +22760,7 @@ export namespace Prisma {
     totalDeposit?: true
     totalFinal?: true
     createdById?: true
+    kycFileId?: true
   }
 
   export type BookingMinAggregateInputType = {
@@ -22741,6 +22781,7 @@ export namespace Prisma {
     paymentStatus?: true
     createdById?: true
     depositMethod?: true
+    kycFileId?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -22764,6 +22805,7 @@ export namespace Prisma {
     paymentStatus?: true
     createdById?: true
     depositMethod?: true
+    kycFileId?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -22788,6 +22830,7 @@ export namespace Prisma {
     pricingSnapshot?: true
     createdById?: true
     depositMethod?: true
+    kycFileId?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -22899,6 +22942,7 @@ export namespace Prisma {
     pricingSnapshot: JsonValue
     createdById: number
     depositMethod: $Enums.DepositMethod | null
+    kycFileId: number | null
     createdAt: Date
     updatedAt: Date
     deletedAt: Date | null
@@ -22942,9 +22986,11 @@ export namespace Prisma {
     pricingSnapshot?: boolean
     createdById?: boolean
     depositMethod?: boolean
+    kycFileId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
+    kycFile?: boolean | Booking$kycFileArgs<ExtArgs>
     customer?: boolean | CustomerDefaultArgs<ExtArgs>
     branch?: boolean | BranchDefaultArgs<ExtArgs>
     createdBy?: boolean | UserDefaultArgs<ExtArgs>
@@ -22975,9 +23021,11 @@ export namespace Prisma {
     pricingSnapshot?: boolean
     createdById?: boolean
     depositMethod?: boolean
+    kycFileId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
+    kycFile?: boolean | Booking$kycFileArgs<ExtArgs>
     customer?: boolean | CustomerDefaultArgs<ExtArgs>
     branch?: boolean | BranchDefaultArgs<ExtArgs>
     createdBy?: boolean | UserDefaultArgs<ExtArgs>
@@ -23002,12 +23050,14 @@ export namespace Prisma {
     pricingSnapshot?: boolean
     createdById?: boolean
     depositMethod?: boolean
+    kycFileId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
   }
 
   export type BookingInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    kycFile?: boolean | Booking$kycFileArgs<ExtArgs>
     customer?: boolean | CustomerDefaultArgs<ExtArgs>
     branch?: boolean | BranchDefaultArgs<ExtArgs>
     createdBy?: boolean | UserDefaultArgs<ExtArgs>
@@ -23019,6 +23069,7 @@ export namespace Prisma {
     _count?: boolean | BookingCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type BookingIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    kycFile?: boolean | Booking$kycFileArgs<ExtArgs>
     customer?: boolean | CustomerDefaultArgs<ExtArgs>
     branch?: boolean | BranchDefaultArgs<ExtArgs>
     createdBy?: boolean | UserDefaultArgs<ExtArgs>
@@ -23027,6 +23078,7 @@ export namespace Prisma {
   export type $BookingPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Booking"
     objects: {
+      kycFile: Prisma.$FileObjectPayload<ExtArgs> | null
       customer: Prisma.$CustomerPayload<ExtArgs>
       branch: Prisma.$BranchPayload<ExtArgs>
       createdBy: Prisma.$UserPayload<ExtArgs>
@@ -23055,6 +23107,7 @@ export namespace Prisma {
       pricingSnapshot: Prisma.JsonValue
       createdById: number
       depositMethod: $Enums.DepositMethod | null
+      kycFileId: number | null
       createdAt: Date
       updatedAt: Date
       deletedAt: Date | null
@@ -23422,6 +23475,7 @@ export namespace Prisma {
    */
   export interface Prisma__BookingClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    kycFile<T extends Booking$kycFileArgs<ExtArgs> = {}>(args?: Subset<T, Booking$kycFileArgs<ExtArgs>>): Prisma__FileObjectClient<$Result.GetResult<Prisma.$FileObjectPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     customer<T extends CustomerDefaultArgs<ExtArgs> = {}>(args?: Subset<T, CustomerDefaultArgs<ExtArgs>>): Prisma__CustomerClient<$Result.GetResult<Prisma.$CustomerPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     branch<T extends BranchDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BranchDefaultArgs<ExtArgs>>): Prisma__BranchClient<$Result.GetResult<Prisma.$BranchPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     createdBy<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
@@ -23477,6 +23531,7 @@ export namespace Prisma {
     readonly pricingSnapshot: FieldRef<"Booking", 'Json'>
     readonly createdById: FieldRef<"Booking", 'Int'>
     readonly depositMethod: FieldRef<"Booking", 'DepositMethod'>
+    readonly kycFileId: FieldRef<"Booking", 'Int'>
     readonly createdAt: FieldRef<"Booking", 'DateTime'>
     readonly updatedAt: FieldRef<"Booking", 'DateTime'>
     readonly deletedAt: FieldRef<"Booking", 'DateTime'>
@@ -23795,6 +23850,21 @@ export namespace Prisma {
      * Filter which Bookings to delete
      */
     where?: BookingWhereInput
+  }
+
+  /**
+   * Booking.kycFile
+   */
+  export type Booking$kycFileArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FileObject
+     */
+    select?: FileObjectSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FileObjectInclude<ExtArgs> | null
+    where?: FileObjectWhereInput
   }
 
   /**
@@ -34245,6 +34315,7 @@ export namespace Prisma {
     pricingSnapshot: 'pricingSnapshot',
     createdById: 'createdById',
     depositMethod: 'depositMethod',
+    kycFileId: 'kycFileId',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
     deletedAt: 'deletedAt'
@@ -35136,6 +35207,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"FileObject"> | Date | string
     bookingPhotos?: BookingPhotoListRelationFilter
     customerKycs?: CustomerKycListRelationFilter
+    bookingKycs?: BookingListRelationFilter
     vehicleImages?: VehicleImageListRelationFilter
   }
 
@@ -35149,6 +35221,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     bookingPhotos?: BookingPhotoOrderByRelationAggregateInput
     customerKycs?: CustomerKycOrderByRelationAggregateInput
+    bookingKycs?: BookingOrderByRelationAggregateInput
     vehicleImages?: VehicleImageOrderByRelationAggregateInput
   }
 
@@ -35165,6 +35238,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"FileObject"> | Date | string
     bookingPhotos?: BookingPhotoListRelationFilter
     customerKycs?: CustomerKycListRelationFilter
+    bookingKycs?: BookingListRelationFilter
     vehicleImages?: VehicleImageListRelationFilter
   }, "id" | "publicId">
 
@@ -36054,9 +36128,11 @@ export namespace Prisma {
     pricingSnapshot?: JsonFilter<"Booking">
     createdById?: IntFilter<"Booking"> | number
     depositMethod?: EnumDepositMethodNullableFilter<"Booking"> | $Enums.DepositMethod | null
+    kycFileId?: IntNullableFilter<"Booking"> | number | null
     createdAt?: DateTimeFilter<"Booking"> | Date | string
     updatedAt?: DateTimeFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
+    kycFile?: XOR<FileObjectNullableRelationFilter, FileObjectWhereInput> | null
     customer?: XOR<CustomerRelationFilter, CustomerWhereInput>
     branch?: XOR<BranchRelationFilter, BranchWhereInput>
     createdBy?: XOR<UserRelationFilter, UserWhereInput>
@@ -36086,9 +36162,11 @@ export namespace Prisma {
     pricingSnapshot?: SortOrder
     createdById?: SortOrder
     depositMethod?: SortOrderInput | SortOrder
+    kycFileId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrderInput | SortOrder
+    kycFile?: FileObjectOrderByWithRelationInput
     customer?: CustomerOrderByWithRelationInput
     branch?: BranchOrderByWithRelationInput
     createdBy?: UserOrderByWithRelationInput
@@ -36121,9 +36199,11 @@ export namespace Prisma {
     pricingSnapshot?: JsonFilter<"Booking">
     createdById?: IntFilter<"Booking"> | number
     depositMethod?: EnumDepositMethodNullableFilter<"Booking"> | $Enums.DepositMethod | null
+    kycFileId?: IntNullableFilter<"Booking"> | number | null
     createdAt?: DateTimeFilter<"Booking"> | Date | string
     updatedAt?: DateTimeFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
+    kycFile?: XOR<FileObjectNullableRelationFilter, FileObjectWhereInput> | null
     customer?: XOR<CustomerRelationFilter, CustomerWhereInput>
     branch?: XOR<BranchRelationFilter, BranchWhereInput>
     createdBy?: XOR<UserRelationFilter, UserWhereInput>
@@ -36153,6 +36233,7 @@ export namespace Prisma {
     pricingSnapshot?: SortOrder
     createdById?: SortOrder
     depositMethod?: SortOrderInput | SortOrder
+    kycFileId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrderInput | SortOrder
@@ -36185,6 +36266,7 @@ export namespace Prisma {
     pricingSnapshot?: JsonWithAggregatesFilter<"Booking">
     createdById?: IntWithAggregatesFilter<"Booking"> | number
     depositMethod?: EnumDepositMethodNullableWithAggregatesFilter<"Booking"> | $Enums.DepositMethod | null
+    kycFileId?: IntNullableWithAggregatesFilter<"Booking"> | number | null
     createdAt?: DateTimeWithAggregatesFilter<"Booking"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
@@ -37382,6 +37464,7 @@ export namespace Prisma {
     createdAt?: Date | string
     bookingPhotos?: BookingPhotoCreateNestedManyWithoutFileInput
     customerKycs?: CustomerKycCreateNestedManyWithoutFileInput
+    bookingKycs?: BookingCreateNestedManyWithoutKycFileInput
     vehicleImages?: VehicleImageCreateNestedManyWithoutFileInput
   }
 
@@ -37395,6 +37478,7 @@ export namespace Prisma {
     createdAt?: Date | string
     bookingPhotos?: BookingPhotoUncheckedCreateNestedManyWithoutFileInput
     customerKycs?: CustomerKycUncheckedCreateNestedManyWithoutFileInput
+    bookingKycs?: BookingUncheckedCreateNestedManyWithoutKycFileInput
     vehicleImages?: VehicleImageUncheckedCreateNestedManyWithoutFileInput
   }
 
@@ -37407,6 +37491,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     bookingPhotos?: BookingPhotoUpdateManyWithoutFileNestedInput
     customerKycs?: CustomerKycUpdateManyWithoutFileNestedInput
+    bookingKycs?: BookingUpdateManyWithoutKycFileNestedInput
     vehicleImages?: VehicleImageUpdateManyWithoutFileNestedInput
   }
 
@@ -37420,6 +37505,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     bookingPhotos?: BookingPhotoUncheckedUpdateManyWithoutFileNestedInput
     customerKycs?: CustomerKycUncheckedUpdateManyWithoutFileNestedInput
+    bookingKycs?: BookingUncheckedUpdateManyWithoutKycFileNestedInput
     vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
   }
 
@@ -38297,6 +38383,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
     customer: CustomerCreateNestedOneWithoutBookingsInput
     branch: BranchCreateNestedOneWithoutBookingsInput
     createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
@@ -38326,6 +38413,7 @@ export namespace Prisma {
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -38354,6 +38442,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
     customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
     branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
     createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
@@ -38383,6 +38472,7 @@ export namespace Prisma {
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -38412,6 +38502,7 @@ export namespace Prisma {
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -38456,6 +38547,7 @@ export namespace Prisma {
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -40576,6 +40668,11 @@ export namespace Prisma {
     not?: NestedEnumDepositMethodNullableFilter<$PrismaModel> | $Enums.DepositMethod | null
   }
 
+  export type FileObjectNullableRelationFilter = {
+    is?: FileObjectWhereInput | null
+    isNot?: FileObjectWhereInput | null
+  }
+
   export type DepositNullableRelationFilter = {
     is?: DepositWhereInput | null
     isNot?: DepositWhereInput | null
@@ -40605,6 +40702,7 @@ export namespace Prisma {
     pricingSnapshot?: SortOrder
     createdById?: SortOrder
     depositMethod?: SortOrder
+    kycFileId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -40620,6 +40718,7 @@ export namespace Prisma {
     totalDeposit?: SortOrder
     totalFinal?: SortOrder
     createdById?: SortOrder
+    kycFileId?: SortOrder
   }
 
   export type BookingMaxOrderByAggregateInput = {
@@ -40640,6 +40739,7 @@ export namespace Prisma {
     paymentStatus?: SortOrder
     createdById?: SortOrder
     depositMethod?: SortOrder
+    kycFileId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -40663,6 +40763,7 @@ export namespace Prisma {
     paymentStatus?: SortOrder
     createdById?: SortOrder
     depositMethod?: SortOrder
+    kycFileId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -40678,6 +40779,7 @@ export namespace Prisma {
     totalDeposit?: SortOrder
     totalFinal?: SortOrder
     createdById?: SortOrder
+    kycFileId?: SortOrder
   }
 
   export type EnumBookingStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -41793,6 +41895,13 @@ export namespace Prisma {
     connect?: CustomerKycWhereUniqueInput | CustomerKycWhereUniqueInput[]
   }
 
+  export type BookingCreateNestedManyWithoutKycFileInput = {
+    create?: XOR<BookingCreateWithoutKycFileInput, BookingUncheckedCreateWithoutKycFileInput> | BookingCreateWithoutKycFileInput[] | BookingUncheckedCreateWithoutKycFileInput[]
+    connectOrCreate?: BookingCreateOrConnectWithoutKycFileInput | BookingCreateOrConnectWithoutKycFileInput[]
+    createMany?: BookingCreateManyKycFileInputEnvelope
+    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+  }
+
   export type VehicleImageCreateNestedManyWithoutFileInput = {
     create?: XOR<VehicleImageCreateWithoutFileInput, VehicleImageUncheckedCreateWithoutFileInput> | VehicleImageCreateWithoutFileInput[] | VehicleImageUncheckedCreateWithoutFileInput[]
     connectOrCreate?: VehicleImageCreateOrConnectWithoutFileInput | VehicleImageCreateOrConnectWithoutFileInput[]
@@ -41812,6 +41921,13 @@ export namespace Prisma {
     connectOrCreate?: CustomerKycCreateOrConnectWithoutFileInput | CustomerKycCreateOrConnectWithoutFileInput[]
     createMany?: CustomerKycCreateManyFileInputEnvelope
     connect?: CustomerKycWhereUniqueInput | CustomerKycWhereUniqueInput[]
+  }
+
+  export type BookingUncheckedCreateNestedManyWithoutKycFileInput = {
+    create?: XOR<BookingCreateWithoutKycFileInput, BookingUncheckedCreateWithoutKycFileInput> | BookingCreateWithoutKycFileInput[] | BookingUncheckedCreateWithoutKycFileInput[]
+    connectOrCreate?: BookingCreateOrConnectWithoutKycFileInput | BookingCreateOrConnectWithoutKycFileInput[]
+    createMany?: BookingCreateManyKycFileInputEnvelope
+    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
   }
 
   export type VehicleImageUncheckedCreateNestedManyWithoutFileInput = {
@@ -41847,6 +41963,20 @@ export namespace Prisma {
     update?: CustomerKycUpdateWithWhereUniqueWithoutFileInput | CustomerKycUpdateWithWhereUniqueWithoutFileInput[]
     updateMany?: CustomerKycUpdateManyWithWhereWithoutFileInput | CustomerKycUpdateManyWithWhereWithoutFileInput[]
     deleteMany?: CustomerKycScalarWhereInput | CustomerKycScalarWhereInput[]
+  }
+
+  export type BookingUpdateManyWithoutKycFileNestedInput = {
+    create?: XOR<BookingCreateWithoutKycFileInput, BookingUncheckedCreateWithoutKycFileInput> | BookingCreateWithoutKycFileInput[] | BookingUncheckedCreateWithoutKycFileInput[]
+    connectOrCreate?: BookingCreateOrConnectWithoutKycFileInput | BookingCreateOrConnectWithoutKycFileInput[]
+    upsert?: BookingUpsertWithWhereUniqueWithoutKycFileInput | BookingUpsertWithWhereUniqueWithoutKycFileInput[]
+    createMany?: BookingCreateManyKycFileInputEnvelope
+    set?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    disconnect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    delete?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    update?: BookingUpdateWithWhereUniqueWithoutKycFileInput | BookingUpdateWithWhereUniqueWithoutKycFileInput[]
+    updateMany?: BookingUpdateManyWithWhereWithoutKycFileInput | BookingUpdateManyWithWhereWithoutKycFileInput[]
+    deleteMany?: BookingScalarWhereInput | BookingScalarWhereInput[]
   }
 
   export type VehicleImageUpdateManyWithoutFileNestedInput = {
@@ -41889,6 +42019,20 @@ export namespace Prisma {
     update?: CustomerKycUpdateWithWhereUniqueWithoutFileInput | CustomerKycUpdateWithWhereUniqueWithoutFileInput[]
     updateMany?: CustomerKycUpdateManyWithWhereWithoutFileInput | CustomerKycUpdateManyWithWhereWithoutFileInput[]
     deleteMany?: CustomerKycScalarWhereInput | CustomerKycScalarWhereInput[]
+  }
+
+  export type BookingUncheckedUpdateManyWithoutKycFileNestedInput = {
+    create?: XOR<BookingCreateWithoutKycFileInput, BookingUncheckedCreateWithoutKycFileInput> | BookingCreateWithoutKycFileInput[] | BookingUncheckedCreateWithoutKycFileInput[]
+    connectOrCreate?: BookingCreateOrConnectWithoutKycFileInput | BookingCreateOrConnectWithoutKycFileInput[]
+    upsert?: BookingUpsertWithWhereUniqueWithoutKycFileInput | BookingUpsertWithWhereUniqueWithoutKycFileInput[]
+    createMany?: BookingCreateManyKycFileInputEnvelope
+    set?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    disconnect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    delete?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    update?: BookingUpdateWithWhereUniqueWithoutKycFileInput | BookingUpdateWithWhereUniqueWithoutKycFileInput[]
+    updateMany?: BookingUpdateManyWithWhereWithoutKycFileInput | BookingUpdateManyWithWhereWithoutKycFileInput[]
+    deleteMany?: BookingScalarWhereInput | BookingScalarWhereInput[]
   }
 
   export type VehicleImageUncheckedUpdateManyWithoutFileNestedInput = {
@@ -42769,6 +42913,12 @@ export namespace Prisma {
     update?: XOR<XOR<VehicleCategoryUpdateToOneWithWhereWithoutCategoryDepositSettingsInput, VehicleCategoryUpdateWithoutCategoryDepositSettingsInput>, VehicleCategoryUncheckedUpdateWithoutCategoryDepositSettingsInput>
   }
 
+  export type FileObjectCreateNestedOneWithoutBookingKycsInput = {
+    create?: XOR<FileObjectCreateWithoutBookingKycsInput, FileObjectUncheckedCreateWithoutBookingKycsInput>
+    connectOrCreate?: FileObjectCreateOrConnectWithoutBookingKycsInput
+    connect?: FileObjectWhereUniqueInput
+  }
+
   export type CustomerCreateNestedOneWithoutBookingsInput = {
     create?: XOR<CustomerCreateWithoutBookingsInput, CustomerUncheckedCreateWithoutBookingsInput>
     connectOrCreate?: CustomerCreateOrConnectWithoutBookingsInput
@@ -42863,6 +43013,16 @@ export namespace Prisma {
 
   export type NullableEnumDepositMethodFieldUpdateOperationsInput = {
     set?: $Enums.DepositMethod | null
+  }
+
+  export type FileObjectUpdateOneWithoutBookingKycsNestedInput = {
+    create?: XOR<FileObjectCreateWithoutBookingKycsInput, FileObjectUncheckedCreateWithoutBookingKycsInput>
+    connectOrCreate?: FileObjectCreateOrConnectWithoutBookingKycsInput
+    upsert?: FileObjectUpsertWithoutBookingKycsInput
+    disconnect?: FileObjectWhereInput | boolean
+    delete?: FileObjectWhereInput | boolean
+    connect?: FileObjectWhereUniqueInput
+    update?: XOR<XOR<FileObjectUpdateToOneWithWhereWithoutBookingKycsInput, FileObjectUpdateWithoutBookingKycsInput>, FileObjectUncheckedUpdateWithoutBookingKycsInput>
   }
 
   export type CustomerUpdateOneRequiredWithoutBookingsNestedInput = {
@@ -43963,6 +44123,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
     customer: CustomerCreateNestedOneWithoutBookingsInput
     branch: BranchCreateNestedOneWithoutBookingsInput
     photos?: BookingPhotoCreateNestedManyWithoutBookingInput
@@ -43990,6 +44151,7 @@ export namespace Prisma {
     paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -44256,6 +44418,7 @@ export namespace Prisma {
     pricingSnapshot?: JsonFilter<"Booking">
     createdById?: IntFilter<"Booking"> | number
     depositMethod?: EnumDepositMethodNullableFilter<"Booking"> | $Enums.DepositMethod | null
+    kycFileId?: IntNullableFilter<"Booking"> | number | null
     createdAt?: DateTimeFilter<"Booking"> | Date | string
     updatedAt?: DateTimeFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
@@ -44579,6 +44742,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
     branch: BranchCreateNestedOneWithoutBookingsInput
     createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
     photos?: BookingPhotoCreateNestedManyWithoutBookingInput
@@ -44606,6 +44770,7 @@ export namespace Prisma {
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -44771,6 +44936,7 @@ export namespace Prisma {
     size: number
     createdAt?: Date | string
     bookingPhotos?: BookingPhotoCreateNestedManyWithoutFileInput
+    bookingKycs?: BookingCreateNestedManyWithoutKycFileInput
     vehicleImages?: VehicleImageCreateNestedManyWithoutFileInput
   }
 
@@ -44783,6 +44949,7 @@ export namespace Prisma {
     size: number
     createdAt?: Date | string
     bookingPhotos?: BookingPhotoUncheckedCreateNestedManyWithoutFileInput
+    bookingKycs?: BookingUncheckedCreateNestedManyWithoutKycFileInput
     vehicleImages?: VehicleImageUncheckedCreateNestedManyWithoutFileInput
   }
 
@@ -44856,6 +45023,7 @@ export namespace Prisma {
     size?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     bookingPhotos?: BookingPhotoUpdateManyWithoutFileNestedInput
+    bookingKycs?: BookingUpdateManyWithoutKycFileNestedInput
     vehicleImages?: VehicleImageUpdateManyWithoutFileNestedInput
   }
 
@@ -44868,6 +45036,7 @@ export namespace Prisma {
     size?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     bookingPhotos?: BookingPhotoUncheckedUpdateManyWithoutFileNestedInput
+    bookingKycs?: BookingUncheckedUpdateManyWithoutKycFileNestedInput
     vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
   }
 
@@ -44920,6 +45089,73 @@ export namespace Prisma {
 
   export type CustomerKycCreateManyFileInputEnvelope = {
     data: CustomerKycCreateManyFileInput | CustomerKycCreateManyFileInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type BookingCreateWithoutKycFileInput = {
+    publicId: string
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    customer: CustomerCreateNestedOneWithoutBookingsInput
+    branch: BranchCreateNestedOneWithoutBookingsInput
+    createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
+    photos?: BookingPhotoCreateNestedManyWithoutBookingInput
+    damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
+    deposit?: DepositCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingUncheckedCreateWithoutKycFileInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
+    damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
+    deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingCreateOrConnectWithoutKycFileInput = {
+    where: BookingWhereUniqueInput
+    create: XOR<BookingCreateWithoutKycFileInput, BookingUncheckedCreateWithoutKycFileInput>
+  }
+
+  export type BookingCreateManyKycFileInputEnvelope = {
+    data: BookingCreateManyKycFileInput | BookingCreateManyKycFileInput[]
     skipDuplicates?: boolean
   }
 
@@ -44990,6 +45226,22 @@ export namespace Prisma {
   export type CustomerKycUpdateManyWithWhereWithoutFileInput = {
     where: CustomerKycScalarWhereInput
     data: XOR<CustomerKycUpdateManyMutationInput, CustomerKycUncheckedUpdateManyWithoutFileInput>
+  }
+
+  export type BookingUpsertWithWhereUniqueWithoutKycFileInput = {
+    where: BookingWhereUniqueInput
+    update: XOR<BookingUpdateWithoutKycFileInput, BookingUncheckedUpdateWithoutKycFileInput>
+    create: XOR<BookingCreateWithoutKycFileInput, BookingUncheckedCreateWithoutKycFileInput>
+  }
+
+  export type BookingUpdateWithWhereUniqueWithoutKycFileInput = {
+    where: BookingWhereUniqueInput
+    data: XOR<BookingUpdateWithoutKycFileInput, BookingUncheckedUpdateWithoutKycFileInput>
+  }
+
+  export type BookingUpdateManyWithWhereWithoutKycFileInput = {
+    where: BookingScalarWhereInput
+    data: XOR<BookingUpdateManyMutationInput, BookingUncheckedUpdateManyWithoutKycFileInput>
   }
 
   export type VehicleImageUpsertWithWhereUniqueWithoutFileInput = {
@@ -45142,6 +45394,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
     customer: CustomerCreateNestedOneWithoutBookingsInput
     createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
     photos?: BookingPhotoCreateNestedManyWithoutBookingInput
@@ -45169,6 +45422,7 @@ export namespace Prisma {
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -46496,6 +46750,7 @@ export namespace Prisma {
     createdAt?: Date | string
     bookingPhotos?: BookingPhotoCreateNestedManyWithoutFileInput
     customerKycs?: CustomerKycCreateNestedManyWithoutFileInput
+    bookingKycs?: BookingCreateNestedManyWithoutKycFileInput
   }
 
   export type FileObjectUncheckedCreateWithoutVehicleImagesInput = {
@@ -46508,6 +46763,7 @@ export namespace Prisma {
     createdAt?: Date | string
     bookingPhotos?: BookingPhotoUncheckedCreateNestedManyWithoutFileInput
     customerKycs?: CustomerKycUncheckedCreateNestedManyWithoutFileInput
+    bookingKycs?: BookingUncheckedCreateNestedManyWithoutKycFileInput
   }
 
   export type FileObjectCreateOrConnectWithoutVehicleImagesInput = {
@@ -46589,6 +46845,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     bookingPhotos?: BookingPhotoUpdateManyWithoutFileNestedInput
     customerKycs?: CustomerKycUpdateManyWithoutFileNestedInput
+    bookingKycs?: BookingUpdateManyWithoutKycFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateWithoutVehicleImagesInput = {
@@ -46601,6 +46858,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     bookingPhotos?: BookingPhotoUncheckedUpdateManyWithoutFileNestedInput
     customerKycs?: CustomerKycUncheckedUpdateManyWithoutFileNestedInput
+    bookingKycs?: BookingUncheckedUpdateManyWithoutKycFileNestedInput
   }
 
   export type VehicleCategoryCreateWithoutPricingRulesInput = {
@@ -46913,6 +47171,36 @@ export namespace Prisma {
     pricingRules?: PricingRuleUncheckedUpdateManyWithoutCategoryNestedInput
   }
 
+  export type FileObjectCreateWithoutBookingKycsInput = {
+    publicId: string
+    key: string
+    url: string
+    mime: string
+    size: number
+    createdAt?: Date | string
+    bookingPhotos?: BookingPhotoCreateNestedManyWithoutFileInput
+    customerKycs?: CustomerKycCreateNestedManyWithoutFileInput
+    vehicleImages?: VehicleImageCreateNestedManyWithoutFileInput
+  }
+
+  export type FileObjectUncheckedCreateWithoutBookingKycsInput = {
+    id?: number
+    publicId: string
+    key: string
+    url: string
+    mime: string
+    size: number
+    createdAt?: Date | string
+    bookingPhotos?: BookingPhotoUncheckedCreateNestedManyWithoutFileInput
+    customerKycs?: CustomerKycUncheckedCreateNestedManyWithoutFileInput
+    vehicleImages?: VehicleImageUncheckedCreateNestedManyWithoutFileInput
+  }
+
+  export type FileObjectCreateOrConnectWithoutBookingKycsInput = {
+    where: FileObjectWhereUniqueInput
+    create: XOR<FileObjectCreateWithoutBookingKycsInput, FileObjectUncheckedCreateWithoutBookingKycsInput>
+  }
+
   export type CustomerCreateWithoutBookingsInput = {
     publicId: string
     alternatePhone?: string | null
@@ -47176,6 +47464,42 @@ export namespace Prisma {
   export type InvoiceCreateOrConnectWithoutBookingInput = {
     where: InvoiceWhereUniqueInput
     create: XOR<InvoiceCreateWithoutBookingInput, InvoiceUncheckedCreateWithoutBookingInput>
+  }
+
+  export type FileObjectUpsertWithoutBookingKycsInput = {
+    update: XOR<FileObjectUpdateWithoutBookingKycsInput, FileObjectUncheckedUpdateWithoutBookingKycsInput>
+    create: XOR<FileObjectCreateWithoutBookingKycsInput, FileObjectUncheckedCreateWithoutBookingKycsInput>
+    where?: FileObjectWhereInput
+  }
+
+  export type FileObjectUpdateToOneWithWhereWithoutBookingKycsInput = {
+    where?: FileObjectWhereInput
+    data: XOR<FileObjectUpdateWithoutBookingKycsInput, FileObjectUncheckedUpdateWithoutBookingKycsInput>
+  }
+
+  export type FileObjectUpdateWithoutBookingKycsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    url?: StringFieldUpdateOperationsInput | string
+    mime?: StringFieldUpdateOperationsInput | string
+    size?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    bookingPhotos?: BookingPhotoUpdateManyWithoutFileNestedInput
+    customerKycs?: CustomerKycUpdateManyWithoutFileNestedInput
+    vehicleImages?: VehicleImageUpdateManyWithoutFileNestedInput
+  }
+
+  export type FileObjectUncheckedUpdateWithoutBookingKycsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    url?: StringFieldUpdateOperationsInput | string
+    mime?: StringFieldUpdateOperationsInput | string
+    size?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    bookingPhotos?: BookingPhotoUncheckedUpdateManyWithoutFileNestedInput
+    customerKycs?: CustomerKycUncheckedUpdateManyWithoutFileNestedInput
+    vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
   }
 
   export type CustomerUpsertWithoutBookingsInput = {
@@ -47500,6 +47824,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
     customer: CustomerCreateNestedOneWithoutBookingsInput
     branch: BranchCreateNestedOneWithoutBookingsInput
     createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
@@ -47528,6 +47853,7 @@ export namespace Prisma {
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -47625,6 +47951,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
     customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
     branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
     createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
@@ -47653,6 +47980,7 @@ export namespace Prisma {
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -47680,6 +48008,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
     customer: CustomerCreateNestedOneWithoutBookingsInput
     branch: BranchCreateNestedOneWithoutBookingsInput
     createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
@@ -47708,6 +48037,7 @@ export namespace Prisma {
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -47730,6 +48060,7 @@ export namespace Prisma {
     size: number
     createdAt?: Date | string
     customerKycs?: CustomerKycCreateNestedManyWithoutFileInput
+    bookingKycs?: BookingCreateNestedManyWithoutKycFileInput
     vehicleImages?: VehicleImageCreateNestedManyWithoutFileInput
   }
 
@@ -47742,6 +48073,7 @@ export namespace Prisma {
     size: number
     createdAt?: Date | string
     customerKycs?: CustomerKycUncheckedCreateNestedManyWithoutFileInput
+    bookingKycs?: BookingUncheckedCreateNestedManyWithoutKycFileInput
     vehicleImages?: VehicleImageUncheckedCreateNestedManyWithoutFileInput
   }
 
@@ -47779,6 +48111,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
     customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
     branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
     createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
@@ -47807,6 +48140,7 @@ export namespace Prisma {
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -47835,6 +48169,7 @@ export namespace Prisma {
     size?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customerKycs?: CustomerKycUpdateManyWithoutFileNestedInput
+    bookingKycs?: BookingUpdateManyWithoutKycFileNestedInput
     vehicleImages?: VehicleImageUpdateManyWithoutFileNestedInput
   }
 
@@ -47847,6 +48182,7 @@ export namespace Prisma {
     size?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customerKycs?: CustomerKycUncheckedUpdateManyWithoutFileNestedInput
+    bookingKycs?: BookingUncheckedUpdateManyWithoutKycFileNestedInput
     vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
   }
 
@@ -47868,6 +48204,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
     customer: CustomerCreateNestedOneWithoutBookingsInput
     branch: BranchCreateNestedOneWithoutBookingsInput
     createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
@@ -47896,6 +48233,7 @@ export namespace Prisma {
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -48033,6 +48371,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
     customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
     branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
     createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
@@ -48061,6 +48400,7 @@ export namespace Prisma {
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -48194,6 +48534,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
     customer: CustomerCreateNestedOneWithoutBookingsInput
     branch: BranchCreateNestedOneWithoutBookingsInput
     createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
@@ -48222,6 +48563,7 @@ export namespace Prisma {
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -48265,6 +48607,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
     customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
     branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
     createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
@@ -48293,6 +48636,7 @@ export namespace Prisma {
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -48390,6 +48734,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
     customer: CustomerCreateNestedOneWithoutBookingsInput
     branch: BranchCreateNestedOneWithoutBookingsInput
     createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
@@ -48418,6 +48763,7 @@ export namespace Prisma {
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -48515,6 +48861,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
     customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
     branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
     createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
@@ -48543,6 +48890,7 @@ export namespace Prisma {
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -48827,6 +49175,7 @@ export namespace Prisma {
     paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -48951,6 +49300,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
     customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
     branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
     photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
@@ -48978,6 +49328,7 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -49006,6 +49357,7 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -49070,6 +49422,7 @@ export namespace Prisma {
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -49119,6 +49472,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
     branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
     createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
     photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
@@ -49146,6 +49500,7 @@ export namespace Prisma {
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -49174,6 +49529,7 @@ export namespace Prisma {
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -49194,6 +49550,30 @@ export namespace Prisma {
     type: $Enums.KycType
     status?: $Enums.KycStatus
     createdAt?: Date | string
+  }
+
+  export type BookingCreateManyKycFileInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
   }
 
   export type VehicleImageCreateManyFileInput = {
@@ -49251,6 +49631,87 @@ export namespace Prisma {
     type?: EnumKycTypeFieldUpdateOperationsInput | $Enums.KycType
     status?: EnumKycStatusFieldUpdateOperationsInput | $Enums.KycStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BookingUpdateWithoutKycFileInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
+    photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUpdateOneWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateWithoutKycFileInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateManyWithoutKycFileInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type VehicleImageUpdateWithoutFileInput = {
@@ -49325,6 +49786,7 @@ export namespace Prisma {
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -49476,6 +49938,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
     customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
     createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
     photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
@@ -49503,6 +49966,7 @@ export namespace Prisma {
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -49531,6 +49995,7 @@ export namespace Prisma {
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
