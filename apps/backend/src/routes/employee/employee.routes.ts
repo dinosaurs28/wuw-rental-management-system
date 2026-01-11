@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { Login } from "../../controller/employee/login.controller";
+import { searchVehicles, getEmployeeVehicleDetails } from "../../controller/employee/vehicle.controller";
+import { createEmployeeBooking } from "../../controller/employee/booking.controller";
 import { EmployeeCheck } from "../../middlewares/employeeCheck.middlewares";
 import { BookingController } from "../../controller/employee/booking.controller";
 import { returnController } from "../../controller/employee/return.controller";
@@ -27,6 +29,9 @@ router.post("/walkin/verify", EmployeeCheck, VerifyWalkinOtp)
 router.post("/walkin/complete", EmployeeCheck, CompleteWalkinProfile)
 router.post("/walkin/kyc/upload", EmployeeCheck, upload.single('file'), CheckCustomerPublicId, UploadWalkinKyc)
 router.post("/walkin/kyc/status", EmployeeCheck, UpdateWalkinKycStatus)
+router.get("/vehicles/search", EmployeeCheck, searchVehicles)
+router.get("/vehicles/:id", EmployeeCheck, getEmployeeVehicleDetails)
+router.post("/booking/create", EmployeeCheck, createEmployeeBooking)
 router.get("/customer/search", EmployeeCheck, SearchCustomer)
 
 export default router
