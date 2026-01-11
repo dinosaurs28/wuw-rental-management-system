@@ -10,6 +10,9 @@ import { InitiateWalkin } from "../../controller/employee/walkin/initiate.contro
 import { VerifyWalkinOtp } from "../../controller/employee/walkin/verify.controller";
 import { CompleteWalkinProfile } from "../../controller/employee/walkin/complete.controller";
 import { SearchCustomer } from "../../controller/employee/customer/search.controller";
+import { upload } from "../../middlewares/upload.middleware";
+import { CheckCustomerPublicId } from "../../middlewares/checkCustomer.middleware";
+import { UpdateWalkinKycStatus, UploadWalkinKyc } from "../../controller/employee/walkin/kyc.controller";
 const router:Router=Router()
 
 router.post("/auth/login", Login)
@@ -22,6 +25,8 @@ router.post("/return/:bookingId/complete", EmployeeCheck, CompleteReturn)
 router.post("/walkin/initiate", EmployeeCheck, InitiateWalkin)
 router.post("/walkin/verify", EmployeeCheck, VerifyWalkinOtp)
 router.post("/walkin/complete", EmployeeCheck, CompleteWalkinProfile)
+router.post("/walkin/kyc/upload", EmployeeCheck, upload.single('file'), CheckCustomerPublicId, UploadWalkinKyc)
+router.post("/walkin/kyc/status", EmployeeCheck, UpdateWalkinKycStatus)
 router.get("/customer/search", EmployeeCheck, SearchCustomer)
 
 export default router
