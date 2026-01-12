@@ -1,7 +1,10 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
-import { prisma } from "@repo/database/client";
+import { prisma, BookingStatus, DamageReportStatus, VehicleStatus, PaymentStatus, InvoiceStatus, DepositMethod, VehicleReturnDisposition } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
+import { createID } from "../../utils/nanoID";
+import { closeDamageReportSchema } from "@repo/schemas";
+import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils";
 
 export const GetDamageReports = async (req: Request, res: Response) => {
     const branchId = req.branch_Id;
@@ -121,6 +124,199 @@ export const GetDamageReports = async (req: Request, res: Response) => {
         console.error("Damage Reports Error:", error);
         return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
             message: "Internal Server Error fetching damage reports"
+        });
+    }
+}
+
+export const CloseDamageReport = async (req: Request, res: Response) => {
+    try {
+        const validation = closeDamageReportSchema.safeParse(req.body);
+        if (!validation.success) {
+            return res.status(StatusCode.BAD_REQUEST).json({
+                message: "Invalid inputs",
+                errors: validation.error.errors
+            });
+        }
+
+        const { disposition, finalCost, paymentMethod } = validation.data;
+        const damageReportPublicId = req.params.damageReportId;
+        const managerId = req.public_Id;
+        const branchId = req.branch_Id;
+
+        // 1. Fetch Report & Related Entities
+        const damageReport = await prisma.damageReport.findUnique({
+            where: { publicId: damageReportPublicId },
+            include: {
+                booking: {
+                    include: {
+                        deposit: true,
+                        invoice: true
+                    }
+                },
+                vehicle: true
+            }
+        });
+
+        if (!damageReport) {
+            return res.status(StatusCode.NOT_FOUND).json({ message: "Damage Report not found" });
+        }
+
+        const booking = damageReport.booking;
+
+        // 2. Validations
+        if (booking.branchId !== branchId) {
+            return res.status(StatusCode.FORBIDDEN).json({
+                message: "Access Denied: Booking belongs to a different branch"
+            });
+        }
+
+        if (damageReport.status !== "PENDING" as DamageReportStatus && damageReport.status !== "APPROVED" as DamageReportStatus) {
+            return res.status(StatusCode.BAD_REQUEST).json({
+                message: `Cannot close report. Current status: ${damageReport.status}`
+            });
+        }
+
+        // 3. Financial Calculation
+        const depositAmount = Number(booking.totalDeposit);
+        const fineAmount = finalCost;
+        const balance = depositAmount - fineAmount; // Positive = Refund, Negative = Due
+
+        const managerUser = await prisma.user.findUnique({
+            where: { publicId: managerId },
+            select: { id: true }
+        });
+
+        if (!managerUser) return res.status(StatusCode.UNAUTHORIZED).json({ message: "Manager not found" });
+
+        // 5. Transaction
+        let paymentUrl: string | null = null;
+        let isFullySettled = false;
+
+        await prisma.$transaction(async (tx) => {
+            // Update Report first
+            await tx.damageReport.update({
+                where: { id: damageReport.id },
+                data: {
+                    finalCost: fineAmount,
+                    disposition: disposition as VehicleReturnDisposition,
+                    approvedById: managerUser.id,
+                    status: "APPROVED" as DamageReportStatus
+                }
+            });
+
+            if (balance >= 0) {
+                // Refund or Exact Match
+                if (balance > 0 && booking.deposit) {
+                    await tx.deposit.update({
+                        where: { id: booking.deposit.id },
+                        data: {
+                            isRefunded: true,
+                            refundedAt: new Date(),
+                            refundMethod: "CASH",
+                        }
+                    });
+                }
+                isFullySettled = true;
+            } else {
+                // Due Amount
+                const dueAmount = Math.abs(balance);
+
+                if (!paymentMethod) {
+                    throw new Error("Payment method required for due amount");
+                }
+
+                if (paymentMethod === "CASH") {
+                    if (booking.invoice) {
+                        await tx.payment.create({
+                            data: {
+                                publicId: createID(),
+                                invoiceId: booking.invoice.id,
+                                method: DepositMethod.CASH,
+                                amount: dueAmount,
+                                status: PaymentStatus.SUCCESS
+                            }
+                        });
+                        isFullySettled = true;
+                    }
+                } else if (paymentMethod === "ONLINE_RAZORPAY") {
+                    if (booking.invoice) {
+                        await tx.payment.create({
+                            data: {
+                                publicId: createID(),
+                                invoiceId: booking.invoice.id,
+                                method: DepositMethod.ONLINE_RAZORPAY,
+                                amount: dueAmount,
+                                status: PaymentStatus.CREATED
+                            }
+                        });
+
+                        const responseIdx = await initiatePhonePePayment(dueAmount);
+                        paymentUrl = responseIdx?.instrumentResponse?.redirectInfo?.url;
+                    }
+                    isFullySettled = false;
+                }
+            }
+
+            // 6. Finalize if Settled
+            if (isFullySettled) {
+                if (booking.invoice) {
+                    await tx.invoice.update({
+                        where: { id: booking.invoice.id },
+                        data: {
+                            status: InvoiceStatus.PAID,
+                            damageCharges: fineAmount,
+                            total: { increment: fineAmount }
+                        }
+                    });
+                }
+
+                await tx.booking.update({
+                    where: { id: booking.id },
+                    data: {
+                        status: BookingStatus.RETURNED,
+                        totalFinal: { increment: fineAmount }
+                    }
+                });
+
+                let nextVehicleStatus: VehicleStatus = VehicleStatus.AVAILABLE;
+                if (disposition === 'MAINTENANCE') nextVehicleStatus = VehicleStatus.MAINTENANCE;
+                if (disposition === 'DAMAGED') nextVehicleStatus = VehicleStatus.INACTIVE;
+
+                await tx.vehicle.update({
+                    where: { id: damageReport.vehicleId },
+                    data: { status: nextVehicleStatus }
+                });
+            }
+
+            await tx.staffActivityLog.create({
+                data: {
+                    publicId: createID(),
+                    staffId: managerUser.id,
+                    action: "BOOKING_CLOSED_WITH_DAMAGE",
+                    entity: "DamageReport",
+                    entityId: damageReport.publicId
+                }
+            });
+        });
+
+        if (isFullySettled) {
+            return res.status(StatusCode.OK).json({
+                message: "Damage Report Closed & Booking Settled",
+                refunded: balance > 0,
+                settled: true
+            });
+        } else {
+            return res.status(StatusCode.OK).json({
+                message: "Payment Required to Settle Booking",
+                paymentUrl: paymentUrl,
+                settled: false
+            });
+        }
+
+    } catch (error: any) {
+        console.error("Error closing damage report:", error);
+        return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+            message: error.message || "Internal Server Error"
         });
     }
 }

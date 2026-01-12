@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode";
-import { prisma, BookingStatus, BookingPhotoType } from "@repo/database/client";
+import { prisma, BookingStatus, BookingPhotoType, VehicleReturnDisposition, DamageReportStatus } from "@repo/database/client";
 import { createID } from "../../utils/nanoID";
 import { createDamageReportSchema } from "@repo/schemas";
 
@@ -115,6 +115,7 @@ export const CreateDamageReport = async (req: Request, res: Response) => {
                     publicId: damageReportPublicId,
                     bookingId: booking.id,
                     vehicleId: vehicleId,
+                    status: DamageReportStatus.PENDING,
                     severity: severity,
                     estimatedCost: 0,
                     notes: notes ?? {},

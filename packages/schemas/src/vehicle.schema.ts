@@ -39,3 +39,9 @@ export const createDamageReportSchema = z.object({
   damageImageIds: z.array(z.string().min(1)),
   notes: z.record(z.any()).optional(), // Structured JSON notes
 });
+
+export const closeDamageReportSchema = z.object({
+  disposition: z.enum(['AVAILABLE', 'MAINTENANCE', 'DAMAGED']),
+  finalCost: z.coerce.number().min(0, "Final cost must be non-negative"),
+  paymentMethod: z.enum(['CASH', 'ONLINE_RAZORPAY']).optional()
+});

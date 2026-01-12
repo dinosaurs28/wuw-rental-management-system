@@ -259,6 +259,24 @@ export const BookingPhotoType: {
 export type BookingPhotoType = (typeof BookingPhotoType)[keyof typeof BookingPhotoType]
 
 
+export const DamageReportStatus: {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED'
+};
+
+export type DamageReportStatus = (typeof DamageReportStatus)[keyof typeof DamageReportStatus]
+
+
+export const VehicleReturnDisposition: {
+  AVAILABLE: 'AVAILABLE',
+  MAINTENANCE: 'MAINTENANCE',
+  DAMAGED: 'DAMAGED'
+};
+
+export type VehicleReturnDisposition = (typeof VehicleReturnDisposition)[keyof typeof VehicleReturnDisposition]
+
+
 export const InvoiceStatus: {
   PENDING: 'PENDING',
   APPROVED: 'APPROVED',
@@ -309,6 +327,14 @@ export const DepositMethod: typeof $Enums.DepositMethod
 export type BookingPhotoType = $Enums.BookingPhotoType
 
 export const BookingPhotoType: typeof $Enums.BookingPhotoType
+
+export type DamageReportStatus = $Enums.DamageReportStatus
+
+export const DamageReportStatus: typeof $Enums.DamageReportStatus
+
+export type VehicleReturnDisposition = $Enums.VehicleReturnDisposition
+
+export const VehicleReturnDisposition: typeof $Enums.VehicleReturnDisposition
 
 export type InvoiceStatus = $Enums.InvoiceStatus
 
@@ -26119,6 +26145,7 @@ export namespace Prisma {
     bookingId: number | null
     vehicleId: number | null
     estimatedCost: Decimal | null
+    finalCost: Decimal | null
     approvedById: number | null
   }
 
@@ -26127,6 +26154,7 @@ export namespace Prisma {
     bookingId: number | null
     vehicleId: number | null
     estimatedCost: Decimal | null
+    finalCost: Decimal | null
     approvedById: number | null
   }
 
@@ -26137,7 +26165,10 @@ export namespace Prisma {
     vehicleId: number | null
     severity: string | null
     estimatedCost: Decimal | null
+    finalCost: Decimal | null
     approvedById: number | null
+    status: $Enums.DamageReportStatus | null
+    disposition: $Enums.VehicleReturnDisposition | null
     createdAt: Date | null
   }
 
@@ -26148,7 +26179,10 @@ export namespace Prisma {
     vehicleId: number | null
     severity: string | null
     estimatedCost: Decimal | null
+    finalCost: Decimal | null
     approvedById: number | null
+    status: $Enums.DamageReportStatus | null
+    disposition: $Enums.VehicleReturnDisposition | null
     createdAt: Date | null
   }
 
@@ -26159,8 +26193,11 @@ export namespace Prisma {
     vehicleId: number
     severity: number
     estimatedCost: number
+    finalCost: number
     notes: number
     approvedById: number
+    status: number
+    disposition: number
     createdAt: number
     _all: number
   }
@@ -26171,6 +26208,7 @@ export namespace Prisma {
     bookingId?: true
     vehicleId?: true
     estimatedCost?: true
+    finalCost?: true
     approvedById?: true
   }
 
@@ -26179,6 +26217,7 @@ export namespace Prisma {
     bookingId?: true
     vehicleId?: true
     estimatedCost?: true
+    finalCost?: true
     approvedById?: true
   }
 
@@ -26189,7 +26228,10 @@ export namespace Prisma {
     vehicleId?: true
     severity?: true
     estimatedCost?: true
+    finalCost?: true
     approvedById?: true
+    status?: true
+    disposition?: true
     createdAt?: true
   }
 
@@ -26200,7 +26242,10 @@ export namespace Prisma {
     vehicleId?: true
     severity?: true
     estimatedCost?: true
+    finalCost?: true
     approvedById?: true
+    status?: true
+    disposition?: true
     createdAt?: true
   }
 
@@ -26211,8 +26256,11 @@ export namespace Prisma {
     vehicleId?: true
     severity?: true
     estimatedCost?: true
+    finalCost?: true
     notes?: true
     approvedById?: true
+    status?: true
+    disposition?: true
     createdAt?: true
     _all?: true
   }
@@ -26310,8 +26358,11 @@ export namespace Prisma {
     vehicleId: number
     severity: string
     estimatedCost: Decimal
+    finalCost: Decimal | null
     notes: JsonValue
     approvedById: number | null
+    status: $Enums.DamageReportStatus
+    disposition: $Enums.VehicleReturnDisposition | null
     createdAt: Date
     _count: DamageReportCountAggregateOutputType | null
     _avg: DamageReportAvgAggregateOutputType | null
@@ -26341,8 +26392,11 @@ export namespace Prisma {
     vehicleId?: boolean
     severity?: boolean
     estimatedCost?: boolean
+    finalCost?: boolean
     notes?: boolean
     approvedById?: boolean
+    status?: boolean
+    disposition?: boolean
     createdAt?: boolean
     booking?: boolean | BookingDefaultArgs<ExtArgs>
     vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
@@ -26358,8 +26412,11 @@ export namespace Prisma {
     vehicleId?: boolean
     severity?: boolean
     estimatedCost?: boolean
+    finalCost?: boolean
     notes?: boolean
     approvedById?: boolean
+    status?: boolean
+    disposition?: boolean
     createdAt?: boolean
     booking?: boolean | BookingDefaultArgs<ExtArgs>
     vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
@@ -26373,8 +26430,11 @@ export namespace Prisma {
     vehicleId?: boolean
     severity?: boolean
     estimatedCost?: boolean
+    finalCost?: boolean
     notes?: boolean
     approvedById?: boolean
+    status?: boolean
+    disposition?: boolean
     createdAt?: boolean
   }
 
@@ -26406,8 +26466,11 @@ export namespace Prisma {
       vehicleId: number
       severity: string
       estimatedCost: Prisma.Decimal
+      finalCost: Prisma.Decimal | null
       notes: Prisma.JsonValue
       approvedById: number | null
+      status: $Enums.DamageReportStatus
+      disposition: $Enums.VehicleReturnDisposition | null
       createdAt: Date
     }, ExtArgs["result"]["damageReport"]>
     composites: {}
@@ -26812,8 +26875,11 @@ export namespace Prisma {
     readonly vehicleId: FieldRef<"DamageReport", 'Int'>
     readonly severity: FieldRef<"DamageReport", 'String'>
     readonly estimatedCost: FieldRef<"DamageReport", 'Decimal'>
+    readonly finalCost: FieldRef<"DamageReport", 'Decimal'>
     readonly notes: FieldRef<"DamageReport", 'Json'>
     readonly approvedById: FieldRef<"DamageReport", 'Int'>
+    readonly status: FieldRef<"DamageReport", 'DamageReportStatus'>
+    readonly disposition: FieldRef<"DamageReport", 'VehicleReturnDisposition'>
     readonly createdAt: FieldRef<"DamageReport", 'DateTime'>
   }
     
@@ -34466,8 +34532,11 @@ export namespace Prisma {
     vehicleId: 'vehicleId',
     severity: 'severity',
     estimatedCost: 'estimatedCost',
+    finalCost: 'finalCost',
     notes: 'notes',
     approvedById: 'approvedById',
+    status: 'status',
+    disposition: 'disposition',
     createdAt: 'createdAt'
   };
 
@@ -34829,6 +34898,34 @@ export namespace Prisma {
    * Reference to a field of type 'BookingPhotoType[]'
    */
   export type ListEnumBookingPhotoTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BookingPhotoType[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'DamageReportStatus'
+   */
+  export type EnumDamageReportStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DamageReportStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'DamageReportStatus[]'
+   */
+  export type ListEnumDamageReportStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DamageReportStatus[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'VehicleReturnDisposition'
+   */
+  export type EnumVehicleReturnDispositionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VehicleReturnDisposition'>
+    
+
+
+  /**
+   * Reference to a field of type 'VehicleReturnDisposition[]'
+   */
+  export type ListEnumVehicleReturnDispositionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VehicleReturnDisposition[]'>
     
 
 
@@ -36548,8 +36645,11 @@ export namespace Prisma {
     vehicleId?: IntFilter<"DamageReport"> | number
     severity?: StringFilter<"DamageReport"> | string
     estimatedCost?: DecimalFilter<"DamageReport"> | Decimal | DecimalJsLike | number | string
+    finalCost?: DecimalNullableFilter<"DamageReport"> | Decimal | DecimalJsLike | number | string | null
     notes?: JsonFilter<"DamageReport">
     approvedById?: IntNullableFilter<"DamageReport"> | number | null
+    status?: EnumDamageReportStatusFilter<"DamageReport"> | $Enums.DamageReportStatus
+    disposition?: EnumVehicleReturnDispositionNullableFilter<"DamageReport"> | $Enums.VehicleReturnDisposition | null
     createdAt?: DateTimeFilter<"DamageReport"> | Date | string
     booking?: XOR<BookingRelationFilter, BookingWhereInput>
     vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
@@ -36564,8 +36664,11 @@ export namespace Prisma {
     vehicleId?: SortOrder
     severity?: SortOrder
     estimatedCost?: SortOrder
+    finalCost?: SortOrderInput | SortOrder
     notes?: SortOrder
     approvedById?: SortOrderInput | SortOrder
+    status?: SortOrder
+    disposition?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     booking?: BookingOrderByWithRelationInput
     vehicle?: VehicleOrderByWithRelationInput
@@ -36583,8 +36686,11 @@ export namespace Prisma {
     vehicleId?: IntFilter<"DamageReport"> | number
     severity?: StringFilter<"DamageReport"> | string
     estimatedCost?: DecimalFilter<"DamageReport"> | Decimal | DecimalJsLike | number | string
+    finalCost?: DecimalNullableFilter<"DamageReport"> | Decimal | DecimalJsLike | number | string | null
     notes?: JsonFilter<"DamageReport">
     approvedById?: IntNullableFilter<"DamageReport"> | number | null
+    status?: EnumDamageReportStatusFilter<"DamageReport"> | $Enums.DamageReportStatus
+    disposition?: EnumVehicleReturnDispositionNullableFilter<"DamageReport"> | $Enums.VehicleReturnDisposition | null
     createdAt?: DateTimeFilter<"DamageReport"> | Date | string
     booking?: XOR<BookingRelationFilter, BookingWhereInput>
     vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
@@ -36599,8 +36705,11 @@ export namespace Prisma {
     vehicleId?: SortOrder
     severity?: SortOrder
     estimatedCost?: SortOrder
+    finalCost?: SortOrderInput | SortOrder
     notes?: SortOrder
     approvedById?: SortOrderInput | SortOrder
+    status?: SortOrder
+    disposition?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: DamageReportCountOrderByAggregateInput
     _avg?: DamageReportAvgOrderByAggregateInput
@@ -36619,8 +36728,11 @@ export namespace Prisma {
     vehicleId?: IntWithAggregatesFilter<"DamageReport"> | number
     severity?: StringWithAggregatesFilter<"DamageReport"> | string
     estimatedCost?: DecimalWithAggregatesFilter<"DamageReport"> | Decimal | DecimalJsLike | number | string
+    finalCost?: DecimalNullableWithAggregatesFilter<"DamageReport"> | Decimal | DecimalJsLike | number | string | null
     notes?: JsonWithAggregatesFilter<"DamageReport">
     approvedById?: IntNullableWithAggregatesFilter<"DamageReport"> | number | null
+    status?: EnumDamageReportStatusWithAggregatesFilter<"DamageReport"> | $Enums.DamageReportStatus
+    disposition?: EnumVehicleReturnDispositionNullableWithAggregatesFilter<"DamageReport"> | $Enums.VehicleReturnDisposition | null
     createdAt?: DateTimeWithAggregatesFilter<"DamageReport"> | Date | string
   }
 
@@ -38831,7 +38943,10 @@ export namespace Prisma {
     publicId: string
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
+    finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
+    status?: $Enums.DamageReportStatus
+    disposition?: $Enums.VehicleReturnDisposition | null
     createdAt?: Date | string
     booking: BookingCreateNestedOneWithoutDamagesInput
     vehicle: VehicleCreateNestedOneWithoutDamageReportsInput
@@ -38846,8 +38961,11 @@ export namespace Prisma {
     vehicleId: number
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
+    finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
     approvedById?: number | null
+    status?: $Enums.DamageReportStatus
+    disposition?: $Enums.VehicleReturnDisposition | null
     createdAt?: Date | string
     photos?: BookingPhotoUncheckedCreateNestedManyWithoutDamageReportInput
   }
@@ -38856,7 +38974,10 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
+    status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
+    disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     booking?: BookingUpdateOneRequiredWithoutDamagesNestedInput
     vehicle?: VehicleUpdateOneRequiredWithoutDamageReportsNestedInput
@@ -38871,8 +38992,11 @@ export namespace Prisma {
     vehicleId?: IntFieldUpdateOperationsInput | number
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
+    disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     photos?: BookingPhotoUncheckedUpdateManyWithoutDamageReportNestedInput
   }
@@ -38884,8 +39008,11 @@ export namespace Prisma {
     vehicleId: number
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
+    finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
     approvedById?: number | null
+    status?: $Enums.DamageReportStatus
+    disposition?: $Enums.VehicleReturnDisposition | null
     createdAt?: Date | string
   }
 
@@ -38893,7 +39020,10 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
+    status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
+    disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -38904,8 +39034,11 @@ export namespace Prisma {
     vehicleId?: IntFieldUpdateOperationsInput | number
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
+    disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -41114,6 +41247,20 @@ export namespace Prisma {
     _max?: NestedEnumBookingPhotoTypeFilter<$PrismaModel>
   }
 
+  export type EnumDamageReportStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.DamageReportStatus | EnumDamageReportStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.DamageReportStatus[] | ListEnumDamageReportStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DamageReportStatus[] | ListEnumDamageReportStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumDamageReportStatusFilter<$PrismaModel> | $Enums.DamageReportStatus
+  }
+
+  export type EnumVehicleReturnDispositionNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.VehicleReturnDisposition | EnumVehicleReturnDispositionFieldRefInput<$PrismaModel> | null
+    in?: $Enums.VehicleReturnDisposition[] | ListEnumVehicleReturnDispositionFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.VehicleReturnDisposition[] | ListEnumVehicleReturnDispositionFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumVehicleReturnDispositionNullableFilter<$PrismaModel> | $Enums.VehicleReturnDisposition | null
+  }
+
   export type UserNullableRelationFilter = {
     is?: UserWhereInput | null
     isNot?: UserWhereInput | null
@@ -41126,8 +41273,11 @@ export namespace Prisma {
     vehicleId?: SortOrder
     severity?: SortOrder
     estimatedCost?: SortOrder
+    finalCost?: SortOrder
     notes?: SortOrder
     approvedById?: SortOrder
+    status?: SortOrder
+    disposition?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -41136,6 +41286,7 @@ export namespace Prisma {
     bookingId?: SortOrder
     vehicleId?: SortOrder
     estimatedCost?: SortOrder
+    finalCost?: SortOrder
     approvedById?: SortOrder
   }
 
@@ -41146,7 +41297,10 @@ export namespace Prisma {
     vehicleId?: SortOrder
     severity?: SortOrder
     estimatedCost?: SortOrder
+    finalCost?: SortOrder
     approvedById?: SortOrder
+    status?: SortOrder
+    disposition?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -41157,7 +41311,10 @@ export namespace Prisma {
     vehicleId?: SortOrder
     severity?: SortOrder
     estimatedCost?: SortOrder
+    finalCost?: SortOrder
     approvedById?: SortOrder
+    status?: SortOrder
+    disposition?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -41166,7 +41323,28 @@ export namespace Prisma {
     bookingId?: SortOrder
     vehicleId?: SortOrder
     estimatedCost?: SortOrder
+    finalCost?: SortOrder
     approvedById?: SortOrder
+  }
+
+  export type EnumDamageReportStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.DamageReportStatus | EnumDamageReportStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.DamageReportStatus[] | ListEnumDamageReportStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DamageReportStatus[] | ListEnumDamageReportStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumDamageReportStatusWithAggregatesFilter<$PrismaModel> | $Enums.DamageReportStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumDamageReportStatusFilter<$PrismaModel>
+    _max?: NestedEnumDamageReportStatusFilter<$PrismaModel>
+  }
+
+  export type EnumVehicleReturnDispositionNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.VehicleReturnDisposition | EnumVehicleReturnDispositionFieldRefInput<$PrismaModel> | null
+    in?: $Enums.VehicleReturnDisposition[] | ListEnumVehicleReturnDispositionFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.VehicleReturnDisposition[] | ListEnumVehicleReturnDispositionFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumVehicleReturnDispositionNullableWithAggregatesFilter<$PrismaModel> | $Enums.VehicleReturnDisposition | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumVehicleReturnDispositionNullableFilter<$PrismaModel>
+    _max?: NestedEnumVehicleReturnDispositionNullableFilter<$PrismaModel>
   }
 
   export type EnumDepositMethodFilter<$PrismaModel = never> = {
@@ -43435,6 +43613,14 @@ export namespace Prisma {
     connect?: BookingPhotoWhereUniqueInput | BookingPhotoWhereUniqueInput[]
   }
 
+  export type EnumDamageReportStatusFieldUpdateOperationsInput = {
+    set?: $Enums.DamageReportStatus
+  }
+
+  export type NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput = {
+    set?: $Enums.VehicleReturnDisposition | null
+  }
+
   export type BookingUpdateOneRequiredWithoutDamagesNestedInput = {
     create?: XOR<BookingCreateWithoutDamagesInput, BookingUncheckedCreateWithoutDamagesInput>
     connectOrCreate?: BookingCreateOrConnectWithoutDamagesInput
@@ -44098,6 +44284,40 @@ export namespace Prisma {
     _max?: NestedEnumBookingPhotoTypeFilter<$PrismaModel>
   }
 
+  export type NestedEnumDamageReportStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.DamageReportStatus | EnumDamageReportStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.DamageReportStatus[] | ListEnumDamageReportStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DamageReportStatus[] | ListEnumDamageReportStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumDamageReportStatusFilter<$PrismaModel> | $Enums.DamageReportStatus
+  }
+
+  export type NestedEnumVehicleReturnDispositionNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.VehicleReturnDisposition | EnumVehicleReturnDispositionFieldRefInput<$PrismaModel> | null
+    in?: $Enums.VehicleReturnDisposition[] | ListEnumVehicleReturnDispositionFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.VehicleReturnDisposition[] | ListEnumVehicleReturnDispositionFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumVehicleReturnDispositionNullableFilter<$PrismaModel> | $Enums.VehicleReturnDisposition | null
+  }
+
+  export type NestedEnumDamageReportStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.DamageReportStatus | EnumDamageReportStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.DamageReportStatus[] | ListEnumDamageReportStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DamageReportStatus[] | ListEnumDamageReportStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumDamageReportStatusWithAggregatesFilter<$PrismaModel> | $Enums.DamageReportStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumDamageReportStatusFilter<$PrismaModel>
+    _max?: NestedEnumDamageReportStatusFilter<$PrismaModel>
+  }
+
+  export type NestedEnumVehicleReturnDispositionNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.VehicleReturnDisposition | EnumVehicleReturnDispositionFieldRefInput<$PrismaModel> | null
+    in?: $Enums.VehicleReturnDisposition[] | ListEnumVehicleReturnDispositionFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.VehicleReturnDisposition[] | ListEnumVehicleReturnDispositionFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumVehicleReturnDispositionNullableWithAggregatesFilter<$PrismaModel> | $Enums.VehicleReturnDisposition | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumVehicleReturnDispositionNullableFilter<$PrismaModel>
+    _max?: NestedEnumVehicleReturnDispositionNullableFilter<$PrismaModel>
+  }
+
   export type NestedEnumDepositMethodFilter<$PrismaModel = never> = {
     equals?: $Enums.DepositMethod | EnumDepositMethodFieldRefInput<$PrismaModel>
     in?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel>
@@ -44388,7 +44608,10 @@ export namespace Prisma {
     publicId: string
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
+    finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
+    status?: $Enums.DamageReportStatus
+    disposition?: $Enums.VehicleReturnDisposition | null
     createdAt?: Date | string
     booking: BookingCreateNestedOneWithoutDamagesInput
     vehicle: VehicleCreateNestedOneWithoutDamageReportsInput
@@ -44402,7 +44625,10 @@ export namespace Prisma {
     vehicleId: number
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
+    finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
+    status?: $Enums.DamageReportStatus
+    disposition?: $Enums.VehicleReturnDisposition | null
     createdAt?: Date | string
     photos?: BookingPhotoUncheckedCreateNestedManyWithoutDamageReportInput
   }
@@ -44664,8 +44890,11 @@ export namespace Prisma {
     vehicleId?: IntFilter<"DamageReport"> | number
     severity?: StringFilter<"DamageReport"> | string
     estimatedCost?: DecimalFilter<"DamageReport"> | Decimal | DecimalJsLike | number | string
+    finalCost?: DecimalNullableFilter<"DamageReport"> | Decimal | DecimalJsLike | number | string | null
     notes?: JsonFilter<"DamageReport">
     approvedById?: IntNullableFilter<"DamageReport"> | number | null
+    status?: EnumDamageReportStatusFilter<"DamageReport"> | $Enums.DamageReportStatus
+    disposition?: EnumVehicleReturnDispositionNullableFilter<"DamageReport"> | $Enums.VehicleReturnDisposition | null
     createdAt?: DateTimeFilter<"DamageReport"> | Date | string
   }
 
@@ -46295,7 +46524,10 @@ export namespace Prisma {
     publicId: string
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
+    finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
+    status?: $Enums.DamageReportStatus
+    disposition?: $Enums.VehicleReturnDisposition | null
     createdAt?: Date | string
     booking: BookingCreateNestedOneWithoutDamagesInput
     approvedBy?: UserCreateNestedOneWithoutApprovedDamageReportsInput
@@ -46308,8 +46540,11 @@ export namespace Prisma {
     bookingId: number
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
+    finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
     approvedById?: number | null
+    status?: $Enums.DamageReportStatus
+    disposition?: $Enums.VehicleReturnDisposition | null
     createdAt?: Date | string
     photos?: BookingPhotoUncheckedCreateNestedManyWithoutDamageReportInput
   }
@@ -47592,7 +47827,10 @@ export namespace Prisma {
     publicId: string
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
+    finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
+    status?: $Enums.DamageReportStatus
+    disposition?: $Enums.VehicleReturnDisposition | null
     createdAt?: Date | string
     vehicle: VehicleCreateNestedOneWithoutDamageReportsInput
     approvedBy?: UserCreateNestedOneWithoutApprovedDamageReportsInput
@@ -47605,8 +47843,11 @@ export namespace Prisma {
     vehicleId: number
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
+    finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
     approvedById?: number | null
+    status?: $Enums.DamageReportStatus
+    disposition?: $Enums.VehicleReturnDisposition | null
     createdAt?: Date | string
     photos?: BookingPhotoUncheckedCreateNestedManyWithoutDamageReportInput
   }
@@ -48334,7 +48575,10 @@ export namespace Prisma {
     publicId: string
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
+    finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
+    status?: $Enums.DamageReportStatus
+    disposition?: $Enums.VehicleReturnDisposition | null
     createdAt?: Date | string
     booking: BookingCreateNestedOneWithoutDamagesInput
     vehicle: VehicleCreateNestedOneWithoutDamageReportsInput
@@ -48348,8 +48592,11 @@ export namespace Prisma {
     vehicleId: number
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
+    finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
     approvedById?: number | null
+    status?: $Enums.DamageReportStatus
+    disposition?: $Enums.VehicleReturnDisposition | null
     createdAt?: Date | string
   }
 
@@ -48477,7 +48724,10 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
+    status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
+    disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     booking?: BookingUpdateOneRequiredWithoutDamagesNestedInput
     vehicle?: VehicleUpdateOneRequiredWithoutDamageReportsNestedInput
@@ -48491,8 +48741,11 @@ export namespace Prisma {
     vehicleId?: IntFieldUpdateOperationsInput | number
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
+    disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -49545,7 +49798,10 @@ export namespace Prisma {
     vehicleId: number
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
+    finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
+    status?: $Enums.DamageReportStatus
+    disposition?: $Enums.VehicleReturnDisposition | null
     createdAt?: Date | string
   }
 
@@ -49724,7 +49980,10 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
+    status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
+    disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     booking?: BookingUpdateOneRequiredWithoutDamagesNestedInput
     vehicle?: VehicleUpdateOneRequiredWithoutDamageReportsNestedInput
@@ -49738,7 +49997,10 @@ export namespace Prisma {
     vehicleId?: IntFieldUpdateOperationsInput | number
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
+    status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
+    disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     photos?: BookingPhotoUncheckedUpdateManyWithoutDamageReportNestedInput
   }
@@ -49750,7 +50012,10 @@ export namespace Prisma {
     vehicleId?: IntFieldUpdateOperationsInput | number
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
+    status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
+    disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -50587,8 +50852,11 @@ export namespace Prisma {
     bookingId: number
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
+    finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
     approvedById?: number | null
+    status?: $Enums.DamageReportStatus
+    disposition?: $Enums.VehicleReturnDisposition | null
     createdAt?: Date | string
   }
 
@@ -50661,7 +50929,10 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
+    status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
+    disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     booking?: BookingUpdateOneRequiredWithoutDamagesNestedInput
     approvedBy?: UserUpdateOneWithoutApprovedDamageReportsNestedInput
@@ -50674,8 +50945,11 @@ export namespace Prisma {
     bookingId?: IntFieldUpdateOperationsInput | number
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
+    disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     photos?: BookingPhotoUncheckedUpdateManyWithoutDamageReportNestedInput
   }
@@ -50686,8 +50960,11 @@ export namespace Prisma {
     bookingId?: IntFieldUpdateOperationsInput | number
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
+    disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -50761,8 +51038,11 @@ export namespace Prisma {
     vehicleId: number
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
+    finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
     approvedById?: number | null
+    status?: $Enums.DamageReportStatus
+    disposition?: $Enums.VehicleReturnDisposition | null
     createdAt?: Date | string
   }
 
@@ -50807,7 +51087,10 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
+    status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
+    disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     vehicle?: VehicleUpdateOneRequiredWithoutDamageReportsNestedInput
     approvedBy?: UserUpdateOneWithoutApprovedDamageReportsNestedInput
@@ -50820,8 +51103,11 @@ export namespace Prisma {
     vehicleId?: IntFieldUpdateOperationsInput | number
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
+    disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     photos?: BookingPhotoUncheckedUpdateManyWithoutDamageReportNestedInput
   }
@@ -50832,8 +51118,11 @@ export namespace Prisma {
     vehicleId?: IntFieldUpdateOperationsInput | number
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
+    disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 

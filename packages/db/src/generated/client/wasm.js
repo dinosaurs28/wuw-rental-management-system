@@ -368,8 +368,11 @@ exports.Prisma.DamageReportScalarFieldEnum = {
   vehicleId: 'vehicleId',
   severity: 'severity',
   estimatedCost: 'estimatedCost',
+  finalCost: 'finalCost',
   notes: 'notes',
   approvedById: 'approvedById',
+  status: 'status',
+  disposition: 'disposition',
   createdAt: 'createdAt'
 };
 
@@ -540,6 +543,18 @@ exports.BookingPhotoType = exports.$Enums.BookingPhotoType = {
   PRE_DELIVERY: 'PRE_DELIVERY',
   POST_RETURN: 'POST_RETURN',
   DAMAGE: 'DAMAGE'
+};
+
+exports.DamageReportStatus = exports.$Enums.DamageReportStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED'
+};
+
+exports.VehicleReturnDisposition = exports.$Enums.VehicleReturnDisposition = {
+  AVAILABLE: 'AVAILABLE',
+  MAINTENANCE: 'MAINTENANCE',
+  DAMAGED: 'DAMAGED'
 };
 
 exports.InvoiceStatus = exports.$Enums.InvoiceStatus = {

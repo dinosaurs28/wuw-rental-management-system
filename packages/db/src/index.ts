@@ -28,6 +28,8 @@ export {
   PaymentStatus,
   InvoiceStatus,
   PricingRuleType,
+  DamageReportStatus,
+  VehicleReturnDisposition,
   Prisma,
 } from "./generated/client/index.js";
 

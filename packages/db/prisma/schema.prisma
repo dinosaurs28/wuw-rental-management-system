@@ -81,6 +81,18 @@ enum PricingRuleType {
   CUSTOM
 }
 
+enum VehicleReturnDisposition {
+  AVAILABLE
+  MAINTENANCE
+  DAMAGED
+}
+
+enum DamageReportStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 // USER & AUTH
 
 model User {
@@ -436,36 +448,38 @@ model BookingItem {
 }
 
 model BookingPhoto {
-  id        Int              @id @default(autoincrement())
-  publicId  String           @unique
-  bookingId Int
-  fileId    Int
-  type      BookingPhotoType
+  id             Int              @id @default(autoincrement())
+  publicId       String           @unique
+  bookingId      Int
+  fileId         Int
+  type           BookingPhotoType
   damageReportId Int?
 
-  booking   Booking    @relation(fields: [bookingId], references: [id])
-  file      FileObject @relation(fields: [fileId], references: [id])
-  createdAt DateTime   @default(now())
-  damageReport  DamageReport? @relation(fields: [damageReportId], references: [id])
+  booking      Booking       @relation(fields: [bookingId], references: [id])
+  file         FileObject    @relation(fields: [fileId], references: [id])
+  createdAt    DateTime      @default(now())
+  damageReport DamageReport? @relation(fields: [damageReportId], references: [id])
 
   @@index([bookingId])
   @@index([fileId])
 }
 
 model DamageReport {
-  id            Int     @id @default(autoincrement())
-  publicId      String  @unique
+  id            Int                      @id @default(autoincrement())
+  publicId      String                   @unique
   bookingId     Int
   vehicleId     Int
   severity      String
   estimatedCost Decimal
+  finalCost     Decimal?
   notes         Json
   approvedById  Int?
-
-  booking    Booking @relation(fields: [bookingId], references: [id])
-  vehicle    Vehicle @relation(fields: [vehicleId], references: [id])
-  approvedBy User?   @relation(fields: [approvedById], references: [id], onDelete: SetNull)
-  photos     BookingPhoto[]
+  status        DamageReportStatus       @default(PENDING)
+  disposition   VehicleReturnDisposition?
+  booking       Booking                  @relation(fields: [bookingId], references: [id])
+  vehicle       Vehicle                  @relation(fields: [vehicleId], references: [id])
+  approvedBy    User?                    @relation(fields: [approvedById], references: [id], onDelete: SetNull)
+  photos        BookingPhoto[]
 
   createdAt DateTime @default(now())
 }
