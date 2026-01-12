@@ -129,6 +129,95 @@ export const GetDamageReports = async (req: Request, res: Response) => {
 }
 
 
+
+export const GetDamageReportList = async (req: Request, res: Response) => {
+    try {
+        const branchId = req.branch_Id;
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const search = parseInt(req.query.search as string);
+        const skip = (page - 1) * limit;
+
+        const whereCondition: any = {
+            booking: {
+                branchId: branchId
+            }
+        };
+
+        if (search) {
+            whereCondition.OR = [
+                { id: { contains: search, mode: 'insensitive' } },
+                {
+                    vehicle: {
+                        regNo: { contains: search, mode: 'insensitive' }
+                    }
+                }
+            ];
+        }
+
+        const reports = await prisma.damageReport.findMany({
+            where: whereCondition,
+            select: {
+                publicId: true,
+                status: true,
+                createdAt: true,
+                vehicle: {
+                    select: {
+                        regNo: true,
+                        make: true,
+                        model: true,
+                        images: {
+                            where: { isThumbnail: true },
+                            select: {
+                                file: {
+                                    select: { url: true }
+                                }
+                            },
+                            take: 1
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            },
+            take: limit,
+            skip: skip
+        });
+
+        const totalCount = await prisma.damageReport.count({
+            where: whereCondition
+        });
+
+        const responseData = {
+            reports: reports.map(r => ({
+                ...r,
+                vehicle: {
+                    ...r.vehicle,
+                    image: r.vehicle.images[0]?.file.url || null
+                }
+            })),
+            pagination: {
+                total: totalCount,
+                page: page,
+                limit: limit,
+                totalPages: Math.ceil(totalCount / limit)
+            }
+        };
+
+        return res.status(StatusCode.OK).json({
+            message: "Damage reports fetched successfully",
+            data: responseData
+        });
+
+    } catch (error) {
+        console.error("Error fetching damage report list:", error);
+        return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+            message: "Internal Server Error"
+        });
+    }
+}
+
 export const GetMinimalDamageReport = async (req: Request, res: Response) => {
     try {
         const { damageReportId } = req.params;
