@@ -3808,6 +3808,37 @@ export namespace Prisma {
 
 
   /**
+   * Count Type DamageReportCountOutputType
+   */
+
+  export type DamageReportCountOutputType = {
+    photos: number
+  }
+
+  export type DamageReportCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    photos?: boolean | DamageReportCountOutputTypeCountPhotosArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * DamageReportCountOutputType without action
+   */
+  export type DamageReportCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DamageReportCountOutputType
+     */
+    select?: DamageReportCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * DamageReportCountOutputType without action
+   */
+  export type DamageReportCountOutputTypeCountPhotosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BookingPhotoWhereInput
+  }
+
+
+  /**
    * Count Type InvoiceCountOutputType
    */
 
@@ -25057,12 +25088,14 @@ export namespace Prisma {
     id: number | null
     bookingId: number | null
     fileId: number | null
+    damageReportId: number | null
   }
 
   export type BookingPhotoSumAggregateOutputType = {
     id: number | null
     bookingId: number | null
     fileId: number | null
+    damageReportId: number | null
   }
 
   export type BookingPhotoMinAggregateOutputType = {
@@ -25071,6 +25104,7 @@ export namespace Prisma {
     bookingId: number | null
     fileId: number | null
     type: $Enums.BookingPhotoType | null
+    damageReportId: number | null
     createdAt: Date | null
   }
 
@@ -25080,6 +25114,7 @@ export namespace Prisma {
     bookingId: number | null
     fileId: number | null
     type: $Enums.BookingPhotoType | null
+    damageReportId: number | null
     createdAt: Date | null
   }
 
@@ -25089,6 +25124,7 @@ export namespace Prisma {
     bookingId: number
     fileId: number
     type: number
+    damageReportId: number
     createdAt: number
     _all: number
   }
@@ -25098,12 +25134,14 @@ export namespace Prisma {
     id?: true
     bookingId?: true
     fileId?: true
+    damageReportId?: true
   }
 
   export type BookingPhotoSumAggregateInputType = {
     id?: true
     bookingId?: true
     fileId?: true
+    damageReportId?: true
   }
 
   export type BookingPhotoMinAggregateInputType = {
@@ -25112,6 +25150,7 @@ export namespace Prisma {
     bookingId?: true
     fileId?: true
     type?: true
+    damageReportId?: true
     createdAt?: true
   }
 
@@ -25121,6 +25160,7 @@ export namespace Prisma {
     bookingId?: true
     fileId?: true
     type?: true
+    damageReportId?: true
     createdAt?: true
   }
 
@@ -25130,6 +25170,7 @@ export namespace Prisma {
     bookingId?: true
     fileId?: true
     type?: true
+    damageReportId?: true
     createdAt?: true
     _all?: true
   }
@@ -25226,6 +25267,7 @@ export namespace Prisma {
     bookingId: number
     fileId: number
     type: $Enums.BookingPhotoType
+    damageReportId: number | null
     createdAt: Date
     _count: BookingPhotoCountAggregateOutputType | null
     _avg: BookingPhotoAvgAggregateOutputType | null
@@ -25254,9 +25296,11 @@ export namespace Prisma {
     bookingId?: boolean
     fileId?: boolean
     type?: boolean
+    damageReportId?: boolean
     createdAt?: boolean
     booking?: boolean | BookingDefaultArgs<ExtArgs>
     file?: boolean | FileObjectDefaultArgs<ExtArgs>
+    damageReport?: boolean | BookingPhoto$damageReportArgs<ExtArgs>
   }, ExtArgs["result"]["bookingPhoto"]>
 
   export type BookingPhotoSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -25265,9 +25309,11 @@ export namespace Prisma {
     bookingId?: boolean
     fileId?: boolean
     type?: boolean
+    damageReportId?: boolean
     createdAt?: boolean
     booking?: boolean | BookingDefaultArgs<ExtArgs>
     file?: boolean | FileObjectDefaultArgs<ExtArgs>
+    damageReport?: boolean | BookingPhoto$damageReportArgs<ExtArgs>
   }, ExtArgs["result"]["bookingPhoto"]>
 
   export type BookingPhotoSelectScalar = {
@@ -25276,16 +25322,19 @@ export namespace Prisma {
     bookingId?: boolean
     fileId?: boolean
     type?: boolean
+    damageReportId?: boolean
     createdAt?: boolean
   }
 
   export type BookingPhotoInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     booking?: boolean | BookingDefaultArgs<ExtArgs>
     file?: boolean | FileObjectDefaultArgs<ExtArgs>
+    damageReport?: boolean | BookingPhoto$damageReportArgs<ExtArgs>
   }
   export type BookingPhotoIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     booking?: boolean | BookingDefaultArgs<ExtArgs>
     file?: boolean | FileObjectDefaultArgs<ExtArgs>
+    damageReport?: boolean | BookingPhoto$damageReportArgs<ExtArgs>
   }
 
   export type $BookingPhotoPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -25293,6 +25342,7 @@ export namespace Prisma {
     objects: {
       booking: Prisma.$BookingPayload<ExtArgs>
       file: Prisma.$FileObjectPayload<ExtArgs>
+      damageReport: Prisma.$DamageReportPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -25300,6 +25350,7 @@ export namespace Prisma {
       bookingId: number
       fileId: number
       type: $Enums.BookingPhotoType
+      damageReportId: number | null
       createdAt: Date
     }, ExtArgs["result"]["bookingPhoto"]>
     composites: {}
@@ -25667,6 +25718,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     booking<T extends BookingDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BookingDefaultArgs<ExtArgs>>): Prisma__BookingClient<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     file<T extends FileObjectDefaultArgs<ExtArgs> = {}>(args?: Subset<T, FileObjectDefaultArgs<ExtArgs>>): Prisma__FileObjectClient<$Result.GetResult<Prisma.$FileObjectPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    damageReport<T extends BookingPhoto$damageReportArgs<ExtArgs> = {}>(args?: Subset<T, BookingPhoto$damageReportArgs<ExtArgs>>): Prisma__DamageReportClient<$Result.GetResult<Prisma.$DamageReportPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -25701,6 +25753,7 @@ export namespace Prisma {
     readonly bookingId: FieldRef<"BookingPhoto", 'Int'>
     readonly fileId: FieldRef<"BookingPhoto", 'Int'>
     readonly type: FieldRef<"BookingPhoto", 'BookingPhotoType'>
+    readonly damageReportId: FieldRef<"BookingPhoto", 'Int'>
     readonly createdAt: FieldRef<"BookingPhoto", 'DateTime'>
   }
     
@@ -26020,6 +26073,21 @@ export namespace Prisma {
   }
 
   /**
+   * BookingPhoto.damageReport
+   */
+  export type BookingPhoto$damageReportArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DamageReport
+     */
+    select?: DamageReportSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DamageReportInclude<ExtArgs> | null
+    where?: DamageReportWhereInput
+  }
+
+  /**
    * BookingPhoto without action
    */
   export type BookingPhotoDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -26069,7 +26137,6 @@ export namespace Prisma {
     vehicleId: number | null
     severity: string | null
     estimatedCost: Decimal | null
-    notes: string | null
     approvedById: number | null
     createdAt: Date | null
   }
@@ -26081,7 +26148,6 @@ export namespace Prisma {
     vehicleId: number | null
     severity: string | null
     estimatedCost: Decimal | null
-    notes: string | null
     approvedById: number | null
     createdAt: Date | null
   }
@@ -26123,7 +26189,6 @@ export namespace Prisma {
     vehicleId?: true
     severity?: true
     estimatedCost?: true
-    notes?: true
     approvedById?: true
     createdAt?: true
   }
@@ -26135,7 +26200,6 @@ export namespace Prisma {
     vehicleId?: true
     severity?: true
     estimatedCost?: true
-    notes?: true
     approvedById?: true
     createdAt?: true
   }
@@ -26246,7 +26310,7 @@ export namespace Prisma {
     vehicleId: number
     severity: string
     estimatedCost: Decimal
-    notes: string | null
+    notes: JsonValue
     approvedById: number | null
     createdAt: Date
     _count: DamageReportCountAggregateOutputType | null
@@ -26283,6 +26347,8 @@ export namespace Prisma {
     booking?: boolean | BookingDefaultArgs<ExtArgs>
     vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
     approvedBy?: boolean | DamageReport$approvedByArgs<ExtArgs>
+    photos?: boolean | DamageReport$photosArgs<ExtArgs>
+    _count?: boolean | DamageReportCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["damageReport"]>
 
   export type DamageReportSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -26316,6 +26382,8 @@ export namespace Prisma {
     booking?: boolean | BookingDefaultArgs<ExtArgs>
     vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
     approvedBy?: boolean | DamageReport$approvedByArgs<ExtArgs>
+    photos?: boolean | DamageReport$photosArgs<ExtArgs>
+    _count?: boolean | DamageReportCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type DamageReportIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     booking?: boolean | BookingDefaultArgs<ExtArgs>
@@ -26329,6 +26397,7 @@ export namespace Prisma {
       booking: Prisma.$BookingPayload<ExtArgs>
       vehicle: Prisma.$VehiclePayload<ExtArgs>
       approvedBy: Prisma.$UserPayload<ExtArgs> | null
+      photos: Prisma.$BookingPhotoPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -26337,7 +26406,7 @@ export namespace Prisma {
       vehicleId: number
       severity: string
       estimatedCost: Prisma.Decimal
-      notes: string | null
+      notes: Prisma.JsonValue
       approvedById: number | null
       createdAt: Date
     }, ExtArgs["result"]["damageReport"]>
@@ -26707,6 +26776,7 @@ export namespace Prisma {
     booking<T extends BookingDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BookingDefaultArgs<ExtArgs>>): Prisma__BookingClient<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     vehicle<T extends VehicleDefaultArgs<ExtArgs> = {}>(args?: Subset<T, VehicleDefaultArgs<ExtArgs>>): Prisma__VehicleClient<$Result.GetResult<Prisma.$VehiclePayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     approvedBy<T extends DamageReport$approvedByArgs<ExtArgs> = {}>(args?: Subset<T, DamageReport$approvedByArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    photos<T extends DamageReport$photosArgs<ExtArgs> = {}>(args?: Subset<T, DamageReport$photosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingPhotoPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -26742,7 +26812,7 @@ export namespace Prisma {
     readonly vehicleId: FieldRef<"DamageReport", 'Int'>
     readonly severity: FieldRef<"DamageReport", 'String'>
     readonly estimatedCost: FieldRef<"DamageReport", 'Decimal'>
-    readonly notes: FieldRef<"DamageReport", 'String'>
+    readonly notes: FieldRef<"DamageReport", 'Json'>
     readonly approvedById: FieldRef<"DamageReport", 'Int'>
     readonly createdAt: FieldRef<"DamageReport", 'DateTime'>
   }
@@ -27075,6 +27145,26 @@ export namespace Prisma {
      */
     include?: UserInclude<ExtArgs> | null
     where?: UserWhereInput
+  }
+
+  /**
+   * DamageReport.photos
+   */
+  export type DamageReport$photosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingPhoto
+     */
+    select?: BookingPhotoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingPhotoInclude<ExtArgs> | null
+    where?: BookingPhotoWhereInput
+    orderBy?: BookingPhotoOrderByWithRelationInput | BookingPhotoOrderByWithRelationInput[]
+    cursor?: BookingPhotoWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: BookingPhotoScalarFieldEnum | BookingPhotoScalarFieldEnum[]
   }
 
   /**
@@ -34362,6 +34452,7 @@ export namespace Prisma {
     bookingId: 'bookingId',
     fileId: 'fileId',
     type: 'type',
+    damageReportId: 'damageReportId',
     createdAt: 'createdAt'
   };
 
@@ -36383,9 +36474,11 @@ export namespace Prisma {
     bookingId?: IntFilter<"BookingPhoto"> | number
     fileId?: IntFilter<"BookingPhoto"> | number
     type?: EnumBookingPhotoTypeFilter<"BookingPhoto"> | $Enums.BookingPhotoType
+    damageReportId?: IntNullableFilter<"BookingPhoto"> | number | null
     createdAt?: DateTimeFilter<"BookingPhoto"> | Date | string
     booking?: XOR<BookingRelationFilter, BookingWhereInput>
     file?: XOR<FileObjectRelationFilter, FileObjectWhereInput>
+    damageReport?: XOR<DamageReportNullableRelationFilter, DamageReportWhereInput> | null
   }
 
   export type BookingPhotoOrderByWithRelationInput = {
@@ -36394,9 +36487,11 @@ export namespace Prisma {
     bookingId?: SortOrder
     fileId?: SortOrder
     type?: SortOrder
+    damageReportId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     booking?: BookingOrderByWithRelationInput
     file?: FileObjectOrderByWithRelationInput
+    damageReport?: DamageReportOrderByWithRelationInput
   }
 
   export type BookingPhotoWhereUniqueInput = Prisma.AtLeast<{
@@ -36408,9 +36503,11 @@ export namespace Prisma {
     bookingId?: IntFilter<"BookingPhoto"> | number
     fileId?: IntFilter<"BookingPhoto"> | number
     type?: EnumBookingPhotoTypeFilter<"BookingPhoto"> | $Enums.BookingPhotoType
+    damageReportId?: IntNullableFilter<"BookingPhoto"> | number | null
     createdAt?: DateTimeFilter<"BookingPhoto"> | Date | string
     booking?: XOR<BookingRelationFilter, BookingWhereInput>
     file?: XOR<FileObjectRelationFilter, FileObjectWhereInput>
+    damageReport?: XOR<DamageReportNullableRelationFilter, DamageReportWhereInput> | null
   }, "id" | "publicId">
 
   export type BookingPhotoOrderByWithAggregationInput = {
@@ -36419,6 +36516,7 @@ export namespace Prisma {
     bookingId?: SortOrder
     fileId?: SortOrder
     type?: SortOrder
+    damageReportId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: BookingPhotoCountOrderByAggregateInput
     _avg?: BookingPhotoAvgOrderByAggregateInput
@@ -36436,6 +36534,7 @@ export namespace Prisma {
     bookingId?: IntWithAggregatesFilter<"BookingPhoto"> | number
     fileId?: IntWithAggregatesFilter<"BookingPhoto"> | number
     type?: EnumBookingPhotoTypeWithAggregatesFilter<"BookingPhoto"> | $Enums.BookingPhotoType
+    damageReportId?: IntNullableWithAggregatesFilter<"BookingPhoto"> | number | null
     createdAt?: DateTimeWithAggregatesFilter<"BookingPhoto"> | Date | string
   }
 
@@ -36449,12 +36548,13 @@ export namespace Prisma {
     vehicleId?: IntFilter<"DamageReport"> | number
     severity?: StringFilter<"DamageReport"> | string
     estimatedCost?: DecimalFilter<"DamageReport"> | Decimal | DecimalJsLike | number | string
-    notes?: StringNullableFilter<"DamageReport"> | string | null
+    notes?: JsonFilter<"DamageReport">
     approvedById?: IntNullableFilter<"DamageReport"> | number | null
     createdAt?: DateTimeFilter<"DamageReport"> | Date | string
     booking?: XOR<BookingRelationFilter, BookingWhereInput>
     vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
     approvedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+    photos?: BookingPhotoListRelationFilter
   }
 
   export type DamageReportOrderByWithRelationInput = {
@@ -36464,12 +36564,13 @@ export namespace Prisma {
     vehicleId?: SortOrder
     severity?: SortOrder
     estimatedCost?: SortOrder
-    notes?: SortOrderInput | SortOrder
+    notes?: SortOrder
     approvedById?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     booking?: BookingOrderByWithRelationInput
     vehicle?: VehicleOrderByWithRelationInput
     approvedBy?: UserOrderByWithRelationInput
+    photos?: BookingPhotoOrderByRelationAggregateInput
   }
 
   export type DamageReportWhereUniqueInput = Prisma.AtLeast<{
@@ -36482,12 +36583,13 @@ export namespace Prisma {
     vehicleId?: IntFilter<"DamageReport"> | number
     severity?: StringFilter<"DamageReport"> | string
     estimatedCost?: DecimalFilter<"DamageReport"> | Decimal | DecimalJsLike | number | string
-    notes?: StringNullableFilter<"DamageReport"> | string | null
+    notes?: JsonFilter<"DamageReport">
     approvedById?: IntNullableFilter<"DamageReport"> | number | null
     createdAt?: DateTimeFilter<"DamageReport"> | Date | string
     booking?: XOR<BookingRelationFilter, BookingWhereInput>
     vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
     approvedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+    photos?: BookingPhotoListRelationFilter
   }, "id" | "publicId">
 
   export type DamageReportOrderByWithAggregationInput = {
@@ -36497,7 +36599,7 @@ export namespace Prisma {
     vehicleId?: SortOrder
     severity?: SortOrder
     estimatedCost?: SortOrder
-    notes?: SortOrderInput | SortOrder
+    notes?: SortOrder
     approvedById?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: DamageReportCountOrderByAggregateInput
@@ -36517,7 +36619,7 @@ export namespace Prisma {
     vehicleId?: IntWithAggregatesFilter<"DamageReport"> | number
     severity?: StringWithAggregatesFilter<"DamageReport"> | string
     estimatedCost?: DecimalWithAggregatesFilter<"DamageReport"> | Decimal | DecimalJsLike | number | string
-    notes?: StringNullableWithAggregatesFilter<"DamageReport"> | string | null
+    notes?: JsonWithAggregatesFilter<"DamageReport">
     approvedById?: IntNullableWithAggregatesFilter<"DamageReport"> | number | null
     createdAt?: DateTimeWithAggregatesFilter<"DamageReport"> | Date | string
   }
@@ -38667,6 +38769,7 @@ export namespace Prisma {
     createdAt?: Date | string
     booking: BookingCreateNestedOneWithoutPhotosInput
     file: FileObjectCreateNestedOneWithoutBookingPhotosInput
+    damageReport?: DamageReportCreateNestedOneWithoutPhotosInput
   }
 
   export type BookingPhotoUncheckedCreateInput = {
@@ -38675,6 +38778,7 @@ export namespace Prisma {
     bookingId: number
     fileId: number
     type: $Enums.BookingPhotoType
+    damageReportId?: number | null
     createdAt?: Date | string
   }
 
@@ -38684,6 +38788,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     booking?: BookingUpdateOneRequiredWithoutPhotosNestedInput
     file?: FileObjectUpdateOneRequiredWithoutBookingPhotosNestedInput
+    damageReport?: DamageReportUpdateOneWithoutPhotosNestedInput
   }
 
   export type BookingPhotoUncheckedUpdateInput = {
@@ -38692,6 +38797,7 @@ export namespace Prisma {
     bookingId?: IntFieldUpdateOperationsInput | number
     fileId?: IntFieldUpdateOperationsInput | number
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
+    damageReportId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -38701,6 +38807,7 @@ export namespace Prisma {
     bookingId: number
     fileId: number
     type: $Enums.BookingPhotoType
+    damageReportId?: number | null
     createdAt?: Date | string
   }
 
@@ -38716,6 +38823,7 @@ export namespace Prisma {
     bookingId?: IntFieldUpdateOperationsInput | number
     fileId?: IntFieldUpdateOperationsInput | number
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
+    damageReportId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -38723,11 +38831,12 @@ export namespace Prisma {
     publicId: string
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
-    notes?: string | null
+    notes: JsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     booking: BookingCreateNestedOneWithoutDamagesInput
     vehicle: VehicleCreateNestedOneWithoutDamageReportsInput
     approvedBy?: UserCreateNestedOneWithoutApprovedDamageReportsInput
+    photos?: BookingPhotoCreateNestedManyWithoutDamageReportInput
   }
 
   export type DamageReportUncheckedCreateInput = {
@@ -38737,20 +38846,22 @@ export namespace Prisma {
     vehicleId: number
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
-    notes?: string | null
+    notes: JsonNullValueInput | InputJsonValue
     approvedById?: number | null
     createdAt?: Date | string
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutDamageReportInput
   }
 
   export type DamageReportUpdateInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: JsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     booking?: BookingUpdateOneRequiredWithoutDamagesNestedInput
     vehicle?: VehicleUpdateOneRequiredWithoutDamageReportsNestedInput
     approvedBy?: UserUpdateOneWithoutApprovedDamageReportsNestedInput
+    photos?: BookingPhotoUpdateManyWithoutDamageReportNestedInput
   }
 
   export type DamageReportUncheckedUpdateInput = {
@@ -38760,9 +38871,10 @@ export namespace Prisma {
     vehicleId?: IntFieldUpdateOperationsInput | number
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: JsonNullValueInput | InputJsonValue
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    photos?: BookingPhotoUncheckedUpdateManyWithoutDamageReportNestedInput
   }
 
   export type DamageReportCreateManyInput = {
@@ -38772,7 +38884,7 @@ export namespace Prisma {
     vehicleId: number
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
-    notes?: string | null
+    notes: JsonNullValueInput | InputJsonValue
     approvedById?: number | null
     createdAt?: Date | string
   }
@@ -38781,7 +38893,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: JsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -38792,7 +38904,7 @@ export namespace Prisma {
     vehicleId?: IntFieldUpdateOperationsInput | number
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: JsonNullValueInput | InputJsonValue
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -40943,12 +41055,18 @@ export namespace Prisma {
     not?: NestedEnumBookingPhotoTypeFilter<$PrismaModel> | $Enums.BookingPhotoType
   }
 
+  export type DamageReportNullableRelationFilter = {
+    is?: DamageReportWhereInput | null
+    isNot?: DamageReportWhereInput | null
+  }
+
   export type BookingPhotoCountOrderByAggregateInput = {
     id?: SortOrder
     publicId?: SortOrder
     bookingId?: SortOrder
     fileId?: SortOrder
     type?: SortOrder
+    damageReportId?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -40956,6 +41074,7 @@ export namespace Prisma {
     id?: SortOrder
     bookingId?: SortOrder
     fileId?: SortOrder
+    damageReportId?: SortOrder
   }
 
   export type BookingPhotoMaxOrderByAggregateInput = {
@@ -40964,6 +41083,7 @@ export namespace Prisma {
     bookingId?: SortOrder
     fileId?: SortOrder
     type?: SortOrder
+    damageReportId?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -40973,6 +41093,7 @@ export namespace Prisma {
     bookingId?: SortOrder
     fileId?: SortOrder
     type?: SortOrder
+    damageReportId?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -40980,6 +41101,7 @@ export namespace Prisma {
     id?: SortOrder
     bookingId?: SortOrder
     fileId?: SortOrder
+    damageReportId?: SortOrder
   }
 
   export type EnumBookingPhotoTypeWithAggregatesFilter<$PrismaModel = never> = {
@@ -41024,7 +41146,6 @@ export namespace Prisma {
     vehicleId?: SortOrder
     severity?: SortOrder
     estimatedCost?: SortOrder
-    notes?: SortOrder
     approvedById?: SortOrder
     createdAt?: SortOrder
   }
@@ -41036,7 +41157,6 @@ export namespace Prisma {
     vehicleId?: SortOrder
     severity?: SortOrder
     estimatedCost?: SortOrder
-    notes?: SortOrder
     approvedById?: SortOrder
     createdAt?: SortOrder
   }
@@ -43247,6 +43367,12 @@ export namespace Prisma {
     connect?: FileObjectWhereUniqueInput
   }
 
+  export type DamageReportCreateNestedOneWithoutPhotosInput = {
+    create?: XOR<DamageReportCreateWithoutPhotosInput, DamageReportUncheckedCreateWithoutPhotosInput>
+    connectOrCreate?: DamageReportCreateOrConnectWithoutPhotosInput
+    connect?: DamageReportWhereUniqueInput
+  }
+
   export type EnumBookingPhotoTypeFieldUpdateOperationsInput = {
     set?: $Enums.BookingPhotoType
   }
@@ -43267,6 +43393,16 @@ export namespace Prisma {
     update?: XOR<XOR<FileObjectUpdateToOneWithWhereWithoutBookingPhotosInput, FileObjectUpdateWithoutBookingPhotosInput>, FileObjectUncheckedUpdateWithoutBookingPhotosInput>
   }
 
+  export type DamageReportUpdateOneWithoutPhotosNestedInput = {
+    create?: XOR<DamageReportCreateWithoutPhotosInput, DamageReportUncheckedCreateWithoutPhotosInput>
+    connectOrCreate?: DamageReportCreateOrConnectWithoutPhotosInput
+    upsert?: DamageReportUpsertWithoutPhotosInput
+    disconnect?: DamageReportWhereInput | boolean
+    delete?: DamageReportWhereInput | boolean
+    connect?: DamageReportWhereUniqueInput
+    update?: XOR<XOR<DamageReportUpdateToOneWithWhereWithoutPhotosInput, DamageReportUpdateWithoutPhotosInput>, DamageReportUncheckedUpdateWithoutPhotosInput>
+  }
+
   export type BookingCreateNestedOneWithoutDamagesInput = {
     create?: XOR<BookingCreateWithoutDamagesInput, BookingUncheckedCreateWithoutDamagesInput>
     connectOrCreate?: BookingCreateOrConnectWithoutDamagesInput
@@ -43283,6 +43419,20 @@ export namespace Prisma {
     create?: XOR<UserCreateWithoutApprovedDamageReportsInput, UserUncheckedCreateWithoutApprovedDamageReportsInput>
     connectOrCreate?: UserCreateOrConnectWithoutApprovedDamageReportsInput
     connect?: UserWhereUniqueInput
+  }
+
+  export type BookingPhotoCreateNestedManyWithoutDamageReportInput = {
+    create?: XOR<BookingPhotoCreateWithoutDamageReportInput, BookingPhotoUncheckedCreateWithoutDamageReportInput> | BookingPhotoCreateWithoutDamageReportInput[] | BookingPhotoUncheckedCreateWithoutDamageReportInput[]
+    connectOrCreate?: BookingPhotoCreateOrConnectWithoutDamageReportInput | BookingPhotoCreateOrConnectWithoutDamageReportInput[]
+    createMany?: BookingPhotoCreateManyDamageReportInputEnvelope
+    connect?: BookingPhotoWhereUniqueInput | BookingPhotoWhereUniqueInput[]
+  }
+
+  export type BookingPhotoUncheckedCreateNestedManyWithoutDamageReportInput = {
+    create?: XOR<BookingPhotoCreateWithoutDamageReportInput, BookingPhotoUncheckedCreateWithoutDamageReportInput> | BookingPhotoCreateWithoutDamageReportInput[] | BookingPhotoUncheckedCreateWithoutDamageReportInput[]
+    connectOrCreate?: BookingPhotoCreateOrConnectWithoutDamageReportInput | BookingPhotoCreateOrConnectWithoutDamageReportInput[]
+    createMany?: BookingPhotoCreateManyDamageReportInputEnvelope
+    connect?: BookingPhotoWhereUniqueInput | BookingPhotoWhereUniqueInput[]
   }
 
   export type BookingUpdateOneRequiredWithoutDamagesNestedInput = {
@@ -43309,6 +43459,34 @@ export namespace Prisma {
     delete?: UserWhereInput | boolean
     connect?: UserWhereUniqueInput
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutApprovedDamageReportsInput, UserUpdateWithoutApprovedDamageReportsInput>, UserUncheckedUpdateWithoutApprovedDamageReportsInput>
+  }
+
+  export type BookingPhotoUpdateManyWithoutDamageReportNestedInput = {
+    create?: XOR<BookingPhotoCreateWithoutDamageReportInput, BookingPhotoUncheckedCreateWithoutDamageReportInput> | BookingPhotoCreateWithoutDamageReportInput[] | BookingPhotoUncheckedCreateWithoutDamageReportInput[]
+    connectOrCreate?: BookingPhotoCreateOrConnectWithoutDamageReportInput | BookingPhotoCreateOrConnectWithoutDamageReportInput[]
+    upsert?: BookingPhotoUpsertWithWhereUniqueWithoutDamageReportInput | BookingPhotoUpsertWithWhereUniqueWithoutDamageReportInput[]
+    createMany?: BookingPhotoCreateManyDamageReportInputEnvelope
+    set?: BookingPhotoWhereUniqueInput | BookingPhotoWhereUniqueInput[]
+    disconnect?: BookingPhotoWhereUniqueInput | BookingPhotoWhereUniqueInput[]
+    delete?: BookingPhotoWhereUniqueInput | BookingPhotoWhereUniqueInput[]
+    connect?: BookingPhotoWhereUniqueInput | BookingPhotoWhereUniqueInput[]
+    update?: BookingPhotoUpdateWithWhereUniqueWithoutDamageReportInput | BookingPhotoUpdateWithWhereUniqueWithoutDamageReportInput[]
+    updateMany?: BookingPhotoUpdateManyWithWhereWithoutDamageReportInput | BookingPhotoUpdateManyWithWhereWithoutDamageReportInput[]
+    deleteMany?: BookingPhotoScalarWhereInput | BookingPhotoScalarWhereInput[]
+  }
+
+  export type BookingPhotoUncheckedUpdateManyWithoutDamageReportNestedInput = {
+    create?: XOR<BookingPhotoCreateWithoutDamageReportInput, BookingPhotoUncheckedCreateWithoutDamageReportInput> | BookingPhotoCreateWithoutDamageReportInput[] | BookingPhotoUncheckedCreateWithoutDamageReportInput[]
+    connectOrCreate?: BookingPhotoCreateOrConnectWithoutDamageReportInput | BookingPhotoCreateOrConnectWithoutDamageReportInput[]
+    upsert?: BookingPhotoUpsertWithWhereUniqueWithoutDamageReportInput | BookingPhotoUpsertWithWhereUniqueWithoutDamageReportInput[]
+    createMany?: BookingPhotoCreateManyDamageReportInputEnvelope
+    set?: BookingPhotoWhereUniqueInput | BookingPhotoWhereUniqueInput[]
+    disconnect?: BookingPhotoWhereUniqueInput | BookingPhotoWhereUniqueInput[]
+    delete?: BookingPhotoWhereUniqueInput | BookingPhotoWhereUniqueInput[]
+    connect?: BookingPhotoWhereUniqueInput | BookingPhotoWhereUniqueInput[]
+    update?: BookingPhotoUpdateWithWhereUniqueWithoutDamageReportInput | BookingPhotoUpdateWithWhereUniqueWithoutDamageReportInput[]
+    updateMany?: BookingPhotoUpdateManyWithWhereWithoutDamageReportInput | BookingPhotoUpdateManyWithWhereWithoutDamageReportInput[]
+    deleteMany?: BookingPhotoScalarWhereInput | BookingPhotoScalarWhereInput[]
   }
 
   export type BookingCreateNestedOneWithoutDepositInput = {
@@ -44210,10 +44388,11 @@ export namespace Prisma {
     publicId: string
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
-    notes?: string | null
+    notes: JsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     booking: BookingCreateNestedOneWithoutDamagesInput
     vehicle: VehicleCreateNestedOneWithoutDamageReportsInput
+    photos?: BookingPhotoCreateNestedManyWithoutDamageReportInput
   }
 
   export type DamageReportUncheckedCreateWithoutApprovedByInput = {
@@ -44223,8 +44402,9 @@ export namespace Prisma {
     vehicleId: number
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
-    notes?: string | null
+    notes: JsonNullValueInput | InputJsonValue
     createdAt?: Date | string
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutDamageReportInput
   }
 
   export type DamageReportCreateOrConnectWithoutApprovedByInput = {
@@ -44484,7 +44664,7 @@ export namespace Prisma {
     vehicleId?: IntFilter<"DamageReport"> | number
     severity?: StringFilter<"DamageReport"> | string
     estimatedCost?: DecimalFilter<"DamageReport"> | Decimal | DecimalJsLike | number | string
-    notes?: StringNullableFilter<"DamageReport"> | string | null
+    notes?: JsonFilter<"DamageReport">
     approvedById?: IntNullableFilter<"DamageReport"> | number | null
     createdAt?: DateTimeFilter<"DamageReport"> | Date | string
   }
@@ -45079,6 +45259,7 @@ export namespace Prisma {
     type: $Enums.BookingPhotoType
     createdAt?: Date | string
     booking: BookingCreateNestedOneWithoutPhotosInput
+    damageReport?: DamageReportCreateNestedOneWithoutPhotosInput
   }
 
   export type BookingPhotoUncheckedCreateWithoutFileInput = {
@@ -45086,6 +45267,7 @@ export namespace Prisma {
     publicId: string
     bookingId: number
     type: $Enums.BookingPhotoType
+    damageReportId?: number | null
     createdAt?: Date | string
   }
 
@@ -45243,6 +45425,7 @@ export namespace Prisma {
     bookingId?: IntFilter<"BookingPhoto"> | number
     fileId?: IntFilter<"BookingPhoto"> | number
     type?: EnumBookingPhotoTypeFilter<"BookingPhoto"> | $Enums.BookingPhotoType
+    damageReportId?: IntNullableFilter<"BookingPhoto"> | number | null
     createdAt?: DateTimeFilter<"BookingPhoto"> | Date | string
   }
 
@@ -46112,10 +46295,11 @@ export namespace Prisma {
     publicId: string
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
-    notes?: string | null
+    notes: JsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     booking: BookingCreateNestedOneWithoutDamagesInput
     approvedBy?: UserCreateNestedOneWithoutApprovedDamageReportsInput
+    photos?: BookingPhotoCreateNestedManyWithoutDamageReportInput
   }
 
   export type DamageReportUncheckedCreateWithoutVehicleInput = {
@@ -46124,9 +46308,10 @@ export namespace Prisma {
     bookingId: number
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
-    notes?: string | null
+    notes: JsonNullValueInput | InputJsonValue
     approvedById?: number | null
     createdAt?: Date | string
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutDamageReportInput
   }
 
   export type DamageReportCreateOrConnectWithoutVehicleInput = {
@@ -47381,6 +47566,7 @@ export namespace Prisma {
     type: $Enums.BookingPhotoType
     createdAt?: Date | string
     file: FileObjectCreateNestedOneWithoutBookingPhotosInput
+    damageReport?: DamageReportCreateNestedOneWithoutPhotosInput
   }
 
   export type BookingPhotoUncheckedCreateWithoutBookingInput = {
@@ -47388,6 +47574,7 @@ export namespace Prisma {
     publicId: string
     fileId: number
     type: $Enums.BookingPhotoType
+    damageReportId?: number | null
     createdAt?: Date | string
   }
 
@@ -47405,10 +47592,11 @@ export namespace Prisma {
     publicId: string
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
-    notes?: string | null
+    notes: JsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     vehicle: VehicleCreateNestedOneWithoutDamageReportsInput
     approvedBy?: UserCreateNestedOneWithoutApprovedDamageReportsInput
+    photos?: BookingPhotoCreateNestedManyWithoutDamageReportInput
   }
 
   export type DamageReportUncheckedCreateWithoutBookingInput = {
@@ -47417,9 +47605,10 @@ export namespace Prisma {
     vehicleId: number
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
-    notes?: string | null
+    notes: JsonNullValueInput | InputJsonValue
     approvedById?: number | null
     createdAt?: Date | string
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutDamageReportInput
   }
 
   export type DamageReportCreateOrConnectWithoutBookingInput = {
@@ -48141,6 +48330,34 @@ export namespace Prisma {
     create: XOR<FileObjectCreateWithoutBookingPhotosInput, FileObjectUncheckedCreateWithoutBookingPhotosInput>
   }
 
+  export type DamageReportCreateWithoutPhotosInput = {
+    publicId: string
+    severity: string
+    estimatedCost: Decimal | DecimalJsLike | number | string
+    notes: JsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    booking: BookingCreateNestedOneWithoutDamagesInput
+    vehicle: VehicleCreateNestedOneWithoutDamageReportsInput
+    approvedBy?: UserCreateNestedOneWithoutApprovedDamageReportsInput
+  }
+
+  export type DamageReportUncheckedCreateWithoutPhotosInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    vehicleId: number
+    severity: string
+    estimatedCost: Decimal | DecimalJsLike | number | string
+    notes: JsonNullValueInput | InputJsonValue
+    approvedById?: number | null
+    createdAt?: Date | string
+  }
+
+  export type DamageReportCreateOrConnectWithoutPhotosInput = {
+    where: DamageReportWhereUniqueInput
+    create: XOR<DamageReportCreateWithoutPhotosInput, DamageReportUncheckedCreateWithoutPhotosInput>
+  }
+
   export type BookingUpsertWithoutPhotosInput = {
     update: XOR<BookingUpdateWithoutPhotosInput, BookingUncheckedUpdateWithoutPhotosInput>
     create: XOR<BookingCreateWithoutPhotosInput, BookingUncheckedCreateWithoutPhotosInput>
@@ -48243,6 +48460,40 @@ export namespace Prisma {
     customerKycs?: CustomerKycUncheckedUpdateManyWithoutFileNestedInput
     bookingKycs?: BookingUncheckedUpdateManyWithoutKycFileNestedInput
     vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
+  }
+
+  export type DamageReportUpsertWithoutPhotosInput = {
+    update: XOR<DamageReportUpdateWithoutPhotosInput, DamageReportUncheckedUpdateWithoutPhotosInput>
+    create: XOR<DamageReportCreateWithoutPhotosInput, DamageReportUncheckedCreateWithoutPhotosInput>
+    where?: DamageReportWhereInput
+  }
+
+  export type DamageReportUpdateToOneWithWhereWithoutPhotosInput = {
+    where?: DamageReportWhereInput
+    data: XOR<DamageReportUpdateWithoutPhotosInput, DamageReportUncheckedUpdateWithoutPhotosInput>
+  }
+
+  export type DamageReportUpdateWithoutPhotosInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    severity?: StringFieldUpdateOperationsInput | string
+    estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    notes?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutDamagesNestedInput
+    vehicle?: VehicleUpdateOneRequiredWithoutDamageReportsNestedInput
+    approvedBy?: UserUpdateOneWithoutApprovedDamageReportsNestedInput
+  }
+
+  export type DamageReportUncheckedUpdateWithoutPhotosInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    vehicleId?: IntFieldUpdateOperationsInput | number
+    severity?: StringFieldUpdateOperationsInput | string
+    estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    notes?: JsonNullValueInput | InputJsonValue
+    approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type BookingCreateWithoutDamagesInput = {
@@ -48401,6 +48652,33 @@ export namespace Prisma {
   export type UserCreateOrConnectWithoutApprovedDamageReportsInput = {
     where: UserWhereUniqueInput
     create: XOR<UserCreateWithoutApprovedDamageReportsInput, UserUncheckedCreateWithoutApprovedDamageReportsInput>
+  }
+
+  export type BookingPhotoCreateWithoutDamageReportInput = {
+    publicId: string
+    type: $Enums.BookingPhotoType
+    createdAt?: Date | string
+    booking: BookingCreateNestedOneWithoutPhotosInput
+    file: FileObjectCreateNestedOneWithoutBookingPhotosInput
+  }
+
+  export type BookingPhotoUncheckedCreateWithoutDamageReportInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    fileId: number
+    type: $Enums.BookingPhotoType
+    createdAt?: Date | string
+  }
+
+  export type BookingPhotoCreateOrConnectWithoutDamageReportInput = {
+    where: BookingPhotoWhereUniqueInput
+    create: XOR<BookingPhotoCreateWithoutDamageReportInput, BookingPhotoUncheckedCreateWithoutDamageReportInput>
+  }
+
+  export type BookingPhotoCreateManyDamageReportInputEnvelope = {
+    data: BookingPhotoCreateManyDamageReportInput | BookingPhotoCreateManyDamageReportInput[]
+    skipDuplicates?: boolean
   }
 
   export type BookingUpsertWithoutDamagesInput = {
@@ -48577,6 +48855,22 @@ export namespace Prisma {
     customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
     bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+  }
+
+  export type BookingPhotoUpsertWithWhereUniqueWithoutDamageReportInput = {
+    where: BookingPhotoWhereUniqueInput
+    update: XOR<BookingPhotoUpdateWithoutDamageReportInput, BookingPhotoUncheckedUpdateWithoutDamageReportInput>
+    create: XOR<BookingPhotoCreateWithoutDamageReportInput, BookingPhotoUncheckedCreateWithoutDamageReportInput>
+  }
+
+  export type BookingPhotoUpdateWithWhereUniqueWithoutDamageReportInput = {
+    where: BookingPhotoWhereUniqueInput
+    data: XOR<BookingPhotoUpdateWithoutDamageReportInput, BookingPhotoUncheckedUpdateWithoutDamageReportInput>
+  }
+
+  export type BookingPhotoUpdateManyWithWhereWithoutDamageReportInput = {
+    where: BookingPhotoScalarWhereInput
+    data: XOR<BookingPhotoUpdateManyMutationInput, BookingPhotoUncheckedUpdateManyWithoutDamageReportInput>
   }
 
   export type BookingCreateWithoutDepositInput = {
@@ -49251,7 +49545,7 @@ export namespace Prisma {
     vehicleId: number
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
-    notes?: string | null
+    notes: JsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -49430,10 +49724,11 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: JsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     booking?: BookingUpdateOneRequiredWithoutDamagesNestedInput
     vehicle?: VehicleUpdateOneRequiredWithoutDamageReportsNestedInput
+    photos?: BookingPhotoUpdateManyWithoutDamageReportNestedInput
   }
 
   export type DamageReportUncheckedUpdateWithoutApprovedByInput = {
@@ -49443,8 +49738,9 @@ export namespace Prisma {
     vehicleId?: IntFieldUpdateOperationsInput | number
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: JsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    photos?: BookingPhotoUncheckedUpdateManyWithoutDamageReportNestedInput
   }
 
   export type DamageReportUncheckedUpdateManyWithoutApprovedByInput = {
@@ -49454,7 +49750,7 @@ export namespace Prisma {
     vehicleId?: IntFieldUpdateOperationsInput | number
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: JsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -49603,6 +49899,7 @@ export namespace Prisma {
     publicId: string
     bookingId: number
     type: $Enums.BookingPhotoType
+    damageReportId?: number | null
     createdAt?: Date | string
   }
 
@@ -49652,6 +49949,7 @@ export namespace Prisma {
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     booking?: BookingUpdateOneRequiredWithoutPhotosNestedInput
+    damageReport?: DamageReportUpdateOneWithoutPhotosNestedInput
   }
 
   export type BookingPhotoUncheckedUpdateWithoutFileInput = {
@@ -49659,6 +49957,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     bookingId?: IntFieldUpdateOperationsInput | number
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
+    damageReportId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -49667,6 +49966,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     bookingId?: IntFieldUpdateOperationsInput | number
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
+    damageReportId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -50287,7 +50587,7 @@ export namespace Prisma {
     bookingId: number
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
-    notes?: string | null
+    notes: JsonNullValueInput | InputJsonValue
     approvedById?: number | null
     createdAt?: Date | string
   }
@@ -50361,10 +50661,11 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: JsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     booking?: BookingUpdateOneRequiredWithoutDamagesNestedInput
     approvedBy?: UserUpdateOneWithoutApprovedDamageReportsNestedInput
+    photos?: BookingPhotoUpdateManyWithoutDamageReportNestedInput
   }
 
   export type DamageReportUncheckedUpdateWithoutVehicleInput = {
@@ -50373,9 +50674,10 @@ export namespace Prisma {
     bookingId?: IntFieldUpdateOperationsInput | number
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: JsonNullValueInput | InputJsonValue
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    photos?: BookingPhotoUncheckedUpdateManyWithoutDamageReportNestedInput
   }
 
   export type DamageReportUncheckedUpdateManyWithoutVehicleInput = {
@@ -50384,7 +50686,7 @@ export namespace Prisma {
     bookingId?: IntFieldUpdateOperationsInput | number
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: JsonNullValueInput | InputJsonValue
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -50449,6 +50751,7 @@ export namespace Prisma {
     publicId: string
     fileId: number
     type: $Enums.BookingPhotoType
+    damageReportId?: number | null
     createdAt?: Date | string
   }
 
@@ -50458,7 +50761,7 @@ export namespace Prisma {
     vehicleId: number
     severity: string
     estimatedCost: Decimal | DecimalJsLike | number | string
-    notes?: string | null
+    notes: JsonNullValueInput | InputJsonValue
     approvedById?: number | null
     createdAt?: Date | string
   }
@@ -50479,6 +50782,7 @@ export namespace Prisma {
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     file?: FileObjectUpdateOneRequiredWithoutBookingPhotosNestedInput
+    damageReport?: DamageReportUpdateOneWithoutPhotosNestedInput
   }
 
   export type BookingPhotoUncheckedUpdateWithoutBookingInput = {
@@ -50486,6 +50790,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     fileId?: IntFieldUpdateOperationsInput | number
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
+    damageReportId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -50494,6 +50799,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     fileId?: IntFieldUpdateOperationsInput | number
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
+    damageReportId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -50501,10 +50807,11 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: JsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     vehicle?: VehicleUpdateOneRequiredWithoutDamageReportsNestedInput
     approvedBy?: UserUpdateOneWithoutApprovedDamageReportsNestedInput
+    photos?: BookingPhotoUpdateManyWithoutDamageReportNestedInput
   }
 
   export type DamageReportUncheckedUpdateWithoutBookingInput = {
@@ -50513,9 +50820,10 @@ export namespace Prisma {
     vehicleId?: IntFieldUpdateOperationsInput | number
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: JsonNullValueInput | InputJsonValue
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    photos?: BookingPhotoUncheckedUpdateManyWithoutDamageReportNestedInput
   }
 
   export type DamageReportUncheckedUpdateManyWithoutBookingInput = {
@@ -50524,7 +50832,7 @@ export namespace Prisma {
     vehicleId?: IntFieldUpdateOperationsInput | number
     severity?: StringFieldUpdateOperationsInput | string
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: JsonNullValueInput | InputJsonValue
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -50559,6 +50867,41 @@ export namespace Prisma {
     discountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     deposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     finalTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+  }
+
+  export type BookingPhotoCreateManyDamageReportInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    fileId: number
+    type: $Enums.BookingPhotoType
+    createdAt?: Date | string
+  }
+
+  export type BookingPhotoUpdateWithoutDamageReportInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutPhotosNestedInput
+    file?: FileObjectUpdateOneRequiredWithoutBookingPhotosNestedInput
+  }
+
+  export type BookingPhotoUncheckedUpdateWithoutDamageReportInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    fileId?: IntFieldUpdateOperationsInput | number
+    type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BookingPhotoUncheckedUpdateManyWithoutDamageReportInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    fileId?: IntFieldUpdateOperationsInput | number
+    type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type InvoiceItemCreateManyInvoiceInput = {
@@ -50664,6 +51007,10 @@ export namespace Prisma {
      * @deprecated Use BookingCountOutputTypeDefaultArgs instead
      */
     export type BookingCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = BookingCountOutputTypeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use DamageReportCountOutputTypeDefaultArgs instead
+     */
+    export type DamageReportCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = DamageReportCountOutputTypeDefaultArgs<ExtArgs>
     /**
      * @deprecated Use InvoiceCountOutputTypeDefaultArgs instead
      */

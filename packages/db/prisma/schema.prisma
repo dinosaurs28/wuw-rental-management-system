@@ -441,10 +441,12 @@ model BookingPhoto {
   bookingId Int
   fileId    Int
   type      BookingPhotoType
+  damageReportId Int?
 
   booking   Booking    @relation(fields: [bookingId], references: [id])
   file      FileObject @relation(fields: [fileId], references: [id])
   createdAt DateTime   @default(now())
+  damageReport  DamageReport? @relation(fields: [damageReportId], references: [id])
 
   @@index([bookingId])
   @@index([fileId])
@@ -457,12 +459,13 @@ model DamageReport {
   vehicleId     Int
   severity      String
   estimatedCost Decimal
-  notes         String?
+  notes         Json
   approvedById  Int?
 
   booking    Booking @relation(fields: [bookingId], references: [id])
   vehicle    Vehicle @relation(fields: [vehicleId], references: [id])
   approvedBy User?   @relation(fields: [approvedById], references: [id], onDelete: SetNull)
+  photos     BookingPhoto[]
 
   createdAt DateTime @default(now())
 }

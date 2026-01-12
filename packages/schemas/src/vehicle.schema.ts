@@ -27,6 +27,15 @@ export const editVehicleSchema = createVehicleSchema.partial().extend({
 });
 
 export const pickUpVehicleSchema = z.object({
-    odo: z.coerce.number().min(0),
-    fuelLevel: z.coerce.number().min(0)
+  odo: z.coerce.number().min(0),
+  fuelLevel: z.coerce.number().min(0)
 })
+
+export const createDamageReportSchema = z.object({
+  bookingId: z.string().min(1, "Booking ID is required"),
+  odo: z.coerce.number().min(0, "Odometer reading must be non-negative"),
+  fuelLevel: z.coerce.number().min(0).max(100, "Fuel level must be between 0 and 100"),
+  severity: z.string().min(1, "Severity is required"),
+  damageImageIds: z.array(z.string().min(1)),
+  notes: z.record(z.any()).optional(), // Structured JSON notes
+});

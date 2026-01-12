@@ -15,7 +15,8 @@ import { SearchCustomer } from "../../controller/employee/customer/search.contro
 import { upload } from "../../middlewares/upload.middleware";
 import { CheckCustomerPublicId } from "../../middlewares/checkCustomer.middleware";
 import { UpdateWalkinKycStatus, UploadWalkinKyc } from "../../controller/employee/walkin/kyc.controller";
-const router:Router=Router()
+import { CreateDamageReport, UploadDamageImage } from "../../controller/employee/damage.controller";
+const router: Router = Router()
 
 router.post("/auth/login", Login)
 router.get("/booking", EmployeeCheck, BookingController)
@@ -33,5 +34,9 @@ router.get("/vehicles/search", EmployeeCheck, searchVehicles)
 router.get("/vehicles/:id", EmployeeCheck, getEmployeeVehicleDetails)
 router.post("/booking/create", EmployeeCheck, createEmployeeBooking)
 router.get("/customer/search", EmployeeCheck, SearchCustomer)
+
+// Damage Reporting
+router.post("/damage/upload", EmployeeCheck, upload.single('file'), UploadDamageImage)
+router.post("/damage/report", EmployeeCheck, CreateDamageReport)
 
 export default router

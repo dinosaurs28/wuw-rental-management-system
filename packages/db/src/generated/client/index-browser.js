@@ -357,6 +357,7 @@ exports.Prisma.BookingPhotoScalarFieldEnum = {
   bookingId: 'bookingId',
   fileId: 'fileId',
   type: 'type',
+  damageReportId: 'damageReportId',
   createdAt: 'createdAt'
 };
 
