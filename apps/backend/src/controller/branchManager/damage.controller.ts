@@ -128,6 +128,97 @@ export const GetDamageReports = async (req: Request, res: Response) => {
     }
 }
 
+
+export const GetMinimalDamageReport = async (req: Request, res: Response) => {
+    try {
+        const { damageReportId } = req.params;
+        const branchId = req.branch_Id;
+
+        if (!damageReportId) {
+            return res.status(StatusCode.BAD_REQUEST).json({ message: "Damage Report ID is required" });
+        }
+
+        const report = await prisma.damageReport.findUnique({
+            where: { publicId: damageReportId },
+            select: {
+                publicId: true,
+                status: true,
+                estimatedCost: true,
+                notes: true,
+                createdAt: true,
+                booking: {
+                    select: {
+                        publicId: true,
+                        totalDeposit: true,
+                        branchId: true,
+                    }
+                },
+                vehicle: {
+                    select: {
+                        regNo: true,
+                        make: true,
+                        model: true,
+                        status: true
+                    }
+                },
+                photos: {
+                    where: {
+                        type: "DAMAGE"
+                    },
+                    select: {
+                        file: {
+                            select: {
+                                url: true
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!report) {
+            return res.status(StatusCode.NOT_FOUND).json({ message: "Damage Report not found" });
+        }
+
+        // Access Rule: Manager.branchId must match booking.branchId
+        if (report.booking.branchId !== branchId) {
+            return res.status(StatusCode.FORBIDDEN).json({
+                message: "Access Denied: This report belongs to another branch"
+            });
+        }
+
+        // Transform response to match strict format
+        const responseData = {
+            damageReportId: report.publicId,
+            status: report.status,
+            booking: {
+                bookingId: report.booking.publicId,
+                deposit: Number(report.booking.totalDeposit)
+            },
+            vehicle: {
+                regNo: report.vehicle.regNo,
+                make: report.vehicle.make,
+                model: report.vehicle.model,
+                currentStatus: report.vehicle.status
+            },
+            damageDetails: report.notes, // JSON object as is
+            images: report.photos.map(p => ({ url: p.file.url })),
+            financialHint: {
+                deposit: Number(report.booking.totalDeposit),
+                estimatedCost: Number(report.estimatedCost)
+            }
+        };
+
+        return res.status(StatusCode.OK).json(responseData);
+
+    } catch (error) {
+        console.error("Error fetching minimal damage report:", error);
+        return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+            message: "Internal Server Error"
+        });
+    }
+}
+
 export const CloseDamageReport = async (req: Request, res: Response) => {
     try {
         const validation = closeDamageReportSchema.safeParse(req.body);
