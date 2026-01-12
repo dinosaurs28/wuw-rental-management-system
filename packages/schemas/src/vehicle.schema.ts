@@ -25,3 +25,8 @@ export const editVehicleSchema = createVehicleSchema.partial().extend({
   status: z.enum(['AVAILABLE', 'MAINTENANCE', 'INACTIVE']).optional(),
   deleteImageIds: z.string().optional()
 });
+
+export const pickUpVehicleSchema = z.object({
+    odo: z.coerce.number().min(0),
+    fuelLevel: z.coerce.number().min(0)
+})

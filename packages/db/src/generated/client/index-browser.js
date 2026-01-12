@@ -246,6 +246,7 @@ exports.Prisma.VehicleScalarFieldEnum = {
   model: 'model',
   regNo: 'regNo',
   odo: 'odo',
+  fuelLevel: 'fuelLevel',
   insuranceExpiry: 'insuranceExpiry',
   status: 'status',
   baseDailyPrice: 'baseDailyPrice',

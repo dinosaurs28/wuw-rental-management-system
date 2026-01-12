@@ -2,11 +2,12 @@ import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus, KycType, KycStatus, VehicleStatus } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
+import { pickUpVehicleSchema } from "@repo/schemas";
 
 export const PickupController = async (req: Request, res: Response) => {
     const { bookingId } = req.params;
     const branchId = req.branch_Id;
-
+    const parsedVehicleDetails = pickUpVehicleSchema.parse(req.body);
     try {
         const booking = await prisma.booking.findFirst({
             where: {
@@ -79,7 +80,9 @@ export const PickupController = async (req: Request, res: Response) => {
                     id: { in: vehicleIds }
                 },
                 data: {
-                    status: VehicleStatus.OUT_FOR_RENTAL
+                    status: VehicleStatus.OUT_FOR_RENTAL,
+                    odo: parsedVehicleDetails.odo,
+                    fuelLevel: parsedVehicleDetails.fuelLevel
                 }
             });
 

@@ -14467,6 +14467,7 @@ export namespace Prisma {
     branchId: number | null
     categoryId: number | null
     odo: number | null
+    fuelLevel: number | null
     baseDailyPrice: Decimal | null
   }
 
@@ -14475,6 +14476,7 @@ export namespace Prisma {
     branchId: number | null
     categoryId: number | null
     odo: number | null
+    fuelLevel: number | null
     baseDailyPrice: Decimal | null
   }
 
@@ -14487,6 +14489,7 @@ export namespace Prisma {
     model: string | null
     regNo: string | null
     odo: number | null
+    fuelLevel: number | null
     insuranceExpiry: Date | null
     status: $Enums.VehicleStatus | null
     baseDailyPrice: Decimal | null
@@ -14504,6 +14507,7 @@ export namespace Prisma {
     model: string | null
     regNo: string | null
     odo: number | null
+    fuelLevel: number | null
     insuranceExpiry: Date | null
     status: $Enums.VehicleStatus | null
     baseDailyPrice: Decimal | null
@@ -14521,6 +14525,7 @@ export namespace Prisma {
     model: number
     regNo: number
     odo: number
+    fuelLevel: number
     insuranceExpiry: number
     status: number
     baseDailyPrice: number
@@ -14536,6 +14541,7 @@ export namespace Prisma {
     branchId?: true
     categoryId?: true
     odo?: true
+    fuelLevel?: true
     baseDailyPrice?: true
   }
 
@@ -14544,6 +14550,7 @@ export namespace Prisma {
     branchId?: true
     categoryId?: true
     odo?: true
+    fuelLevel?: true
     baseDailyPrice?: true
   }
 
@@ -14556,6 +14563,7 @@ export namespace Prisma {
     model?: true
     regNo?: true
     odo?: true
+    fuelLevel?: true
     insuranceExpiry?: true
     status?: true
     baseDailyPrice?: true
@@ -14573,6 +14581,7 @@ export namespace Prisma {
     model?: true
     regNo?: true
     odo?: true
+    fuelLevel?: true
     insuranceExpiry?: true
     status?: true
     baseDailyPrice?: true
@@ -14590,6 +14599,7 @@ export namespace Prisma {
     model?: true
     regNo?: true
     odo?: true
+    fuelLevel?: true
     insuranceExpiry?: true
     status?: true
     baseDailyPrice?: true
@@ -14694,6 +14704,7 @@ export namespace Prisma {
     model: string
     regNo: string
     odo: number
+    fuelLevel: number
     insuranceExpiry: Date
     status: $Enums.VehicleStatus
     baseDailyPrice: Decimal
@@ -14730,6 +14741,7 @@ export namespace Prisma {
     model?: boolean
     regNo?: boolean
     odo?: boolean
+    fuelLevel?: boolean
     insuranceExpiry?: boolean
     status?: boolean
     baseDailyPrice?: boolean
@@ -14756,6 +14768,7 @@ export namespace Prisma {
     model?: boolean
     regNo?: boolean
     odo?: boolean
+    fuelLevel?: boolean
     insuranceExpiry?: boolean
     status?: boolean
     baseDailyPrice?: boolean
@@ -14775,6 +14788,7 @@ export namespace Prisma {
     model?: boolean
     regNo?: boolean
     odo?: boolean
+    fuelLevel?: boolean
     insuranceExpiry?: boolean
     status?: boolean
     baseDailyPrice?: boolean
@@ -14820,6 +14834,7 @@ export namespace Prisma {
       model: string
       regNo: string
       odo: number
+      fuelLevel: number
       insuranceExpiry: Date
       status: $Enums.VehicleStatus
       baseDailyPrice: Prisma.Decimal
@@ -15235,6 +15250,7 @@ export namespace Prisma {
     readonly model: FieldRef<"Vehicle", 'String'>
     readonly regNo: FieldRef<"Vehicle", 'String'>
     readonly odo: FieldRef<"Vehicle", 'Int'>
+    readonly fuelLevel: FieldRef<"Vehicle", 'Int'>
     readonly insuranceExpiry: FieldRef<"Vehicle", 'DateTime'>
     readonly status: FieldRef<"Vehicle", 'VehicleStatus'>
     readonly baseDailyPrice: FieldRef<"Vehicle", 'Decimal'>
@@ -34205,6 +34221,7 @@ export namespace Prisma {
     model: 'model',
     regNo: 'regNo',
     odo: 'odo',
+    fuelLevel: 'fuelLevel',
     insuranceExpiry: 'insuranceExpiry',
     status: 'status',
     baseDailyPrice: 'baseDailyPrice',
@@ -35571,6 +35588,7 @@ export namespace Prisma {
     model?: StringFilter<"Vehicle"> | string
     regNo?: StringFilter<"Vehicle"> | string
     odo?: IntFilter<"Vehicle"> | number
+    fuelLevel?: IntFilter<"Vehicle"> | number
     insuranceExpiry?: DateTimeFilter<"Vehicle"> | Date | string
     status?: EnumVehicleStatusFilter<"Vehicle"> | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFilter<"Vehicle"> | Decimal | DecimalJsLike | number | string
@@ -35596,6 +35614,7 @@ export namespace Prisma {
     model?: SortOrder
     regNo?: SortOrder
     odo?: SortOrder
+    fuelLevel?: SortOrder
     insuranceExpiry?: SortOrder
     status?: SortOrder
     baseDailyPrice?: SortOrder
@@ -35624,6 +35643,7 @@ export namespace Prisma {
     make?: StringFilter<"Vehicle"> | string
     model?: StringFilter<"Vehicle"> | string
     odo?: IntFilter<"Vehicle"> | number
+    fuelLevel?: IntFilter<"Vehicle"> | number
     insuranceExpiry?: DateTimeFilter<"Vehicle"> | Date | string
     status?: EnumVehicleStatusFilter<"Vehicle"> | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFilter<"Vehicle"> | Decimal | DecimalJsLike | number | string
@@ -35649,6 +35669,7 @@ export namespace Prisma {
     model?: SortOrder
     regNo?: SortOrder
     odo?: SortOrder
+    fuelLevel?: SortOrder
     insuranceExpiry?: SortOrder
     status?: SortOrder
     baseDailyPrice?: SortOrder
@@ -35674,6 +35695,7 @@ export namespace Prisma {
     model?: StringWithAggregatesFilter<"Vehicle"> | string
     regNo?: StringWithAggregatesFilter<"Vehicle"> | string
     odo?: IntWithAggregatesFilter<"Vehicle"> | number
+    fuelLevel?: IntWithAggregatesFilter<"Vehicle"> | number
     insuranceExpiry?: DateTimeWithAggregatesFilter<"Vehicle"> | Date | string
     status?: EnumVehicleStatusWithAggregatesFilter<"Vehicle"> | $Enums.VehicleStatus
     baseDailyPrice?: DecimalWithAggregatesFilter<"Vehicle"> | Decimal | DecimalJsLike | number | string
@@ -37851,6 +37873,7 @@ export namespace Prisma {
     model: string
     regNo: string
     odo: number
+    fuelLevel?: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     baseDailyPrice?: Decimal | DecimalJsLike | number | string
@@ -37876,6 +37899,7 @@ export namespace Prisma {
     model: string
     regNo: string
     odo: number
+    fuelLevel?: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     baseDailyPrice?: Decimal | DecimalJsLike | number | string
@@ -37896,6 +37920,7 @@ export namespace Prisma {
     model?: StringFieldUpdateOperationsInput | string
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -37921,6 +37946,7 @@ export namespace Prisma {
     model?: StringFieldUpdateOperationsInput | string
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -37944,6 +37970,7 @@ export namespace Prisma {
     model: string
     regNo: string
     odo: number
+    fuelLevel?: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     baseDailyPrice?: Decimal | DecimalJsLike | number | string
@@ -37958,6 +37985,7 @@ export namespace Prisma {
     model?: StringFieldUpdateOperationsInput | string
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -37975,6 +38003,7 @@ export namespace Prisma {
     model?: StringFieldUpdateOperationsInput | string
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -40231,6 +40260,7 @@ export namespace Prisma {
     model?: SortOrder
     regNo?: SortOrder
     odo?: SortOrder
+    fuelLevel?: SortOrder
     insuranceExpiry?: SortOrder
     status?: SortOrder
     baseDailyPrice?: SortOrder
@@ -40244,6 +40274,7 @@ export namespace Prisma {
     branchId?: SortOrder
     categoryId?: SortOrder
     odo?: SortOrder
+    fuelLevel?: SortOrder
     baseDailyPrice?: SortOrder
   }
 
@@ -40256,6 +40287,7 @@ export namespace Prisma {
     model?: SortOrder
     regNo?: SortOrder
     odo?: SortOrder
+    fuelLevel?: SortOrder
     insuranceExpiry?: SortOrder
     status?: SortOrder
     baseDailyPrice?: SortOrder
@@ -40273,6 +40305,7 @@ export namespace Prisma {
     model?: SortOrder
     regNo?: SortOrder
     odo?: SortOrder
+    fuelLevel?: SortOrder
     insuranceExpiry?: SortOrder
     status?: SortOrder
     baseDailyPrice?: SortOrder
@@ -40286,6 +40319,7 @@ export namespace Prisma {
     branchId?: SortOrder
     categoryId?: SortOrder
     odo?: SortOrder
+    fuelLevel?: SortOrder
     baseDailyPrice?: SortOrder
   }
 
@@ -45329,6 +45363,7 @@ export namespace Prisma {
     model: string
     regNo: string
     odo: number
+    fuelLevel?: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     baseDailyPrice?: Decimal | DecimalJsLike | number | string
@@ -45352,6 +45387,7 @@ export namespace Prisma {
     model: string
     regNo: string
     odo: number
+    fuelLevel?: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     baseDailyPrice?: Decimal | DecimalJsLike | number | string
@@ -45578,6 +45614,7 @@ export namespace Prisma {
     model?: StringFilter<"Vehicle"> | string
     regNo?: StringFilter<"Vehicle"> | string
     odo?: IntFilter<"Vehicle"> | number
+    fuelLevel?: IntFilter<"Vehicle"> | number
     insuranceExpiry?: DateTimeFilter<"Vehicle"> | Date | string
     status?: EnumVehicleStatusFilter<"Vehicle"> | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFilter<"Vehicle"> | Decimal | DecimalJsLike | number | string
@@ -45813,6 +45850,7 @@ export namespace Prisma {
     model: string
     regNo: string
     odo: number
+    fuelLevel?: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     baseDailyPrice?: Decimal | DecimalJsLike | number | string
@@ -45836,6 +45874,7 @@ export namespace Prisma {
     model: string
     regNo: string
     odo: number
+    fuelLevel?: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     baseDailyPrice?: Decimal | DecimalJsLike | number | string
@@ -46393,6 +46432,7 @@ export namespace Prisma {
     model: string
     regNo: string
     odo: number
+    fuelLevel?: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     baseDailyPrice?: Decimal | DecimalJsLike | number | string
@@ -46417,6 +46457,7 @@ export namespace Prisma {
     model: string
     regNo: string
     odo: number
+    fuelLevel?: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     baseDailyPrice?: Decimal | DecimalJsLike | number | string
@@ -46452,6 +46493,7 @@ export namespace Prisma {
     model?: StringFieldUpdateOperationsInput | string
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -46476,6 +46518,7 @@ export namespace Prisma {
     model?: StringFieldUpdateOperationsInput | string
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -46495,6 +46538,7 @@ export namespace Prisma {
     model: string
     regNo: string
     odo: number
+    fuelLevel?: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     baseDailyPrice?: Decimal | DecimalJsLike | number | string
@@ -46519,6 +46563,7 @@ export namespace Prisma {
     model: string
     regNo: string
     odo: number
+    fuelLevel?: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     baseDailyPrice?: Decimal | DecimalJsLike | number | string
@@ -46554,6 +46599,7 @@ export namespace Prisma {
     model?: StringFieldUpdateOperationsInput | string
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -46578,6 +46624,7 @@ export namespace Prisma {
     model?: StringFieldUpdateOperationsInput | string
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -46597,6 +46644,7 @@ export namespace Prisma {
     model: string
     regNo: string
     odo: number
+    fuelLevel?: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     baseDailyPrice?: Decimal | DecimalJsLike | number | string
@@ -46621,6 +46669,7 @@ export namespace Prisma {
     model: string
     regNo: string
     odo: number
+    fuelLevel?: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     baseDailyPrice?: Decimal | DecimalJsLike | number | string
@@ -46656,6 +46705,7 @@ export namespace Prisma {
     model?: StringFieldUpdateOperationsInput | string
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -46680,6 +46730,7 @@ export namespace Prisma {
     model?: StringFieldUpdateOperationsInput | string
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -46699,6 +46750,7 @@ export namespace Prisma {
     model: string
     regNo: string
     odo: number
+    fuelLevel?: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     baseDailyPrice?: Decimal | DecimalJsLike | number | string
@@ -46723,6 +46775,7 @@ export namespace Prisma {
     model: string
     regNo: string
     odo: number
+    fuelLevel?: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     baseDailyPrice?: Decimal | DecimalJsLike | number | string
@@ -46788,6 +46841,7 @@ export namespace Prisma {
     model?: StringFieldUpdateOperationsInput | string
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -46812,6 +46866,7 @@ export namespace Prisma {
     model?: StringFieldUpdateOperationsInput | string
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -47764,6 +47819,7 @@ export namespace Prisma {
     model: string
     regNo: string
     odo: number
+    fuelLevel?: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     baseDailyPrice?: Decimal | DecimalJsLike | number | string
@@ -47788,6 +47844,7 @@ export namespace Prisma {
     model: string
     regNo: string
     odo: number
+    fuelLevel?: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     baseDailyPrice?: Decimal | DecimalJsLike | number | string
@@ -47885,6 +47942,7 @@ export namespace Prisma {
     model?: StringFieldUpdateOperationsInput | string
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -47909,6 +47967,7 @@ export namespace Prisma {
     model?: StringFieldUpdateOperationsInput | string
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -48254,6 +48313,7 @@ export namespace Prisma {
     model: string
     regNo: string
     odo: number
+    fuelLevel?: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     baseDailyPrice?: Decimal | DecimalJsLike | number | string
@@ -48278,6 +48338,7 @@ export namespace Prisma {
     model: string
     regNo: string
     odo: number
+    fuelLevel?: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     baseDailyPrice?: Decimal | DecimalJsLike | number | string
@@ -48427,6 +48488,7 @@ export namespace Prisma {
     model?: StringFieldUpdateOperationsInput | string
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -48451,6 +48513,7 @@ export namespace Prisma {
     model?: StringFieldUpdateOperationsInput | string
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -49760,6 +49823,7 @@ export namespace Prisma {
     model: string
     regNo: string
     odo: number
+    fuelLevel?: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     baseDailyPrice?: Decimal | DecimalJsLike | number | string
@@ -49867,6 +49931,7 @@ export namespace Prisma {
     model?: StringFieldUpdateOperationsInput | string
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -49890,6 +49955,7 @@ export namespace Prisma {
     model?: StringFieldUpdateOperationsInput | string
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -49912,6 +49978,7 @@ export namespace Prisma {
     model?: StringFieldUpdateOperationsInput | string
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -50059,6 +50126,7 @@ export namespace Prisma {
     model: string
     regNo: string
     odo: number
+    fuelLevel?: number
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     baseDailyPrice?: Decimal | DecimalJsLike | number | string
@@ -50118,6 +50186,7 @@ export namespace Prisma {
     model?: StringFieldUpdateOperationsInput | string
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -50141,6 +50210,7 @@ export namespace Prisma {
     model?: StringFieldUpdateOperationsInput | string
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -50163,6 +50233,7 @@ export namespace Prisma {
     model?: StringFieldUpdateOperationsInput | string
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string

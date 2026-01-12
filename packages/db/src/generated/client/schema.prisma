@@ -264,6 +264,7 @@ model Vehicle {
   model           String
   regNo           String        @unique
   odo             Int
+  fuelLevel       Int           @default(0)
   insuranceExpiry DateTime
   status          VehicleStatus @default(AVAILABLE)
   baseDailyPrice  Decimal       @default(500)
