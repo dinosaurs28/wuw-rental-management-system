@@ -6,6 +6,7 @@ import { GetActiveBookings, GetPendingApprovals } from "../../controller/branchM
 import { GetDamageReports, CloseDamageReport, GetMinimalDamageReport, GetDamageReportList } from "../../controller/branchManager/damage.controller";
 import { AddVehicle, EditVehicle } from "../../controller/branchManager/vehicle.controller";
 import { GetStaffAuditLogs } from "../../controller/branchManager/audit.controller";
+import { CreateEmployee, GetEmployee, SearchEmployee, UpdateEmployee } from "../../controller/branchManager/employee.controller";
 import { upload } from "../../middlewares/upload.middleware";
 
 const router:Router=Router()
@@ -21,5 +22,9 @@ router.patch("/damage-reports/:damageReportId/close", ManagerCheck, CloseDamageR
 router.post("/dashboard/vehicle/add", ManagerCheck, upload.array('images', 5), AddVehicle)
 router.put("/dashboard/vehicle/edit/:vehicleId", ManagerCheck, upload.array('images', 5), EditVehicle)
 router.get("/dashboard/staff/activity-logs", ManagerCheck, GetStaffAuditLogs)
+router.get("/dashboard/employees", ManagerCheck, SearchEmployee)
+router.get("/dashboard/employees/:employeeId", ManagerCheck, GetEmployee)
+router.post("/dashboard/employees", ManagerCheck, CreateEmployee)
+router.put("/dashboard/employees/:employeeId", ManagerCheck, UpdateEmployee)
 
 export default router
