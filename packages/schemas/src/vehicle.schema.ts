@@ -4,7 +4,7 @@ export const getVehicleDetailsSchema=z.object({
     id:z.string().min(16,"Vehicle ID length is invalid.")
 })
 
-export const bookingSummarySchema=z.object({
+export const bookingSummarySchema = z.object({
   vehicles: z.array(z.string().min(1)),
   start: z.string().min(1),
   end: z.string().min(1),
@@ -18,7 +18,9 @@ export const createVehicleSchema = z.object({
   odo: z.coerce.number().min(0),
   insuranceExpiry: z.string(),
   baseDailyPrice: z.coerce.number().positive(),
-  categoryId: z.coerce.number().int().positive()
+  categoryId: z.coerce.number().int().positive(),
+  policyNumber: z.string().min(1, "Policy Number is required"),
+  provider: z.string().min(1, "Provider is required")
 });
 
 export const editVehicleSchema = createVehicleSchema.partial().extend({

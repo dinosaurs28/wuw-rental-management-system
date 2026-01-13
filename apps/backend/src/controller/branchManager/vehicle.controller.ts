@@ -4,28 +4,31 @@ import { prisma } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
 import { imageQueue } from "../../lib/queue.client.js";
 import { VehicleStatus } from "@repo/database/client";
-import { editVehicleSchema } from "@repo/schemas";
+import { createVehicleSchema, editVehicleSchema } from "@repo/schemas";
 export const AddVehicle = async (req: Request, res: Response) => {
     const branchId = req.branch_Id;
-    const {
-        make,
-        model,
-        regNo,
-        odo,
-        insuranceExpiry,
-        baseDailyPrice,
-        categoryId
-    } = req.body;
-
     const files = req.files as Express.Multer.File[];
 
     try {
-        // Validation
-        if (!make || !model || !regNo || !baseDailyPrice || !categoryId) {
+        const validation = createVehicleSchema.safeParse(req.body);
+
+        if (!validation.success) {
             return res.status(StatusCode.BAD_REQUEST).json({
-                message: "Missing required vehicle fields"
+                message: "Invalid vehicle data",
+                error: validation.error.format()
             });
         }
+        const {
+            make,
+            model,
+            regNo,
+            odo,
+            insuranceExpiry,
+            baseDailyPrice,
+            categoryId,
+            policyNumber,
+            provider
+        } = validation.data;
 
         const existingVehicle = await prisma.vehicle.findUnique({
             where: { regNo }
@@ -41,14 +44,22 @@ export const AddVehicle = async (req: Request, res: Response) => {
             data: {
                 publicId: createID(),
                 branchId: branchId,
-                categoryId: parseInt(categoryId),
+                categoryId: Number(categoryId), // Zod coerces, but prisma might want int. Zod schema has coerce.number()
                 make,
                 model,
                 regNo,
-                odo: parseInt(odo) || 0,
+                odo: Number(odo),
                 insuranceExpiry: new Date(insuranceExpiry),
-                baseDailyPrice: parseFloat(baseDailyPrice),
-                status: VehicleStatus.AVAILABLE
+                baseDailyPrice: Number(baseDailyPrice),
+                status: VehicleStatus.AVAILABLE,
+                insuranceRecords: {
+                    create: {
+                        publicId: createID(),
+                        policyNumber,
+                        provider,
+                        validTill: new Date(insuranceExpiry)
+                    }
+                }
             }
         });
         if (files && files.length > 0) {
@@ -180,6 +191,57 @@ export const EditVehicle = async (req: Request, res: Response) => {
         console.error("Edit Vehicle Error:", error);
         return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
             message: "Internal Server Error editing vehicle"
+        });
+    }
+}
+
+
+export const GetVehicleById = async (req: Request, res: Response) => {
+    // @ts-ignore
+    const branchId = req.branch_Id;
+    const { vehicleId } = req.params;
+
+    try {
+        const vehicle = await prisma.vehicle.findUnique({
+            where: { publicId: vehicleId },
+            include: {
+                images: {
+                    select: {
+                        id: true,
+                        publicId: true,
+                        isThumbnail: true,
+                        file: {
+                            select: { url: true }
+                        }
+                    }
+                },
+                insuranceRecords: {
+                    orderBy: { validTill: 'desc' },
+                    take: 1
+                }
+            }
+        });
+
+        if (!vehicle || vehicle.branchId !== branchId) {
+            return res.status(StatusCode.NOT_FOUND).json({
+                message: "Vehicle not found or access denied"
+            });
+        }
+
+        const latestInsurance = vehicle.insuranceRecords[0];
+
+        return res.status(StatusCode.OK).json({
+            data: {
+                ...vehicle,
+                policyNumber: latestInsurance?.policyNumber || "",
+                provider: latestInsurance?.provider || ""
+            }
+        });
+
+    } catch (error) {
+        console.error("GetVehicleById Error:", error);
+        return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+            message: "Internal Server Error fetching vehicle"
         });
     }
 }
