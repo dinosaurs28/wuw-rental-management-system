@@ -4,7 +4,7 @@ import { ManagerCheck } from "../../middlewares/managerCheck.middlewares";
 import { GetRevenueStats } from "../../controller/branchManager/revenue.controller";
 import { GetActiveBookings, GetPendingApprovals } from "../../controller/branchManager/bookings.controller";
 import { GetDamageReports, CloseDamageReport, GetMinimalDamageReport, GetDamageReportList } from "../../controller/branchManager/damage.controller";
-import { AddVehicle, EditVehicle } from "../../controller/branchManager/vehicle.controller";
+import { AddVehicle, EditVehicle, GetInsuranceExpiryReport } from "../../controller/branchManager/vehicle.controller";
 import { GetStaffAuditLogs } from "../../controller/branchManager/audit.controller";
 import { CreateEmployee, GetEmployee, SearchEmployee, UpdateEmployee } from "../../controller/branchManager/employee.controller";
 import { upload } from "../../middlewares/upload.middleware";
@@ -22,6 +22,7 @@ router.patch("/damage-reports/:damageReportId/close", ManagerCheck, CloseDamageR
 router.post("/dashboard/vehicle/add", ManagerCheck, upload.array('images', 5), AddVehicle)
 router.put("/dashboard/vehicle/edit/:vehicleId", ManagerCheck, upload.array('images', 5), EditVehicle)
 router.get("/dashboard/staff/activity-logs", ManagerCheck, GetStaffAuditLogs)
+router.get("/dashboard/reports/insurance-expiry", ManagerCheck, GetInsuranceExpiryReport)
 router.get("/dashboard/employees", ManagerCheck, SearchEmployee)
 router.get("/dashboard/employees/:employeeId", ManagerCheck, GetEmployee)
 router.post("/dashboard/employees", ManagerCheck, CreateEmployee)

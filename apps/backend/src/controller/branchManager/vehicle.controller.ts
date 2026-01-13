@@ -183,3 +183,82 @@ export const EditVehicle = async (req: Request, res: Response) => {
         });
     }
 }
+
+export const GetInsuranceExpiryReport = async (req: Request, res: Response) => {
+    const branchId = req.branch_Id;
+    const { q } = req.query;
+
+    const whereClause: any = {
+        branchId: branchId,
+        deletedAt: null
+    };
+
+    if (q) {
+        const search = q as string;
+        whereClause.OR = [
+            { regNo: { contains: search, mode: 'insensitive' } },
+            { make: { contains: search, mode: 'insensitive' } },
+            { model: { contains: search, mode: 'insensitive' } }
+        ];
+    }
+
+    try {
+        const vehicles = await prisma.vehicle.findMany({
+            where: whereClause,
+            select: {
+                id: true,
+                publicId: true,
+                make: true,
+                model: true,
+                regNo: true,
+                insuranceExpiry: true,
+                images: {
+                    where: { isThumbnail: true },
+                    select: {
+                        file: {
+                            select: { url: true }
+                        }
+                    },
+                    take: 1
+                },
+                insuranceRecords: {
+                    orderBy: { validTill: 'desc' },
+                    take: 1,
+                    select: {
+                        policyNumber: true,
+                        provider: true,
+                        validTill: true
+                    }
+                }
+            },
+            orderBy: {
+                insuranceExpiry: 'asc' // Soonest expiry first
+            }
+        });
+
+        const reportData = vehicles.map(v => {
+            const latestInsurance = v.insuranceRecords[0];
+            return {
+                vehicleName: `${v.make} ${v.model}`,
+                thumbnail: v.images[0]?.file.url || null,
+                make: v.make,
+                model: v.model,
+                regNo: v.regNo,
+                policyNumber: latestInsurance?.policyNumber || "N/A",
+                provider: latestInsurance?.provider || "N/A",
+                expiryDate: v.insuranceExpiry
+            };
+        });
+
+        return res.status(StatusCode.OK).json({
+            data: reportData
+        });
+
+    } catch (error) {
+        console.error("GetInsuranceExpiryReport Error:", error);
+        return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+            message: "Internal Server Error fetching insurance report"
+        });
+    }
+}
+
