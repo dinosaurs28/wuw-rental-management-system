@@ -1,37 +1,46 @@
 import { useMemo } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, MapPin, Check } from 'lucide-react';
+import { CalendarIcon, MapPin, Check, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { useVehicleRentalStore } from '@/store/vehicleRental.store';
 import type { VehicleDetails } from '@/services/vehicle.service';
 
 interface VehiclePricingCardProps {
     vehicle: VehicleDetails;
-    pickupDate: Date | null;
-    returnDate: Date | null;
-    onPickupDateChange: (date: Date | undefined) => void;
-    onReturnDateChange: (date: Date | undefined) => void;
     onBookVehicle: () => void;
+    isRefetching?: boolean;
 }
 
 export const VehiclePricingCard = ({
     vehicle,
-    pickupDate,
-    returnDate,
-    onPickupDateChange,
-    onReturnDateChange,
     onBookVehicle,
+    isRefetching = false,
 }: VehiclePricingCardProps) => {
+    // Get state and actions from the store
+    const {
+        getStartDate,
+        getEndDate,
+        setStartDate,
+        setEndDate,
+    } = useVehicleRentalStore();
+
+    // Get dates as Date objects
+    const pickupDate = getStartDate();
+    const returnDate = getEndDate();
+
     const formattedPickupDate = pickupDate ? format(pickupDate, 'MMM dd, yyyy') : 'Select date';
     const formattedReturnDate = returnDate ? format(returnDate, 'MMM dd, yyyy') : 'Select date';
 
     const isAvailable = vehicle.availability && vehicle.status === 'AVAILABLE';
 
-    // Calculate pricing display
+    // Use backend-calculated pricing (updates when dates change and refetch happens)
     const hasDiscount = vehicle.discountPrice > 0 && vehicle.discountPrice < vehicle.baseTotal;
+    const displayDays = vehicle.totalDays;
+    const displayTotal = hasDiscount ? vehicle.discountPrice : vehicle.baseTotal;
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-IN', {
@@ -58,6 +67,18 @@ export const VehiclePricingCard = ({
         today.setHours(0, 0, 0, 0);
         return { before: today };
     }, [pickupDate]);
+
+    // Handle date changes - update store (triggers refetch in parent)
+    const handlePickupDateChange = (date: Date | undefined) => {
+        setStartDate(date || null);
+    };
+
+    const handleReturnDateChange = (date: Date | undefined) => {
+        setEndDate(date || null);
+    };
+
+    // Button is enabled only when we have both dates, vehicle is available, and not loading
+    const canBook = isAvailable && pickupDate && returnDate && !isRefetching;
 
     return (
         <Card className="overflow-hidden border border-zinc-200 shadow-lg">
@@ -117,7 +138,7 @@ export const VehiclePricingCard = ({
                                     <Calendar
                                         mode="single"
                                         selected={pickupDate || undefined}
-                                        onSelect={onPickupDateChange}
+                                        onSelect={handlePickupDateChange}
                                         disabled={disabledDays}
                                         initialFocus
                                     />
@@ -147,7 +168,7 @@ export const VehiclePricingCard = ({
                                     <Calendar
                                         mode="single"
                                         selected={returnDate || undefined}
-                                        onSelect={onReturnDateChange}
+                                        onSelect={handleReturnDateChange}
                                         disabled={returnDisabledDays}
                                         initialFocus
                                     />
@@ -158,12 +179,19 @@ export const VehiclePricingCard = ({
                 </div>
 
                 {/* Pricing Breakdown */}
-                <div className="p-6 space-y-3 border-b border-zinc-100">
-                    {vehicle.totalDays > 0 && (
+                <div className="p-6 space-y-3 border-b border-zinc-100 relative">
+                    {/* Loading overlay for refetching */}
+                    {isRefetching && (
+                        <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-10">
+                            <Loader2 className="size-5 text-orange-500 animate-spin" />
+                        </div>
+                    )}
+
+                    {displayDays > 0 && (
                         <>
                             <div className="flex justify-between text-sm">
                                 <span className="text-zinc-600">
-                                    {formatCurrency(vehicle.pricing.daily)} × {vehicle.totalDays} days
+                                    {formatCurrency(vehicle.pricing.daily)} × {displayDays} days
                                 </span>
                                 <span className="text-zinc-900 font-medium">
                                     {formatCurrency(vehicle.baseTotal)}
@@ -186,14 +214,14 @@ export const VehiclePricingCard = ({
                                 <div className="flex justify-between">
                                     <span className="text-base font-semibold text-zinc-900">Total</span>
                                     <span className="text-xl font-bold text-zinc-900">
-                                        {formatCurrency(hasDiscount ? vehicle.discountPrice : vehicle.baseTotal)}
+                                        {formatCurrency(displayTotal)}
                                     </span>
                                 </div>
                             </div>
                         </>
                     )}
 
-                    {vehicle.totalDays === 0 && (
+                    {displayDays === 0 && !isRefetching && (
                         <p className="text-sm text-zinc-500 text-center py-2">
                             Select dates to see pricing
                         </p>
@@ -214,12 +242,21 @@ export const VehiclePricingCard = ({
                 <div className="p-6">
                     <Button
                         onClick={onBookVehicle}
-                        disabled={!isAvailable || !pickupDate || !returnDate}
+                        disabled={!canBook}
                         className="w-full h-12 bg-orange-500 hover:bg-orange-600 text-white font-semibold text-base rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {isAvailable ? 'Book Vehicle' : 'Currently Unavailable'}
+                        {isRefetching ? (
+                            <span className="flex items-center gap-2">
+                                <Loader2 className="size-4 animate-spin" />
+                                Updating...
+                            </span>
+                        ) : isAvailable ? (
+                            'Book Vehicle'
+                        ) : (
+                            'Currently Unavailable'
+                        )}
                     </Button>
-                    {(!pickupDate || !returnDate) && isAvailable && (
+                    {(!pickupDate || !returnDate) && isAvailable && !isRefetching && (
                         <p className="text-xs text-zinc-500 text-center mt-2">
                             Please select pickup and return dates
                         </p>

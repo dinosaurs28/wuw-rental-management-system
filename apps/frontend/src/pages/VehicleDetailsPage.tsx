@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
@@ -14,17 +14,50 @@ import {
     BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { useVehicleDetails } from '@/hooks/useVehicleDetails';
+import { useVehicleRentalStore } from '@/store/vehicleRental.store';
 import { useSearchStore } from '@/store/search.store';
 import { cn } from '@/lib/utils';
 
 export const VehicleDetailsPage = () => {
     const { vehicleId } = useParams<{ vehicleId: string }>();
 
-    // Get dates from Zustand store
-    const { pickupDate, returnDate, setSearchCriteria } = useSearchStore();
+    // Get dates from search store (set on listing page)
+    const searchPickupDate = useSearchStore((state) => state.pickupDate);
+    const searchReturnDate = useSearchStore((state) => state.returnDate);
 
-    // Fetch vehicle details
-    const { data, isLoading, isError } = useVehicleDetails(
+    // Get dates and actions from vehicle rental store
+    const {
+        getStartDate,
+        getEndDate,
+        setStartDate,
+        setEndDate,
+        setPricePerDay,
+        setVehicleId,
+        setVehicleDetails,
+    } = useVehicleRentalStore();
+
+    const pickupDate = getStartDate();
+    const returnDate = getEndDate();
+
+    // Sync dates from search store to rental store on mount
+    useEffect(() => {
+        // If search store has dates set from listing page, sync them
+        if (searchPickupDate) {
+            setStartDate(searchPickupDate);
+        } else if (!pickupDate) {
+            // Fallback to today if no dates exist
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            setStartDate(today);
+        }
+
+        if (searchReturnDate) {
+            setEndDate(searchReturnDate);
+        }
+    }, []); // Run only on mount
+
+    // Fetch vehicle details - will refetch when dates change
+    const { data, isLoading, isError, isFetching } = useVehicleDetails(
         vehicleId || '',
         pickupDate,
         returnDate
@@ -32,29 +65,31 @@ export const VehicleDetailsPage = () => {
 
     const vehicle = data?.data;
 
-    // Date change handlers
-    const handlePickupDateChange = useCallback(
-        (date: Date | undefined) => {
-            setSearchCriteria({ pickupDate: date || null });
-        },
-        [setSearchCriteria]
-    );
+    // Update price per day in store when vehicle data changes
+    useEffect(() => {
+        if (vehicle?.pricing?.daily) {
+            setPricePerDay(vehicle.pricing.daily);
+        }
+    }, [vehicle?.pricing?.daily, setPricePerDay]);
 
-    const handleReturnDateChange = useCallback(
-        (date: Date | undefined) => {
-            setSearchCriteria({ returnDate: date || null });
-        },
-        [setSearchCriteria]
-    );
-
-    // Book vehicle handler
+    // Book vehicle handler - saves selection to store
     const handleBookVehicle = useCallback(() => {
+        if (!vehicleId || !vehicle) return;
+
+        // Save vehicle selection to store
+        setVehicleId(vehicleId);
+        setVehicleDetails({
+            name: `${vehicle.make} ${vehicle.model}`,
+            model: vehicle.model,
+            make: vehicle.make,
+        });
+
         // Navigate to booking flow (to be implemented)
         console.log('Booking vehicle:', vehicleId);
         // navigate(`/booking/${vehicleId}`);
-    }, [vehicleId]);
+    }, [vehicleId, vehicle, setVehicleId, setVehicleDetails]);
 
-    // Loading state
+    // Loading state (initial load only)
     if (isLoading) {
         return (
             <div className="min-h-screen flex flex-col bg-zinc-50">
@@ -166,11 +201,8 @@ export const VehicleDetailsPage = () => {
                         <div className="lg:sticky lg:top-6">
                             <VehiclePricingCard
                                 vehicle={vehicle}
-                                pickupDate={pickupDate}
-                                returnDate={returnDate}
-                                onPickupDateChange={handlePickupDateChange}
-                                onReturnDateChange={handleReturnDateChange}
                                 onBookVehicle={handleBookVehicle}
+                                isRefetching={isFetching}
                             />
                         </div>
                     </div>
