@@ -91,7 +91,7 @@ export const emailAuthControllerSignin=async (req:Request,res:Response)=>{
         }
         if(!response.emailVerifiedAt){
             return res.status(StatusCode.CREATED).cookie("verifySession",response.publicId,{
-                httpOnly: true,
+                httpOnly: false,
                 secure: true,
                 sameSite: "strict",
             }).json({

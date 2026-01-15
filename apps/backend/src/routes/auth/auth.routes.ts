@@ -3,6 +3,7 @@
     import { generateOTP, verifyOTP } from "../../controller/auth/email-verify.controller.js"
     import passport from "../../utils/passport/google"
     import { googleSignIn } from "../../controller/auth/google.controller.js"
+import { authCheckJwt } from "../../middlewares/authCheck.middlewares.js"
    
 
     const router:Router=Router()
@@ -12,9 +13,15 @@
 
     router.post("/email/signup",emailAuthController)
     router.post("/email/signin",emailAuthControllerSignin)
-    router.route("/email/verify-email").post(generateOTP).post(verifyOTP)
+    router.route("/email/verify-otp").post(generateOTP)
+    router.post("/email/verify-otp/code",verifyOTP)
     router.get("/google",passport.authenticate("google", { scope: ["profile", "email"],session:false }))
     router.get("/google/callback",passport.authenticate("google", { session: false,
     failureRedirect: `${process.env.FRONTEND_REDIRECT_URL}/login?error=auth_failed`,}),googleSignIn)
+    router.get("/me",authCheckJwt,(req,res)=>{
+        res.json({message:"Session is valid",
+            isAuthenticated: true
+        })
+    })
 
     export default router

@@ -15,13 +15,16 @@ export const authCheckJwt=async (req:Request,res:Response,next:NextFunction)=>{
     const token=req.cookies
     if(!token.accessToken){
         return res.status(StatusCode.FORBIDDEN).json({
-            message:"The Access Token Is Missing Please login Again"
+            message:"The Access Token Is Missing Please login Again",
+            isAuthenticated: false
+
         })
     }
     const isverfied=await jwtverfiy(token.accessToken) as jwtinterface
     if(!isverfied){
         return res.status(StatusCode.UNAUTHORIZED).json({
-            message:"Authentication required. Your session has expired or is invalid. Please log in again to securely continue."
+            message:"Authentication required. Your session has expired or is invalid. Please log in again to securely continue.",
+            isAuthenticated: false
         })
     }
     if(isverfied.verified===true){
@@ -29,6 +32,7 @@ export const authCheckJwt=async (req:Request,res:Response,next:NextFunction)=>{
         return next()
     }
     return res.status(StatusCode.FORBIDDEN).json({
-        message:"Please Verfiy Your Phone Number"
+        message:"Please Verfiy Your Phone Number",
+        isAuthenticated: false
     })
 }

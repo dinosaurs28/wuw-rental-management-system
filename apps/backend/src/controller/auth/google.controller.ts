@@ -28,7 +28,7 @@ export const googleSignIn=async (req:Request,res:Response)=>{
     if (!user.emailVerifiedAt) {
       return res.status(StatusCode.OK)
         .cookie("verifySession", user.publicId, {
-          httpOnly: true,
+          httpOnly: false,
           secure: true, // Should be true in production
           sameSite: "strict",
         })
