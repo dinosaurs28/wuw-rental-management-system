@@ -167,11 +167,6 @@ export const KycVerificationPage = () => {
             <Navbar />
 
             <main className="flex-1 container mx-auto px-4 py-6 md:py-10">
-                {/* Step Indicator */}
-                <div className="mb-8 md:mb-12">
-                    <BookingStepIndicator currentStep={2} />
-                </div>
-
                 {/* Main Card */}
                 <Card className="max-w-4xl mx-auto shadow-lg">
                     <CardHeader className="text-center pb-2">

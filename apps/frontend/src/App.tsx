@@ -5,6 +5,7 @@ import OtpPage from "./pages/auth/OtpPage";
 import { VehiclesPage } from "./pages/VehiclesPage";
 import { VehicleDetailsPage } from "./pages/VehicleDetailsPage";
 import { KycVerificationPage } from "./pages/verification/KycVerificationPage";
+import { PersonalInformationPage } from "./pages/profile/PersonalInformationPage";
 import { LandingPage } from "@/components/landing/LandingPage";
 import { AuthInitializer } from "@/components/auth/AuthInitializer";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -35,6 +36,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/verification/kyc" element={<KycVerificationPage />} />
+          <Route path="/profile/personal-information" element={<PersonalInformationPage />} />
         </Route>
 
         {/* Catch all */}
