@@ -8,7 +8,8 @@ export const bookingSummarySchema = z.object({
   vehicles: z.array(z.string().min(1)),
   start: z.string().min(1),
   end: z.string().min(1),
-  file_public_id: z.string().min(1)
+  file_public_id: z.string().min(1),
+  payment_type: z.enum(['CASH', 'ONLINE'])
 })
 
 export const createVehicleSchema = z.object({

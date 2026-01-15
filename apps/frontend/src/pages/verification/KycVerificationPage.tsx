@@ -9,8 +9,6 @@ import { Footer } from '@/components/landing/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-
-import { BookingStepIndicator } from '@/components/verification/BookingStepIndicator';
 import { DocumentTypeSelector } from '@/components/verification/DocumentTypeSelector';
 import { DocumentUploadZone } from '@/components/verification/DocumentUploadZone';
 import { UploadedDocumentsGrid } from '@/components/verification/UploadedDocumentsGrid';

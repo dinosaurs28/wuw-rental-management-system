@@ -10,7 +10,7 @@ import { calculateMultiDayTotalPrice } from "../../utils/pricing/calcMultiDayPri
 import { getDiscountForDays } from "../../utils/pricing/getDiscountForDays";
 import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils";
 import { createID } from "../../utils/nanoID";
-
+import jwt from "jsonwebtoken"
 export const createBookingSummary = async (req: Request, res: Response) => {
   try {
     const parsed = bookingSummarySchema.safeParse(req.body);
@@ -156,9 +156,20 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     grandDiscountTotal = Number(grandDiscountTotal.toFixed(2));
     grandDeposit = Number(grandDeposit.toFixed(2));
     grandFinalTotal = Number(grandFinalTotal.toFixed(2));
-    const paymentDetails=await initiatePhonePePayment(grandFinalTotal)
-    const transactionId=paymentDetails.merchantTransactionId
-    const paymentURL=paymentDetails.instrumentResponse.redirectInfo.url
+    let transactionId:string
+    let paymentURL:string
+    let encryptedFinalPrice:string | null=null
+    if(parsed.data.payment_type==="ONLINE"){
+      const paymentDetails=await initiatePhonePePayment(grandFinalTotal)
+      transactionId=paymentDetails.merchantTransactionId
+      paymentURL=paymentDetails.instrumentResponse.redirectInfo.url
+    }else{
+      transactionId=createID()
+      paymentURL=""
+      encryptedFinalPrice=await jwt.sign({finalPrice:grandFinalTotal},process.env.JWT_SECRET!,{
+        expiresIn:"10m"
+      })
+    }
     const booking = await prisma.$transaction(async (tx) => {
       const newBooking = await tx.booking.create({
         data: {
@@ -233,6 +244,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     return res.status(StatusCode.OK).json({
       message: "Summary created successfully",
       holdId,
+      payment_type:parsed.data.payment_type,
       expiresIn: holdExpiry,
       expiresAt: holdData.expiresAt,
       data: {
@@ -244,7 +256,8 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           grandDiscountTotal,
           grandDeposit,
           grandFinalTotal,
-          paymentURL
+          paymentURL,
+          encryptedFinalPrice
         }
       }
     });
