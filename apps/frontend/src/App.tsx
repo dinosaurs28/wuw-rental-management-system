@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import SignInPage from "./pages/auth/SignInPage";
 import OtpPage from "./pages/auth/OtpPage";
+import { VehiclesPage } from "./pages/VehiclesPage";
+import { LandingPage } from "@/components/landing/LandingPage";
 import { AuthInitializer } from "@/components/auth/AuthInitializer";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PublicRoute } from "@/components/auth/PublicRoute";
@@ -15,7 +17,9 @@ function App() {
       <AuthInitializer />
       <Toaster richColors position="top-center" />
       <Routes>
-        <Route path="/" element={<Navigate to="/auth/sign-in" replace />} />
+        {/* Public Routes - No auth required */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/vehicles" element={<VehiclesPage />} />
 
         {/* Public Auth Routes */}
         <Route element={<PublicRoute />}>

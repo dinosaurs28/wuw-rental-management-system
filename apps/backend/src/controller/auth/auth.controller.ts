@@ -95,7 +95,13 @@ export const emailAuthControllerSignin=async (req:Request,res:Response)=>{
                 secure: true,
                 sameSite: "strict",
             }).json({
-                message:"Redirecting to Otp Page"
+                message:"Redirecting to Otp Page",
+                data:{
+                name:response.name,
+                email:response.email,
+                role:response.role,
+                publicId:response.publicId,
+                }
             })
         }
         const token=await jwtsign({sub:response.publicId,role:response.role,verified:true,provider:response.authProvider})
@@ -105,11 +111,57 @@ export const emailAuthControllerSignin=async (req:Request,res:Response)=>{
             sameSite: "strict",
         }).json({
             message:"Success",
+            data:{
+                name:response.name,
+                email:response.email,
+                role:response.role,
+                publicId:response.publicId,
+            }
         })
     }catch(e:any){
          console.log("The Error In the Email Auth Controller",e)
         return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
             message:"The Internal Error While processing the Email Auth Route"
+            })
+    }
+}
+
+export const ProfileInfo=async(req:Request,res:Response)=>{
+    try{
+        const query=req.query.google
+        const public_Id=req.public_Id
+        if(query){
+            const response=await prisma.user.findUnique({
+                where:{
+                    publicId:public_Id
+                }
+            })
+            if(!response){
+                return res.status(StatusCode.NOT_FOUND).json({
+                    message:"User Not Found"
+                })
+            }
+            return res.status(StatusCode.OK).json({
+                message:"Success",
+                data:{
+                    isAuthenticated:true,
+                    name:response.name,
+                    email:response.email,
+                    role:response.role,
+                    publicId:response.publicId,
+                }
+            })
+        }
+        return res.json({
+            message:"Success",
+            data:{
+                isAuthenticated:true,
+            }
+        })
+    }catch(e:any){
+        console.log("The Error In the Profile Info Controller",e)
+        return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+            message:"The Internal Error While processing the Profile Info Route"
             })
     }
 }

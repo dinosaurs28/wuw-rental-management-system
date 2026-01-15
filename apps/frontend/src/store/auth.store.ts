@@ -29,15 +29,23 @@ export const useAuthStore = create<AuthState>((set) => ({
     checkAuth: async () => {
         set({ isLoading: true });
         try {
-            const response = await authService.checkAuth();
-            // Assuming response.user contains the user data if authenticated
-            if (response && response.user) {
-                set({ user: response.user, isAuthenticated: true, isLoading: false });
-            } else if (response && response.isAuthenticated) {
-                // Fallback if backend just returns isAuthenticated: true but no user object in root
-                // You might need to adjust based on actual API response structure of /me
-                set({ user: response.user || { id: "session_user" }, isAuthenticated: true, isLoading: false });
+            // Always pass google=true to get full profile data (works for both email and Google users)
+            const response = await authService.checkAuth(true);
+
+            if (response?.data?.isAuthenticated && response.data.publicId) {
+                // Full profile returned - always use fresh data from server
+                set({
+                    user: {
+                        id: response.data.publicId,
+                        email: response.data.email || "",
+                        name: response.data.name || "",
+                        role: response.data.role || "",
+                    },
+                    isAuthenticated: true,
+                    isLoading: false
+                });
             } else {
+                // Not authenticated or no profile data - clear everything
                 set({ user: null, isAuthenticated: false, isLoading: false });
             }
         } catch (error) {

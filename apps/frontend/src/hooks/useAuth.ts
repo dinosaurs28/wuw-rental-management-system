@@ -12,10 +12,17 @@ export const useSignIn = () => {
 
     return useMutation({
         mutationFn: (data: SignInInput) => authService.signIn(data),
-        onSuccess: (data) => {
+        onSuccess: (response) => {
             toast.success("Signed in successfully!");
-            if (data.user) {
-                login(data.user);
+
+            // Store user data in Zustand (nested in response.data)
+            if (response.data?.publicId) {
+                login({
+                    id: response.data.publicId,
+                    email: response.data.email || "",
+                    name: response.data.name || "",
+                    role: response.data.role || "",
+                });
             }
 
             if (Cookies.get("verifySession")) {

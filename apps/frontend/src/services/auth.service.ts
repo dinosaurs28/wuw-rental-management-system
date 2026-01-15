@@ -10,15 +10,24 @@ export type SignUpInput = z.infer<typeof emailAuthSchema>;
 export type OtpVerifyInput = z.infer<typeof otpSchema> & { phone: string };
 
 export interface AuthResponse {
-    user?: any;
     message: string;
-    // Add other fields as per backend response
+    data?: {
+        name?: string;
+        email?: string;
+        role?: string;
+        publicId?: string;
+    };
 }
 
 export interface CheckAuthResponse {
-    isAuthenticated: boolean;
     message: string;
-    user?: any;
+    data?: {
+        isAuthenticated: boolean;
+        name?: string;
+        email?: string;
+        role?: string;
+        publicId?: string;
+    };
 }
 
 export const authService = {
@@ -27,13 +36,14 @@ export const authService = {
         return response.data;
     },
 
-    checkAuth: async () => {
-        const response = await apiClient.get<CheckAuthResponse>("/auth/me");
+    checkAuth: async (google?: boolean) => {
+        const queryParam = google ? "?google=true" : "";
+        const response = await apiClient.get<CheckAuthResponse>(`/auth/me${queryParam}`);
         return response.data;
     },
 
     logout: async () => {
-        await apiClient.post("/auth/logout");
+        await apiClient.get("/auth/logout");
     },
 
     signUp: async (data: SignUpInput) => {
