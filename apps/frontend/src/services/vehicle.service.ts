@@ -52,3 +52,54 @@ export const fetchVehicles = async (filters: VehicleFilters): Promise<VehiclesRe
         throw error;
     }
 };
+
+// Vehicle Details Types
+export interface VehicleDetails {
+    publicId: string;
+    make: string;
+    model: string;
+    status: 'AVAILABLE' | 'NOT_AVAILABLE';
+    category: string;
+    branch: string;
+    images: string[];
+    pricing: {
+        daily: number;
+    };
+    deposit: number;
+    availability: boolean;
+    totalDays: number;
+    baseTotal: number;
+    discountPrice: number;
+}
+
+export interface VehicleDetailsResponse {
+    message: string;
+    data: VehicleDetails;
+}
+
+export interface VehicleDetailsParams {
+    vehicleId: string;
+    startDate?: string;
+    endDate?: string;
+}
+
+export const fetchVehicleDetails = async (
+    params: VehicleDetailsParams
+): Promise<VehicleDetailsResponse> => {
+    try {
+        const queryParams = new URLSearchParams();
+
+        if (params.startDate) queryParams.append('start', params.startDate);
+        if (params.endDate) queryParams.append('end', params.endDate);
+
+        const url = queryParams.toString()
+            ? `${API_URL}/public/vehicles/${params.vehicleId}?${queryParams.toString()}`
+            : `${API_URL}/public/vehicles/${params.vehicleId}`;
+
+        const response = await axios.get<VehicleDetailsResponse>(url);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching vehicle details:', error);
+        throw error;
+    }
+};

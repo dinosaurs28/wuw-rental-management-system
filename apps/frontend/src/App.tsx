@@ -3,6 +3,7 @@ import { Toaster } from "sonner";
 import SignInPage from "./pages/auth/SignInPage";
 import OtpPage from "./pages/auth/OtpPage";
 import { VehiclesPage } from "./pages/VehiclesPage";
+import { VehicleDetailsPage } from "./pages/VehicleDetailsPage";
 import { LandingPage } from "@/components/landing/LandingPage";
 import { AuthInitializer } from "@/components/auth/AuthInitializer";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -20,6 +21,7 @@ function App() {
         {/* Public Routes - No auth required */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/vehicles" element={<VehiclesPage />} />
+        <Route path="/vehicle/:vehicleId" element={<VehicleDetailsPage />} />
 
         {/* Public Auth Routes */}
         <Route element={<PublicRoute />}>
