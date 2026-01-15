@@ -49,11 +49,14 @@
   --radius: 0.625rem;
 
   /* Background & Foreground */
-  --background: #FFFFFF; /* --bg-primary */
-  --foreground: #000000; /* --text-primary */
+  --background: #FFFFFF;
+  /* --bg-primary */
+  --foreground: #000000;
+  /* --text-primary */
 
   /* Card */
-  --card: #FFFFFF; /* --bg-card */
+  --card: #FFFFFF;
+  /* --bg-card */
   --card-foreground: #000000;
 
   /* Popover */
@@ -65,13 +68,16 @@
   --primary-foreground: #FFFFFF;
 
   /* Secondary / Muted / Accent */
-  --secondary: #F5F5F5; /* gray-100 */
+  --secondary: #F5F5F5;
+  /* gray-100 */
   --secondary-foreground: #000000;
 
   --muted: #F5F5F5;
-  --muted-foreground: #666666; /* gray-600 */
+  --muted-foreground: #666666;
+  /* gray-600 */
 
-  --accent: #FF8C42; /* primary-orange-light */
+  --accent: #FF8C42;
+  /* primary-orange-light */
   --accent-foreground: #000000;
 
   /* Destructive / Error */
@@ -79,7 +85,8 @@
   --destructive-foreground: #FFFFFF;
 
   /* Borders & Inputs */
-  --border: #DDDDDD; /* gray-200 */
+  --border: #DDDDDD;
+  /* gray-200 */
   --input: #DDDDDD;
   --ring: #FF5F00;
 
@@ -103,11 +110,14 @@
 
 .dark {
   /* Background & Foreground */
-  --background: #000000; /* --bg-dark */
-  --foreground: #FFFFFF; /* --text-inverse */
+  --background: #000000;
+  /* --bg-dark */
+  --foreground: #FFFFFF;
+  /* --text-inverse */
 
   /* Card */
-  --card: #1A1A1A; /* gray-900 */
+  --card: #1A1A1A;
+  /* gray-900 */
   --card-foreground: #FFFFFF;
 
   /* Popover */
@@ -119,11 +129,14 @@
   --primary-foreground: #FFFFFF;
 
   /* Secondary / Muted / Accent */
-  --secondary: #2D2D2D; /* gray-800 */
+  --secondary: #2D2D2D;
+  /* gray-800 */
   --secondary-foreground: #FFFFFF;
 
-  --muted: #404040; /* gray-700 */
-  --muted-foreground: #CCCCCC; /* gray-300 */
+  --muted: #404040;
+  /* gray-700 */
+  --muted-foreground: #CCCCCC;
+  /* gray-300 */
 
   --accent: #FF8C42;
   --accent-foreground: #000000;
@@ -159,6 +172,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }

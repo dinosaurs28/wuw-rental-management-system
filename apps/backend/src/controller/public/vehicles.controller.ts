@@ -130,9 +130,10 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
         model: v.model,
         category: v.category.name,
         branch: v.branch.name,
-        odo: v.odo,
         imageUrl: v.images,
-        pricing,
+        pricing:{
+          daily:pricing.daily,
+        },
       });
     }
 
