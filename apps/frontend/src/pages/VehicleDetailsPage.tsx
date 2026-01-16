@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 import { VehicleImageGallery } from '@/components/vehicles/VehicleImageGallery';
@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 
 export const VehicleDetailsPage = () => {
     const { vehicleId } = useParams<{ vehicleId: string }>();
+    const navigate = useNavigate();
 
     // Get dates from search store (set on listing page)
     const searchPickupDate = useSearchStore((state) => state.pickupDate);
@@ -33,7 +34,8 @@ export const VehicleDetailsPage = () => {
         setEndDate,
         setPricePerDay,
         setVehicleId,
-        setVehicleDetails,
+        setVehicleFullDetails,
+        setDeposit,
     } = useVehicleRentalStore();
 
     const pickupDate = getStartDate();
@@ -70,24 +72,40 @@ export const VehicleDetailsPage = () => {
         if (vehicle?.pricing?.daily) {
             setPricePerDay(vehicle.pricing.daily);
         }
-    }, [vehicle?.pricing?.daily, setPricePerDay]);
+        if (vehicle?.deposit) {
+            setDeposit(vehicle.deposit);
+        }
+    }, [vehicle?.pricing?.daily, vehicle?.deposit, setPricePerDay, setDeposit]);
 
-    // Book vehicle handler - saves selection to store
+    // Book vehicle handler - clears previous selection, saves new one, and navigates to review
     const handleBookVehicle = useCallback(() => {
         if (!vehicleId || !vehicle) return;
 
-        // Save vehicle selection to store
+        // Clear previous vehicle selection from session storage
+        useVehicleRentalStore.getState().clearVehicleSelection();
+
+        // Set new vehicle selection with full details
         setVehicleId(vehicleId);
-        setVehicleDetails({
+        setVehicleFullDetails({
             name: `${vehicle.make} ${vehicle.model}`,
             model: vehicle.model,
             make: vehicle.make,
+            images: vehicle.images || [],
+            category: vehicle.category,
+            branch: vehicle.branch,
         });
 
-        // Navigate to booking flow (to be implemented)
-        console.log('Booking vehicle:', vehicleId);
-        // navigate(`/booking/${vehicleId}`);
-    }, [vehicleId, vehicle, setVehicleId, setVehicleDetails]);
+        // Set dates (maintain current selection)
+        if (pickupDate) setStartDate(pickupDate);
+        if (returnDate) setEndDate(returnDate);
+
+        // Set pricing
+        setPricePerDay(vehicle.pricing?.daily || 0);
+        setDeposit(vehicle.deposit || 0);
+
+        // Navigate to review & confirm page
+        navigate('/booking/review-confirm');
+    }, [vehicleId, vehicle, pickupDate, returnDate, setVehicleId, setVehicleFullDetails, setStartDate, setEndDate, setPricePerDay, setDeposit, navigate]);
 
     // Loading state (initial load only)
     if (isLoading) {
@@ -174,12 +192,12 @@ export const VehicleDetailsPage = () => {
                             <span
                                 className={cn(
                                     "px-3 py-1 text-xs font-semibold rounded-full",
-                                    vehicle.status === 'AVAILABLE'
+                                    (vehicle.availability && vehicle.status === 'AVAILABLE')
                                         ? "bg-emerald-100 text-emerald-700"
                                         : "bg-red-100 text-red-700"
                                 )}
                             >
-                                {vehicle.status === 'AVAILABLE' ? 'Available' : 'Not Available'}
+                                {(vehicle.availability && vehicle.status === 'AVAILABLE') ? 'Available' : 'Not Available'}
                             </span>
                         </div>
                     </div>

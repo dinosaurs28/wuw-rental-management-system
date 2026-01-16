@@ -1,0 +1,112 @@
+import apiClient from "@/lib/axios";
+
+// Types for booking summary request
+export interface CreateBookingSummaryRequest {
+    vehicles: string[];          // Vehicle public IDs
+    start: string;               // ISO date string
+    end: string;                 // ISO date string
+    file_public_id: string;      // KYC document file public ID
+    payment_type: 'CASH' | 'ONLINE';
+}
+
+// Types for booking summary response
+export interface BookingItem {
+    publicId: string;
+    make: string;
+    model: string;
+    category: string;
+    branch: string;
+    days: number;
+    baseTotal: number;
+    discountAmount: number;
+    discountPercent: number;
+    deposit: number;
+    finalTotal: number;
+}
+
+export interface BookingTotals {
+    grandBaseTotal: number;
+    grandDiscountTotal: number;
+    grandDeposit: number;
+    grandFinalTotal: number;
+    paymentURL: string | null;
+    encryptedFinalPrice: string | null;
+    transactionId: string | null;
+}
+
+export interface CreateBookingSummaryResponse {
+    message: string;
+    holdId: string;
+    payment_type: 'CASH' | 'ONLINE';
+    expiresIn: number;
+    expiresAt: string;
+    data: {
+        items: BookingItem[];
+        startDate: string;
+        endDate: string;
+        totals: BookingTotals;
+    };
+}
+
+// Online payment status response
+export interface PaymentStatusResponse {
+    status: 'Success' | 'Pending' | 'Failed';
+    message?: string;
+    redirectURL?: string;
+}
+
+// Cash payment confirmation request/response
+export interface ConfirmCashPaymentRequest {
+    encryptedFinalPrice: string;
+    transactionId: string;
+}
+
+export interface ConfirmCashPaymentResponse {
+    status: 'Success' | 'Failed';
+    message: string;
+    redirectURL?: string;
+}
+
+export const bookingService = {
+    /**
+     * Create a booking summary and initiate payment
+     * POST /public/vehicles/booking
+     * Returns payment details (paymentURL for online, encryptedFinalPrice for cash)
+     */
+    createBookingSummary: async (
+        data: CreateBookingSummaryRequest
+    ): Promise<CreateBookingSummaryResponse> => {
+        const response = await apiClient.post<CreateBookingSummaryResponse>(
+            "/public/vehicles/booking",
+            data
+        );
+        return response.data;
+    },
+
+    /**
+     * Verify online payment status
+     * GET /payment/status/:transactionId
+     */
+    verifyOnlinePayment: async (
+        transactionId: string
+    ): Promise<PaymentStatusResponse> => {
+        const response = await apiClient.get<PaymentStatusResponse>(
+            `/payment/status/${transactionId}`
+        );
+        return response.data;
+    },
+
+    /**
+     * Confirm cash payment
+     * POST /user/payment/cash
+     */
+    confirmCashPayment: async (
+        data: ConfirmCashPaymentRequest
+    ): Promise<ConfirmCashPaymentResponse> => {
+        const response = await apiClient.post<ConfirmCashPaymentResponse>(
+            "/user/payment/cash",
+            data
+        );
+        return response.data;
+    },
+};

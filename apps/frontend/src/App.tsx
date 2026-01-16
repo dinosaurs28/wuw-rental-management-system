@@ -6,6 +6,9 @@ import { VehiclesPage } from "./pages/VehiclesPage";
 import { VehicleDetailsPage } from "./pages/VehicleDetailsPage";
 import { KycVerificationPage } from "./pages/verification/KycVerificationPage";
 import { PersonalInformationPage } from "./pages/profile/PersonalInformationPage";
+import { ReviewConfirmPage } from "./pages/booking/ReviewConfirmPage";
+import { BookingStatusPage } from "./pages/booking/BookingStatusPage";
+import { BookingConfirmationPage } from "./pages/booking/BookingConfirmationPage";
 import { LandingPage } from "@/components/landing/LandingPage";
 import { AuthInitializer } from "@/components/auth/AuthInitializer";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -13,6 +16,9 @@ import { PublicRoute } from "@/components/auth/PublicRoute";
 
 // Placeholder for Dashboard
 const Dashboard = () => <div className="p-10"><h1>Dashboard</h1></div>;
+
+// Placeholder for Booking History
+const BookingHistory = () => <div className="p-10"><h1>Booking History</h1></div>;
 
 function App() {
   return (
@@ -37,6 +43,10 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/verification/kyc" element={<KycVerificationPage />} />
           <Route path="/profile/personal-information" element={<PersonalInformationPage />} />
+          <Route path="/booking/review-confirm" element={<ReviewConfirmPage />} />
+          <Route path="/booking/confirmation" element={<BookingConfirmationPage />} />
+          <Route path="/booking/status/:transactionId" element={<BookingStatusPage />} />
+          <Route path="/booking/history" element={<BookingHistory />} />
         </Route>
 
         {/* Catch all */}

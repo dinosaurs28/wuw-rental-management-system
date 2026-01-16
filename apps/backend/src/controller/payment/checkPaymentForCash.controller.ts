@@ -30,7 +30,7 @@ export const checkPaymentForCash = async (req: Request, res: Response) => {
         try {
             decodedPayload = jwt.verify(
                 encryptedFinalPrice,
-                process.env.JWT_SECRET!
+                process.env.JWT_SECERT!
             ) as CashPaymentPayload;
         } catch (jwtError) {
             return res.status(StatusCode.BAD_REQUEST).json({

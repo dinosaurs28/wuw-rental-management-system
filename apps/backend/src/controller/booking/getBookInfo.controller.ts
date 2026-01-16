@@ -67,7 +67,12 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     }
 
     const now = new Date();
-    if (startDate < now) {
+    // Compare only the date portion, not the exact time
+    // This allows same-day bookings even if the time has passed
+    const startDateOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    if (startDateOnly < todayOnly) {
       return res.status(StatusCode.BAD_REQUEST).json({
         message: "Start date cannot be in the past"
       });
@@ -95,7 +100,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       });
     }
 
-    const items:any = [];
+    const items: any = [];
     let grandBaseTotal = 0;
     let grandDiscountTotal = 0;
     let grandFinalTotal = 0;
@@ -136,11 +141,11 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         model: v.model,
         category: v.category.name,
         branch: v.branch.name,
-        vehicleId:v.id,
+        vehicleId: v.id,
         days,
         baseTotal,
         discountAmount,
-        discountPercent, 
+        discountPercent,
         deposit,
         finalTotal
       });
@@ -156,27 +161,27 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     grandDiscountTotal = Number(grandDiscountTotal.toFixed(2));
     grandDeposit = Number(grandDeposit.toFixed(2));
     grandFinalTotal = Number(grandFinalTotal.toFixed(2));
-    let transactionId:string
-    let paymentURL:string
-    let encryptedFinalPrice:string | null=null
-    if(parsed.data.payment_type==="ONLINE"){
-      const paymentDetails=await initiatePhonePePayment(grandFinalTotal)
-      transactionId=paymentDetails.merchantTransactionId
-      paymentURL=paymentDetails.instrumentResponse.redirectInfo.url
-    }else{
-      transactionId=createID()
-      paymentURL=""
-      encryptedFinalPrice=await jwt.sign({finalPrice:grandFinalTotal},process.env.JWT_SECRET!,{
-        expiresIn:"10m"
+    let transactionId: string
+    let paymentURL: string
+    let encryptedFinalPrice: string | null = null
+    if (parsed.data.payment_type === "ONLINE") {
+      const paymentDetails = await initiatePhonePePayment(grandFinalTotal)
+      transactionId = paymentDetails.merchantTransactionId
+      paymentURL = paymentDetails.instrumentResponse.redirectInfo.url
+    } else {
+      transactionId = createID()
+      paymentURL = ""
+      encryptedFinalPrice = await jwt.sign({ finalPrice: grandFinalTotal }, process.env.JWT_SECERT!, {
+        expiresIn: "10m"
       })
     }
     const booking = await prisma.$transaction(async (tx) => {
       const newBooking = await tx.booking.create({
         data: {
           publicId: createID(),
-          customerId:customerId,
+          customerId: customerId,
           kycFileId: kycFile.id,
-          branchId: vehiclesData[0]!.branchId ,
+          branchId: vehiclesData[0]!.branchId,
           startAt: startDate,
           endAt: endDate,
           days: items[0]!.days,
@@ -199,7 +204,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         },
       });
       await tx.bookingItem.createMany({
-        data: items.map((i:any) => ({
+        data: items.map((i: any) => ({
           bookingId: newBooking.id,
           vehicleId: i.vehicleId,
           days: i.days,
@@ -215,7 +220,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     });
 
     const holdId = booking.publicId
-    const holdExpiry = 18; 
+    const holdExpiry = 18;
 
     const holdData = {
       vehicles: items,
@@ -244,7 +249,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     return res.status(StatusCode.OK).json({
       message: "Summary created successfully",
       holdId,
-      payment_type:parsed.data.payment_type,
+      payment_type: parsed.data.payment_type,
       expiresIn: holdExpiry,
       expiresAt: holdData.expiresAt,
       data: {
@@ -257,7 +262,8 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           grandDeposit,
           grandFinalTotal,
           paymentURL,
-          encryptedFinalPrice
+          encryptedFinalPrice,
+          transactionId
         }
       }
     });

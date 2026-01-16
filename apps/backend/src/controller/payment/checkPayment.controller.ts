@@ -35,9 +35,11 @@ export const checkPayment = async (req: Request, res: Response) => {
         message: "Error while checking payment status",
       });
     }
+    // Idempotency check - prevent duplicate processing
     if (booking.paymentStatus === PaymentStatus.SUCCESS) {
       return res.status(StatusCode.OK).json({
         status: "Success",
+        message: "Booking already confirmed",
         redirectURL: "FRONTEND_SUCCESS_URL",
       });
     }
