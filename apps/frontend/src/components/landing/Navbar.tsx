@@ -86,7 +86,7 @@ export const Navbar = () => {
                                 </div>
                                 <DropdownMenuSeparator className="bg-zinc-800" />
                                 <DropdownMenuItem
-                                    onClick={() => navigate("/dashboard")}
+                                    onClick={() => navigate("/my-bookings")}
                                     className="cursor-pointer hover:bg-white/10 focus:bg-white/10"
                                 >
                                     <LucideBookDashed></LucideBookDashed>
@@ -145,7 +145,7 @@ export const Navbar = () => {
                         <div className="pt-4 border-t border-white/5 space-y-2">
                             {isAuthenticated ? (
                                 <>
-                                    <Link to="/dashboard" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white hover:bg-white/5 rounded-lg transition-all">
+                                    <Link to="/my-bookings" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white hover:bg-white/5 rounded-lg transition-all">
                                         <span className="font-hugeicons text-lg">&#988926;</span>
                                         My Dashboard
                                     </Link>

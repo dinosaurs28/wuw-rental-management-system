@@ -9,7 +9,7 @@ export const PublicRoute = () => {
     }
 
     if (isAuthenticated) {
-        return <Navigate to="/dashboard" replace />;
+        return <Navigate to="/my-bookings" replace />;
     }
 
     return <Outlet />;

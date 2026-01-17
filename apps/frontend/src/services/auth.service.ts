@@ -106,7 +106,7 @@ export const authService = {
             await apiClient.get("/user/profile", {
                 withCredentials: true
             });
-            window.location.href = "/dashboard";
+            window.location.href = "/my-bookings";
             return;
         } catch (e) {
             // Not authenticated or error, proceed to checks
