@@ -11,6 +11,7 @@ export type OtpVerifyInput = z.infer<typeof otpSchema> & { phone: string };
 
 export interface AuthResponse {
     message: string;
+    status?: number;
     data?: {
         name?: string;
         email?: string;
@@ -31,9 +32,9 @@ export interface CheckAuthResponse {
 }
 
 export const authService = {
-    signIn: async (data: SignInInput) => {
+    signIn: async (data: SignInInput): Promise<AuthResponse> => {
         const response = await apiClient.post<AuthResponse>("/auth/email/signin", data);
-        return response.data;
+        return { ...response.data, status: response.status };
     },
 
     checkAuth: async (google?: boolean) => {

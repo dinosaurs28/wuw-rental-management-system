@@ -24,6 +24,7 @@ export function MyBookingsPage() {
         bookings,
         isLoading,
         error,
+        profileNotFound,
         filter,
         meta,
         fetchBookings,
@@ -129,8 +130,27 @@ export function MyBookingsPage() {
                     </div>
                 )}
 
+                {/* Profile Not Found State - for new users who haven't completed profile */}
+                {profileNotFound && !isLoading && (
+                    <div className="flex flex-col items-center justify-center rounded-lg border border-orange-200 bg-orange-50 p-12 text-center">
+                        <div className="mb-4 rounded-full bg-orange-100 p-4">
+                            <Car className="h-8 w-8 text-orange-600" />
+                        </div>
+                        <h3 className="mb-2 text-lg font-semibold text-orange-800">Complete Your Profile</h3>
+                        <p className="mb-6 max-w-sm text-sm text-orange-700">
+                            Welcome! Before you can start booking vehicles, please complete your profile information.
+                        </p>
+                        <Button
+                            className="gap-2 bg-orange-600 hover:bg-orange-700"
+                            onClick={() => navigate("/profile")}
+                        >
+                            Complete Profile
+                        </Button>
+                    </div>
+                )}
+
                 {/* Empty State */}
-                {!isLoading && !error && bookings.length === 0 && (
+                {!isLoading && !error && !profileNotFound && bookings.length === 0 && (
                     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center">
                         <div className="mb-4 rounded-full bg-muted p-4">
                             <CalendarX className="h-8 w-8 text-muted-foreground" />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,7 +13,7 @@ import { useKycStore } from '@/store/kyc.store';
 import { kycService, type KycDocument } from '@/services/kyc.service';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { Check, FileText, ArrowRight, Eye, Upload } from 'lucide-react';
+import { Check, FileText, ArrowRight, Eye, Upload, User } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const KYC_TYPE_LABELS: Record<string, string> = {
@@ -33,9 +33,11 @@ interface KycSelectionCardProps {
 }
 
 export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
+    const navigate = useNavigate();
     const { selectedKycFilePublicId, setSelectedKyc } = useVehicleRentalStore();
     const { uploadedDocuments, setUploadedDocuments, isFetching, setIsFetching } = useKycStore();
     const [error, setError] = useState<string | null>(null);
+    const [profileNotFound, setProfileNotFound] = useState(false);
     const [pendingCount, setPendingCount] = useState(0);
     const [previewImage, setPreviewImage] = useState<{ url: string; title: string } | null>(null);
 
@@ -44,6 +46,7 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
         const fetchDocuments = async () => {
             setIsFetching(true);
             setError(null);
+            setProfileNotFound(false);
             try {
                 const response = await kycService.getDocuments();
                 // Show all documents regardless of status
@@ -51,7 +54,16 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
                 const pendingDocs = response.data.filter(doc => doc.status === 'PENDING');
                 setPendingCount(pendingDocs.length);
             } catch (err: any) {
+                const status = err?.response?.status;
                 const message = err?.response?.data?.message || 'Failed to load KYC documents';
+
+                // Handle "Customer profile not found" error specifically
+                if ((status === 400 || status === 404) && message === "Customer profile not found") {
+                    setProfileNotFound(true);
+                    setIsFetching(false);
+                    return; // Don't show error toast for this case
+                }
+
                 setError(message);
                 toast.error(message);
             } finally {
@@ -87,6 +99,37 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
                     {[1, 2].map((i) => (
                         <Skeleton key={i} className="h-16 w-full rounded-lg" />
                     ))}
+                </CardContent>
+            </Card>
+        );
+    }
+
+    // Profile not found state - user needs to complete profile first
+    if (profileNotFound) {
+        return (
+            <Card className={cn('bg-white border border-orange-200 rounded-xl shadow-sm', className)}>
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold">Select KYC Document</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                        <div className="mb-4 rounded-full bg-orange-100 p-4">
+                            <User className="size-8 text-orange-600" />
+                        </div>
+                        <p className="text-base font-medium text-orange-800 mb-1">
+                            Complete Your Profile First
+                        </p>
+                        <p className="text-sm text-orange-700 mb-6 max-w-xs">
+                            Please complete your profile before uploading KYC documents and proceeding with booking.
+                        </p>
+                        <Button
+                            className="bg-orange-600 hover:bg-orange-700"
+                            onClick={() => navigate("/profile")}
+                        >
+                            Complete Profile
+                            <ArrowRight className="ml-2 size-4" />
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
         );

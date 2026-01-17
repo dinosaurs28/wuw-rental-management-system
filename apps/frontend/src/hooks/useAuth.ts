@@ -12,22 +12,25 @@ export const useSignIn = () => {
 
     return useMutation({
         mutationFn: (data: SignInInput) => authService.signIn(data),
-        onSuccess: (response) => {
-            toast.success("Signed in successfully!");
-
-            // Store user data in Zustand (nested in response.data)
-            if (response.data?.publicId) {
-                login({
-                    id: response.data.publicId,
-                    email: response.data.email || "",
-                    name: response.data.name || "",
-                    role: response.data.role || "",
-                });
-            }
-
-            if (Cookies.get("verifySession")) {
+        onSuccess: (response, _variables, _context) => {
+            // Backend returns status 201 when email verification is needed
+            // and status 200 when user is fully authenticated
+            if (response.status === 201) {
+                // Don't call login() here - user is not fully authenticated yet
+                // The verifySession cookie is set by backend for OTP verification
+                toast.info("Please verify your phone number");
                 navigate("/auth/verify-otp");
             } else {
+                // Only store user data when fully authenticated (status 200)
+                toast.success("Signed in successfully!");
+                if (response.data?.publicId) {
+                    login({
+                        id: response.data.publicId,
+                        email: response.data.email || "",
+                        name: response.data.name || "",
+                        role: response.data.role || "",
+                    });
+                }
                 navigate("/my-bookings");
             }
         },

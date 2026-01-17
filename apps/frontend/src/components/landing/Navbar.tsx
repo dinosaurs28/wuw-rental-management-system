@@ -86,7 +86,7 @@ export const Navbar = () => {
                                 </div>
                                 <DropdownMenuSeparator className="bg-zinc-800" />
                                 <DropdownMenuItem
-                                    onClick={() => navigate("/my-bookings")}
+                                    onClick={() => navigate("/dashboard")}
                                     className="cursor-pointer hover:bg-white/10 focus:bg-white/10"
                                 >
                                     <LucideBookDashed></LucideBookDashed>
