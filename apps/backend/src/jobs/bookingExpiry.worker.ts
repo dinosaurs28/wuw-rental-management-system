@@ -1,0 +1,254 @@
+import Redis from "ioredis";
+import { prisma, BookingStatus } from "@repo/database/client";
+import { createID } from "../utils/nanoID";
+
+
+const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
+const FALLBACK_CRON_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+
+
+const redis = new Redis(REDIS_URL, {
+    maxRetriesPerRequest: null,
+    enableReadyCheck: true,
+});
+
+
+const redisSubscriber = new Redis(REDIS_URL, {
+    maxRetriesPerRequest: null,
+    enableReadyCheck: true,
+});
+
+
+async function enableKeyspaceNotifications(): Promise<void> {
+    try {
+        await redis.config("SET", "notify-keyspace-events", "Ex");
+        console.log("[BookingExpiry] Keyspace notifications enabled (Ex)");
+    } catch (error) {
+        console.error("[BookingExpiry] Failed to enable keyspace notifications:", error);
+        throw error;
+    }
+}
+
+// ============================================================================
+// BOOKING EXPIRY HANDLER
+// ============================================================================
+
+/**
+ * Handles the expiration of a booking hold.
+ * - Checks if booking exists and is still in HOLD status
+ * - If yes, cancels the booking and cleans up Redis keys
+ * - If already CONFIRMED or doesn't exist, does nothing
+ */
+async function handleBookingExpiry(bookingPublicId: string): Promise<void> {
+    console.log(`[BookingExpiry] Processing expired booking: ${bookingPublicId}`);
+
+    try {
+        // Find the booking by publicId
+        const booking = await prisma.booking.findUnique({
+            where: { publicId: bookingPublicId },
+            include: {
+                items: {
+                    include: { vehicle: true },
+                },
+            },
+        });
+
+        // Booking doesn't exist - might have been deleted
+        if (!booking) {
+            console.log(`[BookingExpiry] Booking ${bookingPublicId} not found in database, skipping`);
+            return;
+        }
+
+        // Check if booking is still in HOLD status
+        if (booking.status !== BookingStatus.HOLD) {
+            console.log(
+                `[BookingExpiry] Booking ${bookingPublicId} is already ${booking.status}, skipping cancellation`
+            );
+            return;
+        }
+
+        // Cancel the booking
+        await prisma.$transaction(async (tx) => {
+            // Update booking status to CANCELLED
+            await tx.booking.update({
+                where: { id: booking.id },
+                data: {
+                    status: BookingStatus.CANCELLED,
+                    holdExpiresAt: null,
+                },
+            });
+
+            // Create audit log
+            await tx.auditLog.create({
+                data: {
+                    publicId: createID(),
+                    userId: booking.createdById,
+                    action: "BOOKING_CANCELLED_EXPIRED",
+                    entity: "Booking",
+                    entityId: booking.publicId,
+                    after: {
+                        status: "CANCELLED",
+                        reason: "Hold expired",
+                    },
+                },
+            });
+        });
+
+        // Clean up vehicle holds in Redis
+        for (const item of booking.items) {
+            const vehicleHoldKey = `vehicle_holds:${item.vehicle.publicId}`;
+            await redis.srem(vehicleHoldKey, bookingPublicId);
+
+            // If the set is empty, delete it
+            const remainingHolds = await redis.scard(vehicleHoldKey);
+            if (remainingHolds === 0) {
+                await redis.del(vehicleHoldKey);
+            }
+        }
+
+        console.log(`[BookingExpiry] Successfully cancelled expired booking: ${bookingPublicId}`);
+    } catch (error) {
+        console.error(`[BookingExpiry] Error processing booking ${bookingPublicId}:`, error);
+    }
+}
+
+// ============================================================================
+// EXPIRY EVENT LISTENER
+// ============================================================================
+
+/**
+ * Subscribes to Redis keyspace notifications for expired keys.
+ * Filters to only process booking publicIds (ignores vehicle_holds:* keys).
+ */
+async function startExpiryListener(): Promise<void> {
+    const channel = "__keyevent@0__:expired";
+
+    redisSubscriber.subscribe(channel, (err, count) => {
+        if (err) {
+            console.error("[BookingExpiry] Failed to subscribe to expired events:", err);
+            return;
+        }
+        console.log(`[BookingExpiry] Subscribed to ${channel} (${count} channels)`);
+    });
+
+    redisSubscriber.on("message", async (channel, expiredKey) => {
+        console.log(`[BookingExpiry] Received expired event for key: ${expiredKey}`);
+
+        // Ignore vehicle_holds:* keys and other non-booking keys
+        if (expiredKey.startsWith("vehicle_holds:")) {
+            console.log(`[BookingExpiry] Ignoring vehicle hold key: ${expiredKey}`);
+            return;
+        }
+
+        // Ignore keys that don't look like booking publicIds
+        // Booking publicIds are typically nanoid format (21 chars alphanumeric)
+        if (expiredKey.includes(":") || expiredKey.length < 10) {
+            console.log(`[BookingExpiry] Ignoring non-booking key: ${expiredKey}`);
+            return;
+        }
+
+        // Process the booking expiry
+        await handleBookingExpiry(expiredKey);
+    });
+
+    redisSubscriber.on("error", (error) => {
+        console.error("[BookingExpiry] Redis subscriber error:", error);
+    });
+}
+
+// ============================================================================
+// FALLBACK CRON JOB
+// ============================================================================
+
+/**
+ * Fallback cron job that runs periodically to catch any expired bookings
+ * that might have been missed (e.g., during Redis restart or network issues).
+ */
+async function runFallbackCleanup(): Promise<void> {
+    console.log("[BookingExpiry] Running fallback cleanup...");
+
+    try {
+        const now = new Date();
+
+        // Find all bookings that are in HOLD status with expired holdExpiresAt
+        const expiredBookings = await prisma.booking.findMany({
+            where: {
+                status: BookingStatus.HOLD,
+                holdExpiresAt: {
+                    lt: now,
+                },
+            },
+            select: {
+                publicId: true,
+            },
+        });
+
+        if (expiredBookings.length === 0) {
+            console.log("[BookingExpiry] No expired bookings found in fallback cleanup");
+            return;
+        }
+
+        console.log(`[BookingExpiry] Found ${expiredBookings.length} expired bookings in fallback cleanup`);
+
+        // Process each expired booking
+        for (const booking of expiredBookings) {
+            await handleBookingExpiry(booking.publicId);
+        }
+
+        console.log("[BookingExpiry] Fallback cleanup completed");
+    } catch (error) {
+        console.error("[BookingExpiry] Error in fallback cleanup:", error);
+    }
+}
+
+/**
+ * Starts the fallback cron job using setInterval.
+ */
+function startFallbackCron(): void {
+    console.log(
+        `[BookingExpiry] Starting fallback cron (interval: ${FALLBACK_CRON_INTERVAL_MS / 1000}s)`
+    );
+
+    // Run immediately on startup
+    runFallbackCleanup();
+
+    // Then run at regular intervals
+    setInterval(runFallbackCleanup, FALLBACK_CRON_INTERVAL_MS);
+}
+
+// ============================================================================
+// INITIALIZATION
+// ============================================================================
+
+/**
+ * Main initialization function.
+ * Call this on server startup to enable booking expiry handling.
+ */
+async function initBookingExpiryWorker(): Promise<void> {
+    console.log("[BookingExpiry] Initializing booking expiry worker...");
+
+    try {
+        // Enable keyspace notifications
+        await enableKeyspaceNotifications();
+
+        // Start listening for expired events
+        await startExpiryListener();
+
+        // Start fallback cron as safety net
+        startFallbackCron();
+
+        console.log("[BookingExpiry] Booking expiry worker initialized successfully");
+    } catch (error) {
+        console.error("[BookingExpiry] Failed to initialize booking expiry worker:", error);
+    }
+}
+
+// Auto-initialize when this module is imported
+initBookingExpiryWorker();
+
+// Export for testing purposes
+export {
+    handleBookingExpiry,
+    runFallbackCleanup,
+    initBookingExpiryWorker,
+};

@@ -1,4 +1,4 @@
-import express,{Request,Response} from "express"
+import express, { Request, Response } from "express"
 import cors from "cors"
 import { StatusCode } from "./types/statusCode.js"
 import dotenv from "dotenv"
@@ -14,8 +14,9 @@ import branchManagerRouter from "./routes/branchManger/branchManager.routes"
 import adminRouter from "./routes/admin/admin.routes"
 import "./jobs/image.worker.js";
 import "./jobs/cleanup.worker.js";
+import "./jobs/bookingExpiry.worker.js";
 dotenv.config()
-const app=express()
+const app = express()
 
 
 app.use(cors({
@@ -28,22 +29,22 @@ app.use(helmet({
     "crossOriginResourcePolicy": false
 }))
 app.use(passport.initialize());
-app.use("/api/auth",authrouter)
-app.use("/api/public",vehiclerouter)
-app.use("/api/payment",paymentrouter)
-app.use("/api/user",userrouter)
-app.use("/api/employee",employeerouter)
-app.use("/api/branchManager",branchManagerRouter)
-app.use("/api/admin",adminRouter)
+app.use("/api/auth", authrouter)
+app.use("/api/public", vehiclerouter)
+app.use("/api/payment", paymentrouter)
+app.use("/api/user", userrouter)
+app.use("/api/employee", employeerouter)
+app.use("/api/branchManager", branchManagerRouter)
+app.use("/api/admin", adminRouter)
 
-app.get("/health",(req:Request,res:Response)=>{
+app.get("/health", (req: Request, res: Response) => {
     return res.status(StatusCode.OK).json({
-        uptime:process.uptime(),
-        message:"Server is running",
-        date:new Date()
+        uptime: process.uptime(),
+        message: "Server is running",
+        date: new Date()
     })
 })
 
-app.listen(process.env._PORT,()=>{
+app.listen(process.env._PORT, () => {
     console.log(`The Server is Running on ${process.env._PORT}`)
 })

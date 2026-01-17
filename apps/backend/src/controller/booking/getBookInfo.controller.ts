@@ -220,7 +220,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     });
 
     const holdId = booking.publicId
-    const holdExpiry = 18;
+    const holdExpiry = 10*60;
 
     const holdData = {
       vehicles: items,
