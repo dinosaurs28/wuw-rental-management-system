@@ -98,7 +98,7 @@ const isDateInPast = (dateStr: string): boolean => {
     return checkDate < today;
 };
 
-// Helper to calculate days between two dates
+// Helper to calculate days between two dates (inclusive of both start and end)
 // Returns minimum 1 day for same-day rentals
 const calculateDaysBetween = (start: string | null, end: string | null): number => {
     if (!start || !end) return 0;
@@ -109,19 +109,27 @@ const calculateDaysBetween = (start: string | null, end: string | null): number 
     // Validate dates
     if (!isValidDate(startDate) || !isValidDate(endDate)) return 0;
 
-    const startTime = startDate.setHours(0, 0, 0, 0);
-    const endTime = endDate.setHours(0, 0, 0, 0);
-    const diffTime = endTime - startTime;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // Normalize to start of day (midnight)
+    const startTime = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()).getTime();
+    const endTime = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()).getTime();
 
-    // Minimum 1 day rental (same day = 1 day)
-    return diffDays >= 0 ? Math.max(diffDays, MIN_RENTAL_DAYS) : 0;
+    const diffTime = endTime - startTime;
+    // Add 1 to include both start and end dates (calendar days)
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+    // Minimum 1 day rental
+    return diffDays >= MIN_RENTAL_DAYS ? diffDays : 0;
 };
 
-// Helper to convert Date to ISO string
-const toISOString = (date: Date | null): string | null => {
+// Helper to convert Date to local date string (YYYY-MM-DD format)
+// Using local date format prevents timezone issues when converting to/from ISO
+const toLocalDateString = (date: Date | null): string | null => {
     if (!date || !isValidDate(date)) return null;
-    return date.toISOString();
+    // Format as YYYY-MM-DD to preserve the selected date in local timezone
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 };
 
 export const useVehicleRentalStore = create<VehicleRentalState>()(
@@ -176,7 +184,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
 
             setStartDate: (date) => {
                 const state = get();
-                const startDateStr = toISOString(date);
+                const startDateStr = toLocalDateString(date);
 
                 if (!startDateStr) {
                     set({ startDate: null });
@@ -194,7 +202,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
 
             setEndDate: (date) => {
                 const state = get();
-                const endDateStr = toISOString(date);
+                const endDateStr = toLocalDateString(date);
 
                 if (!endDateStr) {
                     set({ endDate: null });
@@ -212,8 +220,8 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
 
             setDateRange: (startDate, endDate) => {
                 const state = get();
-                const startDateStr = toISOString(startDate);
-                const endDateStr = toISOString(endDate);
+                const startDateStr = toLocalDateString(startDate);
+                const endDateStr = toLocalDateString(endDate);
                 const rentalDays = calculateDaysBetween(startDateStr, endDateStr);
                 set({
                     startDate: startDateStr,

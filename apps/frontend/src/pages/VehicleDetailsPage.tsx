@@ -55,6 +55,12 @@ export const VehicleDetailsPage = () => {
 
         if (searchReturnDate) {
             setEndDate(searchReturnDate);
+        } else if (!returnDate) {
+            // Fallback to tomorrow if no end date exists
+            const tomorrow = new Date();
+            tomorrow.setHours(0, 0, 0, 0);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            setEndDate(tomorrow);
         }
     }, []); // Run only on mount
 
@@ -81,6 +87,11 @@ export const VehicleDetailsPage = () => {
     const handleBookVehicle = useCallback(() => {
         if (!vehicleId || !vehicle) return;
 
+        // Get the LATEST dates from store state (not from render-time closure)
+        const currentState = useVehicleRentalStore.getState();
+        const currentStartDate = currentState.getStartDate();
+        const currentEndDate = currentState.getEndDate();
+
         // Clear previous vehicle selection from session storage
         useVehicleRentalStore.getState().clearVehicleSelection();
 
@@ -95,9 +106,9 @@ export const VehicleDetailsPage = () => {
             branch: vehicle.branch,
         });
 
-        // Set dates (maintain current selection)
-        if (pickupDate) setStartDate(pickupDate);
-        if (returnDate) setEndDate(returnDate);
+        // Set dates from current state (not stale closure values)
+        if (currentStartDate) setStartDate(currentStartDate);
+        if (currentEndDate) setEndDate(currentEndDate);
 
         // Set pricing
         setPricePerDay(vehicle.pricing?.daily || 0);
@@ -105,7 +116,7 @@ export const VehicleDetailsPage = () => {
 
         // Navigate to review & confirm page
         navigate('/booking/review-confirm');
-    }, [vehicleId, vehicle, pickupDate, returnDate, setVehicleId, setVehicleFullDetails, setStartDate, setEndDate, setPricePerDay, setDeposit, navigate]);
+    }, [vehicleId, vehicle, setVehicleId, setVehicleFullDetails, setStartDate, setEndDate, setPricePerDay, setDeposit, navigate]);
 
     // Loading state (initial load only)
     if (isLoading) {

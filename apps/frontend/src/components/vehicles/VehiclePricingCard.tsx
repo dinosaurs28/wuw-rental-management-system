@@ -38,9 +38,11 @@ export const VehiclePricingCard = ({
     const isAvailable = vehicle.availability && vehicle.status === 'AVAILABLE';
 
     // Use backend-calculated pricing (updates when dates change and refetch happens)
+    // discountPrice is the discount amount (savings), not the final price
     const hasDiscount = vehicle.discountPrice > 0 && vehicle.discountPrice < vehicle.baseTotal;
     const displayDays = vehicle.totalDays;
-    const displayTotal = hasDiscount ? vehicle.discountPrice : vehicle.baseTotal;
+    // Final price = baseTotal - discountPrice (discount amount)
+    const displayTotal = hasDiscount ? (vehicle.baseTotal - vehicle.discountPrice) : vehicle.baseTotal;
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-IN', {
@@ -205,7 +207,7 @@ export const VehiclePricingCard = ({
                                         Discount
                                     </span>
                                     <span className="text-emerald-600 font-medium">
-                                        -{formatCurrency(vehicle.baseTotal - vehicle.discountPrice)}
+                                        -{formatCurrency(vehicle.discountPrice)}
                                     </span>
                                 </div>
                             )}
