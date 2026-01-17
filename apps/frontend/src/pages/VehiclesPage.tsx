@@ -67,11 +67,26 @@ export const VehiclesPage = () => {
         if (category && category !== 'all') f.category = category;
         if (debouncedSearch) f.search = debouncedSearch;
         if (sortBy && sortBy !== 'default') f.sort = sortBy as 'price_low_to_high' | 'price_high_to_low';
+
+        // Add dates for availability filtering
+        if (selectedPickupDate) {
+            const year = selectedPickupDate.getFullYear();
+            const month = String(selectedPickupDate.getMonth() + 1).padStart(2, '0');
+            const day = String(selectedPickupDate.getDate()).padStart(2, '0');
+            f.start = `${year}-${month}-${day}`;
+        }
+        if (selectedReturnDate) {
+            const year = selectedReturnDate.getFullYear();
+            const month = String(selectedReturnDate.getMonth() + 1).padStart(2, '0');
+            const day = String(selectedReturnDate.getDate()).padStart(2, '0');
+            f.end = `${year}-${month}-${day}`;
+        }
+
         f.limit = ITEMS_PER_PAGE;
         f.offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
         return f;
-    }, [selectedBranch, category, debouncedSearch, sortBy, currentPage]);
+    }, [selectedBranch, category, debouncedSearch, sortBy, selectedPickupDate, selectedReturnDate, currentPage]);
 
     // Fetch vehicles
     const { data: vehiclesData, isLoading: vehiclesLoading } = useVehicles(filters);

@@ -85,7 +85,7 @@ export const checkPaymentForCash = async (req: Request, res: Response) => {
                     id: { in: booking.items.map((i) => i.vehicleId) },
                 },
                 data: {
-                    status: VehicleStatus.OUT_FOR_RENTAL,
+                    status: VehicleStatus.AVAILABLE,
                 },
             });
 

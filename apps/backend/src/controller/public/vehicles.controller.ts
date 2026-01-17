@@ -7,7 +7,7 @@ import { getVehicleDetailsSchema } from "@repo/schemas";
 import { calculatePricingForVehicleFromRecord } from "../../utils/pricing/calcPricingInd";
 import { calculateMultiDayTotalPrice } from "../../utils/pricing/calcMultiDayPrice";
 import { checkVehicleAvailability } from "../../utils/availability/checkAvailability";
-import { getDepositAmount } from "../../utils/pricing/getDepositAmount"; 
+import { getDepositAmount } from "../../utils/pricing/getDepositAmount";
 import { getDiscountForDays } from "../../utils/pricing/getDiscountForDays";
 
 export const getPublicVehicles = async (req: Request, res: Response) => {
@@ -19,12 +19,29 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       model,
       make,
       sort,
+      start,
+      end,
       limit = "50",
       offset = "0",
     } = req.query as any;
 
+    // Parse and validate dates if provided
+    let startDate: Date | null = null;
+    let endDate: Date | null = null;
+
+    if (start && end) {
+      startDate = new Date(start);
+      endDate = new Date(end);
+
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+          message: "Invalid start or end date format",
+        });
+      }
+    }
+
     const cacheKey = `public:vehicles:${category || "all"}:${branch || "all"}:${search || "all"
-      }:${make || "all"}:${model || "all"}:${sort || "none"}:${limit}:${offset}`;
+      }:${make || "all"}:${model || "all"}:${sort || "none"}:${start || "all"}:${end || "all"}:${limit}:${offset}`;
 
     const cachedData = await redis.get(cacheKey);
     if (cachedData) {
@@ -73,12 +90,12 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       include: {
         category: true,
         branch: true,
-        images:{
-          where:{
-            isThumbnail:true
-          },select:{
-            file:{
-              select:{url:true}
+        images: {
+          where: {
+            isThumbnail: true
+          }, select: {
+            file: {
+              select: { url: true }
             }
           }
         }
@@ -122,6 +139,14 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
 
     const finalResponse = [];
     for (const v of filteredVehicles) {
+      // Check availability if dates are provided
+      if (startDate && endDate) {
+        const isAvailable = await checkVehicleAvailability(v.id, startDate, endDate);
+        if (!isAvailable) {
+          continue; // Skip vehicles that are not available for the selected dates
+        }
+      }
+
       const pricing = await calculatePricingForVehicle(v.id);
 
       finalResponse.push({
@@ -131,8 +156,8 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
         category: v.category.name,
         branch: v.branch.name,
         imageUrl: v.images,
-        pricing:{
-          daily:pricing.daily,
+        pricing: {
+          daily: pricing.daily,
         },
       });
     }
@@ -191,13 +216,13 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
         branch: {
           include: { pricingSetting: true },
         },
-        images:{
-          include:{
-            file:true
+        images: {
+          include: {
+            file: true
           }
         },
         pricingOverride: true,
-        
+
       },
     });
     if (!vehicleData) {
@@ -210,14 +235,14 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
     let availability: boolean | null = null;
     let totalPrice: number | null = null;
     let totalDays: number | null = null;
-    let baseTotal:number |null =null;
-    let discountPrice:number | null=null
+    let baseTotal: number | null = null;
+    let discountPrice: number | null = null
     if (startDate && endDate) {
       availability = await checkVehicleAvailability(vehicleData.id, startDate, endDate);
       const multi = calculateMultiDayTotalPrice(startDate, endDate, pricing.daily);
       baseTotal = multi.total;
       totalDays = multi.days;
-      const discountPercent = await getDiscountForDays(vehicleData.branchId,vehicleData.categoryId,totalDays);
+      const discountPercent = await getDiscountForDays(vehicleData.branchId, vehicleData.categoryId, totalDays);
       const finalTotal = baseTotal * (1 - discountPercent);
       totalPrice = Number(finalTotal.toFixed(2));
       discountPrice = Number((baseTotal - finalTotal).toFixed(2));
@@ -230,9 +255,9 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
       status: vehicleData.status,
       category: vehicleData.category.name,
       branch: vehicleData.branch.name,
-      images:imageUrls,
-      pricing:{
-        daily:pricing.daily
+      images: imageUrls,
+      pricing: {
+        daily: pricing.daily
       },
       deposit,
       availability,

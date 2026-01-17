@@ -7,6 +7,8 @@ export interface VehicleFilters {
     category?: string;
     search?: string;
     sort?: 'price_low_to_high' | 'price_high_to_low';
+    start?: string;
+    end?: string;
     limit?: number;
     offset?: number;
 }
@@ -42,6 +44,8 @@ export const fetchVehicles = async (filters: VehicleFilters): Promise<VehiclesRe
         if (filters.category) params.append('category', filters.category);
         if (filters.search) params.append('search', filters.search);
         if (filters.sort) params.append('sort', filters.sort);
+        if (filters.start) params.append('start', filters.start);
+        if (filters.end) params.append('end', filters.end);
         if (filters.limit) params.append('limit', filters.limit.toString());
         if (filters.offset) params.append('offset', filters.offset.toString());
 
