@@ -17,6 +17,10 @@ import { LandingPage } from "@/components/landing/LandingPage";
 import { AuthInitializer } from "@/components/auth/AuthInitializer";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PublicRoute } from "@/components/auth/PublicRoute";
+import { EmployeeProtectedRoute } from "@/components/auth/EmployeeProtectedRoute";
+import EmployeeDashboardPage from "@/pages/employee/EmployeeDashboardPage";
+import PickupProcessPage from "@/pages/employee/PickupProcessPage";
+import ReturnProcessPage from "@/pages/employee/ReturnProcessPage";
 
 function App() {
   return (
@@ -47,6 +51,13 @@ function App() {
           <Route path="/booking/review-confirm" element={<ReviewConfirmPage />} />
           <Route path="/booking/confirmation" element={<BookingConfirmationPage />} />
           <Route path="/booking/status/:transactionId" element={<BookingStatusPage />} />
+        </Route>
+
+        {/* Employee Protected Routes */}
+        <Route element={<EmployeeProtectedRoute />}>
+          <Route path="/employee/dashboard" element={<EmployeeDashboardPage />} />
+          <Route path="/employee/dashboard/pickup/:bookingId" element={<PickupProcessPage />} />
+          <Route path="/employee/dashboard/return/:bookingId" element={<ReturnProcessPage />} />
         </Route>
 
         {/* Catch all */}

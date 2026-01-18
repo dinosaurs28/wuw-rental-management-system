@@ -2,6 +2,7 @@ import { NextFunction,Response,Request } from "express";
 import { StatusCode } from "../types/statusCode";
 import { jwtverfiy } from "../utils/token/tokenverfiy.utlis";
 import { jwtinterface } from "../utils/token/tokensign.utlis";
+import { Role } from "@repo/database/client";
 
 declare global{
     namespace Express{
@@ -24,6 +25,12 @@ export const authCheckJwt=async (req:Request,res:Response,next:NextFunction)=>{
     if(!isverfied){
         return res.status(StatusCode.UNAUTHORIZED).json({
             message:"Authentication required. Your session has expired or is invalid. Please log in again to securely continue.",
+            isAuthenticated: false
+        })
+    }
+    if(isverfied.role!==Role.CUSTOMER){
+        return res.status(StatusCode.FORBIDDEN).json({
+            message:"You Are Not Authorized To Access This Route",
             isAuthenticated: false
         })
     }

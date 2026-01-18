@@ -1,5 +1,6 @@
 import apiClient from "@/lib/axios";
 
+// Existing Customer Interfaces...
 // Types for booking summary request
 export interface CreateBookingSummaryRequest {
     vehicles: string[];          // Vehicle public IDs
@@ -59,6 +60,7 @@ export interface PaymentStatusResponse {
 export interface ConfirmCashPaymentRequest {
     encryptedFinalPrice: string;
     transactionId: string;
+    payment_type?: string;
 }
 
 export interface ConfirmCashPaymentResponse {
@@ -67,7 +69,40 @@ export interface ConfirmCashPaymentResponse {
     redirectURL?: string;
 }
 
+// --- EMPLOYEE INTERFACES & SERVICE ---
+
+export interface EmployeeBooking {
+    publicId: string;
+    startAt: string;
+    endAt: string;
+    status: string;
+    totalFinal: string;
+    customer: {
+        user: {
+            publicId: string;
+            name: string;
+            phone?: string;
+            email?: string;
+        };
+    };
+    items: {
+        vehicle: {
+            publicId: string;
+            make: string;
+            model: string;
+            regNo: string;
+            status: string;
+            images: {
+                file: {
+                    url: string;
+                }
+            }[];
+        };
+    }[];
+}
+
 export const bookingService = {
+    // --- CUSTOMER METHODS ---
     /**
      * Create a booking summary and initiate payment
      * POST /public/vehicles/booking
@@ -109,4 +144,46 @@ export const bookingService = {
         );
         return response.data;
     },
+
+    // --- EMPLOYEE METHODS ---
+
+    // Fetch Pickups
+    getEmployeeBookings: async (date?: Date) => {
+        try {
+            const query = date ? `?date=${date.toISOString()}` : "";
+            const response = await apiClient.get<{ data: EmployeeBooking[] }>(`/employee/booking${query}`);
+            return response.data.data;
+        } catch (error: any) {
+            if (error.response && error.response.status === 404) {
+                return [];
+            }
+            throw error;
+        }
+    },
+
+    // Fetch Returns
+    getEmployeeReturns: async (date?: Date) => {
+        try {
+            const query = date ? `?date=${date.toISOString()}` : "";
+            const response = await apiClient.get<{ data: EmployeeBooking[] }>(`/employee/return${query}`);
+            return response.data.data;
+        } catch (error: any) {
+            if (error.response && error.response.status === 404) {
+                return [];
+            }
+            throw error;
+        }
+    },
+
+    // Approve Pickup
+    approvePickup: async (bookingId: string, data: { odo: number; fuelLevel: number }) => {
+        const response = await apiClient.post(`/employee/pickup/${bookingId}`, data);
+        return response.data;
+    },
+
+    // Approve Handover (Return)
+    approveReturn: async (bookingId: string) => {
+        const response = await apiClient.post(`/employee/return/${bookingId}/complete`);
+        return response.data;
+    }
 };

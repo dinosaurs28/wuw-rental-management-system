@@ -15,23 +15,42 @@ export const BookingController = async (req: Request, res: Response) => {
         const branchId = req.branch_Id;
         const { date } = req.query;
 
-        let filterDate = new Date();
+        let dateFilter: any = {};
+        let cacheKeySuffix = "";
 
         if (date) {
             const parsedDate = new Date(date as string);
             if (!isNaN(parsedDate.getTime())) {
-                filterDate = parsedDate;
+                const startOfDay = new Date(parsedDate);
+                startOfDay.setHours(0, 0, 0, 0);
+
+                const endOfDay = new Date(parsedDate);
+                endOfDay.setHours(23, 59, 59, 999);
+
+                dateFilter = {
+                    gte: startOfDay,
+                    lte: endOfDay
+                };
+                cacheKeySuffix = `date:${startOfDay.toISOString().split('T')[0]}`;
             }
         }
 
-        filterDate.setHours(0, 0, 0, 0);
+        // Default behavior: Upcoming bookings from today if no valid date is provided
+        if (Object.keys(dateFilter).length === 0) {
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            dateFilter = {
+                gte: now
+            };
+            cacheKeySuffix = `upcoming:${now.toISOString().split('T')[0]}`;
+        }
 
-        const cacheKey = `bookings:${branchId}:${filterDate.toISOString()}`;
+        const cacheKey = `bookings:${branchId}:${cacheKeySuffix}`;
         const cachedData = await redis.get(cacheKey);
 
         if (cachedData) {
             return res.status(StatusCode.OK).json({
-                message: "Upcoming bookings fetched successfully",
+                message: "Bookings fetched successfully",
                 data: JSON.parse(cachedData)
             });
         }
@@ -39,9 +58,7 @@ export const BookingController = async (req: Request, res: Response) => {
         const bookings = await prisma.booking.findMany({
             where: {
                 branchId: branchId,
-                startAt: {
-                    gte: filterDate
-                },
+                startAt: dateFilter,
                 status: BookingStatus.CONFIRMED
             },
             select: {
@@ -56,7 +73,7 @@ export const BookingController = async (req: Request, res: Response) => {
                             select: {
                                 publicId: true,
                                 name: true,
-                                // phone: true // Assuming phone is on User, otherwise check Schema
+                                phone: true // Assuming phone is on User, otherwise check Schema
                             }
                         }
                     }
