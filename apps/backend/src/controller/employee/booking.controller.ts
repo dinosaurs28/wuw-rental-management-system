@@ -278,3 +278,68 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Error" });
     }
 };
+
+export const GetBookingDetails = async (req: Request, res: Response) => {
+    try {
+        const { bookingId } = req.params;
+        const booking = await prisma.booking.findUnique({
+            where: { publicId: bookingId },
+            select: {
+                publicId: true,
+                startAt: true,
+                endAt: true,
+                status: true,
+                totalFinal: true,
+                customer: {
+                    select: {
+                        user: {
+                            select: {
+                                publicId: true,
+                                name: true,
+                                phone: true // Assuming phone is on User, otherwise check Schema
+                            }
+                        }
+                    }
+                },
+                items: {
+                    select: {
+                        vehicle: {
+                            select: {
+                                publicId: true,
+                                make: true,
+                                model: true,
+                                regNo: true,
+                                status: true,
+                                images: {
+                                    where: {
+                                        isThumbnail: true
+                                    },
+                                    take: 1,
+                                    select: {
+                                        file: {
+                                            select: {
+                                                url: true
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!booking) {
+            return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
+        }
+
+        return res.status(StatusCode.OK).json({
+            message: "Booking details fetched successfully",
+            data: booking
+        });
+    } catch (error) {
+        console.error("Error fetching booking details:", error);
+        return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error While Fetching Booking Details" });
+    }
+}

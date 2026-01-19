@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { Plus, Download, Calendar as CalendarIcon, QrCode } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, QrCode } from "lucide-react";
 import { motion } from "motion/react";
 
 import { useEmployeeAuthStore } from "@/store/employeeAuth.store";
@@ -20,8 +20,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 
 export default function EmployeeDashboardPage() {
+    // Navigation fixed to point to /staff/pickups/:bookingId
     const navigate = useNavigate();
-    const { user, isAuthenticated } = useEmployeeAuthStore();
+    const { isAuthenticated } = useEmployeeAuthStore();
 
     // State
     const [date, setDate] = useState<Date>(new Date());
@@ -73,7 +74,7 @@ export default function EmployeeDashboardPage() {
     const handleAction = async (bookingId: string) => {
         try {
             if (filter === "PICKUP") {
-                navigate(`/employee/dashboard/pickup/${bookingId}`);
+                navigate(`/staff/pickups/${bookingId}`);
             } else {
                 navigate(`/employee/dashboard/return/${bookingId}`);
             }
@@ -86,7 +87,7 @@ export default function EmployeeDashboardPage() {
     const handleQrScan = (data: string | null) => {
         if (data) {
             toast.success(`Scanned: ${data}`);
-            navigate(`/employee/dashboard/pickup/${data}`);
+            navigate(`/staff/pickups/${data}`);
         }
     };
 

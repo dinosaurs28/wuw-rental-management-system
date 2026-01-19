@@ -56,12 +56,13 @@ export const GetBookingKyc = async (req: Request, res: Response) => {
             },
             select: {
                 type: true,
-                status: true
+                status: true,
+                publicId: true,
             }
         });
 
         const kycDocs = [{
-            publicId: booking.kycFile.publicId,
+            publicId: kycRecord?.publicId,
             type: kycRecord?.type || "UNKNOWN",
             status: kycRecord?.status || "UNKNOWN",
             file: {

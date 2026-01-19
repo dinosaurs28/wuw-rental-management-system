@@ -147,6 +147,15 @@ export const bookingService = {
 
     // --- EMPLOYEE METHODS ---
 
+    /**
+     * Get details for pickup process
+     * GET /employee/pickup/:bookingId
+     */
+    getPickupDetails: async (bookingId: string) => {
+        const response = await apiClient.get<{ data: EmployeeBooking }>(`/employee/pickup/${bookingId}`);
+        return response.data.data;
+    },
+
     // Fetch Pickups
     getEmployeeBookings: async (date?: Date) => {
         try {

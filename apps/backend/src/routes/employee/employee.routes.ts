@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { Login } from "../../controller/employee/login.controller";
 import { searchVehicles, getEmployeeVehicleDetails } from "../../controller/employee/vehicle.controller";
-import { createEmployeeBooking } from "../../controller/employee/booking.controller";
+import { createEmployeeBooking, GetBookingDetails } from "../../controller/employee/booking.controller";
 import { EmployeeCheck } from "../../middlewares/employeeCheck.middlewares";
 import { BookingController } from "../../controller/employee/booking.controller";
 import { returnController } from "../../controller/employee/return.controller";
@@ -23,6 +23,7 @@ router.get("/booking", EmployeeCheck, BookingController)
 router.get("/return", EmployeeCheck, returnController)
 router.get("/kyc/:bookingId", EmployeeCheck, GetBookingKyc)
 router.patch("/kyc/:kycId/status", EmployeeCheck, VerifyKyc)
+router.get("/pickup/:bookingId", EmployeeCheck, GetBookingDetails   )
 router.post("/pickup/:bookingId", EmployeeCheck, PickupController)
 router.post("/return/:bookingId/complete", EmployeeCheck, CompleteReturn)
 router.post("/walkin/initiate", EmployeeCheck, InitiateWalkin)

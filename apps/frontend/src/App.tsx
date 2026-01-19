@@ -19,7 +19,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PublicRoute } from "@/components/auth/PublicRoute";
 import { EmployeeProtectedRoute } from "@/components/auth/EmployeeProtectedRoute";
 import EmployeeDashboardPage from "@/pages/employee/EmployeeDashboardPage";
-import PickupProcessPage from "@/pages/employee/PickupProcessPage";
+import StaffPickupsPage from "@/pages/employee/StaffPickupsPage";
 import ReturnProcessPage from "@/pages/employee/ReturnProcessPage";
 
 function App() {
@@ -56,7 +56,7 @@ function App() {
         {/* Employee Protected Routes */}
         <Route element={<EmployeeProtectedRoute />}>
           <Route path="/employee/dashboard" element={<EmployeeDashboardPage />} />
-          <Route path="/employee/dashboard/pickup/:bookingId" element={<PickupProcessPage />} />
+          <Route path="/staff/pickups/:bookingId" element={<StaffPickupsPage />} />
           <Route path="/employee/dashboard/return/:bookingId" element={<ReturnProcessPage />} />
         </Route>
 

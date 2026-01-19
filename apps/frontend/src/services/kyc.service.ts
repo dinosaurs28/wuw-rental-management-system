@@ -82,4 +82,42 @@ export const kycService = {
         );
         return response.data;
     },
+
+    // --- EMPLOYEE METHODS ---
+
+    /**
+     * Get KYC documents for a specific booking
+     * GET /employee/kyc/:bookingId
+     */
+    getBookingKyc: async (bookingId: string) => {
+        const response = await apiClient.get<{
+            message: string;
+            customerName: string;
+            kyc: {
+                publicId: string;
+                type: KycDocumentType;
+                status: 'PENDING' | 'APPROVED' | 'REJECTED';
+                file: {
+                    url: string;
+                    mime: string;
+                }
+            }[]
+        }>(`/employee/kyc/${bookingId}`);
+        return response.data;
+    },
+
+    /**
+     * Verify KYC document status
+     * PATCH /employee/kyc/:kycId/status
+     */
+    verifyKyc: async (kycId: string, status: 'APPROVED' | 'REJECTED') => {
+        const response = await apiClient.patch<{
+            message: string;
+            data: {
+                id: string;
+                status: string;
+            }
+        }>(`/employee/kyc/${kycId}/status`, { status });
+        return response.data;
+    }
 };
