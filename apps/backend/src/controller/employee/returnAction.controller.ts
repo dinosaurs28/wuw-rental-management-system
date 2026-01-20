@@ -1,10 +1,47 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
-import { prisma, BookingStatus, VehicleStatus } from "@repo/database/client";
+import { prisma, BookingStatus, VehicleStatus, BookingPhotoType } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
+
+const getFileUrl = (filename: string) => `/uploads/${filename}`;
+
+export const UploadReturnImage = async (req: Request, res: Response) => {
+    try {
+        const file = req.file;
+        if (!file) {
+            return res.status(StatusCode.BAD_REQUEST).json({
+                message: "File is required"
+            });
+        }
+
+        const filePublicId = createID();
+        const fileRecord = await prisma.fileObject.create({
+            data: {
+                publicId: filePublicId,
+                key: file.filename,
+                url: getFileUrl(file.filename),
+                mime: file.mimetype,
+                size: file.size,
+            }
+        });
+
+        return res.status(StatusCode.CREATED).json({
+            message: "Return Image Uploaded Successfully",
+            fileId: fileRecord.publicId,
+            url: fileRecord.url
+        });
+
+    } catch (error) {
+        console.error("Error uploading return image:", error);
+        return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+            message: "Internal Server Error during upload"
+        });
+    }
+}
 
 export const CompleteReturn = async (req: Request, res: Response) => {
     const { bookingId } = req.params;
+    const { returnImageIds } = req.body;
     const branchId = req.branch_Id;
 
     try {
@@ -64,6 +101,25 @@ export const CompleteReturn = async (req: Request, res: Response) => {
                     status: VehicleStatus.AVAILABLE
                 }
             });
+
+            if (returnImageIds && Array.isArray(returnImageIds) && returnImageIds.length > 0) {
+                const files = await tx.fileObject.findMany({
+                    where: { publicId: { in: returnImageIds } }
+                });
+
+                if (files.length !== returnImageIds.length) {
+                    throw new Error("Invalid return image IDs provided");
+                }
+
+                await tx.bookingPhoto.createMany({
+                    data: files.map(f => ({
+                        publicId: createID(),
+                        bookingId: booking.id,
+                        fileId: f.id,
+                        type: BookingPhotoType.POST_RETURN
+                    }))
+                });
+            }
 
             await tx.staffActivityLog.create({
                 data: {

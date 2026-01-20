@@ -92,6 +92,9 @@ export interface EmployeeBooking {
             model: string;
             regNo: string;
             status: string;
+            category: string;
+            odo: number;
+            fuelLevel: number;
             images: {
                 file: {
                     url: string;
@@ -190,9 +193,45 @@ export const bookingService = {
         return response.data;
     },
 
-    // Approve Handover (Return)
-    approveReturn: async (bookingId: string) => {
-        const response = await apiClient.post(`/employee/return/${bookingId}/complete`);
+    // Get Return Details
+    getReturnDetails: async (bookingId: string) => {
+        const response = await apiClient.get<{ data: EmployeeBooking }>(`/employee/return/${bookingId}`);
+        return response.data.data;
+    },
+
+    // Upload Return Image
+    uploadReturnImage: async (formData: FormData) => {
+        const response = await apiClient.post<{ fileId: string; url: string }>("/employee/return/upload", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
         return response.data;
-    }
+    },
+
+    // Complete Return (No Damage)
+    completeReturn: async (bookingId: string, data: { returnImageIds: string[] }) => {
+        const response = await apiClient.post(`/employee/return/${bookingId}/complete`, data);
+        return response.data;
+    },
+
+    // Upload Damage Image
+    uploadDamageImage: async (formData: FormData) => {
+        const response = await apiClient.post<{ fileId: string; url: string }>("/employee/damage/upload", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+        return response.data;
+    },
+
+    // Report Damage
+    reportDamage: async (data: {
+        bookingId: string;
+        odo: number;
+        fuelLevel: number;
+        severity: string;
+        damageImageIds: string[];
+        notes: any;
+        returnImageIds: string[];
+    }) => {
+        const response = await apiClient.post("/employee/damage/report", data);
+        return response.data;
+    },
 };

@@ -58,6 +58,7 @@ function App() {
           <Route path="/employee/dashboard" element={<EmployeeDashboardPage />} />
           <Route path="/staff/pickups/:bookingId" element={<StaffPickupsPage />} />
           <Route path="/employee/dashboard/return/:bookingId" element={<ReturnProcessPage />} />
+          <Route path="/returns/:bookingId" element={<ReturnProcessPage />} />
         </Route>
 
         {/* Catch all */}

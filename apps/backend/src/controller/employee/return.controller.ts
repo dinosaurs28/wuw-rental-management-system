@@ -56,7 +56,7 @@ export const returnController = async (req: Request, res: Response) => {
                                 publicId: true,
                                 name: true,
                                 email: true,
-                                // phone: true 
+                                phone: true
                             }
                         }
                     }

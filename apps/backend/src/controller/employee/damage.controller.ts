@@ -51,7 +51,7 @@ export const CreateDamageReport = async (req: Request, res: Response) => {
             });
         }
 
-        const { bookingId, odo, fuelLevel, severity, damageImageIds, notes } = validation.data;
+        const { bookingId, odo, fuelLevel, severity, damageImageIds, notes, returnImageIds } = validation.data;
         const staffId = req.public_Id;
         const branchId = req.branch_Id;
 
@@ -122,7 +122,7 @@ export const CreateDamageReport = async (req: Request, res: Response) => {
                 }
             });
 
-            // Link Images
+            // Link Damage Images
             if (damageImageIds.length > 0) {
                 // First find the FileObject IDs
                 const files = await tx.fileObject.findMany({
@@ -140,6 +140,26 @@ export const CreateDamageReport = async (req: Request, res: Response) => {
                         fileId: f.id,
                         type: BookingPhotoType.DAMAGE,
                         damageReportId: report.id
+                    }))
+                });
+            }
+
+            // Link Return Images
+            if (returnImageIds && Array.isArray(returnImageIds) && returnImageIds.length > 0) {
+                const files = await tx.fileObject.findMany({
+                    where: { publicId: { in: returnImageIds } }
+                });
+
+                if (files.length !== returnImageIds.length) {
+                    throw new Error("Invalid return image IDs provided");
+                }
+
+                await tx.bookingPhoto.createMany({
+                    data: files.map(f => ({
+                        publicId: createID(),
+                        bookingId: booking.id,
+                        fileId: f.id,
+                        type: BookingPhotoType.POST_RETURN
                     }))
                 });
             }

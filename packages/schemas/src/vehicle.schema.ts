@@ -40,6 +40,7 @@ export const createDamageReportSchema = z.object({
   fuelLevel: z.coerce.number().min(0).max(100, "Fuel level must be between 0 and 100"),
   severity: z.string().min(1, "Severity is required"),
   damageImageIds: z.array(z.string().min(1)),
+  returnImageIds: z.array(z.string().min(1)),
   notes: z.record(z.any()).optional(), // Structured JSON notes
 });
 
