@@ -38,6 +38,7 @@ enum VehicleStatus {
   OUT_FOR_RENTAL
   MAINTENANCE
   INACTIVE
+  MANAGER_REPORTED
 }
 
 enum BookingStatus {

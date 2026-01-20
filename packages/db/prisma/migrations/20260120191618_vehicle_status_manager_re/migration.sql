@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "VehicleStatus" ADD VALUE 'MANAGER_REPORTED';

@@ -310,6 +310,7 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
                                 model: true,
                                 regNo: true,
                                 status: true,
+                                odo:true,
                                 images: {
                                     where: {
                                         isThumbnail: true

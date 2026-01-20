@@ -16,7 +16,7 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Loader2, Upload, Trash2, ArrowLeft, Fuel, Gauge, AlertTriangle, FileCheck, Info, X } from "lucide-react";
+import { Loader2, Upload, Trash2, ArrowLeft, Fuel, Gauge, AlertTriangle, FileCheck, X } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +26,7 @@ interface DamageItem {
     type: string;
     severity: string;
     description: string;
-    photos: string[]; // publicIds
+    photos: { publicId: string; url: string }[];
 }
 
 export default function ReturnProcessPage() {
@@ -37,15 +37,18 @@ export default function ReturnProcessPage() {
     // State
     const [odo, setOdo] = useState<number>(0);
     const [fuel, setFuel] = useState<number>(100);
-    const [returnPhotos, setReturnPhotos] = useState<string[]>([]); // publicIds
+    const [returnPhotos, setReturnPhotos] = useState<{ publicId: string; url: string }[]>([]);
     const [hasDamage, setHasDamage] = useState(false);
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
 
     // Damage Report State
     const [damages, setDamages] = useState<DamageItem[]>([]);
     const [activeDamage, setActiveDamage] = useState<Partial<DamageItem>>({
-        severity: "Minor"
+        severity: "Minor",
+        photos: []
     });
     const [showDamageForm, setShowDamageForm] = useState(false);
+    const [submissionResult, setSubmissionResult] = useState<{ success: boolean; message: string; reportId?: number } | null>(null);
 
     // Dialog Control
     const [showCompleteDialog, setShowCompleteDialog] = useState(false);
@@ -58,19 +61,11 @@ export default function ReturnProcessPage() {
         enabled: !!bookingId,
     });
 
-    useEffect(() => {
-        if (booking && booking.items[0].vehicle) {
-            const v = booking.items[0].vehicle;
-            if (v.odo) setOdo(v.odo);
-            if (v.fuelLevel) setFuel(v.fuelLevel);
-        }
-    }, [booking]);
-
     // Mutations
     const uploadReturnMutation = useMutation({
         mutationFn: bookingService.uploadReturnImage,
         onSuccess: (data) => {
-            setReturnPhotos(prev => [...prev, data.fileId]);
+            setReturnPhotos(prev => [...prev, { publicId: data.fileId, url: data.url }]);
             toast.success("Return photo uploaded");
         },
         onError: () => toast.error("Failed to upload photo")
@@ -81,7 +76,7 @@ export default function ReturnProcessPage() {
         onSuccess: (data) => {
             setActiveDamage(prev => ({
                 ...prev,
-                photos: [...(prev.photos || []), data.fileId]
+                photos: [...(prev.photos || []), { publicId: data.fileId, url: data.url }]
             }));
             toast.success("Damage photo uploaded");
         },
@@ -91,11 +86,9 @@ export default function ReturnProcessPage() {
     const completeReturnMutation = useMutation({
         mutationFn: (data: { returnImageIds: string[] }) =>
             bookingService.completeReturn(bookingId!, data),
-        onSuccess: () => {
-            toast.success("Return completed successfully");
-            setShowCompleteDialog(false);
+        onSuccess: (data: any) => {
+            setSubmissionResult({ success: true, message: data.message || "Return completed", reportId: data.reportId });
             queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
-            // Don't redirect, update UI state
         },
         onError: (err: any) => {
             toast.error(err.response?.data?.message || "Failed to complete return");
@@ -104,15 +97,66 @@ export default function ReturnProcessPage() {
 
     const reportDamageMutation = useMutation({
         mutationFn: (data: any) => bookingService.reportDamage(data),
-        onSuccess: () => {
-            toast.success("Damage report submitted successfully");
-            setShowReportDialog(false);
+        onSuccess: (data: any) => {
+            setSubmissionResult({ success: true, message: data.message || "Damage report submitted", reportId: data.reportId });
             queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
         },
         onError: (err: any) => {
             toast.error(err.response?.data?.message || "Failed to submit damage report");
         }
     });
+
+    const deleteReturnImageMutation = useMutation({
+        mutationFn: bookingService.deleteReturnImage,
+        onSuccess: (_, publicId) => {
+            setReturnPhotos(prev => prev.filter(img => img.publicId !== publicId));
+            toast.success("Photo removed");
+        },
+        onError: () => toast.error("Failed to remove photo")
+    });
+
+    const deleteDamageImageMutation = useMutation({
+        mutationFn: bookingService.deleteReturnImage,
+        onSuccess: () => {
+            // We handle state updates locally in the calling functions or specific contexts
+            toast.success("Damage photo removed");
+        },
+        onError: () => toast.error("Failed to remove damage photo")
+    });
+
+    useEffect(() => {
+        if (booking && booking.items[0].vehicle) {
+            const v = booking.items[0].vehicle;
+            if (v.odo !== undefined && v.odo !== null) setOdo(v.odo);
+            if (v.fuelLevel !== undefined && v.fuelLevel !== null) setFuel(v.fuelLevel);
+        }
+    }, [booking]);
+
+
+    const handleCompleteReturn = () => {
+        if (returnPhotos.length === 0) {
+            toast.error("Please upload return condition photos");
+            return;
+        }
+        completeReturnMutation.mutate({ returnImageIds: returnPhotos.map(p => p.publicId) });
+    };
+
+    const handleReportDamage = () => {
+        if (damages.length === 0) {
+            toast.error("Please add at least one damage entry");
+            return;
+        }
+        reportDamageMutation.mutate({
+            bookingId: bookingId,
+            odo,
+            fuelLevel: fuel,
+            severity: damages.some(d => d.severity === "Severe") ? "Severe" : damages.some(d => d.severity === "Moderate") ? "Moderate" : "Minor",
+            damageImageIds: damages.flatMap(d => d.photos.map(p => p.publicId)),
+            notes: { damages },
+            returnImageIds: returnPhotos.map(p => p.publicId)
+        });
+    };
+
 
     // Handlers
     const onDropReturn = (acceptedFiles: File[]) => {
@@ -142,7 +186,7 @@ export default function ReturnProcessPage() {
     });
 
     const addDamageItem = () => {
-        if (!activeDamage.area || !activeDamage.type || !activeDamage.description) {
+        if (!activeDamage.area || !activeDamage.description) {
             toast.error("Please fill all damage fields");
             return;
         }
@@ -152,32 +196,26 @@ export default function ReturnProcessPage() {
     };
 
     const removeDamageItem = (id: string) => {
+        const item = damages.find(d => d.id === id);
+        if (item && item.photos.length > 0) {
+            item.photos.forEach(photo => {
+                deleteDamageImageMutation.mutate(photo.publicId);
+            });
+        }
         setDamages(prev => prev.filter(d => d.id !== id));
     };
 
-    const handleCompleteReturn = () => {
-        if (returnPhotos.length === 0) {
-            toast.error("Please upload return condition photos");
-            return;
-        }
-        completeReturnMutation.mutate({ returnImageIds: returnPhotos });
+    const removeSavedDamagePhoto = (damageId: string, publicId: string) => {
+        deleteDamageImageMutation.mutate(publicId);
+        setDamages(prev => prev.map(d => {
+            if (d.id === damageId) {
+                return { ...d, photos: d.photos.filter(p => p.publicId !== publicId) };
+            }
+            return d;
+        }));
     };
 
-    const handleReportDamage = () => {
-        if (damages.length === 0) {
-            toast.error("Please add at least one damage entry");
-            return;
-        }
-        reportDamageMutation.mutate({
-            bookingId: bookingId,
-            odo,
-            fuelLevel: fuel,
-            severity: damages.some(d => d.severity === "Severe") ? "Severe" : damages.some(d => d.severity === "Moderate") ? "Moderate" : "Minor",
-            damageImageIds: damages.flatMap(d => d.photos),
-            notes: { damages },
-            returnImageIds: returnPhotos
-        });
-    };
+
 
     if (isLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
     if (error || !booking) return <div className="min-h-screen flex items-center justify-center text-red-500">Failed to load booking details</div>;
@@ -185,11 +223,32 @@ export default function ReturnProcessPage() {
     const vehicle = booking.items[0]?.vehicle;
     const isCompleted = booking.status === "RETURNED" || booking.status === "COMPLETED";
 
-    // Zones based on logic (simplified here)
+    // Zones based on logic
     const isTwoWheeler = vehicle?.category?.toLowerCase().includes("two");
     const damageZones = isTwoWheeler
         ? ["Front", "Rear", "Left Side", "Right Side"]
         : ["Front Bumper", "Rear Bumper", "Left Front Door", "Left Rear Door", "Right Front Door", "Right Rear Door", "Hood", "Roof", "Trunk", "Wheels", "Interior"];
+
+    if (submissionResult?.success) {
+        return (
+            <div className="min-h-screen bg-[#F5F5F5] flex flex-col items-center justify-center p-4">
+                <Card className="max-w-md w-full text-center p-6 border-green-200 bg-green-50/50">
+                    <CardContent className="space-y-4 pt-6">
+                        <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                            <FileCheck className="h-8 w-8 text-green-600" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-green-800">{submissionResult.message}</h2>
+                        {submissionResult.reportId && (
+                            <p className="text-sm text-green-700">Reference ID: #{submissionResult.reportId}</p>
+                        )}
+                        <Button className="w-full mt-4 bg-green-600 hover:bg-green-700" onClick={() => navigate('/employee/dashboard')}>
+                            Return to Dashboard
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#F5F5F5] pb-20">
@@ -266,23 +325,44 @@ export default function ReturnProcessPage() {
 
                                 {returnPhotos.length > 0 && (
                                     <div className="grid grid-cols-4 sm:grid-cols-6 gap-4 mt-6">
-                                        {returnPhotos.map((_, idx) => (
-                                            <div key={idx} className="relative aspect-square rounded-md overflow-hidden border bg-muted group">
-                                                {/* Placeholder for preview since we only have ID. In real app we might need URL or object URL */}
-                                                <div className="w-full h-full flex items-center justify-center bg-gray-100 text-xs text-gray-400">
-                                                    Img {idx + 1}
-                                                </div>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); setReturnPhotos(prev => prev.filter((_, i) => i !== idx)) }}
-                                                    className="absolute top-1 right-1 bg-black/50 hover:bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                        {returnPhotos.map((img, idx) => (
+                                            <div
+                                                key={img.publicId}
+                                                className="relative aspect-square rounded-md overflow-hidden border bg-muted group cursor-pointer"
+                                                onClick={() => setPreviewImage(img.url)}
+                                            >
+                                                <img src={img.url} alt={`Return ${idx}`} className="w-full h-full object-cover" />
+
+                                                {/* Delete Action - Always visible on mobile, hover on desktop */}
+                                                <Button
+                                                    size="icon"
+                                                    variant="destructive"
+                                                    className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-10"
+                                                    onClick={(e) => { e.stopPropagation(); deleteReturnImageMutation.mutate(img.publicId); }}
                                                     disabled={isCompleted}
                                                 >
-                                                    <X className="h-3 w-3" />
-                                                </button>
+                                                    <Trash2 className="h-3 w-3" />
+                                                </Button>
                                             </div>
                                         ))}
                                     </div>
                                 )}
+
+                                <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
+                                    <DialogContent className="max-w-3xl p-0 overflow-hidden bg-black/90 border-none sm:rounded-lg">
+                                        <div className="relative w-full h-[80vh] flex items-center justify-center">
+                                            <img src={previewImage!} alt="Preview" className="max-w-full max-h-full object-contain" />
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="absolute top-2 right-2 text-white/50 hover:text-white hover:bg-white/10"
+                                                onClick={() => setPreviewImage(null)}
+                                            >
+                                                <X className="h-6 w-6" />
+                                            </Button>
+                                        </div>
+                                    </DialogContent>
+                                </Dialog>
                             </CardContent>
                         </Card>
 
@@ -368,7 +448,28 @@ export default function ReturnProcessPage() {
                                                     <p>Click to upload damage photos</p>
                                                 </div>
                                                 {activeDamage.photos && activeDamage.photos.length > 0 && (
-                                                    <p className="text-xs text-green-600 mt-1">{activeDamage.photos.length} photos attached</p>
+                                                    <div className="grid grid-cols-4 gap-2 mt-2">
+                                                        {activeDamage.photos.map((img, idx) => (
+                                                            <div key={img.publicId} className="relative aspect-square rounded overflow-hidden border bg-muted group cursor-pointer" onClick={() => setPreviewImage(img.url)}>
+                                                                <img src={img.url} alt={`Damage ${idx}`} className="w-full h-full object-cover" />
+                                                                <Button
+                                                                    size="icon"
+                                                                    variant="destructive"
+                                                                    className="absolute top-1 right-1 h-5 w-5 rounded-full opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        deleteDamageImageMutation.mutate(img.publicId);
+                                                                        setActiveDamage(prev => ({
+                                                                            ...prev,
+                                                                            photos: prev.photos?.filter(p => p.publicId !== img.publicId)
+                                                                        }));
+                                                                    }}
+                                                                >
+                                                                    <X className="h-3 w-3" />
+                                                                </Button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 )}
                                             </div>
                                             <div className="flex justify-end gap-2 pt-2">
@@ -388,7 +489,28 @@ export default function ReturnProcessPage() {
                                                         <Badge variant={item.severity === 'Severe' ? 'destructive' : 'outline'}>{item.severity}</Badge>
                                                     </div>
                                                     <p className="text-sm text-muted-foreground">{item.description}</p>
-                                                    {item.photos.length > 0 && <p className="text-xs text-blue-600 flex items-center gap-1"><Info className="h-3 w-3" /> {item.photos.length} photos</p>}
+
+                                                    {item.photos.length > 0 && (
+                                                        <div className="grid grid-cols-4 gap-2 mt-2">
+                                                            {item.photos.map((img, idx) => (
+                                                                <div key={img.publicId} className="relative aspect-square rounded overflow-hidden border bg-muted group cursor-pointer" onClick={() => setPreviewImage(img.url)}>
+                                                                    <img src={img.url} alt={`Damage ${idx}`} className="w-full h-full object-cover" />
+                                                                    <Button
+                                                                        size="icon"
+                                                                        variant="destructive"
+                                                                        className="absolute top-1 right-1 h-5 w-5 rounded-full opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            removeSavedDamagePhoto(item.id, img.publicId);
+                                                                        }}
+                                                                        disabled={isCompleted}
+                                                                    >
+                                                                        <X className="h-3 w-3" />
+                                                                    </Button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => removeDamageItem(item.id)} disabled={isCompleted}>
                                                     <Trash2 className="h-4 w-4" />
@@ -415,14 +537,17 @@ export default function ReturnProcessPage() {
                                 <div className="space-y-2">
                                     <Label className="flex items-center gap-2"><Gauge className="h-4 w-4" /> Odometer Reading (km)</Label>
                                     <Input
-                                        type="number"
+                                        type="text"
                                         value={odo}
-                                        onChange={(e) => setOdo(Number(e.target.value))}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            if (/^\d*$/.test(val)) setOdo(Number(val));
+                                        }}
                                         placeholder="Enter current KM"
                                         className="text-lg font-mono"
                                         disabled={isCompleted}
                                     />
-                                    <p className="text-xs text-muted-foreground">Pickup: 12,450 km (Not validated)</p>
+                                    <p className="text-xs text-muted-foreground">Pickup: {vehicle?.odo || 0} km</p>
                                 </div>
 
                                 <Separator />

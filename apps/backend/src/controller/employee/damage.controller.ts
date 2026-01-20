@@ -1,10 +1,15 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode";
-import { prisma, BookingStatus, BookingPhotoType, VehicleReturnDisposition, DamageReportStatus } from "@repo/database/client";
+import { prisma, BookingStatus, BookingPhotoType, VehicleReturnDisposition, DamageReportStatus, VehicleStatus } from "@repo/database/client";
 import { createID } from "../../utils/nanoID";
 import { createDamageReportSchema } from "@repo/schemas";
+import { r2 } from "../../lib/r2.client";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import fs from "fs/promises";
+import path from "path";
 
-const getFileUrl = (filename: string) => `/uploads/${filename}`;
+const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
+const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL!;
 
 export const UploadDamageImage = async (req: Request, res: Response) => {
     try {
@@ -15,13 +20,29 @@ export const UploadDamageImage = async (req: Request, res: Response) => {
             });
         }
 
+        // Upload to R2
+        const fileContent = await fs.readFile(file.path);
+        const ext = path.extname(file.originalname);
+        const date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const key = `damage/${date}/${createID()}${ext}`;
+
+        await r2.send(new PutObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: key,
+            Body: fileContent,
+            ContentType: file.mimetype,
+        }));
+
+        // Clean up local file
+        await fs.unlink(file.path);
+
         // Create FileObject record
         const filePublicId = createID();
         const fileRecord = await prisma.fileObject.create({
             data: {
                 publicId: filePublicId,
-                key: file.filename,
-                url: getFileUrl(file.filename),
+                key: key,
+                url: `${R2_PUBLIC_URL}/${key}`,
                 mime: file.mimetype,
                 size: file.size,
             }
@@ -35,6 +56,10 @@ export const UploadDamageImage = async (req: Request, res: Response) => {
 
     } catch (error) {
         console.error("Error uploading damage image:", error);
+        // Try to cleanup temp file if it exists and error happened before unlink
+        if (req.file) {
+            await fs.unlink(req.file.path).catch(() => { });
+        }
         return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
             message: "Internal Server Error during upload"
         });
@@ -164,12 +189,20 @@ export const CreateDamageReport = async (req: Request, res: Response) => {
                 });
             }
 
-            // Capture ODO & Fuel Level - Update Vehicle
+            // Capture ODO & Fuel Level - Update Vehicle Status & Booking Status
             await tx.vehicle.update({
                 where: { id: vehicleId },
                 data: {
                     odo: odo,
-                    fuelLevel: fuelLevel
+                    fuelLevel: fuelLevel,
+                    status: VehicleStatus.MANAGER_REPORTED
+                }
+            });
+
+            await tx.booking.update({
+                where: { id: booking.id },
+                data: {
+                    status: BookingStatus.RETURNED
                 }
             });
 

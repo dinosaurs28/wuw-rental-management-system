@@ -7,7 +7,7 @@ import { BookingController } from "../../controller/employee/booking.controller"
 import { returnController } from "../../controller/employee/return.controller";
 import { GetBookingKyc, VerifyKyc } from "../../controller/employee/kyc.controller";
 import { PickupController } from "../../controller/employee/pickup.controller";
-import { CompleteReturn, UploadReturnImage } from "../../controller/employee/returnAction.controller";
+import { CompleteReturn, UploadReturnImage, DeleteReturnImage } from "../../controller/employee/returnAction.controller";
 import { InitiateWalkin } from "../../controller/employee/walkin/initiate.controller";
 import { VerifyWalkinOtp } from "../../controller/employee/walkin/verify.controller";
 import { CompleteWalkinProfile } from "../../controller/employee/walkin/complete.controller";
@@ -26,6 +26,7 @@ router.patch("/kyc/:kycId/status", EmployeeCheck, VerifyKyc)
 router.get("/pickup/:bookingId", EmployeeCheck, GetBookingDetails)
 router.post("/pickup/:bookingId", EmployeeCheck, PickupController)
 router.post("/return/upload", EmployeeCheck, upload.single('file'), UploadReturnImage)
+router.delete("/return/image/:publicId", EmployeeCheck, DeleteReturnImage)
 router.get("/return/:bookingId", EmployeeCheck, GetBookingDetails)
 router.post("/return/:bookingId/complete", EmployeeCheck, CompleteReturn)
 router.post("/walkin/initiate", EmployeeCheck, InitiateWalkin)
@@ -37,8 +38,6 @@ router.get("/vehicles/search", EmployeeCheck, searchVehicles)
 router.get("/vehicles/:id", EmployeeCheck, getEmployeeVehicleDetails)
 router.post("/booking/create", EmployeeCheck, createEmployeeBooking)
 router.get("/customer/search", EmployeeCheck, SearchCustomer)
-
-// Damage Reporting
 router.post("/damage/upload", EmployeeCheck, upload.single('file'), UploadDamageImage)
 router.post("/damage/report", EmployeeCheck, CreateDamageReport)
 

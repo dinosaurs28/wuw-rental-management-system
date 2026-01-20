@@ -207,6 +207,12 @@ export const bookingService = {
         return response.data;
     },
 
+    // Delete Return Image
+    deleteReturnImage: async (publicId: string) => {
+        const response = await apiClient.delete(`/employee/return/image/${publicId}`);
+        return response.data;
+    },
+
     // Complete Return (No Damage)
     completeReturn: async (bookingId: string, data: { returnImageIds: string[] }) => {
         const response = await apiClient.post(`/employee/return/${bookingId}/complete`, data);

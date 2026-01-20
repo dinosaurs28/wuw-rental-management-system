@@ -508,7 +508,8 @@ exports.VehicleStatus = exports.$Enums.VehicleStatus = {
   AVAILABLE: 'AVAILABLE',
   OUT_FOR_RENTAL: 'OUT_FOR_RENTAL',
   MAINTENANCE: 'MAINTENANCE',
-  INACTIVE: 'INACTIVE'
+  INACTIVE: 'INACTIVE',
+  MANAGER_REPORTED: 'MANAGER_REPORTED'
 };
 
 exports.PricingRuleType = exports.$Enums.PricingRuleType = {
