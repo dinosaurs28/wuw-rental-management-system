@@ -1,6 +1,15 @@
 import { NextFunction, Request, Response } from "express";
 import { StatusCode } from "../types/statusCode";
 import { prisma } from "@repo/database/client";
+
+declare global {
+    namespace Express {
+        interface Request {
+            customer_public_id?: string;
+        }
+    }
+}
+
 export const CheckCustomerPublicId = async (req: Request, res: Response, next: NextFunction) => {
     const { customer_public_id } = req.body;
     if (!customer_public_id) {
@@ -9,22 +18,23 @@ export const CheckCustomerPublicId = async (req: Request, res: Response, next: N
         });
     }
     try {
-        const customer = await prisma.customer.findUnique({
+        const user = await prisma.user.findUnique({
             where: {
                 publicId: customer_public_id
             },
-            select: {
-                id: true
+            include: {
+                customerProfile: true
             }
         });
-        if (!customer) {
+
+        if (!user || !user.customerProfile) {
             return res.status(StatusCode.NOT_FOUND).json({
-                message: "Customer not found"
+                message: "Customer profile not found"
             });
         }
-        // Attach customer ID to request for downstream use if needed, 
-        // though the controller might just look it up again or use the public ID.
-        // For now, validation is the primary goal.
+
+        // Validation successful
+        req.customer_public_id = user.customerProfile.publicId;
         return next();
     } catch (error) {
         console.error("Error checking customer public ID:", error);

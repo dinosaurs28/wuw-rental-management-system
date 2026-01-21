@@ -16,6 +16,9 @@ import { upload } from "../../middlewares/upload.middleware";
 import { CheckCustomerPublicId } from "../../middlewares/checkCustomer.middleware";
 import { UpdateWalkinKycStatus, UploadWalkinKyc } from "../../controller/employee/walkin/kyc.controller";
 import { CreateDamageReport, UploadDamageImage } from "../../controller/employee/damage.controller";
+import { GetCustomerKyc } from "../../controller/employee/walkin/getKyc.controller";
+import { DeleteKycDocument } from "../../controller/user/kyc.controller";
+
 const router: Router = Router()
 
 router.post("/auth/login", Login)
@@ -33,7 +36,9 @@ router.post("/walkin/initiate", EmployeeCheck, InitiateWalkin)
 router.post("/walkin/verify", EmployeeCheck, VerifyWalkinOtp)
 router.post("/walkin/complete", EmployeeCheck, CompleteWalkinProfile)
 router.post("/walkin/kyc/upload", EmployeeCheck, upload.single('file'), CheckCustomerPublicId, UploadWalkinKyc)
+router.get("/walkin/kyc/:customerPublicId", EmployeeCheck, GetCustomerKyc)
 router.post("/walkin/kyc/status", EmployeeCheck, UpdateWalkinKycStatus)
+router.delete("/walkin/kyc/:id", EmployeeCheck, DeleteKycDocument)
 router.get("/vehicles/search", EmployeeCheck, searchVehicles)
 router.get("/vehicles/:id", EmployeeCheck, getEmployeeVehicleDetails)
 router.post("/booking/create", EmployeeCheck, createEmployeeBooking)

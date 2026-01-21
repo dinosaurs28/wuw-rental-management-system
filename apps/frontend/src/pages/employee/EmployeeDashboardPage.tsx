@@ -133,7 +133,7 @@ export default function EmployeeDashboardPage() {
                                 <QrCode className="mr-2 h-4 w-4" /> Scan
                             </Button>
 
-                            <Button onClick={() => navigate("/new-bookings")} className="flex-1 sm:flex-none bg-orange-600 hover:bg-orange-700 text-white shadow-sm">
+                            <Button onClick={() => navigate("/employee/new-booking")} className="flex-1 sm:flex-none bg-orange-600 hover:bg-orange-700 text-white shadow-sm">
                                 <Plus className="mr-2 h-4 w-4" /> New Booking
                             </Button>
                         </div>

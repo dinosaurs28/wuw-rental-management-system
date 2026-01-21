@@ -240,4 +240,42 @@ export const bookingService = {
         const response = await apiClient.post("/employee/damage/report", data);
         return response.data;
     },
+
+    // Search Customers
+    searchCustomers: async (query: string) => {
+        const response = await apiClient.get<{
+            message: string;
+            customers: {
+                publicId: string;
+                name: string;
+                email: string;
+                phone: string;
+                customerProfile: {
+                    isProfileCompleted: boolean;
+                    publicId: string;
+                } | null;
+            }[];
+        }>(`/employee/customer/search?q=${encodeURIComponent(query)}`);
+        return response.data;
+    },
+
+    // Create Booking (Employee)
+    createEmployeeBooking: async (data: {
+        vehicles: string[];
+        customer_public_id: string;
+        customer_kyc_id: string;
+        start: string;
+        end: string;
+        payment_type: 'CASH' | 'ONLINE';
+    }) => {
+        const response = await apiClient.post<{
+            message: string;
+            data: {
+                bookingId: string;
+                paymentURL: string | null;
+                status: string;
+            };
+        }>("/employee/booking/create", data);
+        return response.data;
+    },
 };

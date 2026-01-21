@@ -19,6 +19,11 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PublicRoute } from "@/components/auth/PublicRoute";
 import { EmployeeProtectedRoute } from "@/components/auth/EmployeeProtectedRoute";
 import EmployeeDashboardPage from "@/pages/employee/EmployeeDashboardPage";
+import EmployeeCustomerSelectPage from "@/pages/employee/booking/EmployeeCustomerSelectPage";
+import EmployeeCreateCustomerPage from "@/pages/employee/booking/EmployeeCreateCustomerPage";
+import EmployeeVehicleListingPage from "@/pages/employee/booking/EmployeeVehicleListingPage";
+import { EmployeeVehicleDetailsPage } from "@/pages/employee/booking/EmployeeVehicleDetailsPage";
+import { EmployeeBookingSummaryPage } from "@/pages/employee/booking/EmployeeBookingSummaryPage";
 import StaffPickupsPage from "@/pages/employee/StaffPickupsPage";
 import ReturnProcessPage from "@/pages/employee/ReturnProcessPage";
 
@@ -56,6 +61,11 @@ function App() {
         {/* Employee Protected Routes */}
         <Route element={<EmployeeProtectedRoute />}>
           <Route path="/employee/dashboard" element={<EmployeeDashboardPage />} />
+          <Route path="/employee/new-booking" element={<EmployeeCustomerSelectPage />} />
+          <Route path="/employee/customer/create" element={<EmployeeCreateCustomerPage />} />
+          <Route path="/employee/vehicles" element={<EmployeeVehicleListingPage />} />
+          <Route path="/employee/vehicle/:id" element={<EmployeeVehicleDetailsPage />} />
+          <Route path="/employee/booking/summary" element={<EmployeeBookingSummaryPage />} />
           <Route path="/staff/pickups/:bookingId" element={<StaffPickupsPage />} />
           <Route path="/employee/dashboard/return/:bookingId" element={<ReturnProcessPage />} />
           <Route path="/returns/:bookingId" element={<ReturnProcessPage />} />

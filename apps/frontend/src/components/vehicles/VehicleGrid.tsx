@@ -21,6 +21,7 @@ interface VehicleGridProps {
     totalCount: number;
     itemsPerPage: number;
     onPageChange: (page: number) => void;
+    basePath?: string;
 }
 
 // Memoized vehicle card for optimization
@@ -72,6 +73,7 @@ export const VehicleGrid = ({
     totalCount,
     itemsPerPage,
     onPageChange,
+    basePath,
 }: VehicleGridProps) => {
     const totalPages = Math.ceil(totalCount / itemsPerPage);
 
@@ -112,7 +114,7 @@ export const VehicleGrid = ({
             {/* Vehicle Grid - No separate scroll container */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {vehicles.map((vehicle) => (
-                    <MemoizedVehicleCard key={vehicle.publicId} vehicle={vehicle} />
+                    <MemoizedVehicleCard key={vehicle.publicId} vehicle={vehicle} basePath={basePath} />
                 ))}
             </div>
 

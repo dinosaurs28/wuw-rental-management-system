@@ -102,10 +102,16 @@ export function DocumentsPage() {
     // Handle document deletion
     const handleDeleteDocument = useCallback(
         async (publicId: string) => {
+            const user = useAuthStore.getState().user;
+            if (!user?.id) {
+                toast.error("User information missing");
+                return;
+            }
+
             setDeletingDocumentId(publicId);
 
             try {
-                await kycService.deleteDocument(publicId);
+                await kycService.deleteDocument(publicId, user.id);
                 removeDocument(publicId);
                 toast.success('Document deleted successfully');
             } catch (error) {

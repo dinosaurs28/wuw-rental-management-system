@@ -6,15 +6,16 @@ import type { Vehicle } from '@/services/vehicle.service';
 
 interface VehicleCardProps {
     vehicle: Vehicle;
+    basePath?: string;
 }
 
-export const VehicleCard = ({ vehicle }: VehicleCardProps) => {
+export const VehicleCard = ({ vehicle, basePath = '/vehicle' }: VehicleCardProps) => {
     const navigate = useNavigate();
 
     const imageUrl = vehicle.imageUrl?.[0]?.file?.url;
 
     const handleViewVehicle = () => {
-        navigate(`/vehicle/${vehicle.publicId}`);
+        navigate(`${basePath}/${vehicle.publicId}`);
     };
 
     return (

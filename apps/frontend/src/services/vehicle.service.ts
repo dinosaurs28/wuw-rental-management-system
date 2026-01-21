@@ -61,7 +61,9 @@ export const fetchVehicles = async (filters: VehicleFilters): Promise<VehiclesRe
 export interface VehicleDetails {
     publicId: string;
     make: string;
+    brand: string;
     model: string;
+    year: number;
     status: 'AVAILABLE' | 'NOT_AVAILABLE';
     category: string;
     branch: string;
@@ -74,6 +76,10 @@ export interface VehicleDetails {
     totalDays: number;
     baseTotal: number;
     discountPrice: number;
+    seats: number;
+    fuelType: string;
+    transmission: string;
+    description: string;
 }
 
 export interface VehicleDetailsResponse {

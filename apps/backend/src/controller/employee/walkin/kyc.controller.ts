@@ -7,7 +7,8 @@ import { createID } from "../../../utils/nanoID.js";
 const getFileUrl = (filename: string) => `/uploads/${filename}`;
 
 export const UploadWalkinKyc = async (req: Request, res: Response) => {
-    const { customer_public_id, kyc_type } = req.body;
+    const { kyc_type } = req.body;
+    const customer_public_id = req.customer_public_id;
     const file = req.file;
 
     if (!file) {
@@ -23,27 +24,6 @@ export const UploadWalkinKyc = async (req: Request, res: Response) => {
     }
 
     try {
-        const actingUserPublicId = req.public_Id;
-        const actingUser = await prisma.user.findUnique({
-            where: { publicId: actingUserPublicId },
-            select: { id: true }
-        });
-
-        if (!actingUser) {
-            return res.status(StatusCode.UNAUTHORIZED).json({
-                message: "Unauthorized: User not found"
-            });
-        }
-
-        const customer = await prisma.customer.findUnique({
-            where: { publicId: customer_public_id },
-        });
-
-        if (!customer) {
-            return res.status(StatusCode.NOT_FOUND).json({
-                message: "Customer not found"
-            });
-        }
 
         // 1. Create FileObject
         const filePublicId = createID();
@@ -64,7 +44,7 @@ export const UploadWalkinKyc = async (req: Request, res: Response) => {
         const existingKyc = await prisma.customerKyc.findUnique({
             where: {
                 customerId_type: {
-                    customerId: customer.id,
+                    customerId: customer_public_id as string,
                     type: kyc_type as KycType
                 }
             }

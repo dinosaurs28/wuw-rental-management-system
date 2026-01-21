@@ -166,13 +166,23 @@ export const UploadKycDocument = async (req: Request, res: Response) => {
 
 export const DeleteKycDocument = async (req: Request, res: Response) => {
     try {
-        const publicId = req.public_Id;
-        const { id } = req.params; // Expecting publicId of the KYC record
 
-        const customerId = await getCustomerId(publicId);
-        if (!customerId) {
-            return res.status(StatusCode.NOT_FOUND).json({
-                message: "Customer profile not found"
+        const { id, customer_public_id } = req.params; // Expecting publicId of the KYC record
+
+        const actingUser = await prisma.user.findUnique({
+            where: { publicId: customer_public_id },
+            select: {
+                id: true,
+                role: true,
+                customerProfile: {
+                    select: { id: true }
+                }
+            }
+        });
+
+        if (!actingUser) {
+            return res.status(StatusCode.UNAUTHORIZED).json({
+                message: "Unauthorized: User not found"
             });
         }
 
@@ -187,16 +197,34 @@ export const DeleteKycDocument = async (req: Request, res: Response) => {
             });
         }
 
-        // Ownership check
-        if (kycRecord.customerId !== customerId) {
-            return res.status(StatusCode.FORBIDDEN).json({
-                message: "You are not authorized to delete this document"
-            });
+        // Authorization Check
+        if (actingUser.role !== Role.STAFF && actingUser.role !== Role.ADMIN && actingUser.role !== Role.MANAGER) {
+            const customerId = actingUser.customerProfile?.id;
+            // Ownership check for customers
+            if (!customerId || kycRecord.customerId !== customerId) {
+                return res.status(StatusCode.FORBIDDEN).json({
+                    message: "You are not authorized to delete this document"
+                });
+            }
         }
-        await prisma.$transaction([
-            prisma.customerKyc.delete({ where: { id: kycRecord.id } }),
-            prisma.fileObject.delete({ where: { id: kycRecord.fileId } })
-        ]);
+
+        await prisma.$transaction(async (tx) => {
+            await tx.customerKyc.delete({ where: { id: kycRecord.id } });
+            await tx.fileObject.delete({ where: { id: kycRecord.fileId } });
+
+            // Audit Log if Employee
+            if (actingUser.role === Role.STAFF || actingUser.role === Role.ADMIN || actingUser.role === Role.MANAGER) {
+                await tx.staffActivityLog.create({
+                    data: {
+                        publicId: createID(),
+                        staffId: actingUser.id,
+                        action: "WALKIN_KYC_DELETE",
+                        entity: "CustomerKyc",
+                        entityId: kycRecord.publicId
+                    }
+                });
+            }
+        });
 
         if (kycRecord.file && kycRecord.file.key) {
             await fileCleanupQueue.add('delete-kyc-file', {

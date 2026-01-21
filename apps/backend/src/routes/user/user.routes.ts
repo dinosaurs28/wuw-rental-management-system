@@ -13,7 +13,7 @@ router.get("/booking/history", authCheckJwt, getUserBookingHistory)
 router.route("/profile").all(authCheckJwt).get(getUserProfile).put(updateUserProfile)
 router.get("/kyc", authCheckJwt, GetKycDocuments)
 router.post("/kyc", authCheckJwt, upload.single('file'), UploadKycDocument)
-router.delete("/kyc/:id", authCheckJwt, DeleteKycDocument)
+router.delete("/kyc/:id/:customer_public_id", authCheckJwt, DeleteKycDocument)
 router.post("/payment/cash", authCheckJwt, checkPaymentForCash)
 
 export default router
