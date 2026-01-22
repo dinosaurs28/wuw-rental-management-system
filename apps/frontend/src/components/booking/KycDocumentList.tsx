@@ -198,7 +198,7 @@ export const KycDocumentList = ({
                 <CardContent className="space-y-3">
                     {errorAlert}
                     {documents.map((doc) => {
-                        const isSelected = selectedId === doc.file.publicId;
+                        const isSelected = selectedId === doc.publicId;
                         const maskedId = `•••• •••• ${doc.file.publicId.slice(-4)}`;
 
                         return (

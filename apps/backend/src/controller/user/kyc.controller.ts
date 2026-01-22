@@ -42,7 +42,7 @@ export const GetKycDocuments = async (req: Request, res: Response) => {
         const documents = await prisma.customerKyc.findMany({
             where: { customerId },
             include: {
-                file: true
+                file: true,
             },
             orderBy: { createdAt: 'desc' }
         });
@@ -166,11 +166,19 @@ export const UploadKycDocument = async (req: Request, res: Response) => {
 
 export const DeleteKycDocument = async (req: Request, res: Response) => {
     try {
+        const { id, customer_public_id } = req.body; // id = KYC Public ID, customer_public_id = Customer User Public ID
 
-        const { id, customer_public_id } = req.params; // Expecting publicId of the KYC record
+        // authenticated user (Employee or Customer themselves)
+        const actingUserPublicId = req.public_Id;
+
+        if (!actingUserPublicId) {
+            return res.status(StatusCode.UNAUTHORIZED).json({
+                message: "Unauthorized: Missing user context"
+            });
+        }
 
         const actingUser = await prisma.user.findUnique({
-            where: { publicId: customer_public_id },
+            where: { publicId: actingUserPublicId },
             select: {
                 id: true,
                 role: true,
@@ -188,7 +196,12 @@ export const DeleteKycDocument = async (req: Request, res: Response) => {
 
         const kycRecord = await prisma.customerKyc.findUnique({
             where: { publicId: id },
-            include: { file: true }
+            include: {
+                file: true,
+                customer: {
+                    include: { user: true }
+                }
+            }
         });
 
         if (!kycRecord) {
@@ -198,22 +211,34 @@ export const DeleteKycDocument = async (req: Request, res: Response) => {
         }
 
         // Authorization Check
-        if (actingUser.role !== Role.STAFF && actingUser.role !== Role.ADMIN && actingUser.role !== Role.MANAGER) {
+        const isStaff = ([Role.STAFF, Role.ADMIN, Role.MANAGER] as Role[]).includes(actingUser.role);
+
+        if (!isStaff) {
+            // If Customer, they can only delete their own
             const customerId = actingUser.customerProfile?.id;
-            // Ownership check for customers
             if (!customerId || kycRecord.customerId !== customerId) {
                 return res.status(StatusCode.FORBIDDEN).json({
                     message: "You are not authorized to delete this document"
+                });
+            }
+        } else {
+            // If Staff, validate that the KYC belongs to the expected customer (if customer_public_id provided)
+            if (customer_public_id && kycRecord.customer?.user?.publicId !== customer_public_id) {
+                return res.status(StatusCode.BAD_REQUEST).json({
+                    message: "KYC document does not belong to the specified customer"
                 });
             }
         }
 
         await prisma.$transaction(async (tx) => {
             await tx.customerKyc.delete({ where: { id: kycRecord.id } });
-            await tx.fileObject.delete({ where: { id: kycRecord.fileId } });
+            // Only delete FileObject if it exists
+            if (kycRecord.fileId) {
+                await tx.fileObject.delete({ where: { id: kycRecord.fileId } });
+            }
 
             // Audit Log if Employee
-            if (actingUser.role === Role.STAFF || actingUser.role === Role.ADMIN || actingUser.role === Role.MANAGER) {
+            if (isStaff) {
                 await tx.staffActivityLog.create({
                     data: {
                         publicId: createID(),

@@ -26,12 +26,15 @@ export const EmployeeVehiclePricingCard = ({
 }: EmployeeVehiclePricingCardProps) => {
     // Get state and actions from the employee store
     const {
-        startDate,
-        endDate,
+        startDate: storeStartDate,
+        endDate: storeEndDate,
         setDates,
         paymentType,
         setPaymentType
     } = useEmployeeBookingStore();
+
+    const startDate = storeStartDate ? new Date(storeStartDate) : null;
+    const endDate = storeEndDate ? new Date(storeEndDate) : null;
 
     // Dates are already Date objects in this store (based on interface, checking store implementation...)
     // Wait, in store implementation: startDate: Date | null
@@ -72,24 +75,7 @@ export const EmployeeVehiclePricingCard = ({
         return { before: today };
     }, [startDate]);
 
-    const handlePickupDateChange = (date: Date | undefined) => {
-        if (date) {
-            // If we have an end date, keep it unless it's invalid
-            const newEnd = (endDate && date > endDate) ? null : endDate;
-            if (newEnd) {
-                setDates(date, newEnd);
-            } else {
-                // Temporary state handling might be needed if store requires both at once
-                // But store has setDates(start, end).
-                // We might need to handle partial state if store enforces both.
-                // Looking at store: setDates: (start, end) => set({ startDate: start, endDate: end })
-                // So we need to pass both.
-                // If we only have start, we can't call setDates yet fully?
-                // Or we pass current end date.
-                setDates(date, endDate as Date); // Cast might be unsafe if endDate is null
-            }
-        }
-    };
+
 
     // Actually, looking at the store signature: setDates: (start: Date, end: Date) => void
     // It requires BOTH. So we need separate setters or handle it locally until both are present.

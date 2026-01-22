@@ -32,12 +32,15 @@ export const EmployeeBookingSummaryPage = () => {
     // Store
     const {
         selectedVehicleId,
-        startDate,
-        endDate,
+        startDate: storeStartDate,
+        endDate: storeEndDate,
         paymentType,
         customerKycId,
         reset: resetStore
     } = useEmployeeBookingStore();
+
+    const startDate = storeStartDate ? new Date(storeStartDate) : null;
+    const endDate = storeEndDate ? new Date(storeEndDate) : null;
 
     // Local State
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,7 +57,7 @@ export const EmployeeBookingSummaryPage = () => {
     // Fetch KYC Details (to show on summary)
     useEffect(() => {
         const fetchKyc = async () => {
-            if (customerKycId && session) {
+            if (customerKycId && session?.publicId && !kycDocument) {
                 try {
                     // We can reuse getCustomerKyc and find the doc, or just show ID/Type if we had it.
                     // To be safe and show nice details, let's fetch.
@@ -67,7 +70,7 @@ export const EmployeeBookingSummaryPage = () => {
             }
         };
         fetchKyc();
-    }, [customerKycId, session]);
+    }, [customerKycId, session?.publicId, kycDocument]);
 
     // Validation & Redirects
     useEffect(() => {
@@ -103,15 +106,14 @@ export const EmployeeBookingSummaryPage = () => {
     const totalPayable = finalTotal + vehicle.deposit; // Including deposit in immediate payment?
     // Wait, usually deposit is collected. Let's assume Total Payable = Final Rental + Deposit for Cash.
 
+    const [bookingSuccess, setBookingSuccess] = useState(false);
+    const [paymentData, setPaymentData] = useState<{ paymentURL: string | null; status: string } | null>(null);
+
     const handleConfirmBooking = async () => {
         if (!session || !selectedVehicleId || !startDate || !endDate || !customerKycId) return;
 
         setIsSubmitting(true);
         try {
-            // Find the correct CustomerKyc public ID (already done via store basically)
-            // Store has the Document Public ID (Active Record).
-            // Payload needs this ID.
-
             const payload = {
                 vehicles: [vehicle.publicId],
                 customer_public_id: session.publicId,
@@ -121,13 +123,16 @@ export const EmployeeBookingSummaryPage = () => {
                 payment_type: paymentType,
             };
 
-            await bookingService.createEmployeeBooking(payload);
+            const response = await bookingService.createEmployeeBooking(payload);
 
+            // Store successful response and show success UI
+            setPaymentData(response.data);
+            setBookingSuccess(true);
             toast.success("Booking Created Successfully!");
 
-            // Cleanup
-            resetStore();
-            navigate('/employee/dashboard');
+            // DO NOT RESET Store yet, wait for user to leave page
+            // resetStore(); 
+            // navigate('/employee/dashboard');
 
         } catch (error: any) {
             console.error("Booking failed", error);
@@ -137,6 +142,85 @@ export const EmployeeBookingSummaryPage = () => {
             setIsSubmitting(false);
         }
     };
+
+    const handleFinish = () => {
+        resetStore();
+        navigate('/employee/dashboard');
+    };
+
+    // Render Success/Payment View
+    if (bookingSuccess && paymentData) {
+        return (
+            <div className="min-h-screen bg-zinc-50 pb-20">
+                {/* Header */}
+                <div className="bg-white border-b border-zinc-200">
+                    <div className="container mx-auto px-4 h-16 flex items-center gap-4">
+                        <Button variant="ghost" size="icon" onClick={handleFinish} className="-ml-2">
+                            <ArrowLeft className="size-5" />
+                        </Button>
+                        <h1 className="text-xl font-bold text-zinc-900">Booking Confirmed</h1>
+                    </div>
+                </div>
+
+                <main className="container mx-auto px-4 py-8">
+                    <Card className="max-w-md mx-auto border-2 border-emerald-100 shadow-lg">
+                        <CardHeader className="bg-emerald-50/50 pb-6 text-center border-b border-emerald-100">
+                            <div className="flex justify-center mb-4">
+                                <div className="bg-emerald-100 p-3 rounded-full">
+                                    <CheckCircle className="size-8 text-emerald-600" />
+                                </div>
+                            </div>
+                            <CardTitle className="text-xl font-bold text-zinc-900">Booking Successful</CardTitle>
+                            <CardDescription>
+                                Booking has been created. Complete payment to finalize.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6 pt-6">
+
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-zinc-500">Total Amount</span>
+                                    <span className="font-bold text-lg text-zinc-900">₹ {totalPayable.toLocaleString('en-IN')}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-zinc-500">Payment Type</span>
+                                    <Badge variant={paymentType === 'CASH' ? 'default' : 'secondary'}>{paymentType}</Badge>
+                                </div>
+                            </div>
+
+                            <div className="pt-4">
+                                {paymentType === 'CASH' && (
+                                    <Button onClick={handleFinish} className="w-full h-12 text-base bg-emerald-600 hover:bg-emerald-700">
+                                        Collect Cash & Finish
+                                    </Button>
+                                )}
+
+                                {paymentType === 'ONLINE' && paymentData.paymentURL && (
+                                    <Button asChild className="w-full h-12 text-base bg-blue-600 hover:bg-blue-700">
+                                        <a href={paymentData.paymentURL} target="_blank" rel="noreferrer">
+                                            Pay Online
+                                        </a>
+                                    </Button>
+                                )}
+
+                                {paymentType === 'ONLINE' && !paymentData.paymentURL && (
+                                    <div className="text-center text-amber-600 bg-amber-50 p-3 rounded-lg text-sm">
+                                        Payment link could not be generated. Please check dashboard.
+                                    </div>
+                                )}
+                            </div>
+
+                            {paymentType === 'ONLINE' && (
+                                <Button variant="outline" onClick={handleFinish} className="w-full">
+                                    Skip / Check Status Later
+                                </Button>
+                            )}
+                        </CardContent>
+                    </Card>
+                </main>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-zinc-50 pb-20">

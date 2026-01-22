@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ChevronRight, Shield, Calendar, Users, Fuel, Settings2, ArrowLeft } from 'lucide-react';
+import { Shield, Users, Fuel, Settings2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -36,7 +36,7 @@ export const EmployeeVehicleDetailsPage = () => {
         endDate,
         selectedVehicleId,
         setVehicle,
-        paymentType,
+
         customerKycId,
         setCustomerKycId
     } = useEmployeeBookingStore();
@@ -80,14 +80,14 @@ export const EmployeeVehicleDetailsPage = () => {
             if (!customerKycId) {
                 const approvedDoc = response.data.find(d => d.status === 'APPROVED');
                 if (approvedDoc) {
-                    setSelectedKycId(approvedDoc.file.publicId);
+                    setSelectedKycId(approvedDoc.publicId);
                     setCustomerKycId(approvedDoc.publicId);
                 }
             } else {
                 // Sync local UI state from store
                 const storedDoc = response.data.find(d => d.publicId === customerKycId);
                 if (storedDoc) {
-                    setSelectedKycId(storedDoc.file.publicId);
+                    setSelectedKycId(storedDoc.publicId);
                 }
             }
         } catch (error: any) {
@@ -117,16 +117,9 @@ export const EmployeeVehicleDetailsPage = () => {
     };
 
     const handleKycSelect = (doc: KycDocument) => {
-        setSelectedKycId(doc.file.publicId);
-        // We really want the CustomerKyc public ID for the backend, but the UI component uses file ID.
-        // Let's store the file ID for now to keep UI in sync, and look up the proper ID later or here.
-        // Actually, if we store the `KycDocument` public ID (booking requirement), we need to map it.
-        // The `doc` object passed here IS the KycDocument.
-        // So we should probably store `doc.publicId` for the backend, 
-        // BUT the UI `KycDocumentList` expects `selectedId` to match `doc.file.publicId`.
-        // Let's keep `selectedKycId` as file ID for UI state, and store `doc.publicId` in global store?
-        // OR just save the `doc.publicId` in the store and derive the file ID?
-        // Let's safe `doc.publicId` to the store.
+        // UI uses CustomerKyc Public ID now
+        setSelectedKycId(doc.publicId);
+        // Store uses CustomerKyc Public ID
         setCustomerKycId(doc.publicId);
     };
 
@@ -141,7 +134,7 @@ export const EmployeeVehicleDetailsPage = () => {
             fetchKycDocuments();
 
             // Deselect if currently selected
-            if (selectedKycId === doc.file.publicId) {
+            if (selectedKycId === doc.publicId) {
                 setSelectedKycId(null);
                 setCustomerKycId(null); // Assuming types allow null, if not we need to handle it. 
                 // Store definition says string | null, so it's fine.

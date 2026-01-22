@@ -155,12 +155,12 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
             return res.status(StatusCode.NOT_FOUND).json({ message: "Customer not found" });
         }
 
-        const kycFile = await prisma.fileObject.findUnique({
+        const kycRecord = await prisma.customerKyc.findUnique({
             where: { publicId: customer_kyc_id },
-            select: { id: true }
+            select: { fileId: true }
         });
-        if (!kycFile) {
-            return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid KYC/File ID" });
+        if (!kycRecord || !kycRecord.fileId) {
+            return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid KYC ID or Document missing" });
         }
 
         const startDate = new Date(start);
@@ -229,7 +229,7 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
                 data: {
                     publicId: createID(),
                     customerId: customer.customerProfile!.id,
-                    kycFileId: kycFile.id,
+                    kycFileId: kycRecord.fileId!,
                     branchId: vehiclesData[0]!.branchId,
                     startAt: startDate,
                     endAt: endDate,
@@ -310,7 +310,7 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
                                 model: true,
                                 regNo: true,
                                 status: true,
-                                odo:true,
+                                odo: true,
                                 images: {
                                     where: {
                                         isThumbnail: true

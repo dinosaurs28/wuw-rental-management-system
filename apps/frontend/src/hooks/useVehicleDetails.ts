@@ -8,8 +8,8 @@ export const useVehicleDetails = (
 ) => {
     const params: VehicleDetailsParams = {
         vehicleId,
-        startDate: startDate ? startDate.toISOString().split('T')[0] : undefined,
-        endDate: endDate ? endDate.toISOString().split('T')[0] : undefined,
+        startDate: startDate ? new Date(startDate).toISOString().split('T')[0] : undefined,
+        endDate: endDate ? new Date(endDate).toISOString().split('T')[0] : undefined,
     };
 
     return useQuery({

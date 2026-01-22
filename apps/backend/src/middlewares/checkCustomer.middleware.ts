@@ -6,9 +6,11 @@ declare global {
     namespace Express {
         interface Request {
             customer_public_id?: string;
+            customer_id?: number;
         }
     }
 }
+
 
 export const CheckCustomerPublicId = async (req: Request, res: Response, next: NextFunction) => {
     const { customer_public_id } = req.body;
@@ -35,6 +37,7 @@ export const CheckCustomerPublicId = async (req: Request, res: Response, next: N
 
         // Validation successful
         req.customer_public_id = user.customerProfile.publicId;
+        req.customer_id = user.customerProfile.id;
         return next();
     } catch (error) {
         console.error("Error checking customer public ID:", error);

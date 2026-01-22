@@ -6,14 +6,14 @@ import { getUserProfile, updateUserProfile } from "../../controller/user/userPro
 import { GetKycDocuments, UploadKycDocument, DeleteKycDocument } from "../../controller/user/kyc.controller";
 import { upload } from "../../middlewares/upload.middleware";
 import { checkPaymentForCash } from "../../controller/payment/checkPaymentForCash.controller";
-const router:Router=Router()
+const router: Router = Router()
 
 router.get("/booking", authCheckJwt, getUserBookings)
 router.get("/booking/history", authCheckJwt, getUserBookingHistory)
 router.route("/profile").all(authCheckJwt).get(getUserProfile).put(updateUserProfile)
 router.get("/kyc", authCheckJwt, GetKycDocuments)
 router.post("/kyc", authCheckJwt, upload.single('file'), UploadKycDocument)
-router.delete("/kyc/:id/:customer_public_id", authCheckJwt, DeleteKycDocument)
+router.delete("/kyc", authCheckJwt, DeleteKycDocument)
 router.post("/payment/cash", authCheckJwt, checkPaymentForCash)
 
 export default router

@@ -74,11 +74,18 @@ export const kycService = {
 
     /**
      * Delete a KYC document by its publicId
-     * DELETE /user/kyc/:id
+     * DELETE /user/kyc
+     * Body: { id, customer_public_id }
      */
     deleteDocument: async (publicId: string, customerPublicId: string): Promise<DeleteKycDocumentResponse> => {
         const response = await apiClient.delete<DeleteKycDocumentResponse>(
-            `/user/kyc/${publicId}/${customerPublicId}`
+            `/user/kyc`,
+            {
+                data: {
+                    id: publicId,
+                    customer_public_id: customerPublicId
+                }
+            }
         );
         return response.data;
     },
@@ -119,11 +126,17 @@ export const kycService = {
 
     /**
      * Delete a KYC document (Employee only)
-     * DELETE /employee/walkin/kyc/:publicId
+     * DELETE /employee/walkin/kyc
+     * Body: { id: publicId }
      */
     deleteWalkinKyc: async (publicId: string): Promise<DeleteKycDocumentResponse> => {
         const response = await apiClient.delete<DeleteKycDocumentResponse>(
-            `/employee/walkin/kyc/${publicId}`
+            `/employee/walkin/kyc`,
+            {
+                data: {
+                    id: publicId
+                }
+            }
         );
         return response.data;
     },

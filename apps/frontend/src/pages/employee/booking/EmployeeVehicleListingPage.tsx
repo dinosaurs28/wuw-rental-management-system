@@ -40,8 +40,8 @@ export default function EmployeeVehicleListingPage() {
 
     // Local State
     const [selectedBranch, setSelectedBranch] = useState<string>('');
-    const [selectedPickupDate, setSelectedPickupDate] = useState<Date | null>(storeStart || null);
-    const [selectedReturnDate, setSelectedReturnDate] = useState<Date | null>(storeEnd || null);
+    const [selectedPickupDate, setSelectedPickupDate] = useState<Date | null>(storeStart ? new Date(storeStart) : null);
+    const [selectedReturnDate, setSelectedReturnDate] = useState<Date | null>(storeEnd ? new Date(storeEnd) : null);
     const [category, setCategory] = useState<string>('all');
     const [sortBy, setSortBy] = useState<string>('default');
     const [searchQuery, setSearchQuery] = useState<string>('');
@@ -77,10 +77,20 @@ export default function EmployeeVehicleListingPage() {
         if (sortBy && sortBy !== 'default') f.sort = sortBy as 'price_low_to_high' | 'price_high_to_low';
 
         if (selectedPickupDate) {
-            f.start = selectedPickupDate.toISOString().split('T')[0];
+            const date = selectedPickupDate instanceof Date ? selectedPickupDate : new Date(selectedPickupDate);
+            try {
+                f.start = date.toISOString().split('T')[0];
+            } catch (e) {
+                console.error("Invalid pickup date:", selectedPickupDate);
+            }
         }
         if (selectedReturnDate) {
-            f.end = selectedReturnDate.toISOString().split('T')[0];
+            const date = selectedReturnDate instanceof Date ? selectedReturnDate : new Date(selectedReturnDate);
+            try {
+                f.end = date.toISOString().split('T')[0];
+            } catch (e) {
+                console.error("Invalid return date:", selectedReturnDate);
+            }
         }
 
         f.limit = ITEMS_PER_PAGE;
