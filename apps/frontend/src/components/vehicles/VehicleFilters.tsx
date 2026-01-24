@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, MapPin, Search, X, ArrowUpDown, Grid3X3 } from 'lucide-react';
+import { CalendarIcon, Search, X, ArrowUpDown, Grid3X3 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -17,21 +18,12 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
-interface Branch {
-    publicId: string;
-    name: string;
-}
-
 interface VehicleFiltersProps {
-    branches: Branch[];
-    branchesLoading: boolean;
-    selectedBranch: string;
     pickupDate: Date | null;
     returnDate: Date | null;
     category: string;
     sortBy: string;
     searchQuery: string;
-    onBranchChange: (branch: string) => void;
     onPickupDateChange: (date: Date | undefined) => void;
     onReturnDateChange: (date: Date | undefined) => void;
     onCategoryChange: (category: string) => void;
@@ -53,15 +45,11 @@ const SORT_OPTIONS = [
 ];
 
 export const VehicleFilters = ({
-    branches,
-    branchesLoading,
-    selectedBranch,
     pickupDate,
     returnDate,
     category,
     sortBy,
     searchQuery,
-    onBranchChange,
     onPickupDateChange,
     onReturnDateChange,
     onCategoryChange,
@@ -69,35 +57,29 @@ export const VehicleFilters = ({
     onSearchChange,
     onReset,
 }: VehicleFiltersProps) => {
+    // Local state for immediate input response
+    const [localSearch, setLocalSearch] = useState(searchQuery);
+
+    // Sync local state when prop changes (e.g. reset)
+    useEffect(() => {
+        setLocalSearch(searchQuery);
+    }, [searchQuery]);
+
+    // Debounce calls to onSearchChange
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (localSearch !== searchQuery) {
+                onSearchChange(localSearch);
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [localSearch, onSearchChange, searchQuery]);
+
     return (
         <div className="bg-white rounded-xl border border-zinc-200 shadow-sm p-4 md:p-6">
             {/* Main Filter Row */}
             <div className="flex flex-col lg:flex-row gap-4">
-                {/* Branch Select */}
-                <div className="flex-1 min-w-0 lg:max-w-[200px]">
-                    <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">
-                        Branch
-                    </label>
-                    <Select
-                        value={selectedBranch}
-                        onValueChange={onBranchChange}
-                        disabled={branchesLoading}
-                    >
-                        <SelectTrigger className="h-11 w-full bg-zinc-50 border-zinc-200 rounded-lg">
-                            <div className="flex items-center gap-2 overflow-hidden">
-                                <MapPin className="size-4 text-zinc-400 shrink-0" />
-                                <SelectValue placeholder={branchesLoading ? "Loading..." : "Select branch"} />
-                            </div>
-                        </SelectTrigger>
-                        <SelectContent className="rounded-lg">
-                            {branches.map((branch) => (
-                                <SelectItem key={branch.publicId} value={branch.publicId}>
-                                    {branch.name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
 
                 {/* Pickup Date */}
                 <div className="w-full sm:w-auto lg:w-[160px]">
@@ -216,13 +198,16 @@ export const VehicleFilters = ({
                     <Input
                         type="text"
                         placeholder="Search by make or model..."
-                        value={searchQuery}
-                        onChange={(e) => onSearchChange(e.target.value)}
+                        value={localSearch}
+                        onChange={(e) => setLocalSearch(e.target.value)}
                         className="h-11 pl-10 bg-zinc-50 border-zinc-200 rounded-lg focus:ring-orange-500 focus:border-orange-500"
                     />
-                    {searchQuery && (
+                    {localSearch && (
                         <button
-                            onClick={() => onSearchChange('')}
+                            onClick={() => {
+                                setLocalSearch('');
+                                onSearchChange('');
+                            }}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
                         >
                             <X className="size-4" />
@@ -233,7 +218,10 @@ export const VehicleFilters = ({
                 {/* Reset Button */}
                 <Button
                     variant="outline"
-                    onClick={onReset}
+                    onClick={() => {
+                        setLocalSearch('');
+                        onReset();
+                    }}
                     className="h-11 border-zinc-200 text-zinc-600 hover:bg-zinc-50 rounded-lg font-semibold"
                 >
                     <X className="size-4 mr-2" />

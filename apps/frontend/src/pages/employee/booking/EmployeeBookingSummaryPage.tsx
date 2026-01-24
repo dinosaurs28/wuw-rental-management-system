@@ -57,7 +57,7 @@ export const EmployeeBookingSummaryPage = () => {
     // Fetch KYC Details (to show on summary)
     useEffect(() => {
         const fetchKyc = async () => {
-            if (customerKycId && session?.publicId && !kycDocument) {
+            if (customerKycId && session?.publicId) {
                 try {
                     // We can reuse getCustomerKyc and find the doc, or just show ID/Type if we had it.
                     // To be safe and show nice details, let's fetch.
@@ -70,7 +70,7 @@ export const EmployeeBookingSummaryPage = () => {
             }
         };
         fetchKyc();
-    }, [customerKycId, session?.publicId, kycDocument]);
+    }, [customerKycId, session?.publicId]);
 
     // Validation & Redirects
     useEffect(() => {
@@ -197,7 +197,7 @@ export const EmployeeBookingSummaryPage = () => {
 
                                 {paymentType === 'ONLINE' && paymentData.paymentURL && (
                                     <Button asChild className="w-full h-12 text-base bg-blue-600 hover:bg-blue-700">
-                                        <a href={paymentData.paymentURL} target="_blank" rel="noreferrer">
+                                        <a href={paymentData.paymentURL}>
                                             Pay Online
                                         </a>
                                     </Button>

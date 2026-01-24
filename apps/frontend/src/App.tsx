@@ -26,6 +26,7 @@ import { EmployeeVehicleDetailsPage } from "@/pages/employee/booking/EmployeeVeh
 import { EmployeeBookingSummaryPage } from "@/pages/employee/booking/EmployeeBookingSummaryPage";
 import StaffPickupsPage from "@/pages/employee/StaffPickupsPage";
 import ReturnProcessPage from "@/pages/employee/ReturnProcessPage";
+import { EmployeeBookingStatusPage } from "./pages/employee/booking/EmployeeBookingStatusPage";
 
 function App() {
   return (
@@ -44,6 +45,7 @@ function App() {
           <Route path="/auth/sign-up" element={<SignInPage defaultTab="sign-up" />} />
           <Route path="/auth/verify-otp" element={<OtpPage />} />
           <Route path="/employee/sign-in" element={<EmployeeSignInPage />} />
+          <Route path="/employee/booking/status/:transactionId" element={<EmployeeBookingStatusPage />} />
         </Route>
 
         {/* Protected Routes */}

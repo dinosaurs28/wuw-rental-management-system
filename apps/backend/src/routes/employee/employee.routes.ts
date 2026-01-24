@@ -12,6 +12,7 @@ import { InitiateWalkin } from "../../controller/employee/walkin/initiate.contro
 import { VerifyWalkinOtp } from "../../controller/employee/walkin/verify.controller";
 import { CompleteWalkinProfile } from "../../controller/employee/walkin/complete.controller";
 import { SearchCustomer } from "../../controller/employee/customer/search.controller";
+import { GetCustomerDetails } from "../../controller/employee/customer/get.controller";
 import { upload } from "../../middlewares/upload.middleware";
 import { CheckCustomerPublicId } from "../../middlewares/checkCustomer.middleware";
 import { UpdateWalkinKycStatus, UploadWalkinKyc } from "../../controller/employee/walkin/kyc.controller";
@@ -43,6 +44,7 @@ router.get("/vehicles/search", EmployeeCheck, searchVehicles)
 router.get("/vehicles/:id", EmployeeCheck, getEmployeeVehicleDetails)
 router.post("/booking/create", EmployeeCheck, createEmployeeBooking)
 router.get("/customer/search", EmployeeCheck, SearchCustomer)
+router.get("/customer/:publicId", EmployeeCheck, GetCustomerDetails)
 router.post("/damage/upload", EmployeeCheck, upload.single('file'), UploadDamageImage)
 router.post("/damage/report", EmployeeCheck, CreateDamageReport)
 

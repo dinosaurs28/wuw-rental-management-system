@@ -19,6 +19,7 @@ import { VehicleImageGallery } from '@/components/vehicles/VehicleImageGallery';
 import { EmployeeVehiclePricingCard } from '@/components/vehicles/EmployeeVehiclePricingCard';
 import { KycDocumentList } from '@/components/booking/KycDocumentList';
 import { UploadKycDialog } from '@/components/booking/UploadKycDialog';
+import { CompleteProfileDialog } from '@/components/booking/CompleteProfileDialog';
 
 import { useVehicleDetails } from '@/hooks/useVehicleDetails';
 import { useEmployeeBookingStore } from '@/store/employeeBooking.store';
@@ -47,6 +48,11 @@ export const EmployeeVehicleDetailsPage = () => {
     const [selectedKycId, setSelectedKycId] = useState<string | null>(customerKycId);
     const [showUploadKyc, setShowUploadKyc] = useState(false);
     const [kycError, setKycError] = useState<string | null>(null);
+
+    // State for Profile Completion
+    const [showCompleteProfile, setShowCompleteProfile] = useState(false);
+    // Force re-render/refetch after profile update
+    const [_, setSessionKey] = useState(0);
 
     // Queries
     const {
@@ -210,6 +216,18 @@ export const EmployeeVehicleDetailsPage = () => {
         { icon: Settings2, label: vehicle.transmission },
     ];
 
+
+
+    const handleProfileComplete = () => {
+        // Refresh session from storage
+        const updatedSession = sessionUtils.get();
+        if (updatedSession) {
+            // Trigger UI update or state refresh
+            setSessionKey(prev => prev + 1);
+            fetchKycDocuments();
+        }
+    };
+
     return (
         <div className="min-h-screen bg-zinc-50 pb-20">
             {/* Header */}
@@ -319,16 +337,41 @@ export const EmployeeVehicleDetailsPage = () => {
                                 </Button>
                             </div>
 
-                            <KycDocumentList
-                                documents={kycDocuments}
-                                isLoading={isLoadingKyc}
-                                selectedId={selectedKycId}
-                                onSelect={handleKycSelect}
-                                onDelete={handleDeleteKyc}
-                                onUploadClick={() => setShowUploadKyc(true)}
-                                error={kycError}
-                                pendingCount={kycDocuments.filter(d => d.status === 'PENDING').length}
-                            />
+                            {/* Check Profile Completion */}
+                            {customerSession && !customerSession.profileCompleted ? (
+                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 text-center space-y-4">
+                                    <div className="flex justify-center">
+                                        <div className="p-3 bg-amber-100 rounded-full">
+                                            <Users className="size-6 text-amber-600" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-amber-900">Profile Incomplete</h3>
+                                        <p className="text-amber-700 max-w-sm mx-auto mt-1">
+                                            Customer profile details are missing. Please complete the profile to proceed with KYC document upload.
+                                        </p>
+                                    </div>
+                                    <Button onClick={() => setShowCompleteProfile(true)}>
+                                        Complete Profile
+                                    </Button>
+                                </div>
+                            ) : kycError ? (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                                    <p className="text-red-600 mb-2">{kycError}</p>
+                                    <Button variant="outline" size="sm" onClick={() => fetchKycDocuments()}>Try Again</Button>
+                                </div>
+                            ) : (
+                                <KycDocumentList
+                                    documents={kycDocuments}
+                                    isLoading={isLoadingKyc}
+                                    selectedId={selectedKycId}
+                                    onSelect={handleKycSelect}
+                                    onDelete={handleDeleteKyc}
+                                    onUploadClick={() => setShowUploadKyc(true)}
+                                    error={null}
+                                    pendingCount={kycDocuments.filter(d => d.status === 'PENDING').length}
+                                />
+                            )}
                         </div>
 
                     </div>
@@ -340,7 +383,7 @@ export const EmployeeVehicleDetailsPage = () => {
                                 vehicle={vehicle}
                                 onBookVehicle={handleBookVehicle}
                                 isRefetching={isVehicleRefetching}
-                                disabled={isVehicleLoading}
+                                disabled={isVehicleLoading || (customerSession ? !customerSession.profileCompleted : true)}
                             />
 
                             {/* Additional Info Cards could go here */}
@@ -365,6 +408,16 @@ export const EmployeeVehicleDetailsPage = () => {
                         onOpenChange={setShowUploadKyc}
                         customerPublicId={customerSession.publicId}
                         onSuccess={() => fetchKycDocuments()}
+                    />
+                )}
+
+                {/* Complete Profile Dialog */}
+                {customerSession && (
+                    <CompleteProfileDialog
+                        open={showCompleteProfile}
+                        onOpenChange={setShowCompleteProfile}
+                        customer={customerSession}
+                        onSuccess={handleProfileComplete}
                     />
                 )}
             </main>

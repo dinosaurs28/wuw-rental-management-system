@@ -2,13 +2,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Search, Plus, QrCode, User, CheckCircle, AlertCircle } from "lucide-react";
+import { Search, Plus, QrCode, User, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
     Dialog,
     DialogContent,
@@ -43,6 +42,8 @@ export default function EmployeeCustomerSelectPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isScannerOpen, setIsScannerOpen] = useState(false);
 
+    const [hasActiveSession, setHasActiveSession] = useState(false);
+
     // Session Warning Dialog
     const [showSessionWarning, setShowSessionWarning] = useState(false);
 
@@ -50,7 +51,10 @@ export default function EmployeeCustomerSelectPage() {
     useEffect(() => {
         if (!isAuthenticated) return;
 
-        if (customerSession.exists()) {
+        const exists = customerSession.exists();
+        setHasActiveSession(exists);
+
+        if (exists) {
             setShowSessionWarning(true);
         }
     }, [isAuthenticated]);
@@ -58,20 +62,22 @@ export default function EmployeeCustomerSelectPage() {
     const handleClearSession = () => {
         customerSession.clear();
         setShowSessionWarning(false);
+        setHasActiveSession(false);
         toast.info("Previous customer session cleared");
     };
 
     // Search Logic
     useEffect(() => {
         const timer = setTimeout(async () => {
+            // ... existing logic ...
             if (searchQuery.trim().length >= 3) {
                 setIsLoading(true);
                 try {
+                    // ... existing logic ...
                     const response = await bookingService.searchCustomers(searchQuery);
                     setResults(response.customers || []);
                 } catch (error) {
                     console.error(error);
-                    // toast.error("Failed to search customers"); // Too noisy
                 } finally {
                     setIsLoading(false);
                 }
@@ -89,11 +95,11 @@ export default function EmployeeCustomerSelectPage() {
             name: customer.name,
             phone: customer.phone,
             profileCompleted: customer.customerProfile?.isProfileCompleted || false,
-            kycStatus: false // Will be verified in details page, or we could fetch it here if needed. 
-            // Optimized: Default false, check real status on next pages.
+            kycStatus: false
         };
 
         customerSession.set(session);
+        setHasActiveSession(true);
         toast.success(`Selected customer: ${customer.name}`);
         navigate("/employee/vehicles");
     };
@@ -101,7 +107,7 @@ export default function EmployeeCustomerSelectPage() {
     const handleScan = async (data: string | null) => {
         if (data) {
             setIsScannerOpen(false);
-            setSearchQuery(data); // Auto-fill search with scanned ID
+            setSearchQuery(data);
             toast.info(`Scanned Code: ${data}`);
         }
     };
@@ -120,6 +126,16 @@ export default function EmployeeCustomerSelectPage() {
                         <h1 className="text-lg font-semibold">Select Customer</h1>
                         <p className="text-xs text-muted-foreground">New Booking</p>
                     </div>
+                    {hasActiveSession && (
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            className="ml-auto"
+                            onClick={() => setShowSessionWarning(true)}
+                        >
+                            Clear Session
+                        </Button>
+                    )}
                 </div>
             </div>
 

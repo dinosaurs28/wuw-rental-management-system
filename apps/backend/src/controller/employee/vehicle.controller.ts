@@ -100,8 +100,11 @@ export const searchVehicles = async (req: Request, res: Response) => {
                 make: v.make,
                 model: v.model,
                 category: v.category.name,
-                image: v.images[0]?.file.url || null,
-                dailyPrice: pricing.daily,
+                branch: v.branch.name,
+                imageUrl: v.images[0]?.file?.url ? [{ file: { url: v.images[0].file.url } }] : [],
+                pricing: {
+                    daily: pricing.daily
+                },
                 status: v.status
             });
         }

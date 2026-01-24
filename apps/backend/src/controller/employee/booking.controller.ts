@@ -217,7 +217,24 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         let paymentURL = null;
 
         if (payment_type === "ONLINE") {
-            const paymentDetails = await initiatePhonePePayment(grandFinalTotal);
+            // Construct Employee Specific Redirect URL
+            // Default assumes: .../booking/status
+            // We want: .../employee/booking/status
+            const defaultRedirectBase = process.env.REDIRECT_URL_PAY;
+            let employeeRedirectBase = defaultRedirectBase;
+
+            if (defaultRedirectBase && defaultRedirectBase.includes('/booking/status')) {
+                employeeRedirectBase = defaultRedirectBase.replace('/booking/status', '/employee/booking/status');
+            } else if (defaultRedirectBase) {
+                // Fallback if structure is different, just append /employee if it was root, but safer to assume standard structure or log warning
+                // If default is just domain, this logic might be fragile. 
+                // Let's assume standard ENV structure: https://app.com/booking/status
+                // If we can't safely replace, use default (Employee will get redirected to customer login, but better than broken link)
+                // Or better, just hardcode the path structure if we know the domain.
+                // Ideally, we should have a separate ENV, but replacing segment is good enough for now.
+            }
+
+            const paymentDetails = await initiatePhonePePayment(grandFinalTotal, employeeRedirectBase);
             transactionId = paymentDetails.merchantTransactionId;
             paymentURL = paymentDetails.instrumentResponse.redirectInfo.url;
         } else {
