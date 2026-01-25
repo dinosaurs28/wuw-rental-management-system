@@ -19,6 +19,7 @@ import { AuthInitializer } from "@/components/auth/AuthInitializer";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PublicRoute } from "@/components/auth/PublicRoute";
 import { EmployeeProtectedRoute } from "@/components/auth/EmployeeProtectedRoute";
+import { BranchManagerProtectedRoute } from "@/components/auth/BranchManagerProtectedRoute";
 import EmployeeDashboardPage from "@/pages/employee/EmployeeDashboardPage";
 import EmployeeCustomerSelectPage from "@/pages/employee/booking/EmployeeCustomerSelectPage";
 import EmployeeCreateCustomerPage from "@/pages/employee/booking/EmployeeCreateCustomerPage";
@@ -28,6 +29,10 @@ import { EmployeeBookingSummaryPage } from "@/pages/employee/booking/EmployeeBoo
 import StaffPickupsPage from "@/pages/employee/StaffPickupsPage";
 import ReturnProcessPage from "@/pages/employee/ReturnProcessPage";
 import { EmployeeBookingStatusPage } from "./pages/employee/booking/EmployeeBookingStatusPage";
+import { DashboardPage } from "./pages/manager/DashboardPage";
+import { ManagerEmployeesPage } from "./pages/manager/ManagerEmployeesPage";
+import { ManagerVehiclesPage } from "./pages/manager/ManagerVehiclesPage";
+import { ManagerProfilePage } from "./pages/manager/ManagerProfilePage";
 
 function App() {
   return (
@@ -46,9 +51,10 @@ function App() {
           <Route path="/auth/sign-up" element={<SignInPage defaultTab="sign-up" />} />
           <Route path="/auth/verify-otp" element={<OtpPage />} />
           <Route path="/employee/sign-in" element={<EmployeeSignInPage />} />
-          <Route path="/branch-manager/sign-in" element={<BranchManagerSignInPage />} />
           <Route path="/employee/booking/status/:transactionId" element={<EmployeeBookingStatusPage />} />
         </Route>
+
+        <Route path="/branch-manager/sign-in" element={<BranchManagerSignInPage />} />
 
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
@@ -60,6 +66,14 @@ function App() {
           <Route path="/booking/review-confirm" element={<ReviewConfirmPage />} />
           <Route path="/booking/confirmation" element={<BookingConfirmationPage />} />
           <Route path="/booking/status/:transactionId" element={<BookingStatusPage />} />
+        </Route>
+
+        {/* Branch Manager Protected Routes */}
+        <Route element={<BranchManagerProtectedRoute />}>
+          <Route path="/manager/dashboard" element={<DashboardPage />} />
+          <Route path="/manager/employees" element={<ManagerEmployeesPage />} />
+          <Route path="/manager/vehicles" element={<ManagerVehiclesPage />} />
+          <Route path="/manager/profile" element={<ManagerProfilePage />} />
         </Route>
 
         {/* Employee Protected Routes */}

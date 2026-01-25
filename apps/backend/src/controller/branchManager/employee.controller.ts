@@ -118,7 +118,7 @@ export const CreateEmployee = async (req: Request, res: Response) => {
         // Check if phone already exists in this branch/system? 
         // User schema has unique email. Phone is not unique in schema, but good to check.
         // We are using phone to generate email, so duplicate phone -> duplicate email.
-        const email = `${phone}@staff.vrms`;
+        const email = `${phone}@staff.vrms.com`;
 
         const existingUser = await prisma.user.findFirst({
             where: {

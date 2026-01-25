@@ -5,7 +5,10 @@ export const AuthInitializer = () => {
     const checkAuth = useAuthStore((state) => state.checkAuth);
 
     useEffect(() => {
-        checkAuth();
+        const path = window.location.pathname;
+        if (!path.startsWith('/manager') && !path.startsWith('/branch-manager')) {
+            checkAuth();
+        }
     }, [checkAuth]);
 
     return null;

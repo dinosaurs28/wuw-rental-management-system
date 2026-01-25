@@ -44,7 +44,7 @@ export default function BranchManagerSignInPage() {
             // Wait, looking at routes: router.get("/dashboard/revenue", ...)
             // I'll redirect to a landing dashboard for managers if I can find one, 
             // or just /branch-manager/dashboard which likely will be the path.
-            navigate("/branch-manager/dashboard");
+            navigate("/manager/dashboard");
         } catch (error: any) {
             console.error(error);
             toast.error("Authentication Failed", {
