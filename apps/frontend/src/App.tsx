@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import SignInPage from "./pages/auth/SignInPage";
 import EmployeeSignInPage from "./pages/auth/EmployeeSignInPage";
+import BranchManagerSignInPage from "./pages/auth/BranchManagerSignInPage";
 import OtpPage from "./pages/auth/OtpPage";
 import { VehiclesPage } from "./pages/VehiclesPage";
 import { VehicleDetailsPage } from "./pages/VehicleDetailsPage";
@@ -45,6 +46,7 @@ function App() {
           <Route path="/auth/sign-up" element={<SignInPage defaultTab="sign-up" />} />
           <Route path="/auth/verify-otp" element={<OtpPage />} />
           <Route path="/employee/sign-in" element={<EmployeeSignInPage />} />
+          <Route path="/branch-manager/sign-in" element={<BranchManagerSignInPage />} />
           <Route path="/employee/booking/status/:transactionId" element={<EmployeeBookingStatusPage />} />
         </Route>
 
