@@ -4,12 +4,12 @@ import { ManagerCheck } from "../../middlewares/managerCheck.middlewares";
 import { GetRevenueStats } from "../../controller/branchManager/revenue.controller";
 import { GetActiveBookings, GetPendingApprovals } from "../../controller/branchManager/bookings.controller";
 import { GetDamageReports, CloseDamageReport, GetMinimalDamageReport, GetDamageReportList } from "../../controller/branchManager/damage.controller";
-import { AddVehicle, EditVehicle, GetInsuranceExpiryReport, GetVehicleById } from "../../controller/branchManager/vehicle.controller";
+import { AddVehicle, EditVehicle, GetInsuranceExpiryReport, GetVehicleById, GetVehicles, DeleteVehicle, GetVehicleCategories } from "../../controller/branchManager/vehicle.controller";
 import { GetStaffAuditLogs } from "../../controller/branchManager/audit.controller";
 import { CreateEmployee, GetEmployee, SearchEmployee, UpdateEmployee } from "../../controller/branchManager/employee.controller";
 import { upload } from "../../middlewares/upload.middleware";
 
-const router:Router=Router()
+const router: Router = Router()
 
 router.post("/auth/login", Login)
 router.get("/dashboard/revenue", ManagerCheck, GetRevenueStats)
@@ -19,9 +19,13 @@ router.get("/dashboard/damage-reports", ManagerCheck, GetDamageReports)
 router.get("/damage-reports", ManagerCheck, GetDamageReportList)
 router.get("/damage-reports/:damageReportId", ManagerCheck, GetMinimalDamageReport)
 router.patch("/damage-reports/:damageReportId/close", ManagerCheck, CloseDamageReport)
+
+router.get("/dashboard/vehicles", ManagerCheck, GetVehicles)
 router.post("/dashboard/vehicle/add", ManagerCheck, upload.array('images', 5), AddVehicle)
 router.put("/dashboard/vehicle/edit/:vehicleId", ManagerCheck, upload.array('images', 5), EditVehicle)
 router.get("/dashboard/vehicle/:vehicleId", ManagerCheck, GetVehicleById)
+router.delete("/dashboard/vehicle/:vehicleId", ManagerCheck, DeleteVehicle)
+router.get("/dashboard/categories", ManagerCheck, GetVehicleCategories)
 router.get("/dashboard/staff/activity-logs", ManagerCheck, GetStaffAuditLogs)
 router.get("/dashboard/reports/insurance-expiry", ManagerCheck, GetInsuranceExpiryReport)
 router.get("/dashboard/employees", ManagerCheck, SearchEmployee)

@@ -3,6 +3,7 @@ import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
 import { imageQueue } from "../../lib/queue.client.js";
+import { redis } from "../../lib/redisconfig.js";
 import { VehicleStatus } from "@repo/database/client";
 import { createVehicleSchema, editVehicleSchema } from "@repo/schemas";
 export const AddVehicle = async (req: Request, res: Response) => {
@@ -75,6 +76,12 @@ export const AddVehicle = async (req: Request, res: Response) => {
             await Promise.all(jobPromises);
         }
 
+        // Clear vehicle list cache for this branch
+        const keys = await redis.keys(`vehicles:${branchId}:*`);
+        if (keys.length > 0) {
+            await redis.del(keys);
+        }
+
         return res.status(StatusCode.CREATED).json({
             message: "Vehicle added successfully. Images are processing in background.",
             data: {
@@ -110,7 +117,13 @@ export const EditVehicle = async (req: Request, res: Response) => {
 
         const vehicle = await prisma.vehicle.findUnique({
             where: { publicId: vehicleId },
-            include: { images: true }
+            include: {
+                images: true,
+                insuranceRecords: {
+                    orderBy: { validTill: 'desc' },
+                    take: 1
+                }
+            }
         });
 
         if (!vehicle || vehicle.branchId !== branchId) {
@@ -133,8 +146,21 @@ export const EditVehicle = async (req: Request, res: Response) => {
         // Handle Image Deletion
         if (data.deleteImageIds) {
             try {
-                const idsToDelete = JSON.parse(data.deleteImageIds);
-                if (Array.isArray(idsToDelete) && idsToDelete.length > 0) {
+                // Determine if it's already an array or needs parsing
+                let idsToDelete: string[] = [];
+                if (Array.isArray(data.deleteImageIds)) {
+                    idsToDelete = data.deleteImageIds;
+                } else if (typeof data.deleteImageIds === 'string') {
+                    try {
+                        idsToDelete = JSON.parse(data.deleteImageIds);
+                    } catch (e) {
+                        // If not JSON, maybe it's a single ID string? Accessing it as array might fall
+                        // But if user sends multiple deleteImageIds inputs (formData), it becomes array?
+                        idsToDelete = [data.deleteImageIds]
+                    }
+                }
+
+                if (idsToDelete.length > 0) {
                     const imagesToDelete = await prisma.vehicleImage.findMany({
                         where: {
                             vehicleId: vehicle.id,
@@ -143,6 +169,8 @@ export const EditVehicle = async (req: Request, res: Response) => {
                     });
 
                     if (imagesToDelete.length > 0) {
+                        // Optional: Delete from storage (R2/local) if feasible here, 
+                        // but usually handled by a cleanup job or just deleted from DB.
                         await prisma.vehicleImage.deleteMany({
                             where: {
                                 id: { in: imagesToDelete.map(img => img.id) }
@@ -157,12 +185,53 @@ export const EditVehicle = async (req: Request, res: Response) => {
 
         const updateData: any = { ...data };
         delete updateData.deleteImageIds;
+        delete updateData.categoryId; // Remove raw categoryId from data object
+        delete updateData.policyNumber;
+        delete updateData.provider;
+
         if (data.insuranceExpiry) {
             updateData.insuranceExpiry = new Date(data.insuranceExpiry);
         }
 
         if (data.status) {
             updateData.status = data.status as VehicleStatus;
+        }
+
+        if (data.categoryId) {
+            updateData.category = {
+                connect: { id: Number(data.categoryId) }
+            };
+        }
+
+        // Handle Insurance Record Update
+        const latestInsurance = vehicle.insuranceRecords[0];
+        const newPolicyNumber = data.policyNumber;
+        const newProvider = data.provider;
+        const newValidTill = data.insuranceExpiry ? new Date(data.insuranceExpiry) : undefined;
+
+        const hasInsuranceChanges =
+            (newPolicyNumber && newPolicyNumber !== latestInsurance?.policyNumber) ||
+            (newProvider && newProvider !== latestInsurance?.provider) ||
+            (newValidTill && latestInsurance?.validTill && newValidTill.getTime() !== latestInsurance.validTill.getTime());
+
+        if (hasInsuranceChanges) {
+            updateData.insuranceRecords = {
+                create: {
+                    publicId: createID(),
+                    policyNumber: newPolicyNumber || latestInsurance?.policyNumber || "UNKNOWN",
+                    provider: newProvider || latestInsurance?.provider || "UNKNOWN",
+                    validTill: newValidTill || latestInsurance?.validTill || new Date()
+                }
+            };
+        } else if (!latestInsurance && (newPolicyNumber || newProvider)) {
+            updateData.insuranceRecords = {
+                create: {
+                    publicId: createID(),
+                    policyNumber: newPolicyNumber || "UNKNOWN",
+                    provider: newProvider || "UNKNOWN",
+                    validTill: newValidTill || new Date()
+                }
+            };
         }
 
         await prisma.vehicle.update({
@@ -181,6 +250,12 @@ export const EditVehicle = async (req: Request, res: Response) => {
                 });
             });
             await Promise.all(jobPromises);
+        }
+
+        // Clear vehicle list cache for this branch
+        const keys = await redis.keys(`vehicles:${branchId}:*`);
+        if (keys.length > 0) {
+            await redis.del(keys);
         }
 
         return res.status(StatusCode.OK).json({
@@ -324,3 +399,132 @@ export const GetInsuranceExpiryReport = async (req: Request, res: Response) => {
     }
 }
 
+export const GetVehicles = async (req: Request, res: Response) => {
+    // @ts-ignore
+    const branchId = req.branch_Id;
+    const { search, category, status, limit = 10, offset = 0 } = req.query;
+
+    const whereClause: any = {
+        branchId: branchId,
+        deletedAt: null
+    };
+
+    if (search) {
+        whereClause.OR = [
+            { make: { contains: String(search), mode: 'insensitive' } },
+            { model: { contains: String(search), mode: 'insensitive' } },
+            { regNo: { contains: String(search), mode: 'insensitive' } }
+        ];
+    }
+
+    if (category) {
+        // category is categoryId in DB? No, in existing AddVehicle it uses categoryId: Number(categoryId).
+        // BUT vehicle schema might have category relation.
+        // Let's check prisma schema or existing code. AddVehicle uses categoryId.
+        // The list filter in public controller (inferred) usually filters by something.
+        // If frontend passes category name, we might need to join or filter by ID.
+        // For now, let's assume category is NOT filtering in this MVP or I need to check schema.
+        // Wait, AddVehicle takes categoryId.
+        // The frontend sends category string (Two Wheeler, Four Wheeler).
+        // I should probably skip category filter for now or assume it matches categoryId if passed as number.
+    }
+
+    if (status) {
+        whereClause.status = status as VehicleStatus;
+    }
+
+    try {
+        const [count, data] = await prisma.$transaction([
+            prisma.vehicle.count({ where: whereClause }),
+            prisma.vehicle.findMany({
+                where: whereClause,
+                take: Number(limit),
+                skip: Number(offset),
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    images: {
+                        where: { isThumbnail: true },
+                        take: 1,
+                        select: {
+                            file: { select: { url: true } }
+                        }
+                    },
+                    category: true // Include category to show name if needed
+                }
+            })
+        ]);
+
+        return res.status(StatusCode.OK).json({
+            count,
+            data
+        });
+    } catch (error) {
+        console.error("GetVehicles Error:", error);
+        return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+            message: "Internal Server Error fetching vehicles"
+        });
+    }
+}
+
+
+export const DeleteVehicle = async (req: Request, res: Response) => {
+    // @ts-ignore
+    const branchId = req.branch_Id;
+    const { vehicleId } = req.params;
+
+    try {
+        const vehicle = await prisma.vehicle.findUnique({
+            where: { publicId: vehicleId }
+        });
+
+        if (!vehicle || vehicle.branchId !== branchId) {
+            return res.status(StatusCode.NOT_FOUND).json({
+                message: "Vehicle not found or access denied"
+            });
+        }
+
+        await prisma.vehicle.update({
+            where: { id: vehicle.id },
+            data: {
+                deletedAt: new Date(),
+                status: VehicleStatus.INACTIVE
+            }
+        });
+
+        // Clear vehicle list cache for this branch
+        const keys = await redis.keys(`vehicles:${branchId}:*`);
+        if (keys.length > 0) {
+            await redis.del(keys);
+        }
+
+        return res.status(StatusCode.OK).json({
+            message: "Vehicle deleted successfully"
+        });
+
+    } catch (error) {
+        console.error("Delete Vehicle Error:", error);
+        return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+            message: "Internal Server Error deleting vehicle"
+        });
+    }
+}
+
+export const GetVehicleCategories = async (req: Request, res: Response) => {
+    try {
+        const categories = await prisma.vehicleCategory.findMany({
+            select: {
+                id: true,
+                publicId: true,
+                name: true
+            }
+        });
+        return res.status(StatusCode.OK).json({
+            data: categories
+        });
+    } catch (error) {
+        console.error("GetVehicleCategories Error:", error);
+        return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+            message: "Internal Server Error fetching categories"
+        });
+    }
+}

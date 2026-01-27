@@ -32,6 +32,7 @@ import { EmployeeBookingStatusPage } from "./pages/employee/booking/EmployeeBook
 import { DashboardPage } from "./pages/manager/DashboardPage";
 import { ManagerEmployeesPage } from "./pages/manager/ManagerEmployeesPage";
 import { ManagerVehiclesPage } from "./pages/manager/ManagerVehiclesPage";
+import { ManagerVehicleFormPage } from "./pages/manager/ManagerVehicleFormPage";
 import { ManagerProfilePage } from "./pages/manager/ManagerProfilePage";
 
 function App() {
@@ -73,6 +74,8 @@ function App() {
           <Route path="/manager/dashboard" element={<DashboardPage />} />
           <Route path="/manager/employees" element={<ManagerEmployeesPage />} />
           <Route path="/manager/vehicles" element={<ManagerVehiclesPage />} />
+          <Route path="/manager/vehicles/add" element={<ManagerVehicleFormPage />} />
+          <Route path="/manager/vehicles/edit/:vehicleId" element={<ManagerVehicleFormPage />} />
           <Route path="/manager/profile" element={<ManagerProfilePage />} />
         </Route>
 
