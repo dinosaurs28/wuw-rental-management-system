@@ -93,7 +93,7 @@ export const ManagerInsuranceExpiryPage = () => {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                         <Input
                             placeholder="Search by vehicle or policy number..."
-                            className="pl-10"
+                            className="pl-10 h-12"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -200,6 +200,7 @@ export const ManagerInsuranceExpiryPage = () => {
                                             <Button
                                                 variant="outline"
                                                 size="sm"
+                                                className="h-12 px-4"
                                                 onClick={() => navigate(`/manager/vehicles/edit/${item.publicId}`)}
                                             >
                                                 Update

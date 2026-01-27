@@ -258,7 +258,7 @@ export const ManagerVehicleFormPage = () => {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Make</FormLabel>
-                                                <FormControl><Input placeholder="e.g. Toyota" {...field} /></FormControl>
+                                                <FormControl><Input placeholder="e.g. Toyota" className="h-12" {...field} /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -269,7 +269,7 @@ export const ManagerVehicleFormPage = () => {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Model</FormLabel>
-                                                <FormControl><Input placeholder="e.g. Camry" {...field} /></FormControl>
+                                                <FormControl><Input placeholder="e.g. Camry" className="h-12" {...field} /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -280,7 +280,7 @@ export const ManagerVehicleFormPage = () => {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Year</FormLabel>
-                                                <FormControl><Input type="number" {...field} /></FormControl>
+                                                <FormControl><Input type="number" className="h-12" {...field} /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -291,7 +291,7 @@ export const ManagerVehicleFormPage = () => {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>License Plate (Reg No)</FormLabel>
-                                                <FormControl><Input placeholder="e.g. KA01AB1234" {...field} /></FormControl>
+                                                <FormControl><Input placeholder="e.g. KA01AB1234" className="h-12" {...field} /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -302,7 +302,7 @@ export const ManagerVehicleFormPage = () => {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Odometer Reading (km)</FormLabel>
-                                                <FormControl><Input type="number" {...field} /></FormControl>
+                                                <FormControl><Input type="number" className="h-12" {...field} /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -315,7 +315,7 @@ export const ManagerVehicleFormPage = () => {
                                                 <FormLabel>Category</FormLabel>
                                                 <Select onValueChange={field.onChange} value={field.value}>
                                                     <FormControl>
-                                                        <SelectTrigger>
+                                                        <SelectTrigger className="h-12">
                                                             <SelectValue placeholder="Select category" />
                                                         </SelectTrigger>
                                                     </FormControl>
@@ -339,7 +339,7 @@ export const ManagerVehicleFormPage = () => {
                                                 <FormLabel>Status</FormLabel>
                                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                     <FormControl>
-                                                        <SelectTrigger>
+                                                        <SelectTrigger className="h-12">
                                                             <SelectValue placeholder="Select status" />
                                                         </SelectTrigger>
                                                     </FormControl>
@@ -367,7 +367,7 @@ export const ManagerVehicleFormPage = () => {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Daily Price (₹)</FormLabel>
-                                                <FormControl><Input type="number" min="0" {...field} /></FormControl>
+                                                <FormControl><Input type="number" min="0" className="h-12" {...field} /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -384,7 +384,7 @@ export const ManagerVehicleFormPage = () => {
                                                             <Button
                                                                 variant={"outline"}
                                                                 className={cn(
-                                                                    "w-full pl-3 text-left font-normal",
+                                                                    "w-full pl-3 text-left font-normal h-12",
                                                                     !field.value && "text-muted-foreground"
                                                                 )}
                                                             >
@@ -422,7 +422,7 @@ export const ManagerVehicleFormPage = () => {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Policy Number</FormLabel>
-                                                <FormControl><Input placeholder="Policy #" {...field} /></FormControl>
+                                                <FormControl><Input placeholder="Policy #" className="h-12" {...field} /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -433,7 +433,7 @@ export const ManagerVehicleFormPage = () => {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Insurance Provider</FormLabel>
-                                                <FormControl><Input placeholder="Provider Name" {...field} /></FormControl>
+                                                <FormControl><Input placeholder="Provider Name" className="h-12" {...field} /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -463,16 +463,17 @@ export const ManagerVehicleFormPage = () => {
                             </div>
 
                             {/* Form Actions */}
-                            <div className="flex items-center justify-end gap-4 sticky bottom-4 p-4 bg-white/80 backdrop-blur-sm border rounded-lg shadow-lg">
+                            <div className="flex items-center justify-end gap-4 fixed bottom-0 left-0 right-0 p-4 bg-white border-t z-50 md:static md:bg-transparent md:border-none md:p-0 md:block">
                                 <Button
                                     type="button"
                                     variant="outline"
+                                    className="h-12 flex-1 md:flex-none"
                                     onClick={() => navigate("/manager/vehicles")}
                                     disabled={isLoading}
                                 >
                                     Cancel
                                 </Button>
-                                <Button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white min-w-[150px]" disabled={isLoading}>
+                                <Button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white min-w-[150px] h-12 flex-1 md:flex-none" disabled={isLoading}>
                                     {isLoading ? (
                                         <>
                                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />

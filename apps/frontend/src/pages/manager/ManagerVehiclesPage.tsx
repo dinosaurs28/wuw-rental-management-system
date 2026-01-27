@@ -86,22 +86,24 @@ export const ManagerVehiclesPage = () => {
                         <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Vehicle Management</h1>
                         <p className="text-neutral-500 mt-1">Manage your fleet, pricing, and availability.</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                         <Button
                             variant="outline"
+                            className="h-9 md:h-11 w-full sm:w-auto text-sm"
                             onClick={() => navigate("/manager/deposit-rules")}
                         >
                             Deposit Rules
                         </Button>
                         <Button
                             variant="outline"
+                            className="h-9 md:h-11 w-full sm:w-auto text-sm"
                             onClick={() => navigate("/manager/insurance-expiry")}
                         >
                             <AlertTriangle className="w-4 h-4 mr-2" />
                             Insurance Alerts
                         </Button>
                         <Button
-                            className="bg-orange-500 hover:bg-orange-600 text-white"
+                            className="bg-orange-500 hover:bg-orange-600 text-white h-9 md:h-11 w-full sm:w-auto text-sm"
                             onClick={() => navigate("/manager/vehicles/add")}
                         >
                             <Plus className="w-4 h-4 mr-2" />
@@ -116,7 +118,7 @@ export const ManagerVehiclesPage = () => {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                         <Input
                             placeholder="Search by make, model, or license plate..."
-                            className="pl-10"
+                            className="pl-10 h-12"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
