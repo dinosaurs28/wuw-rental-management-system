@@ -34,6 +34,7 @@ import { ManagerEmployeesPage } from "./pages/manager/ManagerEmployeesPage";
 import { ManagerVehiclesPage } from "./pages/manager/ManagerVehiclesPage";
 import { ManagerVehicleFormPage } from "./pages/manager/ManagerVehicleFormPage";
 import { ManagerProfilePage } from "./pages/manager/ManagerProfilePage";
+import { ManagerDepositRulesPage } from "./pages/manager/ManagerDepositRulesPage";
 
 function App() {
   return (
@@ -76,6 +77,7 @@ function App() {
           <Route path="/manager/vehicles" element={<ManagerVehiclesPage />} />
           <Route path="/manager/vehicles/add" element={<ManagerVehicleFormPage />} />
           <Route path="/manager/vehicles/edit/:vehicleId" element={<ManagerVehicleFormPage />} />
+          <Route path="/manager/deposit-rules" element={<ManagerDepositRulesPage />} />
           <Route path="/manager/profile" element={<ManagerProfilePage />} />
         </Route>
 

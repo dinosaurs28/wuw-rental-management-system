@@ -7,6 +7,7 @@ import { GetDamageReports, CloseDamageReport, GetMinimalDamageReport, GetDamageR
 import { AddVehicle, EditVehicle, GetInsuranceExpiryReport, GetVehicleById, GetVehicles, DeleteVehicle, GetVehicleCategories } from "../../controller/branchManager/vehicle.controller";
 import { GetStaffAuditLogs } from "../../controller/branchManager/audit.controller";
 import { CreateEmployee, GetEmployee, SearchEmployee, UpdateEmployee } from "../../controller/branchManager/employee.controller";
+import { CreateDepositRule, GetDepositRules, UpdateDepositRule, DeleteDepositRule } from "../../controller/branchManager/deposit.controller";
 import { upload } from "../../middlewares/upload.middleware";
 
 const router: Router = Router()
@@ -32,5 +33,9 @@ router.get("/dashboard/employees", ManagerCheck, SearchEmployee)
 router.get("/dashboard/employees/:employeeId", ManagerCheck, GetEmployee)
 router.post("/dashboard/employees", ManagerCheck, CreateEmployee)
 router.put("/dashboard/employees/:employeeId", ManagerCheck, UpdateEmployee)
+router.get("/dashboard/deposit-rules", ManagerCheck, GetDepositRules)
+router.post("/dashboard/deposit-rules", ManagerCheck, CreateDepositRule)
+router.put("/dashboard/deposit-rules/:id", ManagerCheck, UpdateDepositRule)
+router.delete("/dashboard/deposit-rules/:id", ManagerCheck, DeleteDepositRule)
 
 export default router

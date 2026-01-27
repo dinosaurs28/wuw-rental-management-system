@@ -49,3 +49,12 @@ export const closeDamageReportSchema = z.object({
   finalCost: z.coerce.number().min(0, "Final cost must be non-negative"),
   paymentMethod: z.enum(['CASH', 'ONLINE_RAZORPAY']).optional()
 });
+
+export const createDepositRuleSchema = z.object({
+    categoryId: z.coerce.number().min(1, "Category is required"),
+    amount: z.coerce.number().min(0, "Amount must be positive"),
+});
+
+export const updateDepositRuleSchema = z.object({
+    amount: z.coerce.number().min(0, "Amount must be positive"),
+});

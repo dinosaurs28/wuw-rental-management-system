@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search, Filter, MoreHorizontal, Fuel, Settings2 } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Fuel, Settings2 } from "lucide-react";
 import { ManagerLayout } from "@/components/manager/ManagerLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,13 +73,21 @@ export const ManagerVehiclesPage = () => {
                         <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Vehicle Management</h1>
                         <p className="text-neutral-500 mt-1">Manage your fleet, pricing, and availability.</p>
                     </div>
-                    <Button
-                        className="bg-orange-500 hover:bg-orange-600 text-white"
-                        onClick={() => navigate("/manager/vehicles/add")}
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Vehicle
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => navigate("/manager/deposit-rules")}
+                        >
+                            Deposit Rules
+                        </Button>
+                        <Button
+                            className="bg-orange-500 hover:bg-orange-600 text-white"
+                            onClick={() => navigate("/manager/vehicles/add")}
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Vehicle
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Filters & Search */}
