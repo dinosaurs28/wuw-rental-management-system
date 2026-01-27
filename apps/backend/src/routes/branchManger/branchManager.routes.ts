@@ -20,7 +20,6 @@ router.get("/dashboard/damage-reports", ManagerCheck, GetDamageReports)
 router.get("/damage-reports", ManagerCheck, GetDamageReportList)
 router.get("/damage-reports/:damageReportId", ManagerCheck, GetMinimalDamageReport)
 router.patch("/damage-reports/:damageReportId/close", ManagerCheck, CloseDamageReport)
-
 router.get("/dashboard/vehicles", ManagerCheck, GetVehicles)
 router.post("/dashboard/vehicle/add", ManagerCheck, upload.array('images', 5), AddVehicle)
 router.put("/dashboard/vehicle/edit/:vehicleId", ManagerCheck, upload.array('images', 5), EditVehicle)

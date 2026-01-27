@@ -376,6 +376,7 @@ export const GetInsuranceExpiryReport = async (req: Request, res: Response) => {
         const reportData = vehicles.map(v => {
             const latestInsurance = v.insuranceRecords[0];
             return {
+                publicId: v.publicId,
                 vehicleName: `${v.make} ${v.model}`,
                 thumbnail: v.images[0]?.file.url || null,
                 make: v.make,

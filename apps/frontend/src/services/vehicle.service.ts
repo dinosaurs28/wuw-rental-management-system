@@ -160,6 +160,38 @@ export interface CategoriesResponse {
     data: Category[];
 }
 
+export interface InsuranceExpiryReportItem {
+    publicId: string;
+    vehicleName: string;
+    thumbnail: string | null;
+    make: string;
+    model: string;
+    regNo: string;
+    policyNumber: string;
+    provider: string;
+    expiryDate: string;
+}
+
+export interface InsuranceExpiryReportResponse {
+    data: InsuranceExpiryReportItem[];
+}
+
+export const fetchInsuranceExpiryReport = async (search?: string): Promise<InsuranceExpiryReportItem[]> => {
+    try {
+        const params = new URLSearchParams();
+        if (search) params.append('q', search);
+
+        const response = await axios.get<InsuranceExpiryReportResponse>(`${API_URL}/branchManager/dashboard/reports/insurance-expiry`, {
+            params,
+            withCredentials: true
+        });
+        return response.data.data;
+    } catch (error) {
+        console.error('Error fetching insurance expiry report:', error);
+        return [];
+    }
+};
+
 export const fetchVehicleCategories = async (): Promise<Category[]> => {
     try {
         const response = await axios.get<CategoriesResponse>(`${API_URL}/branchManager/dashboard/categories`, {

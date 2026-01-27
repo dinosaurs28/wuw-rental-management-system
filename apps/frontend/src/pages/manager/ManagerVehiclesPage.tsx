@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search, MoreHorizontal, Fuel, Settings2 } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Fuel, Settings2, AlertTriangle } from "lucide-react";
 import { ManagerLayout } from "@/components/manager/ManagerLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +53,19 @@ export const ManagerVehiclesPage = () => {
         v.publicId.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const getStatusBadgeStyles = (status: string) => {
+        switch (status) {
+            case "AVAILABLE":
+                return "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-emerald-200";
+            case "MAINTENANCE":
+                return "bg-orange-100 text-orange-700 hover:bg-orange-100 border-orange-200";
+            case "INACTIVE":
+                return "bg-red-100 text-red-700 hover:bg-red-100 border-red-200";
+            default:
+                return "bg-gray-100 text-gray-700 hover:bg-gray-100 border-gray-200";
+        }
+    };
+
     return (
         <ManagerLayout>
             <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-8 pb-12">
@@ -79,6 +92,13 @@ export const ManagerVehiclesPage = () => {
                             onClick={() => navigate("/manager/deposit-rules")}
                         >
                             Deposit Rules
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => navigate("/manager/insurance-expiry")}
+                        >
+                            <AlertTriangle className="w-4 h-4 mr-2" />
+                            Insurance Alerts
                         </Button>
                         <Button
                             className="bg-orange-500 hover:bg-orange-600 text-white"
@@ -164,8 +184,8 @@ export const ManagerVehiclesPage = () => {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>
-                                                <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-emerald-200 shadow-none">
-                                                    {vehicle.status || "Available"}
+                                                <Badge className={`${getStatusBadgeStyles(vehicle.status || "")} shadow-none`}>
+                                                    {vehicle.status || "Unknown"}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right font-medium">
@@ -229,8 +249,8 @@ export const ManagerVehiclesPage = () => {
                                             </Button>
                                         </div>
                                         <div className="mt-2 flex items-center justify-between">
-                                            <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-emerald-200 shadow-none">
-                                                {vehicle.status || "Available"}
+                                            <Badge className={`${getStatusBadgeStyles(vehicle.status || "")} shadow-none`}>
+                                                {vehicle.status || "Unknown"}
                                             </Badge>
                                             <p className="font-semibold text-neutral-900">₹{vehicle.baseDailyPrice}<span className="text-xs text-neutral-500 font-normal">/day</span></p>
                                         </div>

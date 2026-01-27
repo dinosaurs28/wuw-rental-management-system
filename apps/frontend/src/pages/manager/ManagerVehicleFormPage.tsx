@@ -41,7 +41,7 @@ const vehicleSchema = z.object({
     licensePlate: z.string().min(1, "License Plate (Reg No) is required"),
     odo: z.coerce.number().min(0, "Odometer reading is required"),
     category: z.string().min(1, "Category is required"),
-    status: z.enum(["AVAILABLE", "MAINTENANCE", "NOT_AVAILABLE"]),
+    status: z.enum(["AVAILABLE", "MAINTENANCE", "INACTIVE"]),
     pricing: z.object({
         daily: z.coerce.number().positive("Daily price must be positive"),
     }),
@@ -121,7 +121,7 @@ export const ManagerVehicleFormPage = () => {
                         licensePlate: vehicle.regNo,
                         odo: vehicle.odo || 0,
                         category: String(vehicle.categoryId || ""),
-                        status: vehicle.status as "AVAILABLE" | "MAINTENANCE" | "NOT_AVAILABLE",
+                        status: vehicle.status as "AVAILABLE" | "MAINTENANCE" | "INACTIVE",
                         pricing: {
                             daily: vehicle.baseDailyPrice,
                         },
@@ -346,7 +346,7 @@ export const ManagerVehicleFormPage = () => {
                                                     <SelectContent>
                                                         <SelectItem value="AVAILABLE">Available</SelectItem>
                                                         <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-                                                        <SelectItem value="NOT_AVAILABLE">Inactive</SelectItem>
+                                                        <SelectItem value="INACTIVE">Inactive</SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                                 <FormMessage />
