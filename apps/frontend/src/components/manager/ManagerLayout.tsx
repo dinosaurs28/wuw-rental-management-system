@@ -54,7 +54,7 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
                                 <span className="text-white font-bold text-lg">S</span>
                             </div>
                             <span className="font-bold text-xl tracking-tight hidden md:block">
-                                SIXT <span className="text-neutral-500 font-normal">Manager</span>
+                                Vrms <span className="text-neutral-500 font-normal">Manager</span>
                             </span>
                         </Link>
 
@@ -122,7 +122,7 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
                                             <div className="w-8 h-8 bg-orange-500 rounded-md flex items-center justify-center">
                                                 <span className="text-white font-bold text-lg">S</span>
                                             </div>
-                                            <span>SIXT Manager</span>
+                                            <span>Vrms Manager</span>
                                         </SheetTitle>
                                     </SheetHeader>
 

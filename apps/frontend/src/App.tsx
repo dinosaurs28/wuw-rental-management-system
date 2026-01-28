@@ -36,6 +36,8 @@ import { ManagerVehicleFormPage } from "./pages/manager/ManagerVehicleFormPage";
 import { ManagerProfilePage } from "./pages/manager/ManagerProfilePage";
 import { ManagerDepositRulesPage } from "./pages/manager/ManagerDepositRulesPage";
 import { ManagerInsuranceExpiryPage } from "./pages/manager/ManagerInsuranceExpiryPage";
+import DamageReviewPage from "./pages/manager/DamageReviewPage";
+import FinePaymentStatusPage from "./pages/manager/FinePaymentStatusPage";
 
 function App() {
   return (
@@ -81,6 +83,8 @@ function App() {
           <Route path="/manager/insurance-expiry" element={<ManagerInsuranceExpiryPage />} />
           <Route path="/manager/deposit-rules" element={<ManagerDepositRulesPage />} />
           <Route path="/manager/profile" element={<ManagerProfilePage />} />
+          <Route path="/manager/payment/fine-status/:transactionId" element={<FinePaymentStatusPage />} />
+          <Route path="/damage/:damageReportId" element={<DamageReviewPage />} />
         </Route>
 
         {/* Employee Protected Routes */}

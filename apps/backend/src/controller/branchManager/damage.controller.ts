@@ -5,6 +5,7 @@ import { redis } from "../../lib/redisconfig.js";
 import { createID } from "../../utils/nanoID";
 import { closeDamageReportSchema } from "@repo/schemas";
 import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils";
+import { checkPhonePeStatus } from "../../utils/payment/paymentStatus.utils.js";
 
 export const GetDamageReports = async (req: Request, res: Response) => {
     const branchId = req.branch_Id;
@@ -135,30 +136,34 @@ export const GetDamageReportList = async (req: Request, res: Response) => {
         const branchId = req.branch_Id;
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || 10;
-        const search = parseInt(req.query.search as string);
         const skip = (page - 1) * limit;
-
         const whereCondition: any = {
             booking: {
                 branchId: branchId
             }
         };
 
-        if (search) {
-            whereCondition.OR = [
-                { id: { contains: search, mode: 'insensitive' } },
-                {
-                    vehicle: {
-                        regNo: { contains: search, mode: 'insensitive' }
-                    }
-                }
-            ];
+        const searchInput = req.query.search as string;
+
+        if (searchInput) {
+            const isNumeric = /^\d+$/.test(searchInput);
+
+            if (isNumeric) {
+                // strict ID search
+                whereCondition.id = parseInt(searchInput);
+            } else {
+                // text search on RegNo
+                whereCondition.vehicle = {
+                    regNo: { contains: searchInput, mode: 'insensitive' }
+                };
+            }
         }
 
         const reports = await prisma.damageReport.findMany({
             where: whereCondition,
             select: {
-                publicId: true,
+                id: true,
+                publicId: true, // Added to fix lint error
                 status: true,
                 createdAt: true,
                 vehicle: {
@@ -192,6 +197,9 @@ export const GetDamageReportList = async (req: Request, res: Response) => {
         const responseData = {
             reports: reports.map(r => ({
                 ...r,
+                publicId: r.publicId || undefined, // Prisma returns null if optional, but here we mapped ID. Wait, I should check if publicId is in select.
+                // Looking at select in lines 164-183: id, status, createdAt, vehicle.
+                // It does NOT select publicId. I must add it to select first.
                 vehicle: {
                     ...r.vehicle,
                     image: r.vehicle.images[0]?.file.url || null
@@ -227,8 +235,11 @@ export const GetMinimalDamageReport = async (req: Request, res: Response) => {
             return res.status(StatusCode.BAD_REQUEST).json({ message: "Damage Report ID is required" });
         }
 
+        const isId = !isNaN(Number(damageReportId));
+        const whereCondition = isId ? { id: Number(damageReportId) } : { publicId: damageReportId };
+
         const report = await prisma.damageReport.findUnique({
-            where: { publicId: damageReportId },
+            where: whereCondition,
             select: {
                 publicId: true,
                 status: true,
@@ -319,13 +330,16 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
         }
 
         const { disposition, finalCost, paymentMethod } = validation.data;
-        const damageReportPublicId = req.params.damageReportId;
+        const damageReportId = req.params.damageReportId;
         const managerId = req.public_Id;
         const branchId = req.branch_Id;
 
+        const isId = !isNaN(Number(damageReportId));
+        const whereCondition = isId ? { id: Number(damageReportId) } : { publicId: damageReportId };
+
         // 1. Fetch Report & Related Entities
         const damageReport = await prisma.damageReport.findUnique({
-            where: { publicId: damageReportPublicId },
+            where: whereCondition,
             include: {
                 booking: {
                     include: {
@@ -350,7 +364,7 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
             });
         }
 
-        if (damageReport.status !== "PENDING" as DamageReportStatus && damageReport.status !== "APPROVED" as DamageReportStatus) {
+        if (damageReport.status !== "PENDING" as DamageReportStatus) {
             return res.status(StatusCode.BAD_REQUEST).json({
                 message: `Cannot close report. Current status: ${damageReport.status}`
             });
@@ -368,8 +382,28 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
 
         if (!managerUser) return res.status(StatusCode.UNAUTHORIZED).json({ message: "Manager not found" });
 
-        // 5. Transaction
+        // 4. Prepare Payment Data (Outside Transaction)
         let paymentUrl: string | null = null;
+        let onlineTransactionId: string | null = null;
+        let dueAmount = 0;
+
+        if (balance < 0) {
+            dueAmount = Math.abs(balance);
+            if (!paymentMethod) {
+                return res.status(StatusCode.BAD_REQUEST).json({ message: "Payment method required for due amount" });
+            }
+
+            if (paymentMethod === "ONLINE_RAZORPAY") {
+                const customRedirectUrl = `${process.env.FRONTEND_REDIRECT_URL}/manager/payment/fine-status`;
+
+                // Initiate Payment First (Network IO)
+                const responseIdx = await initiatePhonePePayment(dueAmount, customRedirectUrl);
+                onlineTransactionId = responseIdx?.merchantTransactionId;
+                paymentUrl = responseIdx?.instrumentResponse?.redirectInfo?.url;
+            }
+        }
+
+        // 5. Transaction
         let isFullySettled = false;
 
         await prisma.$transaction(async (tx) => {
@@ -419,19 +453,18 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
                         isFullySettled = true;
                     }
                 } else if (paymentMethod === "ONLINE_RAZORPAY") {
-                    if (booking.invoice) {
+                    if (booking.invoice && onlineTransactionId) {
                         await tx.payment.create({
                             data: {
                                 publicId: createID(),
                                 invoiceId: booking.invoice.id,
                                 method: DepositMethod.ONLINE_RAZORPAY,
                                 amount: dueAmount,
+                                // Store transaction ID for verification mapping
+                                razorpayOrderId: onlineTransactionId,
                                 status: PaymentStatus.CREATED
                             }
                         });
-
-                        const responseIdx = await initiatePhonePePayment(dueAmount);
-                        paymentUrl = responseIdx?.instrumentResponse?.redirectInfo?.url;
                     }
                     isFullySettled = false;
                 }
@@ -500,3 +533,119 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
         });
     }
 }
+
+export const CheckDamagePaymentStatus = async (req: Request, res: Response) => {
+    try {
+        const { transactionId } = req.params;
+
+        if (!transactionId) {
+            return res.status(StatusCode.BAD_REQUEST).json({ message: "Transaction ID is required" });
+        }
+
+        // 1. Find Payment
+        const payment = await prisma.payment.findFirst({
+            where: { razorpayOrderId: transactionId },
+            include: {
+                invoice: {
+                    include: {
+                        booking: {
+                            include: {
+                                damages: true // To get vehicleId and damage report
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!payment) {
+            return res.status(StatusCode.NOT_FOUND).json({ message: "Payment record not found" });
+        }
+
+        // 2. Check Status from Provider
+        const statusResponse = await checkPhonePeStatus(transactionId);
+
+        // Example PhonePe Success: { success: true, code: "PAYMENT_SUCCESS", ... }
+        const isSuccess = statusResponse?.success === true && statusResponse?.code === "PAYMENT_SUCCESS";
+
+        if (payment.status === "SUCCESS") {
+            return res.status(StatusCode.OK).json({
+                status: "SUCCESS",
+                message: "Payment already verified",
+                settled: true
+            });
+        }
+
+        if (isSuccess) {
+            // 3. Settle everything
+            await prisma.$transaction(async (tx) => {
+                // Update Payment
+                await tx.payment.update({
+                    where: { id: payment.id },
+                    data: {
+                        status: PaymentStatus.SUCCESS,
+                        razorpayPaymentId: statusResponse.data?.paymentInstrument?.cardTransactionId || "ONLINE_SUCCESS" // Store provider ref
+                    }
+                });
+
+                // Get Booking and Damage Report References
+                const invoice = payment.invoice;
+                const booking = invoice.booking;
+
+                const damageCharges = payment.amount; // Use payment amount as the settled amount
+
+                await tx.invoice.update({
+                    where: { id: invoice.id },
+                    data: {
+                        status: InvoiceStatus.PAID,
+                        damageCharges: damageCharges,
+                        total: { increment: damageCharges }
+                    }
+                });
+
+                await tx.booking.update({
+                    where: { id: booking.id },
+                    data: {
+                        status: BookingStatus.RETURNED,
+                        totalFinal: { increment: damageCharges }
+                    }
+                });
+
+                // Update Vehicle Status
+                // Fetch proper damage report
+                const dr = await tx.damageReport.findFirst({
+                    where: { bookingId: booking.id },
+                    orderBy: { createdAt: 'desc' }
+                });
+
+                if (dr) {
+                    let nextVehicleStatus: VehicleStatus = VehicleStatus.AVAILABLE;
+                    if (dr.disposition === 'MAINTENANCE') nextVehicleStatus = VehicleStatus.MAINTENANCE;
+                    if (dr.disposition === 'DAMAGED') nextVehicleStatus = VehicleStatus.INACTIVE;
+
+                    await tx.vehicle.update({
+                        where: { id: dr.vehicleId },
+                        data: { status: nextVehicleStatus }
+                    });
+                }
+            });
+
+            return res.status(StatusCode.OK).json({
+                status: "SUCCESS",
+                message: "Payment verified and booking settled"
+            });
+
+        } else {
+            // Payment Failed or Pending
+            return res.status(StatusCode.OK).json({
+                status: "FAILURE",
+                message: "Payment not successful",
+                details: statusResponse
+            });
+        }
+
+    } catch (error: any) {
+        console.error("Payment Verification Error:", error);
+        return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Error" });
+    }
+};

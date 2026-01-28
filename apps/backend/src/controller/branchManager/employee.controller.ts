@@ -8,7 +8,7 @@ import { createID } from "../../utils/nanoID";
 
 export const SearchEmployee = async (req: Request, res: Response) => {
     const branchId = req.branch_Id;
-    const { q, page = "1", limit = "10" } = req.query;
+    const { search, page = "1", limit = "10" } = req.query;
 
     const pageNumber = parseInt(page as string) || 1;
     const pageSize = parseInt(limit as string) || 10;
@@ -20,12 +20,12 @@ export const SearchEmployee = async (req: Request, res: Response) => {
         deletedAt: null
     };
 
-    if (q) {
-        const search = q as string;
+    if (search) {
+        const searchTerm = search as string;
         whereClause.OR = [
-            { name: { contains: search, mode: 'insensitive' } },
-            { email: { contains: search, mode: 'insensitive' } },
-            { phone: { contains: search, mode: 'insensitive' } }
+            { name: { contains: searchTerm, mode: 'insensitive' } },
+            { email: { contains: searchTerm, mode: 'insensitive' } },
+            { phone: { contains: searchTerm, mode: 'insensitive' } }
         ];
     }
 

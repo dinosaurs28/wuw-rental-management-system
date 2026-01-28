@@ -39,19 +39,27 @@ export const DashboardKPIs = ({ stats, isLoading }: DashboardKPIsProps) => {
         </Card>
     );
 
+
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <KPICard
-                title="Active Bookings"
-                value={stats?.activeBookings}
+                title="Active Vehicles"
+                value={stats?.activeVehicles}
                 icon={CalendarClock}
-                colorClass="text-blue-600"
-                bgClass="bg-blue-50"
+                colorClass="text-emerald-600"
+                bgClass="bg-emerald-50"
             />
             <KPICard
-                title="Pending Approvals"
-                value={stats?.pendingApprovals}
+                title="Inactive Vehicles"
+                value={stats?.inactiveVehicles}
                 icon={AlertCircle}
+                colorClass="text-neutral-600"
+                bgClass="bg-neutral-100"
+            />
+            <KPICard
+                title="In Maintenance"
+                value={stats?.maintenanceVehicles}
+                icon={Users} // Maybe Wrench/Tool icon better but sticking to imports for now or standard
                 colorClass="text-orange-600"
                 bgClass="bg-orange-50"
             />
@@ -61,13 +69,6 @@ export const DashboardKPIs = ({ stats, isLoading }: DashboardKPIsProps) => {
                 icon={AlertTriangle}
                 colorClass="text-red-600"
                 bgClass="bg-red-50"
-            />
-            <KPICard
-                title="Staff On Duty"
-                value={stats?.staffOnDuty}
-                icon={Users}
-                colorClass="text-emerald-600"
-                bgClass="bg-emerald-50"
             />
         </div>
     );

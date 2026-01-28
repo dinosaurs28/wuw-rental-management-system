@@ -1,7 +1,7 @@
 # Design System – Vehicle Rental Management System
 
 ## Brand Inspiration
-- Inspired by SIXT
+- Inspired by Vrms
 - Premium, bold, minimal, high-contrast
 
 ## Colors (DO NOT CHANGE)

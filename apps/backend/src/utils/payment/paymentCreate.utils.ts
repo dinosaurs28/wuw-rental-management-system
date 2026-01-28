@@ -46,7 +46,7 @@ export async function initiatePhonePePayment(amount: number, customBaseRedirectU
                 }
             }
         );
-        return response.data.data;
+        return { ...response.data.data, merchantTransactionId: transactionId };
 
     } catch (error: any) {
         console.error("Payment Error:", error.response ? error.response.data : error.message);

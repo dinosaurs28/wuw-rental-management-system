@@ -31,7 +31,7 @@ export function DashboardNavbar() {
                     <Link to="/employee/dashboard" className="flex items-center gap-2 font-bold text-xl min-w-fit">
                         {/* Orange Triangle Logo Mock */}
                         <div className="w-0 h-0 border-l-[8px] border-l-transparent border-b-[14px] border-b-primary border-r-[8px] border-r-transparent" />
-                        <span>SIXT Admin</span>
+                        <span>Vrms Admin</span>
                     </Link>
 
                     {/* Navigation */}

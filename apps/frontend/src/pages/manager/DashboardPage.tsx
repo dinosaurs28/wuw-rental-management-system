@@ -1,53 +1,52 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator, BreadcrumbPage } from "@/components/ui/breadcrumb";
 import { toast } from "sonner";
 import { DashboardKPIs } from "@/components/manager/dashboard/DashboardKPIs";
-import { ActiveBookings } from "@/components/manager/dashboard/ActiveBookings";
-import { PendingApprovals } from "@/components/manager/dashboard/PendingApprovals";
 import { DamageReports } from "@/components/manager/dashboard/DamageReports";
 import { StaffActivity } from "@/components/manager/dashboard/StaffActivity";
-import { managerDashboardService, type KPIStats } from "@/services/managerDashboard.service";
+import { managerDashboardService, type KPIStats, type DamageReport } from "@/services/managerDashboard.service";
 import { ManagerLayout } from "@/components/manager/ManagerLayout";
+import { Search, QrCode } from "lucide-react";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export const DashboardPage = () => {
     // State for all data
     const [stats, setStats] = useState<KPIStats | null>(null);
-    const [activeBookings, setActiveBookings] = useState<any[]>([]);
-    const [pendingBookings, setPendingBookings] = useState<any[]>([]);
-    const [damageReports, setDamageReports] = useState<any[]>([]);
+    const [damageReports, setDamageReports] = useState<DamageReport[]>([]);
+    const [damagePage, setDamagePage] = useState(1);
+    const [hasMoreDamages, setHasMoreDamages] = useState(true);
     const [staffActivity, setStaffActivity] = useState<any[]>([]);
-    const [employees, setEmployees] = useState<any[]>([]);
+
+    // Search State
+    const [damageSearchId, setDamageSearchId] = useState("");
+    const debouncedSearch = useDebounce(damageSearchId, 500);
 
     const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingDamages, setIsLoadingDamages] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Effect to reload reports when search changes
+    useEffect(() => {
+        loadDamageReports(1, true);
+    }, [debouncedSearch]);
 
     useEffect(() => {
         const loadDashboardData = async () => {
             try {
                 setIsLoading(true);
-                // Parallel fetching of all required data
-                const [active, pending, damage, activity, staff] = await Promise.all([
-                    managerDashboardService.getActiveBookings(),
-                    managerDashboardService.getPendingApprovals(),
-                    managerDashboardService.getDamageReports(),
-                    managerDashboardService.getStaffActivity(),
-                    managerDashboardService.getEmployees()
+                // Parallel fetching of required data
+                const [dashboardStats, activity] = await Promise.all([
+                    managerDashboardService.getDashboardStats(),
+                    managerDashboardService.getStaffActivity()
                 ]);
 
-                setActiveBookings(active || []);
-                setPendingBookings(pending || []);
-                setDamageReports(damage || []);
+                setStats(dashboardStats);
                 setStaffActivity(activity || []);
-                setEmployees(staff || []);
 
-                // Calculate KPIs locally
-                setStats({
-                    activeBookings: active?.length || 0,
-                    pendingApprovals: pending?.length || 0,
-                    openDamageReports: damage?.length || 0,
-                    staffOnDuty: staff?.length || 0
-                });
+                // Load initial damage reports
+                loadDamageReports(1, true);
 
             } catch (err: any) {
                 console.error("Failed to load dashboard data", err);
@@ -61,6 +60,49 @@ export const DashboardPage = () => {
 
         loadDashboardData();
     }, []);
+
+    const loadDamageReports = async (page: number, reset = false) => {
+        try {
+            setIsLoadingDamages(true);
+            const limit = 5;
+            const newReports = await managerDashboardService.getDamageReports(page, limit, debouncedSearch);
+
+            if (reset) {
+                setDamageReports(newReports);
+            } else {
+                setDamageReports(prev => [...prev, ...newReports]);
+            }
+
+            if (newReports.length < limit) {
+                setHasMoreDamages(false);
+            } else {
+                setHasMoreDamages(true);
+            }
+            setDamagePage(page);
+
+        } catch (err) {
+            console.error("Failed to load damage reports", err);
+            toast.error("Failed to load damage reports");
+        } finally {
+            setIsLoadingDamages(false);
+        }
+    };
+
+    const handleLoadMoreDamages = () => {
+        if (!isLoadingDamages && hasMoreDamages) {
+            loadDamageReports(damagePage + 1);
+        }
+    };
+
+
+
+    const handleScanQR = () => {
+        // Placeholder for QR Scanner integration
+        // Ideally this would open a modal with camera stream
+        toast.info("QR Scanner feature coming soon. Please enter ID manually.");
+        // For demo: pretend we scanned an ID
+        // setDamageSearchId("demo-id");
+    };
 
     if (error) {
         return (
@@ -95,7 +137,7 @@ export const DashboardPage = () => {
                         <div>
                             <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Branch Operations Dashboard</h1>
                             <p className="text-neutral-500 mt-2 text-lg">
-                                Overview of bookings, approvals, vehicles, and staff activity.
+                                Overview of vehicles, damage reports, and staff activity.
                             </p>
                         </div>
                     </div>
@@ -106,26 +148,42 @@ export const DashboardPage = () => {
                     <DashboardKPIs stats={stats} isLoading={isLoading} />
                 </section>
 
-                {/* Main Dashboard Grid */}
+                {/* Damage Reports & Tools Section */}
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
 
-                    {/* Left Column (2/3 width on large screens) */}
-                    <div className="xl:col-span-2 space-y-8">
-                        <section>
-                            <ActiveBookings bookings={activeBookings} isLoading={isLoading} />
-                        </section>
+                    {/* Left Column (2/3 width) - Damage Reports */}
+                    <div className="xl:col-span-2 space-y-6">
+
+                        {/* Search & Tools Bar */}
+                        <div className="bg-white p-4 rounded-xl border shadow-sm flex flex-col md:flex-row gap-4 items-center">
+                            <div className="flex-1 w-full flex items-center gap-2">
+                                <Search className="w-5 h-5 text-neutral-400" />
+                                <Input
+                                    placeholder="Search Damage Report by ID..."
+                                    className="flex-1 border-none shadow-none focus-visible:ring-0 px-0 h-auto text-base"
+                                    value={damageSearchId}
+                                    onChange={(e) => setDamageSearchId(e.target.value)}
+                                />
+                            </div>
+                            <div className="w-px h-8 bg-neutral-200 hidden md:block"></div>
+                            <Button variant="outline" className="w-full md:w-auto gap-2" onClick={handleScanQR}>
+                                <QrCode className="w-4 h-4" />
+                                Scan QR Code
+                            </Button>
+                        </div>
 
                         <section>
-                            <DamageReports reports={damageReports} isLoading={isLoading} />
+                            <DamageReports
+                                reports={damageReports}
+                                isLoading={isLoading || (isLoadingDamages && damageReports.length === 0)}
+                                onLoadMore={handleLoadMoreDamages}
+                                hasMore={hasMoreDamages}
+                            />
                         </section>
                     </div>
 
-                    {/* Right Column (1/3 width on large screens) */}
+                    {/* Right Column (1/3 width) - Staff Activity */}
                     <div className="xl:col-span-1 space-y-8">
-                        <section>
-                            <PendingApprovals bookings={pendingBookings} isLoading={isLoading} />
-                        </section>
-
                         <section>
                             <StaffActivity activities={staffActivity} isLoading={isLoading} />
                         </section>
