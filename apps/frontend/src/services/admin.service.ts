@@ -14,9 +14,76 @@ export interface AdminAuthResponse {
     };
 }
 
+export type AdminBranch = {
+    id: string; // Internal ID
+    publicId: string; // Public ID
+    name: string;
+    location: string;
+    status: string;
+    contactNumber?: string;
+    managerName?: string;
+};
+
+export type CreateBranchInput = {
+    name: string;
+    location: string;
+    contactNumber?: string;
+    managerEmail?: string; // Optional invite
+};
+
+export type UpdateBranchInput = Partial<CreateBranchInput> & {
+    status?: string;
+};
+
+export type RevenueReportParams = {
+    startDate?: string; // ISO date string
+    endDate?: string;   // ISO date string
+    branchId?: string;
+    reportType: 'revenue_only';
+};
+
+export type RevenueReportItem = {
+    branchId: string;
+    branchName: string;
+    totalRevenue: number;
+    totalExpenses?: number;
+    netProfit: number;
+    currency: string;
+};
+
+export type RevenueReportResponse = {
+    message: string;
+    dateRange: { start: string; end: string };
+    data: RevenueReportItem[];
+};
+
 export const adminService = {
     login: async (data: SignInInput): Promise<AdminAuthResponse> => {
         const response = await apiClient.post<AdminAuthResponse>("/admin/auth/login", data);
+        return response.data;
+    },
+
+    getBranches: async (): Promise<AdminBranch[]> => {
+        const response = await apiClient.get<{ data: AdminBranch[] }>("/admin/dashboard/branches");
+        return response.data.data; // Assuming backend returns { data: [...] } standard wrapper, or direct array. Let's check backend controller.
+    },
+
+    createBranch: async (data: CreateBranchInput): Promise<AdminBranch> => {
+        const response = await apiClient.post<{ message: string; data: AdminBranch }>("/admin/dashboard/branches/create", data);
+        return response.data.data;
+    },
+
+    updateBranch: async (branchId: string, data: UpdateBranchInput): Promise<AdminBranch> => {
+        const response = await apiClient.put<{ message: string; data: AdminBranch }>(`/admin/dashboard/branches/edit/${branchId}`, data);
+        return response.data.data;
+    },
+
+    deleteBranch: async (branchId: string): Promise<void> => {
+        await apiClient.delete(`/admin/dashboard/branches/delete/${branchId}`);
+    },
+
+    getRevenueReport: async (params: RevenueReportParams): Promise<RevenueReportResponse> => {
+        const response = await apiClient.get<RevenueReportResponse>("/admin/dashboard/reports/revenue", { params });
         return response.data;
     }
 };

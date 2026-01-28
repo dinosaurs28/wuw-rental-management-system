@@ -41,6 +41,7 @@ import FinePaymentStatusPage from "./pages/manager/FinePaymentStatusPage";
 import AdminSignInPage from "./pages/auth/AdminSignInPage";
 import { AdminProtectedRoute } from "@/components/auth/AdminProtectedRoute";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
+import { AdminLayout } from "@/layouts/AdminLayout";
 
 
 function App() {
@@ -94,7 +95,11 @@ function App() {
 
         {/* Admin Protected Routes */}
         <Route element={<AdminProtectedRoute />}>
-          <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+          <Route element={<AdminLayout />}>
+            <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+            {/* Future Admin Routes */}
+            <Route path="/admin/branches" element={<AdminDashboardPage />} /> {/* Placeholder to reuse dashboard for now */}
+          </Route>
         </Route>
 
 
