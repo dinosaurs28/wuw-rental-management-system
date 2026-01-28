@@ -38,6 +38,10 @@ import { ManagerDepositRulesPage } from "./pages/manager/ManagerDepositRulesPage
 import { ManagerInsuranceExpiryPage } from "./pages/manager/ManagerInsuranceExpiryPage";
 import DamageReviewPage from "./pages/manager/DamageReviewPage";
 import FinePaymentStatusPage from "./pages/manager/FinePaymentStatusPage";
+import AdminSignInPage from "./pages/auth/AdminSignInPage";
+import { AdminProtectedRoute } from "@/components/auth/AdminProtectedRoute";
+import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
+
 
 function App() {
   return (
@@ -60,6 +64,7 @@ function App() {
         </Route>
 
         <Route path="/branch-manager/sign-in" element={<BranchManagerSignInPage />} />
+        <Route path="/admin/sign-in" element={<AdminSignInPage />} />
 
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
@@ -86,6 +91,12 @@ function App() {
           <Route path="/manager/payment/fine-status/:transactionId" element={<FinePaymentStatusPage />} />
           <Route path="/damage/:damageReportId" element={<DamageReviewPage />} />
         </Route>
+
+        {/* Admin Protected Routes */}
+        <Route element={<AdminProtectedRoute />}>
+          <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+        </Route>
+
 
         {/* Employee Protected Routes */}
         <Route element={<EmployeeProtectedRoute />}>
