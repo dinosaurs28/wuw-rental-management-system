@@ -18,15 +18,23 @@ export type AdminBranch = {
     id: string; // Internal ID
     publicId: string; // Public ID
     name: string;
-    location: string;
+    address: string;
     status: string;
-    contactNumber?: string;
-    managerName?: string;
+    phone?: string;
+    _count?: {
+        users: number;
+        vehicles: number;
+        bookings: number;
+    };
+    users?: {
+        name: string;
+        email: string;
+    }[];
 };
 
 export type CreateBranchInput = {
     name: string;
-    location: string;
+    address: string;
     contactNumber?: string;
     managerEmail?: string; // Optional invite
 };
@@ -75,6 +83,11 @@ export const adminService = {
 
     updateBranch: async (branchId: string, data: UpdateBranchInput): Promise<AdminBranch> => {
         const response = await apiClient.put<{ message: string; data: AdminBranch }>(`/admin/dashboard/branches/edit/${branchId}`, data);
+        return response.data.data;
+    },
+
+    getBranchDetails: async (branchId: string): Promise<AdminBranch & { managerName: string; managerEmail: string }> => {
+        const response = await apiClient.get<{ message: string; data: AdminBranch & { managerName: string; managerEmail: string } }>(`/admin/dashboard/branches/${branchId}`);
         return response.data.data;
     },
 

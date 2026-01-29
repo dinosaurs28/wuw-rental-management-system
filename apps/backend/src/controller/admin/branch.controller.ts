@@ -101,6 +101,14 @@ export const GetAllBranches = async (req: Request, res: Response) => {
                         vehicles: true,
                         bookings: true
                     }
+                },
+                users: {
+                    where: { role: Role.MANAGER },
+                    take: 1,
+                    select: {
+                        name: true,
+                        email: true
+                    }
                 }
             },
             orderBy: {

@@ -20,12 +20,10 @@ import {
     Wallet,
     BarChart3,
     Settings,
-    Search,
     Bell,
     User
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
 import { useAdminAuthStore } from "@/store/adminAuth.store";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -119,14 +117,6 @@ export function AdminLayout() {
                     <div className="flex items-center gap-2">
                         <SidebarTrigger className="-ml-1" />
                         <Separator orientation="vertical" className="mr-2 h-4" />
-                        <div className="relative w-64 md:w-96 hidden md:block">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                type="search"
-                                placeholder="Search branches, fleet IDs, or reports..."
-                                className="w-full bg-background pl-8 shadow-none focus-visible:ring-0"
-                            />
-                        </div>
                     </div>
                     <div className="flex items-center gap-4">
                         <Button variant="ghost" size="icon">

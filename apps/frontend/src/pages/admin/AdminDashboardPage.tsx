@@ -3,14 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { adminService, type AdminBranch, type RevenueReportItem } from '@/services/admin.service';
 import { toast } from 'sonner';
-import { Download } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Download, DollarSign, Building2, Users } from 'lucide-react';
+// Tabs removed
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator, BreadcrumbPage } from "@/components/ui/breadcrumb";
-import { AdminBranchManagement } from '@/components/admin/AdminBranchManagement';
+// AdminBranchManagement usage removed
 import { AdminStatsCards } from '@/components/admin/AdminStatsCards';
-// Removed duplicate import
 
 export const AdminDashboardPage = () => {
     const [branches, setBranches] = useState<AdminBranch[]>([]);
@@ -69,12 +68,13 @@ export const AdminDashboardPage = () => {
     // or just display the fetched data.
     // If backend returns breakdown by branch for "all", we sum it up.
 
+    // Calculate system-wide KPIs
     const totalRevenue = revenueData.reduce((acc, curr) => acc + curr.totalRevenue, 0);
-    // Hardcoded demo values for other stats not yet in API or if API is minimal
     const totalBranches = branches.length;
-    // Fleet size needs another API or sum from branch details if available
-    const totalFleet = 45800; // Mock reference
-    const activeUsers = 892500; // Mock reference
+
+    // Aggregating counts from all branches
+    const totalFleet = branches.reduce((acc, branch) => acc + (branch._count?.vehicles || 0), 0);
+    const activeUsers = branches.reduce((acc, branch) => acc + (branch._count?.users || 0), 0);
 
     if (loading) {
         return <div className="p-8 space-y-4">
@@ -89,45 +89,42 @@ export const AdminDashboardPage = () => {
     return (
         <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-8">
             {/* Page Header */}
-            <div className="mb-8">
-                <Breadcrumb className="mb-4">
-                    <BreadcrumbList>
-                        <BreadcrumbItem>
-                            <BreadcrumbLink href="/admin/dashboard">Admin</BreadcrumbLink>
-                        </BreadcrumbItem>
-                        <BreadcrumbSeparator />
-                        <BreadcrumbItem>
-                            <BreadcrumbPage>Global Dashboard</BreadcrumbPage>
-                        </BreadcrumbItem>
-                    </BreadcrumbList>
-                </Breadcrumb>
-
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Global Performance Overview</h1>
-                        <p className="text-neutral-500 mt-2 text-lg">
-                            System-level monitoring, branch control, and financial reporting.
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Select value={selectedBranchId} onValueChange={handleBranchChange}>
-                            <SelectTrigger className="w-[180px] bg-white">
-                                <SelectValue placeholder="Select Branch" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Branches</SelectItem>
-                                {branches.map(b => (
-                                    <SelectItem key={b.publicId} value={b.publicId}>
-                                        {b.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Button>
-                            <Download className="mr-2 h-4 w-4" />
-                            Generate Report
-                        </Button>
-                    </div>
+            <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div>
+                    <Breadcrumb className="mb-2">
+                        <BreadcrumbList>
+                            <BreadcrumbItem>
+                                <BreadcrumbLink href="/admin/dashboard" className="text-muted-foreground hover:text-[#FF5F00]">Admin</BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator />
+                            <BreadcrumbItem>
+                                <BreadcrumbPage className="font-semibold text-neutral-900">Reports</BreadcrumbPage>
+                            </BreadcrumbItem>
+                        </BreadcrumbList>
+                    </Breadcrumb>
+                    <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Global Overview</h1>
+                    <p className="text-neutral-500 mt-1 text-base">
+                        Real-time performance metrics across all branch locations.
+                    </p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <Select value={selectedBranchId} onValueChange={handleBranchChange}>
+                        <SelectTrigger className="w-[200px] h-11 bg-white border-neutral-200">
+                            <SelectValue placeholder="All Branches" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Branches</SelectItem>
+                            {branches.map(b => (
+                                <SelectItem key={b.publicId} value={b.publicId}>
+                                    {b.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Button className="h-11 bg-neutral-900 hover:bg-neutral-800 text-white shadow-sm px-6">
+                        <Download className="mr-2 h-4 w-4" />
+                        Export
+                    </Button>
                 </div>
             </div>
 
@@ -144,76 +141,112 @@ export const AdminDashboardPage = () => {
                 />
             </section>
 
-            {/* Main Content Tabs */}
-            <Tabs defaultValue="overview" className="space-y-6">
-                <TabsList className="bg-neutral-100 p-1 rounded-lg">
-                    <TabsTrigger value="overview" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm">Overview</TabsTrigger>
-                    <TabsTrigger value="branches" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm">Branch Management</TabsTrigger>
-                    <TabsTrigger value="fleet" disabled>System Fleet</TabsTrigger>
-                    <TabsTrigger value="reports" disabled>Global Reports</TabsTrigger>
-                </TabsList>
+            {/* Dashboard Content - Overview Only */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Revenue Section */}
+                <Card className="col-span-1 lg:col-span-2 border border-neutral-200 shadow-sm rounded-xl overflow-hidden bg-white">
+                    <CardHeader className="border-b border-neutral-100 bg-neutral-50/30 py-4">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-lg font-semibold text-neutral-900">Revenue Distribution</CardTitle>
+                            {/* Optional: Add a small dropdown or info icon here */}
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                        {/* Placeholder for Revenue Chart - Implementing a simple bar list for now */}
+                        {reportLoading ? (
+                            <div className="space-y-4">
+                                <Skeleton className="h-10 w-full rounded-lg" />
+                                <Skeleton className="h-10 w-full rounded-lg" />
+                                <Skeleton className="h-10 w-full rounded-lg" />
+                            </div>
+                        ) : revenueData.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-[300px] text-neutral-500 space-y-3">
+                                <div className="p-4 bg-neutral-50 rounded-full">
+                                    <DollarSign className="h-6 w-6 text-neutral-400" />
+                                </div>
+                                <p>No revenue data available for this period.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                {revenueData.slice(0, 5).map((item, index) => (
+                                    <div key={item.branchId} className="group">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-8 w-8 rounded-full bg-orange-50 text-[#FF5F00] flex items-center justify-center text-xs font-bold border border-orange-100">
+                                                    {index + 1}
+                                                </div>
+                                                <div>
+                                                    <div className="font-medium text-neutral-900 text-sm">{item.branchName}</div>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="font-bold text-neutral-900">{item.currency} {item.totalRevenue.toLocaleString()}</div>
+                                            </div>
+                                        </div>
+                                        <div className="h-2.5 w-full bg-neutral-100 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-[#FF5F00] rounded-full transition-all duration-1000 ease-out"
+                                                style={{ width: `${Math.min((item.totalRevenue / (totalRevenue || 1)) * 100 * (revenueData.length > 1 ? 2 : 1), 100)}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                                {revenueData.length > 5 && (
+                                    <div className="text-center pt-4 border-t border-neutral-100">
+                                        <Button variant="ghost" className="text-neutral-500 hover:text-[#FF5F00] text-sm font-medium">
+                                            View {revenueData.length - 5} More Locations
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
 
-                <TabsContent value="overview" className="space-y-4">
-                    {/* Revenue Section */}
-                    <Card className="col-span-4 border shadow-sm">
-                        <CardHeader>
-                            <CardTitle>Branch Revenue Comparison</CardTitle>
+                {/* Recently Added Branches / Quick Actions column placeholder */}
+                <div className="space-y-6">
+                    <Card className="border border-neutral-200 shadow-sm rounded-xl overflow-hidden bg-[#FF5F00] text-white">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-lg font-bold">Quick Actions</CardTitle>
                         </CardHeader>
-                        <CardContent className="pl-6 pr-6 pb-6">
-                            {/* Placeholder for Revenue Chart - Implementing a simple bar list for now */}
-                            {reportLoading ? (
-                                <div className="space-y-2">
-                                    <Skeleton className="h-8 w-full" />
-                                    <Skeleton className="h-8 w-full" />
-                                    <Skeleton className="h-8 w-full" />
-                                </div>
-                            ) : revenueData.length === 0 ? (
-                                <div className="flex h-[200px] items-center justify-center text-muted-foreground">
-                                    No revenue data available for selected period.
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {revenueData.slice(0, 5).map((item) => (
-                                        <div key={item.branchId} className="flex items-center gap-4">
-                                            <div className="w-[150px] font-medium truncate text-sm" title={item.branchName}>
-                                                {item.branchName}
-                                            </div>
-                                            <div className="flex-1 h-3 bg-neutral-100 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-primary rounded-full"
-                                                    style={{ width: `${Math.min((item.totalRevenue / (totalRevenue || 1)) * 100 * (revenueData.length > 1 ? 2 : 1), 100)}%` }}
-                                                />
-                                            </div>
-                                            <div className="w-[100px] text-right font-mono text-sm">
-                                                {item.currency} {item.totalRevenue.toLocaleString()}
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {revenueData.length > 5 && (
-                                        <div className="text-center text-sm text-muted-foreground pt-2">
-                                            + {revenueData.length - 5} more branches
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                        <CardContent>
+                            <p className="text-white/80 text-sm mb-4">Manage your system efficiently.</p>
+                            <div className="space-y-2">
+                                <Button variant="secondary" className="w-full justify-start bg-white text-[#FF5F00] hover:bg-neutral-50 border-0 h-10 font-medium">
+                                    <Building2 className="mr-2 h-4 w-4" />
+                                    Add New Branch
+                                </Button>
+                                <Button variant="ghost" className="w-full justify-start text-white hover:bg-white/10 h-10">
+                                    <Users className="mr-2 h-4 w-4" />
+                                    Manage Managers
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
-                </TabsContent>
 
-                <TabsContent value="branches" className="space-y-4">
-                    <Card className="border shadow-sm">
-                        <CardContent className="p-0">
-                            <AdminBranchManagement branches={branches} onRefresh={() => {
-                                const fetchBranches = async () => {
-                                    const data = await adminService.getBranches();
-                                    setBranches(data);
-                                };
-                                fetchBranches();
-                            }} />
+                    <Card className="border border-neutral-200 shadow-sm rounded-xl bg-white">
+                        <CardHeader className="py-4">
+                            <CardTitle className="text-base font-semibold">System Health</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4 pt-0">
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-neutral-500">API Status</span>
+                                <span className="text-emerald-600 font-medium flex items-center gap-1">
+                                    <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+                                    Operational
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-neutral-500">Database</span>
+                                <span className="text-emerald-600 font-medium flex items-center gap-1">
+                                    <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+                                    Connected
+                                </span>
+                            </div>
                         </CardContent>
                     </Card>
-                </TabsContent>
-            </Tabs>
+                </div>
+            </div>
         </div>
     );
 };
