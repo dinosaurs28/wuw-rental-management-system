@@ -71,7 +71,7 @@ export const AdminStatsCards = ({ stats, isLoading }: AdminStatsCardsProps) => {
                 icon={DollarSign}
                 colorClass="text-[#FF5F00]"
                 bgClass="bg-orange-50"
-                prefix="$"
+                prefix="₹"
             />
             <KPICard
                 title="Active User Base"

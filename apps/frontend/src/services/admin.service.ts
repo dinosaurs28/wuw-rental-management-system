@@ -65,6 +65,48 @@ export type RevenueReportResponse = {
     data: RevenueReportItem[];
 };
 
+export type RevenueTrendItem = {
+    period: string;
+    totalRevenue: number;
+    bookingCount: number;
+    avgRevenuePerBooking: number;
+    branchId?: string;
+    branchName?: string;
+};
+
+export type RevenueTrendParams = {
+    startDate?: string;
+    endDate?: string;
+    branchId?: string;
+    granularity?: 'daily' | 'weekly' | 'monthly';
+};
+
+export type CategoryRevenueItem = {
+    categoryId: string;
+    categoryName: string;
+    totalRevenue: number;
+    bookingCount: number;
+    vehicleCount: number;
+    avgRevenuePerVehicle: number;
+};
+
+export type KPISummaryData = {
+    totalRevenue: number;
+    revenueChange: number;
+    totalBookings: number;
+    bookingChange: number;
+    avgBookingValue: number;
+    avgBookingValueChange: number;
+};
+
+export type PaymentMethodItem = {
+    paymentMethod: string;
+    totalRevenue: number;
+    transactionCount: number;
+    avgTransactionValue: number;
+    percentageShare: number;
+};
+
 export const adminService = {
     login: async (data: SignInInput): Promise<AdminAuthResponse> => {
         const response = await apiClient.post<AdminAuthResponse>("/admin/auth/login", data);
@@ -98,5 +140,30 @@ export const adminService = {
     getRevenueReport: async (params: RevenueReportParams): Promise<RevenueReportResponse> => {
         const response = await apiClient.get<RevenueReportResponse>("/admin/dashboard/reports/revenue", { params });
         return response.data;
+    },
+
+    getRevenueTrends: async (params: RevenueTrendParams): Promise<{ message: string; data: RevenueTrendItem[] }> => {
+        const response = await apiClient.get("/admin/dashboard/reports/revenue-trends", { params });
+        return response.data;
+    },
+
+    getRevenueByCategory: async (params: { startDate?: string; endDate?: string; branchId?: string }): Promise<{ message: string; data: CategoryRevenueItem[] }> => {
+        const response = await apiClient.get("/admin/dashboard/reports/revenue-by-category", { params });
+        return response.data;
+    },
+
+    getKPISummary: async (params: { startDate?: string; endDate?: string; branchId?: string }): Promise<{ message: string; data: KPISummaryData }> => {
+        const response = await apiClient.get("/admin/dashboard/reports/kpi-summary", { params });
+        return response.data;
+    },
+
+    getPaymentMethodBreakdown: async (params: { startDate?: string; endDate?: string; branchId?: string }): Promise<{ message: string; data: PaymentMethodItem[] }> => {
+        const response = await apiClient.get("/admin/dashboard/reports/payment-methods", { params });
+        return response.data;
+    },
+
+    getCategories: async (): Promise<{ publicId: string; name: string }[]> => {
+        const response = await apiClient.get<{ data: { publicId: string; name: string }[] }>("/admin/dashboard/categories");
+        return response.data.data;
     }
 };

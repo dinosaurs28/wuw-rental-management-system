@@ -85,7 +85,7 @@ export function AdminLayout() {
                 <SidebarContent>
                     <div className="p-4 flex items-center gap-2 font-bold text-xl text-primary">
                         <Car className="h-6 w-6" />
-                        <span className="group-data-[collapsible=icon]:hidden">SIXT Admin</span>
+                        <span className="group-data-[collapsible=icon]:hidden">WOW Rental Admin</span>
                     </div>
                     <SidebarGroup>
                         <SidebarGroupLabel>Menu</SidebarGroupLabel>
