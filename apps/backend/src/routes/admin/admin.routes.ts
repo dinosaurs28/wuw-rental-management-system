@@ -5,6 +5,7 @@ import { GetAllBranches, CreateBranch, EditBranch, DeleteBranch } from "../../co
 import { GetBranchRevenue } from "../../controller/admin/report.controller";
 import { GetRevenueTrends, GetRevenueByCategory, GetKPISummary, GetPaymentMethodBreakdown } from "../../controller/admin/analytics.controller";
 import { GetAllCategories } from "../../controller/admin/category.controller";
+import { getGlobalKpiStats } from "../../controller/admin/globalKpi.controller";
 
 const router: Router = Router();
 
@@ -18,6 +19,7 @@ router.get("/dashboard/reports/revenue-trends", AdminCheck, GetRevenueTrends);
 router.get("/dashboard/reports/revenue-by-category", AdminCheck, GetRevenueByCategory);
 router.get("/dashboard/reports/kpi-summary", AdminCheck, GetKPISummary);
 router.get("/dashboard/reports/payment-methods", AdminCheck, GetPaymentMethodBreakdown);
+router.get("/dashboard/reports/global-kpi", AdminCheck, getGlobalKpiStats);
 router.get("/dashboard/categories", AdminCheck, GetAllCategories);
 
 export default router;

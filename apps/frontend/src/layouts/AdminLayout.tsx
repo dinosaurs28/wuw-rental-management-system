@@ -48,24 +48,9 @@ const items = [
         icon: Building2,
     },
     {
-        title: "System Fleet",
-        url: "/admin/fleet",
-        icon: Car,
-    },
-    {
-        title: "Financials",
-        url: "/admin/financials",
-        icon: Wallet,
-    },
-    {
         title: "Global Reports",
         url: "/admin/reports",
         icon: BarChart3,
-    },
-    {
-        title: "Settings",
-        url: "/admin/settings",
-        icon: Settings,
     },
 ];
 

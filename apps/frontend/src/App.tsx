@@ -43,6 +43,7 @@ import { AdminProtectedRoute } from "@/components/auth/AdminProtectedRoute";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
 import { AdminBranchesPage } from "./pages/admin/AdminBranchesPage";
 import { AdminLayout } from "@/layouts/AdminLayout";
+import { GlobalReports } from "./pages/admin/reports/GlobalReports";
 
 
 function App() {
@@ -100,6 +101,7 @@ function App() {
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
             {/* Future Admin Routes */}
             <Route path="/admin/branches" element={<AdminBranchesPage />} />
+            <Route path="/admin/reports" element={<GlobalReports />} />
           </Route>
         </Route>
 
