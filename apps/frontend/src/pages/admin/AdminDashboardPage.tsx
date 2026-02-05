@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { adminService, type AdminBranch, type RevenueReportItem, type RevenueTrendItem, type CategoryRevenueItem, type PaymentMethodItem } from '@/services/admin.service';
 import { toast } from 'sonner';
-import { Download, DollarSign, Building2, Users } from 'lucide-react';
+import { Download, Building2, Users } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator, BreadcrumbPage } from "@/components/ui/breadcrumb";
 import { AdminStatsCards } from '@/components/admin/AdminStatsCards';
