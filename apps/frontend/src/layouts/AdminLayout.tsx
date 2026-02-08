@@ -21,7 +21,14 @@ import {
     BarChart3,
     Settings,
     Bell,
-    User
+    User,
+    FileText,
+    FileBarChart,
+    TrendingUp,
+    Shield,
+    DollarSign,
+    Users,
+    Receipt
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAdminAuthStore } from "@/store/adminAuth.store";
@@ -54,6 +61,49 @@ const items = [
     },
 ];
 
+const reportItems = [
+    {
+        title: "Vehicle Reports",
+        url: "/admin/vehicle-reports",
+        icon: Car,
+    },
+    {
+        title: "Daily Summary",
+        url: "/admin/reports/daily-summary",
+        icon: FileBarChart,
+    },
+    {
+        title: "Sales Report",
+        url: "/admin/reports/sales",
+        icon: TrendingUp,
+    },
+    {
+        title: "Vehicle Availability",
+        url: "/admin/reports/vehicle-availability",
+        icon: FileText,
+    },
+    {
+        title: "Insurance & Permit",
+        url: "/admin/reports/insurance-permit-expiry",
+        icon: Shield,
+    },
+    {
+        title: "Collection Report",
+        url: "/admin/reports/collection",
+        icon: DollarSign,
+    },
+    {
+        title: "Fleet Executive",
+        url: "/admin/reports/fleet-executive",
+        icon: Users,
+    },
+    {
+        title: "GST Report",
+        url: "/admin/reports/gst",
+        icon: Receipt,
+    },
+];
+
 export function AdminLayout() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -77,6 +127,29 @@ export function AdminLayout() {
                         <SidebarGroupContent>
                             <SidebarMenu>
                                 {items.map((item) => (
+                                    <SidebarMenuItem key={item.title}>
+                                        <SidebarMenuButton
+                                            asChild
+                                            isActive={location.pathname === item.url}
+                                            tooltip={item.title}
+                                            onClick={() => navigate(item.url)}
+                                        >
+                                            <button>
+                                                <item.icon />
+                                                <span>{item.title}</span>
+                                            </button>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                ))}
+                            </SidebarMenu>
+                        </SidebarGroupContent>
+                    </SidebarGroup>
+
+                    <SidebarGroup>
+                        <SidebarGroupLabel>Detailed Reports</SidebarGroupLabel>
+                        <SidebarGroupContent>
+                            <SidebarMenu>
+                                {reportItems.map((item) => (
                                     <SidebarMenuItem key={item.title}>
                                         <SidebarMenuButton
                                             asChild

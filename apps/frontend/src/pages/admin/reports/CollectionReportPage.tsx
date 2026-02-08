@@ -1,0 +1,35 @@
+import { useNavigate } from 'react-router-dom';
+import { CollectionReport } from '@/components/admin/reports/CollectionReport';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
+
+export const CollectionReportPage = () => {
+    const navigate = useNavigate();
+
+    // Default to last 30 days
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30);
+
+    return (
+        <div className="min-h-screen bg-gray-50">
+            <div className="max-w-7xl mx-auto">
+                <div className="p-4 md:p-6">
+                    <Button
+                        onClick={() => navigate(-1)}
+                        variant="ghost"
+                        size="sm"
+                        className="mb-4"
+                    >
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Back
+                    </Button>
+                    <CollectionReport
+                        startDate={startDate.toISOString().split('T')[0]}
+                        endDate={endDate.toISOString().split('T')[0]}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+};

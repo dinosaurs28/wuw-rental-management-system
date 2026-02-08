@@ -44,6 +44,15 @@ import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
 import { AdminBranchesPage } from "./pages/admin/AdminBranchesPage";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import { GlobalReports } from "./pages/admin/reports/GlobalReports";
+import { VehicleHistoryPage } from "./pages/admin/reports/VehicleHistoryPage";
+import { VehicleReportsListPage } from "./pages/admin/reports/VehicleReportsListPage";
+import { DailySummaryPage } from "./pages/admin/reports/DailySummaryPage";
+import { SalesReportPage } from "./pages/admin/reports/SalesReportPage";
+import { VehicleAvailabilityPage } from "./pages/admin/reports/VehicleAvailabilityPage";
+import { InsurancePermitExpiryPage } from "./pages/admin/reports/InsurancePermitExpiryPage";
+import { CollectionReportPage } from "./pages/admin/reports/CollectionReportPage";
+import { FleetExecutivePage } from "./pages/admin/reports/FleetExecutivePage";
+import { GSTReportPage } from "./pages/admin/reports/GSTReportPage";
 
 
 function App() {
@@ -102,6 +111,17 @@ function App() {
             {/* Future Admin Routes */}
             <Route path="/admin/branches" element={<AdminBranchesPage />} />
             <Route path="/admin/reports" element={<GlobalReports />} />
+            <Route path="/admin/vehicle-reports" element={<VehicleReportsListPage />} />
+
+            {/* Admin Report Routes */}
+            <Route path="/admin/reports/daily-summary" element={<DailySummaryPage />} />
+            <Route path="/admin/reports/sales" element={<SalesReportPage />} />
+            <Route path="/admin/reports/vehicle/:vehicleId" element={<VehicleHistoryPage />} />
+            <Route path="/admin/reports/vehicle-availability" element={<VehicleAvailabilityPage />} />
+            <Route path="/admin/reports/insurance-permit-expiry" element={<InsurancePermitExpiryPage />} />
+            <Route path="/admin/reports/collection" element={<CollectionReportPage />} />
+            <Route path="/admin/reports/fleet-executive" element={<FleetExecutivePage />} />
+            <Route path="/admin/reports/gst" element={<GSTReportPage />} />
           </Route>
         </Route>
 
