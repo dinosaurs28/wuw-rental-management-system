@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
 import { prisma, Role, User } from "@repo/database/client";
-import { StatusCode } from "../../types/statusCode";
+import { StatusCode } from "../../types/statusCode.js";
 import { createEmployeeSchema, updateEmployeeSchema } from "@repo/schemas";
 import { hashSync } from "bcrypt";
 import crypto from "crypto";
-import { createID } from "../../utils/nanoID";
-import { hashpassword } from "../../utils/PasswordCrypt/password";
+import { createID } from "../../utils/nanoID.js";
+import { hashpassword } from "../../utils/PasswordCrypt/password.js";
 
 export const SearchEmployee = async (req: Request, res: Response) => {
     const branchId = req.branch_Id;

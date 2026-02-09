@@ -1,5 +1,5 @@
-import { StatusCode } from "../../types/statusCode";
-import { jwtsign } from "../../utils/token/tokensign.utlis";
+import { StatusCode } from "../../types/statusCode.js";
+import { jwtsign } from "../../utils/token/tokensign.utlis.js";
 
 import { Request,Response } from "express"
 

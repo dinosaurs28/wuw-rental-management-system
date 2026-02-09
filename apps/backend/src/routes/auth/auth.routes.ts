@@ -1,8 +1,8 @@
-    import {Router} from "express"
-    import { emailAuthController, emailAuthControllerSignin, ProfileInfo } from "../../controller/auth/auth.controller.js"
-    import { generateOTP, verifyOTP } from "../../controller/auth/email-verify.controller.js"
-    import passport from "../../utils/passport/google"
-    import { googleSignIn } from "../../controller/auth/google.controller.js"
+import {Router} from "express"
+import { emailAuthController, emailAuthControllerSignin, ProfileInfo } from "../../controller/auth/auth.controller.js"
+import { generateOTP, verifyOTP } from "../../controller/auth/email-verify.controller.js"
+import passport from "../../utils/passport/google.js"
+import { googleSignIn } from "../../controller/auth/google.controller.js"
 import { authCheckJwt } from "../../middlewares/authCheck.middlewares.js"
 import { StatusCode } from "../../types/statusCode.js"
    
@@ -22,8 +22,8 @@ import { StatusCode } from "../../types/statusCode.js"
     router.get("/me",authCheckJwt,ProfileInfo)
     router.get("/logout",authCheckJwt,(req,res)=>{
         return res.clearCookie("accessToken").json({message:"Logout Success",
-            isAuthenticated: false
-        }).status(StatusCode.OK)
-    })
+        isAuthenticated: false
+    }).status(StatusCode.OK)
+})
 
-    export default router
+export default router

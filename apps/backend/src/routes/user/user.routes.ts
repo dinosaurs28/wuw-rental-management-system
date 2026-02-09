@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { authCheckJwt } from "../../middlewares/authCheck.middlewares";
-import { getUserBookings } from "../../controller/booking/getBookUserInfo.controller";
-import { getUserBookingHistory } from "../../controller/user/getUserBookingHistory.controller";
-import { getUserProfile, updateUserProfile } from "../../controller/user/userProfile.controller";
-import { GetKycDocuments, UploadKycDocument, DeleteKycDocument } from "../../controller/user/kyc.controller";
-import { upload } from "../../middlewares/upload.middleware";
-import { checkPaymentForCash } from "../../controller/payment/checkPaymentForCash.controller";
+import { authCheckJwt } from "../../middlewares/authCheck.middlewares.js";
+import { getUserBookings } from "../../controller/booking/getBookUserInfo.controller.js";
+import { getUserBookingHistory } from "../../controller/user/getUserBookingHistory.controller.js";
+import { getUserProfile, updateUserProfile } from "../../controller/user/userProfile.controller.js";
+import { GetKycDocuments, UploadKycDocument, DeleteKycDocument } from "../../controller/user/kyc.controller.js";
+import { upload } from "../../middlewares/upload.middleware.js";
+import { checkPaymentForCash } from "../../controller/payment/checkPaymentForCash.controller.js";
 const router: Router = Router()
 
 router.get("/booking", authCheckJwt, getUserBookings)

@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
-import { StatusCode } from "../../types/statusCode";
+import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus, PaymentStatus, VehicleStatus, DepositMethod, InvoiceStatus } from "@repo/database/client";
-import { redis } from "../../lib/redisconfig";
-import { createID } from "../../utils/nanoID";
+import { redis } from "../../lib/redisconfig.js";
+import { createID } from "../../utils/nanoID.js";
 import jwt from "jsonwebtoken";
 
 interface CashPaymentPayload {

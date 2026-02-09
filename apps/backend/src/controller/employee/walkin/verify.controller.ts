@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import { prisma } from "@repo/database/client";
-import { StatusCode } from "../../../types/statusCode";
+import { StatusCode } from "../../../types/statusCode.js";
 import { verifyWalkinOtpSchema } from "@repo/schemas";
-import { comparehash } from "../../../utils/PasswordCrypt/password";
+import { comparehash } from "../../../utils/PasswordCrypt/password.js";
 
 export const VerifyWalkinOtp = async (req: Request, res: Response) => {
     try {

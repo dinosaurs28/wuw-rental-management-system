@@ -1,6 +1,6 @@
 import Redis from "ioredis";
 import { prisma, BookingStatus } from "@repo/database/client";
-import { createID } from "../utils/nanoID";
+import { createID } from "../utils/nanoID.js";
 
 
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";

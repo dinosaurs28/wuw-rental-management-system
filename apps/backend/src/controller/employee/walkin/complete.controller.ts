@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
 import { prisma } from "@repo/database/client";
-import { StatusCode } from "../../../types/statusCode";
+import { StatusCode } from "../../../types/statusCode.js";
 import { completeWalkinProfileSchema } from "@repo/schemas";
-import { hashpassword } from "../../../utils/PasswordCrypt/password";
-import { createID } from "../../../utils/nanoID";
+import { hashpassword } from "../../../utils/PasswordCrypt/password.js";
+import { createID } from "../../../utils/nanoID.js";
 
 export const CompleteWalkinProfile = async (req: Request, res: Response) => {
     try {

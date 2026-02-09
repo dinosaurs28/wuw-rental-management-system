@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { StatusCode } from "../types/statusCode";
+import { StatusCode } from "../types/statusCode.js";
 import { prisma } from "@repo/database/client";
 
 declare global {

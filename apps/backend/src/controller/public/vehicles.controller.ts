@@ -1,14 +1,14 @@
 import { Request, Response } from "express";
 import { prisma } from "@repo/database/client";
-import { StatusCode } from "../../types/statusCode";
-import { redis } from "../../lib/redisconfig";
-import { calculatePricingForVehicle } from "../../utils/pricing/calcPricing";
+import { StatusCode } from "../../types/statusCode.js";
+import { redis } from "../../lib/redisconfig.js";
+import { calculatePricingForVehicle } from "../../utils/pricing/calcPricing.js";
 import { getVehicleDetailsSchema } from "@repo/schemas";
-import { calculatePricingForVehicleFromRecord } from "../../utils/pricing/calcPricingInd";
-import { calculateMultiDayTotalPrice } from "../../utils/pricing/calcMultiDayPrice";
-import { checkVehicleAvailability } from "../../utils/availability/checkAvailability";
-import { getDepositAmount } from "../../utils/pricing/getDepositAmount";
-import { getDiscountForDays } from "../../utils/pricing/getDiscountForDays";
+import { calculatePricingForVehicleFromRecord } from "../../utils/pricing/calcPricingInd.js";
+import { calculateMultiDayTotalPrice } from "../../utils/pricing/calcMultiDayPrice.js";
+import { checkVehicleAvailability } from "../../utils/availability/checkAvailability.js";
+import { getDepositAmount } from "../../utils/pricing/getDepositAmount.js";
+import { getDiscountForDays } from "../../utils/pricing/getDiscountForDays.js";
 
 export const getPublicVehicles = async (req: Request, res: Response) => {
   try {

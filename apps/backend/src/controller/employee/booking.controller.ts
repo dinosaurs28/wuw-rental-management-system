@@ -2,13 +2,13 @@ import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus, DepositMethod } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
-import { checkVehicleAvailability } from "../../utils/availability/checkAvailability";
-import { calculatePricingForVehicleFromRecord } from "../../utils/pricing/calcPricingInd";
-import { calculateMultiDayTotalPrice } from "../../utils/pricing/calcMultiDayPrice";
-import { getDiscountForDays } from "../../utils/pricing/getDiscountForDays";
-import { getDepositAmount } from "../../utils/pricing/getDepositAmount";
-import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils";
-import { createID } from "../../utils/nanoID";
+import { checkVehicleAvailability } from "../../utils/availability/checkAvailability.js";
+import { calculatePricingForVehicleFromRecord } from "../../utils/pricing/calcPricingInd.js";
+import { calculateMultiDayTotalPrice } from "../../utils/pricing/calcMultiDayPrice.js";
+import { getDiscountForDays } from "../../utils/pricing/getDiscountForDays.js";
+import { getDepositAmount } from "../../utils/pricing/getDepositAmount.js";
+import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
+import { createID } from "../../utils/nanoID.js";
 
 export const BookingController = async (req: Request, res: Response) => {
     try {

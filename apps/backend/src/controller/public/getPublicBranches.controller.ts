@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import { StatusCode } from "../../types/statusCode";
+import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
-import { redis } from "../../lib/redisconfig";
+import { redis } from "../../lib/redisconfig.js";
 
 export const getPublicBranches=async(req:Request,res:Response)=>{
     try {

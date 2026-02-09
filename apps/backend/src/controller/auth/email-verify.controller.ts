@@ -1,11 +1,11 @@
 import { prisma } from "@repo/database/client";
-import { StatusCode } from "../../types/statusCode"
+import { StatusCode } from "../../types/statusCode.js"
 import { Request, Response } from "express"
-import { rateLimit } from "../../utils/rateLimiter";
-import { comparehash, hashpassword } from "../../utils/PasswordCrypt/password";
-import { sendOTP } from "../../services/otp/otpservice";
+import { rateLimit } from "../../utils/rateLimiter.js";
+import { comparehash, hashpassword } from "../../utils/PasswordCrypt/password.js";
+import { sendOTP } from "../../services/otp/otpservice.js";
 import { otpSchema } from "@repo/schemas";
-import { jwtsign } from "../../utils/token/tokensign.utlis";
+import { jwtsign } from "../../utils/token/tokensign.utlis.js";
 
 export const generateOTP = async (req: Request, res: Response) => {
     try {

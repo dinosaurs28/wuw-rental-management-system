@@ -1,24 +1,24 @@
 import { Router } from "express";
-import { Login } from "../../controller/employee/login.controller";
-import { searchVehicles, getEmployeeVehicleDetails } from "../../controller/employee/vehicle.controller";
-import { createEmployeeBooking, GetBookingDetails } from "../../controller/employee/booking.controller";
-import { EmployeeCheck } from "../../middlewares/employeeCheck.middlewares";
-import { BookingController } from "../../controller/employee/booking.controller";
-import { returnController } from "../../controller/employee/return.controller";
-import { GetBookingKyc, VerifyKyc } from "../../controller/employee/kyc.controller";
-import { PickupController } from "../../controller/employee/pickup.controller";
-import { CompleteReturn, UploadReturnImage, DeleteReturnImage } from "../../controller/employee/returnAction.controller";
-import { InitiateWalkin } from "../../controller/employee/walkin/initiate.controller";
-import { VerifyWalkinOtp } from "../../controller/employee/walkin/verify.controller";
-import { CompleteWalkinProfile } from "../../controller/employee/walkin/complete.controller";
-import { SearchCustomer } from "../../controller/employee/customer/search.controller";
-import { GetCustomerDetails } from "../../controller/employee/customer/get.controller";
-import { upload } from "../../middlewares/upload.middleware";
-import { CheckCustomerPublicId } from "../../middlewares/checkCustomer.middleware";
-import { UpdateWalkinKycStatus, UploadWalkinKyc } from "../../controller/employee/walkin/kyc.controller";
-import { CreateDamageReport, UploadDamageImage } from "../../controller/employee/damage.controller";
-import { GetCustomerKyc } from "../../controller/employee/walkin/getKyc.controller";
-import { DeleteKycDocument } from "../../controller/user/kyc.controller";
+import { Login } from "../../controller/employee/login.controller.js";
+import { searchVehicles, getEmployeeVehicleDetails } from "../../controller/employee/vehicle.controller.js";
+import { createEmployeeBooking, GetBookingDetails } from "../../controller/employee/booking.controller.js";
+import { EmployeeCheck } from "../../middlewares/employeeCheck.middlewares.js";
+import { BookingController } from "../../controller/employee/booking.controller.js";
+import { returnController } from "../../controller/employee/return.controller.js";
+import { GetBookingKyc, VerifyKyc } from "../../controller/employee/kyc.controller.js";
+import { PickupController } from "../../controller/employee/pickup.controller.js";
+import { CompleteReturn, UploadReturnImage, DeleteReturnImage } from "../../controller/employee/returnAction.controller.js";
+import { InitiateWalkin } from "../../controller/employee/walkin/initiate.controller.js";
+import { VerifyWalkinOtp } from "../../controller/employee/walkin/verify.controller.js";
+import { CompleteWalkinProfile } from "../../controller/employee/walkin/complete.controller.js";
+import { SearchCustomer } from "../../controller/employee/customer/search.controller.js";
+import { GetCustomerDetails } from "../../controller/employee/customer/get.controller.js";
+import { upload } from "../../middlewares/upload.middleware.js";
+import { CheckCustomerPublicId } from "../../middlewares/checkCustomer.middleware.js";
+import { UpdateWalkinKycStatus, UploadWalkinKyc } from "../../controller/employee/walkin/kyc.controller.js";
+import { CreateDamageReport, UploadDamageImage } from "../../controller/employee/damage.controller.js";
+import { GetCustomerKyc } from "../../controller/employee/walkin/getKyc.controller.js";
+import { DeleteKycDocument } from "../../controller/user/kyc.controller.js";
 
 const router: Router = Router()
 

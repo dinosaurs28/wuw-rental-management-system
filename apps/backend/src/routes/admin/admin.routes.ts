@@ -1,20 +1,20 @@
 import { Router } from "express";
-import { Login } from "../../controller/admin/auth.controller";
-import { AdminCheck } from "../../middlewares/adminCheck.middleware";
-import { GetAllBranches, CreateBranch, EditBranch, DeleteBranch } from "../../controller/admin/branch.controller";
-import { GetBranchRevenue } from "../../controller/admin/report.controller";
-import { GetRevenueTrends, GetRevenueByCategory, GetKPISummary, GetPaymentMethodBreakdown } from "../../controller/admin/analytics.controller";
-import { GetDailySummary } from "../../controller/admin/dailySummaryController";
-import { GetSalesReport } from "../../controller/admin/salesReportController";
-import { GetVehicleHistory } from "../../controller/admin/vehicleHistoryController";
-import { GetVehicleAvailability } from "../../controller/admin/vehicleAvailabilityController";
-import { GetInsurancePermitExpiry } from "../../controller/admin/insurancePermitController";
-import { GetCollectionReport } from "../../controller/admin/collectionReportController";
-import { GetFleetExecutiveReport } from "../../controller/admin/fleetExecutiveController";
-import { GetGSTReport } from "../../controller/admin/gstReportController";
-import { GetAllCategories } from "../../controller/admin/category.controller";
-import { getGlobalKpiStats } from "../../controller/admin/globalKpi.controller";
-import { GetAllVehicles } from "../../controller/admin/vehicle.controller";
+import { Login } from "../../controller/admin/auth.controller.js";
+import { AdminCheck } from "../../middlewares/adminCheck.middleware.js";
+import { GetAllBranches, CreateBranch, EditBranch, DeleteBranch } from "../../controller/admin/branch.controller.js";
+import { GetBranchRevenue } from "../../controller/admin/report.controller.js";
+import { GetRevenueTrends, GetRevenueByCategory, GetKPISummary, GetPaymentMethodBreakdown } from "../../controller/admin/analytics.controller.js";
+import { GetDailySummary } from "../../controller/admin/dailySummaryController.js";
+import { GetSalesReport } from "../../controller/admin/salesReportController.js";
+import { GetVehicleHistory } from "../../controller/admin/vehicleHistoryController.js";
+import { GetVehicleAvailability } from "../../controller/admin/vehicleAvailabilityController.js";
+import { GetInsurancePermitExpiry } from "../../controller/admin/insurancePermitController.js";
+import { GetCollectionReport } from "../../controller/admin/collectionReportController.js";
+import { GetFleetExecutiveReport } from "../../controller/admin/fleetExecutiveController.js";
+import { GetGSTReport } from "../../controller/admin/gstReportController.js";
+import { GetAllCategories } from "../../controller/admin/category.controller.js";
+import { getGlobalKpiStats } from "../../controller/admin/globalKpi.controller.js";
+import { GetAllVehicles } from "../../controller/admin/vehicle.controller.js";
 
 const router: Router = Router();
 

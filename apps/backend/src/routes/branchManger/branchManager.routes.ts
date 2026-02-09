@@ -1,16 +1,16 @@
 import { Router } from "express";
-import { Login } from "../../controller/branchManager/login.controller";
-import { ManagerCheck } from "../../middlewares/managerCheck.middlewares";
-import { GetRevenueStats } from "../../controller/branchManager/revenue.controller";
-import { GetDashboardStats } from "../../controller/branchManager/dashboard.controller";
-import { GetActiveBookings, GetPendingApprovals } from "../../controller/branchManager/bookings.controller";
+import { Login } from "../../controller/branchManager/login.controller.js";
+import { ManagerCheck } from "../../middlewares/managerCheck.middlewares.js";
+import { GetRevenueStats } from "../../controller/branchManager/revenue.controller.js";
+import { GetDashboardStats } from "../../controller/branchManager/dashboard.controller.js";
+import { GetActiveBookings, GetPendingApprovals } from "../../controller/branchManager/bookings.controller.js";
 
-import { GetDamageReports, CloseDamageReport, GetMinimalDamageReport, GetDamageReportList, CheckDamagePaymentStatus } from "../../controller/branchManager/damage.controller";
-import { AddVehicle, EditVehicle, GetInsuranceExpiryReport, GetVehicleById, GetVehicles, DeleteVehicle, GetVehicleCategories } from "../../controller/branchManager/vehicle.controller";
-import { GetStaffAuditLogs } from "../../controller/branchManager/audit.controller";
-import { CreateEmployee, GetEmployee, SearchEmployee, UpdateEmployee } from "../../controller/branchManager/employee.controller";
-import { CreateDepositRule, GetDepositRules, UpdateDepositRule, DeleteDepositRule } from "../../controller/branchManager/deposit.controller";
-import { upload } from "../../middlewares/upload.middleware";
+import { GetDamageReports, CloseDamageReport, GetMinimalDamageReport, GetDamageReportList, CheckDamagePaymentStatus } from "../../controller/branchManager/damage.controller.js";
+import { AddVehicle, EditVehicle, GetInsuranceExpiryReport, GetVehicleById, GetVehicles, DeleteVehicle, GetVehicleCategories } from "../../controller/branchManager/vehicle.controller.js";
+import { GetStaffAuditLogs } from "../../controller/branchManager/audit.controller.js";
+import { CreateEmployee, GetEmployee, SearchEmployee, UpdateEmployee } from "../../controller/branchManager/employee.controller.js";
+import { CreateDepositRule, GetDepositRules, UpdateDepositRule, DeleteDepositRule } from "../../controller/branchManager/deposit.controller.js";
+import { upload } from "../../middlewares/upload.middleware.js";
 
 const router: Router = Router()
 

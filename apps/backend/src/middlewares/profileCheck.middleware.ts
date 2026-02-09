@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { prisma } from "@repo/database/client";
-import { StatusCode } from "../types/statusCode";
+import { StatusCode } from "../types/statusCode.js";
 
 export const checkProfileCompletion = async (req: Request, res: Response, next: NextFunction) => {
     try {

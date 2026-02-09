@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { prisma, Role } from "@repo/database/client";
-import { StatusCode } from "../../../types/statusCode";
-import { redis } from "../../../lib/redisconfig";
+import { StatusCode } from "../../../types/statusCode.js";
+import { redis } from "../../../lib/redisconfig.js";
 
 export const SearchCustomer = async (req: Request, res: Response) => {
     try {

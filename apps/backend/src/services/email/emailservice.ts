@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
-import { generateOTPEmailTemplate, OTPTemplateOptions } from "./emailtemplate"
+import { generateOTPEmailTemplate, OTPTemplateOptions } from "./emailtemplate.js"
 import dotenv from "dotenv"
 dotenv.config()
 interface MSG91Config {

@@ -1,15 +1,15 @@
 import { Request, Response } from "express";
-import { StatusCode } from "../../types/statusCode";
+import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
 import { bookingSummarySchema } from "@repo/schemas";
-import { redis } from "../../lib/redisconfig";
-import { calculatePricingForVehicleFromRecord } from "../../utils/pricing/calcPricingInd";
-import { checkVehicleAvailability } from "../../utils/availability/checkAvailability";
-import { getDepositAmount } from "../../utils/pricing/getDepositAmount";
-import { calculateMultiDayTotalPrice } from "../../utils/pricing/calcMultiDayPrice";
-import { getDiscountForDays } from "../../utils/pricing/getDiscountForDays";
-import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils";
-import { createID } from "../../utils/nanoID";
+import { redis } from "../../lib/redisconfig.js";
+import { calculatePricingForVehicleFromRecord } from "../../utils/pricing/calcPricingInd.js";
+import { checkVehicleAvailability } from "../../utils/availability/checkAvailability.js";
+import { getDepositAmount } from "../../utils/pricing/getDepositAmount.js";
+import { calculateMultiDayTotalPrice } from "../../utils/pricing/calcMultiDayPrice.js";
+import { getDiscountForDays } from "../../utils/pricing/getDiscountForDays.js";
+import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
+import { createID } from "../../utils/nanoID.js";
 import jwt from "jsonwebtoken"
 export const createBookingSummary = async (req: Request, res: Response) => {
   try {

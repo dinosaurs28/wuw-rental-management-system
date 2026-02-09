@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import { prisma } from "@repo/database/client";
-import { StatusCode } from "../../types/statusCode";
+import { StatusCode } from "../../types/statusCode.js";
 import { updateProfileSchema } from "@repo/schemas";
-import { createID } from "../../utils/nanoID";
+import { createID } from "../../utils/nanoID.js";
 
 export const getUserProfile = async (req: Request, res: Response) => {
     try {

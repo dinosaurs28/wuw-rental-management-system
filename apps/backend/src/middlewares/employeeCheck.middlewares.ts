@@ -1,7 +1,7 @@
 import { NextFunction,Response,Request } from "express";
-import { StatusCode } from "../types/statusCode";
-import { jwtverfiy } from "../utils/token/tokenverfiy.utlis";
-import { jwtinterface } from "../utils/token/tokensign.utlis";
+import { StatusCode } from "../types/statusCode.js";
+import { jwtverfiy } from "../utils/token/tokenverfiy.utlis.js";
+import { jwtinterface } from "../utils/token/tokensign.utlis.js";
 import { Role } from "@repo/database/client";
 
 declare global{

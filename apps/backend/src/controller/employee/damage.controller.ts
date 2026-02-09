@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
-import { StatusCode } from "../../types/statusCode";
+import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus, BookingPhotoType, VehicleReturnDisposition, DamageReportStatus, VehicleStatus } from "@repo/database/client";
-import { createID } from "../../utils/nanoID";
+import { createID } from "../../utils/nanoID.js";
 import { createDamageReportSchema } from "@repo/schemas";
-import { r2 } from "../../lib/r2.client";
+import { r2 } from "../../lib/r2.client.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs/promises";
 import path from "path";

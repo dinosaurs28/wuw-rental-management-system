@@ -2,9 +2,9 @@ import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus, DamageReportStatus, VehicleStatus, PaymentStatus, InvoiceStatus, DepositMethod, VehicleReturnDisposition } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
-import { createID } from "../../utils/nanoID";
+import { createID } from "../../utils/nanoID.js";
 import { closeDamageReportSchema } from "@repo/schemas";
-import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils";
+import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
 import { checkPhonePeStatus } from "../../utils/payment/paymentStatus.utils.js";
 
 export const GetDamageReports = async (req: Request, res: Response) => {

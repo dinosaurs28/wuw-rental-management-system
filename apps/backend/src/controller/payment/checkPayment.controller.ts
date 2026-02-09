@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
-import { StatusCode } from "../../types/statusCode";
-import { paymentStatusCheck } from "../../utils/payment/paymentStatusCheck.utils";
+import { StatusCode } from "../../types/statusCode.js";
+import { paymentStatusCheck } from "../../utils/payment/paymentStatusCheck.utils.js";
 import { prisma, BookingStatus, PaymentStatus, VehicleStatus, DepositMethod, InvoiceStatus } from "@repo/database/client";
-import { redis } from "../../lib/redisconfig";
-import { createID } from "../../utils/nanoID";
+import { redis } from "../../lib/redisconfig.js";
+import { createID } from "../../utils/nanoID.js";
 
 export const checkPayment = async (req: Request, res: Response) => {
   try {

@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
 import { prisma, Role, AuthProvider } from "@repo/database/client";
-import { StatusCode } from "../../../types/statusCode";
+import { StatusCode } from "../../../types/statusCode.js";
 import { initiateWalkinSchema } from "@repo/schemas"; // Ensure this is exported
-import { createID } from "../../../utils/nanoID";
-import { hashpassword } from "../../../utils/PasswordCrypt/password";
-import { sendOTP } from "../../../services/otp/otpservice";
-import { rateLimit } from "../../../utils/rateLimiter";
+import { createID } from "../../../utils/nanoID.js";
+import { hashpassword } from "../../../utils/PasswordCrypt/password.js";
+import { sendOTP } from "../../../services/otp/otpservice.js";
+import { rateLimit } from "../../../utils/rateLimiter.js";
 
 export const InitiateWalkin = async (req: Request, res: Response) => {
     try {
