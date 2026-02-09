@@ -5,6 +5,7 @@ import { createEmployeeSchema, updateEmployeeSchema } from "@repo/schemas";
 import { hashSync } from "bcrypt";
 import crypto from "crypto";
 import { createID } from "../../utils/nanoID";
+import { hashpassword } from "../../utils/PasswordCrypt/password";
 
 export const SearchEmployee = async (req: Request, res: Response) => {
     const branchId = req.branch_Id;
@@ -112,7 +113,7 @@ export const CreateEmployee = async (req: Request, res: Response) => {
         });
     }
 
-    const { name, phone } = validation.data;
+    const { name, phone, password } = validation.data;
 
     try {
         // Check if phone already exists in this branch/system? 
@@ -133,9 +134,7 @@ export const CreateEmployee = async (req: Request, res: Response) => {
             return res.status(StatusCode.CONFLICT).json({ message: "Employee with this phone already exists" });
         }
 
-        // Generate password
-        const password = crypto.randomBytes(8).toString('hex');
-        const passwordHash = hashSync(password, 10);
+        const passwordHash = await hashpassword(password);
         const publicId = createID();
 
         const newUser = await prisma.user.create({

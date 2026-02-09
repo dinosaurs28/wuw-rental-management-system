@@ -51,6 +51,7 @@ passport.use(
             email,
             authProvider: AuthProvider.GOOGLE,
             role: Role.CUSTOMER,
+            emailVerifiedAt: new Date(), //Until the Otp System is Implemented
           },
         });
 

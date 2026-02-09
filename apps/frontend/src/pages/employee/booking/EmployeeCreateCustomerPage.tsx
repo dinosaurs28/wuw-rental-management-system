@@ -71,6 +71,7 @@ export default function EmployeeCreateCustomerPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [otpSent, setOtpSent] = useState(false);
     const [customerPublicId, setCustomerPublicId] = useState<string | null>(null);
+    const [receivedOtp, setReceivedOtp] = useState<string | null>(null);
 
     // Forms
     const phoneForm = useForm<z.infer<typeof phoneSchema>>({
@@ -94,8 +95,9 @@ export default function EmployeeCreateCustomerPage() {
             const response = await apiClient.post("/employee/walkin/initiate", { phone: data.phone });
 
             setCustomerPublicId(response.data.customer_public_id);
+            setReceivedOtp(response.data.otp);
             setOtpSent(true);
-            toast.success("OTP sent explicitly to customer phone");
+            toast.success(`OTP sent explicitly to customer phone: ${response.data.otp}`);
         } catch (error: any) {
             console.error(error);
             toast.error(error.response?.data?.message || "Failed to send OTP");
@@ -211,19 +213,32 @@ export default function EmployeeCreateCustomerPage() {
                                         />
 
                                         {otpSent && (
-                                            <FormField
-                                                control={phoneForm.control}
-                                                name="otp"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Enter OTP</FormLabel>
-                                                        <FormControl>
-                                                            <Input placeholder="123456" maxLength={6} {...field} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
+                                            <>
+                                                {receivedOtp && (
+                                                    <div className="mb-6 rounded-lg border bg-card text-card-foreground shadow-sm p-4">
+                                                        <div className="flex flex-col space-y-1.5">
+                                                            <h3 className="font-semibold leading-none tracking-tight">One-Time Password</h3>
+                                                            <p className="text-sm text-muted-foreground">Share this code with the customer.</p>
+                                                        </div>
+                                                        <div className="mt-4 flex items-center justify-center rounded-md bg-muted p-4">
+                                                            <span className="text-2xl font-bold tracking-widest">{receivedOtp}</span>
+                                                        </div>
+                                                    </div>
                                                 )}
-                                            />
+                                                <FormField
+                                                    control={phoneForm.control}
+                                                    name="otp"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Enter OTP</FormLabel>
+                                                            <FormControl>
+                                                                <Input placeholder="123456" maxLength={6} {...field} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </>
                                         )}
 
                                         {!otpSent ? (

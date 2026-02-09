@@ -57,7 +57,7 @@ export const InitiateWalkin = async (req: Request, res: Response) => {
                     phone: phone,
                     role: Role.CUSTOMER,
                     authProvider: AuthProvider.PASSWORD,
-                    passwordHash: null, // No password yet
+                    passwordHash: , // No password yet
                 }
             });
         }
@@ -103,6 +103,7 @@ export const InitiateWalkin = async (req: Request, res: Response) => {
         // }
         return res.status(StatusCode.OK).json({
             message: "OTP sent successfully",
+            otp: otp,
             customer_public_id: user.publicId
         });
     } catch (e: any) {

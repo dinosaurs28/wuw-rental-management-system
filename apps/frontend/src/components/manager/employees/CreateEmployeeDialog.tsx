@@ -30,6 +30,7 @@ import { branchEmployeeService } from "@/services/branchEmployee.service";
 const createEmployeeSchema = z.object({
     name: z.string().min(1, "Name is required"),
     phone: z.string().min(10, "Phone number must be at least 10 digits"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 interface CreateEmployeeDialogProps {
@@ -45,6 +46,7 @@ export function CreateEmployeeDialog({ onSuccess }: CreateEmployeeDialogProps) {
         defaultValues: {
             name: "",
             phone: "",
+            password: "",
         },
     });
 
@@ -80,7 +82,7 @@ export function CreateEmployeeDialog({ onSuccess }: CreateEmployeeDialogProps) {
                 <DialogHeader>
                     <DialogTitle>Add New Employee</DialogTitle>
                     <DialogDescription>
-                        Enter the details of the new employee. They will receive login credentials via SMS.
+                        Enter the details of the new employee and set their password.
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -106,6 +108,19 @@ export function CreateEmployeeDialog({ onSuccess }: CreateEmployeeDialogProps) {
                                     <FormLabel>Phone Number</FormLabel>
                                     <FormControl>
                                         <Input placeholder="+1234567890" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="password"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Password</FormLabel>
+                                    <FormControl>
+                                        <Input type="password" placeholder="********" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

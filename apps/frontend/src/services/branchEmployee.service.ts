@@ -22,6 +22,7 @@ export interface GetEmployeesResponse {
 export interface CreateEmployeeInput {
     name: string;
     phone: string;
+    password: string;
 }
 
 export interface UpdateEmployeeInput {
