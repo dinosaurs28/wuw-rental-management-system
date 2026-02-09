@@ -20,10 +20,13 @@ import branchManagerRouter from "./routes/branchManger/branchManager.routes.js";
 import adminRouter from "./routes/admin/admin.routes.js";
 import "./jobs/image.worker.js";
 import "./jobs/cleanup.worker.js";
-import "./jobs/bookingExpiry.worker.js";
+import { initBookingExpiryWorker } from "./jobs/bookingExpiry.worker.js";
 
 // Initialize passport AFTER env vars are loaded
 initializePassport();
+
+// Initialize booking expiry worker AFTER env vars are loaded
+initBookingExpiryWorker();
 
 const app = express();
 

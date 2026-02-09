@@ -3,19 +3,65 @@ import { prisma, BookingStatus } from "@repo/database/client";
 import { createID } from "../utils/nanoID.js";
 
 
-const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
+// Remove localhost fallback - fail fast if REDIS_URL is not set
+const REDIS_URL = process.env.REDIS_URL;
+if (!REDIS_URL) {
+    throw new Error("[BookingExpiry] REDIS_URL environment variable is required");
+}
+
 const FALLBACK_CRON_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 
-
-const redis = new Redis(REDIS_URL, {
+// Azure Redis connection configuration
+const redisConfig = {
     maxRetriesPerRequest: null,
     enableReadyCheck: true,
+    connectTimeout: 30000, // 30 seconds
+    retryStrategy(times: number) {
+        const delay = Math.min(times * 50, 2000);
+        return delay;
+    },
+    // TLS configuration for Azure Redis (rediss://)
+    tls: REDIS_URL.startsWith('rediss://') ? {
+        rejectUnauthorized: true,
+    } : undefined,
+};
+
+const redis = new Redis(REDIS_URL, redisConfig);
+
+// Add connection event handlers
+redis.on('connect', () => {
+    console.log('[BookingExpiry] Redis client connected');
 });
 
+redis.on('ready', () => {
+    console.log('[BookingExpiry] Redis client ready');
+});
 
-const redisSubscriber = new Redis(REDIS_URL, {
-    maxRetriesPerRequest: null,
-    enableReadyCheck: true,
+redis.on('error', (err) => {
+    console.error('[BookingExpiry] Redis client error:', err.message);
+});
+
+redis.on('close', () => {
+    console.log('[BookingExpiry] Redis client connection closed');
+});
+
+const redisSubscriber = new Redis(REDIS_URL, redisConfig);
+
+// Add connection event handlers for subscriber
+redisSubscriber.on('connect', () => {
+    console.log('[BookingExpiry] Redis subscriber connected');
+});
+
+redisSubscriber.on('ready', () => {
+    console.log('[BookingExpiry] Redis subscriber ready');
+});
+
+redisSubscriber.on('error', (err) => {
+    console.error('[BookingExpiry] Redis subscriber error:', err.message);
+});
+
+redisSubscriber.on('close', () => {
+    console.log('[BookingExpiry] Redis subscriber connection closed');
 });
 
 
@@ -243,10 +289,10 @@ async function initBookingExpiryWorker(): Promise<void> {
     }
 }
 
-// Auto-initialize when this module is imported
-initBookingExpiryWorker();
+// Export initialization function to be called from index.ts after env vars are loaded
+// Do NOT auto-initialize here
 
-// Export for testing purposes
+// Export for manual initialization and testing purposes
 export {
     handleBookingExpiry,
     runFallbackCleanup,

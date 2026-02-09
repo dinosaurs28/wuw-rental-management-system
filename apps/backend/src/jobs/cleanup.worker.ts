@@ -4,14 +4,23 @@ import { r2 } from "../lib/r2.client.js";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { prisma } from "@repo/database/client";
 
-const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+const redisUrl = process.env.REDIS_URL;
+if (!redisUrl) {
+    throw new Error("REDIS_URL environment variable is required");
+}
+
 const connection = new Redis(redisUrl, {
     maxRetriesPerRequest: null,
+    enableReadyCheck: true,
+    connectTimeout: 30000,
+    tls: redisUrl.startsWith('rediss://') ? {
+        rejectUnauthorized: true,
+    } : undefined,
 });
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
 
-export const cleanupWorker = new Worker("cleanup-processing", async (job: Job) => {
+export const cleanupWorker = new Worker("{bull}:cleanup-processing", async (job: Job) => {
     const { branchId } = job.data;
     console.log(`Starting cascade cleanup for branch ${branchId}`);
 

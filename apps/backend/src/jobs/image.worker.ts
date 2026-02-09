@@ -7,14 +7,23 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { prisma } from "@repo/database/client";
 import { createID } from "../utils/nanoID.js";
 
-const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+const redisUrl = process.env.REDIS_URL;
+if (!redisUrl) {
+    throw new Error("REDIS_URL environment variable is required");
+}
+
 const connection = new Redis(redisUrl, {
     maxRetriesPerRequest: null,
+    enableReadyCheck: true,
+    connectTimeout: 30000,
+    tls: redisUrl.startsWith('rediss://') ? {
+        rejectUnauthorized: true,
+    } : undefined,
 });
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
 
-export const imageWorker = new Worker("image-processing", async (job: Job) => {
+export const imageWorker = new Worker("{bull}:image-processing", async (job: Job) => {
     const { filePath, vehicleId, mimeType, originalName } = job.data;
     console.log(`Processing image for vehicle ${vehicleId}: ${originalName}`);
 

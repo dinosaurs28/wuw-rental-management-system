@@ -1,14 +1,24 @@
 import { Queue } from "bullmq";
 import Redis from "ioredis";
 
-// Reuse existing Redis connection string from environment if available, or default
-const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+// Redis URL is required - no localhost fallback
+const redisUrl = process.env.REDIS_URL;
+if (!redisUrl) {
+    throw new Error("REDIS_URL environment variable is required");
+}
 
 const connection = new Redis(redisUrl, {
     maxRetriesPerRequest: null, // Required by BullMQ
+    enableReadyCheck: true,
+    connectTimeout: 30000,
+    // TLS configuration for Azure Redis (rediss://)
+    tls: redisUrl.startsWith('rediss://') ? {
+        rejectUnauthorized: true,
+    } : undefined,
 });
 
-export const imageQueue = new Queue("image-processing", {
+// Use hash tags {bull} to ensure all keys for this queue hash to the same slot in cluster mode
+export const imageQueue = new Queue("{bull}:image-processing", {
     connection,
     defaultJobOptions: {
         attempts: 3,
@@ -21,7 +31,7 @@ export const imageQueue = new Queue("image-processing", {
     }
 });
 
-export const cleanupQueue = new Queue("cleanup-processing", {
+export const cleanupQueue = new Queue("{bull}:cleanup-processing", {
     connection,
     defaultJobOptions: {
         attempts: 3,
@@ -34,7 +44,7 @@ export const cleanupQueue = new Queue("cleanup-processing", {
     }
 });
 
-export const fileCleanupQueue = new Queue("file-cleanup", {
+export const fileCleanupQueue = new Queue("{bull}:file-cleanup", {
     connection,
     defaultJobOptions: {
         attempts: 5,
