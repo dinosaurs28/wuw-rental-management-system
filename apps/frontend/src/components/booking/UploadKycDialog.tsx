@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Upload, X, Loader2, FileText, CheckCircle } from 'lucide-react';
+import { Upload, Loader2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -29,7 +29,6 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { kycService, type KycDocumentType } from '@/services/kyc.service';
 import apiClient from '@/lib/axios';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB

@@ -286,16 +286,16 @@ export const EmployeeBookingSummaryPage = () => {
                             <CardContent className="pt-4 flex gap-4 sm:gap-6">
                                 <div className="w-24 h-24 sm:w-32 sm:h-32 bg-zinc-100 rounded-lg overflow-hidden flex-shrink-0">
                                     <img
-                                        src={vehicle.images[0]}
+                                        src={vehicle.images[0]?.file?.url || '/placeholder.png'}
                                         alt={vehicle.model}
                                         className="w-full h-full object-cover"
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <h3 className="text-lg font-bold text-zinc-900">{vehicle.brand} {vehicle.model}</h3>
+                                    <h3 className="text-lg font-bold text-zinc-900">{vehicle.make} {vehicle.model}</h3>
                                     <p className="text-zinc-500 text-sm">{vehicle.year}</p>
                                     <Badge variant="secondary" className="mt-2 text-xs">
-                                        {vehicle.category}
+                                        {vehicle.category?.name}
                                     </Badge>
                                     <div className="flex items-center gap-2 text-zinc-600 text-sm mt-2">
                                         <MapPin className="size-3.5" />

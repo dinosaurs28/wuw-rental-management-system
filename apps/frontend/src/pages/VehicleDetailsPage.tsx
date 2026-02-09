@@ -97,13 +97,25 @@ export const VehicleDetailsPage = () => {
 
         // Set new vehicle selection with full details
         setVehicleId(vehicleId);
+
+        // Helper to extract string from string or object with name property
+        const getCategoryName = (cat: any): string => {
+            if (!cat) return '';
+            return typeof cat === 'string' ? cat : (cat.name || '');
+        };
+
+        const getBranchName = (br: any): string => {
+            if (!br) return '';
+            return typeof br === 'string' ? br : (br.name || '');
+        };
+
         setVehicleFullDetails({
             name: `${vehicle.make} ${vehicle.model}`,
             model: vehicle.model,
             make: vehicle.make,
-            images: vehicle.images || [],
-            category: vehicle.category,
-            branch: vehicle.branch,
+            images: vehicle.images?.map(img => typeof img === 'string' ? img : img.file?.url).filter(Boolean) || [],
+            category: getCategoryName(vehicle.category),
+            branch: getBranchName(vehicle.branch),
         });
 
         // Set dates from current state (not stale closure values)
@@ -198,7 +210,7 @@ export const VehicleDetailsPage = () => {
                         </h1>
                         <div className="flex items-center gap-2">
                             <span className="px-3 py-1 text-xs font-semibold bg-orange-100 text-orange-700 rounded-full">
-                                {vehicle.category}
+                                {typeof vehicle.category === 'string' ? vehicle.category : vehicle.category?.name || 'N/A'}
                             </span>
                             <span
                                 className={cn(

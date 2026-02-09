@@ -57,7 +57,7 @@ export const InitiateWalkin = async (req: Request, res: Response) => {
                     phone: phone,
                     role: Role.CUSTOMER,
                     authProvider: AuthProvider.PASSWORD,
-                    passwordHash: , // No password yet
+                    passwordHash: null, // No password yet
                 }
             });
         }

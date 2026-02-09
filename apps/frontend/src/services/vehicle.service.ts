@@ -10,6 +10,8 @@ export interface VehicleFilters {
     sort?: 'price_low_to_high' | 'price_high_to_low';
     limit?: number;
     offset?: number;
+    start?: string;
+    end?: string;
 }
 
 export interface VehicleImage {
@@ -47,6 +49,8 @@ export const fetchVehicles = async (filters: VehicleFilters): Promise<VehiclesRe
         if (filters.status) params.append('status', filters.status);
         if (filters.limit) params.append('limit', filters.limit.toString());
         if (filters.offset) params.append('offset', filters.offset.toString());
+        if (filters.start) params.append('start', filters.start);
+        if (filters.end) params.append('end', filters.end);
 
         const response = await axios.get<VehiclesResponse>(`${API_URL}/branchManager/dashboard/vehicles`, {
             params,
@@ -68,10 +72,16 @@ export interface VehicleDetails {
     regNo: string;
     odo: number;
     status: 'AVAILABLE' | 'MAINTENANCE' | 'NOT_AVAILABLE';
+    availability?: boolean;
+    seats?: number;
+    transmission?: string;
+    fuelType?: string;
+    description?: string;
     categoryId: number;
     category?: {
         name: string;
     };
+    branch?: string;
     branchId: string;
     images: {
         id: string;
@@ -90,6 +100,13 @@ export interface VehicleDetails {
     policyNumber?: string;
     provider?: string;
     insuranceExpiry?: string;
+    pricing: {
+        daily: number;
+    };
+    baseTotal: number;
+    discountPrice: number;
+    totalDays: number;
+    deposit: number;
 }
 
 export interface VehicleDetailsResponse {
@@ -99,6 +116,8 @@ export interface VehicleDetailsResponse {
 
 export interface VehicleDetailsParams {
     vehicleId: string;
+    startDate?: string;
+    endDate?: string;
 }
 
 export const fetchVehicleDetails = async (
@@ -106,6 +125,10 @@ export const fetchVehicleDetails = async (
 ): Promise<VehicleDetailsResponse> => {
     try {
         const response = await axios.get<VehicleDetailsResponse>(`${API_URL}/branchManager/dashboard/vehicle/${params.vehicleId}`, {
+            params: {
+                startDate: params.startDate,
+                endDate: params.endDate
+            },
             withCredentials: true
         });
         return response.data;

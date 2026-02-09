@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronRight, UserCheck, AlertCircle } from "lucide-react";
-import { managerDashboardService, type Booking } from "@/services/managerDashboard.service";
+import { type Booking } from "@/services/managerDashboard.service";
 
 interface PendingApprovalsProps {
     bookings?: Booking[];

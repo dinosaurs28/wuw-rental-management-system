@@ -125,11 +125,15 @@ export default function EmployeeVehicleListingPage() {
                 {/* Filters */}
                 <div className="mb-6">
                     <VehicleFilters
+                        branches={[]} // Employee branch is determined by backend token
+                        branchesLoading={false}
+                        selectedBranch=""
                         pickupDate={selectedPickupDate}
                         returnDate={selectedReturnDate}
                         category={category}
                         sortBy={sortBy}
                         searchQuery={searchQuery}
+                        onBranchChange={() => { }} // No-op for employee page
                         onPickupDateChange={(date) => setSelectedPickupDate(date ?? null)}
                         onReturnDateChange={(date) => setSelectedReturnDate(date ?? null)}
                         onCategoryChange={setCategory}

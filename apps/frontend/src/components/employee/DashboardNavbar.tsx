@@ -10,9 +10,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useEmployeeAuthStore } from "@/store/employeeAuth.store";
-import { LogOut, LayoutDashboard, Search, Bell } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { LogOut, LayoutDashboard } from "lucide-react";
 
 export function DashboardNavbar() {
     const { user, logout } = useEmployeeAuthStore();

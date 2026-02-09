@@ -274,12 +274,12 @@ export const EmployeeVehicleDetailsPage = () => {
                         {/* Title and Features - Mobile only (shown above image on mobile usually, but keeping simple order) */}
                         <div className="lg:hidden space-y-4">
                             <h1 className="text-2xl font-bold text-zinc-900">
-                                {vehicle.brand} {vehicle.model}
+                                {vehicle.make} {vehicle.model}
                                 <span className="ml-2 text-lg font-normal text-zinc-500">{vehicle.year}</span>
                             </h1>
                             <div className="flex flex-wrap gap-2">
                                 <Badge variant="secondary" className="bg-zinc-100 text-zinc-700 hover:bg-zinc-200">
-                                    {vehicle.category}
+                                    {vehicle.category?.name}
                                 </Badge>
                                 {vehicleFeatures.map((feature, index) => (
                                     <Badge key={index} variant="outline" className="flex items-center gap-1.5 py-1">
@@ -291,17 +291,20 @@ export const EmployeeVehicleDetailsPage = () => {
                         </div>
 
                         {/* Gallery */}
-                        <VehicleImageGallery images={vehicle.images} vehicleName={`${vehicle.brand} ${vehicle.model}`} />
+                        <VehicleImageGallery
+                            images={vehicle.images.map(img => img.file.url)}
+                            vehicleName={`${vehicle.make} ${vehicle.model}`}
+                        />
 
                         {/* Title and Features - Desktop */}
                         <div className="hidden lg:block space-y-4">
                             <h1 className="text-3xl font-bold text-zinc-900">
-                                {vehicle.brand} {vehicle.model}
+                                {vehicle.make} {vehicle.model}
                                 <span className="ml-3 text-xl font-normal text-zinc-500">{vehicle.year}</span>
                             </h1>
                             <div className="flex flex-wrap gap-3">
                                 <Badge variant="secondary" className="px-3 py-1 text-sm bg-zinc-100 text-zinc-700 hover:bg-zinc-200">
-                                    {vehicle.category}
+                                    {vehicle.category?.name}
                                 </Badge>
                                 {vehicleFeatures.map((feature, index) => (
                                     <Badge key={index} variant="outline" className="flex items-center gap-2 px-3 py-1 text-sm">

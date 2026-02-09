@@ -17,7 +17,6 @@ import { Footer } from '@/components/landing/Footer';
 import { VehicleSummaryCard } from '@/components/booking/VehicleSummaryCard';
 import { KycSelectionCard } from '@/components/booking/KycSelectionCard';
 import { PaymentMethodCard } from '@/components/booking/PaymentMethodCard';
-import { PriceBreakdownCard } from '@/components/booking/PriceBreakdownCard';
 import { EmptyBookingState } from '@/components/booking/EmptyBookingState';
 import { TermsCheckbox } from '@/components/booking/TermsCheckbox';
 

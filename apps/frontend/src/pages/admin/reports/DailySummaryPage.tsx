@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { DailySummaryReport } from '@/components/admin/reports/DailySummaryReport';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { DailySummaryReports } from '@/components/admin/reports/DailySummaryReport';
 
 export const DailySummaryPage = () => {
     const navigate = useNavigate();
@@ -19,7 +19,7 @@ export const DailySummaryPage = () => {
                         <ArrowLeft className="h-4 w-4 mr-2" />
                         Back
                     </Button>
-                    <DailySummaryReport />
+                    <DailySummaryReports />
                 </div>
             </div>
         </div>

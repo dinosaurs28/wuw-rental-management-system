@@ -1,12 +1,11 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowUpRight, Calendar } from "lucide-react";
-import { managerDashboardService, type Booking } from "@/services/managerDashboard.service";
+import { ArrowUpRight } from "lucide-react";
+import {  type Booking } from "@/services/managerDashboard.service";
 
 interface ActiveBookingsProps {
     bookings?: Booking[];

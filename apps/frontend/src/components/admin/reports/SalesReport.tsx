@@ -12,6 +12,7 @@ import { getDateRangeFromPreset, type DateRangePreset } from '@/utils/exportHelp
 import { toast } from 'sonner';
 import type { SalesReport as SalesReportData, SalesBooking } from '@/types/reports';
 import { adminService } from '@/services/admin.service';
+import type { ColumnDef } from '@tanstack/react-table';
 
 // ============================================================================
 // Sales Report Component

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface VehicleImageGalleryProps {
-    images: string[];
+    images: string[] | { file: { url: string } }[];
     vehicleName: string;
 }
 
@@ -19,6 +19,11 @@ export const VehicleImageGallery = ({ images, vehicleName }: VehicleImageGallery
     const [current, setCurrent] = useState(0);
     const [canScrollPrev, setCanScrollPrev] = useState(false);
     const [canScrollNext, setCanScrollNext] = useState(false);
+
+    // Normalize images to string array
+    const normalizedImages: string[] = Array.isArray(images)
+        ? images.map(img => typeof img === 'string' ? img : img.file.url)
+        : [];
 
     useEffect(() => {
         if (!api) return;
@@ -53,7 +58,7 @@ export const VehicleImageGallery = ({ images, vehicleName }: VehicleImageGallery
         api?.scrollNext();
     }, [api]);
 
-    if (!images || images.length === 0) {
+    if (!normalizedImages || normalizedImages.length === 0) {
         return (
             <div className="w-full aspect-[4/3] bg-zinc-100 rounded-xl flex items-center justify-center">
                 <Car className="size-20 text-zinc-300" />
@@ -73,7 +78,7 @@ export const VehicleImageGallery = ({ images, vehicleName }: VehicleImageGallery
                     }}
                 >
                     <CarouselContent>
-                        {images.map((image, index) => (
+                        {normalizedImages.map((image, index) => (
                             <CarouselItem key={index}>
                                 <div className="aspect-[4/3] w-full overflow-hidden rounded-xl bg-zinc-100">
                                     <img
@@ -88,7 +93,7 @@ export const VehicleImageGallery = ({ images, vehicleName }: VehicleImageGallery
                 </Carousel>
 
                 {/* Navigation Arrows */}
-                {images.length > 1 && (
+                {normalizedImages.length > 1 && (
                     <>
                         <Button
                             variant="secondary"
@@ -125,9 +130,9 @@ export const VehicleImageGallery = ({ images, vehicleName }: VehicleImageGallery
             </div>
 
             {/* Thumbnail Strip */}
-            {images.length > 1 && (
+            {normalizedImages.length > 1 && (
                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-zinc-300">
-                    {images.map((image, index) => (
+                    {normalizedImages.map((image, index) => (
                         <button
                             key={index}
                             onClick={() => scrollTo(index)}

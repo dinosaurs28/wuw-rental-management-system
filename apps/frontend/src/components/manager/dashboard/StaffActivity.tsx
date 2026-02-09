@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { managerDashboardService, type StaffActivity as StaffActivityType } from "@/services/managerDashboard.service";
+import type { StaffActivity as StaffActivityType } from "@/services/managerDashboard.service";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface StaffActivityProps {

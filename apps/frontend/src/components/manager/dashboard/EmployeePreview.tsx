@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, Plus } from "lucide-react";
-import { managerDashboardService, type Employee } from "@/services/managerDashboard.service";
+import { type Employee } from "@/services/managerDashboard.service";
 
 interface EmployeePreviewProps {
     employees?: Employee[];

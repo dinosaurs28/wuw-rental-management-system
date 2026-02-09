@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 export const AdminBranchesPage = () => {
     const [branches, setBranches] = useState<AdminBranch[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [ ,setLoading] = useState(true);
 
     const fetchBranches = async () => {
         try {

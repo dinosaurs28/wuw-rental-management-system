@@ -36,7 +36,7 @@ export const VehicleCard = ({ vehicle, basePath = '/vehicle' }: VehicleCardProps
                 {/* Category Badge */}
                 <div className="absolute top-3 left-3">
                     <span className="px-3 py-1 text-xs font-semibold bg-orange-500 text-white rounded-full">
-                        {vehicle.category}
+                        {vehicle.category.name}
                     </span>
                 </div>
             </div>
@@ -56,7 +56,7 @@ export const VehicleCard = ({ vehicle, basePath = '/vehicle' }: VehicleCardProps
                 <div className="flex items-center justify-between pt-2 border-t border-zinc-100">
                     <div>
                         <span className="text-2xl font-bold text-zinc-900">
-                            ₹{vehicle.pricing.daily}
+                            ₹{vehicle.baseDailyPrice}
                         </span>
                         <span className="text-sm text-zinc-500 ml-1">/day</span>
                     </div>

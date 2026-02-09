@@ -8,7 +8,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import {
     Dialog,
     DialogContent,
@@ -149,10 +149,10 @@ function BranchRow({ branch, onRefresh }: { branch: AdminBranch; onRefresh: () =
             <TableCell className="text-neutral-600 max-w-[300px] truncate" title={branch.address}>{branch.address}</TableCell>
             <TableCell>
                 <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${branch.status === 'ACTIVE'
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                        : branch.status === 'MAINTENANCE'
-                            ? 'bg-amber-50 text-amber-700 border-amber-200'
-                            : 'bg-neutral-100 text-neutral-600 border-neutral-200'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : branch.status === 'MAINTENANCE'
+                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                        : 'bg-neutral-100 text-neutral-600 border-neutral-200'
                     }`}>
                     {branch.status || "ACTIVE"}
                 </div>

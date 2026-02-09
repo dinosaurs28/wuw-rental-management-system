@@ -1,11 +1,5 @@
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
-import { useDebounce } from "@uidotdev/usehooks"; // Assuming this hook exists or I should implement one. 
-// Wait, I should not assume. I will check hooks folder or use setTimeout. 
-// Standard practice is to implementation search debounce carefully. 
-// I'll check hooks folder first. If no debounce hook, I'll implement in component or create one.
-// Let's check hooks folder first in my memory... `list_dir` showed `hooks` exists.
-// I'll assume standard `useDebounce` might not be there. Use simple useEffect timeout.
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -19,7 +13,6 @@ import { ManagerLayout } from "@/components/manager/ManagerLayout";
 import { CreateEmployeeDialog } from "@/components/manager/employees/CreateEmployeeDialog";
 import { EmployeeTable } from "@/components/manager/employees/EmployeeTable";
 import { branchEmployeeService, type BranchEmployee } from "@/services/branchEmployee.service";
-import { toast } from "sonner";
 
 export const ManagerEmployeesPage = () => {
     const [searchTerm, setSearchTerm] = useState("");

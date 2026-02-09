@@ -11,15 +11,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { formatCurrency, formatDate, abbreviateAmount } from '@/utils/formatters';
 import { adminService } from '@/services/admin.service';
-import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { DailySummaryReport } from '@/types/reports';
+
 
 // ============================================================================
 // Daily Summary Report Component
 // ============================================================================
 
-export const DailySummaryReport = () => {
+export const DailySummaryReports = () => {
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [selectedBranch, setSelectedBranch] = useState<string>('all');
     const [reportData, setReportData] = useState<DailySummaryReport | null>(null);
@@ -54,7 +54,7 @@ export const DailySummaryReport = () => {
         try {
             const dateStr = selectedDate.toISOString().split('T')[0]; // YYYY-MM-DD
 
-            const params: Record<string, any> = { date: dateStr };
+            const params: { date: string; branchId?: string } = { date: dateStr };
             if (selectedBranch !== 'all') {
                 params.branchId = selectedBranch;
             }
