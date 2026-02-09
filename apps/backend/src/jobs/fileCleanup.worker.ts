@@ -3,19 +3,27 @@ import Redis from "ioredis";
 import { r2 } from "../lib/r2.client.js";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 
-const redisUrl = process.env.REDIS_URL;
-if (!redisUrl) {
-    throw new Error("REDIS_URL environment variable is required");
-}
+// Lazy initialization to ensure environment variables are loaded first
+let connection: Redis | null = null;
 
-const connection = new Redis(redisUrl, {
-    maxRetriesPerRequest: null,
-    enableReadyCheck: true,
-    connectTimeout: 30000,
-    tls: redisUrl.startsWith('rediss://') ? {
-        rejectUnauthorized: true,
-    } : undefined,
-});
+function getConnection(): Redis {
+    if (!connection) {
+        const redisUrl = process.env.REDIS_URL;
+        if (!redisUrl) {
+            throw new Error("REDIS_URL environment variable is required");
+        }
+
+        connection = new Redis(redisUrl, {
+            maxRetriesPerRequest: null,
+            enableReadyCheck: true,
+            connectTimeout: 30000,
+            tls: redisUrl.startsWith('rediss://') ? {
+                rejectUnauthorized: true,
+            } : undefined,
+        });
+    }
+    return connection;
+}
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
 
@@ -34,7 +42,7 @@ export const fileCleanupWorker = new Worker("{bull}:file-cleanup", async (job: J
         throw error;
     }
 }, {
-    connection
+    connection: getConnection()
 });
 
 fileCleanupWorker.on('completed', job => {
