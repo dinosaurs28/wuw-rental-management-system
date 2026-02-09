@@ -18,6 +18,11 @@ function getConnection(): Redis {
             maxRetriesPerRequest: null,
             enableReadyCheck: true,
             connectTimeout: 30000,
+            enableOfflineQueue: false,
+            retryStrategy(times: number) {
+                const delay = Math.min(times * 50, 2000);
+                return delay;
+            },
             tls: redisUrl.startsWith('rediss://') ? {
                 rejectUnauthorized: true,
             } : undefined,
@@ -28,74 +33,80 @@ function getConnection(): Redis {
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
 
-export const cleanupWorker = new Worker("{bull}:cleanup-processing", async (job: Job) => {
-    const { branchId } = job.data;
-    console.log(`Starting cascade cleanup for branch ${branchId}`);
+let cleanupWorker: Worker | null = null;
 
-    try {
-        // 1. Fetch all Vehicles in the branch
-        const vehicles = await prisma.vehicle.findMany({
-            where: {
-                branchId: branchId,
-                deletedAt: null
-            },
-            include: {
-                images: {
-                    include: {
-                        file: true
+export function initCleanupWorker(): void {
+    if (cleanupWorker) return; // Already initialized
+
+    cleanupWorker = new Worker("{bull}cleanup-processing", async (job: Job) => {
+        const { branchId } = job.data;
+        console.log(`Starting cascade cleanup for branch ${branchId}`);
+
+        try {
+            // 1. Fetch all Vehicles in the branch
+            const vehicles = await prisma.vehicle.findMany({
+                where: {
+                    branchId: branchId,
+                    deletedAt: null
+                },
+                include: {
+                    images: {
+                        include: {
+                            file: true
+                        }
                     }
                 }
-            }
-        });
+            });
 
-        // 2. Process Vehicles (Images + Soft Delete)
-        for (const vehicle of vehicles) {
-            // Delete Images from R2
-            for (const image of vehicle.images) {
-                if (image.file && image.file.key) {
-                    try {
-                        console.log(`Deleting R2 object: ${image.file.key}`);
-                        await r2.send(new DeleteObjectCommand({
-                            Bucket: BUCKET_NAME,
-                            Key: image.file.key
-                        }));
-                    } catch (err) {
-                        console.error(`Failed to delete key ${image.file.key} from R2`, err);
+            // 2. Process Vehicles (Images + Soft Delete)
+            for (const vehicle of vehicles) {
+                // Delete Images from R2
+                for (const image of vehicle.images) {
+                    if (image.file && image.file.key) {
+                        try {
+                            console.log(`Deleting R2 object: ${image.file.key}`);
+                            await r2.send(new DeleteObjectCommand({
+                                Bucket: BUCKET_NAME,
+                                Key: image.file.key
+                            }));
+                        } catch (err) {
+                            console.error(`Failed to delete key ${image.file.key} from R2`, err);
+                        }
                     }
                 }
+
+                // Soft Delete Vehicle
+                await prisma.vehicle.update({
+                    where: { id: vehicle.id },
+                    data: { deletedAt: new Date() }
+                });
             }
 
-            // Soft Delete Vehicle
-            await prisma.vehicle.update({
-                where: { id: vehicle.id },
+            // 3. Soft Delete all Staff/Users in the branch
+            // Note: Managers might have been deleted already by the controller, but this catches any others
+            await prisma.user.updateMany({
+                where: {
+                    branchId: branchId,
+                    deletedAt: null
+                },
                 data: { deletedAt: new Date() }
             });
+
+            console.log(`Cascade cleanup completed for branch ${branchId}`);
+
+        } catch (error) {
+            console.error(`Failed cleanup for branch ${branchId}:`, error);
+            throw error;
         }
+    }, {
+        connection: getConnection()
+    });
 
-        // 3. Soft Delete all Staff/Users in the branch
-        // Note: Managers might have been deleted already by the controller, but this catches any others
-        await prisma.user.updateMany({
-            where: {
-                branchId: branchId,
-                deletedAt: null
-            },
-            data: { deletedAt: new Date() }
-        });
+    cleanupWorker.on('completed', job => {
+        console.log(`Cleanup job ${job.id} has completed!`);
+    });
 
-        console.log(`Cascade cleanup completed for branch ${branchId}`);
-
-    } catch (error) {
-        console.error(`Failed cleanup for branch ${branchId}:`, error);
-        throw error;
-    }
-}, {
-    connection: getConnection()
-});
-
-cleanupWorker.on('completed', job => {
-    console.log(`Cleanup job ${job.id} has completed!`);
-});
-
-cleanupWorker.on('failed', (job, err) => {
-    console.log(`Cleanup job ${job?.id} has failed with ${err.message}`);
-});
+    cleanupWorker.on('failed', (job, err) => {
+        console.log(`Cleanup job ${job?.id} has failed with ${err.message}`);
+    });
+}

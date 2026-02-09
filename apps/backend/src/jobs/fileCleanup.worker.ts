@@ -17,6 +17,11 @@ function getConnection(): Redis {
             maxRetriesPerRequest: null,
             enableReadyCheck: true,
             connectTimeout: 30000,
+            enableOfflineQueue: false,
+            retryStrategy(times: number) {
+                const delay = Math.min(times * 50, 2000);
+                return delay;
+            },
             tls: redisUrl.startsWith('rediss://') ? {
                 rejectUnauthorized: true,
             } : undefined,
@@ -27,28 +32,34 @@ function getConnection(): Redis {
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
 
-export const fileCleanupWorker = new Worker("{bull}:file-cleanup", async (job: Job) => {
-    const { key } = job.data;
-    console.log(`Processing file cleanup for key: ${key}`);
+let fileCleanupWorker: Worker | null = null;
 
-    try {
-        await r2.send(new DeleteObjectCommand({
-            Bucket: BUCKET_NAME,
-            Key: key
-        }));
-        console.log(`Successfully deleted file from R2: ${key}`);
-    } catch (error) {
-        console.error(`Failed to delete file ${key} from R2:`, error);
-        throw error;
-    }
-}, {
-    connection: getConnection()
-});
+export function initFileCleanupWorker(): void {
+    if (fileCleanupWorker) return; // Already initialized
 
-fileCleanupWorker.on('completed', job => {
-    console.log(`File cleanup job ${job.id} has completed!`);
-});
+    fileCleanupWorker = new Worker("{bull}file-cleanup", async (job: Job) => {
+        const { key } = job.data;
+        console.log(`Processing file cleanup for key: ${key}`);
 
-fileCleanupWorker.on('failed', (job, err) => {
-    console.log(`File cleanup job ${job?.id} has failed with ${err.message}`);
-});
+        try {
+            await r2.send(new DeleteObjectCommand({
+                Bucket: BUCKET_NAME,
+                Key: key
+            }));
+            console.log(`Successfully deleted file from R2: ${key}`);
+        } catch (error) {
+            console.error(`Failed to delete file ${key} from R2:`, error);
+            throw error;
+        }
+    }, {
+        connection: getConnection()
+    });
+
+    fileCleanupWorker.on('completed', job => {
+        console.log(`File cleanup job ${job.id} has completed!`);
+    });
+
+    fileCleanupWorker.on('failed', (job, err) => {
+        console.log(`File cleanup job ${job?.id} has failed with ${err.message}`);
+    });
+}

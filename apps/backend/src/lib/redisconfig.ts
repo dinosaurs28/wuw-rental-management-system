@@ -13,6 +13,11 @@ function createRedisClient(): Redis {
     maxRetriesPerRequest: null,
     enableReadyCheck: true,
     connectTimeout: 30000,
+    enableOfflineQueue: false,
+    retryStrategy(times: number) {
+      const delay = Math.min(times * 50, 2000);
+      return delay;
+    },
     // TLS configuration for Azure Redis (rediss://)
     tls: redisUrl.startsWith('rediss://') ? {
       rejectUnauthorized: true,

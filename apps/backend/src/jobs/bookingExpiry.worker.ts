@@ -16,6 +16,7 @@ const redisConfig = {
     maxRetriesPerRequest: null,
     enableReadyCheck: true,
     connectTimeout: 30000, // 30 seconds
+    enableOfflineQueue: false,
     retryStrategy(times: number) {
         const delay = Math.min(times * 50, 2000);
         return delay;
@@ -67,6 +68,27 @@ redisSubscriber.on('close', () => {
 
 async function enableKeyspaceNotifications(): Promise<void> {
     try {
+        // Wait for Redis connection to be ready
+        if (redis.status !== 'ready') {
+            console.log('[BookingExpiry] Waiting for Redis connection to be ready...');
+            await new Promise<void>((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    reject(new Error('Redis connection timeout'));
+                }, 10000); // 10 second timeout
+
+                redis.once('ready', () => {
+                    clearTimeout(timeout);
+                    resolve();
+                });
+
+                // If already ready by the time we set up the listener
+                if (redis.status === 'ready') {
+                    clearTimeout(timeout);
+                    resolve();
+                }
+            });
+        }
+
         await redis.config("SET", "notify-keyspace-events", "Ex");
         console.log("[BookingExpiry] Keyspace notifications enabled (Ex)");
     } catch (error) {

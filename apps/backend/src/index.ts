@@ -18,14 +18,18 @@ import userrouter from "./routes/user/user.routes.js";
 import employeerouter from "./routes/employee/employee.routes.js";
 import branchManagerRouter from "./routes/branchManger/branchManager.routes.js";
 import adminRouter from "./routes/admin/admin.routes.js";
-import "./jobs/image.worker.js";
-import "./jobs/cleanup.worker.js";
+import { initImageWorker } from "./jobs/image.worker.js";
+import { initCleanupWorker } from "./jobs/cleanup.worker.js";
+import { initFileCleanupWorker } from "./jobs/fileCleanup.worker.js";
 import { initBookingExpiryWorker } from "./jobs/bookingExpiry.worker.js";
 
 // Initialize passport AFTER env vars are loaded
 initializePassport();
 
-// Initialize booking expiry worker AFTER env vars are loaded
+// Initialize all workers AFTER env vars are loaded
+initImageWorker();
+initCleanupWorker();
+initFileCleanupWorker();
 initBookingExpiryWorker();
 
 const app = express();

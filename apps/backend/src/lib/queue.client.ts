@@ -18,6 +18,11 @@ function getConnection(): Redis {
             maxRetriesPerRequest: null, // Required by BullMQ
             enableReadyCheck: true,
             connectTimeout: 30000,
+            enableOfflineQueue: false,
+            retryStrategy(times: number) {
+                const delay = Math.min(times * 50, 2000);
+                return delay;
+            },
             // TLS configuration for Azure Redis (rediss://)
             tls: redisUrl.startsWith('rediss://') ? {
                 rejectUnauthorized: true,
@@ -30,7 +35,7 @@ function getConnection(): Redis {
 // Lazy getters for queues
 export function getImageQueue(): Queue {
     if (!imageQueueInstance) {
-        imageQueueInstance = new Queue("{bull}:image-processing", {
+        imageQueueInstance = new Queue("{bull}image-processing", {
             connection: getConnection(),
             defaultJobOptions: {
                 attempts: 3,
@@ -48,7 +53,7 @@ export function getImageQueue(): Queue {
 
 export function getCleanupQueue(): Queue {
     if (!cleanupQueueInstance) {
-        cleanupQueueInstance = new Queue("{bull}:cleanup-processing", {
+        cleanupQueueInstance = new Queue("{bull}cleanup-processing", {
             connection: getConnection(),
             defaultJobOptions: {
                 attempts: 3,
@@ -66,7 +71,7 @@ export function getCleanupQueue(): Queue {
 
 export function getFileCleanupQueue(): Queue {
     if (!fileCleanupQueueInstance) {
-        fileCleanupQueueInstance = new Queue("{bull}:file-cleanup", {
+        fileCleanupQueueInstance = new Queue("{bull}file-cleanup", {
             connection: getConnection(),
             defaultJobOptions: {
                 attempts: 5,

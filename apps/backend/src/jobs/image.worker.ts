@@ -21,6 +21,11 @@ function getConnection(): Redis {
             maxRetriesPerRequest: null,
             enableReadyCheck: true,
             connectTimeout: 30000,
+            enableOfflineQueue: false,
+            retryStrategy(times: number) {
+                const delay = Math.min(times * 50, 2000);
+                return delay;
+            },
             tls: redisUrl.startsWith('rediss://') ? {
                 rejectUnauthorized: true,
             } : undefined,
@@ -31,97 +36,103 @@ function getConnection(): Redis {
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
 
-export const imageWorker = new Worker("{bull}:image-processing", async (job: Job) => {
-    const { filePath, vehicleId, mimeType, originalName } = job.data;
-    console.log(`Processing image for vehicle ${vehicleId}: ${originalName}`);
+let imageWorker: Worker | null = null;
 
-    try {
-        const fileBuffer = await fs.readFile(filePath);
+export function initImageWorker(): void {
+    if (imageWorker) return; // Already initialized
 
-        // 1. Process Main Image (Optimized)
-        // Resize to max 1920 width/height, maintain aspect ratio, convert to webp for better compression
-        const optimizedBuffer = await sharp(fileBuffer)
-            .resize({ width: 1920, height: 1920, fit: 'inside', withoutEnlargement: true })
-            .webp({ quality: 80 })
-            .toBuffer();
+    imageWorker = new Worker("{bull}image-processing", async (job: Job) => {
+        const { filePath, vehicleId, mimeType, originalName } = job.data;
+        console.log(`Processing image for vehicle ${vehicleId}: ${originalName}`);
 
-        const mainKey = `vehicles/${vehicleId}/${createID()}.webp`;
+        try {
+            const fileBuffer = await fs.readFile(filePath);
 
-        await r2.send(new PutObjectCommand({
-            Bucket: BUCKET_NAME,
-            Key: mainKey,
-            Body: optimizedBuffer,
-            ContentType: "image/webp",
-        }));
+            // 1. Process Main Image (Optimized)
+            // Resize to max 1920 width/height, maintain aspect ratio, convert to webp for better compression
+            const optimizedBuffer = await sharp(fileBuffer)
+                .resize({ width: 1920, height: 1920, fit: 'inside', withoutEnlargement: true })
+                .webp({ quality: 80 })
+                .toBuffer();
 
-        const mainFile = await prisma.fileObject.create({
-            data: {
-                publicId: createID(),
-                key: mainKey,
-                url: `${process.env.R2_PUBLIC_URL}/${mainKey}`,
-                mime: "image/webp",
-                size: optimizedBuffer.length
-            }
-        });
+            const mainKey = `vehicles/${vehicleId}/${createID()}.webp`;
 
-        await prisma.vehicleImage.create({
-            data: {
-                publicId: createID(),
-                vehicleId: vehicleId,
-                fileId: mainFile.id,
-                isThumbnail: false
-            }
-        });
+            await r2.send(new PutObjectCommand({
+                Bucket: BUCKET_NAME,
+                Key: mainKey,
+                Body: optimizedBuffer,
+                ContentType: "image/webp",
+            }));
 
-        // 2. Process Thumbnail
-        const thumbBuffer = await sharp(fileBuffer)
-            .resize({ width: 300, height: 300, fit: 'cover' })
-            .webp({ quality: 80 })
-            .toBuffer();
+            const mainFile = await prisma.fileObject.create({
+                data: {
+                    publicId: createID(),
+                    key: mainKey,
+                    url: `${process.env.R2_PUBLIC_URL}/${mainKey}`,
+                    mime: "image/webp",
+                    size: optimizedBuffer.length
+                }
+            });
 
-        const thumbKey = `vehicles/${vehicleId}/thumb_${createID()}.webp`;
+            await prisma.vehicleImage.create({
+                data: {
+                    publicId: createID(),
+                    vehicleId: vehicleId,
+                    fileId: mainFile.id,
+                    isThumbnail: false
+                }
+            });
 
-        await r2.send(new PutObjectCommand({
-            Bucket: BUCKET_NAME,
-            Key: thumbKey,
-            Body: thumbBuffer,
-            ContentType: "image/webp",
-        }));
+            // 2. Process Thumbnail
+            const thumbBuffer = await sharp(fileBuffer)
+                .resize({ width: 300, height: 300, fit: 'cover' })
+                .webp({ quality: 80 })
+                .toBuffer();
 
-        const thumbFile = await prisma.fileObject.create({
-            data: {
-                publicId: createID(),
-                key: thumbKey,
-                url: `${process.env.R2_PUBLIC_URL}/${thumbKey}`,
-                mime: "image/webp",
-                size: thumbBuffer.length
-            }
-        });
+            const thumbKey = `vehicles/${vehicleId}/thumb_${createID()}.webp`;
 
-        await prisma.vehicleImage.create({
-            data: {
-                publicId: createID(),
-                vehicleId: vehicleId,
-                fileId: thumbFile.id,
-                isThumbnail: true
-            }
-        });
+            await r2.send(new PutObjectCommand({
+                Bucket: BUCKET_NAME,
+                Key: thumbKey,
+                Body: thumbBuffer,
+                ContentType: "image/webp",
+            }));
 
-        await fs.unlink(filePath);
-        console.log(`Successfully processed and uploaded images for vehicle ${vehicleId}`);
+            const thumbFile = await prisma.fileObject.create({
+                data: {
+                    publicId: createID(),
+                    key: thumbKey,
+                    url: `${process.env.R2_PUBLIC_URL}/${thumbKey}`,
+                    mime: "image/webp",
+                    size: thumbBuffer.length
+                }
+            });
 
-    } catch (error) {
-        console.error(`Failed to process image for vehicle ${vehicleId}:`, error);
-        throw error;
-    }
-}, {
-    connection: getConnection()
-});
+            await prisma.vehicleImage.create({
+                data: {
+                    publicId: createID(),
+                    vehicleId: vehicleId,
+                    fileId: thumbFile.id,
+                    isThumbnail: true
+                }
+            });
 
-imageWorker.on('completed', job => {
-    console.log(`${job.id} has completed!`);
-});
+            await fs.unlink(filePath);
+            console.log(`Successfully processed and uploaded images for vehicle ${vehicleId}`);
 
-imageWorker.on('failed', (job, err) => {
-    console.log(`${job?.id} has failed with ${err.message}`);
-});
+        } catch (error) {
+            console.error(`Failed to process image for vehicle ${vehicleId}:`, error);
+            throw error;
+        }
+    }, {
+        connection: getConnection()
+    });
+
+    imageWorker.on('completed', job => {
+        console.log(`${job.id} has completed!`);
+    });
+
+    imageWorker.on('failed', (job, err) => {
+        console.log(`${job?.id} has failed with ${err.message}`);
+    });
+}
