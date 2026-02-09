@@ -54,7 +54,7 @@ export const Navbar = () => {
                             <circle cx="17" cy="17" r="2" />
                         </svg>
                     </div>
-                    <span className="text-lg font-bold tracking-tight text-white group-hover:text-orange-500 transition-colors duration-200">VRMS</span>
+                    <span className="text-lg font-bold tracking-tight text-white group-hover:text-orange-500 transition-colors duration-200">WOW Rentals</span>
                 </Link>
 
                 {/* Desktop Navigation Links */}

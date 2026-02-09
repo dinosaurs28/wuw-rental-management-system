@@ -59,7 +59,7 @@ export default function EmployeeSignInPage() {
                 <div className="relative z-20 flex h-full flex-col justify-between p-12 text-white">
                     <div className="flex items-center gap-2 font-medium text-lg">
                         <div className="h-6 w-6 rounded-md bg-white text-black flex items-center justify-center font-bold">V</div>
-                        VRMS Employee Portal
+                        WOW Employee Portal
                     </div>
                     <div className="space-y-2">
                         <h1 className="text-4xl font-bold tracking-tight">Manage the world's finest fleet.</h1>
