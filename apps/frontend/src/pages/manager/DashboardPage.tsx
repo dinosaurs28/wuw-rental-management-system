@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator, BreadcrumbPage } from "@/components/ui/breadcrumb";
@@ -6,12 +7,15 @@ import { toast } from "sonner";
 import { DashboardKPIs } from "@/components/manager/dashboard/DashboardKPIs";
 import { DamageReports } from "@/components/manager/dashboard/DamageReports";
 import { StaffActivity } from "@/components/manager/dashboard/StaffActivity";
+import { QrScannerModal } from "@/components/employee/QrScannerModal";
 import { managerDashboardService, type KPIStats, type DamageReport } from "@/services/managerDashboard.service";
 import { ManagerLayout } from "@/components/manager/ManagerLayout";
 import { Search, QrCode } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 
 export const DashboardPage = () => {
+    const navigate = useNavigate();
+
     // State for all data
     const [stats, setStats] = useState<KPIStats | null>(null);
     const [damageReports, setDamageReports] = useState<DamageReport[]>([]);
@@ -22,6 +26,9 @@ export const DashboardPage = () => {
     // Search State
     const [damageSearchId, setDamageSearchId] = useState("");
     const debouncedSearch = useDebounce(damageSearchId, 500);
+
+    // QR Scanner State
+    const [isScannerOpen, setIsScannerOpen] = useState(false);
 
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingDamages, setIsLoadingDamages] = useState(false);
@@ -97,11 +104,17 @@ export const DashboardPage = () => {
 
 
     const handleScanQR = () => {
-        // Placeholder for QR Scanner integration
-        // Ideally this would open a modal with camera stream
-        toast.info("QR Scanner feature coming soon. Please enter ID manually.");
-        // For demo: pretend we scanned an ID
-        // setDamageSearchId("demo-id");
+        setIsScannerOpen(true);
+    };
+
+    const handleQrScan = (data: string | null) => {
+        if (data) {
+            // Extract damage ID from scanned data
+            // Assuming QR code contains just the damage ID (e.g., "1", "2", etc.)
+            const damageId = data.trim();
+            toast.success(`Scanned Damage Report #${damageId}`);
+            navigate(`/damage/${damageId}`);
+        }
     };
 
     if (error) {
@@ -191,6 +204,12 @@ export const DashboardPage = () => {
 
                 </div>
             </div>
+
+            <QrScannerModal
+                isOpen={isScannerOpen}
+                onClose={() => setIsScannerOpen(false)}
+                onScan={handleQrScan}
+            />
         </ManagerLayout>
     );
 };
