@@ -202,11 +202,11 @@ export const KycDocumentList = ({
                         const maskedId = `•••• •••• ${doc.file.publicId.slice(-4)}`;
 
                         return (
-                            <button
+                            <div
                                 key={doc.publicId}
                                 onClick={() => onSelect(doc)}
                                 className={cn(
-                                    'w-full flex items-start sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg border-2 transition-all duration-200 text-left',
+                                    'w-full flex items-start sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg border-2 transition-all duration-200 text-left cursor-pointer',
                                     isSelected
                                         ? 'border-primary bg-primary/5'
                                         : 'border-zinc-200 hover:border-zinc-300 bg-white'
@@ -287,7 +287,7 @@ export const KycDocumentList = ({
                                         {isSelected && <Check className="size-3 sm:size-4 text-white" />}
                                     </div>
                                 </div>
-                            </button>
+                            </div>
                         );
                     })}
 

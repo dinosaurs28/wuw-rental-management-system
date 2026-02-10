@@ -111,13 +111,22 @@ export const CompleteProfileDialog = ({
     }, [open, customer.publicId, customer.name, form]);
 
     const onSubmit = async (data: ProfileFormValues) => {
+        console.log("Form submitted with data:", data);
         setIsLoading(true);
         try {
             const payload = {
                 customer_public_id: customer.publicId,
-                ...data,
+                name: data.name,
+                email: data.email,
+                dob: data.dob ? data.dob.toISOString().split('T')[0] : undefined, // Format as YYYY-MM-DD
+                addressLine1: data.addressLine1,
+                city: data.city,
+                state: data.state,
+                zipCode: data.zipCode,
+                country: data.country,
             };
 
+            console.log("Sending payload to backend:", payload);
             await apiClient.post("/employee/walkin/complete", payload);
 
             // Fetch fresh details to ensure we have the latest server state
@@ -136,7 +145,7 @@ export const CompleteProfileDialog = ({
             onSuccess();
             onOpenChange(false);
         } catch (error: any) {
-            console.error(error);
+            console.error("Profile update error:", error);
             toast.error(error.response?.data?.message || "Failed to update profile");
         } finally {
             setIsLoading(false);
@@ -161,7 +170,16 @@ export const CompleteProfileDialog = ({
 
 
                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <form
+                            onSubmit={form.handleSubmit(
+                                onSubmit,
+                                (errors) => {
+                                    console.log("Form validation errors:", errors);
+                                    toast.error("Please fill in all required fields");
+                                }
+                            )}
+                            className="space-y-4"
+                        >
                             <FormField
                                 control={form.control}
                                 name="name"

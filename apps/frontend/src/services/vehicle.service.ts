@@ -20,7 +20,21 @@ export interface VehicleImage {
     };
 }
 
-export interface Vehicle {
+// Public-facing vehicle (from /public/vehicles)
+export interface PublicVehicle {
+    publicId: string;
+    make: string;
+    model: string;
+    category: string; // Just the name
+    branch: string;
+    imageUrl: VehicleImage[];
+    pricing: {
+        daily: number;
+    };
+}
+
+// Manager vehicle (from /branchManager/dashboard/vehicles)
+export interface ManagerVehicle {
     publicId: string;
     make: string;
     model: string;
@@ -34,12 +48,48 @@ export interface Vehicle {
     baseDailyPrice: number;
 }
 
-export interface VehiclesResponse {
+// Legacy alias for backward compatibility
+export type Vehicle = PublicVehicle;
+
+export interface PublicVehiclesResponse {
     count: number;
-    data: Vehicle[];
+    data: PublicVehicle[];
 }
 
-export const fetchVehicles = async (filters: VehicleFilters): Promise<VehiclesResponse> => {
+export interface ManagerVehiclesResponse {
+    count: number;
+    data: ManagerVehicle[];
+}
+
+// Legacy alias
+export type VehiclesResponse = PublicVehiclesResponse;
+
+// Public vehicles endpoint (for customer-facing pages)
+export const fetchPublicVehicles = async (filters: VehicleFilters): Promise<PublicVehiclesResponse> => {
+    try {
+        const params = new URLSearchParams();
+
+        if (filters.branch) params.append('branch', filters.branch);
+        if (filters.category) params.append('category', filters.category);
+        if (filters.search) params.append('search', filters.search);
+        if (filters.limit) params.append('limit', filters.limit.toString());
+        if (filters.offset) params.append('offset', filters.offset.toString());
+        if (filters.start) params.append('start', filters.start);
+        if (filters.end) params.append('end', filters.end);
+
+        const response = await axios.get<PublicVehiclesResponse>(`${API_URL}/public/vehicles`, {
+            params,
+            withCredentials: true
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching public vehicles:', error);
+        throw error;
+    }
+};
+
+// Manager vehicles endpoint (for branch manager dashboard)
+export const fetchManagerVehicles = async (filters: VehicleFilters): Promise<ManagerVehiclesResponse> => {
     try {
         const params = new URLSearchParams();
 
@@ -49,19 +99,20 @@ export const fetchVehicles = async (filters: VehicleFilters): Promise<VehiclesRe
         if (filters.status) params.append('status', filters.status);
         if (filters.limit) params.append('limit', filters.limit.toString());
         if (filters.offset) params.append('offset', filters.offset.toString());
-        if (filters.start) params.append('start', filters.start);
-        if (filters.end) params.append('end', filters.end);
 
-        const response = await axios.get<VehiclesResponse>(`${API_URL}/branchManager/dashboard/vehicles`, {
+        const response = await axios.get<ManagerVehiclesResponse>(`${API_URL}/branchManager/dashboard/vehicles`, {
             params,
             withCredentials: true
         });
         return response.data;
     } catch (error) {
-        console.error('Error fetching vehicles:', error);
+        console.error('Error fetching manager vehicles:', error);
         throw error;
     }
 };
+
+// Legacy alias for backward compatibility
+export const fetchVehicles = fetchPublicVehicles;
 
 // Vehicle Details Types
 export interface VehicleDetails {
@@ -124,10 +175,10 @@ export const fetchVehicleDetails = async (
     params: VehicleDetailsParams
 ): Promise<VehicleDetailsResponse> => {
     try {
-        const response = await axios.get<VehicleDetailsResponse>(`${API_URL}/branchManager/dashboard/vehicle/${params.vehicleId}`, {
+        const response = await axios.get<VehicleDetailsResponse>(`${API_URL}/public/vehicles/${params.vehicleId}`, {
             params: {
-                startDate: params.startDate,
-                endDate: params.endDate
+                start: params.startDate,
+                end: params.endDate
             },
             withCredentials: true
         });

@@ -2,10 +2,10 @@ import { useNavigate } from 'react-router-dom';
 import { Car } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import type { Vehicle } from '@/services/vehicle.service';
+import type { PublicVehicle, ManagerVehicle } from '@/services/vehicle.service';
 
 interface VehicleCardProps {
-    vehicle: Vehicle;
+    vehicle: PublicVehicle | ManagerVehicle;
     basePath?: string;
 }
 
@@ -13,6 +13,16 @@ export const VehicleCard = ({ vehicle, basePath = '/vehicle' }: VehicleCardProps
     const navigate = useNavigate();
 
     const imageUrl = vehicle.imageUrl?.[0]?.file?.url;
+
+    // Helper to get category name from either type
+    const getCategoryName = () => {
+        return typeof vehicle.category === 'string' ? vehicle.category : vehicle.category.name;
+    };
+
+    // Helper to get price from either type
+    const getPrice = () => {
+        return 'pricing' in vehicle ? vehicle.pricing.daily : vehicle.baseDailyPrice;
+    };
 
     const handleViewVehicle = () => {
         navigate(`${basePath}/${vehicle.publicId}`);
@@ -36,7 +46,7 @@ export const VehicleCard = ({ vehicle, basePath = '/vehicle' }: VehicleCardProps
                 {/* Category Badge */}
                 <div className="absolute top-3 left-3">
                     <span className="px-3 py-1 text-xs font-semibold bg-orange-500 text-white rounded-full">
-                        {vehicle.category.name}
+                        {getCategoryName()}
                     </span>
                 </div>
             </div>
@@ -56,7 +66,7 @@ export const VehicleCard = ({ vehicle, basePath = '/vehicle' }: VehicleCardProps
                 <div className="flex items-center justify-between pt-2 border-t border-zinc-100">
                     <div>
                         <span className="text-2xl font-bold text-zinc-900">
-                            ₹{vehicle.baseDailyPrice}
+                            ₹{getPrice()}
                         </span>
                         <span className="text-sm text-zinc-500 ml-1">/day</span>
                     </div>

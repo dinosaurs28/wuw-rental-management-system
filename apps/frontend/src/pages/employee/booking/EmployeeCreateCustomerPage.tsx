@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2} from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/popover";
 
 import { useEmployeeAuthStore } from "@/store/employeeAuth.store";
- // Reusing auth service for OTP
+// Reusing auth service for OTP
 
 // Actually we need to use `InitiateWalkin` (OTP) and `CompleteWalkinProfile`.
 // I need those services. I'll add them to booking service or a new one.
@@ -107,7 +107,6 @@ export default function EmployeeCreateCustomerPage() {
 
     const handleVerifyOtp = async () => {
         const otp = phoneForm.getValues("otp");
-        // const phone = phoneForm.getValues("phone");
 
         if (!otp || otp.length !== 6) {
             phoneForm.setError("otp", { message: "Enter a valid 6-digit OTP" });
@@ -117,16 +116,10 @@ export default function EmployeeCreateCustomerPage() {
         setIsLoading(true);
         try {
             // Call Backend: Verify Walkin OTP
-            // const response = await apiClient.post("/employee/walkin/verify", {
-            //     phone,
-            //     otp,
-            //     customer_public_id: customerPublicId
-            // });
-
-            // On success, we get maybe an auth token or just a success message.
-            // For employee flow, we just need to know it's verified.
-            // Check `verify.controller.ts`? 
-            // Assuming 200 OK means verified.
+            await apiClient.post("/employee/walkin/verify", {
+                otp,
+                customer_public_id: customerPublicId
+            });
 
             toast.success("Phone verified successfully");
             setStep("PROFILE_DETAILS");
@@ -147,19 +140,30 @@ export default function EmployeeCreateCustomerPage() {
         setIsLoading(true);
         try {
             // Call Backend: Complete Walkin Profile
-            // const payload = {
-            //     customer_public_id: customerPublicId,
-            //     ...data, // name, email, dob, address...
-            //     // Ensure field naming matches `complete.controller.ts` schema
-            // };
+            const payload = {
+                customer_public_id: customerPublicId,
+                name: data.name,
+                email: data.email,
+                dob: data.dob.toISOString().split('T')[0], // Format as YYYY-MM-DD
+                addressLine1: data.addressLine1,
+                city: data.city,
+                state: data.state,
+                zipCode: data.zipCode,
+                country: data.country,
+            };
 
+            await apiClient.post("/employee/walkin/complete", payload);
 
-            // Success! Store session
+            // Fetch fresh customer details to get the updated profile status
+            const detailsResponse = await apiClient.get(`/employee/customer/${customerPublicId}`);
+            const freshData = detailsResponse.data.data;
+
+            // Success! Store session with fresh data
             const session: CustomerSession = {
                 publicId: customerPublicId,
-                name: data.name,
+                name: freshData.name,
                 phone: phoneForm.getValues("phone"),
-                profileCompleted: true,
+                profileCompleted: freshData.isProfileCompleted,
                 kycStatus: false // New customer, no KYC yet
             };
             customerSession.set(session);

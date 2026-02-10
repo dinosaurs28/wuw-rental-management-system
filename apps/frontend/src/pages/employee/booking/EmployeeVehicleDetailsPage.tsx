@@ -292,7 +292,7 @@ export const EmployeeVehicleDetailsPage = () => {
 
                         {/* Gallery */}
                         <VehicleImageGallery
-                            images={vehicle.images.map(img => img.file.url)}
+                            images={vehicle.images.map(img => typeof img === 'string' ? img : img.file.url)}
                             vehicleName={`${vehicle.make} ${vehicle.model}`}
                         />
 

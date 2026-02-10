@@ -22,12 +22,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator, BreadcrumbPage } from "@/components/ui/breadcrumb";
-import { fetchVehicles, deleteVehicle, type Vehicle } from "@/services/vehicle.service";
+import { fetchManagerVehicles, deleteVehicle, type ManagerVehicle } from "@/services/vehicle.service";
 import { toast } from "sonner";
 
 export const ManagerVehiclesPage = () => {
     const navigate = useNavigate();
-    const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+    const [vehicles, setVehicles] = useState<ManagerVehicle[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
 
@@ -38,7 +38,7 @@ export const ManagerVehiclesPage = () => {
     const loadVehicles = async () => {
         setIsLoading(true);
         try {
-            const response = await fetchVehicles({ limit: 100 }); // Fetch all for now
+            const response = await fetchManagerVehicles({ limit: 100 }); // Fetch all for now
             setVehicles(response.data);
         } catch (error) {
             toast.error("Failed to load vehicles");

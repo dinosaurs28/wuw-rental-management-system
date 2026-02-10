@@ -140,6 +140,7 @@ export default function EmployeeVehicleListingPage() {
                         onSortChange={setSortBy}
                         onSearchChange={setSearchQuery}
                         onReset={handleReset}
+                        showBranchSelector={false} // Hide branch selector for employee page
                     />
                 </div>
 
