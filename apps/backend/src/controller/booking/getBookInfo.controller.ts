@@ -202,7 +202,9 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     let paymentURL: string
     let encryptedFinalPrice: string | null = null
     if (parsed.data.payment_type === "ONLINE") {
-      const paymentDetails = await initiatePhonePePayment(grandFinalTotal)
+      const redirectUrl = process.env.REDIRECT_URL_PAY
+      const customerRedirectUrl = `${redirectUrl}/booking/status`
+      const paymentDetails = await initiatePhonePePayment(grandFinalTotal, customerRedirectUrl)
       transactionId = paymentDetails.merchantTransactionId
       paymentURL = paymentDetails.instrumentResponse.redirectInfo.url
     } else {

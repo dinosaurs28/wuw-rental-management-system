@@ -13,7 +13,8 @@ export async function initiatePhonePePayment(amount: number, customBaseRedirectU
     const transactionId = `MT-${uuidv4().toString().slice(0, 8)}`;
 
     // Use custom redirect URL if provided, otherwise default to env var
-    // valid redirectUrl MUST include the transactionId or handle it
+    // valid redirectUrl MUST include the transactionId or handle 
+    // it
     const baseUrl = customBaseRedirectUrl || redirectUrl;
     const finalRedirectUrl = `${baseUrl}/${transactionId}`;
 

@@ -424,6 +424,9 @@ exports.Prisma.InvoiceScalarFieldEnum = {
   damageCharges: 'damageCharges',
   total: 'total',
   status: 'status',
+  invoiceNumber: 'invoiceNumber',
+  invoicePdfFileId: 'invoicePdfFileId',
+  generatedAt: 'generatedAt',
   createdAt: 'createdAt'
 };
 
@@ -541,7 +544,8 @@ exports.BookingStatus = exports.$Enums.BookingStatus = {
   CONFIRMED: 'CONFIRMED',
   PICKED_UP: 'PICKED_UP',
   RETURNED: 'RETURNED',
-  CANCELLED: 'CANCELLED'
+  CANCELLED: 'CANCELLED',
+  HOLD_EXPIRED: 'HOLD_EXPIRED'
 };
 
 exports.PaymentStatus = exports.$Enums.PaymentStatus = {

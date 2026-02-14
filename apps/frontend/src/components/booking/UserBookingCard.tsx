@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Booking } from "@/services/userBookings.service";
 import { BookingStatusBadge } from "./BookingStatusBadge";
 import { BookingQRModal } from "./BookingQRModal";
+import { InvoiceDownloadButton } from "@/components/InvoiceDownloadButton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { QrCode, Calendar, Clock, Car } from "lucide-react";
@@ -95,7 +96,7 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
                             ))}
                         </div>
 
-                        {/* Footer with Total and QR Button */}
+                        {/* Footer with Total and Action Buttons */}
                         <div className="mt-4 flex items-center justify-between border-t pt-4">
                             <div className="flex flex-col">
                                 <span className="text-xs text-muted-foreground">Total Amount</span>
@@ -103,15 +104,22 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
                                     {formatCurrency(booking.total)}
                                 </span>
                             </div>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="gap-2"
-                                onClick={() => setIsQRModalOpen(true)}
-                            >
-                                <QrCode className="h-4 w-4" />
-                                <span className="hidden sm:inline">Show QR</span>
-                            </Button>
+                            <div className="flex gap-2">
+                                {/* Invoice Download Button - shows for CONFIRMED and RETURNED only */}
+                                <InvoiceDownloadButton
+                                    bookingId={booking.id}
+                                    bookingStatus={booking.status}
+                                />
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2"
+                                    onClick={() => setIsQRModalOpen(true)}
+                                >
+                                    <QrCode className="h-4 w-4" />
+                                    <span className="hidden sm:inline">Show QR</span>
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </CardContent>

@@ -231,7 +231,8 @@ export const BookingStatus: {
   CONFIRMED: 'CONFIRMED',
   PICKED_UP: 'PICKED_UP',
   RETURNED: 'RETURNED',
-  CANCELLED: 'CANCELLED'
+  CANCELLED: 'CANCELLED',
+  HOLD_EXPIRED: 'HOLD_EXPIRED'
 };
 
 export type BookingStatus = (typeof BookingStatus)[keyof typeof BookingStatus]
@@ -3630,6 +3631,7 @@ export namespace Prisma {
     customerKycs: number
     bookingKycs: number
     vehicleImages: number
+    invoicePdfs: number
   }
 
   export type FileObjectCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3637,6 +3639,7 @@ export namespace Prisma {
     customerKycs?: boolean | FileObjectCountOutputTypeCountCustomerKycsArgs
     bookingKycs?: boolean | FileObjectCountOutputTypeCountBookingKycsArgs
     vehicleImages?: boolean | FileObjectCountOutputTypeCountVehicleImagesArgs
+    invoicePdfs?: boolean | FileObjectCountOutputTypeCountInvoicePdfsArgs
   }
 
   // Custom InputTypes
@@ -3676,6 +3679,13 @@ export namespace Prisma {
    */
   export type FileObjectCountOutputTypeCountVehicleImagesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: VehicleImageWhereInput
+  }
+
+  /**
+   * FileObjectCountOutputType without action
+   */
+  export type FileObjectCountOutputTypeCountInvoicePdfsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: InvoiceWhereInput
   }
 
 
@@ -9588,6 +9598,7 @@ export namespace Prisma {
     customerKycs?: boolean | FileObject$customerKycsArgs<ExtArgs>
     bookingKycs?: boolean | FileObject$bookingKycsArgs<ExtArgs>
     vehicleImages?: boolean | FileObject$vehicleImagesArgs<ExtArgs>
+    invoicePdfs?: boolean | FileObject$invoicePdfsArgs<ExtArgs>
     _count?: boolean | FileObjectCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["fileObject"]>
 
@@ -9616,6 +9627,7 @@ export namespace Prisma {
     customerKycs?: boolean | FileObject$customerKycsArgs<ExtArgs>
     bookingKycs?: boolean | FileObject$bookingKycsArgs<ExtArgs>
     vehicleImages?: boolean | FileObject$vehicleImagesArgs<ExtArgs>
+    invoicePdfs?: boolean | FileObject$invoicePdfsArgs<ExtArgs>
     _count?: boolean | FileObjectCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type FileObjectIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -9627,6 +9639,7 @@ export namespace Prisma {
       customerKycs: Prisma.$CustomerKycPayload<ExtArgs>[]
       bookingKycs: Prisma.$BookingPayload<ExtArgs>[]
       vehicleImages: Prisma.$VehicleImagePayload<ExtArgs>[]
+      invoicePdfs: Prisma.$InvoicePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -10004,6 +10017,7 @@ export namespace Prisma {
     customerKycs<T extends FileObject$customerKycsArgs<ExtArgs> = {}>(args?: Subset<T, FileObject$customerKycsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CustomerKycPayload<ExtArgs>, T, "findMany"> | Null>
     bookingKycs<T extends FileObject$bookingKycsArgs<ExtArgs> = {}>(args?: Subset<T, FileObject$bookingKycsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findMany"> | Null>
     vehicleImages<T extends FileObject$vehicleImagesArgs<ExtArgs> = {}>(args?: Subset<T, FileObject$vehicleImagesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleImagePayload<ExtArgs>, T, "findMany"> | Null>
+    invoicePdfs<T extends FileObject$invoicePdfsArgs<ExtArgs> = {}>(args?: Subset<T, FileObject$invoicePdfsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InvoicePayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -10431,6 +10445,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: VehicleImageScalarFieldEnum | VehicleImageScalarFieldEnum[]
+  }
+
+  /**
+   * FileObject.invoicePdfs
+   */
+  export type FileObject$invoicePdfsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Invoice
+     */
+    select?: InvoiceSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InvoiceInclude<ExtArgs> | null
+    where?: InvoiceWhereInput
+    orderBy?: InvoiceOrderByWithRelationInput | InvoiceOrderByWithRelationInput[]
+    cursor?: InvoiceWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: InvoiceScalarFieldEnum | InvoiceScalarFieldEnum[]
   }
 
   /**
@@ -30420,6 +30454,7 @@ export namespace Prisma {
     tax: Decimal | null
     damageCharges: Decimal | null
     total: Decimal | null
+    invoicePdfFileId: number | null
   }
 
   export type InvoiceSumAggregateOutputType = {
@@ -30430,6 +30465,7 @@ export namespace Prisma {
     tax: Decimal | null
     damageCharges: Decimal | null
     total: Decimal | null
+    invoicePdfFileId: number | null
   }
 
   export type InvoiceMinAggregateOutputType = {
@@ -30442,6 +30478,9 @@ export namespace Prisma {
     damageCharges: Decimal | null
     total: Decimal | null
     status: $Enums.InvoiceStatus | null
+    invoiceNumber: string | null
+    invoicePdfFileId: number | null
+    generatedAt: Date | null
     createdAt: Date | null
   }
 
@@ -30455,6 +30494,9 @@ export namespace Prisma {
     damageCharges: Decimal | null
     total: Decimal | null
     status: $Enums.InvoiceStatus | null
+    invoiceNumber: string | null
+    invoicePdfFileId: number | null
+    generatedAt: Date | null
     createdAt: Date | null
   }
 
@@ -30468,6 +30510,9 @@ export namespace Prisma {
     damageCharges: number
     total: number
     status: number
+    invoiceNumber: number
+    invoicePdfFileId: number
+    generatedAt: number
     createdAt: number
     _all: number
   }
@@ -30481,6 +30526,7 @@ export namespace Prisma {
     tax?: true
     damageCharges?: true
     total?: true
+    invoicePdfFileId?: true
   }
 
   export type InvoiceSumAggregateInputType = {
@@ -30491,6 +30537,7 @@ export namespace Prisma {
     tax?: true
     damageCharges?: true
     total?: true
+    invoicePdfFileId?: true
   }
 
   export type InvoiceMinAggregateInputType = {
@@ -30503,6 +30550,9 @@ export namespace Prisma {
     damageCharges?: true
     total?: true
     status?: true
+    invoiceNumber?: true
+    invoicePdfFileId?: true
+    generatedAt?: true
     createdAt?: true
   }
 
@@ -30516,6 +30566,9 @@ export namespace Prisma {
     damageCharges?: true
     total?: true
     status?: true
+    invoiceNumber?: true
+    invoicePdfFileId?: true
+    generatedAt?: true
     createdAt?: true
   }
 
@@ -30529,6 +30582,9 @@ export namespace Prisma {
     damageCharges?: true
     total?: true
     status?: true
+    invoiceNumber?: true
+    invoicePdfFileId?: true
+    generatedAt?: true
     createdAt?: true
     _all?: true
   }
@@ -30629,6 +30685,9 @@ export namespace Prisma {
     damageCharges: Decimal
     total: Decimal
     status: $Enums.InvoiceStatus
+    invoiceNumber: string | null
+    invoicePdfFileId: number | null
+    generatedAt: Date | null
     createdAt: Date
     _count: InvoiceCountAggregateOutputType | null
     _avg: InvoiceAvgAggregateOutputType | null
@@ -30661,7 +30720,11 @@ export namespace Prisma {
     damageCharges?: boolean
     total?: boolean
     status?: boolean
+    invoiceNumber?: boolean
+    invoicePdfFileId?: boolean
+    generatedAt?: boolean
     createdAt?: boolean
+    invoicePdfFile?: boolean | Invoice$invoicePdfFileArgs<ExtArgs>
     booking?: boolean | BookingDefaultArgs<ExtArgs>
     items?: boolean | Invoice$itemsArgs<ExtArgs>
     payments?: boolean | Invoice$paymentsArgs<ExtArgs>
@@ -30678,7 +30741,11 @@ export namespace Prisma {
     damageCharges?: boolean
     total?: boolean
     status?: boolean
+    invoiceNumber?: boolean
+    invoicePdfFileId?: boolean
+    generatedAt?: boolean
     createdAt?: boolean
+    invoicePdfFile?: boolean | Invoice$invoicePdfFileArgs<ExtArgs>
     booking?: boolean | BookingDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["invoice"]>
 
@@ -30692,22 +30759,28 @@ export namespace Prisma {
     damageCharges?: boolean
     total?: boolean
     status?: boolean
+    invoiceNumber?: boolean
+    invoicePdfFileId?: boolean
+    generatedAt?: boolean
     createdAt?: boolean
   }
 
   export type InvoiceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    invoicePdfFile?: boolean | Invoice$invoicePdfFileArgs<ExtArgs>
     booking?: boolean | BookingDefaultArgs<ExtArgs>
     items?: boolean | Invoice$itemsArgs<ExtArgs>
     payments?: boolean | Invoice$paymentsArgs<ExtArgs>
     _count?: boolean | InvoiceCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type InvoiceIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    invoicePdfFile?: boolean | Invoice$invoicePdfFileArgs<ExtArgs>
     booking?: boolean | BookingDefaultArgs<ExtArgs>
   }
 
   export type $InvoicePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Invoice"
     objects: {
+      invoicePdfFile: Prisma.$FileObjectPayload<ExtArgs> | null
       booking: Prisma.$BookingPayload<ExtArgs>
       items: Prisma.$InvoiceItemPayload<ExtArgs>[]
       payments: Prisma.$PaymentPayload<ExtArgs>[]
@@ -30722,6 +30795,9 @@ export namespace Prisma {
       damageCharges: Prisma.Decimal
       total: Prisma.Decimal
       status: $Enums.InvoiceStatus
+      invoiceNumber: string | null
+      invoicePdfFileId: number | null
+      generatedAt: Date | null
       createdAt: Date
     }, ExtArgs["result"]["invoice"]>
     composites: {}
@@ -31087,6 +31163,7 @@ export namespace Prisma {
    */
   export interface Prisma__InvoiceClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    invoicePdfFile<T extends Invoice$invoicePdfFileArgs<ExtArgs> = {}>(args?: Subset<T, Invoice$invoicePdfFileArgs<ExtArgs>>): Prisma__FileObjectClient<$Result.GetResult<Prisma.$FileObjectPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     booking<T extends BookingDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BookingDefaultArgs<ExtArgs>>): Prisma__BookingClient<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     items<T extends Invoice$itemsArgs<ExtArgs> = {}>(args?: Subset<T, Invoice$itemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InvoiceItemPayload<ExtArgs>, T, "findMany"> | Null>
     payments<T extends Invoice$paymentsArgs<ExtArgs> = {}>(args?: Subset<T, Invoice$paymentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentPayload<ExtArgs>, T, "findMany"> | Null>
@@ -31128,6 +31205,9 @@ export namespace Prisma {
     readonly damageCharges: FieldRef<"Invoice", 'Decimal'>
     readonly total: FieldRef<"Invoice", 'Decimal'>
     readonly status: FieldRef<"Invoice", 'InvoiceStatus'>
+    readonly invoiceNumber: FieldRef<"Invoice", 'String'>
+    readonly invoicePdfFileId: FieldRef<"Invoice", 'Int'>
+    readonly generatedAt: FieldRef<"Invoice", 'DateTime'>
     readonly createdAt: FieldRef<"Invoice", 'DateTime'>
   }
     
@@ -31444,6 +31524,21 @@ export namespace Prisma {
      * Filter which Invoices to delete
      */
     where?: InvoiceWhereInput
+  }
+
+  /**
+   * Invoice.invoicePdfFile
+   */
+  export type Invoice$invoicePdfFileArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FileObject
+     */
+    select?: FileObjectSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FileObjectInclude<ExtArgs> | null
+    where?: FileObjectWhereInput
   }
 
   /**
@@ -35817,6 +35912,9 @@ export namespace Prisma {
     damageCharges: 'damageCharges',
     total: 'total',
     status: 'status',
+    invoiceNumber: 'invoiceNumber',
+    invoicePdfFileId: 'invoicePdfFileId',
+    generatedAt: 'generatedAt',
     createdAt: 'createdAt'
   };
 
@@ -36651,6 +36749,7 @@ export namespace Prisma {
     customerKycs?: CustomerKycListRelationFilter
     bookingKycs?: BookingListRelationFilter
     vehicleImages?: VehicleImageListRelationFilter
+    invoicePdfs?: InvoiceListRelationFilter
   }
 
   export type FileObjectOrderByWithRelationInput = {
@@ -36665,6 +36764,7 @@ export namespace Prisma {
     customerKycs?: CustomerKycOrderByRelationAggregateInput
     bookingKycs?: BookingOrderByRelationAggregateInput
     vehicleImages?: VehicleImageOrderByRelationAggregateInput
+    invoicePdfs?: InvoiceOrderByRelationAggregateInput
   }
 
   export type FileObjectWhereUniqueInput = Prisma.AtLeast<{
@@ -36682,6 +36782,7 @@ export namespace Prisma {
     customerKycs?: CustomerKycListRelationFilter
     bookingKycs?: BookingListRelationFilter
     vehicleImages?: VehicleImageListRelationFilter
+    invoicePdfs?: InvoiceListRelationFilter
   }, "id" | "publicId">
 
   export type FileObjectOrderByWithAggregationInput = {
@@ -38227,7 +38328,11 @@ export namespace Prisma {
     damageCharges?: DecimalFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
     total?: DecimalFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
     status?: EnumInvoiceStatusFilter<"Invoice"> | $Enums.InvoiceStatus
+    invoiceNumber?: StringNullableFilter<"Invoice"> | string | null
+    invoicePdfFileId?: IntNullableFilter<"Invoice"> | number | null
+    generatedAt?: DateTimeNullableFilter<"Invoice"> | Date | string | null
     createdAt?: DateTimeFilter<"Invoice"> | Date | string
+    invoicePdfFile?: XOR<FileObjectNullableRelationFilter, FileObjectWhereInput> | null
     booking?: XOR<BookingRelationFilter, BookingWhereInput>
     items?: InvoiceItemListRelationFilter
     payments?: PaymentListRelationFilter
@@ -38243,7 +38348,11 @@ export namespace Prisma {
     damageCharges?: SortOrder
     total?: SortOrder
     status?: SortOrder
+    invoiceNumber?: SortOrderInput | SortOrder
+    invoicePdfFileId?: SortOrderInput | SortOrder
+    generatedAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
+    invoicePdfFile?: FileObjectOrderByWithRelationInput
     booking?: BookingOrderByWithRelationInput
     items?: InvoiceItemOrderByRelationAggregateInput
     payments?: PaymentOrderByRelationAggregateInput
@@ -38253,6 +38362,7 @@ export namespace Prisma {
     id?: number
     publicId?: string
     bookingId?: number
+    invoiceNumber?: string
     AND?: InvoiceWhereInput | InvoiceWhereInput[]
     OR?: InvoiceWhereInput[]
     NOT?: InvoiceWhereInput | InvoiceWhereInput[]
@@ -38262,11 +38372,14 @@ export namespace Prisma {
     damageCharges?: DecimalFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
     total?: DecimalFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
     status?: EnumInvoiceStatusFilter<"Invoice"> | $Enums.InvoiceStatus
+    invoicePdfFileId?: IntNullableFilter<"Invoice"> | number | null
+    generatedAt?: DateTimeNullableFilter<"Invoice"> | Date | string | null
     createdAt?: DateTimeFilter<"Invoice"> | Date | string
+    invoicePdfFile?: XOR<FileObjectNullableRelationFilter, FileObjectWhereInput> | null
     booking?: XOR<BookingRelationFilter, BookingWhereInput>
     items?: InvoiceItemListRelationFilter
     payments?: PaymentListRelationFilter
-  }, "id" | "publicId" | "bookingId">
+  }, "id" | "publicId" | "bookingId" | "invoiceNumber">
 
   export type InvoiceOrderByWithAggregationInput = {
     id?: SortOrder
@@ -38278,6 +38391,9 @@ export namespace Prisma {
     damageCharges?: SortOrder
     total?: SortOrder
     status?: SortOrder
+    invoiceNumber?: SortOrderInput | SortOrder
+    invoicePdfFileId?: SortOrderInput | SortOrder
+    generatedAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: InvoiceCountOrderByAggregateInput
     _avg?: InvoiceAvgOrderByAggregateInput
@@ -38299,6 +38415,9 @@ export namespace Prisma {
     damageCharges?: DecimalWithAggregatesFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
     total?: DecimalWithAggregatesFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
     status?: EnumInvoiceStatusWithAggregatesFilter<"Invoice"> | $Enums.InvoiceStatus
+    invoiceNumber?: StringNullableWithAggregatesFilter<"Invoice"> | string | null
+    invoicePdfFileId?: IntNullableWithAggregatesFilter<"Invoice"> | number | null
+    generatedAt?: DateTimeNullableWithAggregatesFilter<"Invoice"> | Date | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Invoice"> | Date | string
   }
 
@@ -39044,6 +39163,7 @@ export namespace Prisma {
     customerKycs?: CustomerKycCreateNestedManyWithoutFileInput
     bookingKycs?: BookingCreateNestedManyWithoutKycFileInput
     vehicleImages?: VehicleImageCreateNestedManyWithoutFileInput
+    invoicePdfs?: InvoiceCreateNestedManyWithoutInvoicePdfFileInput
   }
 
   export type FileObjectUncheckedCreateInput = {
@@ -39058,6 +39178,7 @@ export namespace Prisma {
     customerKycs?: CustomerKycUncheckedCreateNestedManyWithoutFileInput
     bookingKycs?: BookingUncheckedCreateNestedManyWithoutKycFileInput
     vehicleImages?: VehicleImageUncheckedCreateNestedManyWithoutFileInput
+    invoicePdfs?: InvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
   }
 
   export type FileObjectUpdateInput = {
@@ -39071,6 +39192,7 @@ export namespace Prisma {
     customerKycs?: CustomerKycUpdateManyWithoutFileNestedInput
     bookingKycs?: BookingUpdateManyWithoutKycFileNestedInput
     vehicleImages?: VehicleImageUpdateManyWithoutFileNestedInput
+    invoicePdfs?: InvoiceUpdateManyWithoutInvoicePdfFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateInput = {
@@ -39085,6 +39207,7 @@ export namespace Prisma {
     customerKycs?: CustomerKycUncheckedUpdateManyWithoutFileNestedInput
     bookingKycs?: BookingUncheckedUpdateManyWithoutKycFileNestedInput
     vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
+    invoicePdfs?: InvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
   }
 
   export type FileObjectCreateManyInput = {
@@ -40651,7 +40774,10 @@ export namespace Prisma {
     damageCharges: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
     status?: $Enums.InvoiceStatus
+    invoiceNumber?: string | null
+    generatedAt?: Date | string | null
     createdAt?: Date | string
+    invoicePdfFile?: FileObjectCreateNestedOneWithoutInvoicePdfsInput
     booking: BookingCreateNestedOneWithoutInvoiceInput
     items?: InvoiceItemCreateNestedManyWithoutInvoiceInput
     payments?: PaymentCreateNestedManyWithoutInvoiceInput
@@ -40667,6 +40793,9 @@ export namespace Prisma {
     damageCharges: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
     status?: $Enums.InvoiceStatus
+    invoiceNumber?: string | null
+    invoicePdfFileId?: number | null
+    generatedAt?: Date | string | null
     createdAt?: Date | string
     items?: InvoiceItemUncheckedCreateNestedManyWithoutInvoiceInput
     payments?: PaymentUncheckedCreateNestedManyWithoutInvoiceInput
@@ -40680,7 +40809,10 @@ export namespace Prisma {
     damageCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumInvoiceStatusFieldUpdateOperationsInput | $Enums.InvoiceStatus
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    invoicePdfFile?: FileObjectUpdateOneWithoutInvoicePdfsNestedInput
     booking?: BookingUpdateOneRequiredWithoutInvoiceNestedInput
     items?: InvoiceItemUpdateManyWithoutInvoiceNestedInput
     payments?: PaymentUpdateManyWithoutInvoiceNestedInput
@@ -40696,6 +40828,9 @@ export namespace Prisma {
     damageCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumInvoiceStatusFieldUpdateOperationsInput | $Enums.InvoiceStatus
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoicePdfFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: InvoiceItemUncheckedUpdateManyWithoutInvoiceNestedInput
     payments?: PaymentUncheckedUpdateManyWithoutInvoiceNestedInput
@@ -40711,6 +40846,9 @@ export namespace Prisma {
     damageCharges: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
     status?: $Enums.InvoiceStatus
+    invoiceNumber?: string | null
+    invoicePdfFileId?: number | null
+    generatedAt?: Date | string | null
     createdAt?: Date | string
   }
 
@@ -40722,6 +40860,8 @@ export namespace Prisma {
     damageCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumInvoiceStatusFieldUpdateOperationsInput | $Enums.InvoiceStatus
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -40735,6 +40875,9 @@ export namespace Prisma {
     damageCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumInvoiceStatusFieldUpdateOperationsInput | $Enums.InvoiceStatus
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoicePdfFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -41613,11 +41756,21 @@ export namespace Prisma {
     none?: VehicleImageWhereInput
   }
 
+  export type InvoiceListRelationFilter = {
+    every?: InvoiceWhereInput
+    some?: InvoiceWhereInput
+    none?: InvoiceWhereInput
+  }
+
   export type BookingPhotoOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
   export type VehicleImageOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type InvoiceOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -43026,6 +43179,9 @@ export namespace Prisma {
     damageCharges?: SortOrder
     total?: SortOrder
     status?: SortOrder
+    invoiceNumber?: SortOrder
+    invoicePdfFileId?: SortOrder
+    generatedAt?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -43037,6 +43193,7 @@ export namespace Prisma {
     tax?: SortOrder
     damageCharges?: SortOrder
     total?: SortOrder
+    invoicePdfFileId?: SortOrder
   }
 
   export type InvoiceMaxOrderByAggregateInput = {
@@ -43049,6 +43206,9 @@ export namespace Prisma {
     damageCharges?: SortOrder
     total?: SortOrder
     status?: SortOrder
+    invoiceNumber?: SortOrder
+    invoicePdfFileId?: SortOrder
+    generatedAt?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -43062,6 +43222,9 @@ export namespace Prisma {
     damageCharges?: SortOrder
     total?: SortOrder
     status?: SortOrder
+    invoiceNumber?: SortOrder
+    invoicePdfFileId?: SortOrder
+    generatedAt?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -43073,6 +43236,7 @@ export namespace Prisma {
     tax?: SortOrder
     damageCharges?: SortOrder
     total?: SortOrder
+    invoicePdfFileId?: SortOrder
   }
 
   export type EnumInvoiceStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -43784,6 +43948,13 @@ export namespace Prisma {
     connect?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
   }
 
+  export type InvoiceCreateNestedManyWithoutInvoicePdfFileInput = {
+    create?: XOR<InvoiceCreateWithoutInvoicePdfFileInput, InvoiceUncheckedCreateWithoutInvoicePdfFileInput> | InvoiceCreateWithoutInvoicePdfFileInput[] | InvoiceUncheckedCreateWithoutInvoicePdfFileInput[]
+    connectOrCreate?: InvoiceCreateOrConnectWithoutInvoicePdfFileInput | InvoiceCreateOrConnectWithoutInvoicePdfFileInput[]
+    createMany?: InvoiceCreateManyInvoicePdfFileInputEnvelope
+    connect?: InvoiceWhereUniqueInput | InvoiceWhereUniqueInput[]
+  }
+
   export type BookingPhotoUncheckedCreateNestedManyWithoutFileInput = {
     create?: XOR<BookingPhotoCreateWithoutFileInput, BookingPhotoUncheckedCreateWithoutFileInput> | BookingPhotoCreateWithoutFileInput[] | BookingPhotoUncheckedCreateWithoutFileInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutFileInput | BookingPhotoCreateOrConnectWithoutFileInput[]
@@ -43810,6 +43981,13 @@ export namespace Prisma {
     connectOrCreate?: VehicleImageCreateOrConnectWithoutFileInput | VehicleImageCreateOrConnectWithoutFileInput[]
     createMany?: VehicleImageCreateManyFileInputEnvelope
     connect?: VehicleImageWhereUniqueInput | VehicleImageWhereUniqueInput[]
+  }
+
+  export type InvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput = {
+    create?: XOR<InvoiceCreateWithoutInvoicePdfFileInput, InvoiceUncheckedCreateWithoutInvoicePdfFileInput> | InvoiceCreateWithoutInvoicePdfFileInput[] | InvoiceUncheckedCreateWithoutInvoicePdfFileInput[]
+    connectOrCreate?: InvoiceCreateOrConnectWithoutInvoicePdfFileInput | InvoiceCreateOrConnectWithoutInvoicePdfFileInput[]
+    createMany?: InvoiceCreateManyInvoicePdfFileInputEnvelope
+    connect?: InvoiceWhereUniqueInput | InvoiceWhereUniqueInput[]
   }
 
   export type BookingPhotoUpdateManyWithoutFileNestedInput = {
@@ -43868,6 +44046,20 @@ export namespace Prisma {
     deleteMany?: VehicleImageScalarWhereInput | VehicleImageScalarWhereInput[]
   }
 
+  export type InvoiceUpdateManyWithoutInvoicePdfFileNestedInput = {
+    create?: XOR<InvoiceCreateWithoutInvoicePdfFileInput, InvoiceUncheckedCreateWithoutInvoicePdfFileInput> | InvoiceCreateWithoutInvoicePdfFileInput[] | InvoiceUncheckedCreateWithoutInvoicePdfFileInput[]
+    connectOrCreate?: InvoiceCreateOrConnectWithoutInvoicePdfFileInput | InvoiceCreateOrConnectWithoutInvoicePdfFileInput[]
+    upsert?: InvoiceUpsertWithWhereUniqueWithoutInvoicePdfFileInput | InvoiceUpsertWithWhereUniqueWithoutInvoicePdfFileInput[]
+    createMany?: InvoiceCreateManyInvoicePdfFileInputEnvelope
+    set?: InvoiceWhereUniqueInput | InvoiceWhereUniqueInput[]
+    disconnect?: InvoiceWhereUniqueInput | InvoiceWhereUniqueInput[]
+    delete?: InvoiceWhereUniqueInput | InvoiceWhereUniqueInput[]
+    connect?: InvoiceWhereUniqueInput | InvoiceWhereUniqueInput[]
+    update?: InvoiceUpdateWithWhereUniqueWithoutInvoicePdfFileInput | InvoiceUpdateWithWhereUniqueWithoutInvoicePdfFileInput[]
+    updateMany?: InvoiceUpdateManyWithWhereWithoutInvoicePdfFileInput | InvoiceUpdateManyWithWhereWithoutInvoicePdfFileInput[]
+    deleteMany?: InvoiceScalarWhereInput | InvoiceScalarWhereInput[]
+  }
+
   export type BookingPhotoUncheckedUpdateManyWithoutFileNestedInput = {
     create?: XOR<BookingPhotoCreateWithoutFileInput, BookingPhotoUncheckedCreateWithoutFileInput> | BookingPhotoCreateWithoutFileInput[] | BookingPhotoUncheckedCreateWithoutFileInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutFileInput | BookingPhotoCreateOrConnectWithoutFileInput[]
@@ -43922,6 +44114,20 @@ export namespace Prisma {
     update?: VehicleImageUpdateWithWhereUniqueWithoutFileInput | VehicleImageUpdateWithWhereUniqueWithoutFileInput[]
     updateMany?: VehicleImageUpdateManyWithWhereWithoutFileInput | VehicleImageUpdateManyWithWhereWithoutFileInput[]
     deleteMany?: VehicleImageScalarWhereInput | VehicleImageScalarWhereInput[]
+  }
+
+  export type InvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput = {
+    create?: XOR<InvoiceCreateWithoutInvoicePdfFileInput, InvoiceUncheckedCreateWithoutInvoicePdfFileInput> | InvoiceCreateWithoutInvoicePdfFileInput[] | InvoiceUncheckedCreateWithoutInvoicePdfFileInput[]
+    connectOrCreate?: InvoiceCreateOrConnectWithoutInvoicePdfFileInput | InvoiceCreateOrConnectWithoutInvoicePdfFileInput[]
+    upsert?: InvoiceUpsertWithWhereUniqueWithoutInvoicePdfFileInput | InvoiceUpsertWithWhereUniqueWithoutInvoicePdfFileInput[]
+    createMany?: InvoiceCreateManyInvoicePdfFileInputEnvelope
+    set?: InvoiceWhereUniqueInput | InvoiceWhereUniqueInput[]
+    disconnect?: InvoiceWhereUniqueInput | InvoiceWhereUniqueInput[]
+    delete?: InvoiceWhereUniqueInput | InvoiceWhereUniqueInput[]
+    connect?: InvoiceWhereUniqueInput | InvoiceWhereUniqueInput[]
+    update?: InvoiceUpdateWithWhereUniqueWithoutInvoicePdfFileInput | InvoiceUpdateWithWhereUniqueWithoutInvoicePdfFileInput[]
+    updateMany?: InvoiceUpdateManyWithWhereWithoutInvoicePdfFileInput | InvoiceUpdateManyWithWhereWithoutInvoicePdfFileInput[]
+    deleteMany?: InvoiceScalarWhereInput | InvoiceScalarWhereInput[]
   }
 
   export type UserCreateNestedManyWithoutBranchInput = {
@@ -45282,6 +45488,12 @@ export namespace Prisma {
     update?: XOR<XOR<InvoiceUpdateToOneWithWhereWithoutPaymentsInput, InvoiceUpdateWithoutPaymentsInput>, InvoiceUncheckedUpdateWithoutPaymentsInput>
   }
 
+  export type FileObjectCreateNestedOneWithoutInvoicePdfsInput = {
+    create?: XOR<FileObjectCreateWithoutInvoicePdfsInput, FileObjectUncheckedCreateWithoutInvoicePdfsInput>
+    connectOrCreate?: FileObjectCreateOrConnectWithoutInvoicePdfsInput
+    connect?: FileObjectWhereUniqueInput
+  }
+
   export type BookingCreateNestedOneWithoutInvoiceInput = {
     create?: XOR<BookingCreateWithoutInvoiceInput, BookingUncheckedCreateWithoutInvoiceInput>
     connectOrCreate?: BookingCreateOrConnectWithoutInvoiceInput
@@ -45318,6 +45530,16 @@ export namespace Prisma {
 
   export type EnumInvoiceStatusFieldUpdateOperationsInput = {
     set?: $Enums.InvoiceStatus
+  }
+
+  export type FileObjectUpdateOneWithoutInvoicePdfsNestedInput = {
+    create?: XOR<FileObjectCreateWithoutInvoicePdfsInput, FileObjectUncheckedCreateWithoutInvoicePdfsInput>
+    connectOrCreate?: FileObjectCreateOrConnectWithoutInvoicePdfsInput
+    upsert?: FileObjectUpsertWithoutInvoicePdfsInput
+    disconnect?: FileObjectWhereInput | boolean
+    delete?: FileObjectWhereInput | boolean
+    connect?: FileObjectWhereUniqueInput
+    update?: XOR<XOR<FileObjectUpdateToOneWithWhereWithoutInvoicePdfsInput, FileObjectUpdateWithoutInvoicePdfsInput>, FileObjectUncheckedUpdateWithoutInvoicePdfsInput>
   }
 
   export type BookingUpdateOneRequiredWithoutInvoiceNestedInput = {
@@ -46979,6 +47201,7 @@ export namespace Prisma {
     bookingPhotos?: BookingPhotoCreateNestedManyWithoutFileInput
     bookingKycs?: BookingCreateNestedManyWithoutKycFileInput
     vehicleImages?: VehicleImageCreateNestedManyWithoutFileInput
+    invoicePdfs?: InvoiceCreateNestedManyWithoutInvoicePdfFileInput
   }
 
   export type FileObjectUncheckedCreateWithoutCustomerKycsInput = {
@@ -46992,6 +47215,7 @@ export namespace Prisma {
     bookingPhotos?: BookingPhotoUncheckedCreateNestedManyWithoutFileInput
     bookingKycs?: BookingUncheckedCreateNestedManyWithoutKycFileInput
     vehicleImages?: VehicleImageUncheckedCreateNestedManyWithoutFileInput
+    invoicePdfs?: InvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
   }
 
   export type FileObjectCreateOrConnectWithoutCustomerKycsInput = {
@@ -47066,6 +47290,7 @@ export namespace Prisma {
     bookingPhotos?: BookingPhotoUpdateManyWithoutFileNestedInput
     bookingKycs?: BookingUpdateManyWithoutKycFileNestedInput
     vehicleImages?: VehicleImageUpdateManyWithoutFileNestedInput
+    invoicePdfs?: InvoiceUpdateManyWithoutInvoicePdfFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateWithoutCustomerKycsInput = {
@@ -47079,6 +47304,7 @@ export namespace Prisma {
     bookingPhotos?: BookingPhotoUncheckedUpdateManyWithoutFileNestedInput
     bookingKycs?: BookingUncheckedUpdateManyWithoutKycFileNestedInput
     vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
+    invoicePdfs?: InvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
   }
 
   export type BookingPhotoCreateWithoutFileInput = {
@@ -47229,6 +47455,49 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type InvoiceCreateWithoutInvoicePdfFileInput = {
+    publicId: string
+    subtotal: Decimal | DecimalJsLike | number | string
+    discount: Decimal | DecimalJsLike | number | string
+    tax: Decimal | DecimalJsLike | number | string
+    damageCharges: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    status?: $Enums.InvoiceStatus
+    invoiceNumber?: string | null
+    generatedAt?: Date | string | null
+    createdAt?: Date | string
+    booking: BookingCreateNestedOneWithoutInvoiceInput
+    items?: InvoiceItemCreateNestedManyWithoutInvoiceInput
+    payments?: PaymentCreateNestedManyWithoutInvoiceInput
+  }
+
+  export type InvoiceUncheckedCreateWithoutInvoicePdfFileInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discount: Decimal | DecimalJsLike | number | string
+    tax: Decimal | DecimalJsLike | number | string
+    damageCharges: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    status?: $Enums.InvoiceStatus
+    invoiceNumber?: string | null
+    generatedAt?: Date | string | null
+    createdAt?: Date | string
+    items?: InvoiceItemUncheckedCreateNestedManyWithoutInvoiceInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutInvoiceInput
+  }
+
+  export type InvoiceCreateOrConnectWithoutInvoicePdfFileInput = {
+    where: InvoiceWhereUniqueInput
+    create: XOR<InvoiceCreateWithoutInvoicePdfFileInput, InvoiceUncheckedCreateWithoutInvoicePdfFileInput>
+  }
+
+  export type InvoiceCreateManyInvoicePdfFileInputEnvelope = {
+    data: InvoiceCreateManyInvoicePdfFileInput | InvoiceCreateManyInvoicePdfFileInput[]
+    skipDuplicates?: boolean
+  }
+
   export type BookingPhotoUpsertWithWhereUniqueWithoutFileInput = {
     where: BookingPhotoWhereUniqueInput
     update: XOR<BookingPhotoUpdateWithoutFileInput, BookingPhotoUncheckedUpdateWithoutFileInput>
@@ -47316,6 +47585,41 @@ export namespace Prisma {
     fileId?: IntFilter<"VehicleImage"> | number
     isThumbnail?: BoolFilter<"VehicleImage"> | boolean
     createdAt?: DateTimeFilter<"VehicleImage"> | Date | string
+  }
+
+  export type InvoiceUpsertWithWhereUniqueWithoutInvoicePdfFileInput = {
+    where: InvoiceWhereUniqueInput
+    update: XOR<InvoiceUpdateWithoutInvoicePdfFileInput, InvoiceUncheckedUpdateWithoutInvoicePdfFileInput>
+    create: XOR<InvoiceCreateWithoutInvoicePdfFileInput, InvoiceUncheckedCreateWithoutInvoicePdfFileInput>
+  }
+
+  export type InvoiceUpdateWithWhereUniqueWithoutInvoicePdfFileInput = {
+    where: InvoiceWhereUniqueInput
+    data: XOR<InvoiceUpdateWithoutInvoicePdfFileInput, InvoiceUncheckedUpdateWithoutInvoicePdfFileInput>
+  }
+
+  export type InvoiceUpdateManyWithWhereWithoutInvoicePdfFileInput = {
+    where: InvoiceScalarWhereInput
+    data: XOR<InvoiceUpdateManyMutationInput, InvoiceUncheckedUpdateManyWithoutInvoicePdfFileInput>
+  }
+
+  export type InvoiceScalarWhereInput = {
+    AND?: InvoiceScalarWhereInput | InvoiceScalarWhereInput[]
+    OR?: InvoiceScalarWhereInput[]
+    NOT?: InvoiceScalarWhereInput | InvoiceScalarWhereInput[]
+    id?: IntFilter<"Invoice"> | number
+    publicId?: StringFilter<"Invoice"> | string
+    bookingId?: IntFilter<"Invoice"> | number
+    subtotal?: DecimalFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
+    discount?: DecimalFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
+    tax?: DecimalFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
+    damageCharges?: DecimalFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
+    status?: EnumInvoiceStatusFilter<"Invoice"> | $Enums.InvoiceStatus
+    invoiceNumber?: StringNullableFilter<"Invoice"> | string | null
+    invoicePdfFileId?: IntNullableFilter<"Invoice"> | number | null
+    generatedAt?: DateTimeNullableFilter<"Invoice"> | Date | string | null
+    createdAt?: DateTimeFilter<"Invoice"> | Date | string
   }
 
   export type UserCreateWithoutBranchInput = {
@@ -48904,6 +49208,7 @@ export namespace Prisma {
     bookingPhotos?: BookingPhotoCreateNestedManyWithoutFileInput
     customerKycs?: CustomerKycCreateNestedManyWithoutFileInput
     bookingKycs?: BookingCreateNestedManyWithoutKycFileInput
+    invoicePdfs?: InvoiceCreateNestedManyWithoutInvoicePdfFileInput
   }
 
   export type FileObjectUncheckedCreateWithoutVehicleImagesInput = {
@@ -48917,6 +49222,7 @@ export namespace Prisma {
     bookingPhotos?: BookingPhotoUncheckedCreateNestedManyWithoutFileInput
     customerKycs?: CustomerKycUncheckedCreateNestedManyWithoutFileInput
     bookingKycs?: BookingUncheckedCreateNestedManyWithoutKycFileInput
+    invoicePdfs?: InvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
   }
 
   export type FileObjectCreateOrConnectWithoutVehicleImagesInput = {
@@ -49001,6 +49307,7 @@ export namespace Prisma {
     bookingPhotos?: BookingPhotoUpdateManyWithoutFileNestedInput
     customerKycs?: CustomerKycUpdateManyWithoutFileNestedInput
     bookingKycs?: BookingUpdateManyWithoutKycFileNestedInput
+    invoicePdfs?: InvoiceUpdateManyWithoutInvoicePdfFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateWithoutVehicleImagesInput = {
@@ -49014,6 +49321,7 @@ export namespace Prisma {
     bookingPhotos?: BookingPhotoUncheckedUpdateManyWithoutFileNestedInput
     customerKycs?: CustomerKycUncheckedUpdateManyWithoutFileNestedInput
     bookingKycs?: BookingUncheckedUpdateManyWithoutKycFileNestedInput
+    invoicePdfs?: InvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
   }
 
   export type VehicleCategoryCreateWithoutPricingRulesInput = {
@@ -49344,6 +49652,7 @@ export namespace Prisma {
     bookingPhotos?: BookingPhotoCreateNestedManyWithoutFileInput
     customerKycs?: CustomerKycCreateNestedManyWithoutFileInput
     vehicleImages?: VehicleImageCreateNestedManyWithoutFileInput
+    invoicePdfs?: InvoiceCreateNestedManyWithoutInvoicePdfFileInput
   }
 
   export type FileObjectUncheckedCreateWithoutBookingKycsInput = {
@@ -49357,6 +49666,7 @@ export namespace Prisma {
     bookingPhotos?: BookingPhotoUncheckedCreateNestedManyWithoutFileInput
     customerKycs?: CustomerKycUncheckedCreateNestedManyWithoutFileInput
     vehicleImages?: VehicleImageUncheckedCreateNestedManyWithoutFileInput
+    invoicePdfs?: InvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
   }
 
   export type FileObjectCreateOrConnectWithoutBookingKycsInput = {
@@ -49625,7 +49935,10 @@ export namespace Prisma {
     damageCharges: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
     status?: $Enums.InvoiceStatus
+    invoiceNumber?: string | null
+    generatedAt?: Date | string | null
     createdAt?: Date | string
+    invoicePdfFile?: FileObjectCreateNestedOneWithoutInvoicePdfsInput
     items?: InvoiceItemCreateNestedManyWithoutInvoiceInput
     payments?: PaymentCreateNestedManyWithoutInvoiceInput
   }
@@ -49639,6 +49952,9 @@ export namespace Prisma {
     damageCharges: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
     status?: $Enums.InvoiceStatus
+    invoiceNumber?: string | null
+    invoicePdfFileId?: number | null
+    generatedAt?: Date | string | null
     createdAt?: Date | string
     items?: InvoiceItemUncheckedCreateNestedManyWithoutInvoiceInput
     payments?: PaymentUncheckedCreateNestedManyWithoutInvoiceInput
@@ -49670,6 +49986,7 @@ export namespace Prisma {
     bookingPhotos?: BookingPhotoUpdateManyWithoutFileNestedInput
     customerKycs?: CustomerKycUpdateManyWithoutFileNestedInput
     vehicleImages?: VehicleImageUpdateManyWithoutFileNestedInput
+    invoicePdfs?: InvoiceUpdateManyWithoutInvoicePdfFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateWithoutBookingKycsInput = {
@@ -49683,6 +50000,7 @@ export namespace Prisma {
     bookingPhotos?: BookingPhotoUncheckedUpdateManyWithoutFileNestedInput
     customerKycs?: CustomerKycUncheckedUpdateManyWithoutFileNestedInput
     vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
+    invoicePdfs?: InvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
   }
 
   export type CustomerUpsertWithoutBookingsInput = {
@@ -49924,7 +50242,10 @@ export namespace Prisma {
     damageCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumInvoiceStatusFieldUpdateOperationsInput | $Enums.InvoiceStatus
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    invoicePdfFile?: FileObjectUpdateOneWithoutInvoicePdfsNestedInput
     items?: InvoiceItemUpdateManyWithoutInvoiceNestedInput
     payments?: PaymentUpdateManyWithoutInvoiceNestedInput
   }
@@ -49938,6 +50259,9 @@ export namespace Prisma {
     damageCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumInvoiceStatusFieldUpdateOperationsInput | $Enums.InvoiceStatus
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoicePdfFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: InvoiceItemUncheckedUpdateManyWithoutInvoiceNestedInput
     payments?: PaymentUncheckedUpdateManyWithoutInvoiceNestedInput
@@ -50257,6 +50581,7 @@ export namespace Prisma {
     customerKycs?: CustomerKycCreateNestedManyWithoutFileInput
     bookingKycs?: BookingCreateNestedManyWithoutKycFileInput
     vehicleImages?: VehicleImageCreateNestedManyWithoutFileInput
+    invoicePdfs?: InvoiceCreateNestedManyWithoutInvoicePdfFileInput
   }
 
   export type FileObjectUncheckedCreateWithoutBookingPhotosInput = {
@@ -50270,6 +50595,7 @@ export namespace Prisma {
     customerKycs?: CustomerKycUncheckedCreateNestedManyWithoutFileInput
     bookingKycs?: BookingUncheckedCreateNestedManyWithoutKycFileInput
     vehicleImages?: VehicleImageUncheckedCreateNestedManyWithoutFileInput
+    invoicePdfs?: InvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
   }
 
   export type FileObjectCreateOrConnectWithoutBookingPhotosInput = {
@@ -50402,6 +50728,7 @@ export namespace Prisma {
     customerKycs?: CustomerKycUpdateManyWithoutFileNestedInput
     bookingKycs?: BookingUpdateManyWithoutKycFileNestedInput
     vehicleImages?: VehicleImageUpdateManyWithoutFileNestedInput
+    invoicePdfs?: InvoiceUpdateManyWithoutInvoicePdfFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateWithoutBookingPhotosInput = {
@@ -50415,6 +50742,7 @@ export namespace Prisma {
     customerKycs?: CustomerKycUncheckedUpdateManyWithoutFileNestedInput
     bookingKycs?: BookingUncheckedUpdateManyWithoutKycFileNestedInput
     vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
+    invoicePdfs?: InvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
   }
 
   export type DamageReportUpsertWithoutPhotosInput = {
@@ -50980,7 +51308,10 @@ export namespace Prisma {
     damageCharges: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
     status?: $Enums.InvoiceStatus
+    invoiceNumber?: string | null
+    generatedAt?: Date | string | null
     createdAt?: Date | string
+    invoicePdfFile?: FileObjectCreateNestedOneWithoutInvoicePdfsInput
     booking: BookingCreateNestedOneWithoutInvoiceInput
     items?: InvoiceItemCreateNestedManyWithoutInvoiceInput
   }
@@ -50995,6 +51326,9 @@ export namespace Prisma {
     damageCharges: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
     status?: $Enums.InvoiceStatus
+    invoiceNumber?: string | null
+    invoicePdfFileId?: number | null
+    generatedAt?: Date | string | null
     createdAt?: Date | string
     items?: InvoiceItemUncheckedCreateNestedManyWithoutInvoiceInput
   }
@@ -51023,7 +51357,10 @@ export namespace Prisma {
     damageCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumInvoiceStatusFieldUpdateOperationsInput | $Enums.InvoiceStatus
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    invoicePdfFile?: FileObjectUpdateOneWithoutInvoicePdfsNestedInput
     booking?: BookingUpdateOneRequiredWithoutInvoiceNestedInput
     items?: InvoiceItemUpdateManyWithoutInvoiceNestedInput
   }
@@ -51038,8 +51375,43 @@ export namespace Prisma {
     damageCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumInvoiceStatusFieldUpdateOperationsInput | $Enums.InvoiceStatus
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoicePdfFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: InvoiceItemUncheckedUpdateManyWithoutInvoiceNestedInput
+  }
+
+  export type FileObjectCreateWithoutInvoicePdfsInput = {
+    publicId: string
+    key: string
+    url: string
+    mime: string
+    size: number
+    createdAt?: Date | string
+    bookingPhotos?: BookingPhotoCreateNestedManyWithoutFileInput
+    customerKycs?: CustomerKycCreateNestedManyWithoutFileInput
+    bookingKycs?: BookingCreateNestedManyWithoutKycFileInput
+    vehicleImages?: VehicleImageCreateNestedManyWithoutFileInput
+  }
+
+  export type FileObjectUncheckedCreateWithoutInvoicePdfsInput = {
+    id?: number
+    publicId: string
+    key: string
+    url: string
+    mime: string
+    size: number
+    createdAt?: Date | string
+    bookingPhotos?: BookingPhotoUncheckedCreateNestedManyWithoutFileInput
+    customerKycs?: CustomerKycUncheckedCreateNestedManyWithoutFileInput
+    bookingKycs?: BookingUncheckedCreateNestedManyWithoutKycFileInput
+    vehicleImages?: VehicleImageUncheckedCreateNestedManyWithoutFileInput
+  }
+
+  export type FileObjectCreateOrConnectWithoutInvoicePdfsInput = {
+    where: FileObjectWhereUniqueInput
+    create: XOR<FileObjectCreateWithoutInvoicePdfsInput, FileObjectUncheckedCreateWithoutInvoicePdfsInput>
   }
 
   export type BookingCreateWithoutInvoiceInput = {
@@ -51158,6 +51530,44 @@ export namespace Prisma {
   export type PaymentCreateManyInvoiceInputEnvelope = {
     data: PaymentCreateManyInvoiceInput | PaymentCreateManyInvoiceInput[]
     skipDuplicates?: boolean
+  }
+
+  export type FileObjectUpsertWithoutInvoicePdfsInput = {
+    update: XOR<FileObjectUpdateWithoutInvoicePdfsInput, FileObjectUncheckedUpdateWithoutInvoicePdfsInput>
+    create: XOR<FileObjectCreateWithoutInvoicePdfsInput, FileObjectUncheckedCreateWithoutInvoicePdfsInput>
+    where?: FileObjectWhereInput
+  }
+
+  export type FileObjectUpdateToOneWithWhereWithoutInvoicePdfsInput = {
+    where?: FileObjectWhereInput
+    data: XOR<FileObjectUpdateWithoutInvoicePdfsInput, FileObjectUncheckedUpdateWithoutInvoicePdfsInput>
+  }
+
+  export type FileObjectUpdateWithoutInvoicePdfsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    url?: StringFieldUpdateOperationsInput | string
+    mime?: StringFieldUpdateOperationsInput | string
+    size?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    bookingPhotos?: BookingPhotoUpdateManyWithoutFileNestedInput
+    customerKycs?: CustomerKycUpdateManyWithoutFileNestedInput
+    bookingKycs?: BookingUpdateManyWithoutKycFileNestedInput
+    vehicleImages?: VehicleImageUpdateManyWithoutFileNestedInput
+  }
+
+  export type FileObjectUncheckedUpdateWithoutInvoicePdfsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    url?: StringFieldUpdateOperationsInput | string
+    mime?: StringFieldUpdateOperationsInput | string
+    size?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    bookingPhotos?: BookingPhotoUncheckedUpdateManyWithoutFileNestedInput
+    customerKycs?: CustomerKycUncheckedUpdateManyWithoutFileNestedInput
+    bookingKycs?: BookingUncheckedUpdateManyWithoutKycFileNestedInput
+    vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
   }
 
   export type BookingUpsertWithoutInvoiceInput = {
@@ -51296,7 +51706,10 @@ export namespace Prisma {
     damageCharges: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
     status?: $Enums.InvoiceStatus
+    invoiceNumber?: string | null
+    generatedAt?: Date | string | null
     createdAt?: Date | string
+    invoicePdfFile?: FileObjectCreateNestedOneWithoutInvoicePdfsInput
     booking: BookingCreateNestedOneWithoutInvoiceInput
     payments?: PaymentCreateNestedManyWithoutInvoiceInput
   }
@@ -51311,6 +51724,9 @@ export namespace Prisma {
     damageCharges: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
     status?: $Enums.InvoiceStatus
+    invoiceNumber?: string | null
+    invoicePdfFileId?: number | null
+    generatedAt?: Date | string | null
     createdAt?: Date | string
     payments?: PaymentUncheckedCreateNestedManyWithoutInvoiceInput
   }
@@ -51339,7 +51755,10 @@ export namespace Prisma {
     damageCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumInvoiceStatusFieldUpdateOperationsInput | $Enums.InvoiceStatus
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    invoicePdfFile?: FileObjectUpdateOneWithoutInvoicePdfsNestedInput
     booking?: BookingUpdateOneRequiredWithoutInvoiceNestedInput
     payments?: PaymentUpdateManyWithoutInvoiceNestedInput
   }
@@ -51354,6 +51773,9 @@ export namespace Prisma {
     damageCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumInvoiceStatusFieldUpdateOperationsInput | $Enums.InvoiceStatus
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoicePdfFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     payments?: PaymentUncheckedUpdateManyWithoutInvoiceNestedInput
   }
@@ -52016,6 +52438,21 @@ export namespace Prisma {
     createdAt?: Date | string
   }
 
+  export type InvoiceCreateManyInvoicePdfFileInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discount: Decimal | DecimalJsLike | number | string
+    tax: Decimal | DecimalJsLike | number | string
+    damageCharges: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    status?: $Enums.InvoiceStatus
+    invoiceNumber?: string | null
+    generatedAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
   export type BookingPhotoUpdateWithoutFileInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
@@ -52172,6 +52609,54 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     vehicleId?: IntFieldUpdateOperationsInput | number
     isThumbnail?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type InvoiceUpdateWithoutInvoicePdfFileInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    damageCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumInvoiceStatusFieldUpdateOperationsInput | $Enums.InvoiceStatus
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutInvoiceNestedInput
+    items?: InvoiceItemUpdateManyWithoutInvoiceNestedInput
+    payments?: PaymentUpdateManyWithoutInvoiceNestedInput
+  }
+
+  export type InvoiceUncheckedUpdateWithoutInvoicePdfFileInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    damageCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumInvoiceStatusFieldUpdateOperationsInput | $Enums.InvoiceStatus
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    items?: InvoiceItemUncheckedUpdateManyWithoutInvoiceNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutInvoiceNestedInput
+  }
+
+  export type InvoiceUncheckedUpdateManyWithoutInvoicePdfFileInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    damageCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumInvoiceStatusFieldUpdateOperationsInput | $Enums.InvoiceStatus
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 

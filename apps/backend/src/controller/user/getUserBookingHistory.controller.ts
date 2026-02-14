@@ -91,6 +91,7 @@ export const getUserBookingHistory = async (req: Request, res: Response) => {
 
 
         const data = bookings.map((booking) => ({
+            id: booking.id, // Numeric ID for backend operations (e.g., invoice generation)
             bookingId: booking.publicId,
             status: booking.status,
             paymentStatus: booking.paymentStatus,

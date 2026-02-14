@@ -10,7 +10,8 @@ export interface BookingVehicle {
 }
 
 export interface Booking {
-    bookingId: string;
+    id: number; // Numeric ID for backend operations
+    bookingId: string; // UUID publicId
     status: 'CONFIRMED' | 'RETURNED' | 'CANCELLED';
     paymentStatus: string;
     startAt: string;

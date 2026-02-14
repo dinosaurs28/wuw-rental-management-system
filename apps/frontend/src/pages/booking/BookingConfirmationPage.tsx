@@ -13,6 +13,7 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 
@@ -163,11 +164,57 @@ export const BookingConfirmationPage = () => {
         return (
             <div className="min-h-screen bg-background flex flex-col">
                 <Navbar />
-                <main className="flex-1 flex items-center justify-center">
-                    <div className="text-center">
-                        <Loader2 className="size-12 text-primary animate-spin mx-auto mb-4" />
-                        <h2 className="text-xl font-semibold text-foreground mb-2">Creating Your Booking</h2>
-                        <p className="text-muted-foreground">Please wait while we process your request...</p>
+                <main className="flex-1">
+                    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+                        {/* Breadcrumb Skeleton */}
+                        <div className="flex items-center gap-2 mb-8">
+                            <Skeleton className="h-4 w-12" />
+                            <Skeleton className="h-4 w-4" />
+                            <Skeleton className="h-4 w-16" />
+                            <Skeleton className="h-4 w-4" />
+                            <Skeleton className="h-4 w-24" />
+                        </div>
+
+                        {/* Success Header Skeleton */}
+                        <div className="flex flex-col items-center mb-8">
+                            <Skeleton className="h-16 w-16 rounded-full mb-4" />
+                            <Skeleton className="h-8 w-48 mb-2" />
+                            <Skeleton className="h-4 w-64" />
+                        </div>
+
+                        {/* Booking Summary Card Skeleton */}
+                        <div className="border border-zinc-200 rounded-xl shadow-sm mb-6 p-6">
+                            <Skeleton className="h-6 w-40 mb-4" />
+                            <div className="space-y-4">
+                                <div className="flex justify-between"><Skeleton className="h-4 w-20" /><Skeleton className="h-4 w-32" /></div>
+                                <div className="flex justify-between"><Skeleton className="h-4 w-24" /><Skeleton className="h-4 w-28" /></div>
+                                <div className="flex justify-between"><Skeleton className="h-4 w-20" /><Skeleton className="h-4 w-40" /></div>
+                                <div className="flex justify-between"><Skeleton className="h-4 w-16" /><Skeleton className="h-4 w-12" /></div>
+                                <div className="flex justify-between"><Skeleton className="h-4 w-24" /><Skeleton className="h-4 w-20" /></div>
+                            </div>
+                        </div>
+
+                        {/* Price Details Card Skeleton */}
+                        <div className="border border-zinc-200 rounded-xl shadow-sm mb-6 p-6">
+                            <Skeleton className="h-6 w-32 mb-4" />
+                            <div className="space-y-4">
+                                <div className="flex justify-between"><Skeleton className="h-4 w-20" /><Skeleton className="h-4 w-16" /></div>
+                                <div className="flex justify-between"><Skeleton className="h-4 w-24" /><Skeleton className="h-4 w-16" /></div>
+                                <div className="border-t pt-3 flex justify-between">
+                                    <Skeleton className="h-6 w-32" /><Skeleton className="h-6 w-24" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Payment Action Skeleton */}
+                        <div className="border border-primary/20 rounded-xl shadow-sm p-6">
+                            <div className="flex flex-col items-center">
+                                <Skeleton className="h-14 w-14 rounded-full mb-4" />
+                                <Skeleton className="h-6 w-48 mb-2" />
+                                <Skeleton className="h-4 w-64 mb-6" />
+                                <Skeleton className="h-14 w-full rounded-xl" />
+                            </div>
+                        </div>
                     </div>
                 </main>
                 <Footer />

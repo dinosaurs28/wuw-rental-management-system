@@ -30,7 +30,7 @@ export const getUserBookings = async (req: Request, res: Response) => {
 
         const page = Number(req.query.page || 1);
         const limit = Number(req.query.limit || 10);
-        if (!Number.isInteger(page) ||!Number.isInteger(limit)) {
+        if (!Number.isInteger(page) || !Number.isInteger(limit)) {
             return res.status(StatusCode.BAD_REQUEST).json({
                 message: "Pagination parameters (page, limit) must be valid numbers",
             });
@@ -77,6 +77,7 @@ export const getUserBookings = async (req: Request, res: Response) => {
 
 
         const data = bookings.map((booking) => ({
+            id: booking.id, // Numeric ID for backend operations (e.g., invoice generation)
             bookingId: booking.publicId,
             status: booking.status,
             paymentStatus: booking.paymentStatus,

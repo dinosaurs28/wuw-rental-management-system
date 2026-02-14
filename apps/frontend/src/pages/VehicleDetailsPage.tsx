@@ -4,7 +4,6 @@ import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 import { VehicleImageGallery } from '@/components/vehicles/VehicleImageGallery';
 import { VehiclePricingCard } from '@/components/vehicles/VehiclePricingCard';
-import { Spinner } from '@/components/ui/spinner';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
     Breadcrumb,

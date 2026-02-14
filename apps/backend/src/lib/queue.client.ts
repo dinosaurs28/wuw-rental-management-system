@@ -6,6 +6,8 @@ let connection: Redis | null = null;
 let imageQueueInstance: Queue | null = null;
 let cleanupQueueInstance: Queue | null = null;
 let fileCleanupQueueInstance: Queue | null = null;
+let invoiceQueueInstance: Queue | null = null;
+
 
 function getConnection(): Redis {
     if (!connection) {
@@ -87,6 +89,29 @@ export function getFileCleanupQueue(): Queue {
     return fileCleanupQueueInstance;
 }
 
+export function getInvoiceQueue(): Queue {
+    if (!invoiceQueueInstance) {
+        invoiceQueueInstance = new Queue("{bull}invoice-generation", {
+            connection: getConnection(),
+            defaultJobOptions: {
+                attempts: 3,
+                backoff: {
+                    type: "exponential",
+                    delay: 5000,
+                },
+                removeOnComplete: {
+                    age: 86400, // 24 hours
+                    count: 1000,
+                },
+                removeOnFail: {
+                    age: 604800, // 7 days
+                }
+            }
+        });
+    }
+    return invoiceQueueInstance;
+}
+
 // For backward compatibility, export as properties that call the getters
 export const imageQueue = new Proxy({} as Queue, {
     get(_target, prop) {
@@ -105,3 +130,10 @@ export const fileCleanupQueue = new Proxy({} as Queue, {
         return getFileCleanupQueue()[prop as keyof Queue];
     }
 });
+
+export const invoiceQueue = new Proxy({} as Queue, {
+    get(_target, prop) {
+        return getInvoiceQueue()[prop as keyof Queue];
+    }
+});
+

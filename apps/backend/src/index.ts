@@ -18,10 +18,12 @@ import userrouter from "./routes/user/user.routes.js";
 import employeerouter from "./routes/employee/employee.routes.js";
 import branchManagerRouter from "./routes/branchManger/branchManager.routes.js";
 import adminRouter from "./routes/admin/admin.routes.js";
+import invoiceRouter from "./routes/invoice/invoice.routes.js";
 import { initImageWorker } from "./jobs/image.worker.js";
 import { initCleanupWorker } from "./jobs/cleanup.worker.js";
 import { initFileCleanupWorker } from "./jobs/fileCleanup.worker.js";
 import { initBookingExpiryWorker } from "./jobs/bookingExpiry.worker.js";
+import { initInvoiceWorker } from "./jobs/invoice.worker.js";
 
 // Initialize passport AFTER env vars are loaded
 initializePassport();
@@ -31,6 +33,7 @@ initImageWorker();
 initCleanupWorker();
 initFileCleanupWorker();
 initBookingExpiryWorker();
+initInvoiceWorker();
 
 const app = express();
 
@@ -51,6 +54,7 @@ app.use("/api/user", userrouter);
 app.use("/api/employee", employeerouter);
 app.use("/api/branchManager", branchManagerRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/invoices", invoiceRouter);
 
 app.get("/health", (req: Request, res: Response) => {
     return res.status(StatusCode.OK).json({

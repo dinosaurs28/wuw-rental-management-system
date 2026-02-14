@@ -206,6 +206,7 @@ model FileObject {
   customerKycs  CustomerKyc[]
   bookingKycs   Booking[]      @relation("BookingKyc")
   vehicleImages VehicleImage[]
+  invoicePdfs   Invoice[]      @relation("InvoicePdf")
 
   @@index([publicId])
 }
@@ -547,12 +548,19 @@ model Invoice {
   total         Decimal
   status        InvoiceStatus @default(PENDING)
 
+  // PDF Generation Fields
+  invoiceNumber    String?     @unique
+  invoicePdfFileId Int?
+  invoicePdfFile   FileObject? @relation("InvoicePdf", fields: [invoicePdfFileId], references: [id], onDelete: SetNull)
+  generatedAt      DateTime?
+
   booking   Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   items     InvoiceItem[]
   payments  Payment[]
   createdAt DateTime      @default(now())
 
   @@index([bookingId])
+  @@index([invoicePdfFileId])
 }
 
 model InvoiceItem {

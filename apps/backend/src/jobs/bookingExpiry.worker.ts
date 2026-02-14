@@ -3,71 +3,91 @@ import { prisma, BookingStatus } from "@repo/database/client";
 import { createID } from "../utils/nanoID.js";
 
 
-// Remove localhost fallback - fail fast if REDIS_URL is not set
-const REDIS_URL = process.env.REDIS_URL;
-if (!REDIS_URL) {
-    throw new Error("[BookingExpiry] REDIS_URL environment variable is required");
-}
+// Lazy initialization - connections created when needed, after env vars are loaded
+let redis: Redis | null = null;
+let redisSubscriber: Redis | null = null;
 
 const FALLBACK_CRON_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 
-// Azure Redis connection configuration
-const redisConfig = {
-    maxRetriesPerRequest: null,
-    enableReadyCheck: true,
-    connectTimeout: 30000, // 30 seconds
-    enableOfflineQueue: false,
-    retryStrategy(times: number) {
-        const delay = Math.min(times * 50, 2000);
-        return delay;
-    },
-    // TLS configuration for Azure Redis (rediss://)
-    tls: REDIS_URL.startsWith('rediss://') ? {
-        rejectUnauthorized: true,
-    } : undefined,
-};
+function getRedisConfig() {
+    const REDIS_URL = process.env.REDIS_URL;
+    if (!REDIS_URL) {
+        throw new Error("[BookingExpiry] REDIS_URL environment variable is required");
+    }
 
-const redis = new Redis(REDIS_URL, redisConfig);
+    return {
+        url: REDIS_URL,
+        options: {
+            maxRetriesPerRequest: null,
+            enableReadyCheck: true,
+            connectTimeout: 30000, // 30 seconds
+            enableOfflineQueue: false,
+            retryStrategy(times: number) {
+                const delay = Math.min(times * 50, 2000);
+                return delay;
+            },
+            // TLS configuration for Azure Redis (rediss://)
+            tls: REDIS_URL.startsWith('rediss://') ? {
+                rejectUnauthorized: true,
+            } : undefined,
+        }
+    };
+}
 
-// Add connection event handlers
-redis.on('connect', () => {
-    console.log('[BookingExpiry] Redis client connected');
-});
+function getRedisConnection(): Redis {
+    if (!redis) {
+        const { url, options } = getRedisConfig();
+        redis = new Redis(url, options);
 
-redis.on('ready', () => {
-    console.log('[BookingExpiry] Redis client ready');
-});
+        // Add connection event handlers
+        redis.on('connect', () => {
+            console.log('[BookingExpiry] Redis client connected');
+        });
 
-redis.on('error', (err) => {
-    console.error('[BookingExpiry] Redis client error:', err.message);
-});
+        redis.on('ready', () => {
+            console.log('[BookingExpiry] Redis client ready');
+        });
 
-redis.on('close', () => {
-    console.log('[BookingExpiry] Redis client connection closed');
-});
+        redis.on('error', (err) => {
+            console.error('[BookingExpiry] Redis client error:', err.message);
+        });
 
-const redisSubscriber = new Redis(REDIS_URL, redisConfig);
+        redis.on('close', () => {
+            console.log('[BookingExpiry] Redis client connection closed');
+        });
+    }
+    return redis;
+}
 
-// Add connection event handlers for subscriber
-redisSubscriber.on('connect', () => {
-    console.log('[BookingExpiry] Redis subscriber connected');
-});
+function getRedisSubscriber(): Redis {
+    if (!redisSubscriber) {
+        const { url, options } = getRedisConfig();
+        redisSubscriber = new Redis(url, options);
 
-redisSubscriber.on('ready', () => {
-    console.log('[BookingExpiry] Redis subscriber ready');
-});
+        // Add connection event handlers for subscriber
+        redisSubscriber.on('connect', () => {
+            console.log('[BookingExpiry] Redis subscriber connected');
+        });
 
-redisSubscriber.on('error', (err) => {
-    console.error('[BookingExpiry] Redis subscriber error:', err.message);
-});
+        redisSubscriber.on('ready', () => {
+            console.log('[BookingExpiry] Redis subscriber ready');
+        });
 
-redisSubscriber.on('close', () => {
-    console.log('[BookingExpiry] Redis subscriber connection closed');
-});
+        redisSubscriber.on('error', (err) => {
+            console.error('[BookingExpiry] Redis subscriber error:', err.message);
+        });
+
+        redisSubscriber.on('close', () => {
+            console.log('[BookingExpiry] Redis subscriber connection closed');
+        });
+    }
+    return redisSubscriber;
+}
 
 
 async function enableKeyspaceNotifications(): Promise<void> {
     try {
+        const redis = getRedisConnection();
         // Wait for Redis connection to be ready
         if (redis.status !== 'ready') {
             console.log('[BookingExpiry] Waiting for Redis connection to be ready...');
@@ -163,6 +183,7 @@ async function handleBookingExpiry(bookingPublicId: string): Promise<void> {
         });
 
         // Clean up vehicle holds in Redis
+        const redis = getRedisConnection();
         for (const item of booking.items) {
             const vehicleHoldKey = `vehicle_holds:${item.vehicle.publicId}`;
             await redis.srem(vehicleHoldKey, bookingPublicId);
@@ -190,14 +211,35 @@ async function handleBookingExpiry(bookingPublicId: string): Promise<void> {
  */
 async function startExpiryListener(): Promise<void> {
     const channel = "__keyevent@0__:expired";
+    const redisSubscriber = getRedisSubscriber();
 
-    redisSubscriber.subscribe(channel, (err, count) => {
-        if (err) {
-            console.error("[BookingExpiry] Failed to subscribe to expired events:", err);
-            return;
-        }
+    // Wait for Redis subscriber to be ready
+    if (redisSubscriber.status !== 'ready') {
+        console.log('[BookingExpiry] Waiting for Redis subscriber to be ready...');
+        await new Promise<void>((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                reject(new Error('Redis subscriber connection timeout'));
+            }, 10000); // 10 second timeout
+
+            redisSubscriber.once('ready', () => {
+                clearTimeout(timeout);
+                resolve();
+            });
+
+            // If already ready
+            if (redisSubscriber.status === 'ready') {
+                clearTimeout(timeout);
+                resolve();
+            }
+        });
+    }
+
+    try {
+        const count = await redisSubscriber.subscribe(channel);
         console.log(`[BookingExpiry] Subscribed to ${channel} (${count} channels)`);
-    });
+    } catch (err) {
+        console.error("[BookingExpiry] Failed to subscribe to expired events:", err);
+    }
 
     redisSubscriber.on("message", async (channel, expiredKey) => {
         console.log(`[BookingExpiry] Received expired event for key: ${expiredKey}`);
