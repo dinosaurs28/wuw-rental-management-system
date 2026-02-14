@@ -28,6 +28,10 @@ export interface BookingItem {
 export interface BookingTotals {
     grandBaseTotal: number;
     grandDiscountTotal: number;
+    grandTaxTotal: number;
+    grandCGSTTotal?: number;
+    grandSGSTTotal?: number;
+    taxRate?: number;
     grandDeposit: number;
     grandFinalTotal: number;
     paymentURL: string | null;
@@ -274,6 +278,7 @@ export const bookingService = {
                 bookingId: string;
                 paymentURL: string | null;
                 status: string;
+                transactionId: string;
             };
         }>("/employee/booking/create", data);
         return response.data;

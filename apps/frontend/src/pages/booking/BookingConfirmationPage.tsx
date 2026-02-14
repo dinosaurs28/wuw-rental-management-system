@@ -28,6 +28,10 @@ interface BookingResponse {
     encryptedFinalPrice?: string;
     grandBaseTotal: number;
     grandDiscountTotal: number;
+    grandTaxTotal: number;
+    grandCGSTTotal?: number;
+    grandSGSTTotal?: number;
+    taxRate?: number;
     grandDeposit: number;
     grandFinalTotal: number;
 }
@@ -81,6 +85,10 @@ export const BookingConfirmationPage = () => {
                     encryptedFinalPrice: response.data.totals.encryptedFinalPrice as string,
                     grandBaseTotal: response.data.totals.grandBaseTotal,
                     grandDiscountTotal: response.data.totals.grandDiscountTotal,
+                    grandTaxTotal: response.data.totals.grandTaxTotal,
+                    grandCGSTTotal: response.data.totals.grandCGSTTotal,
+                    grandSGSTTotal: response.data.totals.grandSGSTTotal,
+                    taxRate: response.data.totals.taxRate,
                     grandDeposit: response.data.totals.grandDeposit,
                     grandFinalTotal: response.data.totals.grandFinalTotal,
                 });
@@ -334,6 +342,29 @@ export const BookingConfirmationPage = () => {
                                         -{formatPrice(bookingData.grandDiscountTotal)}
                                     </span>
                                 </div>
+                            )}
+
+                            {bookingData.grandTaxTotal > 0 && (
+                                <>
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-muted-foreground">Tax ({bookingData.taxRate}%)</span>
+                                        <span className="font-medium text-foreground">
+                                            {formatPrice(bookingData.grandTaxTotal)}
+                                        </span>
+                                    </div>
+                                    {bookingData.grandCGSTTotal !== undefined && (
+                                        <div className="flex items-center justify-between text-sm text-muted-foreground pl-2">
+                                            <span>CGST ({(bookingData.taxRate || 18) / 2}%)</span>
+                                            <span>{formatPrice(bookingData.grandCGSTTotal)}</span>
+                                        </div>
+                                    )}
+                                    {bookingData.grandSGSTTotal !== undefined && (
+                                        <div className="flex items-center justify-between text-sm text-muted-foreground pl-2">
+                                            <span>SGST ({(bookingData.taxRate || 18) / 2}%)</span>
+                                            <span>{formatPrice(bookingData.grandSGSTTotal)}</span>
+                                        </div>
+                                    )}
+                                </>
                             )}
 
                             {bookingData.grandDeposit > 0 && (

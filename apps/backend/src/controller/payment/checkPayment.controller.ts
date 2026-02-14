@@ -28,14 +28,22 @@ export const checkPayment = async (req: Request, res: Response) => {
         message: "Booking not found for this transactionId",
       });
     }
-    const paymentStatus = await paymentStatusCheck(transactionId);
+    let paymentStatus;
+    if (transactionId.startsWith("MT")) {
+      paymentStatus = await paymentStatusCheck(transactionId);
 
-    if (!paymentStatus) {
-      return res.status(StatusCode.BAD_REQUEST).json({
-        message: "Error while checking payment status",
-      });
+      if (!paymentStatus) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+          message: "Error while checking payment status",
+        });
+      }
     }
-    // Idempotency check - prevent duplicate processing
+    // Determine if this is a Cash transaction
+    const isCash = transactionId.startsWith("CASH_");
+    const isOnlineSuccess = paymentStatus?.code === "PAYMENT_SUCCESS";
+    const isOnlinePending = paymentStatus?.code === "PAYMENT_PENDING";
+
+    // Idempotency check - if already SUCCESS, return OK
     if (booking.paymentStatus === PaymentStatus.SUCCESS) {
       return res.status(StatusCode.OK).json({
         status: "Success",
@@ -44,15 +52,17 @@ export const checkPayment = async (req: Request, res: Response) => {
       });
     }
 
-    if (paymentStatus.code === "PAYMENT_SUCCESS") {
+    if (isOnlineSuccess || isCash) {
       await prisma.$transaction(async (tx) => {
+        const method = isCash ? DepositMethod.CASH : DepositMethod.ONLINE_RAZORPAY;
+
         await tx.booking.update({
           where: { id: booking.id },
           data: {
             status: BookingStatus.CONFIRMED,
             paymentStatus: PaymentStatus.SUCCESS,
             holdExpiresAt: null,
-            depositMethod: DepositMethod.ONLINE_RAZORPAY,
+            depositMethod: method,
           },
         });
 
@@ -71,7 +81,7 @@ export const checkPayment = async (req: Request, res: Response) => {
               publicId: createID(),
               bookingId: booking.id,
               amount: booking.totalDeposit,
-              method: DepositMethod.ONLINE_RAZORPAY,
+              method: method,
             },
           });
         }
@@ -102,7 +112,7 @@ export const checkPayment = async (req: Request, res: Response) => {
           data: {
             publicId: createID(),
             invoiceId: invoice.id,
-            method: DepositMethod.ONLINE_RAZORPAY,
+            method: method,
             status: PaymentStatus.SUCCESS,
             amount: booking.totalFinal,
           },
@@ -133,7 +143,8 @@ export const checkPayment = async (req: Request, res: Response) => {
         redirectURL: "FRONTEND_SUCCESS_URL",
       });
     }
-    if (paymentStatus.code === "PAYMENT_PENDING") {
+
+    if (isOnlinePending) {
       return res.status(StatusCode.OK).json({
         status: "Pending",
         message: "Payment is still pending",

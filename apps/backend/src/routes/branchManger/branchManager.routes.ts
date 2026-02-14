@@ -10,6 +10,7 @@ import { AddVehicle, EditVehicle, GetInsuranceExpiryReport, GetVehicleById, GetV
 import { GetStaffAuditLogs } from "../../controller/branchManager/audit.controller.js";
 import { CreateEmployee, GetEmployee, SearchEmployee, UpdateEmployee } from "../../controller/branchManager/employee.controller.js";
 import { CreateDepositRule, GetDepositRules, UpdateDepositRule, DeleteDepositRule } from "../../controller/branchManager/deposit.controller.js";
+import { GetGSTRule, CreateOrUpdateGSTRule } from "../../controller/branchManager/gst.controller.js";
 import { upload } from "../../middlewares/upload.middleware.js";
 
 const router: Router = Router()
@@ -40,5 +41,7 @@ router.get("/dashboard/deposit-rules", ManagerCheck, GetDepositRules)
 router.post("/dashboard/deposit-rules", ManagerCheck, CreateDepositRule)
 router.put("/dashboard/deposit-rules/:id", ManagerCheck, UpdateDepositRule)
 router.delete("/dashboard/deposit-rules/:id", ManagerCheck, DeleteDepositRule)
+router.get("/gst", ManagerCheck, GetGSTRule)
+router.post("/gst", ManagerCheck, CreateOrUpdateGSTRule)
 
 export default router

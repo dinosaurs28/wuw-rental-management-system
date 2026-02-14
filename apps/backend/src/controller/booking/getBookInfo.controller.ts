@@ -14,32 +14,32 @@ import jwt from "jsonwebtoken"
 export const createBookingSummary = async (req: Request, res: Response) => {
   try {
     const parsed = bookingSummarySchema.safeParse(req.body);
-    const customerpubId=req.public_Id
+    const customerpubId = req.public_Id
     if (!parsed.success) {
       return res.status(StatusCode.BAD_REQUEST).json({
         message: "Invalid request data",
         errors: parsed.error.flatten()
       });
     }
-     const userData=await prisma.user.findUnique({
-      where:{
-        publicId:customerpubId
-      },select:{
-        id:true,
-        customerProfile:{
-          select:{
-            id:true
+    const userData = await prisma.user.findUnique({
+      where: {
+        publicId: customerpubId
+      }, select: {
+        id: true,
+        customerProfile: {
+          select: {
+            id: true
           }
         }
       }
     })
-    if(!userData?.customerProfile){
+    if (!userData?.customerProfile) {
       return res.status(StatusCode.BAD_REQUEST).json({
-        message:"Customer doesnt Exists"
+        message: "Customer doesnt Exists"
       })
     }
-    const { vehicles, start, end,file_public_id } = parsed.data;
-    const customerId=userData.customerProfile.id
+    const { vehicles, start, end, file_public_id } = parsed.data;
+    const customerId = userData.customerProfile.id
     const kycFile = await prisma.fileObject.findUnique({
       where: { publicId: file_public_id },
       select: { id: true }
@@ -101,10 +101,31 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     }
 
     const items: any = [];
+
+    // GST Rule Fetching
+    const branchId = vehiclesData[0]?.branchId;
+    let cgstRate = 9;
+    let sgstRate = 9;
+
+    if (branchId) {
+      const gstRule = await prisma.gSTRule.findUnique({
+        where: { branchId }
+      });
+      if (gstRule) {
+        cgstRate = Number(gstRule.cgstRate);
+        sgstRate = Number(gstRule.sgstRate);
+      }
+    }
+    const totalTaxRate = cgstRate + sgstRate;
+
     let grandBaseTotal = 0;
     let grandDiscountTotal = 0;
-    let grandFinalTotal = 0;
+    let grandTaxTotal = 0;
+    let grandCGSTTotal = 0;
+    let grandSGSTTotal = 0;
     let grandDeposit = 0;
+    let grandFinalTotal = 0;
+
     for (const v of vehiclesData) {
       const availability = await checkVehicleAvailability(
         v.id,
@@ -133,7 +154,12 @@ export const createBookingSummary = async (req: Request, res: Response) => {
 
 
       const deposit = (await getDepositAmount(v.branchId, v.categoryId)) || 0;
-      const finalTotal = Number((discountedTotal + deposit).toFixed(2));
+      // Calculate Tax
+      const taxAmount = Number((discountedTotal * (totalTaxRate / 100)).toFixed(2));
+      const cgstAmount = Number((discountedTotal * (cgstRate / 100)).toFixed(2));
+      const sgstAmount = Number((discountedTotal * (sgstRate / 100)).toFixed(2));
+
+      const finalTotal = Number((discountedTotal + taxAmount + deposit).toFixed(2));
 
       items.push({
         publicId: v.publicId,
@@ -147,11 +173,18 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         discountAmount,
         discountPercent,
         deposit,
+        taxAmount,
+        cgstAmount,
+        sgstAmount,
+        taxRate: totalTaxRate,
         finalTotal
       });
 
       grandBaseTotal += baseTotal;
       grandDiscountTotal += discountAmount;
+      grandTaxTotal += taxAmount;
+      grandCGSTTotal += cgstAmount;
+      grandSGSTTotal += sgstAmount;
       grandDeposit += deposit;
       grandFinalTotal += finalTotal;
     }
@@ -159,8 +192,12 @@ export const createBookingSummary = async (req: Request, res: Response) => {
 
     grandBaseTotal = Number(grandBaseTotal.toFixed(2));
     grandDiscountTotal = Number(grandDiscountTotal.toFixed(2));
+    grandTaxTotal = Number(grandTaxTotal.toFixed(2));
+    grandCGSTTotal = Number(grandCGSTTotal.toFixed(2));
+    grandSGSTTotal = Number(grandSGSTTotal.toFixed(2));
     grandDeposit = Number(grandDeposit.toFixed(2));
     grandFinalTotal = Number(grandFinalTotal.toFixed(2));
+
     let transactionId: string
     let paymentURL: string
     let encryptedFinalPrice: string | null = null
@@ -189,6 +226,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           totalBase: grandBaseTotal,
           totalDiscount: grandDiscountTotal,
           totalDeposit: grandDeposit,
+          totalTax: grandTaxTotal,
           totalFinal: grandFinalTotal,
           transactionId,
           pricingSnapshot: {
@@ -197,6 +235,10 @@ export const createBookingSummary = async (req: Request, res: Response) => {
               grandBaseTotal,
               grandDiscountTotal,
               grandDeposit,
+              grandTaxTotal,
+              grandCGSTTotal,
+              grandSGSTTotal,
+              taxRate: totalTaxRate,
               grandFinalTotal,
             },
           },
@@ -212,6 +254,10 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           discountAmount: i.discountAmount,
           discountPercent: i.discountPercent,
           deposit: i.deposit,
+          taxAmount: i.taxAmount,
+          cgstAmount: i.cgstAmount,
+          sgstAmount: i.sgstAmount,
+          taxRate: i.taxRate,
           finalTotal: i.finalTotal,
         })),
       });
@@ -220,7 +266,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     });
 
     const holdId = booking.publicId
-    const holdExpiry = 10*60;
+    const holdExpiry = 10 * 60;
 
     const holdData = {
       vehicles: items,
@@ -230,6 +276,10 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         grandBaseTotal,
         grandDiscountTotal,
         grandDeposit,
+        grandTaxTotal,
+        grandCGSTTotal,
+        grandSGSTTotal,
+        taxRate: totalTaxRate,
         grandFinalTotal
       },
       createdAt: new Date().toISOString(),
@@ -260,6 +310,10 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           grandBaseTotal,
           grandDiscountTotal,
           grandDeposit,
+          grandTaxTotal, // Added tax total
+          grandCGSTTotal,
+          grandSGSTTotal,
+          taxRate: totalTaxRate,
           grandFinalTotal,
           paymentURL,
           encryptedFinalPrice,

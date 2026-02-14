@@ -141,7 +141,7 @@ async function handleBookingExpiry(bookingPublicId: string): Promise<void> {
             await tx.booking.update({
                 where: { id: booking.id },
                 data: {
-                    status: BookingStatus.CANCELLED,
+                    status: BookingStatus.HOLD_EXPIRED,
                     holdExpiresAt: null,
                 },
             });
@@ -151,11 +151,11 @@ async function handleBookingExpiry(bookingPublicId: string): Promise<void> {
                 data: {
                     publicId: createID(),
                     userId: booking.createdById,
-                    action: "BOOKING_CANCELLED_EXPIRED",
+                    action: "HOLD_EXPIRED",
                     entity: "Booking",
                     entityId: booking.publicId,
                     after: {
-                        status: "CANCELLED",
+                        status: "HOLD_EXPIRED",
                         reason: "Hold expired",
                     },
                 },

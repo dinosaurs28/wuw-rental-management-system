@@ -47,6 +47,7 @@ enum BookingStatus {
   PICKED_UP
   RETURNED
   CANCELLED
+  HOLD_EXPIRED
 }
 
 enum BookingPhotoType {
@@ -223,6 +224,7 @@ model Branch {
   pricingSetting          BranchPricingSetting?
   pricingDiscountSlabs    PricingDiscountSlab[]
   categoryDepositSettings CategoryDepositSetting[]
+  gstRule                 GSTRule?
   createdAt               DateTime                 @default(now())
   deletedAt               DateTime?
 }
@@ -399,6 +401,7 @@ model Booking {
   totalBase       Decimal
   totalDiscount   Decimal
   totalDeposit    Decimal
+  totalTax        Decimal        @default(0)
   totalFinal      Decimal
   status          BookingStatus  @default(HOLD)
   transactionId   String?        @unique
@@ -439,6 +442,10 @@ model BookingItem {
   discountAmount  Decimal
   discountPercent Decimal
   deposit         Decimal
+  taxAmount       Decimal @default(0)
+  cgstAmount      Decimal @default(0)
+  sgstAmount      Decimal @default(0)
+  taxRate         Decimal @default(0)
   finalTotal      Decimal
 
   vehicle Vehicle @relation(fields: [vehicleId], references: [id])
@@ -466,8 +473,8 @@ model BookingPhoto {
 }
 
 model DamageReport {
-  id            Int                      @id @default(autoincrement())
-  publicId      String                   @unique
+  id            Int                       @id @default(autoincrement())
+  publicId      String                    @unique
   bookingId     Int
   vehicleId     Int
   severity      String
@@ -475,11 +482,11 @@ model DamageReport {
   finalCost     Decimal?
   notes         Json
   approvedById  Int?
-  status        DamageReportStatus       @default(PENDING)
+  status        DamageReportStatus        @default(PENDING)
   disposition   VehicleReturnDisposition?
-  booking       Booking                  @relation(fields: [bookingId], references: [id])
-  vehicle       Vehicle                  @relation(fields: [vehicleId], references: [id])
-  approvedBy    User?                    @relation(fields: [approvedById], references: [id], onDelete: SetNull)
+  booking       Booking                   @relation(fields: [bookingId], references: [id])
+  vehicle       Vehicle                   @relation(fields: [vehicleId], references: [id])
+  approvedBy    User?                     @relation(fields: [approvedById], references: [id], onDelete: SetNull)
   photos        BookingPhoto[]
 
   createdAt DateTime @default(now())
@@ -581,5 +588,19 @@ model SystemSetting {
   publicId  String   @unique
   key       String   @unique
   value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model GSTRule {
+  id        Int     @id @default(autoincrement())
+  publicId  String  @unique
+  branchId  Int     @unique
+  gstNumber String
+  cgstRate  Decimal @default(9.00)
+  sgstRate  Decimal @default(9.00)
+  igstRate  Decimal @default(0.00)
+
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

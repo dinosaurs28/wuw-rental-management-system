@@ -171,15 +171,37 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
             include: {
                 category: true,
                 branch: { include: { pricingSetting: true } },
-                pricingOverride: true
+                images: {
+                    include: { file: true },
+                    take: 1
+                }
             }
         });
 
         if (vehiclesData.length !== vehicles.length) return res.status(StatusCode.NOT_FOUND).json({ message: "Some vehicles not found" });
 
+        // GST Rule Fetching
+        const branchId = vehiclesData[0]?.branchId;
+        let cgstRate = 0;
+        let sgstRate = 0;
+
+        if (branchId) {
+            const gstRule = await prisma.gSTRule.findUnique({
+                where: { branchId }
+            });
+            if (gstRule) {
+                cgstRate = Number(gstRule.cgstRate);
+                sgstRate = Number(gstRule.sgstRate);
+            }
+        }
+        const totalTaxRate = cgstRate + sgstRate;
+
         const items: any[] = [];
         let grandBaseTotal = 0;
         let grandDiscountTotal = 0;
+        let grandTaxTotal = 0;
+        let grandCGSTTotal = 0;
+        let grandSGSTTotal = 0;
         let grandDeposit = 0;
         let grandFinalTotal = 0;
 
@@ -195,44 +217,57 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
             const discountedTotal = Number((baseTotal * (1 - discountPercent)).toFixed(2));
             const discountAmount = Number((baseTotal - discountedTotal).toFixed(2));
             const deposit = (await getDepositAmount(v.branchId, v.categoryId)) || 0;
-            const finalTotal = Number((discountedTotal + deposit).toFixed(2));
+
+            // Calculate Tax
+            const taxAmount = Number((discountedTotal * (totalTaxRate / 100)).toFixed(2));
+            const cgstAmount = Number((discountedTotal * (cgstRate / 100)).toFixed(2));
+            const sgstAmount = Number((discountedTotal * (sgstRate / 100)).toFixed(2));
+
+            const finalTotal = Number((discountedTotal + taxAmount + deposit).toFixed(2));
 
             items.push({
                 vehicleId: v.id,
+                make: v.make,
+                model: v.model,
+                category: v.category?.name,
+                image: v.images[0]?.file?.url,
+                regNo: v.regNo,
+                payment_type,
                 days,
                 baseTotal,
                 discountAmount,
                 discountPercent,
                 deposit,
+                taxAmount,
+                cgstAmount,
+                sgstAmount,
+                taxRate: totalTaxRate,
                 finalTotal
             });
 
             grandBaseTotal += baseTotal;
             grandDiscountTotal += discountAmount;
+            grandTaxTotal += taxAmount;
+            grandCGSTTotal += cgstAmount;
+            grandSGSTTotal += sgstAmount;
             grandDeposit += deposit;
             grandFinalTotal += finalTotal;
         }
+
+        grandBaseTotal = Number(grandBaseTotal.toFixed(2));
+        grandDiscountTotal = Number(grandDiscountTotal.toFixed(2));
+        grandTaxTotal = Number(grandTaxTotal.toFixed(2));
+        grandCGSTTotal = Number(grandCGSTTotal.toFixed(2));
+        grandSGSTTotal = Number(grandSGSTTotal.toFixed(2));
+        grandDeposit = Number(grandDeposit.toFixed(2));
+        grandFinalTotal = Number(grandFinalTotal.toFixed(2));
 
         let transactionId = null;
         let paymentURL = null;
 
         if (payment_type === "ONLINE") {
-            // Construct Employee Specific Redirect URL
-            // Default assumes: .../booking/status
-            // We want: .../employee/booking/status
-            const defaultRedirectBase = process.env.REDIRECT_URL_PAY;
-            let employeeRedirectBase = defaultRedirectBase;
-
-            if (defaultRedirectBase && defaultRedirectBase.includes('/booking/status')) {
-                employeeRedirectBase = defaultRedirectBase.replace('/booking/status', '/employee/booking/status');
-            } else if (defaultRedirectBase) {
-                // Fallback if structure is different, just append /employee if it was root, but safer to assume standard structure or log warning
-                // If default is just domain, this logic might be fragile. 
-                // Let's assume standard ENV structure: https://app.com/booking/status
-                // If we can't safely replace, use default (Employee will get redirected to customer login, but better than broken link)
-                // Or better, just hardcode the path structure if we know the domain.
-                // Ideally, we should have a separate ENV, but replacing segment is good enough for now.
-            }
+            const frontendUrl = process.env.FRONTEND_URL
+            const employeeRedirectBase = `${frontendUrl}/employee/booking/status`;
 
             const paymentDetails = await initiatePhonePePayment(grandFinalTotal, employeeRedirectBase);
             transactionId = paymentDetails.merchantTransactionId;
@@ -251,21 +286,47 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
                     startAt: startDate,
                     endAt: endDate,
                     days: items[0]!.days,
-                    status: BookingStatus.CONFIRMED,
-                    paymentStatus: payment_type === "CASH" ? "SUCCESS" : "CREATED",
+                    status: BookingStatus.HOLD,
+                    paymentStatus: "CREATED",
                     depositMethod: payment_type === "CASH" ? DepositMethod.CASH : DepositMethod.ONLINE_RAZORPAY,
                     totalBase: grandBaseTotal,
                     totalDiscount: grandDiscountTotal,
                     totalDeposit: grandDeposit,
+                    totalTax: grandTaxTotal,
                     totalFinal: grandFinalTotal,
                     transactionId,
-                    pricingSnapshot: { items, totals: { grandBaseTotal, grandFinalTotal } },
+                    pricingSnapshot: {
+                        items,
+                        totals: {
+                            grandBaseTotal,
+                            grandDiscountTotal,
+                            grandDeposit,
+                            grandTaxTotal,
+                            grandCGSTTotal,
+                            grandSGSTTotal,
+                            taxRate: totalTaxRate,
+                            grandFinalTotal
+                        }
+                    },
                     createdById: staff.id
                 }
             });
 
             await tx.bookingItem.createMany({
-                data: items.map(i => ({ ...i, bookingId: newBooking.id }))
+                data: items.map(i => ({
+                    bookingId: newBooking.id,
+                    vehicleId: i.vehicleId,
+                    days: i.days,
+                    baseTotal: i.baseTotal,
+                    discountAmount: i.discountAmount,
+                    discountPercent: i.discountPercent,
+                    deposit: i.deposit,
+                    taxAmount: i.taxAmount,
+                    cgstAmount: i.cgstAmount,
+                    sgstAmount: i.sgstAmount,
+                    taxRate: i.taxRate,
+                    finalTotal: i.finalTotal,
+                }))
             });
 
             await tx.staffActivityLog.create({
@@ -281,12 +342,19 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
             return newBooking;
         });
 
+        const snapshot = booking.pricingSnapshot as any;
+
         return res.status(StatusCode.OK).json({
             message: "Booking Created Successfully",
             data: {
                 bookingId: booking.publicId,
                 paymentURL,
-                status: booking.status
+                status: booking.status,
+                startDate: booking.startAt,
+                endDate: booking.endAt,
+                transactionId: booking.transactionId,
+                totals: snapshot?.totals,
+                items: snapshot?.items
             }
         });
 

@@ -105,19 +105,25 @@ export const emailAuthControllerSignin = async (req: Request, res: Response) => 
                 }
             })
         }
-        const token = await jwtsign({ sub: response.publicId, role: response.role, verified: true, provider: response.authProvider })
-        return res.status(StatusCode.OK).cookie("accessToken", token, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "strict",
-        }).json({
-            message: "Success",
-            data: {
-                name: response.name,
-                email: response.email,
-                role: response.role,
-                publicId: response.publicId,
-            }
+        if (response.role === Role.CUSTOMER) {
+            const token = await jwtsign({ sub: response.publicId, role: response.role, verified: true, provider: response.authProvider })
+            return res.status(StatusCode.OK).cookie("accessToken", token, {
+                httpOnly: true,
+                secure: true,
+                sameSite: "strict",
+            }).json({
+                message: "Success",
+                data: {
+                    name: response.name,
+                    email: response.email,
+                    role: response.role,
+                    publicId: response.publicId,
+                }
+            })
+        }
+
+        return res.status(StatusCode.UNAUTHORIZED).json({
+            message: "Only Customer Login is Allowed"
         })
     } catch (e: any) {
         console.log("The Error In the Email Auth Controller", e)

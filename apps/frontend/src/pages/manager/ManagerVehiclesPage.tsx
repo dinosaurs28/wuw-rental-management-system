@@ -103,6 +103,13 @@ export const ManagerVehiclesPage = () => {
                             Insurance Alerts
                         </Button>
                         <Button
+                            variant="outline"
+                            className="h-9 md:h-11 w-full sm:w-auto text-sm"
+                            onClick={() => navigate("/manager/gst-rules")}
+                        >
+                            GST Rules
+                        </Button>
+                        <Button
                             className="bg-orange-500 hover:bg-orange-600 text-white h-9 md:h-11 w-full sm:w-auto text-sm"
                             onClick={() => navigate("/manager/vehicles/add")}
                         >

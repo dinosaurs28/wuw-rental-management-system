@@ -326,6 +326,7 @@ exports.Prisma.BookingScalarFieldEnum = {
   totalBase: 'totalBase',
   totalDiscount: 'totalDiscount',
   totalDeposit: 'totalDeposit',
+  totalTax: 'totalTax',
   totalFinal: 'totalFinal',
   status: 'status',
   transactionId: 'transactionId',
@@ -348,6 +349,10 @@ exports.Prisma.BookingItemScalarFieldEnum = {
   discountAmount: 'discountAmount',
   discountPercent: 'discountPercent',
   deposit: 'deposit',
+  taxAmount: 'taxAmount',
+  cgstAmount: 'cgstAmount',
+  sgstAmount: 'sgstAmount',
+  taxRate: 'taxRate',
   finalTotal: 'finalTotal'
 };
 
@@ -447,6 +452,18 @@ exports.Prisma.SystemSettingScalarFieldEnum = {
   publicId: 'publicId',
   key: 'key',
   value: 'value',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.GSTRuleScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  branchId: 'branchId',
+  gstNumber: 'gstNumber',
+  cgstRate: 'cgstRate',
+  sgstRate: 'sgstRate',
+  igstRate: 'igstRate',
+  createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
 
@@ -594,7 +611,8 @@ exports.Prisma.ModelName = {
   Invoice: 'Invoice',
   InvoiceItem: 'InvoiceItem',
   AuditLog: 'AuditLog',
-  SystemSetting: 'SystemSetting'
+  SystemSetting: 'SystemSetting',
+  GSTRule: 'GSTRule'
 };
 
 /**

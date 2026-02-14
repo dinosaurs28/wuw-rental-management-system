@@ -14,6 +14,10 @@ apiClient.interceptors.response.use(
         // if (status === 401) {
         //   // Handle unauthorized (e.g., redirect to login) if needed
         // }
+
+        if (error.response?.data?.message === "Access Denied: Admins Only") {
+            window.location.href = "/admin/sign-in";
+        }
         return Promise.reject(error);
     }
 );

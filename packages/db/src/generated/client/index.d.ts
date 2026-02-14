@@ -158,6 +158,11 @@ export type AuditLog = $Result.DefaultSelection<Prisma.$AuditLogPayload>
  * 
  */
 export type SystemSetting = $Result.DefaultSelection<Prisma.$SystemSettingPayload>
+/**
+ * Model GSTRule
+ * 
+ */
+export type GSTRule = $Result.DefaultSelection<Prisma.$GSTRulePayload>
 
 /**
  * Enums
@@ -753,6 +758,16 @@ export class PrismaClient<
     * ```
     */
   get systemSetting(): Prisma.SystemSettingDelegate<ExtArgs>;
+
+  /**
+   * `prisma.gSTRule`: Exposes CRUD operations for the **GSTRule** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more GSTRules
+    * const gSTRules = await prisma.gSTRule.findMany()
+    * ```
+    */
+  get gSTRule(): Prisma.GSTRuleDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -1222,7 +1237,8 @@ export namespace Prisma {
     Invoice: 'Invoice',
     InvoiceItem: 'InvoiceItem',
     AuditLog: 'AuditLog',
-    SystemSetting: 'SystemSetting'
+    SystemSetting: 'SystemSetting',
+    GSTRule: 'GSTRule'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1238,7 +1254,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehicle" | "vehiclePricingOverride" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting"
+      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehicle" | "vehiclePricingOverride" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "gSTRule"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -3269,6 +3285,76 @@ export namespace Prisma {
           count: {
             args: Prisma.SystemSettingCountArgs<ExtArgs>
             result: $Utils.Optional<SystemSettingCountAggregateOutputType> | number
+          }
+        }
+      }
+      GSTRule: {
+        payload: Prisma.$GSTRulePayload<ExtArgs>
+        fields: Prisma.GSTRuleFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.GSTRuleFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GSTRulePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.GSTRuleFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GSTRulePayload>
+          }
+          findFirst: {
+            args: Prisma.GSTRuleFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GSTRulePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.GSTRuleFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GSTRulePayload>
+          }
+          findMany: {
+            args: Prisma.GSTRuleFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GSTRulePayload>[]
+          }
+          create: {
+            args: Prisma.GSTRuleCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GSTRulePayload>
+          }
+          createMany: {
+            args: Prisma.GSTRuleCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.GSTRuleCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GSTRulePayload>[]
+          }
+          delete: {
+            args: Prisma.GSTRuleDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GSTRulePayload>
+          }
+          update: {
+            args: Prisma.GSTRuleUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GSTRulePayload>
+          }
+          deleteMany: {
+            args: Prisma.GSTRuleDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.GSTRuleUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.GSTRuleUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GSTRulePayload>
+          }
+          aggregate: {
+            args: Prisma.GSTRuleAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateGSTRule>
+          }
+          groupBy: {
+            args: Prisma.GSTRuleGroupByArgs<ExtArgs>
+            result: $Utils.Optional<GSTRuleGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.GSTRuleCountArgs<ExtArgs>
+            result: $Utils.Optional<GSTRuleCountAggregateOutputType> | number
           }
         }
       }
@@ -10582,6 +10668,7 @@ export namespace Prisma {
     pricingSetting?: boolean | Branch$pricingSettingArgs<ExtArgs>
     pricingDiscountSlabs?: boolean | Branch$pricingDiscountSlabsArgs<ExtArgs>
     categoryDepositSettings?: boolean | Branch$categoryDepositSettingsArgs<ExtArgs>
+    gstRule?: boolean | Branch$gstRuleArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["branch"]>
 
@@ -10612,6 +10699,7 @@ export namespace Prisma {
     pricingSetting?: boolean | Branch$pricingSettingArgs<ExtArgs>
     pricingDiscountSlabs?: boolean | Branch$pricingDiscountSlabsArgs<ExtArgs>
     categoryDepositSettings?: boolean | Branch$categoryDepositSettingsArgs<ExtArgs>
+    gstRule?: boolean | Branch$gstRuleArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type BranchIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -10625,6 +10713,7 @@ export namespace Prisma {
       pricingSetting: Prisma.$BranchPricingSettingPayload<ExtArgs> | null
       pricingDiscountSlabs: Prisma.$PricingDiscountSlabPayload<ExtArgs>[]
       categoryDepositSettings: Prisma.$CategoryDepositSettingPayload<ExtArgs>[]
+      gstRule: Prisma.$GSTRulePayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -11004,6 +11093,7 @@ export namespace Prisma {
     pricingSetting<T extends Branch$pricingSettingArgs<ExtArgs> = {}>(args?: Subset<T, Branch$pricingSettingArgs<ExtArgs>>): Prisma__BranchPricingSettingClient<$Result.GetResult<Prisma.$BranchPricingSettingPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     pricingDiscountSlabs<T extends Branch$pricingDiscountSlabsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$pricingDiscountSlabsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PricingDiscountSlabPayload<ExtArgs>, T, "findMany"> | Null>
     categoryDepositSettings<T extends Branch$categoryDepositSettingsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$categoryDepositSettingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CategoryDepositSettingPayload<ExtArgs>, T, "findMany"> | Null>
+    gstRule<T extends Branch$gstRuleArgs<ExtArgs> = {}>(args?: Subset<T, Branch$gstRuleArgs<ExtArgs>>): Prisma__GSTRuleClient<$Result.GetResult<Prisma.$GSTRulePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -11466,6 +11556,21 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: CategoryDepositSettingScalarFieldEnum | CategoryDepositSettingScalarFieldEnum[]
+  }
+
+  /**
+   * Branch.gstRule
+   */
+  export type Branch$gstRuleArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GSTRule
+     */
+    select?: GSTRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GSTRuleInclude<ExtArgs> | null
+    where?: GSTRuleWhereInput
   }
 
   /**
@@ -22718,6 +22823,7 @@ export namespace Prisma {
     totalBase: Decimal | null
     totalDiscount: Decimal | null
     totalDeposit: Decimal | null
+    totalTax: Decimal | null
     totalFinal: Decimal | null
     createdById: number | null
     kycFileId: number | null
@@ -22731,6 +22837,7 @@ export namespace Prisma {
     totalBase: Decimal | null
     totalDiscount: Decimal | null
     totalDeposit: Decimal | null
+    totalTax: Decimal | null
     totalFinal: Decimal | null
     createdById: number | null
     kycFileId: number | null
@@ -22748,6 +22855,7 @@ export namespace Prisma {
     totalBase: Decimal | null
     totalDiscount: Decimal | null
     totalDeposit: Decimal | null
+    totalTax: Decimal | null
     totalFinal: Decimal | null
     status: $Enums.BookingStatus | null
     transactionId: string | null
@@ -22772,6 +22880,7 @@ export namespace Prisma {
     totalBase: Decimal | null
     totalDiscount: Decimal | null
     totalDeposit: Decimal | null
+    totalTax: Decimal | null
     totalFinal: Decimal | null
     status: $Enums.BookingStatus | null
     transactionId: string | null
@@ -22796,6 +22905,7 @@ export namespace Prisma {
     totalBase: number
     totalDiscount: number
     totalDeposit: number
+    totalTax: number
     totalFinal: number
     status: number
     transactionId: number
@@ -22819,6 +22929,7 @@ export namespace Prisma {
     totalBase?: true
     totalDiscount?: true
     totalDeposit?: true
+    totalTax?: true
     totalFinal?: true
     createdById?: true
     kycFileId?: true
@@ -22832,6 +22943,7 @@ export namespace Prisma {
     totalBase?: true
     totalDiscount?: true
     totalDeposit?: true
+    totalTax?: true
     totalFinal?: true
     createdById?: true
     kycFileId?: true
@@ -22849,6 +22961,7 @@ export namespace Prisma {
     totalBase?: true
     totalDiscount?: true
     totalDeposit?: true
+    totalTax?: true
     totalFinal?: true
     status?: true
     transactionId?: true
@@ -22873,6 +22986,7 @@ export namespace Prisma {
     totalBase?: true
     totalDiscount?: true
     totalDeposit?: true
+    totalTax?: true
     totalFinal?: true
     status?: true
     transactionId?: true
@@ -22897,6 +23011,7 @@ export namespace Prisma {
     totalBase?: true
     totalDiscount?: true
     totalDeposit?: true
+    totalTax?: true
     totalFinal?: true
     status?: true
     transactionId?: true
@@ -23009,6 +23124,7 @@ export namespace Prisma {
     totalBase: Decimal
     totalDiscount: Decimal
     totalDeposit: Decimal
+    totalTax: Decimal
     totalFinal: Decimal
     status: $Enums.BookingStatus
     transactionId: string | null
@@ -23053,6 +23169,7 @@ export namespace Prisma {
     totalBase?: boolean
     totalDiscount?: boolean
     totalDeposit?: boolean
+    totalTax?: boolean
     totalFinal?: boolean
     status?: boolean
     transactionId?: boolean
@@ -23088,6 +23205,7 @@ export namespace Prisma {
     totalBase?: boolean
     totalDiscount?: boolean
     totalDeposit?: boolean
+    totalTax?: boolean
     totalFinal?: boolean
     status?: boolean
     transactionId?: boolean
@@ -23117,6 +23235,7 @@ export namespace Prisma {
     totalBase?: boolean
     totalDiscount?: boolean
     totalDeposit?: boolean
+    totalTax?: boolean
     totalFinal?: boolean
     status?: boolean
     transactionId?: boolean
@@ -23174,6 +23293,7 @@ export namespace Prisma {
       totalBase: Prisma.Decimal
       totalDiscount: Prisma.Decimal
       totalDeposit: Prisma.Decimal
+      totalTax: Prisma.Decimal
       totalFinal: Prisma.Decimal
       status: $Enums.BookingStatus
       transactionId: string | null
@@ -23598,6 +23718,7 @@ export namespace Prisma {
     readonly totalBase: FieldRef<"Booking", 'Decimal'>
     readonly totalDiscount: FieldRef<"Booking", 'Decimal'>
     readonly totalDeposit: FieldRef<"Booking", 'Decimal'>
+    readonly totalTax: FieldRef<"Booking", 'Decimal'>
     readonly totalFinal: FieldRef<"Booking", 'Decimal'>
     readonly status: FieldRef<"Booking", 'BookingStatus'>
     readonly transactionId: FieldRef<"Booking", 'String'>
@@ -24067,6 +24188,10 @@ export namespace Prisma {
     discountAmount: Decimal | null
     discountPercent: Decimal | null
     deposit: Decimal | null
+    taxAmount: Decimal | null
+    cgstAmount: Decimal | null
+    sgstAmount: Decimal | null
+    taxRate: Decimal | null
     finalTotal: Decimal | null
   }
 
@@ -24079,6 +24204,10 @@ export namespace Prisma {
     discountAmount: Decimal | null
     discountPercent: Decimal | null
     deposit: Decimal | null
+    taxAmount: Decimal | null
+    cgstAmount: Decimal | null
+    sgstAmount: Decimal | null
+    taxRate: Decimal | null
     finalTotal: Decimal | null
   }
 
@@ -24091,6 +24220,10 @@ export namespace Prisma {
     discountAmount: Decimal | null
     discountPercent: Decimal | null
     deposit: Decimal | null
+    taxAmount: Decimal | null
+    cgstAmount: Decimal | null
+    sgstAmount: Decimal | null
+    taxRate: Decimal | null
     finalTotal: Decimal | null
   }
 
@@ -24103,6 +24236,10 @@ export namespace Prisma {
     discountAmount: Decimal | null
     discountPercent: Decimal | null
     deposit: Decimal | null
+    taxAmount: Decimal | null
+    cgstAmount: Decimal | null
+    sgstAmount: Decimal | null
+    taxRate: Decimal | null
     finalTotal: Decimal | null
   }
 
@@ -24115,6 +24252,10 @@ export namespace Prisma {
     discountAmount: number
     discountPercent: number
     deposit: number
+    taxAmount: number
+    cgstAmount: number
+    sgstAmount: number
+    taxRate: number
     finalTotal: number
     _all: number
   }
@@ -24129,6 +24270,10 @@ export namespace Prisma {
     discountAmount?: true
     discountPercent?: true
     deposit?: true
+    taxAmount?: true
+    cgstAmount?: true
+    sgstAmount?: true
+    taxRate?: true
     finalTotal?: true
   }
 
@@ -24141,6 +24286,10 @@ export namespace Prisma {
     discountAmount?: true
     discountPercent?: true
     deposit?: true
+    taxAmount?: true
+    cgstAmount?: true
+    sgstAmount?: true
+    taxRate?: true
     finalTotal?: true
   }
 
@@ -24153,6 +24302,10 @@ export namespace Prisma {
     discountAmount?: true
     discountPercent?: true
     deposit?: true
+    taxAmount?: true
+    cgstAmount?: true
+    sgstAmount?: true
+    taxRate?: true
     finalTotal?: true
   }
 
@@ -24165,6 +24318,10 @@ export namespace Prisma {
     discountAmount?: true
     discountPercent?: true
     deposit?: true
+    taxAmount?: true
+    cgstAmount?: true
+    sgstAmount?: true
+    taxRate?: true
     finalTotal?: true
   }
 
@@ -24177,6 +24334,10 @@ export namespace Prisma {
     discountAmount?: true
     discountPercent?: true
     deposit?: true
+    taxAmount?: true
+    cgstAmount?: true
+    sgstAmount?: true
+    taxRate?: true
     finalTotal?: true
     _all?: true
   }
@@ -24276,6 +24437,10 @@ export namespace Prisma {
     discountAmount: Decimal
     discountPercent: Decimal
     deposit: Decimal
+    taxAmount: Decimal
+    cgstAmount: Decimal
+    sgstAmount: Decimal
+    taxRate: Decimal
     finalTotal: Decimal
     _count: BookingItemCountAggregateOutputType | null
     _avg: BookingItemAvgAggregateOutputType | null
@@ -24307,6 +24472,10 @@ export namespace Prisma {
     discountAmount?: boolean
     discountPercent?: boolean
     deposit?: boolean
+    taxAmount?: boolean
+    cgstAmount?: boolean
+    sgstAmount?: boolean
+    taxRate?: boolean
     finalTotal?: boolean
     vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
     booking?: boolean | BookingDefaultArgs<ExtArgs>
@@ -24321,6 +24490,10 @@ export namespace Prisma {
     discountAmount?: boolean
     discountPercent?: boolean
     deposit?: boolean
+    taxAmount?: boolean
+    cgstAmount?: boolean
+    sgstAmount?: boolean
+    taxRate?: boolean
     finalTotal?: boolean
     vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
     booking?: boolean | BookingDefaultArgs<ExtArgs>
@@ -24335,6 +24508,10 @@ export namespace Prisma {
     discountAmount?: boolean
     discountPercent?: boolean
     deposit?: boolean
+    taxAmount?: boolean
+    cgstAmount?: boolean
+    sgstAmount?: boolean
+    taxRate?: boolean
     finalTotal?: boolean
   }
 
@@ -24362,6 +24539,10 @@ export namespace Prisma {
       discountAmount: Prisma.Decimal
       discountPercent: Prisma.Decimal
       deposit: Prisma.Decimal
+      taxAmount: Prisma.Decimal
+      cgstAmount: Prisma.Decimal
+      sgstAmount: Prisma.Decimal
+      taxRate: Prisma.Decimal
       finalTotal: Prisma.Decimal
     }, ExtArgs["result"]["bookingItem"]>
     composites: {}
@@ -24766,6 +24947,10 @@ export namespace Prisma {
     readonly discountAmount: FieldRef<"BookingItem", 'Decimal'>
     readonly discountPercent: FieldRef<"BookingItem", 'Decimal'>
     readonly deposit: FieldRef<"BookingItem", 'Decimal'>
+    readonly taxAmount: FieldRef<"BookingItem", 'Decimal'>
+    readonly cgstAmount: FieldRef<"BookingItem", 'Decimal'>
+    readonly sgstAmount: FieldRef<"BookingItem", 'Decimal'>
+    readonly taxRate: FieldRef<"BookingItem", 'Decimal'>
     readonly finalTotal: FieldRef<"BookingItem", 'Decimal'>
   }
     
@@ -34211,6 +34396,1037 @@ export namespace Prisma {
 
 
   /**
+   * Model GSTRule
+   */
+
+  export type AggregateGSTRule = {
+    _count: GSTRuleCountAggregateOutputType | null
+    _avg: GSTRuleAvgAggregateOutputType | null
+    _sum: GSTRuleSumAggregateOutputType | null
+    _min: GSTRuleMinAggregateOutputType | null
+    _max: GSTRuleMaxAggregateOutputType | null
+  }
+
+  export type GSTRuleAvgAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    cgstRate: Decimal | null
+    sgstRate: Decimal | null
+    igstRate: Decimal | null
+  }
+
+  export type GSTRuleSumAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    cgstRate: Decimal | null
+    sgstRate: Decimal | null
+    igstRate: Decimal | null
+  }
+
+  export type GSTRuleMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    branchId: number | null
+    gstNumber: string | null
+    cgstRate: Decimal | null
+    sgstRate: Decimal | null
+    igstRate: Decimal | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type GSTRuleMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    branchId: number | null
+    gstNumber: string | null
+    cgstRate: Decimal | null
+    sgstRate: Decimal | null
+    igstRate: Decimal | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type GSTRuleCountAggregateOutputType = {
+    id: number
+    publicId: number
+    branchId: number
+    gstNumber: number
+    cgstRate: number
+    sgstRate: number
+    igstRate: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type GSTRuleAvgAggregateInputType = {
+    id?: true
+    branchId?: true
+    cgstRate?: true
+    sgstRate?: true
+    igstRate?: true
+  }
+
+  export type GSTRuleSumAggregateInputType = {
+    id?: true
+    branchId?: true
+    cgstRate?: true
+    sgstRate?: true
+    igstRate?: true
+  }
+
+  export type GSTRuleMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    branchId?: true
+    gstNumber?: true
+    cgstRate?: true
+    sgstRate?: true
+    igstRate?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type GSTRuleMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    branchId?: true
+    gstNumber?: true
+    cgstRate?: true
+    sgstRate?: true
+    igstRate?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type GSTRuleCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    branchId?: true
+    gstNumber?: true
+    cgstRate?: true
+    sgstRate?: true
+    igstRate?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type GSTRuleAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which GSTRule to aggregate.
+     */
+    where?: GSTRuleWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of GSTRules to fetch.
+     */
+    orderBy?: GSTRuleOrderByWithRelationInput | GSTRuleOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: GSTRuleWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` GSTRules from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` GSTRules.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned GSTRules
+    **/
+    _count?: true | GSTRuleCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: GSTRuleAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: GSTRuleSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: GSTRuleMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: GSTRuleMaxAggregateInputType
+  }
+
+  export type GetGSTRuleAggregateType<T extends GSTRuleAggregateArgs> = {
+        [P in keyof T & keyof AggregateGSTRule]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateGSTRule[P]>
+      : GetScalarType<T[P], AggregateGSTRule[P]>
+  }
+
+
+
+
+  export type GSTRuleGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: GSTRuleWhereInput
+    orderBy?: GSTRuleOrderByWithAggregationInput | GSTRuleOrderByWithAggregationInput[]
+    by: GSTRuleScalarFieldEnum[] | GSTRuleScalarFieldEnum
+    having?: GSTRuleScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: GSTRuleCountAggregateInputType | true
+    _avg?: GSTRuleAvgAggregateInputType
+    _sum?: GSTRuleSumAggregateInputType
+    _min?: GSTRuleMinAggregateInputType
+    _max?: GSTRuleMaxAggregateInputType
+  }
+
+  export type GSTRuleGroupByOutputType = {
+    id: number
+    publicId: string
+    branchId: number
+    gstNumber: string
+    cgstRate: Decimal
+    sgstRate: Decimal
+    igstRate: Decimal
+    createdAt: Date
+    updatedAt: Date
+    _count: GSTRuleCountAggregateOutputType | null
+    _avg: GSTRuleAvgAggregateOutputType | null
+    _sum: GSTRuleSumAggregateOutputType | null
+    _min: GSTRuleMinAggregateOutputType | null
+    _max: GSTRuleMaxAggregateOutputType | null
+  }
+
+  type GetGSTRuleGroupByPayload<T extends GSTRuleGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<GSTRuleGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof GSTRuleGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], GSTRuleGroupByOutputType[P]>
+            : GetScalarType<T[P], GSTRuleGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type GSTRuleSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    branchId?: boolean
+    gstNumber?: boolean
+    cgstRate?: boolean
+    sgstRate?: boolean
+    igstRate?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["gSTRule"]>
+
+  export type GSTRuleSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    branchId?: boolean
+    gstNumber?: boolean
+    cgstRate?: boolean
+    sgstRate?: boolean
+    igstRate?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["gSTRule"]>
+
+  export type GSTRuleSelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    branchId?: boolean
+    gstNumber?: boolean
+    cgstRate?: boolean
+    sgstRate?: boolean
+    igstRate?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type GSTRuleInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }
+  export type GSTRuleIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }
+
+  export type $GSTRulePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "GSTRule"
+    objects: {
+      branch: Prisma.$BranchPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      branchId: number
+      gstNumber: string
+      cgstRate: Prisma.Decimal
+      sgstRate: Prisma.Decimal
+      igstRate: Prisma.Decimal
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["gSTRule"]>
+    composites: {}
+  }
+
+  type GSTRuleGetPayload<S extends boolean | null | undefined | GSTRuleDefaultArgs> = $Result.GetResult<Prisma.$GSTRulePayload, S>
+
+  type GSTRuleCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<GSTRuleFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: GSTRuleCountAggregateInputType | true
+    }
+
+  export interface GSTRuleDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['GSTRule'], meta: { name: 'GSTRule' } }
+    /**
+     * Find zero or one GSTRule that matches the filter.
+     * @param {GSTRuleFindUniqueArgs} args - Arguments to find a GSTRule
+     * @example
+     * // Get one GSTRule
+     * const gSTRule = await prisma.gSTRule.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends GSTRuleFindUniqueArgs>(args: SelectSubset<T, GSTRuleFindUniqueArgs<ExtArgs>>): Prisma__GSTRuleClient<$Result.GetResult<Prisma.$GSTRulePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one GSTRule that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {GSTRuleFindUniqueOrThrowArgs} args - Arguments to find a GSTRule
+     * @example
+     * // Get one GSTRule
+     * const gSTRule = await prisma.gSTRule.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends GSTRuleFindUniqueOrThrowArgs>(args: SelectSubset<T, GSTRuleFindUniqueOrThrowArgs<ExtArgs>>): Prisma__GSTRuleClient<$Result.GetResult<Prisma.$GSTRulePayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first GSTRule that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GSTRuleFindFirstArgs} args - Arguments to find a GSTRule
+     * @example
+     * // Get one GSTRule
+     * const gSTRule = await prisma.gSTRule.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends GSTRuleFindFirstArgs>(args?: SelectSubset<T, GSTRuleFindFirstArgs<ExtArgs>>): Prisma__GSTRuleClient<$Result.GetResult<Prisma.$GSTRulePayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first GSTRule that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GSTRuleFindFirstOrThrowArgs} args - Arguments to find a GSTRule
+     * @example
+     * // Get one GSTRule
+     * const gSTRule = await prisma.gSTRule.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends GSTRuleFindFirstOrThrowArgs>(args?: SelectSubset<T, GSTRuleFindFirstOrThrowArgs<ExtArgs>>): Prisma__GSTRuleClient<$Result.GetResult<Prisma.$GSTRulePayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more GSTRules that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GSTRuleFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all GSTRules
+     * const gSTRules = await prisma.gSTRule.findMany()
+     * 
+     * // Get first 10 GSTRules
+     * const gSTRules = await prisma.gSTRule.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const gSTRuleWithIdOnly = await prisma.gSTRule.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends GSTRuleFindManyArgs>(args?: SelectSubset<T, GSTRuleFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GSTRulePayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a GSTRule.
+     * @param {GSTRuleCreateArgs} args - Arguments to create a GSTRule.
+     * @example
+     * // Create one GSTRule
+     * const GSTRule = await prisma.gSTRule.create({
+     *   data: {
+     *     // ... data to create a GSTRule
+     *   }
+     * })
+     * 
+     */
+    create<T extends GSTRuleCreateArgs>(args: SelectSubset<T, GSTRuleCreateArgs<ExtArgs>>): Prisma__GSTRuleClient<$Result.GetResult<Prisma.$GSTRulePayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many GSTRules.
+     * @param {GSTRuleCreateManyArgs} args - Arguments to create many GSTRules.
+     * @example
+     * // Create many GSTRules
+     * const gSTRule = await prisma.gSTRule.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends GSTRuleCreateManyArgs>(args?: SelectSubset<T, GSTRuleCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many GSTRules and returns the data saved in the database.
+     * @param {GSTRuleCreateManyAndReturnArgs} args - Arguments to create many GSTRules.
+     * @example
+     * // Create many GSTRules
+     * const gSTRule = await prisma.gSTRule.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many GSTRules and only return the `id`
+     * const gSTRuleWithIdOnly = await prisma.gSTRule.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends GSTRuleCreateManyAndReturnArgs>(args?: SelectSubset<T, GSTRuleCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GSTRulePayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a GSTRule.
+     * @param {GSTRuleDeleteArgs} args - Arguments to delete one GSTRule.
+     * @example
+     * // Delete one GSTRule
+     * const GSTRule = await prisma.gSTRule.delete({
+     *   where: {
+     *     // ... filter to delete one GSTRule
+     *   }
+     * })
+     * 
+     */
+    delete<T extends GSTRuleDeleteArgs>(args: SelectSubset<T, GSTRuleDeleteArgs<ExtArgs>>): Prisma__GSTRuleClient<$Result.GetResult<Prisma.$GSTRulePayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one GSTRule.
+     * @param {GSTRuleUpdateArgs} args - Arguments to update one GSTRule.
+     * @example
+     * // Update one GSTRule
+     * const gSTRule = await prisma.gSTRule.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends GSTRuleUpdateArgs>(args: SelectSubset<T, GSTRuleUpdateArgs<ExtArgs>>): Prisma__GSTRuleClient<$Result.GetResult<Prisma.$GSTRulePayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more GSTRules.
+     * @param {GSTRuleDeleteManyArgs} args - Arguments to filter GSTRules to delete.
+     * @example
+     * // Delete a few GSTRules
+     * const { count } = await prisma.gSTRule.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends GSTRuleDeleteManyArgs>(args?: SelectSubset<T, GSTRuleDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more GSTRules.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GSTRuleUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many GSTRules
+     * const gSTRule = await prisma.gSTRule.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends GSTRuleUpdateManyArgs>(args: SelectSubset<T, GSTRuleUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one GSTRule.
+     * @param {GSTRuleUpsertArgs} args - Arguments to update or create a GSTRule.
+     * @example
+     * // Update or create a GSTRule
+     * const gSTRule = await prisma.gSTRule.upsert({
+     *   create: {
+     *     // ... data to create a GSTRule
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the GSTRule we want to update
+     *   }
+     * })
+     */
+    upsert<T extends GSTRuleUpsertArgs>(args: SelectSubset<T, GSTRuleUpsertArgs<ExtArgs>>): Prisma__GSTRuleClient<$Result.GetResult<Prisma.$GSTRulePayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of GSTRules.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GSTRuleCountArgs} args - Arguments to filter GSTRules to count.
+     * @example
+     * // Count the number of GSTRules
+     * const count = await prisma.gSTRule.count({
+     *   where: {
+     *     // ... the filter for the GSTRules we want to count
+     *   }
+     * })
+    **/
+    count<T extends GSTRuleCountArgs>(
+      args?: Subset<T, GSTRuleCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], GSTRuleCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a GSTRule.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GSTRuleAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends GSTRuleAggregateArgs>(args: Subset<T, GSTRuleAggregateArgs>): Prisma.PrismaPromise<GetGSTRuleAggregateType<T>>
+
+    /**
+     * Group by GSTRule.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GSTRuleGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends GSTRuleGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: GSTRuleGroupByArgs['orderBy'] }
+        : { orderBy?: GSTRuleGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, GSTRuleGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetGSTRuleGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the GSTRule model
+   */
+  readonly fields: GSTRuleFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for GSTRule.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__GSTRuleClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    branch<T extends BranchDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BranchDefaultArgs<ExtArgs>>): Prisma__BranchClient<$Result.GetResult<Prisma.$BranchPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the GSTRule model
+   */ 
+  interface GSTRuleFieldRefs {
+    readonly id: FieldRef<"GSTRule", 'Int'>
+    readonly publicId: FieldRef<"GSTRule", 'String'>
+    readonly branchId: FieldRef<"GSTRule", 'Int'>
+    readonly gstNumber: FieldRef<"GSTRule", 'String'>
+    readonly cgstRate: FieldRef<"GSTRule", 'Decimal'>
+    readonly sgstRate: FieldRef<"GSTRule", 'Decimal'>
+    readonly igstRate: FieldRef<"GSTRule", 'Decimal'>
+    readonly createdAt: FieldRef<"GSTRule", 'DateTime'>
+    readonly updatedAt: FieldRef<"GSTRule", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * GSTRule findUnique
+   */
+  export type GSTRuleFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GSTRule
+     */
+    select?: GSTRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GSTRuleInclude<ExtArgs> | null
+    /**
+     * Filter, which GSTRule to fetch.
+     */
+    where: GSTRuleWhereUniqueInput
+  }
+
+  /**
+   * GSTRule findUniqueOrThrow
+   */
+  export type GSTRuleFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GSTRule
+     */
+    select?: GSTRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GSTRuleInclude<ExtArgs> | null
+    /**
+     * Filter, which GSTRule to fetch.
+     */
+    where: GSTRuleWhereUniqueInput
+  }
+
+  /**
+   * GSTRule findFirst
+   */
+  export type GSTRuleFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GSTRule
+     */
+    select?: GSTRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GSTRuleInclude<ExtArgs> | null
+    /**
+     * Filter, which GSTRule to fetch.
+     */
+    where?: GSTRuleWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of GSTRules to fetch.
+     */
+    orderBy?: GSTRuleOrderByWithRelationInput | GSTRuleOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for GSTRules.
+     */
+    cursor?: GSTRuleWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` GSTRules from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` GSTRules.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of GSTRules.
+     */
+    distinct?: GSTRuleScalarFieldEnum | GSTRuleScalarFieldEnum[]
+  }
+
+  /**
+   * GSTRule findFirstOrThrow
+   */
+  export type GSTRuleFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GSTRule
+     */
+    select?: GSTRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GSTRuleInclude<ExtArgs> | null
+    /**
+     * Filter, which GSTRule to fetch.
+     */
+    where?: GSTRuleWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of GSTRules to fetch.
+     */
+    orderBy?: GSTRuleOrderByWithRelationInput | GSTRuleOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for GSTRules.
+     */
+    cursor?: GSTRuleWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` GSTRules from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` GSTRules.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of GSTRules.
+     */
+    distinct?: GSTRuleScalarFieldEnum | GSTRuleScalarFieldEnum[]
+  }
+
+  /**
+   * GSTRule findMany
+   */
+  export type GSTRuleFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GSTRule
+     */
+    select?: GSTRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GSTRuleInclude<ExtArgs> | null
+    /**
+     * Filter, which GSTRules to fetch.
+     */
+    where?: GSTRuleWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of GSTRules to fetch.
+     */
+    orderBy?: GSTRuleOrderByWithRelationInput | GSTRuleOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing GSTRules.
+     */
+    cursor?: GSTRuleWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` GSTRules from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` GSTRules.
+     */
+    skip?: number
+    distinct?: GSTRuleScalarFieldEnum | GSTRuleScalarFieldEnum[]
+  }
+
+  /**
+   * GSTRule create
+   */
+  export type GSTRuleCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GSTRule
+     */
+    select?: GSTRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GSTRuleInclude<ExtArgs> | null
+    /**
+     * The data needed to create a GSTRule.
+     */
+    data: XOR<GSTRuleCreateInput, GSTRuleUncheckedCreateInput>
+  }
+
+  /**
+   * GSTRule createMany
+   */
+  export type GSTRuleCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many GSTRules.
+     */
+    data: GSTRuleCreateManyInput | GSTRuleCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * GSTRule createManyAndReturn
+   */
+  export type GSTRuleCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GSTRule
+     */
+    select?: GSTRuleSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many GSTRules.
+     */
+    data: GSTRuleCreateManyInput | GSTRuleCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GSTRuleIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * GSTRule update
+   */
+  export type GSTRuleUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GSTRule
+     */
+    select?: GSTRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GSTRuleInclude<ExtArgs> | null
+    /**
+     * The data needed to update a GSTRule.
+     */
+    data: XOR<GSTRuleUpdateInput, GSTRuleUncheckedUpdateInput>
+    /**
+     * Choose, which GSTRule to update.
+     */
+    where: GSTRuleWhereUniqueInput
+  }
+
+  /**
+   * GSTRule updateMany
+   */
+  export type GSTRuleUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update GSTRules.
+     */
+    data: XOR<GSTRuleUpdateManyMutationInput, GSTRuleUncheckedUpdateManyInput>
+    /**
+     * Filter which GSTRules to update
+     */
+    where?: GSTRuleWhereInput
+  }
+
+  /**
+   * GSTRule upsert
+   */
+  export type GSTRuleUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GSTRule
+     */
+    select?: GSTRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GSTRuleInclude<ExtArgs> | null
+    /**
+     * The filter to search for the GSTRule to update in case it exists.
+     */
+    where: GSTRuleWhereUniqueInput
+    /**
+     * In case the GSTRule found by the `where` argument doesn't exist, create a new GSTRule with this data.
+     */
+    create: XOR<GSTRuleCreateInput, GSTRuleUncheckedCreateInput>
+    /**
+     * In case the GSTRule was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<GSTRuleUpdateInput, GSTRuleUncheckedUpdateInput>
+  }
+
+  /**
+   * GSTRule delete
+   */
+  export type GSTRuleDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GSTRule
+     */
+    select?: GSTRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GSTRuleInclude<ExtArgs> | null
+    /**
+     * Filter which GSTRule to delete.
+     */
+    where: GSTRuleWhereUniqueInput
+  }
+
+  /**
+   * GSTRule deleteMany
+   */
+  export type GSTRuleDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which GSTRules to delete
+     */
+    where?: GSTRuleWhereInput
+  }
+
+  /**
+   * GSTRule without action
+   */
+  export type GSTRuleDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GSTRule
+     */
+    select?: GSTRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GSTRuleInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -34482,6 +35698,7 @@ export namespace Prisma {
     totalBase: 'totalBase',
     totalDiscount: 'totalDiscount',
     totalDeposit: 'totalDeposit',
+    totalTax: 'totalTax',
     totalFinal: 'totalFinal',
     status: 'status',
     transactionId: 'transactionId',
@@ -34507,6 +35724,10 @@ export namespace Prisma {
     discountAmount: 'discountAmount',
     discountPercent: 'discountPercent',
     deposit: 'deposit',
+    taxAmount: 'taxAmount',
+    cgstAmount: 'cgstAmount',
+    sgstAmount: 'sgstAmount',
+    taxRate: 'taxRate',
     finalTotal: 'finalTotal'
   };
 
@@ -34637,6 +35858,21 @@ export namespace Prisma {
   };
 
   export type SystemSettingScalarFieldEnum = (typeof SystemSettingScalarFieldEnum)[keyof typeof SystemSettingScalarFieldEnum]
+
+
+  export const GSTRuleScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    branchId: 'branchId',
+    gstNumber: 'gstNumber',
+    cgstRate: 'cgstRate',
+    sgstRate: 'sgstRate',
+    igstRate: 'igstRate',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type GSTRuleScalarFieldEnum = (typeof GSTRuleScalarFieldEnum)[keyof typeof GSTRuleScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -35493,6 +36729,7 @@ export namespace Prisma {
     pricingSetting?: XOR<BranchPricingSettingNullableRelationFilter, BranchPricingSettingWhereInput> | null
     pricingDiscountSlabs?: PricingDiscountSlabListRelationFilter
     categoryDepositSettings?: CategoryDepositSettingListRelationFilter
+    gstRule?: XOR<GSTRuleNullableRelationFilter, GSTRuleWhereInput> | null
   }
 
   export type BranchOrderByWithRelationInput = {
@@ -35509,6 +36746,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingOrderByWithRelationInput
     pricingDiscountSlabs?: PricingDiscountSlabOrderByRelationAggregateInput
     categoryDepositSettings?: CategoryDepositSettingOrderByRelationAggregateInput
+    gstRule?: GSTRuleOrderByWithRelationInput
   }
 
   export type BranchWhereUniqueInput = Prisma.AtLeast<{
@@ -35528,6 +36766,7 @@ export namespace Prisma {
     pricingSetting?: XOR<BranchPricingSettingNullableRelationFilter, BranchPricingSettingWhereInput> | null
     pricingDiscountSlabs?: PricingDiscountSlabListRelationFilter
     categoryDepositSettings?: CategoryDepositSettingListRelationFilter
+    gstRule?: XOR<GSTRuleNullableRelationFilter, GSTRuleWhereInput> | null
   }, "id" | "publicId">
 
   export type BranchOrderByWithAggregationInput = {
@@ -36332,6 +37571,7 @@ export namespace Prisma {
     totalBase?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFilter<"Booking"> | $Enums.BookingStatus
     transactionId?: StringNullableFilter<"Booking"> | string | null
@@ -36366,6 +37606,7 @@ export namespace Prisma {
     totalBase?: SortOrder
     totalDiscount?: SortOrder
     totalDeposit?: SortOrder
+    totalTax?: SortOrder
     totalFinal?: SortOrder
     status?: SortOrder
     transactionId?: SortOrderInput | SortOrder
@@ -36404,6 +37645,7 @@ export namespace Prisma {
     totalBase?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFilter<"Booking"> | $Enums.BookingStatus
     paymentStatus?: EnumPaymentStatusFilter<"Booking"> | $Enums.PaymentStatus
@@ -36437,6 +37679,7 @@ export namespace Prisma {
     totalBase?: SortOrder
     totalDiscount?: SortOrder
     totalDeposit?: SortOrder
+    totalTax?: SortOrder
     totalFinal?: SortOrder
     status?: SortOrder
     transactionId?: SortOrderInput | SortOrder
@@ -36470,6 +37713,7 @@ export namespace Prisma {
     totalBase?: DecimalWithAggregatesFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalWithAggregatesFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalWithAggregatesFilter<"Booking"> | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalWithAggregatesFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalWithAggregatesFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusWithAggregatesFilter<"Booking"> | $Enums.BookingStatus
     transactionId?: StringNullableWithAggregatesFilter<"Booking"> | string | null
@@ -36495,6 +37739,10 @@ export namespace Prisma {
     discountAmount?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
     discountPercent?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
     deposit?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    cgstAmount?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    sgstAmount?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    taxRate?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
     finalTotal?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
     vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
     booking?: XOR<BookingRelationFilter, BookingWhereInput>
@@ -36509,6 +37757,10 @@ export namespace Prisma {
     discountAmount?: SortOrder
     discountPercent?: SortOrder
     deposit?: SortOrder
+    taxAmount?: SortOrder
+    cgstAmount?: SortOrder
+    sgstAmount?: SortOrder
+    taxRate?: SortOrder
     finalTotal?: SortOrder
     vehicle?: VehicleOrderByWithRelationInput
     booking?: BookingOrderByWithRelationInput
@@ -36526,6 +37778,10 @@ export namespace Prisma {
     discountAmount?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
     discountPercent?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
     deposit?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    cgstAmount?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    sgstAmount?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    taxRate?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
     finalTotal?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
     vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
     booking?: XOR<BookingRelationFilter, BookingWhereInput>
@@ -36540,6 +37796,10 @@ export namespace Prisma {
     discountAmount?: SortOrder
     discountPercent?: SortOrder
     deposit?: SortOrder
+    taxAmount?: SortOrder
+    cgstAmount?: SortOrder
+    sgstAmount?: SortOrder
+    taxRate?: SortOrder
     finalTotal?: SortOrder
     _count?: BookingItemCountOrderByAggregateInput
     _avg?: BookingItemAvgOrderByAggregateInput
@@ -36560,6 +37820,10 @@ export namespace Prisma {
     discountAmount?: DecimalWithAggregatesFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
     discountPercent?: DecimalWithAggregatesFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
     deposit?: DecimalWithAggregatesFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalWithAggregatesFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    cgstAmount?: DecimalWithAggregatesFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    sgstAmount?: DecimalWithAggregatesFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    taxRate?: DecimalWithAggregatesFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
     finalTotal?: DecimalWithAggregatesFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
   }
 
@@ -37226,6 +38490,83 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"SystemSetting"> | Date | string
   }
 
+  export type GSTRuleWhereInput = {
+    AND?: GSTRuleWhereInput | GSTRuleWhereInput[]
+    OR?: GSTRuleWhereInput[]
+    NOT?: GSTRuleWhereInput | GSTRuleWhereInput[]
+    id?: IntFilter<"GSTRule"> | number
+    publicId?: StringFilter<"GSTRule"> | string
+    branchId?: IntFilter<"GSTRule"> | number
+    gstNumber?: StringFilter<"GSTRule"> | string
+    cgstRate?: DecimalFilter<"GSTRule"> | Decimal | DecimalJsLike | number | string
+    sgstRate?: DecimalFilter<"GSTRule"> | Decimal | DecimalJsLike | number | string
+    igstRate?: DecimalFilter<"GSTRule"> | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFilter<"GSTRule"> | Date | string
+    updatedAt?: DateTimeFilter<"GSTRule"> | Date | string
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+  }
+
+  export type GSTRuleOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    branchId?: SortOrder
+    gstNumber?: SortOrder
+    cgstRate?: SortOrder
+    sgstRate?: SortOrder
+    igstRate?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    branch?: BranchOrderByWithRelationInput
+  }
+
+  export type GSTRuleWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    branchId?: number
+    AND?: GSTRuleWhereInput | GSTRuleWhereInput[]
+    OR?: GSTRuleWhereInput[]
+    NOT?: GSTRuleWhereInput | GSTRuleWhereInput[]
+    gstNumber?: StringFilter<"GSTRule"> | string
+    cgstRate?: DecimalFilter<"GSTRule"> | Decimal | DecimalJsLike | number | string
+    sgstRate?: DecimalFilter<"GSTRule"> | Decimal | DecimalJsLike | number | string
+    igstRate?: DecimalFilter<"GSTRule"> | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFilter<"GSTRule"> | Date | string
+    updatedAt?: DateTimeFilter<"GSTRule"> | Date | string
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+  }, "id" | "publicId" | "branchId">
+
+  export type GSTRuleOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    branchId?: SortOrder
+    gstNumber?: SortOrder
+    cgstRate?: SortOrder
+    sgstRate?: SortOrder
+    igstRate?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: GSTRuleCountOrderByAggregateInput
+    _avg?: GSTRuleAvgOrderByAggregateInput
+    _max?: GSTRuleMaxOrderByAggregateInput
+    _min?: GSTRuleMinOrderByAggregateInput
+    _sum?: GSTRuleSumOrderByAggregateInput
+  }
+
+  export type GSTRuleScalarWhereWithAggregatesInput = {
+    AND?: GSTRuleScalarWhereWithAggregatesInput | GSTRuleScalarWhereWithAggregatesInput[]
+    OR?: GSTRuleScalarWhereWithAggregatesInput[]
+    NOT?: GSTRuleScalarWhereWithAggregatesInput | GSTRuleScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"GSTRule"> | number
+    publicId?: StringWithAggregatesFilter<"GSTRule"> | string
+    branchId?: IntWithAggregatesFilter<"GSTRule"> | number
+    gstNumber?: StringWithAggregatesFilter<"GSTRule"> | string
+    cgstRate?: DecimalWithAggregatesFilter<"GSTRule"> | Decimal | DecimalJsLike | number | string
+    sgstRate?: DecimalWithAggregatesFilter<"GSTRule"> | Decimal | DecimalJsLike | number | string
+    igstRate?: DecimalWithAggregatesFilter<"GSTRule"> | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeWithAggregatesFilter<"GSTRule"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"GSTRule"> | Date | string
+  }
+
   export type UserCreateInput = {
     publicId: string
     name: string
@@ -37788,6 +39129,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateInput = {
@@ -37804,6 +39146,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUpdateInput = {
@@ -37819,6 +39162,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateInput = {
@@ -37835,6 +39179,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchCreateManyInput = {
@@ -38618,6 +39963,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -38650,6 +39996,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -38677,6 +40024,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -38709,6 +40057,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -38739,6 +40088,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -38761,6 +40111,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -38784,6 +40135,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -38803,6 +40155,10 @@ export namespace Prisma {
     discountAmount: Decimal | DecimalJsLike | number | string
     discountPercent: Decimal | DecimalJsLike | number | string
     deposit: Decimal | DecimalJsLike | number | string
+    taxAmount?: Decimal | DecimalJsLike | number | string
+    cgstAmount?: Decimal | DecimalJsLike | number | string
+    sgstAmount?: Decimal | DecimalJsLike | number | string
+    taxRate?: Decimal | DecimalJsLike | number | string
     finalTotal: Decimal | DecimalJsLike | number | string
     vehicle: VehicleCreateNestedOneWithoutBookingItemsInput
     booking: BookingCreateNestedOneWithoutItemsInput
@@ -38817,6 +40173,10 @@ export namespace Prisma {
     discountAmount: Decimal | DecimalJsLike | number | string
     discountPercent: Decimal | DecimalJsLike | number | string
     deposit: Decimal | DecimalJsLike | number | string
+    taxAmount?: Decimal | DecimalJsLike | number | string
+    cgstAmount?: Decimal | DecimalJsLike | number | string
+    sgstAmount?: Decimal | DecimalJsLike | number | string
+    taxRate?: Decimal | DecimalJsLike | number | string
     finalTotal: Decimal | DecimalJsLike | number | string
   }
 
@@ -38826,6 +40186,10 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     deposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cgstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    sgstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     finalTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     vehicle?: VehicleUpdateOneRequiredWithoutBookingItemsNestedInput
     booking?: BookingUpdateOneRequiredWithoutItemsNestedInput
@@ -38840,6 +40204,10 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     deposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cgstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    sgstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     finalTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
@@ -38852,6 +40220,10 @@ export namespace Prisma {
     discountAmount: Decimal | DecimalJsLike | number | string
     discountPercent: Decimal | DecimalJsLike | number | string
     deposit: Decimal | DecimalJsLike | number | string
+    taxAmount?: Decimal | DecimalJsLike | number | string
+    cgstAmount?: Decimal | DecimalJsLike | number | string
+    sgstAmount?: Decimal | DecimalJsLike | number | string
+    taxRate?: Decimal | DecimalJsLike | number | string
     finalTotal: Decimal | DecimalJsLike | number | string
   }
 
@@ -38861,6 +40233,10 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     deposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cgstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    sgstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     finalTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
@@ -38873,6 +40249,10 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     deposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cgstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    sgstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     finalTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
@@ -39540,6 +40920,86 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     key?: StringFieldUpdateOperationsInput | string
     value?: JsonNullValueInput | InputJsonValue
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type GSTRuleCreateInput = {
+    publicId: string
+    gstNumber: string
+    cgstRate?: Decimal | DecimalJsLike | number | string
+    sgstRate?: Decimal | DecimalJsLike | number | string
+    igstRate?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    branch: BranchCreateNestedOneWithoutGstRuleInput
+  }
+
+  export type GSTRuleUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    gstNumber: string
+    cgstRate?: Decimal | DecimalJsLike | number | string
+    sgstRate?: Decimal | DecimalJsLike | number | string
+    igstRate?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type GSTRuleUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    gstNumber?: StringFieldUpdateOperationsInput | string
+    cgstRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    sgstRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    igstRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    branch?: BranchUpdateOneRequiredWithoutGstRuleNestedInput
+  }
+
+  export type GSTRuleUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    gstNumber?: StringFieldUpdateOperationsInput | string
+    cgstRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    sgstRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    igstRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type GSTRuleCreateManyInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    gstNumber: string
+    cgstRate?: Decimal | DecimalJsLike | number | string
+    sgstRate?: Decimal | DecimalJsLike | number | string
+    igstRate?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type GSTRuleUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    gstNumber?: StringFieldUpdateOperationsInput | string
+    cgstRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    sgstRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    igstRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type GSTRuleUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    gstNumber?: StringFieldUpdateOperationsInput | string
+    cgstRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    sgstRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    igstRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -40228,6 +41688,11 @@ export namespace Prisma {
     every?: CategoryDepositSettingWhereInput
     some?: CategoryDepositSettingWhereInput
     none?: CategoryDepositSettingWhereInput
+  }
+
+  export type GSTRuleNullableRelationFilter = {
+    is?: GSTRuleWhereInput | null
+    isNot?: GSTRuleWhereInput | null
   }
 
   export type UserOrderByRelationAggregateInput = {
@@ -40975,6 +42440,7 @@ export namespace Prisma {
     totalBase?: SortOrder
     totalDiscount?: SortOrder
     totalDeposit?: SortOrder
+    totalTax?: SortOrder
     totalFinal?: SortOrder
     status?: SortOrder
     transactionId?: SortOrder
@@ -40996,6 +42462,7 @@ export namespace Prisma {
     totalBase?: SortOrder
     totalDiscount?: SortOrder
     totalDeposit?: SortOrder
+    totalTax?: SortOrder
     totalFinal?: SortOrder
     createdById?: SortOrder
     kycFileId?: SortOrder
@@ -41013,6 +42480,7 @@ export namespace Prisma {
     totalBase?: SortOrder
     totalDiscount?: SortOrder
     totalDeposit?: SortOrder
+    totalTax?: SortOrder
     totalFinal?: SortOrder
     status?: SortOrder
     transactionId?: SortOrder
@@ -41037,6 +42505,7 @@ export namespace Prisma {
     totalBase?: SortOrder
     totalDiscount?: SortOrder
     totalDeposit?: SortOrder
+    totalTax?: SortOrder
     totalFinal?: SortOrder
     status?: SortOrder
     transactionId?: SortOrder
@@ -41057,6 +42526,7 @@ export namespace Prisma {
     totalBase?: SortOrder
     totalDiscount?: SortOrder
     totalDeposit?: SortOrder
+    totalTax?: SortOrder
     totalFinal?: SortOrder
     createdById?: SortOrder
     kycFileId?: SortOrder
@@ -41131,6 +42601,10 @@ export namespace Prisma {
     discountAmount?: SortOrder
     discountPercent?: SortOrder
     deposit?: SortOrder
+    taxAmount?: SortOrder
+    cgstAmount?: SortOrder
+    sgstAmount?: SortOrder
+    taxRate?: SortOrder
     finalTotal?: SortOrder
   }
 
@@ -41143,6 +42617,10 @@ export namespace Prisma {
     discountAmount?: SortOrder
     discountPercent?: SortOrder
     deposit?: SortOrder
+    taxAmount?: SortOrder
+    cgstAmount?: SortOrder
+    sgstAmount?: SortOrder
+    taxRate?: SortOrder
     finalTotal?: SortOrder
   }
 
@@ -41155,6 +42633,10 @@ export namespace Prisma {
     discountAmount?: SortOrder
     discountPercent?: SortOrder
     deposit?: SortOrder
+    taxAmount?: SortOrder
+    cgstAmount?: SortOrder
+    sgstAmount?: SortOrder
+    taxRate?: SortOrder
     finalTotal?: SortOrder
   }
 
@@ -41167,6 +42649,10 @@ export namespace Prisma {
     discountAmount?: SortOrder
     discountPercent?: SortOrder
     deposit?: SortOrder
+    taxAmount?: SortOrder
+    cgstAmount?: SortOrder
+    sgstAmount?: SortOrder
+    taxRate?: SortOrder
     finalTotal?: SortOrder
   }
 
@@ -41179,6 +42665,10 @@ export namespace Prisma {
     discountAmount?: SortOrder
     discountPercent?: SortOrder
     deposit?: SortOrder
+    taxAmount?: SortOrder
+    cgstAmount?: SortOrder
+    sgstAmount?: SortOrder
+    taxRate?: SortOrder
     finalTotal?: SortOrder
   }
 
@@ -41748,6 +43238,58 @@ export namespace Prisma {
 
   export type SystemSettingSumOrderByAggregateInput = {
     id?: SortOrder
+  }
+
+  export type GSTRuleCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    branchId?: SortOrder
+    gstNumber?: SortOrder
+    cgstRate?: SortOrder
+    sgstRate?: SortOrder
+    igstRate?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type GSTRuleAvgOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    cgstRate?: SortOrder
+    sgstRate?: SortOrder
+    igstRate?: SortOrder
+  }
+
+  export type GSTRuleMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    branchId?: SortOrder
+    gstNumber?: SortOrder
+    cgstRate?: SortOrder
+    sgstRate?: SortOrder
+    igstRate?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type GSTRuleMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    branchId?: SortOrder
+    gstNumber?: SortOrder
+    cgstRate?: SortOrder
+    sgstRate?: SortOrder
+    igstRate?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type GSTRuleSumOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    cgstRate?: SortOrder
+    sgstRate?: SortOrder
+    igstRate?: SortOrder
   }
 
   export type BranchCreateNestedOneWithoutUsersInput = {
@@ -42423,6 +43965,12 @@ export namespace Prisma {
     connect?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
   }
 
+  export type GSTRuleCreateNestedOneWithoutBranchInput = {
+    create?: XOR<GSTRuleCreateWithoutBranchInput, GSTRuleUncheckedCreateWithoutBranchInput>
+    connectOrCreate?: GSTRuleCreateOrConnectWithoutBranchInput
+    connect?: GSTRuleWhereUniqueInput
+  }
+
   export type UserUncheckedCreateNestedManyWithoutBranchInput = {
     create?: XOR<UserCreateWithoutBranchInput, UserUncheckedCreateWithoutBranchInput> | UserCreateWithoutBranchInput[] | UserUncheckedCreateWithoutBranchInput[]
     connectOrCreate?: UserCreateOrConnectWithoutBranchInput | UserCreateOrConnectWithoutBranchInput[]
@@ -42462,6 +44010,12 @@ export namespace Prisma {
     connectOrCreate?: CategoryDepositSettingCreateOrConnectWithoutBranchInput | CategoryDepositSettingCreateOrConnectWithoutBranchInput[]
     createMany?: CategoryDepositSettingCreateManyBranchInputEnvelope
     connect?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
+  }
+
+  export type GSTRuleUncheckedCreateNestedOneWithoutBranchInput = {
+    create?: XOR<GSTRuleCreateWithoutBranchInput, GSTRuleUncheckedCreateWithoutBranchInput>
+    connectOrCreate?: GSTRuleCreateOrConnectWithoutBranchInput
+    connect?: GSTRuleWhereUniqueInput
   }
 
   export type UserUpdateManyWithoutBranchNestedInput = {
@@ -42544,6 +44098,16 @@ export namespace Prisma {
     deleteMany?: CategoryDepositSettingScalarWhereInput | CategoryDepositSettingScalarWhereInput[]
   }
 
+  export type GSTRuleUpdateOneWithoutBranchNestedInput = {
+    create?: XOR<GSTRuleCreateWithoutBranchInput, GSTRuleUncheckedCreateWithoutBranchInput>
+    connectOrCreate?: GSTRuleCreateOrConnectWithoutBranchInput
+    upsert?: GSTRuleUpsertWithoutBranchInput
+    disconnect?: GSTRuleWhereInput | boolean
+    delete?: GSTRuleWhereInput | boolean
+    connect?: GSTRuleWhereUniqueInput
+    update?: XOR<XOR<GSTRuleUpdateToOneWithWhereWithoutBranchInput, GSTRuleUpdateWithoutBranchInput>, GSTRuleUncheckedUpdateWithoutBranchInput>
+  }
+
   export type UserUncheckedUpdateManyWithoutBranchNestedInput = {
     create?: XOR<UserCreateWithoutBranchInput, UserUncheckedCreateWithoutBranchInput> | UserCreateWithoutBranchInput[] | UserUncheckedCreateWithoutBranchInput[]
     connectOrCreate?: UserCreateOrConnectWithoutBranchInput | UserCreateOrConnectWithoutBranchInput[]
@@ -42622,6 +44186,16 @@ export namespace Prisma {
     update?: CategoryDepositSettingUpdateWithWhereUniqueWithoutBranchInput | CategoryDepositSettingUpdateWithWhereUniqueWithoutBranchInput[]
     updateMany?: CategoryDepositSettingUpdateManyWithWhereWithoutBranchInput | CategoryDepositSettingUpdateManyWithWhereWithoutBranchInput[]
     deleteMany?: CategoryDepositSettingScalarWhereInput | CategoryDepositSettingScalarWhereInput[]
+  }
+
+  export type GSTRuleUncheckedUpdateOneWithoutBranchNestedInput = {
+    create?: XOR<GSTRuleCreateWithoutBranchInput, GSTRuleUncheckedCreateWithoutBranchInput>
+    connectOrCreate?: GSTRuleCreateOrConnectWithoutBranchInput
+    upsert?: GSTRuleUpsertWithoutBranchInput
+    disconnect?: GSTRuleWhereInput | boolean
+    delete?: GSTRuleWhereInput | boolean
+    connect?: GSTRuleWhereUniqueInput
+    update?: XOR<XOR<GSTRuleUpdateToOneWithWhereWithoutBranchInput, GSTRuleUpdateWithoutBranchInput>, GSTRuleUncheckedUpdateWithoutBranchInput>
   }
 
   export type BranchCreateNestedOneWithoutPricingSettingInput = {
@@ -43838,6 +45412,20 @@ export namespace Prisma {
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutAuditLogsInput, UserUpdateWithoutAuditLogsInput>, UserUncheckedUpdateWithoutAuditLogsInput>
   }
 
+  export type BranchCreateNestedOneWithoutGstRuleInput = {
+    create?: XOR<BranchCreateWithoutGstRuleInput, BranchUncheckedCreateWithoutGstRuleInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutGstRuleInput
+    connect?: BranchWhereUniqueInput
+  }
+
+  export type BranchUpdateOneRequiredWithoutGstRuleNestedInput = {
+    create?: XOR<BranchCreateWithoutGstRuleInput, BranchUncheckedCreateWithoutGstRuleInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutGstRuleInput
+    upsert?: BranchUpsertWithoutGstRuleInput
+    connect?: BranchWhereUniqueInput
+    update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutGstRuleInput, BranchUpdateWithoutGstRuleInput>, BranchUncheckedUpdateWithoutGstRuleInput>
+  }
+
   export type NestedIntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -44387,6 +45975,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutUsersInput = {
@@ -44402,6 +45991,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutUsersInput = {
@@ -44547,6 +46137,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -44578,6 +46169,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -44667,6 +46259,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutUsersInput = {
@@ -44682,6 +46275,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type EmailVerificationOtpUpsertWithWhereUniqueWithoutUserInput = {
@@ -44852,6 +46446,7 @@ export namespace Prisma {
     totalBase?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFilter<"Booking"> | $Enums.BookingStatus
     transactionId?: StringNullableFilter<"Booking"> | string | null
@@ -45177,6 +46772,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -45207,6 +46803,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -45547,6 +47144,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -45578,6 +47176,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -45834,6 +47433,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -45864,6 +47464,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -45962,6 +47563,32 @@ export namespace Prisma {
   export type CategoryDepositSettingCreateManyBranchInputEnvelope = {
     data: CategoryDepositSettingCreateManyBranchInput | CategoryDepositSettingCreateManyBranchInput[]
     skipDuplicates?: boolean
+  }
+
+  export type GSTRuleCreateWithoutBranchInput = {
+    publicId: string
+    gstNumber: string
+    cgstRate?: Decimal | DecimalJsLike | number | string
+    sgstRate?: Decimal | DecimalJsLike | number | string
+    igstRate?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type GSTRuleUncheckedCreateWithoutBranchInput = {
+    id?: number
+    publicId: string
+    gstNumber: string
+    cgstRate?: Decimal | DecimalJsLike | number | string
+    sgstRate?: Decimal | DecimalJsLike | number | string
+    igstRate?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type GSTRuleCreateOrConnectWithoutBranchInput = {
+    where: GSTRuleWhereUniqueInput
+    create: XOR<GSTRuleCreateWithoutBranchInput, GSTRuleUncheckedCreateWithoutBranchInput>
   }
 
   export type UserUpsertWithWhereUniqueWithoutBranchInput = {
@@ -46139,6 +47766,38 @@ export namespace Prisma {
     amount?: DecimalFilter<"CategoryDepositSetting"> | Decimal | DecimalJsLike | number | string
   }
 
+  export type GSTRuleUpsertWithoutBranchInput = {
+    update: XOR<GSTRuleUpdateWithoutBranchInput, GSTRuleUncheckedUpdateWithoutBranchInput>
+    create: XOR<GSTRuleCreateWithoutBranchInput, GSTRuleUncheckedCreateWithoutBranchInput>
+    where?: GSTRuleWhereInput
+  }
+
+  export type GSTRuleUpdateToOneWithWhereWithoutBranchInput = {
+    where?: GSTRuleWhereInput
+    data: XOR<GSTRuleUpdateWithoutBranchInput, GSTRuleUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type GSTRuleUpdateWithoutBranchInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    gstNumber?: StringFieldUpdateOperationsInput | string
+    cgstRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    sgstRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    igstRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type GSTRuleUncheckedUpdateWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    gstNumber?: StringFieldUpdateOperationsInput | string
+    cgstRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    sgstRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    igstRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type BranchCreateWithoutPricingSettingInput = {
     publicId: string
     name: string
@@ -46151,6 +47810,7 @@ export namespace Prisma {
     bookings?: BookingCreateNestedManyWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPricingSettingInput = {
@@ -46166,6 +47826,7 @@ export namespace Prisma {
     bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPricingSettingInput = {
@@ -46196,6 +47857,7 @@ export namespace Prisma {
     bookings?: BookingUpdateManyWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPricingSettingInput = {
@@ -46211,6 +47873,7 @@ export namespace Prisma {
     bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type PricingDiscountSlabCreateWithoutCategoryInput = {
@@ -46425,6 +48088,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutVehiclesInput = {
@@ -46440,6 +48104,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutVehiclesInput = {
@@ -46609,6 +48274,10 @@ export namespace Prisma {
     discountAmount: Decimal | DecimalJsLike | number | string
     discountPercent: Decimal | DecimalJsLike | number | string
     deposit: Decimal | DecimalJsLike | number | string
+    taxAmount?: Decimal | DecimalJsLike | number | string
+    cgstAmount?: Decimal | DecimalJsLike | number | string
+    sgstAmount?: Decimal | DecimalJsLike | number | string
+    taxRate?: Decimal | DecimalJsLike | number | string
     finalTotal: Decimal | DecimalJsLike | number | string
     booking: BookingCreateNestedOneWithoutItemsInput
   }
@@ -46621,6 +48290,10 @@ export namespace Prisma {
     discountAmount: Decimal | DecimalJsLike | number | string
     discountPercent: Decimal | DecimalJsLike | number | string
     deposit: Decimal | DecimalJsLike | number | string
+    taxAmount?: Decimal | DecimalJsLike | number | string
+    cgstAmount?: Decimal | DecimalJsLike | number | string
+    sgstAmount?: Decimal | DecimalJsLike | number | string
+    taxRate?: Decimal | DecimalJsLike | number | string
     finalTotal: Decimal | DecimalJsLike | number | string
   }
 
@@ -46657,6 +48330,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutVehiclesInput = {
@@ -46672,6 +48346,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutVehiclesInput = {
@@ -46844,6 +48519,10 @@ export namespace Prisma {
     discountAmount?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
     discountPercent?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
     deposit?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    cgstAmount?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    sgstAmount?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
+    taxRate?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
     finalTotal?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
   }
 
@@ -47403,6 +49082,7 @@ export namespace Prisma {
     bookings?: BookingCreateNestedManyWithoutBranchInput
     pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPricingDiscountSlabsInput = {
@@ -47418,6 +49098,7 @@ export namespace Prisma {
     bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
     pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPricingDiscountSlabsInput = {
@@ -47472,6 +49153,7 @@ export namespace Prisma {
     bookings?: BookingUpdateManyWithoutBranchNestedInput
     pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPricingDiscountSlabsInput = {
@@ -47487,6 +49169,7 @@ export namespace Prisma {
     bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
     pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutPricingDiscountSlabsInput = {
@@ -47531,6 +49214,7 @@ export namespace Prisma {
     bookings?: BookingCreateNestedManyWithoutBranchInput
     pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutCategoryDepositSettingsInput = {
@@ -47546,6 +49230,7 @@ export namespace Prisma {
     bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
     pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutCategoryDepositSettingsInput = {
@@ -47600,6 +49285,7 @@ export namespace Prisma {
     bookings?: BookingUpdateManyWithoutBranchNestedInput
     pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutCategoryDepositSettingsInput = {
@@ -47615,6 +49301,7 @@ export namespace Prisma {
     bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
     pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutCategoryDepositSettingsInput = {
@@ -47729,6 +49416,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutBookingsInput = {
@@ -47744,6 +49432,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutBookingsInput = {
@@ -47869,6 +49558,10 @@ export namespace Prisma {
     discountAmount: Decimal | DecimalJsLike | number | string
     discountPercent: Decimal | DecimalJsLike | number | string
     deposit: Decimal | DecimalJsLike | number | string
+    taxAmount?: Decimal | DecimalJsLike | number | string
+    cgstAmount?: Decimal | DecimalJsLike | number | string
+    sgstAmount?: Decimal | DecimalJsLike | number | string
+    taxRate?: Decimal | DecimalJsLike | number | string
     finalTotal: Decimal | DecimalJsLike | number | string
     vehicle: VehicleCreateNestedOneWithoutBookingItemsInput
   }
@@ -47881,6 +49574,10 @@ export namespace Prisma {
     discountAmount: Decimal | DecimalJsLike | number | string
     discountPercent: Decimal | DecimalJsLike | number | string
     deposit: Decimal | DecimalJsLike | number | string
+    taxAmount?: Decimal | DecimalJsLike | number | string
+    cgstAmount?: Decimal | DecimalJsLike | number | string
+    sgstAmount?: Decimal | DecimalJsLike | number | string
+    taxRate?: Decimal | DecimalJsLike | number | string
     finalTotal: Decimal | DecimalJsLike | number | string
   }
 
@@ -48057,6 +49754,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutBookingsInput = {
@@ -48072,6 +49770,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type UserUpsertWithoutBookingsCreatedInput = {
@@ -48303,6 +50002,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -48334,6 +50034,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -48432,6 +50133,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -48463,6 +50165,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -48489,6 +50192,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -48520,6 +50224,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -48626,6 +50331,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -48657,6 +50363,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -48759,6 +50466,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -48790,6 +50498,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -48955,6 +50664,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -48986,6 +50696,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -49136,6 +50847,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -49167,6 +50879,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -49209,6 +50922,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -49240,6 +50954,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -49336,6 +51051,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -49367,6 +51083,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -49463,6 +51180,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -49494,6 +51212,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -49737,6 +51456,84 @@ export namespace Prisma {
     approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
+  export type BranchCreateWithoutGstRuleInput = {
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleCreateNestedManyWithoutBranchInput
+    bookings?: BookingCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchUncheckedCreateWithoutGstRuleInput = {
+    id?: number
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserUncheckedCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchCreateOrConnectWithoutGstRuleInput = {
+    where: BranchWhereUniqueInput
+    create: XOR<BranchCreateWithoutGstRuleInput, BranchUncheckedCreateWithoutGstRuleInput>
+  }
+
+  export type BranchUpsertWithoutGstRuleInput = {
+    update: XOR<BranchUpdateWithoutGstRuleInput, BranchUncheckedUpdateWithoutGstRuleInput>
+    create: XOR<BranchCreateWithoutGstRuleInput, BranchUncheckedCreateWithoutGstRuleInput>
+    where?: BranchWhereInput
+  }
+
+  export type BranchUpdateToOneWithWhereWithoutGstRuleInput = {
+    where?: BranchWhereInput
+    data: XOR<BranchUpdateWithoutGstRuleInput, BranchUncheckedUpdateWithoutGstRuleInput>
+  }
+
+  export type BranchUpdateWithoutGstRuleInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+  }
+
+  export type BranchUncheckedUpdateWithoutGstRuleInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUncheckedUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+  }
+
   export type EmailVerificationOtpCreateManyUserInput = {
     id?: number
     phone: string
@@ -49780,6 +51577,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -49905,6 +51703,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -49936,6 +51735,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -49965,6 +51765,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -50040,6 +51841,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -50088,6 +51890,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -50118,6 +51921,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -50147,6 +51951,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -50190,6 +51995,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -50271,6 +52077,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -50302,6 +52109,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -50331,6 +52139,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -50409,6 +52218,7 @@ export namespace Prisma {
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
     totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
     totalFinal: Decimal | DecimalJsLike | number | string
     status?: $Enums.BookingStatus
     transactionId?: string | null
@@ -50562,6 +52372,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -50592,6 +52403,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -50621,6 +52433,7 @@ export namespace Prisma {
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -50877,6 +52690,10 @@ export namespace Prisma {
     discountAmount: Decimal | DecimalJsLike | number | string
     discountPercent: Decimal | DecimalJsLike | number | string
     deposit: Decimal | DecimalJsLike | number | string
+    taxAmount?: Decimal | DecimalJsLike | number | string
+    cgstAmount?: Decimal | DecimalJsLike | number | string
+    sgstAmount?: Decimal | DecimalJsLike | number | string
+    taxRate?: Decimal | DecimalJsLike | number | string
     finalTotal: Decimal | DecimalJsLike | number | string
   }
 
@@ -50998,6 +52815,10 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     deposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cgstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    sgstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     finalTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     booking?: BookingUpdateOneRequiredWithoutItemsNestedInput
   }
@@ -51010,6 +52831,10 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     deposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cgstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    sgstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     finalTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
@@ -51021,6 +52846,10 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     deposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cgstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    sgstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     finalTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
@@ -51055,6 +52884,10 @@ export namespace Prisma {
     discountAmount: Decimal | DecimalJsLike | number | string
     discountPercent: Decimal | DecimalJsLike | number | string
     deposit: Decimal | DecimalJsLike | number | string
+    taxAmount?: Decimal | DecimalJsLike | number | string
+    cgstAmount?: Decimal | DecimalJsLike | number | string
+    sgstAmount?: Decimal | DecimalJsLike | number | string
+    taxRate?: Decimal | DecimalJsLike | number | string
     finalTotal: Decimal | DecimalJsLike | number | string
   }
 
@@ -51133,6 +52966,10 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     deposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cgstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    sgstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     finalTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     vehicle?: VehicleUpdateOneRequiredWithoutBookingItemsNestedInput
   }
@@ -51145,6 +52982,10 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     deposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cgstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    sgstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     finalTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
@@ -51156,6 +52997,10 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     deposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cgstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    sgstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     finalTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
@@ -51421,6 +53266,10 @@ export namespace Prisma {
      * @deprecated Use SystemSettingDefaultArgs instead
      */
     export type SystemSettingArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = SystemSettingDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use GSTRuleDefaultArgs instead
+     */
+    export type GSTRuleArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = GSTRuleDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

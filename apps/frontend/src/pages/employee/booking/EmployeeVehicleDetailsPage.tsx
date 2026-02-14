@@ -37,6 +37,7 @@ export const EmployeeVehicleDetailsPage = () => {
         endDate,
         selectedVehicleId,
         setVehicle,
+        paymentType, // Added paymentType
 
         customerKycId,
         setCustomerKycId
@@ -166,6 +167,11 @@ export const EmployeeVehicleDetailsPage = () => {
 
     const handleBookVehicle = () => {
         // Validate
+        if (!vehicle || !customerSession) {
+            toast.error("Missing vehicle or session details");
+            return;
+        }
+
         if (!startDate || !endDate) {
             toast.error("Please select booking dates");
             return;
@@ -173,12 +179,22 @@ export const EmployeeVehicleDetailsPage = () => {
 
         if (!customerKycId) {
             toast.error("Please select a KYC document");
-            // Scroll to KYC section?
             document.getElementById('kyc-section')?.scrollIntoView({ behavior: 'smooth' });
             return;
         }
 
-        navigate('/employee/booking/summary');
+        const payload = {
+            vehicles: [vehicle.publicId],
+            customer_public_id: customerSession.publicId,
+            customer_kyc_id: customerKycId,
+            start: new Date(startDate).toISOString(),
+            end: new Date(endDate).toISOString(),
+            payment_type: paymentType || 'CASH',
+        };
+
+        navigate('/employee/booking/summary', {
+            state: { bookingPayload: payload }
+        });
     };
 
     if (isVehicleLoading || !customerSession) {
