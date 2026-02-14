@@ -19,13 +19,15 @@ export const BookingController = async (req: Request, res: Response) => {
         let cacheKeySuffix = "";
 
         if (date) {
-            const parsedDate = new Date(date as string);
+            // Force UTC parsing
+            const parsedDate = new Date(`${date}T00:00:00Z`);
             if (!isNaN(parsedDate.getTime())) {
                 const startOfDay = new Date(parsedDate);
-                startOfDay.setHours(0, 0, 0, 0);
+                // No need to setHours again if already midnight UTC, but for clarity/safety:
+                startOfDay.setUTCHours(0, 0, 0, 0);
 
                 const endOfDay = new Date(parsedDate);
-                endOfDay.setHours(23, 59, 59, 999);
+                endOfDay.setUTCHours(23, 59, 59, 999);
 
                 dateFilter = {
                     gte: startOfDay,
@@ -38,11 +40,13 @@ export const BookingController = async (req: Request, res: Response) => {
         // Default behavior: Upcoming bookings from today if no valid date is provided
         if (Object.keys(dateFilter).length === 0) {
             const now = new Date();
-            now.setHours(0, 0, 0, 0);
+            // Get today in UTC
+            const todayUTC = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0));
+
             dateFilter = {
-                gte: now
+                gte: todayUTC
             };
-            cacheKeySuffix = `upcoming:${now.toISOString().split('T')[0]}`;
+            cacheKeySuffix = `upcoming:${todayUTC.toISOString().split('T')[0]}`;
         }
 
         const cacheKey = `bookings:${branchId}:${cacheKeySuffix}`;
@@ -163,8 +167,8 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
             return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid KYC ID or Document missing" });
         }
 
-        const startDate = new Date(start);
-        const endDate = new Date(end);
+        const startDate = new Date(`${start}T00:00:00Z`);
+        const endDate = new Date(`${end}T00:00:00Z`);
         if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid dates" });
         const vehiclesData = await prisma.vehicle.findMany({
             where: { publicId: { in: vehicles } },
@@ -266,7 +270,7 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         let paymentURL = null;
 
         if (payment_type === "ONLINE") {
-            const frontendUrl = process.env.FRONTEND_URL
+            const frontendUrl = process.env.REDIRECT_URL_PAY
             const employeeRedirectBase = `${frontendUrl}/employee/booking/status`;
 
             const paymentDetails = await initiatePhonePePayment(grandFinalTotal, employeeRedirectBase);
@@ -428,4 +432,40 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
         console.error("Error fetching booking details:", error);
         return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error While Fetching Booking Details" });
     }
+}
+
+export const DebugBookings = async (req: Request, res: Response) => {
+    const bookings = await prisma.booking.findMany({
+        where: {
+            status: { in: ['CONFIRMED', 'PICKED_UP', 'HOLD'] }
+        },
+        include: {
+            items: {
+                include: {
+                    vehicle: true
+                }
+            }
+        }
+    });
+
+    const start = new Date('2026-02-14T00:00:00Z');
+    const end = new Date('2026-02-15T23:59:59.999Z');
+
+    const result = bookings.map(b => ({
+        id: b.publicId,
+        start: b.startAt,
+        end: b.endAt,
+        status: b.status,
+        vehicles: b.items.map(i => `${i.vehicle.make} ${i.vehicle.model} (${i.vehicle.publicId})`),
+        overlapCheck: {
+            startLteSearchEnd: b.startAt <= end,
+            endGteSearchStart: b.endAt >= start,
+            overlaps: b.startAt <= end && b.endAt >= start
+        }
+    }));
+
+    return res.json({
+        searchRange: { start, end },
+        bookings: result
+    });
 }

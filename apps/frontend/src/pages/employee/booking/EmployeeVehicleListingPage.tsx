@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ArrowLeft } from 'lucide-react';
+import { format } from 'date-fns';
 
 import { VehicleFilters } from '@/components/vehicles/VehicleFilters';
 import { VehicleGrid } from '@/components/vehicles/VehicleGrid';
@@ -66,7 +67,8 @@ export default function EmployeeVehicleListingPage() {
         if (selectedPickupDate) {
             const date = selectedPickupDate instanceof Date ? selectedPickupDate : new Date(selectedPickupDate);
             try {
-                f.start = date.toISOString().split('T')[0];
+                // Use local date format to prevent timezone shifts
+                f.start = format(date, 'yyyy-MM-dd');
             } catch (e) {
                 console.error("Invalid pickup date:", selectedPickupDate);
             }
@@ -74,7 +76,8 @@ export default function EmployeeVehicleListingPage() {
         if (selectedReturnDate) {
             const date = selectedReturnDate instanceof Date ? selectedReturnDate : new Date(selectedReturnDate);
             try {
-                f.end = date.toISOString().split('T')[0];
+                // Use local date format to prevent timezone shifts
+                f.end = format(date, 'yyyy-MM-dd');
             } catch (e) {
                 console.error("Invalid return date:", selectedReturnDate);
             }
@@ -86,7 +89,8 @@ export default function EmployeeVehicleListingPage() {
     }, [category, searchQuery, sortBy, selectedPickupDate, selectedReturnDate, currentPage]);
 
     // Fetch Vehicles
-    const { data: vehiclesData, isLoading: vehiclesLoading } = useEmployeeVehicles(filters);
+    const { data: vehiclesData, isLoading: initialLoading, isFetching } = useEmployeeVehicles(filters);
+    const isLoading = initialLoading || isFetching;
     const vehicles = vehiclesData?.data || [];
     const vehicleCount = vehiclesData?.pagination?.total || vehicles.length || 0;
 
@@ -147,7 +151,7 @@ export default function EmployeeVehicleListingPage() {
                 {/* Grid */}
                 <VehicleGrid
                     vehicles={vehicles}
-                    isLoading={vehiclesLoading}
+                    isLoading={isLoading}
                     onReset={handleReset}
                     currentPage={currentPage}
                     totalCount={vehicleCount}

@@ -1,7 +1,6 @@
 import { memo, useMemo } from 'react';
 import { VehicleCard } from './VehicleCard';
 import { VehicleEmptyState } from './VehicleEmptyState';
-import { Spinner } from '@/components/ui/spinner';
 import {
     Pagination,
     PaginationContent,
@@ -11,6 +10,7 @@ import {
     PaginationPrevious,
     PaginationEllipsis,
 } from '@/components/ui/pagination';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { Vehicle } from '@/services/vehicle.service';
 
 interface VehicleGridProps {
@@ -95,10 +95,17 @@ export const VehicleGrid = ({
     // Loading state
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center py-20">
-                <div className="flex flex-col items-center gap-4">
-                    <Spinner className="size-10 text-orange-500" />
-                    <p className="text-sm text-zinc-500">Loading vehicles...</p>
+            <div className="space-y-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="flex flex-col space-y-3">
+                            <Skeleton className="h-[200px] w-full rounded-xl" />
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-[250px]" />
+                                <Skeleton className="h-4 w-[200px]" />
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
         );

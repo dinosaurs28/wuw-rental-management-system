@@ -28,9 +28,9 @@ export const VehiclesPage = () => {
     const { data: branches = [], isLoading: branchesLoading } = useBranches();
 
     // Local filter state
-    const [selectedBranch, setSelectedBranch] = useState<string>('');
-    const [selectedPickupDate, setSelectedPickupDate] = useState<Date | null>(null);
-    const [selectedReturnDate, setSelectedReturnDate] = useState<Date | null>(null);
+    const [selectedBranch, setSelectedBranch] = useState<string>(branchPublicId || '');
+    const [selectedPickupDate, setSelectedPickupDate] = useState<Date | null>(pickupDate || null);
+    const [selectedReturnDate, setSelectedReturnDate] = useState<Date | null>(returnDate || null);
     const [category, setCategory] = useState<string>('all');
     const [sortBy, setSortBy] = useState<string>('default');
     const [searchQuery, setSearchQuery] = useState<string>('');
@@ -46,18 +46,27 @@ export const VehiclesPage = () => {
 
     // Initialize state from store or set default branch
     useEffect(() => {
-        if (branchPublicId) {
+        if (branchPublicId && selectedBranch !== branchPublicId) {
             setSelectedBranch(branchPublicId);
-        } else if (branches.length > 0 && !selectedBranch) {
+        } else if (branches.length > 0 && !selectedBranch && !branchPublicId) {
             setSelectedBranch(branches[0].publicId);
             setSearchCriteria({ branchPublicId: branches[0].publicId });
         }
     }, [branchPublicId, branches, selectedBranch, setSearchCriteria]);
 
+    // Sync dates from store and handle default return date
     useEffect(() => {
-        if (pickupDate) setSelectedPickupDate(pickupDate);
-        if (returnDate) setSelectedReturnDate(returnDate);
-    }, [pickupDate, returnDate]);
+        setSelectedPickupDate(pickupDate);
+        setSelectedReturnDate(returnDate);
+
+        // If pickup date exists but return date is missing on load/store update, default to next day
+        if (pickupDate && !returnDate) {
+            const nextDay = new Date(pickupDate);
+            nextDay.setDate(nextDay.getDate() + 1);
+            setSelectedReturnDate(nextDay);
+            setSearchCriteria({ returnDate: nextDay });
+        }
+    }, [pickupDate, returnDate, setSearchCriteria]);
 
     // Build filters for API with pagination
     const filters: VehicleFiltersType = useMemo(() => {
@@ -88,8 +97,8 @@ export const VehiclesPage = () => {
         return f;
     }, [selectedBranch, category, debouncedSearch, sortBy, selectedPickupDate, selectedReturnDate, currentPage]);
 
-    // Fetch vehicles
-    const { data: vehiclesData, isLoading: vehiclesLoading } = useVehicles(filters);
+    // Fetch vehicles - Only when branch is selected
+    const { data: vehiclesData, isLoading: vehiclesLoading } = useVehicles(filters, { enabled: !!selectedBranch });
 
     const vehicles = vehiclesData?.data || [];
     const vehicleCount = vehiclesData?.count || 0;
@@ -101,9 +110,25 @@ export const VehiclesPage = () => {
     }, [setSearchCriteria]);
 
     const handlePickupDateChange = useCallback((date: Date | undefined) => {
+        const nextDay = date ? new Date(date) : null;
+        if (nextDay) {
+            nextDay.setDate(nextDay.getDate() + 1);
+        }
+
         setSelectedPickupDate(date || null);
-        setSearchCriteria({ pickupDate: date || null });
-    }, [setSearchCriteria]);
+
+        // If we have a valid date and no return date (or return date is before pickup date), set next day
+        // Also update store in one go if possible, or sequentially but ensuring local state is consistent
+        if (date && (!selectedReturnDate || selectedReturnDate <= date)) {
+            setSelectedReturnDate(nextDay);
+            setSearchCriteria({
+                pickupDate: date,
+                returnDate: nextDay
+            });
+        } else {
+            setSearchCriteria({ pickupDate: date || null });
+        }
+    }, [selectedReturnDate, setSearchCriteria]);
 
     const handleReturnDateChange = useCallback((date: Date | undefined) => {
         setSelectedReturnDate(date || null);

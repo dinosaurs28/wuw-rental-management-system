@@ -5,6 +5,7 @@ import { Footer } from '@/components/landing/Footer';
 import { VehicleImageGallery } from '@/components/vehicles/VehicleImageGallery';
 import { VehiclePricingCard } from '@/components/vehicles/VehiclePricingCard';
 import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -131,14 +132,52 @@ export const VehicleDetailsPage = () => {
     }, [vehicleId, vehicle, setVehicleId, setVehicleFullDetails, setStartDate, setEndDate, setPricePerDay, setDeposit, navigate]);
 
     // Loading state (initial load only)
+    // Loading state (initial load only)
     if (isLoading) {
         return (
             <div className="min-h-screen flex flex-col bg-zinc-50">
                 <Navbar />
-                <main className="flex-1 flex items-center justify-center">
-                    <div className="flex flex-col items-center gap-4">
-                        <Spinner className="size-10 text-orange-500" />
-                        <p className="text-zinc-500">Loading vehicle details...</p>
+                <main className="flex-1 container mx-auto px-4 lg:px-8 py-6 md:py-8">
+                    {/* Breadcrumb Skeleton */}
+                    <div className="flex items-center gap-2 mb-6">
+                        <Skeleton className="h-4 w-12" />
+                        <Skeleton className="h-4 w-4" />
+                        <Skeleton className="h-4 w-16" />
+                        <Skeleton className="h-4 w-4" />
+                        <Skeleton className="h-4 w-24" />
+                    </div>
+
+                    {/* Header Skeleton */}
+                    <div className="mb-6 md:mb-8">
+                        <div className="flex flex-wrap items-center gap-3 mb-2">
+                            <Skeleton className="h-8 w-64 md:h-10 md:w-96" />
+                            <div className="flex items-center gap-2">
+                                <Skeleton className="h-6 w-20 rounded-full" />
+                                <Skeleton className="h-6 w-24 rounded-full" />
+                            </div>
+                        </div>
+                        <Skeleton className="h-5 w-32" />
+                    </div>
+
+                    {/* Content Grid Skeleton */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+                        {/* Image Gallery Skeleton */}
+                        <div className="lg:col-span-7 xl:col-span-8 space-y-4">
+                            <Skeleton className="w-full aspect-video rounded-xl" />
+                            <div className="grid grid-cols-4 gap-2 md:gap-4">
+                                <Skeleton className="aspect-square rounded-lg" />
+                                <Skeleton className="aspect-square rounded-lg" />
+                                <Skeleton className="aspect-square rounded-lg" />
+                                <Skeleton className="aspect-square rounded-lg" />
+                            </div>
+                        </div>
+
+                        {/* Pricing Card Skeleton */}
+                        <div className="lg:col-span-5 xl:col-span-4">
+                            <div className="lg:sticky lg:top-6">
+                                <Skeleton className="h-[400px] w-full rounded-xl" />
+                            </div>
+                        </div>
                     </div>
                 </main>
                 <Footer />

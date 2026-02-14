@@ -29,9 +29,19 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
     let startDate: Date | null = null;
     let endDate: Date | null = null;
 
-    if (start && end) {
-      startDate = new Date(start);
-      endDate = new Date(end);
+    if (start) {
+      // Force UTC parsing
+      startDate = new Date(`${start}T00:00:00Z`);
+
+      if (end) {
+        endDate = new Date(`${end}T00:00:00Z`);
+      } else {
+        // Default to same day if end date missing
+        endDate = new Date(startDate);
+      }
+
+      // Update end date to end of day for full availability check
+      endDate.setUTCHours(23, 59, 59, 999);
 
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         return res.status(StatusCode.BAD_REQUEST).json({
@@ -50,6 +60,9 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
     const filters: any = {
       status: "AVAILABLE",
       deletedAt: null,
+      insuranceExpiry: {
+        gt: new Date() // Only show vehicles with valid insurance
+      }
     };
 
     if (category) {
@@ -199,9 +212,18 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
     let startDate: Date | null = null;
     let endDate: Date | null = null;
 
-    if (start && end) {
-      startDate = new Date(start);
-      endDate = new Date(end);
+    if (start) {
+      // Force UTC parsing
+      startDate = new Date(`${start}T00:00:00Z`);
+
+      if (end) {
+        endDate = new Date(`${end}T00:00:00Z`);
+      } else {
+        endDate = new Date(startDate);
+      }
+
+      // Update end date to end of day for full availability check
+      endDate.setUTCHours(23, 59, 59, 999);
 
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         return res.status(StatusCode.BAD_REQUEST).json({
@@ -237,8 +259,17 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
     let totalDays: number | null = null;
     let baseTotal: number | null = null;
     let discountPrice: number | null = null
+
+    // Check insurance expiry
+    const isInsuranceValid = new Date(vehicleData.insuranceExpiry) > new Date();
+
     if (startDate && endDate) {
-      availability = await checkVehicleAvailability(vehicleData.id, startDate, endDate);
+      if (!isInsuranceValid) {
+        availability = false; // Not available if insurance expired
+      } else {
+        availability = await checkVehicleAvailability(vehicleData.id, startDate, endDate);
+      }
+
       const multi = calculateMultiDayTotalPrice(startDate, endDate, pricing.daily);
       baseTotal = multi.total;
       totalDays = multi.days;
@@ -246,6 +277,9 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
       const finalTotal = baseTotal * (1 - discountPercent);
       totalPrice = Number(finalTotal.toFixed(2));
       discountPrice = Number((baseTotal - finalTotal).toFixed(2));
+    } else if (!isInsuranceValid) {
+      // If no dates provided but insurance expired, mark as explicitly unavailable
+      availability = false;
     }
     const imageUrls = vehicleData.images.map(img => img.file.url);
     const response = {

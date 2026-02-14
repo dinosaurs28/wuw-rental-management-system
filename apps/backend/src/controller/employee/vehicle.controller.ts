@@ -29,6 +29,9 @@ export const searchVehicles = async (req: Request, res: Response) => {
         if (start && end) {
             startDate = new Date(start as string);
             endDate = new Date(end as string);
+            // Set end date to end of day to cover full day (23:59:59.999)
+            endDate.setHours(23, 59, 59, 999);
+
             if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
                 return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid date format" });
             }
@@ -136,6 +139,9 @@ export const getEmployeeVehicleDetails = async (req: Request, res: Response) => 
         if (start && end) {
             startDate = new Date(start as string);
             endDate = new Date(end as string);
+            // Set end date to end of day to cover full day (23:59:59.999)
+            endDate.setHours(23, 59, 59, 999);
+
             if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
                 return res.status(StatusCode.BAD_REQUEST).json({
                     message: "Invalid start or end date format",
@@ -169,8 +175,16 @@ export const getEmployeeVehicleDetails = async (req: Request, res: Response) => 
         let discountPrice: number | null = null;
         let totalPrice: number | null = null;
 
+        // Check insurance expiry
+        const isInsuranceValid = new Date(vehicleData.insuranceExpiry) > new Date();
+
         if (startDate && endDate) {
-            availability = await checkVehicleAvailability(vehicleData.id, startDate, endDate);
+            if (!isInsuranceValid) {
+                availability = false; // Not available if insurance expired
+            } else {
+                availability = await checkVehicleAvailability(vehicleData.id, startDate, endDate);
+            }
+
             const multi = calculateMultiDayTotalPrice(startDate, endDate, pricing.daily);
             baseTotal = multi.total;
             totalDays = multi.days;
@@ -178,6 +192,9 @@ export const getEmployeeVehicleDetails = async (req: Request, res: Response) => 
             const finalTotal = baseTotal * (1 - discountPercent);
             totalPrice = Number(finalTotal.toFixed(2));
             discountPrice = Number((baseTotal - finalTotal).toFixed(2));
+        } else if (!isInsuranceValid) {
+            // If no dates provided but insurance expired, mark as explicitly unavailable
+            availability = false;
         }
 
         const imageUrls = vehicleData.images.map(img => img.file.url);

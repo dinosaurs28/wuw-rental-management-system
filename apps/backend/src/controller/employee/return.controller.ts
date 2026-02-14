@@ -11,16 +11,17 @@ export const returnController = async (req: Request, res: Response) => {
         let filterDate = new Date();
 
         if (date) {
-            const parsedDate = new Date(date as string);
+            // Force UTC parsing
+            const parsedDate = new Date(`${date}T00:00:00Z`);
             if (!isNaN(parsedDate.getTime())) {
                 filterDate = parsedDate;
             }
         }
         const startOfDay = new Date(filterDate);
-        startOfDay.setHours(0, 0, 0, 0);
+        startOfDay.setUTCHours(0, 0, 0, 0);
 
         const endOfDay = new Date(filterDate);
-        endOfDay.setHours(23, 59, 59, 999);
+        endOfDay.setUTCHours(23, 59, 59, 999);
 
         const cacheKey = `returns:${branchId}:${startOfDay.toISOString()}`;
         const cachedData = await redis.get(cacheKey);

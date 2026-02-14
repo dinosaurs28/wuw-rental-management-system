@@ -1,4 +1,5 @@
 import apiClient from "@/lib/axios";
+import { format } from "date-fns";
 
 // Existing Customer Interfaces...
 // Types for booking summary request
@@ -166,7 +167,7 @@ export const bookingService = {
     // Fetch Pickups
     getEmployeeBookings: async (date?: Date) => {
         try {
-            const query = date ? `?date=${date.toISOString()}` : "";
+            const query = date ? `?date=${format(date, 'yyyy-MM-dd')}` : "";
             const response = await apiClient.get<{ data: EmployeeBooking[] }>(`/employee/booking${query}`);
             return response.data.data;
         } catch (error: any) {
@@ -180,7 +181,7 @@ export const bookingService = {
     // Fetch Returns
     getEmployeeReturns: async (date?: Date) => {
         try {
-            const query = date ? `?date=${date.toISOString()}` : "";
+            const query = date ? `?date=${format(date, 'yyyy-MM-dd')}` : "";
             const response = await apiClient.get<{ data: EmployeeBooking[] }>(`/employee/return${query}`);
             return response.data.data;
         } catch (error: any) {

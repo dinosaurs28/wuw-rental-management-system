@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Shield, Users, Fuel, Settings2, ArrowLeft } from 'lucide-react';
+import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -187,8 +188,8 @@ export const EmployeeVehicleDetailsPage = () => {
             vehicles: [vehicle.publicId],
             customer_public_id: customerSession.publicId,
             customer_kyc_id: customerKycId,
-            start: new Date(startDate).toISOString(),
-            end: new Date(endDate).toISOString(),
+            start: format(new Date(startDate), 'yyyy-MM-dd'),
+            end: format(new Date(endDate), 'yyyy-MM-dd'),
             payment_type: paymentType || 'CASH',
         };
 
