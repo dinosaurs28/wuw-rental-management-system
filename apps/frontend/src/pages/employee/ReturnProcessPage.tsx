@@ -224,8 +224,8 @@ export default function ReturnProcessPage() {
     const isCompleted = booking.status === "RETURNED" || booking.status === "COMPLETED";
 
     // Zones based on logic
-    const isTwoWheeler = vehicle?.category?.toLowerCase().includes("two");
-    const damageZones = isTwoWheeler
+    const isTWUWheeler = vehicle?.category?.toLowerCase().includes("two");
+    const damageZones = isTWUWheeler
         ? ["Front", "Rear", "Left Side", "Right Side"]
         : ["Front Bumper", "Rear Bumper", "Left Front Door", "Left Rear Door", "Right Front Door", "Right Rear Door", "Hood", "Roof", "Trunk", "Wheels", "Interior"];
 

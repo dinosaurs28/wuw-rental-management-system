@@ -38,7 +38,7 @@ initInvoiceWorker();
 const app = express();
 
 app.use(cors({
-    origin: ["http://localhost:5173", "https://wowrentals-staging.office-09d.workers.dev"],
+    origin: ["http://localhost:5173", "https://WUWrentals-staging.office-09d.workers.dev"],
     credentials: true,
 }));
 app.use(express.json());

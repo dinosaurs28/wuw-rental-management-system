@@ -138,6 +138,11 @@ exports.Prisma.UserScalarFieldEnum = {
   deletedAt: 'deletedAt'
 };
 
+exports.Prisma.RelationLoadStrategy = {
+  query: 'query',
+  join: 'join'
+};
+
 exports.Prisma.UserProviderScalarFieldEnum = {
   id: 'id',
   publicId: 'publicId',

@@ -189,6 +189,18 @@ export const fetchVehicleDetails = async (
     }
 };
 
+export const fetchManagerVehicleDetails = async (vehicleId: string): Promise<VehicleDetailsResponse> => {
+    try {
+        const response = await axios.get<VehicleDetailsResponse>(`${API_URL}/branchManager/dashboard/vehicle/${vehicleId}`, {
+            withCredentials: true
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching manager vehicle details:', error);
+        throw error;
+    }
+};
+
 export const createVehicle = async (formData: FormData): Promise<VehicleDetailsResponse> => {
     try {
         const response = await axios.post<VehicleDetailsResponse>(`${API_URL}/branchManager/dashboard/vehicle/add`, formData, {

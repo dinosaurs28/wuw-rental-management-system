@@ -22,7 +22,11 @@ export const searchVehicles = async (req: Request, res: Response) => {
             limit = "20",
             offset = "0",
         } = req.query as any;
-        const branchId = req.branch_Id
+
+        const branchId = req.branch_Id;
+        const limitNum = Number(limit);
+        const offsetNum = Number(offset);
+
         // Basic validation for dates if provided
         let startDate: Date | null = null;
         let endDate: Date | null = null;
@@ -44,7 +48,10 @@ export const searchVehicles = async (req: Request, res: Response) => {
         const where: any = {
             branchId: branchId,
             status: "AVAILABLE",
-            deletedAt: null
+            deletedAt: null,
+            insuranceExpiry: {
+                gt: new Date()
+            }
         };
 
         if (search) {
@@ -56,57 +63,82 @@ export const searchVehicles = async (req: Request, res: Response) => {
         }
         if (model) where.model = { contains: model, mode: "insensitive" };
         if (make) where.make = { contains: make, mode: "insensitive" };
+
         if (category) {
-            // Assuming category is publicId, need to resolve or join
-            const catObj = await prisma.vehicleCategory.findUnique({ where: { publicId: category as string } });
-            if (catObj) where.categoryId = catObj.id;
+            // Optimized: Filter by category publicId directly in the relation
+            where.category = { publicId: category as string };
         }
 
         // Availability Filter
         if (startDate && endDate) {
-            const bookedItems = await prisma.bookingItem.findMany({
-                where: {
-                    booking: {
-                        status: { not: "CANCELLED" },
-                        startAt: { lte: endDate }, // overlap logic
-                        endAt: { gte: startDate }
+            // Filter out vehicles that have conflicting bookings
+            // using Prisma's relation filtering (anti-join logic)
+            where.NOT = {
+                bookingItems: {
+                    some: {
+                        booking: {
+                            status: { in: ["CONFIRMED", "PICKED_UP", "HOLD"] }, // Assuming logic matches public controller
+                            // Check for overlap: (StartA <= EndB) and (EndA >= StartB)
+                            startAt: { lte: endDate },
+                            endAt: { gte: startDate }
+                        }
                     }
-                },
-                select: { vehicleId: true }
-            });
-            const bookedIds = bookedItems.map(i => i.vehicleId);
-            if (bookedIds.length > 0) {
-                where.id = { notIn: bookedIds };
-            }
+                }
+            };
         }
 
-        const vehicles = await prisma.vehicle.findMany({
+        // Single query to fetch vehicles with all necessary data
+        const vehicles: any[] = await prisma.vehicle.findMany({
             where,
-            take: Number(limit),
-            skip: Number(offset),
+            take: limitNum,
+            skip: offsetNum,
             include: {
                 category: true,
-                branch: true,
-                images: { where: { isThumbnail: true }, include: { file: true } }
-            }
+                branch: {
+                    include: { pricingSetting: true }
+                },
+                images: { where: { isThumbnail: true }, select: { file: { select: { url: true } } } },
+                pricingOverride: true
+            },
+            orderBy: { createdAt: 'desc' }
         });
 
         const total = await prisma.vehicle.count({ where });
 
         const formatted = [];
         for (const v of vehicles) {
-            // Basic calculation, or detailed if needed in list? User said "basic info like name,model,type,thumbnail,base price"
-            // base price usually is baseDailyPrice, or calculated
-            const pricing = await calculatePricingForVehicle(v.id);
+            // In-memory pricing calculation to avoid N+1 calls
+            const base = Number(v.baseDailyPrice);
+            let finalDailyPrice = base;
+
+            if (v.pricingOverride?.enabled) {
+                if (v.pricingOverride.customPrice) {
+                    finalDailyPrice = Number(v.pricingOverride.customPrice);
+                } else if (v.pricingOverride.multiplier) {
+                    finalDailyPrice = base * Number(v.pricingOverride.multiplier);
+                }
+            } else {
+                const settings = v.branch?.pricingSetting;
+                if (settings) {
+                    if (settings.customEnabled) {
+                        finalDailyPrice = base * Number(settings.customMultiplier);
+                    } else if (settings.peakEnabled) {
+                        finalDailyPrice = base * Number(settings.peakMultiplier);
+                    } else if (settings.weekendEnabled) {
+                        finalDailyPrice = base * Number(settings.weekendMultiplier);
+                    }
+                }
+            }
+
             formatted.push({
                 publicId: v.publicId,
                 make: v.make,
                 model: v.model,
                 category: v.category.name,
                 branch: v.branch.name,
-                imageUrl: v.images[0]?.file?.url ? [{ file: { url: v.images[0].file.url } }] : [],
+                imageUrl: v.images, // Structure matching public controller response for consistency
                 pricing: {
-                    daily: pricing.daily
+                    daily: Number(finalDailyPrice.toFixed(2))
                 },
                 status: v.status
             });
@@ -116,8 +148,8 @@ export const searchVehicles = async (req: Request, res: Response) => {
             data: formatted,
             pagination: {
                 total,
-                limit: Number(limit),
-                offset: Number(offset)
+                limit: limitNum,
+                offset: offsetNum
             }
         };
 

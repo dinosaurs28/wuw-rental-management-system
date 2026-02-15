@@ -1,6 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
-  output   = "../src/generated/client"
+  provider        = "prisma-client-js"
+  output          = "../src/generated/client"
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {
@@ -300,6 +301,10 @@ model Vehicle {
   @@index([branchId])
   @@index([categoryId])
   @@index([status])
+  // Performance indexes
+  @@index([status, deletedAt, insuranceExpiry])
+  @@index([make, model])
+  @@index([branchId, categoryId, status])
 }
 
 model VehiclePricingOverride {
@@ -352,6 +357,8 @@ model VehicleImage {
 
   @@index([vehicleId])
   @@index([fileId])
+  // Performance index
+  @@index([vehicleId, isThumbnail])
 }
 
 // BOOKINGS
@@ -431,6 +438,8 @@ model Booking {
   @@index([createdById])
   @@index([status])
   @@index([startAt, endAt])
+  // Performance index
+  @@index([status, startAt, endAt])
 }
 
 model BookingItem {
@@ -454,6 +463,8 @@ model BookingItem {
 
   @@index([bookingId])
   @@index([vehicleId])
+  // Performance index
+  @@index([vehicleId, bookingId])
 }
 
 model BookingPhoto {

@@ -31,7 +31,7 @@ export const Login = async (req: Request, res: Response) => {
             });
         }
 
-        if (user.role === Role.CUSTOMER) {
+        if (user.role !== Role.STAFF) {
             return res.status(StatusCode.FORBIDDEN).json({
                 message: "Access Denied: Employees Only"
             });

@@ -25,9 +25,6 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       offset = "0",
     } = req.query as any;
 
-    const limitNum = Number(limit);
-    const offsetNum = Number(offset);
-
     // Parse and validate dates if provided
     let startDate: Date | null = null;
     let endDate: Date | null = null;
@@ -57,11 +54,9 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       }:${make || "all"}:${model || "all"}:${sort || "none"}:${start || "all"}:${end || "all"}:${limit}:${offset}`;
 
     const cachedData = await redis.get(cacheKey);
-    const startTime = performance.now();
     if (cachedData) {
       return res.status(StatusCode.OK).json(JSON.parse(cachedData));
     }
-
     const filters: any = {
       status: "AVAILABLE",
       deletedAt: null,
@@ -71,66 +66,43 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
     };
 
     if (category) {
-      filters.category = { publicId: category };
+      const categoryObj = await prisma.vehicleCategory.findUnique({
+        where: { publicId: category },
+        select: { id: true },
+      });
+
+      if (!categoryObj) {
+        return res.status(404).json({ message: "Invalid category" });
+      }
+
+      filters.categoryId = categoryObj.id;
     }
 
     if (branch) {
-      // Inline branch filter to avoid separate query
-      // Branch can be publicId or name
-      filters.branch = {
-        OR: [
-          { publicId: branch },
-          { name: { contains: branch, mode: "insensitive" } },
-        ]
-      };
+      const branchObj = await prisma.branch.findFirst({
+        where: {
+          OR: [
+            { publicId: branch },
+            { name: { contains: branch, mode: "insensitive" } },
+          ],
+        },
+        select: { id: true },
+      });
+
+      if (!branchObj) {
+        return res.status(404).json({ message: "Invalid branch" });
+      }
+
+      filters.branchId = branchObj.id;
     }
 
-    if (search) {
-      filters.OR = [
-        { make: { contains: search, mode: "insensitive" } },
-        { model: { contains: search, mode: "insensitive" } }
-      ];
-    }
-
-    if (make) {
-      filters.make = { contains: make, mode: "insensitive" };
-    }
-
-    if (model) {
-      filters.model = { contains: model, mode: "insensitive" };
-    }
-
-    // Availability Filter
-    if (startDate && endDate) {
-      // Filter out vehicles that have conflicting bookings
-      // using Prisma's relation filtering (anti-join logic)
-      filters.NOT = {
-        bookingItems: { // Note: Relation name is bookingItems
-          some: {
-            booking: {
-              status: { in: ["CONFIRMED", "PICKED_UP", "HOLD"] },
-              // Check for overlap: (StartA <= EndB) and (EndA >= StartB)
-              startAt: { lte: endDate },
-              endAt: { gte: startDate }
-            }
-          }
-        }
-      };
-    }
-
-    // 1. Single Fetch with JOIN strategy
-    const vehicleFetchStart = performance.now();
-    const vehicles: any[] = await prisma.vehicle.findMany({
-      // relationLoadStrategy: 'join', // Removed due to runtime error, will rely on Prisma's default optimization
+    const vehicles = await prisma.vehicle.findMany({
       where: filters,
-      skip: offsetNum,
-      take: limitNum,
+      skip: Number(offset),
+      take: Number(limit),
       include: {
         category: true,
-        branch: {
-          include: { pricingSetting: true }
-        },
-        pricingOverride: true,
+        branch: true,
         images: {
           where: {
             isThumbnail: true
@@ -143,48 +115,52 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       },
       orderBy:
         sort === "price_low_to_high"
-          ? { id: "asc" } // approximate sorting by ID if price sort requested, real sorting needs computed price which suggests DB field
+          ? { id: "asc" }
           : sort === "price_high_to_low"
             ? { id: "desc" }
             : { createdAt: "desc" },
-    } as any);
-    console.log(`Vehicle single-query fetch: ${(performance.now() - vehicleFetchStart).toFixed(2)}ms`);
+    });
 
     if (vehicles.length === 0) {
       return res.status(StatusCode.OK).json({ count: 0, data: [] });
     }
 
+    let filteredVehicles = vehicles;
+
+    if (search) {
+      const t = search.toLowerCase();
+      filteredVehicles = filteredVehicles.filter(
+        (v) =>
+          v.make.toLowerCase().includes(t) ||
+          v.model.toLowerCase().includes(t)
+      );
+    }
+
+    if (make) {
+      const t = make.toLowerCase();
+      filteredVehicles = filteredVehicles.filter((v) =>
+        v.make.toLowerCase().includes(t)
+      );
+    }
+
+    if (model) {
+      const t = model.toLowerCase();
+      filteredVehicles = filteredVehicles.filter((v) =>
+        v.model.toLowerCase().includes(t)
+      );
+    }
+
     const finalResponse = [];
-
-    // Process vehicles in memory (Pricing calculation is now O(1) per vehicle with pre-fetched data)
-    for (const v of vehicles) {
-      // Calculate pricing using the data we already fetched
-      // Re-implementing simplified version of calculatePricingForVehicle to avoid DB call
-      const base = Number(v.baseDailyPrice);
-      let finalDailyPrice = base;
-
-      if (v.pricingOverride?.enabled) {
-        if (v.pricingOverride.customPrice) {
-          finalDailyPrice = Number(v.pricingOverride.customPrice);
-        } else if (v.pricingOverride.multiplier) {
-          finalDailyPrice = base * Number(v.pricingOverride.multiplier);
-        }
-      } else {
-        const settings = v.branch?.pricingSetting;
-        if (settings) {
-          if (settings.customEnabled) {
-            finalDailyPrice = base * Number(settings.customMultiplier);
-          } else if (settings.peakEnabled) {
-            finalDailyPrice = base * Number(settings.peakMultiplier);
-          } else if (settings.weekendEnabled) {
-            finalDailyPrice = base * Number(settings.weekendMultiplier);
-          }
+    for (const v of filteredVehicles) {
+      // Check availability if dates are provided
+      if (startDate && endDate) {
+        const isAvailable = await checkVehicleAvailability(v.id, startDate, endDate);
+        if (!isAvailable) {
+          continue; // Skip vehicles that are not available for the selected dates
         }
       }
 
-      const pricing = {
-        daily: Number(finalDailyPrice.toFixed(2))
-      };
+      const pricing = await calculatePricingForVehicle(v.id);
 
       finalResponse.push({
         publicId: v.publicId,
@@ -199,10 +175,11 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       });
     }
 
-    // Handle sorting by price in memory since it's a computed field
     if (sort === "price_low_to_high") {
       finalResponse.sort((a, b) => a.pricing.daily - b.pricing.daily);
-    } else if (sort === "price_high_to_low") {
+    }
+
+    if (sort === "price_high_to_low") {
       finalResponse.sort((a, b) => b.pricing.daily - a.pricing.daily);
     }
 
@@ -210,8 +187,6 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       count: finalResponse.length,
       data: finalResponse,
     };
-
-    console.log(`Total processing time: ${(performance.now() - startTime).toFixed(2)}ms`);
 
     await redis.set(cacheKey, JSON.stringify(result), "EX", 60);
 

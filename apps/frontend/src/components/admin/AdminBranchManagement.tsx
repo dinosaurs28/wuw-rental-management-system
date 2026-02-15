@@ -277,7 +277,7 @@ function CreateBranchDialog({ onClose, onSuccess }: { onClose: () => void; onSuc
                             <Input
                                 id="manager"
                                 type="email"
-                                placeholder="manager@wow.com"
+                                placeholder="manager@WUW.com"
                                 value={formData.managerEmail}
                                 onChange={e => setFormData({ ...formData, managerEmail: e.target.value })}
                                 className="h-11"

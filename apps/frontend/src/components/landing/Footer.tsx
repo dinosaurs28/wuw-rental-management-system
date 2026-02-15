@@ -25,7 +25,7 @@ export const Footer = () => {
                                     <circle cx="17" cy="17" r="2" />
                                 </svg>
                             </div>
-                            <span className="text-lg font-bold text-zinc-900">WOW Rentals</span>
+                            <span className="text-lg font-bold text-zinc-900">WUW Rentals</span>
                         </Link>
                         <p className="text-sm text-zinc-600 max-w-xs leading-relaxed">
                             Redefining mobility with a premium fleet and exceptional service. Drive the extraordinary.
@@ -69,7 +69,7 @@ export const Footer = () => {
                 {/* Bottom Bar */}
                 <div className="mt-12 pt-8 border-t border-zinc-200 flex flex-col md:flex-row justify-between items-center gap-4">
                     <p className="text-xs text-zinc-500">
-                        © {new Date().getFullYear()} WOW Rentals Inc. All rights reserved.
+                        © {new Date().getFullYear()} WUW Rentals Inc. All rights reserved.
                     </p>
                     <div className="flex items-center gap-1 text-xs text-zinc-500">
                         <span>English (US)</span>

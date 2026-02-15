@@ -35,10 +35,16 @@ export default function EmployeeVehicleListingPage() {
 
     // Local State
     // Default to today if no store date
-    const [selectedPickupDate, setSelectedPickupDate] = useState<Date | null>(
-        storeStart ? new Date(storeStart) : new Date()
-    );
-    const [selectedReturnDate, setSelectedReturnDate] = useState<Date | null>(storeEnd ? new Date(storeEnd) : null);
+    const initialPickup = storeStart ? new Date(storeStart) : new Date();
+    const [selectedPickupDate, setSelectedPickupDate] = useState<Date | null>(initialPickup);
+
+    // Default return date to pickup + 1 day if not in store
+    const initialReturn = storeEnd ? new Date(storeEnd) : (() => {
+        const d = new Date(initialPickup);
+        d.setDate(d.getDate() + 1);
+        return d;
+    })();
+    const [selectedReturnDate, setSelectedReturnDate] = useState<Date | null>(initialReturn);
     const [category, setCategory] = useState<string>('all');
     const [sortBy, setSortBy] = useState<string>('default');
     const [searchQuery, setSearchQuery] = useState<string>('');
@@ -96,8 +102,13 @@ export default function EmployeeVehicleListingPage() {
 
     // Handlers
     const handleReset = useCallback(() => {
-        setSelectedPickupDate(new Date());
-        setSelectedReturnDate(null);
+        const today = new Date();
+        setSelectedPickupDate(today);
+
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        setSelectedReturnDate(tomorrow);
+
         setCategory('all');
         setSortBy('default');
         setSearchQuery('');
@@ -138,7 +149,16 @@ export default function EmployeeVehicleListingPage() {
                         sortBy={sortBy}
                         searchQuery={searchQuery}
                         onBranchChange={() => { }} // No-op for employee page
-                        onPickupDateChange={(date) => setSelectedPickupDate(date ?? null)}
+                        onPickupDateChange={(date) => {
+                            setSelectedPickupDate(date ?? null);
+                            if (date) {
+                                const nextDay = new Date(date);
+                                nextDay.setDate(nextDay.getDate() + 1);
+                                setSelectedReturnDate(nextDay);
+                            } else {
+                                setSelectedReturnDate(null);
+                            }
+                        }}
                         onReturnDateChange={(date) => setSelectedReturnDate(date ?? null)}
                         onCategoryChange={setCategory}
                         onSortChange={setSortBy}

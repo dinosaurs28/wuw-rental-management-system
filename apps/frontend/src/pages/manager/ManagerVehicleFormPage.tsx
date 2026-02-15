@@ -31,7 +31,7 @@ import { Separator } from "@/components/ui/separator";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-import { createVehicle, updateVehicle, fetchVehicleDetails, fetchVehicleCategories, type Category } from "@/services/vehicle.service";
+import { createVehicle, updateVehicle, fetchManagerVehicleDetails, fetchVehicleCategories, type Category } from "@/services/vehicle.service";
 import { VehicleImageUpload } from "@/components/manager/vehicles/VehicleImageUpload";
 
 const vehicleSchema = z.object({
@@ -98,7 +98,7 @@ export const ManagerVehicleFormPage = () => {
         if (isEditMode && vehicleId) {
             const loadVehicle = async () => {
                 try {
-                    const response = await fetchVehicleDetails({ vehicleId });
+                    const response = await fetchManagerVehicleDetails(vehicleId);
                     const vehicle = response.data;
 
                     // Store original images to track deletions

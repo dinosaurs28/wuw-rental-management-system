@@ -60,7 +60,7 @@ export function DashboardSidebar() {
                     </div>
                     <div className="flex flex-col">
                         <span className="text-sm font-semibold text-sidebar-foreground">
-                            WOW
+                            WUW
                         </span>
                         <span className="text-xs text-muted-foreground">
                             Vehicle Rental
