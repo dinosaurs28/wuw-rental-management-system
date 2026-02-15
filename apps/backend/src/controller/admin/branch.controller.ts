@@ -26,7 +26,7 @@ export const CreateBranch = async (req: Request, res: Response) => {
 
         if (existingUser) {
             return res.status(StatusCode.CONFLICT).json({
-                message: "A user with this email already exists."
+                message: "A Branch Already Exists with this email."
             });
         }
 
@@ -89,6 +89,9 @@ export const GetAllBranches = async (req: Request, res: Response) => {
         }
 
         const branches = await prisma.branch.findMany({
+            where: {
+                deletedAt: null
+            },
             select: {
                 publicId: true,
                 name: true,
@@ -228,9 +231,7 @@ export const DeleteBranch = async (req: Request, res: Response) => {
             });
         });
 
-        await cleanupQueue.add("delete-branch-cascading", { branchId: branch.id }, {
-            delay: 500
-        });
+        await cleanupQueue.add("delete-branch-cascading", { branchId: branch.id });
 
         await redis.del("admin:all_branches");
 

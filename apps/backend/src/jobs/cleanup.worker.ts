@@ -5,6 +5,7 @@ import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { prisma } from "@repo/database/client";
 
 // Lazy initialization to ensure environment variables are loaded first
+console.log("[CleanupWorker] Module loaded");
 let connection: Redis | null = null;
 
 function getConnection(): Redis {
@@ -38,29 +39,21 @@ let cleanupWorker: Worker | null = null;
 export function initCleanupWorker(): void {
     if (cleanupWorker) return; // Already initialized
 
+    console.log("Initializing cleanup worker...");
     cleanupWorker = new Worker("{bull}cleanup-processing", async (job: Job) => {
         const { branchId } = job.data;
+        console.log(`[Worker] Received job ${job.name} with ID ${job.id} for branch ${branchId}`);
+        console.log(`[Worker] Job data:`, job.data);
         console.log(`Starting cascade cleanup for branch ${branchId}`);
 
         try {
-            // 1. Fetch all Vehicles in the branch
+            // 0. Fetch Vehicles to delete images first
             const vehicles = await prisma.vehicle.findMany({
-                where: {
-                    branchId: branchId,
-                    deletedAt: null
-                },
-                include: {
-                    images: {
-                        include: {
-                            file: true
-                        }
-                    }
-                }
+                where: { branchId: branchId },
+                include: { images: { include: { file: true } } }
             });
-
-            // 2. Process Vehicles (Images + Soft Delete)
+            // 1. Delete Images from R2
             for (const vehicle of vehicles) {
-                // Delete Images from R2
                 for (const image of vehicle.images) {
                     if (image.file && image.file.key) {
                         try {
@@ -74,25 +67,70 @@ export function initCleanupWorker(): void {
                         }
                     }
                 }
-
-                // Soft Delete Vehicle
-                await prisma.vehicle.update({
-                    where: { id: vehicle.id },
-                    data: { deletedAt: new Date() }
-                });
             }
 
-            // 3. Soft Delete all Staff/Users in the branch
-            // Note: Managers might have been deleted already by the controller, but this catches any others
-            await prisma.user.updateMany({
-                where: {
-                    branchId: branchId,
-                    deletedAt: null
-                },
-                data: { deletedAt: new Date() }
+            // 2. Database Hard Deletes (Order matters for Foreign Keys)
+            await prisma.$transaction(async (tx) => {
+                // A. Delete Branch Settings & Rules
+                await tx.gSTRule.deleteMany({ where: { branchId } });
+                await tx.branchPricingSetting.deleteMany({ where: { branchId } });
+                await tx.categoryDepositSetting.deleteMany({ where: { branchId } });
+                await tx.pricingDiscountSlab.deleteMany({ where: { branchId } });
+
+                // B. Delete Bookings & Related Data
+                const bookings = await tx.booking.findMany({
+                    where: { branchId },
+                    select: { id: true }
+                });
+                const bookingIds = bookings.map(b => b.id);
+
+                if (bookingIds.length > 0) {
+                    await tx.bookingItem.deleteMany({ where: { bookingId: { in: bookingIds } } });
+                    await tx.bookingPhoto.deleteMany({ where: { bookingId: { in: bookingIds } } });
+                    await tx.damageReport.deleteMany({ where: { bookingId: { in: bookingIds } } });
+                    await tx.payment.deleteMany({ where: { invoice: { bookingId: { in: bookingIds } } } }); // via Invoice
+                    await tx.invoice.deleteMany({ where: { bookingId: { in: bookingIds } } });
+                    await tx.deposit.deleteMany({ where: { bookingId: { in: bookingIds } } });
+                    await tx.booking.deleteMany({ where: { branchId } });
+                }
+
+                // C. Delete Vehicles & Related Data
+                const vehicleIds = vehicles.map(v => v.id);
+                if (vehicleIds.length > 0) {
+                    await tx.vehicleImage.deleteMany({ where: { vehicleId: { in: vehicleIds } } });
+                    await tx.vehicleInsurance.deleteMany({ where: { vehicleId: { in: vehicleIds } } });
+                    await tx.vehicleMaintenanceRecord.deleteMany({ where: { vehicleId: { in: vehicleIds } } });
+                    await tx.vehiclePricingOverride.deleteMany({ where: { vehicleId: { in: vehicleIds } } });
+                    await tx.vehicle.deleteMany({ where: { branchId } });
+                }
+
+                // D. Delete Users (Managers/Staff) & Customer Profiles
+                const users = await tx.user.findMany({
+                    where: { branchId },
+                    select: { id: true, role: true }
+                });
+                const userIds = users.map(u => u.id);
+
+                if (userIds.length > 0) {
+                    // Delete Customer profiles linked to these users
+                    await tx.customerKyc.deleteMany({ where: { customer: { userId: { in: userIds } } } });
+                    await tx.customer.deleteMany({ where: { userId: { in: userIds } } });
+
+                    await tx.emailVerificationOtp.deleteMany({ where: { userId: { in: userIds } } });
+                    await tx.userProvider.deleteMany({ where: { userId: { in: userIds } } });
+                    await tx.auditLog.deleteMany({ where: { userId: { in: userIds } } });
+                    await tx.staffActivityLog.deleteMany({ where: { staffId: { in: userIds } } });
+                    await tx.user.deleteMany({ where: { branchId } });
+                }
+
+                // E. Finally, Delete the Branch
+                await tx.branch.delete({ where: { id: branchId } });
+            }, {
+                maxWait: 10000, // 10s max wait
+                timeout: 20000  // 20s timeout for large deletions
             });
 
-            console.log(`Cascade cleanup completed for branch ${branchId}`);
+            console.log(`Cascade HARD DELETE completed for branch ${branchId}`);
 
         } catch (error) {
             console.error(`Failed cleanup for branch ${branchId}:`, error);

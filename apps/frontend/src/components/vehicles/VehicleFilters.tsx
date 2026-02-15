@@ -39,8 +39,8 @@ interface VehicleFiltersProps {
 
 const CATEGORIES = [
     { value: 'all', label: 'All Categories' },
-    { value: 'f86rdkaslieo00f4', label: 'Two Wheeler' },
-    { value: 'ekdg8blyaz27a3bv', label: 'Four Wheeler' },
+    { value: 'oqhrdkffow94mxs3', label: 'Two Wheeler' },
+    { value: 'a3kk9u5pbc3j4sjv', label: 'Four Wheeler' },
 ];
 
 const SORT_OPTIONS = [

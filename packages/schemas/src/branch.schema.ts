@@ -6,7 +6,8 @@ export const createBranchSchema = z.object({
     phone: z.string().optional(),
     managerName: z.string().min(1, "Manager name is required"),
     managerEmail: z.string().email("Invalid manager email"),
-    managerPassword: z.string().min(6, "Password must be at least 6 characters")
+    managerPassword: z.string().min(6, "Password must be at least 6 characters"),
+    
 });
 
 export const gstRuleSchema = z.object({

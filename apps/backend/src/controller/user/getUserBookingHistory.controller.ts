@@ -45,7 +45,7 @@ export const getUserBookingHistory = async (req: Request, res: Response) => {
 
         if (type === 'active') {
             where.status = {
-                in: ['CONFIRMED']
+                in: ['CONFIRMED','PICKED_UP']
             };
         } else if (type === 'past') {
             where.status = {

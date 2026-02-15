@@ -197,7 +197,7 @@ export function AdminLayout() {
                                     </div>
                                 </DropdownMenuLabel>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => navigate('/admin/profile')}>
+                                <DropdownMenuItem onClick={() => navigate('/admin/dashboard')}>
                                     <User className="mr-2 h-4 w-4" />
                                     <span>Profile</span>
                                 </DropdownMenuItem>

@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 export const AdminBranchesPage = () => {
     const [branches, setBranches] = useState<AdminBranch[]>([]);
-    const [ ,setLoading] = useState(true);
+    const [, setLoading] = useState(true);
 
     const fetchBranches = async () => {
         try {
@@ -52,9 +52,7 @@ export const AdminBranchesPage = () => {
             </div>
 
             {/* Branch Management Table */}
-            <div className="bg-white rounded-lg shadow-sm border">
-                <AdminBranchManagement branches={branches} onRefresh={fetchBranches} />
-            </div>
+            <AdminBranchManagement branches={branches} onRefresh={fetchBranches} />
         </div>
     );
 };

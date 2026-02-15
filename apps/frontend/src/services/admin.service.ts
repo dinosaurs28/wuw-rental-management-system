@@ -35,8 +35,10 @@ export type AdminBranch = {
 export type CreateBranchInput = {
     name: string;
     address: string;
-    contactNumber?: string;
-    managerEmail?: string; // Optional invite
+    phone?: string;
+    managerName: string;
+    managerEmail: string;
+    managerPassword: string;
 };
 
 export type UpdateBranchInput = Partial<CreateBranchInput> & {
