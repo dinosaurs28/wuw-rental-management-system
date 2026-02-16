@@ -7,6 +7,7 @@ import { r2 } from "../../lib/r2.client.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs/promises";
 import path from "path";
+import { processImage } from "../../utils/image-processor.js";
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL!;
@@ -26,11 +27,14 @@ export const UploadDamageImage = async (req: Request, res: Response) => {
         const date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
         const key = `damage/${date}/${createID()}${ext}`;
 
+        // Process image with Sharp
+        const processed = await processImage(fileContent);
+
         await r2.send(new PutObjectCommand({
             Bucket: BUCKET_NAME,
             Key: key,
-            Body: fileContent,
-            ContentType: file.mimetype,
+            Body: processed.buffer,
+            ContentType: processed.mimeType,
         }));
 
         // Clean up local file
@@ -43,8 +47,8 @@ export const UploadDamageImage = async (req: Request, res: Response) => {
                 publicId: filePublicId,
                 key: key,
                 url: `${R2_PUBLIC_URL}/${key}`,
-                mime: file.mimetype,
-                size: file.size,
+                mime: processed.mimeType,
+                size: processed.size,
             }
         });
 

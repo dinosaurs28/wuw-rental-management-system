@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { DocumentTypeSelector } from '@/components/verification/DocumentTypeSelector';
 import { DocumentUploadZone } from '@/components/verification/DocumentUploadZone';
+import { compressImage } from '@/lib/utils';
 import { UploadedDocumentsGrid } from '@/components/verification/UploadedDocumentsGrid';
 
 import { useKycStore } from '@/store/kyc.store';
@@ -72,7 +73,8 @@ export function DocumentsPage() {
             setIsUploading(true);
 
             try {
-                const response = await kycService.uploadDocument(file, selectedDocumentType);
+                const processedFile = await compressImage(file);
+                const response = await kycService.uploadDocument(processedFile, selectedDocumentType);
                 addDocument(response.data);
                 setSelectedDocumentType(null);
                 toast.success('Document uploaded successfully');

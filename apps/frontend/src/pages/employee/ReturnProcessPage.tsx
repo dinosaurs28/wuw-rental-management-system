@@ -18,7 +18,7 @@ import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Loader2, Upload, Trash2, ArrowLeft, Fuel, Gauge, AlertTriangle, FileCheck, X } from "lucide-react";
 import { useDropzone } from "react-dropzone";
-import { cn } from "@/lib/utils";
+import { cn, compressImage } from "@/lib/utils";
 
 interface DamageItem {
     id: string;
@@ -159,12 +159,21 @@ export default function ReturnProcessPage() {
 
 
     // Handlers
-    const onDropReturn = (acceptedFiles: File[]) => {
-        acceptedFiles.forEach(file => {
-            const formData = new FormData();
-            formData.append("file", file);
-            uploadReturnMutation.mutate(formData);
-        });
+    const onDropReturn = async (acceptedFiles: File[]) => {
+        for (const file of acceptedFiles) {
+            try {
+                const processedFile = await compressImage(file);
+                const formData = new FormData();
+                formData.append("file", processedFile);
+                uploadReturnMutation.mutate(formData);
+            } catch (error) {
+                console.error("Compression error:", error);
+                // Fallback to original file if compression fails
+                const formData = new FormData();
+                formData.append("file", file);
+                uploadReturnMutation.mutate(formData);
+            }
+        }
     };
 
     const { getRootProps: getReturnRootProps, getInputProps: getReturnInputProps } = useDropzone({
@@ -172,12 +181,20 @@ export default function ReturnProcessPage() {
         accept: { 'image/*': [] }
     });
 
-    const onDropDamage = (acceptedFiles: File[]) => {
-        acceptedFiles.forEach(file => {
-            const formData = new FormData();
-            formData.append("file", file);
-            uploadDamageMutation.mutate(formData);
-        });
+    const onDropDamage = async (acceptedFiles: File[]) => {
+        for (const file of acceptedFiles) {
+            try {
+                const processedFile = await compressImage(file);
+                const formData = new FormData();
+                formData.append("file", processedFile);
+                uploadDamageMutation.mutate(formData);
+            } catch (error) {
+                console.error("Compression error:", error);
+                const formData = new FormData();
+                formData.append("file", file);
+                uploadDamageMutation.mutate(formData);
+            }
+        }
     };
 
     const { getRootProps: getDamageRootProps, getInputProps: getDamageInputProps } = useDropzone({
