@@ -80,6 +80,7 @@ export const PickupImageCard = ({
                         <div className="flex items-center gap-1 flex-shrink-0">
                             {/* View Button */}
                             <Button
+                                type="button"
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => setIsViewOpen(true)}
@@ -91,6 +92,7 @@ export const PickupImageCard = ({
 
                             {/* Delete Button */}
                             <Button
+                                type="button"
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => onDelete(image.fileId)}

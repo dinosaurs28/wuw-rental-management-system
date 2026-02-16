@@ -12,12 +12,11 @@ interface DocumentUploadZoneProps {
 }
 
 const ACCEPTED_TYPES = {
-    'image/jpeg': ['.jpg', '.jpeg'],
-    'image/png': ['.png'],
+    'image/*': ['.jpg', '.jpeg', '.png', '.heic', '.heif'],
     'application/pdf': ['.pdf'],
 };
 
-const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB as per docs
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
 
 export const DocumentUploadZone = ({
     onFileSelect,
@@ -26,9 +25,13 @@ export const DocumentUploadZone = ({
     error,
 }: DocumentUploadZoneProps) => {
     const onDrop = useCallback(
-        (acceptedFiles: File[]) => {
-            if (acceptedFiles.length > 0 && !isUploading && !disabled) {
-                onFileSelect(acceptedFiles[0]);
+        (acceptedFiles: File[], fileRejections: any[]) => {
+            // If dropzone rejects it (e.g. because of MIME type vs extension mismatch)
+            // but it's an image, we try to pass it anyway so our utility can try to fix it
+            const fileToProcess = acceptedFiles[0] || (fileRejections[0]?.file as File);
+
+            if (fileToProcess && !isUploading && !disabled) {
+                onFileSelect(fileToProcess);
             }
         },
         [onFileSelect, isUploading, disabled]
@@ -62,7 +65,7 @@ export const DocumentUploadZone = ({
                     (isUploading || disabled) && 'opacity-60 cursor-not-allowed'
                 )}
             >
-                <input {...getInputProps()} />
+                <input {...getInputProps()} capture="environment" />
 
                 {isUploading ? (
                     <div className="flex flex-col items-center gap-3">
@@ -113,7 +116,7 @@ export const DocumentUploadZone = ({
                         <div className="flex flex-wrap items-center justify-center gap-4 mt-4 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1">
                                 <FileImage className="w-3 h-3" />
-                                JPG, PNG, PDF
+                                JPG, PNG, HEIC, PDF
                             </span>
                             <span>•</span>
                             <span>Max 15MB per file</span>

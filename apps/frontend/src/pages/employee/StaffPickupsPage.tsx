@@ -19,7 +19,7 @@ import {
     Image as ImageIcon,
 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { cn, compressImage } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -189,7 +189,9 @@ export default function StaffPickupsPage() {
         setUploadError(null);
         setIsUploading(true);
         try {
-            await uploadImageMutation.mutateAsync(file);
+            // Compress image if it's a camera blob/high-res photo
+            const processedFile = await compressImage(file);
+            await uploadImageMutation.mutateAsync(processedFile);
         } finally {
             setIsUploading(false);
         }
@@ -391,6 +393,7 @@ export default function StaffPickupsPage() {
                                                         {/* View Overlay Button */}
                                                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                                                             <Button
+                                                                type="button"
                                                                 variant="secondary"
                                                                 size="sm"
                                                                 className="h-9 bg-white/90 hover:bg-white text-xs"
@@ -416,6 +419,7 @@ export default function StaffPickupsPage() {
                                                         {!isPickedUp && doc.status !== 'APPROVED' && (
                                                             <div className="flex items-center gap-2">
                                                                 <Button
+                                                                    type="button"
                                                                     size="sm"
                                                                     className="h-8 flex-1 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border-green-200"
                                                                     variant="outline"
@@ -425,6 +429,7 @@ export default function StaffPickupsPage() {
                                                                     Approve
                                                                 </Button>
                                                                 <Button
+                                                                    type="button"
                                                                     size="sm"
                                                                     className="h-8 flex-1 bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800 border-red-200"
                                                                     variant="outline"
@@ -568,10 +573,11 @@ export default function StaffPickupsPage() {
                                                         </DialogDescription>
                                                     </DialogHeader>
                                                     <DialogFooter className="mt-4">
-                                                        <Button variant="outline" onClick={() => setIsConfirmOpen(false)}>
+                                                        <Button type="button" variant="outline" onClick={() => setIsConfirmOpen(false)}>
                                                             Cancel
                                                         </Button>
                                                         <Button
+                                                            type="button"
                                                             className="bg-[#FF5F00] hover:bg-[#e65600]"
                                                             onClick={handleSubmit(onConfirmHandover)}
                                                             disabled={handoverMutation.isPending}
