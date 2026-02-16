@@ -35,7 +35,7 @@ export const VehiclePricingCard = ({
     const formattedPickupDate = pickupDate ? format(pickupDate, 'MMM dd, yyyy') : 'Select date';
     const formattedReturnDate = returnDate ? format(returnDate, 'MMM dd, yyyy') : 'Select date';
 
-    const isAvailable = vehicle.availability && vehicle.status === 'AVAILABLE';
+    const isAvailable = vehicle.availability;
 
     // Use backend-calculated pricing (updates when dates change and refetch happens)
     // discountPrice is the discount amount (savings), not the final price

@@ -39,7 +39,7 @@ export const VehicleImageUpload = ({
         accept: {
             'image/*': ['.jpeg', '.jpg', '.png', '.webp'],
         },
-        maxSize: 5 * 1024 * 1024, // 5MB
+        maxSize: 15 * 1024 * 1024, // 15MB
         disabled: images.length >= maxFiles,
     });
 
@@ -139,7 +139,7 @@ export const VehicleImageUpload = ({
                             Click to upload or drag and drop
                         </p>
                         <p className="text-xs">
-                            SVG, PNG, JPG or GIF (max. 5MB)
+                            SVG, PNG, JPG or GIF (max. 15MB)
                         </p>
                     </div>
                 </div>

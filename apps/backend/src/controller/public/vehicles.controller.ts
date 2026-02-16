@@ -63,7 +63,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
     }
 
     const filters: any = {
-      status: "AVAILABLE",
+      status: { in: ["AVAILABLE", "OUT_FOR_RENTAL"] },
       deletedAt: null,
       insuranceExpiry: {
         gt: new Date() // Only show vehicles with valid insurance
@@ -158,6 +158,13 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
 
     // Process vehicles in memory (Pricing calculation is now O(1) per vehicle with pre-fetched data)
     for (const v of vehicles) {
+      if (startDate && endDate) {
+        const isAvailable = await checkVehicleAvailability(v.id, startDate, endDate);
+        if (!isAvailable) {
+          continue;
+        }
+      }
+
       // Calculate pricing using the data we already fetched
       // Re-implementing simplified version of calculatePricingForVehicle to avoid DB call
       const base = Number(v.baseDailyPrice);
@@ -289,10 +296,12 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
     const isInsuranceValid = new Date(vehicleData.insuranceExpiry) > new Date();
 
     if (startDate && endDate) {
-      if (!isInsuranceValid) {
-        availability = false; // Not available if insurance expired
+      const isBookableStatus = ["AVAILABLE", "OUT_FOR_RENTAL"].includes(vehicleData.status);
+      if (!isInsuranceValid || !isBookableStatus) {
+        availability = false; // Not available if insurance expired or status not bookable
       } else {
         availability = await checkVehicleAvailability(vehicleData.id, startDate, endDate);
+        console.log("Availability:", availability);
       }
 
       const multi = calculateMultiDayTotalPrice(startDate, endDate, pricing.daily);

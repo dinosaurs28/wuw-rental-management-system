@@ -47,7 +47,7 @@ export const searchVehicles = async (req: Request, res: Response) => {
 
         const where: any = {
             branchId: branchId,
-            status: "AVAILABLE",
+            status: { in: ["AVAILABLE", "OUT_FOR_RENTAL"] },
             deletedAt: null,
             insuranceExpiry: {
                 gt: new Date()
@@ -211,8 +211,9 @@ export const getEmployeeVehicleDetails = async (req: Request, res: Response) => 
         const isInsuranceValid = new Date(vehicleData.insuranceExpiry) > new Date();
 
         if (startDate && endDate) {
-            if (!isInsuranceValid) {
-                availability = false; // Not available if insurance expired
+            const isBookableStatus = ["AVAILABLE", "OUT_FOR_RENTAL"].includes(vehicleData.status);
+            if (!isInsuranceValid || !isBookableStatus) {
+                availability = false; // Not available if insurance expired or status not bookable
             } else {
                 availability = await checkVehicleAvailability(vehicleData.id, startDate, endDate);
             }

@@ -31,7 +31,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import apiClient from '@/lib/axios';
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
 const ACEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 
 const uploadKycSchema = z.object({
@@ -40,7 +40,7 @@ const uploadKycSchema = z.object({
     }),
     file: z
         .instanceof(File, { message: 'Please select a file' })
-        .refine((file) => file.size <= MAX_FILE_SIZE, 'File size must be less than 5MB')
+        .refine((file) => file.size <= MAX_FILE_SIZE, 'File size must be less than 15MB')
         .refine(
             (file) => ACEPTED_IMAGE_TYPES.includes(file.type),
             'Only .jpg, .png, .webp and .pdf files are accepted'
@@ -191,7 +191,7 @@ export const UploadKycDialog = ({
                                                                     <span className="font-semibold">Click to upload</span>
                                                                 </p>
                                                                 <p className="text-xs text-gray-500">
-                                                                    JPG, PNG, PDF (MAX. 5MB)
+                                                                    JPG, PNG, PDF (MAX. 15MB)
                                                                 </p>
                                                             </>
                                                         )}

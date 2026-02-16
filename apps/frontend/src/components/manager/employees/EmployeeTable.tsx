@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { MoreHorizontal, Loader2 } from "lucide-react";
+import { MoreHorizontal, Loader2, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import {
     Table,
     TableBody,
@@ -18,7 +19,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { type BranchEmployee } from "@/services/branchEmployee.service";
+import { type BranchEmployee, branchEmployeeService } from "@/services/branchEmployee.service";
 import { EditEmployeeDialog } from "./EditEmployeeDialog";
 
 interface EmployeeTableProps {
@@ -42,6 +43,25 @@ export function EmployeeTable({
 }: EmployeeTableProps) {
     const [editingEmployee, setEditingEmployee] = useState<BranchEmployee | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+
+    const handleDelete = async (employee: BranchEmployee) => {
+        if (!confirm(`Are you sure you want to delete ${employee.name}? This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            setDeletingId(employee.publicId);
+            await branchEmployeeService.delete(employee.publicId);
+            toast.success("Employee deleted successfully");
+            if (onEmployeeUpdated) onEmployeeUpdated();
+        } catch (error) {
+            console.error("Failed to delete employee", error);
+            toast.error("Failed to delete employee");
+        } finally {
+            setDeletingId(null);
+        }
+    };
 
     if (isLoading) {
         return (
@@ -111,7 +131,14 @@ export function EmployeeTable({
                                             }}>
                                                 Edit Details
                                             </DropdownMenuItem>
-                                            {/* No delete option as per requirements */}
+                                            <DropdownMenuItem
+                                                onClick={() => handleDelete(employee)}
+                                                disabled={deletingId === employee.publicId}
+                                                className="text-red-600 focus:text-red-600"
+                                            >
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                {deletingId === employee.publicId ? "Deleting..." : "Delete"}
+                                            </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>

@@ -53,6 +53,8 @@ import { DashboardNavbar } from "@/components/employee/DashboardNavbar";
 
 import { bookingService } from "@/services/booking.service";
 import { kycService } from "@/services/kyc.service";
+import { DocumentUploadZone } from "@/components/verification/DocumentUploadZone";
+import { PickupImageCard, type UploadedImage } from "@/components/employee/PickupImageCard";
 
 // --- HELPERS ---
 const getDocumentTypeName = (type: string): string => {
@@ -82,6 +84,10 @@ export default function StaffPickupsPage() {
     const queryClient = useQueryClient();
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
+    const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadError, setUploadError] = useState<string | null>(null);
+    const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
 
     // --- DATA FETCHING ---
     const {
@@ -119,7 +125,7 @@ export default function StaffPickupsPage() {
     });
 
     const handoverMutation = useMutation({
-        mutationFn: (data: { odo: number, fuelLevel: number }) =>
+        mutationFn: (data: { odo: number, fuelLevel: number, pickupImageIds?: string[] }) =>
             bookingService.approvePickup(bookingId!, data),
         onSuccess: () => {
             toast.success("Vehicle Handover Confirmed!");
@@ -130,6 +136,36 @@ export default function StaffPickupsPage() {
             toast.error(error.response?.data?.message || "Failed to confirm handover");
             setIsConfirmOpen(false);
         }
+    });
+
+    const uploadImageMutation = useMutation({
+        mutationFn: (file: File) => {
+            const formData = new FormData();
+            formData.append('file', file);
+            return bookingService.uploadPickupImage(formData);
+        },
+        onSuccess: (data) => {
+            setUploadedImages(prev => [...prev, data]);
+            setUploadError(null);
+            toast.success("Image uploaded successfully");
+        },
+        onError: (error: any) => {
+            setUploadError(error.response?.data?.message || "Failed to upload image");
+            toast.error(error.response?.data?.message || "Failed to upload image");
+        },
+    });
+
+    const deleteImageMutation = useMutation({
+        mutationFn: (fileId: string) => bookingService.deletePickupImage(fileId),
+        onSuccess: (_, fileId) => {
+            setUploadedImages(prev => prev.filter(img => img.fileId !== fileId));
+            toast.success("Image deleted successfully");
+            setDeletingImageId(null);
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || "Failed to delete image");
+            setDeletingImageId(null);
+        },
     });
 
     // --- FORM SETUP ---
@@ -148,6 +184,22 @@ export default function StaffPickupsPage() {
     const isHandoverReady = areAllDocsApproved && watch("odo") > 0 && watch("fuelLevel") !== "";
     const isPickedUp = booking?.status === 'PICKED_UP';
 
+    // --- HANDLERS ---
+    const handleFileSelect = async (file: File) => {
+        setUploadError(null);
+        setIsUploading(true);
+        try {
+            await uploadImageMutation.mutateAsync(file);
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleDeleteImage = (fileId: string) => {
+        setDeletingImageId(fileId);
+        deleteImageMutation.mutate(fileId);
+    };
+
     // --- FORMAT DATE ---
     const formatDate = (dateStr: string) => {
         return new Date(dateStr).toLocaleString('en-US', {
@@ -157,9 +209,11 @@ export default function StaffPickupsPage() {
 
     // --- HANDLERS ---
     const onConfirmHandover = (data: HandoverFormValues) => {
+        const imageIds = uploadedImages.map(img => img.fileId);
         handoverMutation.mutate({
             odo: data.odo,
-            fuelLevel: parseInt(data.fuelLevel)
+            fuelLevel: parseInt(data.fuelLevel),
+            pickupImageIds: imageIds.length > 0 ? imageIds : undefined
         });
     };
 
@@ -449,6 +503,41 @@ export default function StaffPickupsPage() {
                                             )}
                                         />
                                         {errors.fuelLevel && <p className="text-xs text-red-500">{errors.fuelLevel.message}</p>}
+                                    </div>
+
+                                    {/* Pickup Images Section */}
+                                    <div className="space-y-3">
+                                        <Label className="text-sm font-medium flex items-center gap-2">
+                                            <ImageIcon className="h-4 w-4" />
+                                            Vehicle Photos (Optional)
+                                        </Label>
+                                        <p className="text-xs text-muted-foreground">
+                                            Upload photos of the vehicle before handover
+                                        </p>
+
+                                        {/* Upload Zone */}
+                                        {!isPickedUp && (
+                                            <DocumentUploadZone
+                                                onFileSelect={handleFileSelect}
+                                                isUploading={isUploading}
+                                                disabled={isPickedUp}
+                                                error={uploadError}
+                                            />
+                                        )}
+
+                                        {/* Uploaded Images Grid */}
+                                        {uploadedImages.length > 0 && (
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
+                                                {uploadedImages.map((image) => (
+                                                    <PickupImageCard
+                                                        key={image.fileId}
+                                                        image={image}
+                                                        onDelete={handleDeleteImage}
+                                                        isDeleting={deletingImageId === image.fileId}
+                                                    />
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
 
                                     {!isPickedUp && (

@@ -82,6 +82,17 @@ export const AddVehicle = async (req: Request, res: Response) => {
             await redis.del(keys);
         }
 
+        // Invalidate public vehicle cache
+        let cursor = "0";
+        do {
+            const reply = await redis.scan(cursor, "MATCH", "public:vehicles:*", "COUNT", 100);
+            cursor = reply[0];
+            const publicKeys = reply[1];
+            if (publicKeys.length > 0) {
+                await redis.del(publicKeys);
+            }
+        } while (cursor !== "0");
+
         return res.status(StatusCode.CREATED).json({
             message: "Vehicle added successfully. Images are processing in background.",
             data: {
@@ -257,6 +268,17 @@ export const EditVehicle = async (req: Request, res: Response) => {
         if (keys.length > 0) {
             await redis.del(keys);
         }
+
+        // Invalidate public vehicle cache
+        let cursor = "0";
+        do {
+            const reply = await redis.scan(cursor, "MATCH", "public:vehicles:*", "COUNT", 100);
+            cursor = reply[0];
+            const publicKeys = reply[1];
+            if (publicKeys.length > 0) {
+                await redis.del(publicKeys);
+            }
+        } while (cursor !== "0");
 
         return res.status(StatusCode.OK).json({
             message: "Vehicle updated successfully",
@@ -497,6 +519,17 @@ export const DeleteVehicle = async (req: Request, res: Response) => {
         if (keys.length > 0) {
             await redis.del(keys);
         }
+
+        // Invalidate public vehicle cache
+        let cursor = "0";
+        do {
+            const reply = await redis.scan(cursor, "MATCH", "public:vehicles:*", "COUNT", 100);
+            cursor = reply[0];
+            const publicKeys = reply[1];
+            if (publicKeys.length > 0) {
+                await redis.del(publicKeys);
+            }
+        } while (cursor !== "0");
 
         return res.status(StatusCode.OK).json({
             message: "Vehicle deleted successfully"

@@ -42,7 +42,7 @@ export const EmployeeVehiclePricingCard = ({
     const formattedPickupDate = startDate ? format(startDate, 'MMM dd, yyyy') : 'Select date';
     const formattedReturnDate = endDate ? format(endDate, 'MMM dd, yyyy') : 'Select date';
 
-    const isAvailable = vehicle.availability && vehicle.status === 'AVAILABLE';
+    const isAvailable = vehicle.availability;
 
     // Pricing display logic
     const hasDiscount = vehicle.discountPrice > 0 && vehicle.discountPrice < vehicle.baseTotal;

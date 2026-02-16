@@ -4,8 +4,9 @@ export function calculateMultiDayTotalPrice(
   dailyPrice: number
 ) {
   // Normalize to start of day (midnight) to avoid time-based discrepancies
-  const start = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-  const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+  // Normalize to start of day (midnight) using UTC to avoid timezone issues
+  const start = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate()));
+  const end = new Date(Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate()));
 
   // Calculate the difference in milliseconds
   const diffInMs = end.getTime() - start.getTime();

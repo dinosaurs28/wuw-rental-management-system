@@ -4,6 +4,7 @@ import SignInPage from "./pages/auth/SignInPage";
 import EmployeeSignInPage from "./pages/auth/EmployeeSignInPage";
 import BranchManagerSignInPage from "./pages/auth/BranchManagerSignInPage";
 import OtpPage from "./pages/auth/OtpPage";
+import PortalPage from "./pages/auth/PortalPage";
 import { VehiclesPage } from "./pages/VehiclesPage";
 import { VehicleDetailsPage } from "./pages/VehicleDetailsPage";
 import { KycVerificationPage } from "./pages/verification/KycVerificationPage";
@@ -66,6 +67,8 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/vehicles" element={<VehiclesPage />} />
         <Route path="/vehicle/:vehicleId" element={<VehicleDetailsPage />} />
+        <Route path="/portal" element={<PortalPage />} />
+        <Route path="/links" element={<Navigate to="/portal" replace />} />
 
         {/* Public Auth Routes */}
         <Route element={<PublicRoute />}>

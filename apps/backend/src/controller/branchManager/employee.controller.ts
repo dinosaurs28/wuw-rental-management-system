@@ -239,3 +239,39 @@ export const UpdateEmployee = async (req: Request, res: Response) => {
         return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
     }
 }
+
+export const DeleteEmployee = async (req: Request, res: Response) => {
+    const branchId = req.branch_Id;
+    const { employeeId } = req.params;
+
+    try {
+        const user = await prisma.user.findFirst({
+            where: {
+                publicId: employeeId,
+                branchId: branchId,
+                role: Role.STAFF,
+                deletedAt: null
+            }
+        });
+
+        if (!user) {
+            return res.status(StatusCode.NOT_FOUND).json({ message: "Employee not found" });
+        }
+
+        // Soft delete by setting deletedAt
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                deletedAt: new Date()
+            }
+        });
+
+        return res.status(StatusCode.OK).json({
+            message: "Employee deleted successfully"
+        });
+
+    } catch (error) {
+        console.error("DeleteEmployee Error:", error);
+        return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
+    }
+}

@@ -6,10 +6,16 @@ export const useVehicleDetails = (
     startDate: Date | null,
     endDate: Date | null
 ) => {
+    const formatDate = (date: Date) => {
+        const offset = date.getTimezoneOffset();
+        const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+        return localDate.toISOString().split('T')[0];
+    };
+
     const params: VehicleDetailsParams = {
         vehicleId,
-        startDate: startDate ? new Date(startDate).toISOString().split('T')[0] : undefined,
-        endDate: endDate ? new Date(endDate).toISOString().split('T')[0] : undefined,
+        startDate: startDate ? formatDate(new Date(startDate)) : undefined,
+        endDate: endDate ? formatDate(new Date(endDate)) : undefined,
     };
 
     return useQuery({

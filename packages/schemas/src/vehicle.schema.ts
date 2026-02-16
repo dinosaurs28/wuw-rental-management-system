@@ -1,7 +1,7 @@
-import {z} from "zod";
+import { z } from "zod";
 
-export const getVehicleDetailsSchema=z.object({
-    id:z.string().min(16,"Vehicle ID length is invalid.")
+export const getVehicleDetailsSchema = z.object({
+  id: z.string().min(16, "Vehicle ID length is invalid.")
 })
 
 export const bookingSummarySchema = z.object({
@@ -31,7 +31,8 @@ export const editVehicleSchema = createVehicleSchema.partial().extend({
 
 export const pickUpVehicleSchema = z.object({
   odo: z.coerce.number().min(0),
-  fuelLevel: z.coerce.number().min(0)
+  fuelLevel: z.coerce.number().min(0),
+  pickupImageIds: z.array(z.string().min(1)).optional()
 })
 
 export const createDamageReportSchema = z.object({
@@ -51,10 +52,17 @@ export const closeDamageReportSchema = z.object({
 });
 
 export const createDepositRuleSchema = z.object({
-    categoryId: z.coerce.number().min(1, "Category is required"),
-    amount: z.coerce.number().min(0, "Amount must be positive"),
+  categoryId: z.coerce.number().min(1, "Category is required"),
+  amount: z.coerce.number().min(0, "Amount must be positive"),
 });
 
 export const updateDepositRuleSchema = z.object({
-    amount: z.coerce.number().min(0, "Amount must be positive"),
+  amount: z.coerce.number().min(0, "Amount must be positive"),
+});
+
+export const pricingDiscountSlabSchema = z.object({
+  categoryId: z.number().int().positive(),
+  days: z.number().int().min(1),
+  multiplier: z.number().min(0).max(1), // Assuming 0.1to 1.0 (e.g. 0.9 = 10% off) or 0-100? The prisma model says Decimal. Usually multipliers are like 0.9 for 10% off. Let's assume user inputs Multiplier factor.
+  // User said "multiplier Decimal".
 });

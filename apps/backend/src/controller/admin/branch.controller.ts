@@ -59,6 +59,7 @@ export const CreateBranch = async (req: Request, res: Response) => {
 
         const cacheKey = "admin:all_branches";
         await redis.del(cacheKey);
+        await redis.del("branches");
 
         return res.status(StatusCode.CREATED).json({
             message: "Branch and Manager created successfully",
@@ -189,6 +190,7 @@ export const EditBranch = async (req: Request, res: Response) => {
 
         // Invalidate Cache
         await redis.del("admin:all_branches");
+        await redis.del("branches");
 
         return res.status(StatusCode.OK).json({
             message: "Branch updated successfully"
@@ -234,6 +236,7 @@ export const DeleteBranch = async (req: Request, res: Response) => {
         await cleanupQueue.add("delete-branch-cascading", { branchId: branch.id });
 
         await redis.del("admin:all_branches");
+        await redis.del("branches");
 
         return res.status(StatusCode.OK).json({
             message: "Branch deleted successfully. Associated data will be removed in the background."

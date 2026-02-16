@@ -195,6 +195,17 @@ async function handleBookingExpiry(bookingPublicId: string): Promise<void> {
             }
         }
 
+        // Invalidate public vehicle cache
+        let cursor = "0";
+        do {
+            const reply = await redis.scan(cursor, "MATCH", "public:vehicles:*", "COUNT", 100);
+            cursor = reply[0];
+            const keys = reply[1];
+            if (keys.length > 0) {
+                await redis.del(keys);
+            }
+        } while (cursor !== "0");
+
         console.log(`[BookingExpiry] Successfully cancelled expired booking: ${bookingPublicId}`);
     } catch (error) {
         console.error(`[BookingExpiry] Error processing booking ${bookingPublicId}:`, error);

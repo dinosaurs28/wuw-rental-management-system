@@ -17,7 +17,7 @@ const ACCEPTED_TYPES = {
     'application/pdf': ['.pdf'],
 };
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB as per docs
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB as per docs
 
 export const DocumentUploadZone = ({
     onFileSelect,
@@ -116,7 +116,7 @@ export const DocumentUploadZone = ({
                                 JPG, PNG, PDF
                             </span>
                             <span>•</span>
-                            <span>Max 5MB per file</span>
+                            <span>Max 15MB per file</span>
                         </div>
                     </>
                 )}

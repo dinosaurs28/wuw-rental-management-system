@@ -253,12 +253,12 @@ export const VehicleDetailsPage = () => {
                             <span
                                 className={cn(
                                     "px-3 py-1 text-xs font-semibold rounded-full",
-                                    (vehicle.availability && vehicle.status === 'AVAILABLE')
+                                    (vehicle.availability)
                                         ? "bg-emerald-100 text-emerald-700"
                                         : "bg-red-100 text-red-700"
                                 )}
                             >
-                                {(vehicle.availability && vehicle.status === 'AVAILABLE') ? 'Available' : 'Not Available'}
+                                {(vehicle.availability) ? 'Available' : 'Not Available'}
                             </span>
                         </div>
                     </div>

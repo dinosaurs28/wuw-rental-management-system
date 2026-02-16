@@ -8,8 +8,9 @@ import { GetActiveBookings, GetPendingApprovals } from "../../controller/branchM
 import { GetDamageReports, CloseDamageReport, GetMinimalDamageReport, GetDamageReportList, CheckDamagePaymentStatus } from "../../controller/branchManager/damage.controller.js";
 import { AddVehicle, EditVehicle, GetInsuranceExpiryReport, GetVehicleById, GetVehicles, DeleteVehicle, GetVehicleCategories } from "../../controller/branchManager/vehicle.controller.js";
 import { GetStaffAuditLogs } from "../../controller/branchManager/audit.controller.js";
-import { CreateEmployee, GetEmployee, SearchEmployee, UpdateEmployee } from "../../controller/branchManager/employee.controller.js";
+import { CreateEmployee, GetEmployee, SearchEmployee, UpdateEmployee, DeleteEmployee } from "../../controller/branchManager/employee.controller.js";
 import { CreateDepositRule, GetDepositRules, UpdateDepositRule, DeleteDepositRule } from "../../controller/branchManager/deposit.controller.js";
+import { GetDiscounts, CreateDiscount, UpdateDiscount, DeleteDiscount } from "../../controller/branchManager/pricing.controller.js";
 import { GetGSTRule, CreateOrUpdateGSTRule } from "../../controller/branchManager/gst.controller.js";
 import { upload } from "../../middlewares/upload.middleware.js";
 
@@ -37,10 +38,17 @@ router.get("/dashboard/employees", ManagerCheck, SearchEmployee)
 router.get("/dashboard/employees/:employeeId", ManagerCheck, GetEmployee)
 router.post("/dashboard/employees", ManagerCheck, CreateEmployee)
 router.put("/dashboard/employees/:employeeId", ManagerCheck, UpdateEmployee)
+router.delete("/dashboard/employees/:employeeId", ManagerCheck, DeleteEmployee)
 router.get("/dashboard/deposit-rules", ManagerCheck, GetDepositRules)
 router.post("/dashboard/deposit-rules", ManagerCheck, CreateDepositRule)
 router.put("/dashboard/deposit-rules/:id", ManagerCheck, UpdateDepositRule)
 router.delete("/dashboard/deposit-rules/:id", ManagerCheck, DeleteDepositRule)
+
+router.get("/dashboard/pricing", ManagerCheck, GetDiscounts)
+router.post("/dashboard/pricing", ManagerCheck, CreateDiscount)
+router.put("/dashboard/pricing/:id", ManagerCheck, UpdateDiscount)
+router.delete("/dashboard/pricing/:id", ManagerCheck, DeleteDiscount)
+
 router.get("/gst", ManagerCheck, GetGSTRule)
 router.post("/gst", ManagerCheck, CreateOrUpdateGSTRule)
 

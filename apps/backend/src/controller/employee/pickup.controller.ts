@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
-import { prisma, BookingStatus, KycType, KycStatus, VehicleStatus } from "@repo/database/client";
+import { prisma, BookingStatus, KycType, KycStatus, VehicleStatus, BookingPhotoType } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
 import { pickUpVehicleSchema } from "@repo/schemas";
 
@@ -85,6 +85,25 @@ export const PickupController = async (req: Request, res: Response) => {
                     fuelLevel: parsedVehicleDetails.fuelLevel
                 }
             });
+
+            if (parsedVehicleDetails.pickupImageIds && parsedVehicleDetails.pickupImageIds.length > 0) {
+                const files = await tx.fileObject.findMany({
+                    where: { publicId: { in: parsedVehicleDetails.pickupImageIds } }
+                });
+
+                if (files.length !== parsedVehicleDetails.pickupImageIds.length) {
+                    throw new Error("Invalid pickup image IDs provided");
+                }
+
+                await tx.bookingPhoto.createMany({
+                    data: files.map(f => ({
+                        publicId: createID(),
+                        bookingId: booking.id,
+                        fileId: f.id,
+                        type: BookingPhotoType.PRE_DELIVERY
+                    }))
+                });
+            }
 
             await tx.staffActivityLog.create({
                 data: {

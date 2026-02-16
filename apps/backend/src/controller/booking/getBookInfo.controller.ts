@@ -298,6 +298,17 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     }
     await pipeline.exec();
 
+    // Invalidate public vehicle cache
+    let cursor = "0";
+    do {
+      const reply = await redis.scan(cursor, "MATCH", "public:vehicles:*", "COUNT", 100);
+      cursor = reply[0];
+      const keys = reply[1];
+      if (keys.length > 0) {
+        await redis.del(keys);
+      }
+    } while (cursor !== "0");
+
     return res.status(StatusCode.OK).json({
       message: "Summary created successfully",
       holdId,

@@ -7,6 +7,7 @@ import { BookingController } from "../../controller/employee/booking.controller.
 import { returnController } from "../../controller/employee/return.controller.js";
 import { GetBookingKyc, VerifyKyc } from "../../controller/employee/kyc.controller.js";
 import { PickupController } from "../../controller/employee/pickup.controller.js";
+import { UploadPickupImage, DeletePickupImage } from "../../controller/employee/pickupAction.controller.js";
 import { CompleteReturn, UploadReturnImage, DeleteReturnImage } from "../../controller/employee/returnAction.controller.js";
 import { InitiateWalkin } from "../../controller/employee/walkin/initiate.controller.js";
 import { VerifyWalkinOtp } from "../../controller/employee/walkin/verify.controller.js";
@@ -28,6 +29,8 @@ router.get("/return", EmployeeCheck, returnController)
 router.get("/kyc/:bookingId", EmployeeCheck, GetBookingKyc)
 router.patch("/kyc/:kycId/status", EmployeeCheck, VerifyKyc)
 router.get("/pickup/:bookingId", EmployeeCheck, GetBookingDetails)
+router.post("/pickup/upload", EmployeeCheck, upload.single('file'), UploadPickupImage);
+router.delete("/pickup/image/:publicId", EmployeeCheck, DeletePickupImage);
 router.post("/pickup/:bookingId", EmployeeCheck, PickupController)
 router.post("/return/upload", EmployeeCheck, upload.single('file'), UploadReturnImage)
 router.delete("/return/image/:publicId", EmployeeCheck, DeleteReturnImage)

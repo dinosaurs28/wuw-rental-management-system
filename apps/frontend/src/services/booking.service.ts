@@ -192,8 +192,22 @@ export const bookingService = {
         }
     },
 
+    // Upload Pickup Image
+    uploadPickupImage: async (formData: FormData) => {
+        const response = await apiClient.post<{ fileId: string; url: string }>("/employee/pickup/upload", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+        return response.data;
+    },
+
+    // Delete Pickup Image
+    deletePickupImage: async (publicId: string) => {
+        const response = await apiClient.delete(`/employee/pickup/image/${publicId}`);
+        return response.data;
+    },
+
     // Approve Pickup
-    approvePickup: async (bookingId: string, data: { odo: number; fuelLevel: number }) => {
+    approvePickup: async (bookingId: string, data: { odo: number; fuelLevel: number; pickupImageIds?: string[] }) => {
         const response = await apiClient.post(`/employee/pickup/${bookingId}`, data);
         return response.data;
     },

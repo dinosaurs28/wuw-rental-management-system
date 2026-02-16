@@ -50,4 +50,8 @@ export const branchEmployeeService = {
     update: async (id: string, data: UpdateEmployeeInput): Promise<void> => {
         await apiClient.put(`/branchManager/dashboard/employees/${id}`, data);
     },
+
+    delete: async (id: string): Promise<void> => {
+        await apiClient.delete(`/branchManager/dashboard/employees/${id}`);
+    },
 };
