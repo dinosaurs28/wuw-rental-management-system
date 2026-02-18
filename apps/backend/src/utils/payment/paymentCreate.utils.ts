@@ -22,7 +22,7 @@ export async function initiatePhonePePayment(amount: number, customBaseRedirectU
         merchantId: MERCHANT_ID,
         merchantTransactionId: transactionId,
         merchantUserId: "MUID-" + uuidv4().toString().slice(0, 6),
-        amount: amount * 100,
+        amount: Math.round(amount * 100),
         redirectUrl: finalRedirectUrl,
         redirectMode: "REDIRECT",
         callbackUrl: finalRedirectUrl,
@@ -50,6 +50,8 @@ export async function initiatePhonePePayment(amount: number, customBaseRedirectU
         return { ...response.data.data, merchantTransactionId: transactionId };
 
     } catch (error: any) {
-        console.error("Payment Error:", error.response ? error.response.data : error.message);
+        const errorData = error.response ? error.response.data : error.message;
+        console.error("Payment Error:", errorData);
+        throw new Error(errorData?.message || "Failed to initiate payment");
     }
 }

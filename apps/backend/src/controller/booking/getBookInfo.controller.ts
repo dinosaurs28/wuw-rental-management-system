@@ -204,9 +204,20 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     if (parsed.data.payment_type === "ONLINE") {
       const redirectUrl = process.env.REDIRECT_URL_PAY
       const customerRedirectUrl = `${redirectUrl}/booking/status`
-      const paymentDetails = await initiatePhonePePayment(grandFinalTotal, customerRedirectUrl)
-      transactionId = paymentDetails.merchantTransactionId
-      paymentURL = paymentDetails.instrumentResponse.redirectInfo.url
+      try {
+        const paymentDetails = await initiatePhonePePayment(grandFinalTotal, customerRedirectUrl)
+        if (!paymentDetails || !paymentDetails.merchantTransactionId) {
+          throw new Error("Invalid payment details received")
+        }
+        transactionId = paymentDetails.merchantTransactionId
+        paymentURL = paymentDetails.instrumentResponse.redirectInfo.url
+      } catch (error: any) {
+        console.error("Error initiating payment:", error);
+        return res.status(StatusCode.BAD_REQUEST).json({
+          success: false,
+          message: error.message || "Failed to initiate payment gateway",
+        });
+      }
     } else {
       transactionId = createID()
       paymentURL = ""

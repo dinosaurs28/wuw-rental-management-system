@@ -396,10 +396,21 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
             if (paymentMethod === "ONLINE_RAZORPAY") {
                 const customRedirectUrl = `${process.env.FRONTEND_REDIRECT_URL}/manager/payment/fine-status`;
 
-                // Initiate Payment First (Network IO)
-                const responseIdx = await initiatePhonePePayment(dueAmount, customRedirectUrl);
-                onlineTransactionId = responseIdx?.merchantTransactionId;
-                paymentUrl = responseIdx?.instrumentResponse?.redirectInfo?.url;
+                try {
+                    // Initiate Payment First (Network IO)
+                    const responseIdx = await initiatePhonePePayment(dueAmount, customRedirectUrl);
+                    if (!responseIdx || !responseIdx.merchantTransactionId) {
+                        throw new Error("Invalid payment response from gateway");
+                    }
+                    onlineTransactionId = responseIdx.merchantTransactionId;
+                    paymentUrl = responseIdx.instrumentResponse?.redirectInfo?.url;
+                } catch (error: any) {
+                    console.error("Error initiating damage fine payment:", error);
+                    return res.status(StatusCode.BAD_REQUEST).json({
+                        success: false,
+                        message: error.message || "Failed to initiate payment gateway",
+                    });
+                }
             }
         }
 

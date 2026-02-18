@@ -273,9 +273,20 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
             const frontendUrl = process.env.REDIRECT_URL_PAY
             const employeeRedirectBase = `${frontendUrl}/employee/booking/status`;
 
-            const paymentDetails = await initiatePhonePePayment(grandFinalTotal, employeeRedirectBase);
-            transactionId = paymentDetails.merchantTransactionId;
-            paymentURL = paymentDetails.instrumentResponse.redirectInfo.url;
+            try {
+                const paymentDetails = await initiatePhonePePayment(grandFinalTotal, employeeRedirectBase);
+                if (!paymentDetails || !paymentDetails.merchantTransactionId) {
+                    throw new Error("Invalid payment details received from gateway");
+                }
+                transactionId = paymentDetails.merchantTransactionId;
+                paymentURL = paymentDetails.instrumentResponse.redirectInfo.url;
+            } catch (error: any) {
+                console.error("Error initiating employee booking payment:", error);
+                return res.status(StatusCode.BAD_REQUEST).json({
+                    success: false,
+                    message: error.message || "Failed to initiate payment gateway",
+                });
+            }
         } else {
             transactionId = `CASH_${createID()}`;
         }
