@@ -2,124 +2,167 @@ import { Navbar } from "./Navbar";
 import { SearchForm } from "./SearchForm";
 
 import { motion } from "motion/react";
-import { Globe, Car, Headphones } from "lucide-react";
+import { Globe, Car, Headphones, Star, ArrowRight } from "lucide-react";
 import { Footer } from "./Footer";
+import { Link } from "react-router-dom";
 
 export const LandingPage = () => {
     return (
-        <div className="min-h-screen flex flex-col bg-white">
-            <Navbar />
+        <div className="relative min-h-screen font-sans selection:bg-orange-500/30 bg-zinc-950">
+            {/* Global Fixed Background Car Image */}
+            <div 
+                className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-30"
+                style={{
+                    backgroundImage: 'url("https://images.unsplash.com/photo-1614200187524-dc4b892acf16?q=80&w=3000&auto=format&fit=crop")',
+                }}
+            />
+            <div className="fixed inset-0 z-0 bg-gradient-to-b from-zinc-950/50 via-zinc-950/80 to-zinc-950" />
+            
+            {/* Main Content Wrapper */}
+            <div className="relative z-10 flex flex-col min-h-screen">
+                <Navbar />
 
-            <main className="flex-1">
-                {/* Hero Section */}
-                <section className="relative min-h-[560px] md:min-h-[600px] w-full overflow-hidden bg-zinc-950">
-                    {/* Background Image */}
-                    <div
-                        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                        style={{
-                            backgroundImage: 'url("https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?q=80&w=2694&auto=format&fit=crop")',
-                        }}
-                    />
-                    {/* Dark Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/95 via-zinc-950/70 to-zinc-950/40" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
+                <main className="flex-1 w-full max-w-[1600px] mx-auto overflow-hidden">
+                    {/* Interlocking Layout Wrapper */}
+                    <div className="relative pt-32 px-4 md:px-6 lg:px-8 pb-32">
+                        
+                        {/* Hero Massive Card */}
+                        <div className="relative rounded-[3rem] md:rounded-[4rem] overflow-hidden bg-zinc-950 min-h-[85vh] flex flex-col items-center pt-24 pb-48 px-6 md:px-16 text-center shadow-2xl z-10 border border-zinc-800">
+                            {/* Background subtle gradient / effect */}
+                            <motion.div
+                                initial={{ opacity: 0, scale: 1.1 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ duration: 1.5, ease: "easeOut" }}
+                                className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-50"
+                                style={{
+                                    backgroundImage: 'url("https://images.unsplash.com/photo-1542282088-fe8426682b8f?q=80&w=2787&auto=format&fit=crop")',
+                                }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/30 via-zinc-950/70 to-zinc-950 z-0" />
 
-                    {/* Hero Content */}
-                    <div className="relative z-10 container mx-auto px-4 lg:px-8 pt-16 md:pt-24 pb-32 md:pb-40">
-                        <motion.div
-                            initial={{ opacity: 0, y: 24 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.6, ease: "easeOut" }}
-                            className="max-w-2xl"
-                        >
-                            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.1]">
-                                Premium mobility.
-                                <br />
-                                <span className="text-orange-500">Anywhere, anytime.</span>
-                            </h1>
-                            <motion.p
-                                initial={{ opacity: 0, y: 16 }}
+                            <div className="relative z-10 flex flex-col items-center justify-center flex-1 w-full max-w-6xl mx-auto">
+                            <motion.h1
+                                initial={{ opacity: 0, y: 40 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.6, delay: 0.15, ease: "easeOut" }}
-                                className="mt-5 text-base sm:text-lg text-zinc-300 max-w-lg leading-relaxed"
+                                transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                                className="font-serif text-6xl md:text-8xl lg:text-[7rem] leading-[0.9] text-zinc-50 max-w-5xl tracking-tight"
                             >
-                                Experience the difference with our luxury fleet. From executive sedans to spacious SUVs, find your perfect drive.
+                                Epic journeys <br className="hidden md:block" />
+                                built around <span className="text-orange-500 italic pr-4">you.</span>
+                            </motion.h1>
+
+                            <motion.p
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                                className="mt-10 text-xl font-medium text-zinc-400 max-w-2xl leading-relaxed"
+                            >
+                                Uncompromising luxury, meticulously curated. Experience the road like never before with our premium selection of exotic and executive vehicles.
                             </motion.p>
-                        </motion.div>
+                        </div>
                     </div>
-                </section>
 
-                {/* Search Form - Overlapping Hero */}
-                <div className="relative z-20 container mx-auto px-4 lg:px-8 -mt-20 md:-mt-16 mb-16 md:mb-20">
-                    <motion.div
-                        initial={{ opacity: 0, y: 32 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
-                    >
-                        <SearchForm />
-                    </motion.div>
-                </div>
+                    {/* Overlapping Content Box (White Section directly hugging the dark hero) */}
+                    <div className="relative z-20 w-[95%] mx-auto -mt-32 md:-mt-40 pt-16 md:pt-24 pb-24 px-6 md:px-16 rounded-[3rem] md:rounded-[4rem] bg-zinc-50 shadow-[0_-20px_40px_-15px_rgba(0,0,0,0.3)] border border-zinc-200/50">
+                        
+                        {/* Search Module nested inside the white block */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 50 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                            className="-mt-32 md:-mt-48 mb-20 md:mb-32 max-w-5xl mx-auto"
+                        >
+                            <SearchForm />
+                        </motion.div>
 
-                {/* Features Section */}
-                <section className="py-16 md:py-20 bg-white">
-                    <div className="container mx-auto px-4 lg:px-8">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
-                            {/* Feature 1 */}
+                        {/* Features Header */}
+                        <div className="flex flex-col md:flex-row items-end justify-between mb-16 md:mb-24 gap-8 max-w-6xl mx-auto">
+                            <div className="max-w-3xl">
+                                <h2 className="font-serif text-5xl md:text-7xl text-zinc-950 mb-6 tracking-tight leading-[0.95]">
+                                    The new standard <br />
+                                    of <span className="text-orange-500 italic pr-2">excellence.</span>
+                                </h2>
+                                <p className="text-xl text-zinc-600 leading-relaxed font-medium">
+                                    We don't just rent cars. We deliver an impeccable experience seamlessly crafted for those who demand the absolute best.
+                                </p>
+                            </div>
+                            <Link to="#" className="group hidden md:flex items-center gap-2 text-zinc-900 font-bold text-lg hover:text-orange-600 transition-colors pb-4">
+                                Explore Our Fleet
+                                <ArrowRight className="size-6 group-hover:translate-x-1 transition-transform" />
+                            </Link>
+                        </div>
+
+                        {/* Staggered Grid Layout for Features */}
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 max-w-6xl mx-auto">
+                            {/* Feature 1 - Spans 7 columns */}
                             <motion.div
-                                initial={{ opacity: 0, y: 20 }}
+                                initial={{ opacity: 0, y: 30 }}
                                 whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.5 }}
-                                className="flex flex-col items-start"
+                                viewport={{ once: true, margin: "-100px" }}
+                                transition={{ duration: 0.6, ease: "easeOut" }}
+                                className="md:col-span-7 group flex flex-col items-start bg-zinc-100 rounded-[2.5rem] p-10 lg:p-14 transition-all duration-300 border border-transparent hover:border-zinc-200"
                             >
-                                <div className="size-12 rounded-2xl bg-orange-100 flex items-center justify-center text-orange-600 mb-5">
-                                    <Globe className="size-6" strokeWidth={1.5} />
+                                <div className="size-20 rounded-[1.5rem] bg-white flex items-center justify-center text-zinc-900 mb-10 shadow-sm border border-zinc-200 group-hover:scale-105 transition-all duration-300">
+                                    <Globe className="size-10" strokeWidth={1.5} />
                                 </div>
-                                <h3 className="text-lg font-bold text-zinc-900 mb-2">Global Reach</h3>
-                                <p className="text-sm text-zinc-600 leading-relaxed">
-                                    Access premium mobility at over 2,000+ locations worldwide. From airports to city centers, we're where you need us.
+                                <h3 className="font-serif text-4xl mb-6 text-zinc-950 tracking-tight">Global Access.</h3>
+                                <p className="text-lg text-zinc-600 leading-relaxed font-medium max-w-md">
+                                    Exclusive airport lounges and downtown hubs in over 2,000 locations worldwide. Always ready when you arrive.
                                 </p>
                             </motion.div>
 
-                            {/* Feature 2 */}
+                            {/* Feature 2 - Spans 5 columns */}
                             <motion.div
-                                initial={{ opacity: 0, y: 20 }}
+                                initial={{ opacity: 0, y: 30 }}
                                 whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.5, delay: 0.1 }}
-                                className="flex flex-col items-start"
+                                viewport={{ once: true, margin: "-100px" }}
+                                transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
+                                className="md:col-span-5 group flex flex-col items-start bg-zinc-900 rounded-[2.5rem] p-10 lg:p-14 relative overflow-hidden"
                             >
-                                <div className="size-12 rounded-2xl bg-orange-100 flex items-center justify-center text-orange-600 mb-5">
-                                    <Car className="size-6" strokeWidth={1.5} />
+                                <div className="absolute top-0 right-0 p-8">
+                                    <Star className="size-8 text-orange-500 fill-orange-500/20" />
                                 </div>
-                                <h3 className="text-lg font-bold text-zinc-900 mb-2">Premium Fleet</h3>
-                                <p className="text-sm text-zinc-600 leading-relaxed">
-                                    Drive the latest models from top brands like BMW, Mercedes-Benz, and Audi. Experience luxury in every mile.
+                                <div className="size-20 rounded-[1.5rem] bg-zinc-800 flex items-center justify-center text-white mb-10 shadow-lg border border-zinc-700/50 group-hover:scale-105 group-hover:bg-orange-500 group-hover:border-orange-400 group-hover:shadow-orange-500/20 transition-all duration-300">
+                                    <Car className="size-10" strokeWidth={1.5} />
+                                </div>
+                                <h3 className="font-serif text-4xl mb-6 text-white tracking-tight">Pristine Fleet.</h3>
+                                <p className="text-lg text-zinc-400 leading-relaxed font-medium">
+                                    From Porsche to Mercedes-AMG. Every vehicle is deep-cleaned and meticulously inspected before the keys touch your hands.
                                 </p>
                             </motion.div>
 
-                            {/* Feature 3 */}
+                            {/* Feature 3 - Spans 12 columns (Full width banner style) */}
                             <motion.div
-                                initial={{ opacity: 0, y: 20 }}
+                                initial={{ opacity: 0, y: 30 }}
                                 whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.5, delay: 0.2 }}
-                                className="flex flex-col items-start"
+                                viewport={{ once: true, margin: "-100px" }}
+                                transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
+                                className="md:col-span-12 group flex flex-col md:flex-row items-center gap-10 bg-orange-500 rounded-[3rem] p-10 lg:p-16 shadow-lg shadow-orange-500/20 mt-4 overflow-hidden relative"
                             >
-                                <div className="size-12 rounded-2xl bg-orange-100 flex items-center justify-center text-orange-600 mb-5">
-                                    <Headphones className="size-6" strokeWidth={1.5} />
+                                <div className="absolute top-20 right-20 size-[30rem] rounded-full bg-white/10 blur-3xl" />
+                                
+                                <div className="size-24 shrink-0 rounded-[2rem] bg-white flex items-center justify-center text-orange-600 shadow-xl group-hover:scale-105 transition-all duration-300 relative z-10">
+                                    <Headphones className="size-12" strokeWidth={1.5} />
                                 </div>
-                                <h3 className="text-lg font-bold text-zinc-900 mb-2">Exceptional Service</h3>
-                                <p className="text-sm text-zinc-600 leading-relaxed">
-                                    Enjoy 24/7 dedicated customer support and a seamless rental experience tailored to your specific needs.
-                                </p>
+                                <div className="flex-1 relative z-10 text-center md:text-left">
+                                    <h3 className="font-serif text-4xl lg:text-5xl font-bold text-white mb-4 tracking-tight">White-Glove Support.</h3>
+                                    <p className="text-xl text-orange-100 leading-relaxed font-medium max-w-3xl">
+                                        A dedicated concierge team available 24/7. We anticipate your needs so you can focus entirely on the drive.
+                                    </p>
+                                </div>
+                                <div className="relative z-10 mt-6 md:mt-0">
+                                    <Link to="#" className="px-8 py-5 bg-white text-orange-600 rounded-full font-bold text-lg hover:bg-zinc-950 hover:text-white transition-colors flex items-center gap-2">
+                                        Contact Concierge
+                                    </Link>
+                                </div>
                             </motion.div>
                         </div>
                     </div>
-                </section>
+                </div>
             </main>
 
             <Footer />
+            </div>
         </div>
     );
 };

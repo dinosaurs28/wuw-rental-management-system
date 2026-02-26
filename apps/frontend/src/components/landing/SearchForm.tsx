@@ -20,6 +20,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { motion } from "motion/react";
 
 export const SearchForm = () => {
     const navigate = useNavigate();
@@ -41,138 +42,160 @@ export const SearchForm = () => {
     const isFormValid = branchPublicId && pickupDate && returnDate;
 
     return (
-        <div className="w-full max-w-5xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-2xl shadow-black/10 p-5 md:p-6 border border-zinc-100">
-                {/* Form Flex Container */}
-                <div className="flex flex-col md:flex-row gap-4 md:gap-3">
+        <div className="w-full max-w-5xl mx-auto relative group z-10">
+            {/* Glowing background effect */}
+            <div className="absolute -inset-4 bg-zinc-200/50 rounded-full blur-2xl opacity-40 group-hover:opacity-100 transition duration-1000"></div>
+            
+            {/* Main Unified Pill Container */}
+            <div className="relative bg-white rounded-[2rem] md:rounded-full shadow-2xl p-2 md:p-3 border border-zinc-100">
+                <div className="flex flex-col md:flex-row items-center divide-y md:divide-y-0 md:divide-x divide-zinc-200">
 
                     {/* Branch Selection */}
-                    <div className="flex-1 min-w-0">
-                        <label className="block text-[11px] font-semibold text-zinc-500 uppercase tracking-wider pl-1 mb-2">
-                            Branch Location
-                        </label>
-                        <Select
-                            value={branchPublicId || ""}
-                            onValueChange={(value: string) => setSearchCriteria({ branchPublicId: value })}
-                            disabled={isLoading || isError}
-                        >
-                            <SelectTrigger className="h-12 w-full bg-zinc-100 border-0 rounded-xl text-left font-medium text-zinc-900 hover:bg-zinc-200/70 transition-colors focus:ring-2 focus:ring-orange-500 focus:ring-offset-0">
-                                <div className="flex items-center gap-3">
-                                    <MapPin className="size-4 text-zinc-400 shrink-0" />
-                                    <SelectValue placeholder={isLoading ? "Loading..." : "Select branch"} />
-                                </div>
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl border-zinc-200">
-                                {branches?.map((branch) => (
-                                    <SelectItem
-                                        key={branch.publicId}
-                                        value={branch.publicId}
-                                        className="rounded-lg"
-                                    >
-                                        {branch.name}
-                                    </SelectItem>
-                                ))}
-                                {!isLoading && (!branches || branches.length === 0) && (
-                                    <div className="p-3 text-sm text-zinc-500">No branches found</div>
-                                )}
-                            </SelectContent>
-                        </Select>
+                    <div className="flex-1 min-w-0 w-full hover:bg-zinc-50 rounded-[1.5rem] md:rounded-full transition-colors">
+                        <div className="px-6 py-3">
+                            <label className="block text-[11px] font-bold text-zinc-800 uppercase tracking-widest mb-1 cursor-pointer">
+                                Location
+                            </label>
+                            <Select
+                                value={branchPublicId || ""}
+                                onValueChange={(value: string) => setSearchCriteria({ branchPublicId: value })}
+                                disabled={isLoading || isError}
+                            >
+                                <SelectTrigger className="h-8 w-full bg-transparent border-0 shadow-none p-0 text-left font-medium text-zinc-500 hover:bg-transparent focus:ring-0 [&>svg]:text-orange-500 [&>svg]:size-5">
+                                    <div className="flex items-center gap-2 text-base md:text-lg">
+                                        <MapPin className="size-5 shrink-0 text-zinc-400" />
+                                        <div className="truncate">
+                                            <SelectValue placeholder={isLoading ? "Loading..." : "Where are you going?"} />
+                                        </div>
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent className="rounded-3xl border-zinc-200 p-2 shadow-2xl mt-4">
+                                    {branches?.map((branch) => (
+                                        <SelectItem
+                                            key={branch.publicId}
+                                            value={branch.publicId}
+                                            className="rounded-2xl py-3 px-4 cursor-pointer font-medium focus:bg-zinc-100 focus:text-zinc-900"
+                                        >
+                                            {branch.name}
+                                        </SelectItem>
+                                    ))}
+                                    {!isLoading && (!branches || branches.length === 0) && (
+                                        <div className="p-4 text-sm text-center text-zinc-500">No locations available</div>
+                                    )}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
 
                     {/* Pickup Date */}
-                    <div className="w-full md:w-44">
-                        <label className="block text-[11px] font-semibold text-zinc-500 uppercase tracking-wider pl-1 mb-2">
-                            Pickup Date
-                        </label>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    className={cn(
-                                        "h-12 w-full justify-start text-left font-medium bg-zinc-100 border-0 rounded-xl hover:bg-zinc-200/70 transition-colors focus:ring-2 focus:ring-orange-500 focus:ring-offset-0",
-                                        !pickupDate && "text-zinc-500"
-                                    )}
-                                >
-                                    <CalendarIcon className="mr-3 size-4 text-zinc-400" />
-                                    {pickupDate ? (
-                                        <span className="text-zinc-900">{format(pickupDate, "MMM dd, yyyy")}</span>
-                                    ) : (
-                                        <span>Select date</span>
-                                    )}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0 rounded-xl border-zinc-200" align="start">
-                                <Calendar
-                                    mode="single"
-                                    selected={pickupDate || undefined}
-                                    onSelect={(date) => setSearchCriteria({ pickupDate: date })}
-                                    initialFocus
-                                    disabled={(date) => {
-                                        const today = new Date();
-                                        today.setHours(0, 0, 0, 0);
-                                        return date < today;
-                                    }}
-                                />
-                            </PopoverContent>
-                        </Popover>
+                    <div className="w-full md:w-[280px] hover:bg-zinc-50 rounded-[1.5rem] md:rounded-full transition-colors">
+                        <div className="px-6 py-3">
+                            <label className="block text-[11px] font-bold text-zinc-800 uppercase tracking-widest mb-1 cursor-pointer">
+                                Pick-up
+                            </label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        className={cn(
+                                            "h-8 w-full justify-start text-left bg-transparent hover:bg-transparent border-0 shadow-none p-0 focus:ring-0 text-base md:text-lg hover:text-orange-600 transition-colors",
+                                            !pickupDate ? "text-zinc-500 font-medium" : "text-zinc-900 font-semibold"
+                                        )}
+                                    >
+                                        <div className="text-zinc-400 mr-2">
+                                            <CalendarIcon className="size-5" />
+                                        </div>
+                                        {pickupDate ? (
+                                            <span className="truncate">{format(pickupDate, "MMM dd, yyyy")}</span>
+                                        ) : (
+                                            <span className="truncate">Add dates</span>
+                                        )}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-2 rounded-3xl border-zinc-200 shadow-2xl mt-4" align="center">
+                                    <Calendar
+                                        mode="single"
+                                        selected={pickupDate || undefined}
+                                        onSelect={(date) => setSearchCriteria({ pickupDate: date })}
+                                        initialFocus
+                                        className="p-3 bg-white rounded-2xl"
+                                        disabled={(date) => {
+                                            const today = new Date();
+                                            today.setHours(0, 0, 0, 0);
+                                            return date < today;
+                                        }}
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
                     </div>
 
                     {/* Return Date */}
-                    <div className="w-full md:w-44">
-                        <label className="block text-[11px] font-semibold text-zinc-500 uppercase tracking-wider pl-1 mb-2">
-                            Return Date
-                        </label>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    className={cn(
-                                        "h-12 w-full justify-start text-left font-medium bg-zinc-100 border-0 rounded-xl hover:bg-zinc-200/70 transition-colors focus:ring-2 focus:ring-orange-500 focus:ring-offset-0",
-                                        !returnDate && "text-zinc-500"
-                                    )}
-                                >
-                                    <CalendarIcon className="mr-3 size-4 text-zinc-400" />
-                                    {returnDate ? (
-                                        <span className="text-zinc-900">{format(returnDate, "MMM dd, yyyy")}</span>
-                                    ) : (
-                                        <span>Select date</span>
-                                    )}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0 rounded-xl border-zinc-200" align="start">
-                                <Calendar
-                                    mode="single"
-                                    selected={returnDate || undefined}
-                                    onSelect={(date) => setSearchCriteria({ returnDate: date })}
-                                    initialFocus
-                                    disabled={(date) =>
-                                        (pickupDate ? date < pickupDate : date < new Date()) ||
-                                        date < new Date("1900-01-01")
-                                    }
-                                />
-                            </PopoverContent>
-                        </Popover>
+                    <div className="w-full md:w-[280px] hover:bg-zinc-50 rounded-[1.5rem] md:rounded-full transition-colors">
+                        <div className="px-6 py-3">
+                            <label className="block text-[11px] font-bold text-zinc-800 uppercase tracking-widest mb-1 cursor-pointer">
+                                Return
+                            </label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        className={cn(
+                                            "h-8 w-full justify-start text-left bg-transparent hover:bg-transparent border-0 shadow-none p-0 focus:ring-0 text-base md:text-lg hover:text-orange-600 transition-colors",
+                                            !returnDate ? "text-zinc-500 font-medium" : "text-zinc-900 font-semibold"
+                                        )}
+                                    >
+                                        <div className="text-zinc-400 mr-2">
+                                            <CalendarIcon className="size-5" />
+                                        </div>
+                                        {returnDate ? (
+                                            <span className="truncate">{format(returnDate, "MMM dd, yyyy")}</span>
+                                        ) : (
+                                            <span className="truncate">Add dates</span>
+                                        )}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-2 rounded-3xl border-zinc-200 shadow-2xl mt-4" align="center">
+                                    <Calendar
+                                        mode="single"
+                                        selected={returnDate || undefined}
+                                        onSelect={(date) => setSearchCriteria({ returnDate: date })}
+                                        initialFocus
+                                        className="p-3 bg-white rounded-2xl"
+                                        disabled={(date) =>
+                                            (pickupDate ? date < pickupDate : date < new Date()) ||
+                                            date < new Date("1900-01-01")
+                                        }
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
                     </div>
 
                     {/* Search Button */}
-                    <div className="w-full md:w-auto flex flex-col justify-end">
-                        <Button
-                            size="lg"
+                    <div className="w-full md:w-auto p-2 md:pl-4">
+                        <motion.button
+                            whileHover={isFormValid ? { scale: 1.05 } : {}}
+                            whileTap={isFormValid ? { scale: 0.95 } : {}}
                             className={cn(
-                                "h-12 w-full md:w-12 rounded-xl font-bold text-sm transition-all duration-300",
-                                "bg-orange-500 hover:bg-orange-600 text-white",
-                                "shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40",
-                                "disabled:bg-zinc-300 disabled:text-zinc-500 disabled:shadow-none"
+                                "h-16 w-full md:w-20 lg:w-32 flex items-center justify-center rounded-[1.5rem] md:rounded-full font-bold transition-all duration-300 gap-2",
+                                "bg-zinc-950 text-white hover:bg-orange-500",
+                                "shadow-xl shadow-zinc-950/20 hover:shadow-orange-500/30",
+                                "disabled:bg-zinc-100 disabled:text-zinc-400 disabled:shadow-none disabled:cursor-not-allowed",
+                                !isFormValid && "opacity-80"
                             )}
                             onClick={handleSearch}
                             disabled={!isFormValid}
                         >
                             {isLoading ? (
-                                <Loader2 className="size-5 animate-spin" />
+                                <Loader2 className="size-6 animate-spin" />
                             ) : (
-                                <ArrowRight className="size-5" />
+                                <>
+                                    <span className="md:hidden lg:inline-block font-bold">Search</span>
+                                    <ArrowRight className="size-5 md:size-6" />
+                                </>
                             )}
-                        </Button>
+                        </motion.button>
                     </div>
                 </div>
             </div>
