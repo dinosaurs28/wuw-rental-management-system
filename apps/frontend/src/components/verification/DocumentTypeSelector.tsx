@@ -54,17 +54,21 @@ export const DocumentTypeSelector = ({
                         onClick={() => !isDisabled && onSelectType(docType.type)}
                         disabled={isDisabled}
                         className={cn(
-                            'relative flex flex-col items-center p-4 sm:p-6 rounded-lg border-2 transition-all duration-200',
-                            'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+                            'relative flex flex-col items-center p-6 sm:p-8 rounded-[1.5rem] border border-white/5 transition-all duration-300 overflow-hidden group',
+                            'focus:outline-none focus-visible:ring-2 focus-visible:ring-white/20',
                             isSelected
-                                ? 'border-primary bg-primary/5 shadow-md'
-                                : 'border-border bg-card hover:border-primary/50 hover:bg-muted/50',
-                            isDisabled && 'opacity-50 cursor-not-allowed hover:border-border hover:bg-card'
+                                ? 'bg-white/10 border-white/20 shadow-[0_0_30px_rgba(255,255,255,0.1)]'
+                                : 'bg-black/40 hover:bg-black/60 hover:border-white/10',
+                            isDisabled && 'opacity-50 cursor-not-allowed hover:border-white/5 hover:bg-black/40'
                         )}
                     >
+                        {/* Subtle gradient for selected state */}
+                        {isSelected && (
+                             <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent pointer-events-none" />
+                        )}
                         {/* Uploaded Badge */}
                         {isDisabled && (
-                            <span className="absolute top-2 right-2 text-[10px] font-semibold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                            <span className="absolute top-4 right-4 text-[9px] font-black tracking-widest uppercase bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/20">
                                 Uploaded
                             </span>
                         )}
@@ -72,10 +76,10 @@ export const DocumentTypeSelector = ({
                         {/* Icon */}
                         <div
                             className={cn(
-                                'p-3 rounded-full mb-3 transition-colors',
+                                'p-4 rounded-full mb-4 transition-colors relative z-10',
                                 isSelected
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-muted text-muted-foreground'
+                                    ? 'bg-white text-zinc-950 shadow-[0_0_20px_rgba(255,255,255,0.2)]'
+                                    : 'bg-white/5 text-zinc-400 group-hover:bg-white/10 group-hover:text-white'
                             )}
                         >
                             {docType.icon}
@@ -84,15 +88,15 @@ export const DocumentTypeSelector = ({
                         {/* Label */}
                         <h3
                             className={cn(
-                                'text-sm font-semibold mb-1 text-center',
-                                isSelected ? 'text-primary' : 'text-foreground'
+                                'text-base font-bold mb-1 text-center tracking-wide relative z-10 transition-colors',
+                                isSelected ? 'text-white' : 'text-zinc-300 group-hover:text-white'
                             )}
                         >
                             {docType.label}
                         </h3>
 
                         {/* Description */}
-                        <p className="text-xs text-muted-foreground text-center">
+                        <p className="text-xs font-medium text-zinc-500 text-center relative z-10">
                             {docType.description}
                         </p>
                     </button>

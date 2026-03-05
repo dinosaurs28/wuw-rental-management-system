@@ -134,47 +134,47 @@ export const VehicleDetailsPage = () => {
     // Loading state (initial load only)
     if (isLoading) {
         return (
-            <div className="min-h-screen flex flex-col bg-zinc-50">
+            <div className="min-h-screen flex flex-col bg-zinc-950">
                 <Navbar />
-                <main className="flex-1 container mx-auto px-4 lg:px-8 py-6 md:py-8">
+                <main className="flex-1 container mx-auto px-4 lg:px-8 py-6 md:py-8 mt-24">
                     {/* Breadcrumb Skeleton */}
-                    <div className="flex items-center gap-2 mb-6">
-                        <Skeleton className="h-4 w-12" />
-                        <Skeleton className="h-4 w-4" />
-                        <Skeleton className="h-4 w-16" />
-                        <Skeleton className="h-4 w-4" />
-                        <Skeleton className="h-4 w-24" />
+                    <div className="flex items-center gap-2 mb-8">
+                        <Skeleton className="h-4 w-12 bg-white/10" />
+                        <Skeleton className="h-4 w-4 bg-white/5" />
+                        <Skeleton className="h-4 w-16 bg-white/10" />
+                        <Skeleton className="h-4 w-4 bg-white/5" />
+                        <Skeleton className="h-4 w-24 bg-white/10" />
                     </div>
 
                     {/* Header Skeleton */}
-                    <div className="mb-6 md:mb-8">
-                        <div className="flex flex-wrap items-center gap-3 mb-2">
-                            <Skeleton className="h-8 w-64 md:h-10 md:w-96" />
-                            <div className="flex items-center gap-2">
-                                <Skeleton className="h-6 w-20 rounded-full" />
-                                <Skeleton className="h-6 w-24 rounded-full" />
+                    <div className="mb-8 md:mb-10">
+                        <div className="flex flex-wrap items-center gap-4 mb-3">
+                            <Skeleton className="h-10 w-64 md:h-12 md:w-96 bg-white/10 rounded-xl" />
+                            <div className="flex items-center gap-3">
+                                <Skeleton className="h-8 w-24 rounded-full bg-white/5" />
+                                <Skeleton className="h-8 w-28 rounded-full bg-white/5" />
                             </div>
                         </div>
-                        <Skeleton className="h-5 w-32" />
+                        <Skeleton className="h-5 w-40 bg-white/5" />
                     </div>
 
                     {/* Content Grid Skeleton */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
                         {/* Image Gallery Skeleton */}
                         <div className="lg:col-span-7 xl:col-span-8 space-y-4">
-                            <Skeleton className="w-full aspect-video rounded-xl" />
-                            <div className="grid grid-cols-4 gap-2 md:gap-4">
-                                <Skeleton className="aspect-square rounded-lg" />
-                                <Skeleton className="aspect-square rounded-lg" />
-                                <Skeleton className="aspect-square rounded-lg" />
-                                <Skeleton className="aspect-square rounded-lg" />
+                            <Skeleton className="w-full aspect-video rounded-[2rem] bg-zinc-900/40 border border-white/5" />
+                            <div className="grid grid-cols-4 gap-3 md:gap-4">
+                                <Skeleton className="aspect-square rounded-2xl bg-white/5" />
+                                <Skeleton className="aspect-square rounded-2xl bg-white/5" />
+                                <Skeleton className="aspect-square rounded-2xl bg-white/5" />
+                                <Skeleton className="aspect-square rounded-2xl bg-white/5" />
                             </div>
                         </div>
 
                         {/* Pricing Card Skeleton */}
                         <div className="lg:col-span-5 xl:col-span-4">
-                            <div className="lg:sticky lg:top-6">
-                                <Skeleton className="h-[400px] w-full rounded-xl" />
+                            <div className="lg:sticky lg:top-28">
+                                <Skeleton className="h-[500px] w-full rounded-[2rem] bg-zinc-900/40 border border-white/5" />
                             </div>
                         </div>
                     </div>
@@ -187,17 +187,17 @@ export const VehicleDetailsPage = () => {
     // Error state
     if (isError || !vehicle) {
         return (
-            <div className="min-h-screen flex flex-col bg-zinc-50">
+            <div className="min-h-screen flex flex-col bg-zinc-950">
                 <Navbar />
-                <main className="flex-1 flex items-center justify-center">
-                    <div className="text-center space-y-4">
-                        <h2 className="text-2xl font-bold text-zinc-900">Vehicle Not Found</h2>
-                        <p className="text-zinc-500">
+                <main className="flex-1 flex items-center justify-center mt-24">
+                    <div className="text-center space-y-6 max-w-md mx-auto p-8 rounded-[2rem] bg-zinc-900/40 backdrop-blur-xl border border-white/5 text-center">
+                        <h2 className="text-3xl font-serif font-black text-white">Vehicle Not Found</h2>
+                        <p className="text-zinc-500 font-medium">
                             The vehicle you're looking for doesn't exist or has been removed.
                         </p>
                         <Link
                             to="/vehicles"
-                            className="inline-block px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors"
+                            className="inline-block px-8 py-4 bg-white hover:bg-zinc-200 text-zinc-950 font-bold tracking-wide rounded-full transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
                         >
                             Browse Vehicles
                         </Link>
@@ -211,58 +211,61 @@ export const VehicleDetailsPage = () => {
     const vehicleName = `${vehicle.make} ${vehicle.model}`;
 
     return (
-        <div className="min-h-screen flex flex-col bg-zinc-50">
+        <div className="min-h-screen flex flex-col bg-zinc-950 scroll-smooth">
             <Navbar />
 
-            <main className="flex-1 container mx-auto px-4 lg:px-8 py-6 md:py-8">
+            <main className="flex-1 container mx-auto px-4 lg:px-8 py-6 md:py-8 mt-24">
                 {/* Breadcrumb */}
-                <Breadcrumb className="mb-6">
+                <Breadcrumb className="mb-8">
                     <BreadcrumbList>
                         <BreadcrumbItem>
                             <BreadcrumbLink asChild>
-                                <Link to="/" className="text-orange-500 hover:text-orange-600">
+                                <Link to="/" className="text-zinc-500 hover:text-white transition-colors">
                                     Home
                                 </Link>
                             </BreadcrumbLink>
                         </BreadcrumbItem>
-                        <BreadcrumbSeparator />
+                        <BreadcrumbSeparator className="text-zinc-700" />
                         <BreadcrumbItem>
                             <BreadcrumbLink asChild>
-                                <Link to="/vehicles" className="text-orange-500 hover:text-orange-600">
+                                <Link to="/vehicles" className="text-zinc-500 hover:text-white transition-colors">
                                     Vehicles
                                 </Link>
                             </BreadcrumbLink>
                         </BreadcrumbItem>
-                        <BreadcrumbSeparator />
+                        <BreadcrumbSeparator className="text-zinc-700" />
                         <BreadcrumbItem>
-                            <BreadcrumbPage>Vehicle Details</BreadcrumbPage>
+                            <BreadcrumbPage className="text-white font-medium">Vehicle Details</BreadcrumbPage>
                         </BreadcrumbItem>
                     </BreadcrumbList>
                 </Breadcrumb>
 
                 {/* Vehicle Header */}
-                <div className="mb-6 md:mb-8">
-                    <div className="flex flex-wrap items-center gap-3 mb-2">
-                        <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-zinc-900">
+                <div className="mb-8 md:mb-12">
+                    <div className="flex flex-wrap items-center gap-4 mb-3">
+                        <h1 className="text-3xl md:text-5xl lg:text-6xl font-serif font-black text-white tracking-tight">
                             {vehicleName}
                         </h1>
-                        <div className="flex items-center gap-2">
-                            <span className="px-3 py-1 text-xs font-semibold bg-orange-100 text-orange-700 rounded-full">
+                        <div className="flex items-center gap-3">
+                            <span className="px-4 py-1.5 text-xs font-black tracking-[0.2em] bg-white/10 text-white rounded-full uppercase border border-white/10">
                                 {typeof vehicle.category === 'string' ? vehicle.category : vehicle.category?.name || 'N/A'}
                             </span>
                             <span
                                 className={cn(
-                                    "px-3 py-1 text-xs font-semibold rounded-full",
+                                    "px-4 py-1.5 text-xs font-black tracking-[0.2em] rounded-full uppercase border",
                                     (vehicle.availability)
-                                        ? "bg-emerald-100 text-emerald-700"
-                                        : "bg-red-100 text-red-700"
+                                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                        : "bg-red-500/10 text-red-400 border-red-500/20"
                                 )}
                             >
                                 {(vehicle.availability) ? 'Available' : 'Not Available'}
                             </span>
                         </div>
                     </div>
-                    <p className="text-zinc-500">{vehicle.branch}</p>
+                    <p className="text-sm font-bold tracking-wider text-zinc-500 uppercase flex items-center gap-2">
+                        <span className="size-2 rounded-full bg-orange-500 shrink-0" />
+                        {vehicle.branch}
+                    </p>
                 </div>
 
                 {/* Main Content Grid */}
@@ -277,7 +280,7 @@ export const VehicleDetailsPage = () => {
 
                     {/* Right Column - Pricing Card (Sticky on Desktop) */}
                     <div className="lg:col-span-5 xl:col-span-4">
-                        <div className="lg:sticky lg:top-6">
+                        <div className="lg:sticky lg:top-28">
                             <VehiclePricingCard
                                 vehicle={vehicle}
                                 onBookVehicle={handleBookVehicle}

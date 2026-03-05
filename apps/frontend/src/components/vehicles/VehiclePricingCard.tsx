@@ -83,44 +83,41 @@ export const VehiclePricingCard = ({
     const canBook = isAvailable && pickupDate && returnDate && !isRefetching;
 
     return (
-        <Card className="overflow-hidden border border-zinc-200 shadow-lg">
+        <Card className="overflow-hidden bg-zinc-900/40 backdrop-blur-xl border border-white/5 shadow-2xl rounded-[2rem]">
             <CardContent className="p-0">
                 {/* Price Header */}
-                <div className="p-6 border-b border-zinc-100">
-                    <div className="flex items-baseline justify-between">
+                <div className="p-8 border-b border-white/5">
+                    <div className="flex items-baseline justify-between mb-4">
                         <div>
-                            <span className="text-3xl font-bold text-zinc-900">
+                            <span className="text-4xl lg:text-5xl font-serif font-black text-white tracking-tight">
                                 {formatCurrency(vehicle.pricing.daily)}
                             </span>
-                            <span className="text-sm text-zinc-500 ml-1">/day</span>
+                            <span className="text-sm font-bold text-zinc-500 uppercase tracking-wider ml-2">/day</span>
                         </div>
                         <div
                             className={cn(
-                                "px-3 py-1.5 rounded-full text-xs font-semibold",
+                                "px-4 py-1.5 rounded-full text-xs font-black tracking-[0.2em] uppercase border",
                                 isAvailable
-                                    ? "bg-emerald-100 text-emerald-700"
-                                    : "bg-red-100 text-red-700"
+                                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                    : "bg-red-500/10 text-red-400 border-red-500/20"
                             )}
                         >
                             {isAvailable ? 'Available' : 'Not Available'}
                         </div>
                     </div>
-                </div>
-
-                {/* Branch Location */}
-                <div className="px-6 py-4 bg-zinc-50 border-b border-zinc-100">
-                    <div className="flex items-center gap-2 text-sm text-zinc-600">
+                    {/* Branch Location */}
+                    <div className="flex items-center gap-2 text-sm font-bold tracking-wider text-zinc-400 uppercase">
                         <MapPin className="size-4 text-orange-500" />
                         <span>{vehicle.branch}</span>
                     </div>
                 </div>
 
                 {/* Date Selectors */}
-                <div className="p-6 space-y-4 border-b border-zinc-100">
-                    <div className="grid grid-cols-2 gap-4">
+                <div className="p-8 space-y-6 border-b border-white/5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Pickup Date */}
-                        <div className="space-y-2">
-                            <label className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
+                        <div className="space-y-3">
+                            <label className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">
                                 Pickup Date
                             </label>
                             <Popover>
@@ -128,12 +125,12 @@ export const VehiclePricingCard = ({
                                     <Button
                                         variant="outline"
                                         className={cn(
-                                            "w-full justify-start text-left font-normal h-11",
-                                            !pickupDate && "text-muted-foreground"
+                                            "w-full justify-start text-left font-normal h-14 rounded-full bg-black/40 border-white/10 hover:bg-white/5 text-white hover:text-white transition-colors",
+                                            !pickupDate && "text-zinc-500"
                                         )}
                                     >
-                                        <CalendarIcon className="mr-2 size-4" />
-                                        <span className="truncate">{formattedPickupDate}</span>
+                                        <CalendarIcon className="mr-3 size-5 text-zinc-400" />
+                                        <span className="truncate text-base">{formattedPickupDate}</span>
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0" align="start">
@@ -149,8 +146,8 @@ export const VehiclePricingCard = ({
                         </div>
 
                         {/* Return Date */}
-                        <div className="space-y-2">
-                            <label className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
+                        <div className="space-y-3">
+                            <label className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">
                                 Return Date
                             </label>
                             <Popover>
@@ -158,12 +155,12 @@ export const VehiclePricingCard = ({
                                     <Button
                                         variant="outline"
                                         className={cn(
-                                            "w-full justify-start text-left font-normal h-11",
-                                            !returnDate && "text-muted-foreground"
+                                            "w-full justify-start text-left font-normal h-14 rounded-full bg-black/40 border-white/10 hover:bg-white/5 text-white hover:text-white transition-colors",
+                                            !returnDate && "text-zinc-500"
                                         )}
                                     >
-                                        <CalendarIcon className="mr-2 size-4" />
-                                        <span className="truncate">{formattedReturnDate}</span>
+                                        <CalendarIcon className="mr-3 size-5 text-zinc-400" />
+                                        <span className="truncate text-base">{formattedReturnDate}</span>
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0" align="start">
@@ -181,41 +178,41 @@ export const VehiclePricingCard = ({
                 </div>
 
                 {/* Pricing Breakdown */}
-                <div className="p-6 space-y-3 border-b border-zinc-100 relative">
+                <div className="p-8 space-y-4 border-b border-white/5 relative">
                     {/* Loading overlay for refetching */}
                     {isRefetching && (
-                        <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-10">
-                            <Loader2 className="size-5 text-orange-500 animate-spin" />
+                        <div className="absolute inset-0 bg-zinc-950/70 backdrop-blur-sm flex items-center justify-center z-10">
+                            <Loader2 className="size-6 text-orange-500 animate-spin" />
                         </div>
                     )}
 
                     {displayDays > 0 && (
                         <>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-zinc-600">
+                            <div className="flex justify-between text-base">
+                                <span className="text-zinc-400">
                                     {formatCurrency(vehicle.pricing.daily)} × {displayDays} days
                                 </span>
-                                <span className="text-zinc-900 font-medium">
+                                <span className="text-white font-medium">
                                     {formatCurrency(vehicle.baseTotal)}
                                 </span>
                             </div>
 
                             {hasDiscount && (
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-emerald-600 flex items-center gap-1">
+                                <div className="flex justify-between text-base">
+                                    <span className="text-emerald-400 flex items-center gap-2">
                                         <Check className="size-4" />
                                         Discount
                                     </span>
-                                    <span className="text-emerald-600 font-medium">
+                                    <span className="text-emerald-400 font-medium tracking-wide">
                                         -{formatCurrency(vehicle.discountPrice)}
                                     </span>
                                 </div>
                             )}
 
-                            <div className="pt-3 border-t border-zinc-200">
-                                <div className="flex justify-between">
-                                    <span className="text-base font-semibold text-zinc-900">Total</span>
-                                    <span className="text-xl font-bold text-zinc-900">
+                            <div className="pt-4 mt-2 border-t border-white/10">
+                                <div className="flex justify-between items-end">
+                                    <span className="text-lg font-black text-white uppercase tracking-wider">Total</span>
+                                    <span className="text-3xl font-bold text-white tracking-tight">
                                         {formatCurrency(displayTotal)}
                                     </span>
                                 </div>
@@ -224,43 +221,43 @@ export const VehiclePricingCard = ({
                     )}
 
                     {displayDays === 0 && !isRefetching && (
-                        <p className="text-sm text-zinc-500 text-center py-2">
+                        <p className="text-base text-zinc-500 text-center py-4 font-medium">
                             Select dates to see pricing
                         </p>
                     )}
                 </div>
 
                 {/* Deposit Info */}
-                <div className="px-6 py-4 bg-zinc-50 border-b border-zinc-100">
-                    <div className="flex justify-between text-sm">
-                        <span className="text-zinc-600">Security Deposit</span>
-                        <span className="text-zinc-900 font-medium">
+                <div className="px-8 py-6 bg-black/20 border-b border-white/5">
+                    <div className="flex justify-between text-base">
+                        <span className="text-zinc-400">Security Deposit</span>
+                        <span className="text-white font-medium">
                             {formatCurrency(vehicle.deposit)}
                         </span>
                     </div>
                 </div>
 
                 {/* CTA Button */}
-                <div className="p-6">
+                <div className="p-8">
                     <Button
                         onClick={onBookVehicle}
                         disabled={!canBook}
-                        className="w-full h-12 bg-orange-500 hover:bg-orange-600 text-white font-semibold text-base rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full h-16 bg-white hover:bg-zinc-200 text-zinc-950 font-black text-lg uppercase tracking-widest rounded-full transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none"
                     >
                         {isRefetching ? (
-                            <span className="flex items-center gap-2">
-                                <Loader2 className="size-4 animate-spin" />
+                            <span className="flex items-center gap-3">
+                                <Loader2 className="size-5 animate-spin" />
                                 Updating...
                             </span>
                         ) : isAvailable ? (
                             'Book Vehicle'
                         ) : (
-                            'Currently Unavailable'
+                            'Unavailable'
                         )}
                     </Button>
                     {(!pickupDate || !returnDate) && isAvailable && !isRefetching && (
-                        <p className="text-xs text-zinc-500 text-center mt-2">
-                            Please select pickup and return dates
+                        <p className="text-sm font-bold tracking-wider text-zinc-500 uppercase text-center mt-4">
+                            Please select dates
                         </p>
                     )}
                 </div>

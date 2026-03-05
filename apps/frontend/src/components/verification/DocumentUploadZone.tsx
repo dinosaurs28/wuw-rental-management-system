@@ -54,74 +54,76 @@ export const DocumentUploadZone = ({
             <div
                 {...getRootProps()}
                 className={cn(
-                    'relative flex flex-col items-center justify-center w-full min-h-[200px] p-6 sm:p-8',
-                    'border-2 border-dashed rounded-lg cursor-pointer transition-all duration-200',
-                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+                    'relative flex flex-col items-center justify-center w-full min-h-[250px] p-8 sm:p-10',
+                    'border-2 border-dashed rounded-[2rem] cursor-pointer transition-all duration-300 overflow-hidden group',
+                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-white/20',
                     isDragActive && !isDragReject
-                        ? 'border-primary bg-primary/5'
+                        ? 'border-white/50 bg-white/5 shadow-[0_0_50px_rgba(255,255,255,0.05)]'
                         : isDragReject
-                            ? 'border-destructive bg-destructive/5'
-                            : 'border-border bg-muted/30 hover:border-primary/50 hover:bg-muted/50',
-                    (isUploading || disabled) && 'opacity-60 cursor-not-allowed'
+                            ? 'border-red-500/50 bg-red-500/5 shadow-[0_0_50px_rgba(239,68,68,0.1)]'
+                            : 'border-white/10 bg-black/20 hover:border-white/30 hover:bg-black/40',
+                    (isUploading || disabled) && 'opacity-50 cursor-not-allowed hover:border-white/10 hover:bg-black/20'
                 )}
             >
+                {/* Subtle animated background gradient */}
+                <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
                 <input {...getInputProps()} capture="environment" />
 
                 {isUploading ? (
-                    <div className="flex flex-col items-center gap-3">
-                        <Spinner className="w-10 h-10 text-primary" />
-                        <p className="text-sm font-medium text-muted-foreground">
-                            Uploading document...
+                    <div className="flex flex-col items-center gap-4 relative z-10">
+                        <Spinner className="w-12 h-12 text-white" />
+                        <p className="text-sm font-bold tracking-wide text-zinc-300 uppercase">
+                            Securely Uploading...
                         </p>
                     </div>
                 ) : (
-                    <>
+                    <div className="flex flex-col items-center relative z-10 transition-transform duration-300 group-hover:-translate-y-1">
                         {/* Icon */}
                         <div
                             className={cn(
-                                'p-4 rounded-full mb-4 transition-colors',
+                                'p-5 rounded-full mb-6 transition-all duration-300',
                                 isDragActive && !isDragReject
-                                    ? 'bg-primary text-primary-foreground'
+                                    ? 'bg-white text-zinc-950 shadow-[0_0_30px_rgba(255,255,255,0.3)] scale-110'
                                     : isDragReject
-                                        ? 'bg-destructive text-destructive-foreground'
-                                        : 'bg-muted text-muted-foreground'
+                                        ? 'bg-red-500/20 text-red-500 scale-110'
+                                        : 'bg-white/5 text-zinc-400 group-hover:bg-white/10 group-hover:text-white group-hover:scale-105'
                             )}
                         >
                             {isDragReject ? (
-                                <AlertCircle className="w-8 h-8" />
+                                <AlertCircle className="w-10 h-10" />
                             ) : isDragActive ? (
-                                <FileImage className="w-8 h-8" />
+                                <FileImage className="w-10 h-10" />
                             ) : (
-                                <Upload className="w-8 h-8" />
+                                <Upload className="w-10 h-10" />
                             )}
                         </div>
 
                         {/* Text */}
-                        <p className="text-base font-medium text-foreground text-center mb-1">
+                        <p className="text-lg font-bold text-white text-center mb-2 tracking-wide">
                             {isDragReject
-                                ? 'Invalid file type'
+                                ? 'Invalid file type detected'
                                 : isDragActive
-                                    ? 'Drop your document here'
-                                    : 'Drag and drop your documents here'}
+                                    ? 'Drop to upload instantly'
+                                    : 'Drag & drop your document securely'}
                         </p>
-                        <p className="text-sm text-muted-foreground text-center">
+                        <p className="text-sm font-medium text-zinc-500 text-center">
                             Or{' '}
-                            <span className="text-primary font-medium hover:underline">
+                            <span className="text-white hover:text-zinc-300 font-bold underline underline-offset-4 decoration-white/30 transition-colors cursor-pointer">
                                 browse files
                             </span>{' '}
-                            from your computer
+                            from your device
                         </p>
 
                         {/* Format info */}
-                        <div className="flex flex-wrap items-center justify-center gap-4 mt-4 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                                <FileImage className="w-3 h-3" />
-                                JPG, PNG, HEIC, PDF
+                        <div className="flex flex-wrap items-center justify-center gap-4 mt-8 pt-6 border-t border-white/5 text-[10px] font-black tracking-widest uppercase text-zinc-600 w-full max-w-xs">
+                            <span className="flex items-center gap-2">
+                                <FileImage className="w-3.5 h-3.5" />
+                                JPG, PNG, PDF, HEIC
                             </span>
-                            <span>•</span>
-                            <span>Max 15MB per file</span>
+                            <span className="text-zinc-700">•</span>
+                            <span>Max 15MB</span>
                         </div>
-                    </>
+                    </div>
                 )}
             </div>
 

@@ -15,14 +15,14 @@ export const UploadedDocumentsGrid = ({
 }: UploadedDocumentsGridProps) => {
     if (documents.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                <div className="p-4 bg-muted rounded-full mb-4">
-                    <FileX className="w-8 h-8 text-muted-foreground" />
+            <div className="flex flex-col items-center justify-center py-16 px-4 text-center rounded-[2rem] border border-dashed border-white/10 bg-black/20">
+                <div className="p-4 bg-white/5 rounded-full mb-6 border border-white/5">
+                    <FileX className="w-8 h-8 text-zinc-500" />
                 </div>
-                <h3 className="text-base font-semibold text-foreground mb-1">
+                <h3 className="text-lg font-serif font-bold text-white mb-2">
                     No documents uploaded
                 </h3>
-                <p className="text-sm text-muted-foreground max-w-sm">
+                <p className="text-sm font-medium text-zinc-500 max-w-sm">
                     Select a document type above and upload your KYC documents to continue
                 </p>
             </div>
@@ -31,8 +31,8 @@ export const UploadedDocumentsGrid = ({
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                <h3 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest">
                     Uploaded Documents ({documents.length})
                 </h3>
             </div>

@@ -164,34 +164,55 @@ export function ProfilePage() {
                 </div>
 
                 {/* Main Card */}
-                <Card className="shadow-sm">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-xl font-semibold">
+                <Card className="border-0 shadow-2xl bg-zinc-900/40 backdrop-blur-2xl rounded-[2rem] overflow-hidden relative">
+                    {/* Subtle Inner Glow */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent pointer-events-none" />
+                    
+                    <CardHeader className="pb-6 pt-8 px-8 border-b border-white/5 relative z-10">
+                        <CardTitle className="text-2xl font-serif font-black tracking-tight text-white">
                             Personal Information
                         </CardTitle>
-                        <CardDescription>
-                            Update your personal details below.
+                        <CardDescription className="text-zinc-400 font-medium text-sm">
+                            Update your personal details below. All information is stored securely.
                         </CardDescription>
                     </CardHeader>
 
-                    <CardContent className="pt-6">
+                    <CardContent className="pt-8 px-8 pb-8 relative z-10">
                         {isLoadingProfile ? (
-                            <div className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
-                                        <div key={i} className="space-y-2">
-                                            <Skeleton className="h-4 w-24" />
-                                            <Skeleton className="h-10 w-full" />
-                                        </div>
-                                    ))}
-                                </div>
+                            <div className="space-y-12">
+                                <section>
+                                    <h3 className="text-xs font-black text-zinc-500/50 uppercase tracking-widest mb-6 pb-2 border-b border-white/5">
+                                        <Skeleton className="h-3 w-24 bg-white/10 rounded-full" />
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {[1, 2, 3, 4].map((i) => (
+                                            <div key={i} className="space-y-3">
+                                                <Skeleton className="h-3 w-20 bg-white/10 rounded-full" />
+                                                <Skeleton className="h-14 w-full bg-white/5 rounded-full" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+                                <section>
+                                    <h3 className="text-xs font-black text-zinc-500/50 uppercase tracking-widest mb-6 pb-2 border-b border-white/5">
+                                        <Skeleton className="h-3 w-32 bg-white/10 rounded-full" />
+                                    </h3>
+                                    <div className="grid grid-cols-1 gap-6">
+                                        {[1].map((i) => (
+                                            <div key={i} className="space-y-3">
+                                                <Skeleton className="h-3 w-28 bg-white/10 rounded-full" />
+                                                <Skeleton className="h-14 w-[50%] bg-white/5 rounded-full" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
                             </div>
                         ) : (
                             <Form {...form}>
                                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                                     {/* Basic Info Section */}
                                     <section>
-                                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
+                                        <h3 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-white/5">
                                             Basic Info
                                         </h3>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -201,28 +222,28 @@ export function ProfilePage() {
                                                 name="name"
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <FormLabel>Full Name</FormLabel>
+                                                        <FormLabel className="text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase">Full Name</FormLabel>
                                                         <FormControl>
                                                             <Input
                                                                 placeholder="John Doe"
-                                                                className="h-12"
+                                                                className="h-14 rounded-full bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:border-white/20 transition-all duration-300 px-6"
                                                                 {...field}
                                                             />
                                                         </FormControl>
-                                                        <FormMessage />
+                                                        <FormMessage className="text-red-400/90" />
                                                     </FormItem>
                                                 )}
                                             />
 
                                             {/* Email (Read-only) */}
                                             <div className="space-y-2">
-                                                <Label htmlFor="email">Email Address</Label>
+                                                <Label htmlFor="email" className="text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase">Email Address</Label>
                                                 <Input
                                                     id="email"
                                                     type="email"
                                                     value={userEmail}
                                                     disabled
-                                                    className="h-12 bg-muted cursor-not-allowed"
+                                                    className="h-14 rounded-full bg-black/20 border-white/5 text-zinc-500 cursor-not-allowed px-6"
                                                 />
                                             </div>
 
@@ -232,15 +253,15 @@ export function ProfilePage() {
                                                 name="phone"
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <FormLabel>Phone Number</FormLabel>
+                                                        <FormLabel className="text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase">Phone Number</FormLabel>
                                                         <FormControl>
                                                             <Input
                                                                 placeholder="+1 (555) 000-0000"
-                                                                className="h-12"
+                                                                className="h-14 rounded-full bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:border-white/20 transition-all duration-300 px-6"
                                                                 {...field}
                                                             />
                                                         </FormControl>
-                                                        <FormMessage />
+                                                        <FormMessage className="text-red-400/90" />
                                                     </FormItem>
                                                 )}
                                             />
@@ -251,15 +272,15 @@ export function ProfilePage() {
                                                 name="alternatePhone"
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <FormLabel>Alternate Phone Number</FormLabel>
+                                                        <FormLabel className="text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase">Alternate Phone Number</FormLabel>
                                                         <FormControl>
                                                             <Input
                                                                 placeholder="9874158750"
-                                                                className="h-12"
+                                                                className="h-14 rounded-full bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:border-white/20 transition-all duration-300 px-6"
                                                                 {...field}
                                                             />
                                                         </FormControl>
-                                                        <FormMessage />
+                                                        <FormMessage className="text-red-400/90" />
                                                     </FormItem>
                                                 )}
                                             />
@@ -268,7 +289,7 @@ export function ProfilePage() {
 
                                     {/* Personal Details Section */}
                                     <section>
-                                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
+                                        <h3 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-white/5">
                                             Personal Details
                                         </h3>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -278,24 +299,24 @@ export function ProfilePage() {
                                                 name="dob"
                                                 render={({ field }) => (
                                                     <FormItem className="flex flex-col">
-                                                        <FormLabel>Date of Birth</FormLabel>
+                                                        <FormLabel className="text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase">Date of Birth</FormLabel>
                                                         <Popover>
                                                             <PopoverTrigger asChild>
                                                                 <FormControl>
                                                                     <Button
                                                                         variant="outline"
                                                                         className={cn(
-                                                                            'h-12 w-full justify-start text-left font-normal',
-                                                                            !field.value && 'text-muted-foreground'
+                                                                            'h-14 rounded-full bg-black/40 border-white/10 text-white px-6 w-full justify-start text-left font-medium hover:bg-black/60 hover:text-white transition-all duration-300',
+                                                                            !field.value && 'text-zinc-600'
                                                                         )}
                                                                     >
                                                                         {field.value
                                                                             ? format(parseDobToDate(field.value) || new Date(), 'PPP')
-                                                                            : 'dd-mm-yyyy'}
+                                                                            : 'Select your birth date'}
                                                                     </Button>
                                                                 </FormControl>
                                                             </PopoverTrigger>
-                                                            <PopoverContent className="w-auto p-0" align="start">
+                                                            <PopoverContent className="w-auto p-0 border-white/10 bg-zinc-900 text-zinc-50" align="start">
                                                                 <Calendar
                                                                     mode="single"
                                                                     selected={parseDobToDate(field.value)}
@@ -322,7 +343,7 @@ export function ProfilePage() {
 
                                     {/* Address Section */}
                                     <section>
-                                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
+                                        <h3 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-white/5">
                                             Address
                                         </h3>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -332,15 +353,15 @@ export function ProfilePage() {
                                                 name="addressLine1"
                                                 render={({ field }) => (
                                                     <FormItem className="md:col-span-2">
-                                                        <FormLabel>Address Line 1</FormLabel>
+                                                        <FormLabel className="text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase">Address Line 1</FormLabel>
                                                         <FormControl>
                                                             <Input
                                                                 placeholder="Street address, City, State, ZIP"
-                                                                className="h-12"
+                                                                className="h-14 rounded-full bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:border-white/20 transition-all duration-300 px-6"
                                                                 {...field}
                                                             />
                                                         </FormControl>
-                                                        <FormMessage />
+                                                        <FormMessage className="text-red-400/90" />
                                                     </FormItem>
                                                 )}
                                             />
@@ -351,15 +372,15 @@ export function ProfilePage() {
                                                 name="city"
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <FormLabel>City</FormLabel>
+                                                        <FormLabel className="text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase">City</FormLabel>
                                                         <FormControl>
                                                             <Input
                                                                 placeholder="Mangaluru"
-                                                                className="h-12"
+                                                                className="h-14 rounded-full bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:border-white/20 transition-all duration-300 px-6"
                                                                 {...field}
                                                             />
                                                         </FormControl>
-                                                        <FormMessage />
+                                                        <FormMessage className="text-red-400/90" />
                                                     </FormItem>
                                                 )}
                                             />
@@ -370,15 +391,15 @@ export function ProfilePage() {
                                                 name="state"
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <FormLabel>State</FormLabel>
+                                                        <FormLabel className="text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase">State</FormLabel>
                                                         <FormControl>
                                                             <Input
                                                                 placeholder="Karnataka"
-                                                                className="h-12"
+                                                                className="h-14 rounded-full bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:border-white/20 transition-all duration-300 px-6"
                                                                 {...field}
                                                             />
                                                         </FormControl>
-                                                        <FormMessage />
+                                                        <FormMessage className="text-red-400/90" />
                                                     </FormItem>
                                                 )}
                                             />
@@ -389,15 +410,15 @@ export function ProfilePage() {
                                                 name="country"
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <FormLabel>Country</FormLabel>
+                                                        <FormLabel className="text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase">Country</FormLabel>
                                                         <FormControl>
                                                             <Input
                                                                 placeholder="India"
-                                                                className="h-12"
+                                                                className="h-14 rounded-full bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:border-white/20 transition-all duration-300 px-6"
                                                                 {...field}
                                                             />
                                                         </FormControl>
-                                                        <FormMessage />
+                                                        <FormMessage className="text-red-400/90" />
                                                     </FormItem>
                                                 )}
                                             />
@@ -408,15 +429,15 @@ export function ProfilePage() {
                                                 name="zipCode"
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <FormLabel>ZIP Code</FormLabel>
+                                                        <FormLabel className="text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase">ZIP Code</FormLabel>
                                                         <FormControl>
                                                             <Input
                                                                 placeholder="575001"
-                                                                className="h-12"
+                                                                className="h-14 rounded-full bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:border-white/20 transition-all duration-300 px-6"
                                                                 {...field}
                                                             />
                                                         </FormControl>
-                                                        <FormMessage />
+                                                        <FormMessage className="text-red-400/90" />
                                                     </FormItem>
                                                 )}
                                             />
@@ -424,11 +445,11 @@ export function ProfilePage() {
                                     </section>
 
                                     {/* Submit Button */}
-                                    <div className="flex justify-end pt-4 border-t">
+                                    <div className="flex justify-end pt-8 mt-8 border-t border-white/5">
                                         <Button
                                             type="submit"
                                             size="lg"
-                                            className="min-w-[180px]"
+                                            className="min-w-[200px] h-14 rounded-full bg-white text-zinc-950 hover:bg-zinc-200 transition-all duration-300 font-bold tracking-wide shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
                                             disabled={!hasChanges || !form.formState.isValid || isSubmitting}
                                         >
                                             {isSubmitting && (

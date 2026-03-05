@@ -29,14 +29,17 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
 
     return (
         <>
-            <Card className="overflow-hidden transition-shadow hover:shadow-md">
-                <CardContent className="p-0">
+            <Card className="overflow-hidden bg-zinc-900/60 backdrop-blur-xl border-white/5 shadow-2xl rounded-[1.5rem] transition-all hover:bg-zinc-900/80 hover:border-white/10 group">
+                <CardContent className="p-0 relative">
+                    {/* Subtle glow effect on hover */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
                     {/* Header with Booking ID and Statuses */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-muted/30 px-4 py-3">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">Booking ID:</span>
-                            <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">
-                                {booking.bookingId.slice(0, 8)}...
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 bg-black/20 px-5 py-4">
+                        <div className="flex items-center gap-3">
+                            <span className="text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase">Booking Ref:</span>
+                            <code className="rounded bg-white/5 px-2 py-1 font-mono text-xs font-bold text-zinc-300 border border-white/10 shadow-inner">
+                                {booking.bookingId.slice(0, 8).toUpperCase()}
                             </code>
                         </div>
                         <div className="flex items-center gap-2">
@@ -46,30 +49,37 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
                     </div>
 
                     {/* Main Content */}
-                    <div className="p-4">
+                    <div className="p-5 flex flex-col gap-5 relative z-10">
                         {/* Date and Duration Row */}
-                        <div className="mb-4 flex flex-wrap items-center gap-4 text-sm">
-                            <div className="flex items-center gap-2">
-                                <Calendar className="h-4 w-4 text-muted-foreground" />
-                                <span>
-                                    {formatDate(booking.startAt)} → {formatDate(booking.endAt)}
-                                </span>
+                        <div className="flex flex-wrap items-center gap-6 pb-4 border-b border-white/5">
+                            <div className="flex flex-col gap-1">
+                                <span className="text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase">Schedule</span>
+                                <div className="flex items-center gap-2 text-sm font-medium text-zinc-200">
+                                    <Calendar className="h-4 w-4 text-zinc-400" />
+                                    <span>
+                                        {formatDate(booking.startAt)} <span className="text-zinc-500 mx-1">→</span> {formatDate(booking.endAt)}
+                                    </span>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Clock className="h-4 w-4 text-muted-foreground" />
-                                <span>{booking.days} {booking.days === 1 ? 'day' : 'days'}</span>
+                            <div className="flex flex-col gap-1 border-l border-white/5 pl-6">
+                                <span className="text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase">Duration</span>
+                                <div className="flex items-center gap-2 text-sm font-medium text-zinc-200">
+                                    <Clock className="h-4 w-4 text-zinc-400" />
+                                    <span>{booking.days} {booking.days === 1 ? 'day' : 'days'}</span>
+                                </div>
                             </div>
                         </div>
 
                         {/* Vehicles List */}
                         <div className="space-y-3">
+                            <span className="text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase mb-2 block">Vehicles Reserved</span>
                             {booking.vehicles.map((vehicle) => (
                                 <div
                                     key={vehicle.publicId}
-                                    className="flex items-center gap-4 rounded-lg border bg-card p-3"
+                                    className="flex items-center gap-4 rounded-xl border border-white/5 bg-black/40 p-3 hover:bg-black/60 transition-colors"
                                 >
                                     {/* Vehicle Thumbnail */}
-                                    <div className="h-16 w-24 flex-shrink-0 overflow-hidden rounded-md bg-muted">
+                                    <div className="h-16 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-zinc-900 border border-white/10">
                                         {vehicle.thumbnail ? (
                                             <img
                                                 src={vehicle.thumbnail}
@@ -78,17 +88,17 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
                                             />
                                         ) : (
                                             <div className="flex h-full w-full items-center justify-center">
-                                                <Car className="h-8 w-8 text-muted-foreground" />
+                                                <Car className="h-6 w-6 text-zinc-600" />
                                             </div>
                                         )}
                                     </div>
 
                                     {/* Vehicle Info */}
-                                    <div className="flex flex-1 flex-col gap-1">
-                                        <h4 className="font-medium">
+                                    <div className="flex flex-1 flex-col justify-center">
+                                        <h4 className="font-bold text-white tracking-wide">
                                             {vehicle.make} {vehicle.model}
                                         </h4>
-                                        <span className="text-sm text-muted-foreground">
+                                        <span className="text-sm font-medium text-zinc-400 font-mono">
                                             {formatCurrency(vehicle.finalTotal)}
                                         </span>
                                     </div>
@@ -97,14 +107,14 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
                         </div>
 
                         {/* Footer with Total and Action Buttons */}
-                        <div className="mt-4 flex items-center justify-between border-t pt-4">
-                            <div className="flex flex-col">
-                                <span className="text-xs text-muted-foreground">Total Amount</span>
-                                <span className="text-lg font-semibold text-primary">
+                        <div className="mt-2 flex items-center justify-between pt-4">
+                            <div className="flex flex-col gap-1 border-t border-white/10 pt-4 w-full sm:w-auto">
+                                <span className="text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase">Total Amount</span>
+                                <span className="text-xl font-bold text-white font-mono tracking-tight">
                                     {formatCurrency(booking.total)}
                                 </span>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2 justify-end w-full sm:w-auto border-t border-white/10 pt-4">
                                 {/* Invoice Download Button - shows for CONFIRMED and RETURNED only */}
                                 <InvoiceDownloadButton
                                     bookingId={booking.id}
@@ -113,11 +123,11 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    className="gap-2"
+                                    className="gap-2 rounded-full h-10 border-white/10 bg-white/5 hover:bg-white/10 text-white font-medium px-4 transition-all"
                                     onClick={() => setIsQRModalOpen(true)}
                                 >
                                     <QrCode className="h-4 w-4" />
-                                    <span className="hidden sm:inline">Show QR</span>
+                                    <span className="hidden sm:inline">Show Pass</span>
                                 </Button>
                             </div>
                         </div>

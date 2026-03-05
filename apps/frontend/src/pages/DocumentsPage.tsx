@@ -148,30 +148,35 @@ export function DocumentsPage() {
         <DashboardLayout>
             <div className="container mx-auto px-4 py-6 md:px-6 lg:px-8">
                 {/* Page Header */}
-                <div className="mb-6">
-                    <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-                        Documents
-                    </h1>
-                    <p className="mt-1 text-muted-foreground">
-                        Manage your identity verification documents
-                    </p>
+                <div className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h1 className="text-3xl font-serif font-black tracking-tight text-white md:text-4xl">
+                            Documents
+                        </h1>
+                        <p className="mt-2 text-zinc-400 font-medium">
+                            Manage your premium identity verification documents
+                        </p>
+                    </div>
                 </div>
 
                 {/* Main Card */}
-                <Card className="shadow-sm">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-xl font-semibold">
+                <Card className="border-0 shadow-2xl bg-zinc-900/40 backdrop-blur-2xl rounded-[2rem] overflow-hidden relative">
+                    {/* Subtle Inner Glow */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent pointer-events-none" />
+
+                    <CardHeader className="pb-6 pt-8 px-8 border-b border-white/5 relative z-10">
+                        <CardTitle className="text-2xl font-serif font-black tracking-tight text-white">
                             Identity Verification
                         </CardTitle>
-                        <CardDescription>
+                        <CardDescription className="text-zinc-400 font-medium text-sm">
                             Upload your official documents to maintain premium service standards.
                         </CardDescription>
                     </CardHeader>
 
-                    <CardContent className="space-y-8 pt-6">
+                    <CardContent className="space-y-10 pt-8 px-8 pb-8 relative z-10">
                         {/* Document Type Selection */}
                         <section>
-                            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
+                            <h2 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-white/5">
                                 Select Document Type
                             </h2>
                             <DocumentTypeSelector
@@ -190,20 +195,23 @@ export function DocumentsPage() {
                                 error={uploadError}
                             />
                             {!selectedDocumentType && !isUploading && (
-                                <p className="text-sm text-muted-foreground text-center mt-2">
-                                    Please select a document type above to enable upload
+                                <p className="text-sm font-medium text-zinc-500 text-center mt-4">
+                                    Please select a document type above to enable the upload zone
                                 </p>
                             )}
                         </section>
 
                         {/* Uploaded Documents Grid */}
                         <section>
+                            <h2 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-white/5">
+                                Uploaded Documents
+                            </h2>
                             {isFetching ? (
                                 <div className="space-y-4">
-                                    <Skeleton className="h-4 w-48" />
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <Skeleton className="h-4 w-48 bg-white/10 rounded-full" />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                         {[1, 2, 3].map((i) => (
-                                            <Skeleton key={i} className="aspect-[4/3] rounded-lg" />
+                                            <Skeleton key={i} className="aspect-[1.586/1] rounded-2xl bg-white/10" />
                                         ))}
                                     </div>
                                 </div>
@@ -219,9 +227,9 @@ export function DocumentsPage() {
                 </Card>
 
                 {/* Security Note */}
-                <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
-                    <Shield className="w-4 h-4" />
-                    <span>Your documents are encrypted and stored securely.</span>
+                <div className="mt-8 flex items-center justify-center gap-2 text-sm font-medium text-zinc-500">
+                    <Shield className="w-4 h-4 text-emerald-500/80" />
+                    <span>Your documents are encrypted and stored securely within our private vault.</span>
                 </div>
             </div>
         </DashboardLayout>

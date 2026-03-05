@@ -11,6 +11,7 @@ import {
     PaginationEllipsis,
 } from '@/components/ui/pagination';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 import type { Vehicle } from '@/services/vehicle.service';
 
 interface VehicleGridProps {
@@ -96,13 +97,17 @@ export const VehicleGrid = ({
     if (isLoading) {
         return (
             <div className="space-y-8">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                        <div key={i} className="flex flex-col space-y-3">
-                            <Skeleton className="h-[200px] w-full rounded-xl" />
-                            <div className="space-y-2">
-                                <Skeleton className="h-4 w-[250px]" />
-                                <Skeleton className="h-4 w-[200px]" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {Array.from({ length: 9 }).map((_, i) => (
+                        <div key={i} className="flex flex-col space-y-4 bg-zinc-900/40 border border-white/5 rounded-[2rem] p-4">
+                            <Skeleton className="h-[200px] w-full rounded-[1.5rem] bg-white/5" />
+                            <div className="space-y-3 px-2">
+                                <Skeleton className="h-4 w-3/4 bg-white/10 rounded-full" />
+                                <Skeleton className="h-4 w-1/2 bg-white/5 rounded-full" />
+                            </div>
+                            <div className="pt-4 mt-2 border-t border-white/5 flex justify-between px-2">
+                                <Skeleton className="h-8 w-24 bg-white/10 rounded-full" />
+                                <Skeleton className="h-10 w-28 bg-white/5 rounded-full" />
                             </div>
                         </div>
                     ))}
@@ -127,18 +132,19 @@ export const VehicleGrid = ({
 
             {/* Pagination */}
             {totalPages > 1 && (
-                <div className="flex items-center justify-center pt-4 pb-8">
+                <div className="flex items-center justify-center pt-8 pb-12">
                     <Pagination>
-                        <PaginationContent>
+                        <PaginationContent className="bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-full p-2 shadow-2xl">
                             {/* Previous Button */}
                             <PaginationItem>
                                 <PaginationPrevious
                                     onClick={() => handlePageChange(currentPage - 1)}
-                                    className={
+                                    className={cn(
+                                        "h-10 px-4 rounded-full font-bold tracking-wide transition-all",
                                         currentPage === 1
-                                            ? 'pointer-events-none opacity-50'
-                                            : 'cursor-pointer hover:bg-zinc-100'
-                                    }
+                                            ? 'pointer-events-none opacity-30 text-zinc-500'
+                                            : 'cursor-pointer hover:bg-white/10 text-white'
+                                    )}
                                 />
                             </PaginationItem>
 
@@ -146,16 +152,17 @@ export const VehicleGrid = ({
                             {pageNumbers.map((page, index) => (
                                 <PaginationItem key={index}>
                                     {page === 'ellipsis' ? (
-                                        <PaginationEllipsis />
+                                        <PaginationEllipsis className="text-zinc-500" />
                                     ) : (
                                         <PaginationLink
                                             onClick={() => handlePageChange(page)}
                                             isActive={currentPage === page}
-                                            className={
+                                            className={cn(
+                                                "size-10 rounded-full font-bold transition-all",
                                                 currentPage === page
-                                                    ? 'bg-orange-500 text-white border-orange-500 hover:bg-orange-600'
-                                                    : 'cursor-pointer hover:bg-zinc-100'
-                                            }
+                                                    ? 'bg-white text-zinc-950 shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:bg-zinc-200 hover:text-zinc-950'
+                                                    : 'cursor-pointer text-zinc-400 hover:bg-white/10 hover:text-white'
+                                            )}
                                         >
                                             {page}
                                         </PaginationLink>
@@ -167,11 +174,12 @@ export const VehicleGrid = ({
                             <PaginationItem>
                                 <PaginationNext
                                     onClick={() => handlePageChange(currentPage + 1)}
-                                    className={
+                                    className={cn(
+                                        "h-10 px-4 rounded-full font-bold tracking-wide transition-all",
                                         currentPage === totalPages
-                                            ? 'pointer-events-none opacity-50'
-                                            : 'cursor-pointer hover:bg-zinc-100'
-                                    }
+                                            ? 'pointer-events-none opacity-30 text-zinc-500'
+                                            : 'cursor-pointer hover:bg-white/10 text-white'
+                                    )}
                                 />
                             </PaginationItem>
                         </PaginationContent>
@@ -181,8 +189,8 @@ export const VehicleGrid = ({
 
             {/* Page Info */}
             {totalPages > 1 && (
-                <div className="text-center text-sm text-zinc-500 pb-4">
-                    Page {currentPage} of {totalPages} • Showing {vehicles.length} of {totalCount} vehicles
+                <div className="text-center text-xs font-black tracking-[0.2em] text-zinc-500 uppercase pb-4">
+                    Page <span className="text-white">{currentPage}</span> of <span className="text-white">{totalPages}</span> • Showing <span className="text-white">{vehicles.length}</span> of <span className="text-white">{totalCount}</span> vehicles
                 </div>
             )}
         </div>

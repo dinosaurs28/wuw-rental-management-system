@@ -167,16 +167,16 @@ export const VehiclesPage = () => {
     }, []);
 
     return (
-        <div className="min-h-screen flex flex-col bg-zinc-50 scroll-smooth">
+        <div className="min-h-screen flex flex-col bg-zinc-950 scroll-smooth">
             <Navbar />
 
-            <main className="flex-1 container mx-auto px-4 lg:px-8 py-6 md:py-8">
+            <main className="flex-1 container mx-auto px-4 lg:px-8 py-6 md:py-8 mt-24">
                 {/* Breadcrumb */}
                 <Breadcrumb className="mb-6">
                     <BreadcrumbList>
                         <BreadcrumbItem>
                             <BreadcrumbLink asChild>
-                                <Link to="/" className="text-orange-500 hover:text-orange-600">
+                                <Link to="/" className="text-zinc-500 hover:text-white transition-colors">
                                     Home
                                 </Link>
                             </BreadcrumbLink>
@@ -189,18 +189,18 @@ export const VehiclesPage = () => {
                 </Breadcrumb>
 
                 {/* Page Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-bold text-zinc-900">
+                        <h1 className="text-3xl md:text-5xl font-serif font-black text-white tracking-tight">
                             Select Your Vehicle
                         </h1>
-                        <p className="text-zinc-500 mt-1">
-                            Find the perfect vehicle for your journey
+                        <p className="text-zinc-400 font-medium mt-2">
+                            Find the perfect luxury companion for your journey
                         </p>
                     </div>
-                    <div className="text-sm text-zinc-600">
-                        <span className="font-bold text-orange-500 text-lg">{vehicleCount}</span>
-                        {' '}Results found
+                    <div className="text-sm font-bold text-zinc-500 tracking-widest uppercase bg-white/5 px-4 py-2 rounded-full border border-white/10">
+                        <span className="text-white text-lg mr-2">{vehicleCount}</span>
+                        Results found
                     </div>
                 </div>
 

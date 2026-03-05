@@ -9,14 +9,16 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
     return (
-        <SidebarProvider>
-            <DashboardSidebar />
-            <SidebarInset>
-                <DashboardNavbar />
-                <main className="flex-1 overflow-auto">
-                    {children}
-                </main>
-            </SidebarInset>
-        </SidebarProvider>
+        <div className="dark min-h-screen bg-zinc-950 text-zinc-50 selection:bg-white/20">
+            <SidebarProvider className="bg-transparent">
+                <DashboardSidebar />
+                <SidebarInset className="bg-transparent/0">
+                    <DashboardNavbar />
+                    <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
+                        {children}
+                    </main>
+                </SidebarInset>
+            </SidebarProvider>
+        </div>
     );
 }

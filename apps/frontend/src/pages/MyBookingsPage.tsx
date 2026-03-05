@@ -62,54 +62,54 @@ export function MyBookingsPage() {
         <DashboardLayout>
             <div className="container mx-auto px-4 py-6 md:px-6 lg:px-8">
                 {/* Page Header */}
-                <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
+                        <h1 className="text-3xl font-serif font-black tracking-tight text-white md:text-4xl">
                             Welcome back, {user?.name || "User"}
                         </h1>
-                        <p className="mt-1 text-muted-foreground">
-                            Manage your vehicle bookings and rentals
+                        <p className="mt-2 text-zinc-400 font-medium">
+                            Manage your premium vehicle bookings and rentals
                         </p>
                     </div>
                     <Button
-                        className="gap-2 shrink-0"
+                        className="gap-2 shrink-0 h-14 rounded-full bg-white text-zinc-950 hover:bg-zinc-200 transition-all duration-300 font-bold tracking-wide px-8 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
                         onClick={() => navigate("/vehicles")}
                     >
-                        <Car className="h-4 w-4" />
+                        <Car className="h-5 w-5" />
                         Book a Vehicle
                     </Button>
                 </div>
 
                 {/* Filter Section */}
-                <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <h2 className="text-lg font-semibold">
+                <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-white/5 pb-6">
+                    <h2 className="text-lg font-bold text-white tracking-wide">
                         {filter === 'active' ? 'Active Bookings' : 'Past Bookings'}
                     </h2>
                     <Select value={filter} onValueChange={handleFilterChange}>
-                        <SelectTrigger className="w-full sm:w-[180px]">
+                        <SelectTrigger className="w-full sm:w-[200px] h-12 rounded-full bg-black/40 border-white/10 text-white font-medium hover:bg-black/60 focus:ring-1 focus:ring-white/20 transition-all px-6">
                             <SelectValue placeholder="Filter bookings" />
                         </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="past">Past</SelectItem>
+                        <SelectContent className="bg-zinc-900 border-white/10 text-zinc-50 rounded-2xl shadow-2xl">
+                            <SelectItem value="active" className="rounded-xl focus:bg-white/10 focus:text-white cursor-pointer py-2">Active Trips</SelectItem>
+                            <SelectItem value="past" className="rounded-xl focus:bg-white/10 focus:text-white cursor-pointer py-2">Past History</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
 
                 {/* Loading State */}
                 {isLoading && (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                         {[1, 2, 3].map((i) => (
-                            <div key={i} className="rounded-lg border p-4">
-                                <div className="mb-4 flex justify-between">
-                                    <Skeleton className="h-4 w-24" />
-                                    <Skeleton className="h-5 w-20" />
+                            <div key={i} className="rounded-[2rem] border border-white/5 bg-zinc-900/40 p-6 backdrop-blur-xl">
+                                <div className="mb-6 flex justify-between">
+                                    <Skeleton className="h-5 w-24 bg-white/10 rounded-full" />
+                                    <Skeleton className="h-6 w-20 bg-white/10 rounded-full" />
                                 </div>
-                                <Skeleton className="mb-3 h-6 w-48" />
-                                <Skeleton className="mb-4 h-20 w-full" />
-                                <div className="flex justify-between">
-                                    <Skeleton className="h-6 w-24" />
-                                    <Skeleton className="h-9 w-24" />
+                                <Skeleton className="mb-4 h-8 w-48 bg-white/10 rounded-full" />
+                                <Skeleton className="mb-6 h-24 w-full bg-white/10 rounded-2xl" />
+                                <div className="flex justify-between items-end pt-4 border-t border-white/5">
+                                    <Skeleton className="h-8 w-24 bg-white/10 rounded-full" />
+                                    <Skeleton className="h-10 w-28 bg-white/10 rounded-full" />
                                 </div>
                             </div>
                         ))}
@@ -118,11 +118,11 @@ export function MyBookingsPage() {
 
                 {/* Error State */}
                 {error && !isLoading && (
-                    <div className="flex flex-col items-center justify-center rounded-lg border border-destructive/20 bg-destructive/5 p-8 text-center">
-                        <p className="text-destructive">{error}</p>
+                    <div className="flex flex-col items-center justify-center rounded-[2rem] border border-red-500/20 bg-red-500/10 p-12 text-center backdrop-blur-xl">
+                        <p className="text-red-400 font-medium mb-6">{error}</p>
                         <Button
-                            variant="outline"
-                            className="mt-4"
+                            variant="destructive"
+                            className="h-12 rounded-full px-8 font-bold tracking-wide"
                             onClick={() => fetchBookings()}
                         >
                             Try Again
@@ -132,16 +132,16 @@ export function MyBookingsPage() {
 
                 {/* Profile Not Found State - for new users who haven't completed profile */}
                 {profileNotFound && !isLoading && (
-                    <div className="flex flex-col items-center justify-center rounded-lg border border-orange-200 bg-orange-50 p-12 text-center">
-                        <div className="mb-4 rounded-full bg-orange-100 p-4">
-                            <Car className="h-8 w-8 text-orange-600" />
+                    <div className="flex flex-col items-center justify-center rounded-[2rem] border border-orange-500/20 bg-orange-500/10 p-12 text-center backdrop-blur-xl">
+                        <div className="mb-6 rounded-full bg-orange-500/20 p-5 shadow-[0_0_30px_rgba(249,115,22,0.2)]">
+                            <Car className="h-10 w-10 text-orange-400" />
                         </div>
-                        <h3 className="mb-2 text-lg font-semibold text-orange-800">Complete Your Profile</h3>
-                        <p className="mb-6 max-w-sm text-sm text-orange-700">
-                            Welcome! Before you can start booking vehicles, please complete your profile information.
+                        <h3 className="mb-3 text-xl font-serif font-black text-white tracking-tight">Complete Your Profile</h3>
+                        <p className="mb-8 max-w-sm text-sm font-medium text-orange-200/80">
+                            Welcome! Before you can start booking premium vehicles, please complete your profile information.
                         </p>
                         <Button
-                            className="gap-2 bg-orange-600 hover:bg-orange-700"
+                            className="gap-2 h-14 rounded-full bg-orange-500 text-white hover:bg-orange-600 transition-all duration-300 font-bold tracking-wide px-8 shadow-[0_0_20px_rgba(249,115,22,0.3)] hover:shadow-[0_0_30px_rgba(249,115,22,0.5)]"
                             onClick={() => navigate("/profile")}
                         >
                             Complete Profile
@@ -151,23 +151,24 @@ export function MyBookingsPage() {
 
                 {/* Empty State */}
                 {!isLoading && !error && !profileNotFound && bookings.length === 0 && (
-                    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center">
-                        <div className="mb-4 rounded-full bg-muted p-4">
-                            <CalendarX className="h-8 w-8 text-muted-foreground" />
+                    <div className="flex flex-col items-center justify-center rounded-[2rem] border border-white/5 bg-zinc-900/40 p-16 text-center backdrop-blur-xl relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
+                        <div className="mb-6 rounded-full bg-white/5 p-6 shadow-[0_0_40px_rgba(255,255,255,0.05)] border border-white/10 relative z-10">
+                            <CalendarX className="h-12 w-12 text-zinc-400" />
                         </div>
-                        <h3 className="mb-2 text-lg font-semibold">No bookings found</h3>
-                        <p className="mb-6 max-w-sm text-sm text-muted-foreground">
+                        <h3 className="mb-3 text-2xl font-serif font-black text-white tracking-tight relative z-10">No bookings found</h3>
+                        <p className="mb-8 max-w-md text-sm font-medium text-zinc-400 relative z-10">
                             {filter === 'active'
-                                ? "You don't have any active bookings. Start exploring our vehicles!"
+                                ? "You don't have any active bookings. It's time to start exploring our premium vehicle collection!"
                                 : "You don't have any past bookings yet."
                             }
                         </p>
                         <Button
-                            className="gap-2"
+                            className="gap-2 h-14 rounded-full bg-white text-zinc-950 hover:bg-zinc-200 transition-all duration-300 font-bold tracking-wide px-8 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] relative z-10"
                             onClick={() => navigate("/vehicles")}
                         >
-                            <Car className="h-4 w-4" />
-                            Browse Vehicles
+                            <Car className="h-5 w-5" />
+                            Browse Premium Vehicles
                         </Button>
                     </div>
                 )}
