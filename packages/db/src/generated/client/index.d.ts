@@ -163,6 +163,11 @@ export type SystemSetting = $Result.DefaultSelection<Prisma.$SystemSettingPayloa
  * 
  */
 export type GSTRule = $Result.DefaultSelection<Prisma.$GSTRulePayload>
+/**
+ * Model TimezoneSetting
+ * 
+ */
+export type TimezoneSetting = $Result.DefaultSelection<Prisma.$TimezoneSettingPayload>
 
 /**
  * Enums
@@ -769,6 +774,16 @@ export class PrismaClient<
     * ```
     */
   get gSTRule(): Prisma.GSTRuleDelegate<ExtArgs>;
+
+  /**
+   * `prisma.timezoneSetting`: Exposes CRUD operations for the **TimezoneSetting** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more TimezoneSettings
+    * const timezoneSettings = await prisma.timezoneSetting.findMany()
+    * ```
+    */
+  get timezoneSetting(): Prisma.TimezoneSettingDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -1239,7 +1254,8 @@ export namespace Prisma {
     InvoiceItem: 'InvoiceItem',
     AuditLog: 'AuditLog',
     SystemSetting: 'SystemSetting',
-    GSTRule: 'GSTRule'
+    GSTRule: 'GSTRule',
+    TimezoneSetting: 'TimezoneSetting'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1255,7 +1271,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehicle" | "vehiclePricingOverride" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "gSTRule"
+      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehicle" | "vehiclePricingOverride" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "gSTRule" | "timezoneSetting"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -3356,6 +3372,76 @@ export namespace Prisma {
           count: {
             args: Prisma.GSTRuleCountArgs<ExtArgs>
             result: $Utils.Optional<GSTRuleCountAggregateOutputType> | number
+          }
+        }
+      }
+      TimezoneSetting: {
+        payload: Prisma.$TimezoneSettingPayload<ExtArgs>
+        fields: Prisma.TimezoneSettingFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.TimezoneSettingFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TimezoneSettingPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.TimezoneSettingFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TimezoneSettingPayload>
+          }
+          findFirst: {
+            args: Prisma.TimezoneSettingFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TimezoneSettingPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.TimezoneSettingFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TimezoneSettingPayload>
+          }
+          findMany: {
+            args: Prisma.TimezoneSettingFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TimezoneSettingPayload>[]
+          }
+          create: {
+            args: Prisma.TimezoneSettingCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TimezoneSettingPayload>
+          }
+          createMany: {
+            args: Prisma.TimezoneSettingCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.TimezoneSettingCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TimezoneSettingPayload>[]
+          }
+          delete: {
+            args: Prisma.TimezoneSettingDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TimezoneSettingPayload>
+          }
+          update: {
+            args: Prisma.TimezoneSettingUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TimezoneSettingPayload>
+          }
+          deleteMany: {
+            args: Prisma.TimezoneSettingDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.TimezoneSettingUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.TimezoneSettingUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TimezoneSettingPayload>
+          }
+          aggregate: {
+            args: Prisma.TimezoneSettingAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateTimezoneSetting>
+          }
+          groupBy: {
+            args: Prisma.TimezoneSettingGroupByArgs<ExtArgs>
+            result: $Utils.Optional<TimezoneSettingGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.TimezoneSettingCountArgs<ExtArgs>
+            result: $Utils.Optional<TimezoneSettingCountAggregateOutputType> | number
           }
         }
       }
@@ -35792,6 +35878,939 @@ export namespace Prisma {
 
 
   /**
+   * Model TimezoneSetting
+   */
+
+  export type AggregateTimezoneSetting = {
+    _count: TimezoneSettingCountAggregateOutputType | null
+    _avg: TimezoneSettingAvgAggregateOutputType | null
+    _sum: TimezoneSettingSumAggregateOutputType | null
+    _min: TimezoneSettingMinAggregateOutputType | null
+    _max: TimezoneSettingMaxAggregateOutputType | null
+  }
+
+  export type TimezoneSettingAvgAggregateOutputType = {
+    id: number | null
+  }
+
+  export type TimezoneSettingSumAggregateOutputType = {
+    id: number | null
+  }
+
+  export type TimezoneSettingMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    timezone: string | null
+    enabled: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type TimezoneSettingMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    timezone: string | null
+    enabled: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type TimezoneSettingCountAggregateOutputType = {
+    id: number
+    publicId: number
+    timezone: number
+    enabled: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type TimezoneSettingAvgAggregateInputType = {
+    id?: true
+  }
+
+  export type TimezoneSettingSumAggregateInputType = {
+    id?: true
+  }
+
+  export type TimezoneSettingMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    timezone?: true
+    enabled?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type TimezoneSettingMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    timezone?: true
+    enabled?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type TimezoneSettingCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    timezone?: true
+    enabled?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type TimezoneSettingAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which TimezoneSetting to aggregate.
+     */
+    where?: TimezoneSettingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TimezoneSettings to fetch.
+     */
+    orderBy?: TimezoneSettingOrderByWithRelationInput | TimezoneSettingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: TimezoneSettingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TimezoneSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TimezoneSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned TimezoneSettings
+    **/
+    _count?: true | TimezoneSettingCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: TimezoneSettingAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: TimezoneSettingSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: TimezoneSettingMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: TimezoneSettingMaxAggregateInputType
+  }
+
+  export type GetTimezoneSettingAggregateType<T extends TimezoneSettingAggregateArgs> = {
+        [P in keyof T & keyof AggregateTimezoneSetting]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateTimezoneSetting[P]>
+      : GetScalarType<T[P], AggregateTimezoneSetting[P]>
+  }
+
+
+
+
+  export type TimezoneSettingGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: TimezoneSettingWhereInput
+    orderBy?: TimezoneSettingOrderByWithAggregationInput | TimezoneSettingOrderByWithAggregationInput[]
+    by: TimezoneSettingScalarFieldEnum[] | TimezoneSettingScalarFieldEnum
+    having?: TimezoneSettingScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: TimezoneSettingCountAggregateInputType | true
+    _avg?: TimezoneSettingAvgAggregateInputType
+    _sum?: TimezoneSettingSumAggregateInputType
+    _min?: TimezoneSettingMinAggregateInputType
+    _max?: TimezoneSettingMaxAggregateInputType
+  }
+
+  export type TimezoneSettingGroupByOutputType = {
+    id: number
+    publicId: string
+    timezone: string
+    enabled: boolean
+    createdAt: Date
+    updatedAt: Date
+    _count: TimezoneSettingCountAggregateOutputType | null
+    _avg: TimezoneSettingAvgAggregateOutputType | null
+    _sum: TimezoneSettingSumAggregateOutputType | null
+    _min: TimezoneSettingMinAggregateOutputType | null
+    _max: TimezoneSettingMaxAggregateOutputType | null
+  }
+
+  type GetTimezoneSettingGroupByPayload<T extends TimezoneSettingGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<TimezoneSettingGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof TimezoneSettingGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], TimezoneSettingGroupByOutputType[P]>
+            : GetScalarType<T[P], TimezoneSettingGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type TimezoneSettingSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    timezone?: boolean
+    enabled?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["timezoneSetting"]>
+
+  export type TimezoneSettingSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    timezone?: boolean
+    enabled?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["timezoneSetting"]>
+
+  export type TimezoneSettingSelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    timezone?: boolean
+    enabled?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+
+  export type $TimezoneSettingPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "TimezoneSetting"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      timezone: string
+      enabled: boolean
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["timezoneSetting"]>
+    composites: {}
+  }
+
+  type TimezoneSettingGetPayload<S extends boolean | null | undefined | TimezoneSettingDefaultArgs> = $Result.GetResult<Prisma.$TimezoneSettingPayload, S>
+
+  type TimezoneSettingCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<TimezoneSettingFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: TimezoneSettingCountAggregateInputType | true
+    }
+
+  export interface TimezoneSettingDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['TimezoneSetting'], meta: { name: 'TimezoneSetting' } }
+    /**
+     * Find zero or one TimezoneSetting that matches the filter.
+     * @param {TimezoneSettingFindUniqueArgs} args - Arguments to find a TimezoneSetting
+     * @example
+     * // Get one TimezoneSetting
+     * const timezoneSetting = await prisma.timezoneSetting.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends TimezoneSettingFindUniqueArgs>(args: SelectSubset<T, TimezoneSettingFindUniqueArgs<ExtArgs>>): Prisma__TimezoneSettingClient<$Result.GetResult<Prisma.$TimezoneSettingPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one TimezoneSetting that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {TimezoneSettingFindUniqueOrThrowArgs} args - Arguments to find a TimezoneSetting
+     * @example
+     * // Get one TimezoneSetting
+     * const timezoneSetting = await prisma.timezoneSetting.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends TimezoneSettingFindUniqueOrThrowArgs>(args: SelectSubset<T, TimezoneSettingFindUniqueOrThrowArgs<ExtArgs>>): Prisma__TimezoneSettingClient<$Result.GetResult<Prisma.$TimezoneSettingPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first TimezoneSetting that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TimezoneSettingFindFirstArgs} args - Arguments to find a TimezoneSetting
+     * @example
+     * // Get one TimezoneSetting
+     * const timezoneSetting = await prisma.timezoneSetting.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends TimezoneSettingFindFirstArgs>(args?: SelectSubset<T, TimezoneSettingFindFirstArgs<ExtArgs>>): Prisma__TimezoneSettingClient<$Result.GetResult<Prisma.$TimezoneSettingPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first TimezoneSetting that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TimezoneSettingFindFirstOrThrowArgs} args - Arguments to find a TimezoneSetting
+     * @example
+     * // Get one TimezoneSetting
+     * const timezoneSetting = await prisma.timezoneSetting.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends TimezoneSettingFindFirstOrThrowArgs>(args?: SelectSubset<T, TimezoneSettingFindFirstOrThrowArgs<ExtArgs>>): Prisma__TimezoneSettingClient<$Result.GetResult<Prisma.$TimezoneSettingPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more TimezoneSettings that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TimezoneSettingFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all TimezoneSettings
+     * const timezoneSettings = await prisma.timezoneSetting.findMany()
+     * 
+     * // Get first 10 TimezoneSettings
+     * const timezoneSettings = await prisma.timezoneSetting.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const timezoneSettingWithIdOnly = await prisma.timezoneSetting.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends TimezoneSettingFindManyArgs>(args?: SelectSubset<T, TimezoneSettingFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TimezoneSettingPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a TimezoneSetting.
+     * @param {TimezoneSettingCreateArgs} args - Arguments to create a TimezoneSetting.
+     * @example
+     * // Create one TimezoneSetting
+     * const TimezoneSetting = await prisma.timezoneSetting.create({
+     *   data: {
+     *     // ... data to create a TimezoneSetting
+     *   }
+     * })
+     * 
+     */
+    create<T extends TimezoneSettingCreateArgs>(args: SelectSubset<T, TimezoneSettingCreateArgs<ExtArgs>>): Prisma__TimezoneSettingClient<$Result.GetResult<Prisma.$TimezoneSettingPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many TimezoneSettings.
+     * @param {TimezoneSettingCreateManyArgs} args - Arguments to create many TimezoneSettings.
+     * @example
+     * // Create many TimezoneSettings
+     * const timezoneSetting = await prisma.timezoneSetting.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends TimezoneSettingCreateManyArgs>(args?: SelectSubset<T, TimezoneSettingCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many TimezoneSettings and returns the data saved in the database.
+     * @param {TimezoneSettingCreateManyAndReturnArgs} args - Arguments to create many TimezoneSettings.
+     * @example
+     * // Create many TimezoneSettings
+     * const timezoneSetting = await prisma.timezoneSetting.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many TimezoneSettings and only return the `id`
+     * const timezoneSettingWithIdOnly = await prisma.timezoneSetting.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends TimezoneSettingCreateManyAndReturnArgs>(args?: SelectSubset<T, TimezoneSettingCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TimezoneSettingPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a TimezoneSetting.
+     * @param {TimezoneSettingDeleteArgs} args - Arguments to delete one TimezoneSetting.
+     * @example
+     * // Delete one TimezoneSetting
+     * const TimezoneSetting = await prisma.timezoneSetting.delete({
+     *   where: {
+     *     // ... filter to delete one TimezoneSetting
+     *   }
+     * })
+     * 
+     */
+    delete<T extends TimezoneSettingDeleteArgs>(args: SelectSubset<T, TimezoneSettingDeleteArgs<ExtArgs>>): Prisma__TimezoneSettingClient<$Result.GetResult<Prisma.$TimezoneSettingPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one TimezoneSetting.
+     * @param {TimezoneSettingUpdateArgs} args - Arguments to update one TimezoneSetting.
+     * @example
+     * // Update one TimezoneSetting
+     * const timezoneSetting = await prisma.timezoneSetting.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends TimezoneSettingUpdateArgs>(args: SelectSubset<T, TimezoneSettingUpdateArgs<ExtArgs>>): Prisma__TimezoneSettingClient<$Result.GetResult<Prisma.$TimezoneSettingPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more TimezoneSettings.
+     * @param {TimezoneSettingDeleteManyArgs} args - Arguments to filter TimezoneSettings to delete.
+     * @example
+     * // Delete a few TimezoneSettings
+     * const { count } = await prisma.timezoneSetting.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends TimezoneSettingDeleteManyArgs>(args?: SelectSubset<T, TimezoneSettingDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more TimezoneSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TimezoneSettingUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many TimezoneSettings
+     * const timezoneSetting = await prisma.timezoneSetting.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends TimezoneSettingUpdateManyArgs>(args: SelectSubset<T, TimezoneSettingUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one TimezoneSetting.
+     * @param {TimezoneSettingUpsertArgs} args - Arguments to update or create a TimezoneSetting.
+     * @example
+     * // Update or create a TimezoneSetting
+     * const timezoneSetting = await prisma.timezoneSetting.upsert({
+     *   create: {
+     *     // ... data to create a TimezoneSetting
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the TimezoneSetting we want to update
+     *   }
+     * })
+     */
+    upsert<T extends TimezoneSettingUpsertArgs>(args: SelectSubset<T, TimezoneSettingUpsertArgs<ExtArgs>>): Prisma__TimezoneSettingClient<$Result.GetResult<Prisma.$TimezoneSettingPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of TimezoneSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TimezoneSettingCountArgs} args - Arguments to filter TimezoneSettings to count.
+     * @example
+     * // Count the number of TimezoneSettings
+     * const count = await prisma.timezoneSetting.count({
+     *   where: {
+     *     // ... the filter for the TimezoneSettings we want to count
+     *   }
+     * })
+    **/
+    count<T extends TimezoneSettingCountArgs>(
+      args?: Subset<T, TimezoneSettingCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], TimezoneSettingCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a TimezoneSetting.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TimezoneSettingAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends TimezoneSettingAggregateArgs>(args: Subset<T, TimezoneSettingAggregateArgs>): Prisma.PrismaPromise<GetTimezoneSettingAggregateType<T>>
+
+    /**
+     * Group by TimezoneSetting.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TimezoneSettingGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends TimezoneSettingGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: TimezoneSettingGroupByArgs['orderBy'] }
+        : { orderBy?: TimezoneSettingGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, TimezoneSettingGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetTimezoneSettingGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the TimezoneSetting model
+   */
+  readonly fields: TimezoneSettingFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for TimezoneSetting.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__TimezoneSettingClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the TimezoneSetting model
+   */ 
+  interface TimezoneSettingFieldRefs {
+    readonly id: FieldRef<"TimezoneSetting", 'Int'>
+    readonly publicId: FieldRef<"TimezoneSetting", 'String'>
+    readonly timezone: FieldRef<"TimezoneSetting", 'String'>
+    readonly enabled: FieldRef<"TimezoneSetting", 'Boolean'>
+    readonly createdAt: FieldRef<"TimezoneSetting", 'DateTime'>
+    readonly updatedAt: FieldRef<"TimezoneSetting", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * TimezoneSetting findUnique
+   */
+  export type TimezoneSettingFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TimezoneSetting
+     */
+    select?: TimezoneSettingSelect<ExtArgs> | null
+    /**
+     * Filter, which TimezoneSetting to fetch.
+     */
+    where: TimezoneSettingWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * TimezoneSetting findUniqueOrThrow
+   */
+  export type TimezoneSettingFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TimezoneSetting
+     */
+    select?: TimezoneSettingSelect<ExtArgs> | null
+    /**
+     * Filter, which TimezoneSetting to fetch.
+     */
+    where: TimezoneSettingWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * TimezoneSetting findFirst
+   */
+  export type TimezoneSettingFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TimezoneSetting
+     */
+    select?: TimezoneSettingSelect<ExtArgs> | null
+    /**
+     * Filter, which TimezoneSetting to fetch.
+     */
+    where?: TimezoneSettingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TimezoneSettings to fetch.
+     */
+    orderBy?: TimezoneSettingOrderByWithRelationInput | TimezoneSettingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for TimezoneSettings.
+     */
+    cursor?: TimezoneSettingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TimezoneSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TimezoneSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of TimezoneSettings.
+     */
+    distinct?: TimezoneSettingScalarFieldEnum | TimezoneSettingScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * TimezoneSetting findFirstOrThrow
+   */
+  export type TimezoneSettingFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TimezoneSetting
+     */
+    select?: TimezoneSettingSelect<ExtArgs> | null
+    /**
+     * Filter, which TimezoneSetting to fetch.
+     */
+    where?: TimezoneSettingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TimezoneSettings to fetch.
+     */
+    orderBy?: TimezoneSettingOrderByWithRelationInput | TimezoneSettingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for TimezoneSettings.
+     */
+    cursor?: TimezoneSettingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TimezoneSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TimezoneSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of TimezoneSettings.
+     */
+    distinct?: TimezoneSettingScalarFieldEnum | TimezoneSettingScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * TimezoneSetting findMany
+   */
+  export type TimezoneSettingFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TimezoneSetting
+     */
+    select?: TimezoneSettingSelect<ExtArgs> | null
+    /**
+     * Filter, which TimezoneSettings to fetch.
+     */
+    where?: TimezoneSettingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TimezoneSettings to fetch.
+     */
+    orderBy?: TimezoneSettingOrderByWithRelationInput | TimezoneSettingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing TimezoneSettings.
+     */
+    cursor?: TimezoneSettingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TimezoneSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TimezoneSettings.
+     */
+    skip?: number
+    distinct?: TimezoneSettingScalarFieldEnum | TimezoneSettingScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * TimezoneSetting create
+   */
+  export type TimezoneSettingCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TimezoneSetting
+     */
+    select?: TimezoneSettingSelect<ExtArgs> | null
+    /**
+     * The data needed to create a TimezoneSetting.
+     */
+    data: XOR<TimezoneSettingCreateInput, TimezoneSettingUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * TimezoneSetting createMany
+   */
+  export type TimezoneSettingCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many TimezoneSettings.
+     */
+    data: TimezoneSettingCreateManyInput | TimezoneSettingCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * TimezoneSetting createManyAndReturn
+   */
+  export type TimezoneSettingCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TimezoneSetting
+     */
+    select?: TimezoneSettingSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many TimezoneSettings.
+     */
+    data: TimezoneSettingCreateManyInput | TimezoneSettingCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * TimezoneSetting update
+   */
+  export type TimezoneSettingUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TimezoneSetting
+     */
+    select?: TimezoneSettingSelect<ExtArgs> | null
+    /**
+     * The data needed to update a TimezoneSetting.
+     */
+    data: XOR<TimezoneSettingUpdateInput, TimezoneSettingUncheckedUpdateInput>
+    /**
+     * Choose, which TimezoneSetting to update.
+     */
+    where: TimezoneSettingWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * TimezoneSetting updateMany
+   */
+  export type TimezoneSettingUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update TimezoneSettings.
+     */
+    data: XOR<TimezoneSettingUpdateManyMutationInput, TimezoneSettingUncheckedUpdateManyInput>
+    /**
+     * Filter which TimezoneSettings to update
+     */
+    where?: TimezoneSettingWhereInput
+  }
+
+  /**
+   * TimezoneSetting upsert
+   */
+  export type TimezoneSettingUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TimezoneSetting
+     */
+    select?: TimezoneSettingSelect<ExtArgs> | null
+    /**
+     * The filter to search for the TimezoneSetting to update in case it exists.
+     */
+    where: TimezoneSettingWhereUniqueInput
+    /**
+     * In case the TimezoneSetting found by the `where` argument doesn't exist, create a new TimezoneSetting with this data.
+     */
+    create: XOR<TimezoneSettingCreateInput, TimezoneSettingUncheckedCreateInput>
+    /**
+     * In case the TimezoneSetting was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<TimezoneSettingUpdateInput, TimezoneSettingUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * TimezoneSetting delete
+   */
+  export type TimezoneSettingDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TimezoneSetting
+     */
+    select?: TimezoneSettingSelect<ExtArgs> | null
+    /**
+     * Filter which TimezoneSetting to delete.
+     */
+    where: TimezoneSettingWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * TimezoneSetting deleteMany
+   */
+  export type TimezoneSettingDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which TimezoneSettings to delete
+     */
+    where?: TimezoneSettingWhereInput
+  }
+
+  /**
+   * TimezoneSetting without action
+   */
+  export type TimezoneSettingDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TimezoneSetting
+     */
+    select?: TimezoneSettingSelect<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -36249,6 +37268,18 @@ export namespace Prisma {
   };
 
   export type GSTRuleScalarFieldEnum = (typeof GSTRuleScalarFieldEnum)[keyof typeof GSTRuleScalarFieldEnum]
+
+
+  export const TimezoneSettingScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    timezone: 'timezone',
+    enabled: 'enabled',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type TimezoneSettingScalarFieldEnum = (typeof TimezoneSettingScalarFieldEnum)[keyof typeof TimezoneSettingScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -38964,6 +39995,65 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"GSTRule"> | Date | string
   }
 
+  export type TimezoneSettingWhereInput = {
+    AND?: TimezoneSettingWhereInput | TimezoneSettingWhereInput[]
+    OR?: TimezoneSettingWhereInput[]
+    NOT?: TimezoneSettingWhereInput | TimezoneSettingWhereInput[]
+    id?: IntFilter<"TimezoneSetting"> | number
+    publicId?: StringFilter<"TimezoneSetting"> | string
+    timezone?: StringFilter<"TimezoneSetting"> | string
+    enabled?: BoolFilter<"TimezoneSetting"> | boolean
+    createdAt?: DateTimeFilter<"TimezoneSetting"> | Date | string
+    updatedAt?: DateTimeFilter<"TimezoneSetting"> | Date | string
+  }
+
+  export type TimezoneSettingOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    timezone?: SortOrder
+    enabled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type TimezoneSettingWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    AND?: TimezoneSettingWhereInput | TimezoneSettingWhereInput[]
+    OR?: TimezoneSettingWhereInput[]
+    NOT?: TimezoneSettingWhereInput | TimezoneSettingWhereInput[]
+    timezone?: StringFilter<"TimezoneSetting"> | string
+    enabled?: BoolFilter<"TimezoneSetting"> | boolean
+    createdAt?: DateTimeFilter<"TimezoneSetting"> | Date | string
+    updatedAt?: DateTimeFilter<"TimezoneSetting"> | Date | string
+  }, "id" | "publicId">
+
+  export type TimezoneSettingOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    timezone?: SortOrder
+    enabled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: TimezoneSettingCountOrderByAggregateInput
+    _avg?: TimezoneSettingAvgOrderByAggregateInput
+    _max?: TimezoneSettingMaxOrderByAggregateInput
+    _min?: TimezoneSettingMinOrderByAggregateInput
+    _sum?: TimezoneSettingSumOrderByAggregateInput
+  }
+
+  export type TimezoneSettingScalarWhereWithAggregatesInput = {
+    AND?: TimezoneSettingScalarWhereWithAggregatesInput | TimezoneSettingScalarWhereWithAggregatesInput[]
+    OR?: TimezoneSettingScalarWhereWithAggregatesInput[]
+    NOT?: TimezoneSettingScalarWhereWithAggregatesInput | TimezoneSettingScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"TimezoneSetting"> | number
+    publicId?: StringWithAggregatesFilter<"TimezoneSetting"> | string
+    timezone?: StringWithAggregatesFilter<"TimezoneSetting"> | string
+    enabled?: BoolWithAggregatesFilter<"TimezoneSetting"> | boolean
+    createdAt?: DateTimeWithAggregatesFilter<"TimezoneSetting"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"TimezoneSetting"> | Date | string
+  }
+
   export type UserCreateInput = {
     publicId: string
     name: string
@@ -41424,6 +42514,66 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type TimezoneSettingCreateInput = {
+    publicId: string
+    timezone?: string
+    enabled?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type TimezoneSettingUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    timezone?: string
+    enabled?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type TimezoneSettingUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    timezone?: StringFieldUpdateOperationsInput | string
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TimezoneSettingUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    timezone?: StringFieldUpdateOperationsInput | string
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TimezoneSettingCreateManyInput = {
+    id?: number
+    publicId: string
+    timezone?: string
+    enabled?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type TimezoneSettingUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    timezone?: StringFieldUpdateOperationsInput | string
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TimezoneSettingUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    timezone?: StringFieldUpdateOperationsInput | string
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type IntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -43732,6 +44882,41 @@ export namespace Prisma {
     cgstRate?: SortOrder
     sgstRate?: SortOrder
     igstRate?: SortOrder
+  }
+
+  export type TimezoneSettingCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    timezone?: SortOrder
+    enabled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type TimezoneSettingAvgOrderByAggregateInput = {
+    id?: SortOrder
+  }
+
+  export type TimezoneSettingMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    timezone?: SortOrder
+    enabled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type TimezoneSettingMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    timezone?: SortOrder
+    enabled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type TimezoneSettingSumOrderByAggregateInput = {
+    id?: SortOrder
   }
 
   export type BranchCreateNestedOneWithoutUsersInput = {
@@ -54033,6 +55218,10 @@ export namespace Prisma {
      * @deprecated Use GSTRuleDefaultArgs instead
      */
     export type GSTRuleArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = GSTRuleDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use TimezoneSettingDefaultArgs instead
+     */
+    export type TimezoneSettingArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = TimezoneSettingDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

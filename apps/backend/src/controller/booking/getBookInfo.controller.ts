@@ -10,7 +10,9 @@ import { calculateMultiDayTotalPrice } from "../../utils/pricing/calcMultiDayPri
 import { getDiscountForDays } from "../../utils/pricing/getDiscountForDays.js";
 import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
 import { createID } from "../../utils/nanoID.js";
-import jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken";
+import { TimezoneService } from "../../services/timezone/timezone.service.js";
+
 export const createBookingSummary = async (req: Request, res: Response) => {
   try {
     const parsed = bookingSummarySchema.safeParse(req.body);
@@ -50,14 +52,17 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         message: "Invalid KYC document"
       });
     }
-    const startDate = new Date(start);
-    const endDate = new Date(end);
+    const startDateDt = TimezoneService.parseISO(start);
+    const endDateDt = TimezoneService.parseISO(end);
 
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+    if (!startDateDt.isValid || !endDateDt.isValid) {
       return res.status(StatusCode.BAD_REQUEST).json({
         message: "Invalid start or end date format"
       });
     }
+
+    const startDate = TimezoneService.toPrisma(startDateDt);
+    const endDate = TimezoneService.toPrisma(endDateDt);
 
 
     if (endDate <= startDate) {
@@ -66,11 +71,11 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       });
     }
 
-    const now = new Date();
+    const nowDt = TimezoneService.getCurrentTime();
     // Compare only the date portion, not the exact time
     // This allows same-day bookings even if the time has passed
-    const startDateOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-    const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startDateOnly = TimezoneService.startOfDay(startDateDt);
+    const todayOnly = TimezoneService.startOfDay(nowDt);
 
     if (startDateOnly < todayOnly) {
       return res.status(StatusCode.BAD_REQUEST).json({

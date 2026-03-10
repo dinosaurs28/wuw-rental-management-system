@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
+import { TimezoneService } from "../../services/timezone/timezone.service.js";
 
 export const GetActiveBookings = async (req: Request, res: Response) => {
     const branchId = req.branch_Id;
@@ -15,21 +16,18 @@ export const GetActiveBookings = async (req: Request, res: Response) => {
     let dateKey: string | undefined = 'all';
 
     if (date) {
-        const targetDate = new Date(date as string);
-        if (!isNaN(targetDate.getTime())) {
-            const startOfDay = new Date(targetDate);
-            startOfDay.setHours(0, 0, 0, 0);
-
-            const endOfDay = new Date(targetDate);
-            endOfDay.setHours(23, 59, 59, 999);
+        const targetDateDt = TimezoneService.parseISO(date as string);
+        if (targetDateDt.isValid) {
+            const startOfDayDt = TimezoneService.startOfDay(targetDateDt);
+            const endOfDayDt = TimezoneService.endOfDay(targetDateDt);
 
             dateFilter = {
                 startAt: {
-                    gte: startOfDay,
-                    lte: endOfDay
+                    gte: TimezoneService.toPrisma(startOfDayDt),
+                    lte: TimezoneService.toPrisma(endOfDayDt)
                 }
             };
-            dateKey = targetDate.toISOString().split('T')[0] as string;
+            dateKey = targetDateDt.toFormat('yyyy-MM-dd');
         }
     }
 
@@ -146,21 +144,18 @@ export const GetPendingApprovals = async (req: Request, res: Response) => {
     let dateKey: string | undefined = 'all';
 
     if (date) {
-        const targetDate = new Date(date as string);
-        if (!isNaN(targetDate.getTime())) {
-            const startOfDay = new Date(targetDate);
-            startOfDay.setHours(0, 0, 0, 0);
-
-            const endOfDay = new Date(targetDate);
-            endOfDay.setHours(23, 59, 59, 999);
+        const targetDateDt = TimezoneService.parseISO(date as string);
+        if (targetDateDt.isValid) {
+            const startOfDayDt = TimezoneService.startOfDay(targetDateDt);
+            const endOfDayDt = TimezoneService.endOfDay(targetDateDt);
 
             dateFilter = {
                 startAt: {
-                    gte: startOfDay,
-                    lte: endOfDay
+                    gte: TimezoneService.toPrisma(startOfDayDt),
+                    lte: TimezoneService.toPrisma(endOfDayDt)
                 }
             };
-            dateKey = targetDate.toISOString().split('T')[0] as string;
+            dateKey = targetDateDt.toFormat('yyyy-MM-dd');
         }
     }
 

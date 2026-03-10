@@ -326,14 +326,13 @@ export const BookingConfirmationPage = () => {
                                 </div>
                             )}
 
-                            {/* Dates */}
                             <div className="flex items-center justify-between py-2 border-b border-zinc-100">
                                 <span className="text-sm text-muted-foreground flex items-center gap-2">
                                     <Calendar className="size-4" />
-                                    Duration
+                                    Duration & Timezone
                                 </span>
                                 <span className="text-sm font-medium text-foreground">
-                                    {formattedStartDate} - {formattedEndDate}
+                                    {formattedStartDate} - {formattedEndDate} (IST)
                                 </span>
                             </div>
 

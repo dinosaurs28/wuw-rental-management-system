@@ -9,6 +9,7 @@ import { getDiscountForDays } from "../../utils/pricing/getDiscountForDays.js";
 import { getDepositAmount } from "../../utils/pricing/getDepositAmount.js";
 import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
 import { createID } from "../../utils/nanoID.js";
+import { TimezoneService } from "../../services/timezone/timezone.service.js";
 
 export const BookingController = async (req: Request, res: Response) => {
     try {
@@ -19,34 +20,28 @@ export const BookingController = async (req: Request, res: Response) => {
         let cacheKeySuffix = "";
 
         if (date) {
-            // Force UTC parsing
-            const parsedDate = new Date(`${date}T00:00:00Z`);
-            if (!isNaN(parsedDate.getTime())) {
-                const startOfDay = new Date(parsedDate);
-                // No need to setHours again if already midnight UTC, but for clarity/safety:
-                startOfDay.setUTCHours(0, 0, 0, 0);
-
-                const endOfDay = new Date(parsedDate);
-                endOfDay.setUTCHours(23, 59, 59, 999);
+            const parsedDateDt = TimezoneService.parseISO(date as string);
+            if (parsedDateDt.isValid) {
+                const startOfDayDt = TimezoneService.startOfDay(parsedDateDt);
+                const endOfDayDt = TimezoneService.endOfDay(parsedDateDt);
 
                 dateFilter = {
-                    gte: startOfDay,
-                    lte: endOfDay
+                    gte: TimezoneService.toPrisma(startOfDayDt),
+                    lte: TimezoneService.toPrisma(endOfDayDt)
                 };
-                cacheKeySuffix = `date:${startOfDay.toISOString().split('T')[0]}`;
+                cacheKeySuffix = `date:${parsedDateDt.toFormat('yyyy-MM-dd')}`;
             }
         }
 
         // Default behavior: Upcoming bookings from today if no valid date is provided
         if (Object.keys(dateFilter).length === 0) {
-            const now = new Date();
-            // Get today in UTC
-            const todayUTC = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0));
+            const nowDt = TimezoneService.getCurrentTime();
+            const startOfDayDt = TimezoneService.startOfDay(nowDt);
 
             dateFilter = {
-                gte: todayUTC
+                gte: TimezoneService.toPrisma(startOfDayDt)
             };
-            cacheKeySuffix = `upcoming:${todayUTC.toISOString().split('T')[0]}`;
+            cacheKeySuffix = `upcoming:${nowDt.toFormat('yyyy-MM-dd')}`;
         }
 
         const cacheKey = `bookings:${branchId}:${cacheKeySuffix}`;
@@ -167,9 +162,11 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
             return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid KYC ID or Document missing" });
         }
 
-        const startDate = new Date(`${start}T00:00:00Z`);
-        const endDate = new Date(`${end}T00:00:00Z`);
-        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid dates" });
+        const startDateDt = TimezoneService.parseISO(start);
+        const endDateDt = TimezoneService.parseISO(end);
+        if (!startDateDt.isValid || !endDateDt.isValid) return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid dates" });
+        const startDate = TimezoneService.toPrisma(startDateDt);
+        const endDate = TimezoneService.toPrisma(endDateDt);
         const vehiclesData = await prisma.vehicle.findMany({
             where: { publicId: { in: vehicles } },
             include: {
@@ -470,8 +467,8 @@ export const DebugBookings = async (req: Request, res: Response) => {
         }
     });
 
-    const start = new Date('2026-02-14T00:00:00Z');
-    const end = new Date('2026-02-15T23:59:59.999Z');
+    const start = TimezoneService.toPrisma(TimezoneService.parseISO('2026-02-14'));
+    const end = TimezoneService.toPrisma(TimezoneService.endOfDay(TimezoneService.parseISO('2026-02-15')));
 
     const result = bookings.map(b => ({
         id: b.publicId,

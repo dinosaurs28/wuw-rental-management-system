@@ -475,6 +475,15 @@ exports.Prisma.GSTRuleScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.TimezoneSettingScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  timezone: 'timezone',
+  enabled: 'enabled',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -621,7 +630,8 @@ exports.Prisma.ModelName = {
   InvoiceItem: 'InvoiceItem',
   AuditLog: 'AuditLog',
   SystemSetting: 'SystemSetting',
-  GSTRule: 'GSTRule'
+  GSTRule: 'GSTRule',
+  TimezoneSetting: 'TimezoneSetting'
 };
 
 /**

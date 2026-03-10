@@ -144,7 +144,7 @@ export const EmployeeBookingSummaryPage = () => {
                         <div className="flex items-center gap-2 mt-2 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded w-fit">
                             <span>{format(startDate, "MMM dd, yyyy")}</span>
                             <ArrowRight className="size-3" />
-                            <span>{format(endDate, "MMM dd, yyyy")}</span>
+                            <span>{format(endDate, "MMM dd, yyyy")} (IST)</span>
                         </div>
                     </div>
                 </div>
