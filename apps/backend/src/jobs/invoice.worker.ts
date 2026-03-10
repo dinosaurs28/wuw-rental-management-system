@@ -121,7 +121,7 @@ export function initInvoiceWorker(): void {
             throw error;
         }
     }, {
-        connection: getConnection(),
+        connection: getConnection() as any,
         concurrency: 5, // Process up to 5 invoices concurrently
     });
 

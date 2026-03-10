@@ -5,10 +5,14 @@ import { redis } from "../../lib/redisconfig.js";
 import { calculatePricingForVehicle } from "../../utils/pricing/calcPricing.js";
 import { getVehicleDetailsSchema } from "@repo/schemas";
 import { calculatePricingForVehicleFromRecord } from "../../utils/pricing/calcPricingInd.js";
-import { calculateMultiDayTotalPrice } from "../../utils/pricing/calcMultiDayPrice.js";
 import { checkVehicleAvailability } from "../../utils/availability/checkAvailability.js";
 import { getDepositAmount } from "../../utils/pricing/getDepositAmount.js";
-import { getDiscountForDays } from "../../utils/pricing/getDiscountForDays.js";
+import { TimezoneService } from "../../services/timezone/timezone.service.js";
+import { PricingEngineService } from "../../services/pricing/pricing-engine.service.js";
+import { DurationCalculatorService } from "../../services/pricing/duration-calculator.service.js";
+import { DateTime } from "luxon";
+
+const pricingEngine = new PricingEngineService();
 
 export const getPublicVehicles = async (req: Request, res: Response) => {
   try {
@@ -25,28 +29,26 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       offset = "0",
     } = req.query as any;
 
-    const limitNum = Number(limit);
-    const offsetNum = Number(offset);
-
     // Parse and validate dates if provided
-    let startDate: Date | null = null;
-    let endDate: Date | null = null;
+    let startDate: DateTime | null = null;
+    let endDate: DateTime | null = null;
 
     if (start) {
-      // Force UTC parsing
-      startDate = new Date(`${start}T00:00:00Z`);
+      startDate = TimezoneService.parseISO(start);
 
       if (end) {
-        endDate = new Date(`${end}T00:00:00Z`);
+        endDate = TimezoneService.parseISO(end);
       } else {
-        // Default to same day if end date missing
-        endDate = new Date(startDate);
+        // Fallback: Default to 24 hours if end date missing
+        endDate = startDate.plus({ hours: 24 });
       }
 
-      // Update end date to end of day for full availability check
-      endDate.setUTCHours(23, 59, 59, 999);
+      if (startDate.toMillis() === endDate.toMillis()) {
+        // Fallback: Default to 24 hours if same exact time
+        endDate = startDate.plus({ hours: 24 });
+      }
 
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      if (!startDate?.isValid || !endDate?.isValid) {
         return res.status(StatusCode.BAD_REQUEST).json({
           message: "Invalid start or end date format",
         });
@@ -56,14 +58,17 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
     const cacheKey = `public:vehicles:${category || "all"}:${branch || "all"}:${search || "all"
       }:${make || "all"}:${model || "all"}:${sort || "none"}:${start || "all"}:${end || "all"}:${limit}:${offset}`;
 
-    const cachedData = await redis.get(cacheKey);
-    const startTime = performance.now();
+    let cachedData = null;
+    try {
+      cachedData = await redis.get(cacheKey);
+    } catch (redisErr) {
+      console.warn("Redis get error:", redisErr);
+    }
     if (cachedData) {
       return res.status(StatusCode.OK).json(JSON.parse(cachedData));
     }
-
     const filters: any = {
-      status: { in: ["AVAILABLE", "OUT_FOR_RENTAL"] },
+      status: "AVAILABLE",
       deletedAt: null,
       insuranceExpiry: {
         gt: new Date() // Only show vehicles with valid insurance
@@ -71,66 +76,43 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
     };
 
     if (category) {
-      filters.category = { publicId: category };
+      const categoryObj = await prisma.vehicleCategory.findUnique({
+        where: { publicId: category },
+        select: { id: true },
+      });
+
+      if (!categoryObj) {
+        return res.status(404).json({ message: "Invalid category" });
+      }
+
+      filters.categoryId = categoryObj.id;
     }
 
     if (branch) {
-      // Inline branch filter to avoid separate query
-      // Branch can be publicId or name
-      filters.branch = {
-        OR: [
-          { publicId: branch },
-          { name: { contains: branch, mode: "insensitive" } },
-        ]
-      };
+      const branchObj = await prisma.branch.findFirst({
+        where: {
+          OR: [
+            { publicId: branch },
+            { name: { contains: branch, mode: "insensitive" } },
+          ],
+        },
+        select: { id: true },
+      });
+
+      if (!branchObj) {
+        return res.status(404).json({ message: "Invalid branch" });
+      }
+
+      filters.branchId = branchObj.id;
     }
 
-    if (search) {
-      filters.OR = [
-        { make: { contains: search, mode: "insensitive" } },
-        { model: { contains: search, mode: "insensitive" } }
-      ];
-    }
-
-    if (make) {
-      filters.make = { contains: make, mode: "insensitive" };
-    }
-
-    if (model) {
-      filters.model = { contains: model, mode: "insensitive" };
-    }
-
-    // Availability Filter
-    if (startDate && endDate) {
-      // Filter out vehicles that have conflicting bookings
-      // using Prisma's relation filtering (anti-join logic)
-      filters.NOT = {
-        bookingItems: { // Note: Relation name is bookingItems
-          some: {
-            booking: {
-              status: { in: ["CONFIRMED", "PICKED_UP", "HOLD"] },
-              // Check for overlap: (StartA <= EndB) and (EndA >= StartB)
-              startAt: { lte: endDate },
-              endAt: { gte: startDate }
-            }
-          }
-        }
-      };
-    }
-
-    // 1. Single Fetch with JOIN strategy
-    const vehicleFetchStart = performance.now();
-    const vehicles: any[] = await prisma.vehicle.findMany({
-      // relationLoadStrategy: 'join', // Removed due to runtime error, will rely on Prisma's default optimization
+    const vehicles = await prisma.vehicle.findMany({
       where: filters,
-      skip: offsetNum,
-      take: limitNum,
+      skip: Number(offset),
+      take: Number(limit),
       include: {
         category: true,
-        branch: {
-          include: { pricingSetting: true }
-        },
-        pricingOverride: true,
+        branch: true,
         images: {
           where: {
             isThumbnail: true
@@ -143,55 +125,83 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       },
       orderBy:
         sort === "price_low_to_high"
-          ? { id: "asc" } // approximate sorting by ID if price sort requested, real sorting needs computed price which suggests DB field
+          ? { id: "asc" }
           : sort === "price_high_to_low"
             ? { id: "desc" }
             : { createdAt: "desc" },
-    } as any);
-    console.log(`Vehicle single-query fetch: ${(performance.now() - vehicleFetchStart).toFixed(2)}ms`);
+    });
 
     if (vehicles.length === 0) {
       return res.status(StatusCode.OK).json({ count: 0, data: [] });
     }
 
+    let filteredVehicles = vehicles;
+
+    if (search) {
+      const t = search.toLowerCase();
+      filteredVehicles = filteredVehicles.filter(
+        (v) =>
+          v.make.toLowerCase().includes(t) ||
+          v.model.toLowerCase().includes(t)
+      );
+    }
+
+    if (make) {
+      const t = make.toLowerCase();
+      filteredVehicles = filteredVehicles.filter((v) =>
+        v.make.toLowerCase().includes(t)
+      );
+    }
+
+    if (model) {
+      const t = model.toLowerCase();
+      filteredVehicles = filteredVehicles.filter((v) =>
+        v.model.toLowerCase().includes(t)
+      );
+    }
+
     const finalResponse = [];
+    for (const v of filteredVehicles) {
+      let pricingDetails: any = undefined;
 
-    // Process vehicles in memory (Pricing calculation is now O(1) per vehicle with pre-fetched data)
-    for (const v of vehicles) {
       if (startDate && endDate) {
-        const isAvailable = await checkVehicleAvailability(v.id, startDate, endDate);
+        const isAvailable = await checkVehicleAvailability(v.id, TimezoneService.toPrisma(startDate), TimezoneService.toPrisma(endDate));
         if (!isAvailable) {
-          continue;
+          continue; // Skip vehicles that are not available for the selected dates
         }
-      }
 
-      // Calculate pricing using the data we already fetched
-      // Re-implementing simplified version of calculatePricingForVehicle to avoid DB call
-      const base = Number(v.baseDailyPrice);
-      let finalDailyPrice = base;
+        const pricingResult = await pricingEngine.calculateBookingPrice(
+          v.id,
+          startDate,
+          endDate,
+          v.branchId
+        );
 
-      if (v.pricingOverride?.enabled) {
-        if (v.pricingOverride.customPrice) {
-          finalDailyPrice = Number(v.pricingOverride.customPrice);
-        } else if (v.pricingOverride.multiplier) {
-          finalDailyPrice = base * Number(v.pricingOverride.multiplier);
-        }
-      } else {
-        const settings = v.branch?.pricingSetting;
-        if (settings) {
-          if (settings.customEnabled) {
-            finalDailyPrice = base * Number(settings.customMultiplier);
-          } else if (settings.peakEnabled) {
-            finalDailyPrice = base * Number(settings.peakMultiplier);
-          } else if (settings.weekendEnabled) {
-            finalDailyPrice = base * Number(settings.weekendMultiplier);
+        pricingDetails = {
+          basePrice: Number(pricingResult.basePrice),
+          discountAmount: Number(pricingResult.discountAmount),
+          discountPercent: Number(pricingResult.discountPercent),
+          deposit: Number(pricingResult.deposit),
+          taxAmount: Number(pricingResult.taxAmount),
+          cgstAmount: Number(pricingResult.cgstAmount),
+          sgstAmount: Number(pricingResult.sgstAmount),
+          taxRate: Number(pricingResult.taxRate),
+          finalTotal: Number(pricingResult.finalTotal),
+          freeKmLimit: pricingResult.freeKmLimit,
+          extraKmRate: Number(pricingResult.extraKmRate),
+          pricingBreakdown: {
+            periodType: pricingResult.pricingBreakdown.periodType,
+            duration: pricingResult.pricingBreakdown.duration,
+            applicablePrice: Number(pricingResult.pricingBreakdown.applicablePrice),
+            priceSource: pricingResult.pricingBreakdown.priceSource
           }
-        }
+        };
       }
 
-      const pricing = {
-        daily: Number(finalDailyPrice.toFixed(2))
-      };
+      let fallbackPricing: any = null;
+      if (!pricingDetails) {
+        fallbackPricing = await calculatePricingForVehicle(v.id);
+      }
 
       finalResponse.push({
         publicId: v.publicId,
@@ -200,16 +210,22 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
         category: v.category.name,
         branch: v.branch.name,
         imageUrl: v.images,
-        pricing: {
-          daily: pricing.daily,
+        pricing: pricingDetails ? {
+          daily: pricingDetails.pricingBreakdown.applicablePrice
+        } : {
+          daily: fallbackPricing.daily,
+          hourly: fallbackPricing.hourly,
+          halfDay: fallbackPricing.halfDay
         },
+        pricingDetails
       });
     }
 
-    // Handle sorting by price in memory since it's a computed field
     if (sort === "price_low_to_high") {
       finalResponse.sort((a, b) => a.pricing.daily - b.pricing.daily);
-    } else if (sort === "price_high_to_low") {
+    }
+
+    if (sort === "price_high_to_low") {
       finalResponse.sort((a, b) => b.pricing.daily - a.pricing.daily);
     }
 
@@ -218,9 +234,11 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       data: finalResponse,
     };
 
-    console.log(`Total processing time: ${(performance.now() - startTime).toFixed(2)}ms`);
-
-    await redis.set(cacheKey, JSON.stringify(result), "EX", 60);
+    try {
+      await redis.set(cacheKey, JSON.stringify(result), "EX", 60);
+    } catch (redisErr) {
+      console.warn("Redis set error:", redisErr);
+    }
 
     return res.status(StatusCode.OK).json(result);
   } catch (err) {
@@ -241,23 +259,24 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
     }
     const { start, end } = req.query as { start?: string; end?: string };
 
-    let startDate: Date | null = null;
-    let endDate: Date | null = null;
+    let startDate: DateTime | null = null;
+    let endDate: DateTime | null = null;
 
     if (start) {
-      // Force UTC parsing
-      startDate = new Date(`${start}T00:00:00Z`);
+      // Fix: Use parseISO instead of parseUserDateTime since query params are typically full ISO strings from frontend
+      startDate = TimezoneService.parseISO(start);
 
       if (end) {
-        endDate = new Date(`${end}T00:00:00Z`);
+        endDate = TimezoneService.parseISO(end);
       } else {
-        endDate = new Date(startDate);
+        endDate = startDate.plus({ hours: 24 });
       }
 
-      // Update end date to end of day for full availability check
-      endDate.setUTCHours(23, 59, 59, 999);
+      if (startDate.toMillis() === endDate.toMillis()) {
+        endDate = startDate.plus({ hours: 24 });
+      }
 
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      if (!startDate?.isValid || !endDate?.isValid) {
         return res.status(StatusCode.BAD_REQUEST).json({
           message: "Invalid start or end date format",
         });
@@ -284,33 +303,50 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
         message: "Vehicle details could not be found for the provided ID."
       })
     }
-    const pricing = await calculatePricingForVehicleFromRecord(vehicleData)
-    const deposit = await getDepositAmount(vehicleData.branchId, vehicleData.categoryId);
+
+    let deposit = await getDepositAmount(vehicleData.branchId, vehicleData.categoryId);
     let availability: boolean | null = null;
-    let totalPrice: number | null = null;
-    let totalDays: number | null = null;
-    let baseTotal: number | null = null;
-    let discountPrice: number | null = null
+    let pricingDetails: any = null;
 
     // Check insurance expiry
     const isInsuranceValid = new Date(vehicleData.insuranceExpiry) > new Date();
 
     if (startDate && endDate) {
-      const isBookableStatus = ["AVAILABLE", "OUT_FOR_RENTAL"].includes(vehicleData.status);
-      if (!isInsuranceValid || !isBookableStatus) {
-        availability = false; // Not available if insurance expired or status not bookable
+      if (!isInsuranceValid) {
+        availability = false; // Not available if insurance expired
       } else {
-        availability = await checkVehicleAvailability(vehicleData.id, startDate, endDate);
-        console.log("Availability:", availability);
+        availability = await checkVehicleAvailability(vehicleData.id, TimezoneService.toPrisma(startDate), TimezoneService.toPrisma(endDate));
       }
 
-      const multi = calculateMultiDayTotalPrice(startDate, endDate, pricing.daily);
-      baseTotal = multi.total;
-      totalDays = multi.days;
-      const discountPercent = await getDiscountForDays(vehicleData.branchId, vehicleData.categoryId, totalDays);
-      const finalTotal = baseTotal * (1 - discountPercent);
-      totalPrice = Number(finalTotal.toFixed(2));
-      discountPrice = Number((baseTotal - finalTotal).toFixed(2));
+      // Calculate pricing via Phase 2 Pricing Engine
+      const pricingResult = await pricingEngine.calculateBookingPrice(
+        vehicleData.id,
+        startDate,
+        endDate,
+        vehicleData.branchId
+      );
+
+      pricingDetails = {
+        basePrice: Number(pricingResult.basePrice),
+        discountAmount: Number(pricingResult.discountAmount),
+        discountPercent: Number(pricingResult.discountPercent),
+        deposit: Number(pricingResult.deposit),
+        taxAmount: Number(pricingResult.taxAmount),
+        cgstAmount: Number(pricingResult.cgstAmount),
+        sgstAmount: Number(pricingResult.sgstAmount),
+        taxRate: Number(pricingResult.taxRate),
+        finalTotal: Number(pricingResult.finalTotal),
+        freeKmLimit: pricingResult.freeKmLimit,
+        extraKmRate: Number(pricingResult.extraKmRate),
+        pricingBreakdown: {
+          periodType: pricingResult.pricingBreakdown.periodType,
+          duration: pricingResult.pricingBreakdown.duration,
+          applicablePrice: Number(pricingResult.pricingBreakdown.applicablePrice),
+          priceSource: pricingResult.pricingBreakdown.priceSource
+        }
+      };
+
+      deposit = pricingDetails.deposit;
     } else if (!isInsuranceValid) {
       // If no dates provided but insurance expired, mark as explicitly unavailable
       availability = false;
@@ -325,13 +361,11 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
       branch: vehicleData.branch.name,
       images: imageUrls,
       pricing: {
-        daily: pricing.daily
+        daily: pricingDetails?.pricingBreakdown?.applicablePrice
       },
       deposit,
       availability,
-      totalDays,
-      baseTotal,
-      discountPrice
+      pricingDetails
     };
 
     return res.status(StatusCode.OK).json({

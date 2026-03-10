@@ -96,6 +96,14 @@ enum DamageReportStatus {
   REJECTED
 }
 
+enum RentalPeriodType {
+  HOURLY
+  HALF_DAY
+  FULL_DAY
+  MULTI_DAY
+  MONTHLY
+}
+
 // USER & AUTH
 
 model User {
@@ -226,6 +234,7 @@ model Branch {
   pricingSetting          BranchPricingSetting?
   pricingDiscountSlabs    PricingDiscountSlab[]
   categoryDepositSettings CategoryDepositSetting[]
+  branchPricingDefaults   BranchPricingDefaults[]
   gstRule                 GSTRule?
   createdAt               DateTime                 @default(now())
   deletedAt               DateTime?
@@ -270,6 +279,7 @@ model VehicleCategory {
   categoryDepositSettings CategoryDepositSetting[]
   vehicles                Vehicle[]
   pricingRules            PricingRule[]
+  branchPricingDefaults   BranchPricingDefaults[]
 }
 
 model Vehicle {
@@ -292,6 +302,7 @@ model Vehicle {
   maintenance      VehicleMaintenanceRecord[]
   damageReports    DamageReport[]
   pricingOverride  VehiclePricingOverride?
+  customPricing    VehicleCustomPricing?
   images           VehicleImage[]
   bookingItems     BookingItem[]
   createdAt        DateTime                   @default(now())
@@ -315,6 +326,54 @@ model VehiclePricingOverride {
   enabled     Boolean  @default(false)
 
   vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+}
+
+model VehicleCustomPricing {
+  id            Int      @id @default(autoincrement())
+  publicId      String   @unique
+  vehicleId     Int      @unique
+  hourlyRate    Decimal?
+  price12Hour   Decimal?
+  freeKm12Hour  Int      @default(100)
+  price24Hour   Decimal
+  freeKm24Hour  Int      @default(150)
+  priceMonthly  Decimal?
+  freeKmMonthly Int      @default(1500)
+  extraKmRate   Decimal  @default(8.00)
+  extraHourRate Decimal  @default(100.00)
+  enabled       Boolean  @default(true)
+
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([vehicleId])
+  @@index([enabled])
+}
+
+model BranchPricingDefaults {
+  id            Int      @id @default(autoincrement())
+  publicId      String   @unique
+  branchId      Int
+  categoryId    Int
+  hourlyRate    Decimal?
+  price12Hour   Decimal?
+  freeKm12Hour  Int      @default(100)
+  price24Hour   Decimal
+  freeKm24Hour  Int      @default(150)
+  priceMonthly  Decimal?
+  freeKmMonthly Int      @default(1500)
+  extraKmRate   Decimal  @default(8.00)
+  extraHourRate Decimal  @default(100.00)
+
+  branch    Branch          @relation(fields: [branchId], references: [id])
+  category  VehicleCategory @relation(fields: [categoryId], references: [id])
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@unique([branchId, categoryId])
+  @@index([branchId])
+  @@index([categoryId])
 }
 
 model VehicleInsurance {
@@ -398,30 +457,38 @@ model CategoryDepositSetting {
 }
 
 model Booking {
-  id              Int            @id @default(autoincrement())
-  publicId        String         @unique
-  customerId      Int
-  branchId        Int
-  startAt         DateTime
-  endAt           DateTime
-  days            Int
-  holdExpiresAt   DateTime?
-  totalBase       Decimal
-  totalDiscount   Decimal
-  totalDeposit    Decimal
-  totalTax        Decimal        @default(0)
-  totalFinal      Decimal
-  status          BookingStatus  @default(HOLD)
-  transactionId   String?        @unique
-  paymentStatus   PaymentStatus  @default(CREATED)
-  pricingSnapshot Json
-  createdById     Int
-  depositMethod   DepositMethod?
-  kycFileId       Int?
-  kycFile         FileObject?    @relation("BookingKyc", fields: [kycFileId], references: [id])
-  customer        Customer       @relation(fields: [customerId], references: [id])
-  branch          Branch         @relation(fields: [branchId], references: [id])
-  createdBy       User           @relation("BookingCreator", fields: [createdById], references: [id])
+  id               Int               @id @default(autoincrement())
+  publicId         String            @unique
+  customerId       Int
+  branchId         Int
+  startAt          DateTime
+  endAt            DateTime
+  days             Int
+  rentalPeriodType RentalPeriodType?
+  actualHours      Decimal?
+  billableHours    Decimal?
+  startOdometer    Int?
+  endOdometer      Int?
+  totalKmDriven    Int?
+  freeKmLimit      Int?
+  extraKmCharged   Int?
+  holdExpiresAt    DateTime?
+  totalBase        Decimal
+  totalDiscount    Decimal
+  totalDeposit     Decimal
+  totalTax         Decimal           @default(0)
+  totalFinal       Decimal
+  status           BookingStatus     @default(HOLD)
+  transactionId    String?           @unique
+  paymentStatus    PaymentStatus     @default(CREATED)
+  pricingSnapshot  Json
+  createdById      Int
+  depositMethod    DepositMethod?
+  kycFileId        Int?
+  kycFile          FileObject?       @relation("BookingKyc", fields: [kycFileId], references: [id])
+  customer         Customer          @relation(fields: [customerId], references: [id])
+  branch           Branch            @relation(fields: [branchId], references: [id])
+  createdBy        User              @relation("BookingCreator", fields: [createdById], references: [id])
 
   photos  BookingPhoto[]
   damages DamageReport[]
@@ -440,6 +507,7 @@ model Booking {
   @@index([startAt, endAt])
   // Performance index
   @@index([status, startAt, endAt])
+  @@index([rentalPeriodType])
 }
 
 model BookingItem {

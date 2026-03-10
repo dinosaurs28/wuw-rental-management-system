@@ -52,7 +52,7 @@ export function initFileCleanupWorker(): void {
             throw error;
         }
     }, {
-        connection: getConnection()
+        connection: getConnection() as any
     });
 
     fileCleanupWorker.on('completed', job => {

@@ -1,18 +1,18 @@
 {
   "name": "PrismaClientKnownRequestError",
-  "code": "P2021",
+  "code": "P2003",
   "clientVersion": "5.22.0",
   "meta": {
-    "modelName": "VehicleMaintenanceRecord",
-    "table": "public.VehicleMaintenanceRecord"
+    "modelName": "Vehicle",
+    "field_name": "VehiclePricingOverride_vehicleId_fkey (index)"
   }
 }
 PrismaClientKnownRequestError: 
-Invalid `prisma.vehicleMaintenanceRecord.deleteMany()` invocation in
-C:\Freelance\vrms\packages\db\prisma\seed.ts:13:41
+Invalid `prisma.vehicle.deleteMany()` invocation in
+C:\Freelance\vrms\packages\db\prisma\seed.ts:18:24
 
-  10 
-  11 // Cleanup existing data
-  12 console.log("Cleaning up existing data...");
-→ 13 await prisma.vehicleMaintenanceRecord.deleteMany(
-The table `public.VehicleMaintenanceRecord` does not exist in the current database.
+  15 await prisma.vehicleCustomPricing.deleteMany();
+  16 await prisma.branchPricingDefaults.deleteMany();
+  17 await prisma.vehicleImage.deleteMany();
+→ 18 await prisma.vehicle.deleteMany(
+Foreign key constraint violated: `VehiclePricingOverride_vehicleId_fkey (index)`

@@ -137,7 +137,7 @@ export function initCleanupWorker(): void {
             throw error;
         }
     }, {
-        connection: getConnection()
+        connection: getConnection() as any
     });
 
     cleanupWorker.on('completed', job => {

@@ -74,6 +74,16 @@ export type Vehicle = $Result.DefaultSelection<Prisma.$VehiclePayload>
  */
 export type VehiclePricingOverride = $Result.DefaultSelection<Prisma.$VehiclePricingOverridePayload>
 /**
+ * Model VehicleCustomPricing
+ * 
+ */
+export type VehicleCustomPricing = $Result.DefaultSelection<Prisma.$VehicleCustomPricingPayload>
+/**
+ * Model BranchPricingDefaults
+ * 
+ */
+export type BranchPricingDefaults = $Result.DefaultSelection<Prisma.$BranchPricingDefaultsPayload>
+/**
  * Model VehicleInsurance
  * 
  */
@@ -231,6 +241,17 @@ export const PricingRuleType: {
 export type PricingRuleType = (typeof PricingRuleType)[keyof typeof PricingRuleType]
 
 
+export const RentalPeriodType: {
+  HOURLY: 'HOURLY',
+  HALF_DAY: 'HALF_DAY',
+  FULL_DAY: 'FULL_DAY',
+  MULTI_DAY: 'MULTI_DAY',
+  MONTHLY: 'MONTHLY'
+};
+
+export type RentalPeriodType = (typeof RentalPeriodType)[keyof typeof RentalPeriodType]
+
+
 export const BookingStatus: {
   HOLD: 'HOLD',
   CONFIRMED: 'CONFIRMED',
@@ -323,6 +344,10 @@ export const VehicleStatus: typeof $Enums.VehicleStatus
 export type PricingRuleType = $Enums.PricingRuleType
 
 export const PricingRuleType: typeof $Enums.PricingRuleType
+
+export type RentalPeriodType = $Enums.RentalPeriodType
+
+export const RentalPeriodType: typeof $Enums.RentalPeriodType
 
 export type BookingStatus = $Enums.BookingStatus
 
@@ -594,6 +619,26 @@ export class PrismaClient<
     * ```
     */
   get vehiclePricingOverride(): Prisma.VehiclePricingOverrideDelegate<ExtArgs>;
+
+  /**
+   * `prisma.vehicleCustomPricing`: Exposes CRUD operations for the **VehicleCustomPricing** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more VehicleCustomPricings
+    * const vehicleCustomPricings = await prisma.vehicleCustomPricing.findMany()
+    * ```
+    */
+  get vehicleCustomPricing(): Prisma.VehicleCustomPricingDelegate<ExtArgs>;
+
+  /**
+   * `prisma.branchPricingDefaults`: Exposes CRUD operations for the **BranchPricingDefaults** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more BranchPricingDefaults
+    * const branchPricingDefaults = await prisma.branchPricingDefaults.findMany()
+    * ```
+    */
+  get branchPricingDefaults(): Prisma.BranchPricingDefaultsDelegate<ExtArgs>;
 
   /**
    * `prisma.vehicleInsurance`: Exposes CRUD operations for the **VehicleInsurance** model.
@@ -1237,6 +1282,8 @@ export namespace Prisma {
     VehicleCategory: 'VehicleCategory',
     Vehicle: 'Vehicle',
     VehiclePricingOverride: 'VehiclePricingOverride',
+    VehicleCustomPricing: 'VehicleCustomPricing',
+    BranchPricingDefaults: 'BranchPricingDefaults',
     VehicleInsurance: 'VehicleInsurance',
     VehicleMaintenanceRecord: 'VehicleMaintenanceRecord',
     VehicleImage: 'VehicleImage',
@@ -1271,7 +1318,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehicle" | "vehiclePricingOverride" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "gSTRule" | "timezoneSetting"
+      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehicle" | "vehiclePricingOverride" | "vehicleCustomPricing" | "branchPricingDefaults" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "gSTRule" | "timezoneSetting"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -2112,6 +2159,146 @@ export namespace Prisma {
           count: {
             args: Prisma.VehiclePricingOverrideCountArgs<ExtArgs>
             result: $Utils.Optional<VehiclePricingOverrideCountAggregateOutputType> | number
+          }
+        }
+      }
+      VehicleCustomPricing: {
+        payload: Prisma.$VehicleCustomPricingPayload<ExtArgs>
+        fields: Prisma.VehicleCustomPricingFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.VehicleCustomPricingFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleCustomPricingPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.VehicleCustomPricingFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleCustomPricingPayload>
+          }
+          findFirst: {
+            args: Prisma.VehicleCustomPricingFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleCustomPricingPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.VehicleCustomPricingFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleCustomPricingPayload>
+          }
+          findMany: {
+            args: Prisma.VehicleCustomPricingFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleCustomPricingPayload>[]
+          }
+          create: {
+            args: Prisma.VehicleCustomPricingCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleCustomPricingPayload>
+          }
+          createMany: {
+            args: Prisma.VehicleCustomPricingCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.VehicleCustomPricingCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleCustomPricingPayload>[]
+          }
+          delete: {
+            args: Prisma.VehicleCustomPricingDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleCustomPricingPayload>
+          }
+          update: {
+            args: Prisma.VehicleCustomPricingUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleCustomPricingPayload>
+          }
+          deleteMany: {
+            args: Prisma.VehicleCustomPricingDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.VehicleCustomPricingUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.VehicleCustomPricingUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleCustomPricingPayload>
+          }
+          aggregate: {
+            args: Prisma.VehicleCustomPricingAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateVehicleCustomPricing>
+          }
+          groupBy: {
+            args: Prisma.VehicleCustomPricingGroupByArgs<ExtArgs>
+            result: $Utils.Optional<VehicleCustomPricingGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.VehicleCustomPricingCountArgs<ExtArgs>
+            result: $Utils.Optional<VehicleCustomPricingCountAggregateOutputType> | number
+          }
+        }
+      }
+      BranchPricingDefaults: {
+        payload: Prisma.$BranchPricingDefaultsPayload<ExtArgs>
+        fields: Prisma.BranchPricingDefaultsFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.BranchPricingDefaultsFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPricingDefaultsPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.BranchPricingDefaultsFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPricingDefaultsPayload>
+          }
+          findFirst: {
+            args: Prisma.BranchPricingDefaultsFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPricingDefaultsPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.BranchPricingDefaultsFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPricingDefaultsPayload>
+          }
+          findMany: {
+            args: Prisma.BranchPricingDefaultsFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPricingDefaultsPayload>[]
+          }
+          create: {
+            args: Prisma.BranchPricingDefaultsCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPricingDefaultsPayload>
+          }
+          createMany: {
+            args: Prisma.BranchPricingDefaultsCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.BranchPricingDefaultsCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPricingDefaultsPayload>[]
+          }
+          delete: {
+            args: Prisma.BranchPricingDefaultsDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPricingDefaultsPayload>
+          }
+          update: {
+            args: Prisma.BranchPricingDefaultsUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPricingDefaultsPayload>
+          }
+          deleteMany: {
+            args: Prisma.BranchPricingDefaultsDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.BranchPricingDefaultsUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.BranchPricingDefaultsUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPricingDefaultsPayload>
+          }
+          aggregate: {
+            args: Prisma.BranchPricingDefaultsAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateBranchPricingDefaults>
+          }
+          groupBy: {
+            args: Prisma.BranchPricingDefaultsGroupByArgs<ExtArgs>
+            result: $Utils.Optional<BranchPricingDefaultsGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.BranchPricingDefaultsCountArgs<ExtArgs>
+            result: $Utils.Optional<BranchPricingDefaultsCountAggregateOutputType> | number
           }
         }
       }
@@ -3785,6 +3972,7 @@ export namespace Prisma {
     bookings: number
     pricingDiscountSlabs: number
     categoryDepositSettings: number
+    branchPricingDefaults: number
   }
 
   export type BranchCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3793,6 +3981,7 @@ export namespace Prisma {
     bookings?: boolean | BranchCountOutputTypeCountBookingsArgs
     pricingDiscountSlabs?: boolean | BranchCountOutputTypeCountPricingDiscountSlabsArgs
     categoryDepositSettings?: boolean | BranchCountOutputTypeCountCategoryDepositSettingsArgs
+    branchPricingDefaults?: boolean | BranchCountOutputTypeCountBranchPricingDefaultsArgs
   }
 
   // Custom InputTypes
@@ -3841,6 +4030,13 @@ export namespace Prisma {
     where?: CategoryDepositSettingWhereInput
   }
 
+  /**
+   * BranchCountOutputType without action
+   */
+  export type BranchCountOutputTypeCountBranchPricingDefaultsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BranchPricingDefaultsWhereInput
+  }
+
 
   /**
    * Count Type VehicleCategoryCountOutputType
@@ -3851,6 +4047,7 @@ export namespace Prisma {
     categoryDepositSettings: number
     vehicles: number
     pricingRules: number
+    branchPricingDefaults: number
   }
 
   export type VehicleCategoryCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3858,6 +4055,7 @@ export namespace Prisma {
     categoryDepositSettings?: boolean | VehicleCategoryCountOutputTypeCountCategoryDepositSettingsArgs
     vehicles?: boolean | VehicleCategoryCountOutputTypeCountVehiclesArgs
     pricingRules?: boolean | VehicleCategoryCountOutputTypeCountPricingRulesArgs
+    branchPricingDefaults?: boolean | VehicleCategoryCountOutputTypeCountBranchPricingDefaultsArgs
   }
 
   // Custom InputTypes
@@ -3897,6 +4095,13 @@ export namespace Prisma {
    */
   export type VehicleCategoryCountOutputTypeCountPricingRulesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: PricingRuleWhereInput
+  }
+
+  /**
+   * VehicleCategoryCountOutputType without action
+   */
+  export type VehicleCategoryCountOutputTypeCountBranchPricingDefaultsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BranchPricingDefaultsWhereInput
   }
 
 
@@ -10842,6 +11047,7 @@ export namespace Prisma {
     pricingSetting?: boolean | Branch$pricingSettingArgs<ExtArgs>
     pricingDiscountSlabs?: boolean | Branch$pricingDiscountSlabsArgs<ExtArgs>
     categoryDepositSettings?: boolean | Branch$categoryDepositSettingsArgs<ExtArgs>
+    branchPricingDefaults?: boolean | Branch$branchPricingDefaultsArgs<ExtArgs>
     gstRule?: boolean | Branch$gstRuleArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["branch"]>
@@ -10873,6 +11079,7 @@ export namespace Prisma {
     pricingSetting?: boolean | Branch$pricingSettingArgs<ExtArgs>
     pricingDiscountSlabs?: boolean | Branch$pricingDiscountSlabsArgs<ExtArgs>
     categoryDepositSettings?: boolean | Branch$categoryDepositSettingsArgs<ExtArgs>
+    branchPricingDefaults?: boolean | Branch$branchPricingDefaultsArgs<ExtArgs>
     gstRule?: boolean | Branch$gstRuleArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }
@@ -10887,6 +11094,7 @@ export namespace Prisma {
       pricingSetting: Prisma.$BranchPricingSettingPayload<ExtArgs> | null
       pricingDiscountSlabs: Prisma.$PricingDiscountSlabPayload<ExtArgs>[]
       categoryDepositSettings: Prisma.$CategoryDepositSettingPayload<ExtArgs>[]
+      branchPricingDefaults: Prisma.$BranchPricingDefaultsPayload<ExtArgs>[]
       gstRule: Prisma.$GSTRulePayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
@@ -11267,6 +11475,7 @@ export namespace Prisma {
     pricingSetting<T extends Branch$pricingSettingArgs<ExtArgs> = {}>(args?: Subset<T, Branch$pricingSettingArgs<ExtArgs>>): Prisma__BranchPricingSettingClient<$Result.GetResult<Prisma.$BranchPricingSettingPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     pricingDiscountSlabs<T extends Branch$pricingDiscountSlabsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$pricingDiscountSlabsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PricingDiscountSlabPayload<ExtArgs>, T, "findMany"> | Null>
     categoryDepositSettings<T extends Branch$categoryDepositSettingsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$categoryDepositSettingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CategoryDepositSettingPayload<ExtArgs>, T, "findMany"> | Null>
+    branchPricingDefaults<T extends Branch$branchPricingDefaultsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$branchPricingDefaultsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BranchPricingDefaultsPayload<ExtArgs>, T, "findMany"> | Null>
     gstRule<T extends Branch$gstRuleArgs<ExtArgs> = {}>(args?: Subset<T, Branch$gstRuleArgs<ExtArgs>>): Prisma__GSTRuleClient<$Result.GetResult<Prisma.$GSTRulePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -11739,6 +11948,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: CategoryDepositSettingScalarFieldEnum | CategoryDepositSettingScalarFieldEnum[]
+  }
+
+  /**
+   * Branch.branchPricingDefaults
+   */
+  export type Branch$branchPricingDefaultsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingDefaults
+     */
+    select?: BranchPricingDefaultsSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingDefaultsInclude<ExtArgs> | null
+    where?: BranchPricingDefaultsWhereInput
+    orderBy?: BranchPricingDefaultsOrderByWithRelationInput | BranchPricingDefaultsOrderByWithRelationInput[]
+    cursor?: BranchPricingDefaultsWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: BranchPricingDefaultsScalarFieldEnum | BranchPricingDefaultsScalarFieldEnum[]
   }
 
   /**
@@ -13966,6 +14195,7 @@ export namespace Prisma {
     categoryDepositSettings?: boolean | VehicleCategory$categoryDepositSettingsArgs<ExtArgs>
     vehicles?: boolean | VehicleCategory$vehiclesArgs<ExtArgs>
     pricingRules?: boolean | VehicleCategory$pricingRulesArgs<ExtArgs>
+    branchPricingDefaults?: boolean | VehicleCategory$branchPricingDefaultsArgs<ExtArgs>
     _count?: boolean | VehicleCategoryCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["vehicleCategory"]>
 
@@ -13988,6 +14218,7 @@ export namespace Prisma {
     categoryDepositSettings?: boolean | VehicleCategory$categoryDepositSettingsArgs<ExtArgs>
     vehicles?: boolean | VehicleCategory$vehiclesArgs<ExtArgs>
     pricingRules?: boolean | VehicleCategory$pricingRulesArgs<ExtArgs>
+    branchPricingDefaults?: boolean | VehicleCategory$branchPricingDefaultsArgs<ExtArgs>
     _count?: boolean | VehicleCategoryCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type VehicleCategoryIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -13999,6 +14230,7 @@ export namespace Prisma {
       categoryDepositSettings: Prisma.$CategoryDepositSettingPayload<ExtArgs>[]
       vehicles: Prisma.$VehiclePayload<ExtArgs>[]
       pricingRules: Prisma.$PricingRulePayload<ExtArgs>[]
+      branchPricingDefaults: Prisma.$BranchPricingDefaultsPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -14373,6 +14605,7 @@ export namespace Prisma {
     categoryDepositSettings<T extends VehicleCategory$categoryDepositSettingsArgs<ExtArgs> = {}>(args?: Subset<T, VehicleCategory$categoryDepositSettingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CategoryDepositSettingPayload<ExtArgs>, T, "findMany"> | Null>
     vehicles<T extends VehicleCategory$vehiclesArgs<ExtArgs> = {}>(args?: Subset<T, VehicleCategory$vehiclesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehiclePayload<ExtArgs>, T, "findMany"> | Null>
     pricingRules<T extends VehicleCategory$pricingRulesArgs<ExtArgs> = {}>(args?: Subset<T, VehicleCategory$pricingRulesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PricingRulePayload<ExtArgs>, T, "findMany"> | Null>
+    branchPricingDefaults<T extends VehicleCategory$branchPricingDefaultsArgs<ExtArgs> = {}>(args?: Subset<T, VehicleCategory$branchPricingDefaultsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BranchPricingDefaultsPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -14809,6 +15042,26 @@ export namespace Prisma {
   }
 
   /**
+   * VehicleCategory.branchPricingDefaults
+   */
+  export type VehicleCategory$branchPricingDefaultsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingDefaults
+     */
+    select?: BranchPricingDefaultsSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingDefaultsInclude<ExtArgs> | null
+    where?: BranchPricingDefaultsWhereInput
+    orderBy?: BranchPricingDefaultsOrderByWithRelationInput | BranchPricingDefaultsOrderByWithRelationInput[]
+    cursor?: BranchPricingDefaultsWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: BranchPricingDefaultsScalarFieldEnum | BranchPricingDefaultsScalarFieldEnum[]
+  }
+
+  /**
    * VehicleCategory without action
    */
   export type VehicleCategoryDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -15127,6 +15380,7 @@ export namespace Prisma {
     maintenance?: boolean | Vehicle$maintenanceArgs<ExtArgs>
     damageReports?: boolean | Vehicle$damageReportsArgs<ExtArgs>
     pricingOverride?: boolean | Vehicle$pricingOverrideArgs<ExtArgs>
+    customPricing?: boolean | Vehicle$customPricingArgs<ExtArgs>
     images?: boolean | Vehicle$imagesArgs<ExtArgs>
     bookingItems?: boolean | Vehicle$bookingItemsArgs<ExtArgs>
     _count?: boolean | VehicleCountOutputTypeDefaultArgs<ExtArgs>
@@ -15177,6 +15431,7 @@ export namespace Prisma {
     maintenance?: boolean | Vehicle$maintenanceArgs<ExtArgs>
     damageReports?: boolean | Vehicle$damageReportsArgs<ExtArgs>
     pricingOverride?: boolean | Vehicle$pricingOverrideArgs<ExtArgs>
+    customPricing?: boolean | Vehicle$customPricingArgs<ExtArgs>
     images?: boolean | Vehicle$imagesArgs<ExtArgs>
     bookingItems?: boolean | Vehicle$bookingItemsArgs<ExtArgs>
     _count?: boolean | VehicleCountOutputTypeDefaultArgs<ExtArgs>
@@ -15195,6 +15450,7 @@ export namespace Prisma {
       maintenance: Prisma.$VehicleMaintenanceRecordPayload<ExtArgs>[]
       damageReports: Prisma.$DamageReportPayload<ExtArgs>[]
       pricingOverride: Prisma.$VehiclePricingOverridePayload<ExtArgs> | null
+      customPricing: Prisma.$VehicleCustomPricingPayload<ExtArgs> | null
       images: Prisma.$VehicleImagePayload<ExtArgs>[]
       bookingItems: Prisma.$BookingItemPayload<ExtArgs>[]
     }
@@ -15584,6 +15840,7 @@ export namespace Prisma {
     maintenance<T extends Vehicle$maintenanceArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$maintenanceArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleMaintenanceRecordPayload<ExtArgs>, T, "findMany"> | Null>
     damageReports<T extends Vehicle$damageReportsArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$damageReportsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DamageReportPayload<ExtArgs>, T, "findMany"> | Null>
     pricingOverride<T extends Vehicle$pricingOverrideArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$pricingOverrideArgs<ExtArgs>>): Prisma__VehiclePricingOverrideClient<$Result.GetResult<Prisma.$VehiclePricingOverridePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    customPricing<T extends Vehicle$customPricingArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$customPricingArgs<ExtArgs>>): Prisma__VehicleCustomPricingClient<$Result.GetResult<Prisma.$VehicleCustomPricingPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     images<T extends Vehicle$imagesArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$imagesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleImagePayload<ExtArgs>, T, "findMany"> | Null>
     bookingItems<T extends Vehicle$bookingItemsArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$bookingItemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingItemPayload<ExtArgs>, T, "findMany"> | Null>
     /**
@@ -16029,6 +16286,21 @@ export namespace Prisma {
      */
     include?: VehiclePricingOverrideInclude<ExtArgs> | null
     where?: VehiclePricingOverrideWhereInput
+  }
+
+  /**
+   * Vehicle.customPricing
+   */
+  export type Vehicle$customPricingArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleCustomPricing
+     */
+    select?: VehicleCustomPricingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleCustomPricingInclude<ExtArgs> | null
+    where?: VehicleCustomPricingWhereInput
   }
 
   /**
@@ -17071,6 +17343,2288 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: VehiclePricingOverrideInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model VehicleCustomPricing
+   */
+
+  export type AggregateVehicleCustomPricing = {
+    _count: VehicleCustomPricingCountAggregateOutputType | null
+    _avg: VehicleCustomPricingAvgAggregateOutputType | null
+    _sum: VehicleCustomPricingSumAggregateOutputType | null
+    _min: VehicleCustomPricingMinAggregateOutputType | null
+    _max: VehicleCustomPricingMaxAggregateOutputType | null
+  }
+
+  export type VehicleCustomPricingAvgAggregateOutputType = {
+    id: number | null
+    vehicleId: number | null
+    hourlyRate: Decimal | null
+    price12Hour: Decimal | null
+    freeKm12Hour: number | null
+    price24Hour: Decimal | null
+    freeKm24Hour: number | null
+    priceMonthly: Decimal | null
+    freeKmMonthly: number | null
+    extraKmRate: Decimal | null
+    extraHourRate: Decimal | null
+  }
+
+  export type VehicleCustomPricingSumAggregateOutputType = {
+    id: number | null
+    vehicleId: number | null
+    hourlyRate: Decimal | null
+    price12Hour: Decimal | null
+    freeKm12Hour: number | null
+    price24Hour: Decimal | null
+    freeKm24Hour: number | null
+    priceMonthly: Decimal | null
+    freeKmMonthly: number | null
+    extraKmRate: Decimal | null
+    extraHourRate: Decimal | null
+  }
+
+  export type VehicleCustomPricingMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    vehicleId: number | null
+    hourlyRate: Decimal | null
+    price12Hour: Decimal | null
+    freeKm12Hour: number | null
+    price24Hour: Decimal | null
+    freeKm24Hour: number | null
+    priceMonthly: Decimal | null
+    freeKmMonthly: number | null
+    extraKmRate: Decimal | null
+    extraHourRate: Decimal | null
+    enabled: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type VehicleCustomPricingMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    vehicleId: number | null
+    hourlyRate: Decimal | null
+    price12Hour: Decimal | null
+    freeKm12Hour: number | null
+    price24Hour: Decimal | null
+    freeKm24Hour: number | null
+    priceMonthly: Decimal | null
+    freeKmMonthly: number | null
+    extraKmRate: Decimal | null
+    extraHourRate: Decimal | null
+    enabled: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type VehicleCustomPricingCountAggregateOutputType = {
+    id: number
+    publicId: number
+    vehicleId: number
+    hourlyRate: number
+    price12Hour: number
+    freeKm12Hour: number
+    price24Hour: number
+    freeKm24Hour: number
+    priceMonthly: number
+    freeKmMonthly: number
+    extraKmRate: number
+    extraHourRate: number
+    enabled: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type VehicleCustomPricingAvgAggregateInputType = {
+    id?: true
+    vehicleId?: true
+    hourlyRate?: true
+    price12Hour?: true
+    freeKm12Hour?: true
+    price24Hour?: true
+    freeKm24Hour?: true
+    priceMonthly?: true
+    freeKmMonthly?: true
+    extraKmRate?: true
+    extraHourRate?: true
+  }
+
+  export type VehicleCustomPricingSumAggregateInputType = {
+    id?: true
+    vehicleId?: true
+    hourlyRate?: true
+    price12Hour?: true
+    freeKm12Hour?: true
+    price24Hour?: true
+    freeKm24Hour?: true
+    priceMonthly?: true
+    freeKmMonthly?: true
+    extraKmRate?: true
+    extraHourRate?: true
+  }
+
+  export type VehicleCustomPricingMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    vehicleId?: true
+    hourlyRate?: true
+    price12Hour?: true
+    freeKm12Hour?: true
+    price24Hour?: true
+    freeKm24Hour?: true
+    priceMonthly?: true
+    freeKmMonthly?: true
+    extraKmRate?: true
+    extraHourRate?: true
+    enabled?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type VehicleCustomPricingMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    vehicleId?: true
+    hourlyRate?: true
+    price12Hour?: true
+    freeKm12Hour?: true
+    price24Hour?: true
+    freeKm24Hour?: true
+    priceMonthly?: true
+    freeKmMonthly?: true
+    extraKmRate?: true
+    extraHourRate?: true
+    enabled?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type VehicleCustomPricingCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    vehicleId?: true
+    hourlyRate?: true
+    price12Hour?: true
+    freeKm12Hour?: true
+    price24Hour?: true
+    freeKm24Hour?: true
+    priceMonthly?: true
+    freeKmMonthly?: true
+    extraKmRate?: true
+    extraHourRate?: true
+    enabled?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type VehicleCustomPricingAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which VehicleCustomPricing to aggregate.
+     */
+    where?: VehicleCustomPricingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehicleCustomPricings to fetch.
+     */
+    orderBy?: VehicleCustomPricingOrderByWithRelationInput | VehicleCustomPricingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: VehicleCustomPricingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehicleCustomPricings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehicleCustomPricings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned VehicleCustomPricings
+    **/
+    _count?: true | VehicleCustomPricingCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: VehicleCustomPricingAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: VehicleCustomPricingSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: VehicleCustomPricingMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: VehicleCustomPricingMaxAggregateInputType
+  }
+
+  export type GetVehicleCustomPricingAggregateType<T extends VehicleCustomPricingAggregateArgs> = {
+        [P in keyof T & keyof AggregateVehicleCustomPricing]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateVehicleCustomPricing[P]>
+      : GetScalarType<T[P], AggregateVehicleCustomPricing[P]>
+  }
+
+
+
+
+  export type VehicleCustomPricingGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VehicleCustomPricingWhereInput
+    orderBy?: VehicleCustomPricingOrderByWithAggregationInput | VehicleCustomPricingOrderByWithAggregationInput[]
+    by: VehicleCustomPricingScalarFieldEnum[] | VehicleCustomPricingScalarFieldEnum
+    having?: VehicleCustomPricingScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: VehicleCustomPricingCountAggregateInputType | true
+    _avg?: VehicleCustomPricingAvgAggregateInputType
+    _sum?: VehicleCustomPricingSumAggregateInputType
+    _min?: VehicleCustomPricingMinAggregateInputType
+    _max?: VehicleCustomPricingMaxAggregateInputType
+  }
+
+  export type VehicleCustomPricingGroupByOutputType = {
+    id: number
+    publicId: string
+    vehicleId: number
+    hourlyRate: Decimal | null
+    price12Hour: Decimal | null
+    freeKm12Hour: number
+    price24Hour: Decimal
+    freeKm24Hour: number
+    priceMonthly: Decimal | null
+    freeKmMonthly: number
+    extraKmRate: Decimal
+    extraHourRate: Decimal
+    enabled: boolean
+    createdAt: Date
+    updatedAt: Date
+    _count: VehicleCustomPricingCountAggregateOutputType | null
+    _avg: VehicleCustomPricingAvgAggregateOutputType | null
+    _sum: VehicleCustomPricingSumAggregateOutputType | null
+    _min: VehicleCustomPricingMinAggregateOutputType | null
+    _max: VehicleCustomPricingMaxAggregateOutputType | null
+  }
+
+  type GetVehicleCustomPricingGroupByPayload<T extends VehicleCustomPricingGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<VehicleCustomPricingGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof VehicleCustomPricingGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], VehicleCustomPricingGroupByOutputType[P]>
+            : GetScalarType<T[P], VehicleCustomPricingGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type VehicleCustomPricingSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    vehicleId?: boolean
+    hourlyRate?: boolean
+    price12Hour?: boolean
+    freeKm12Hour?: boolean
+    price24Hour?: boolean
+    freeKm24Hour?: boolean
+    priceMonthly?: boolean
+    freeKmMonthly?: boolean
+    extraKmRate?: boolean
+    extraHourRate?: boolean
+    enabled?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["vehicleCustomPricing"]>
+
+  export type VehicleCustomPricingSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    vehicleId?: boolean
+    hourlyRate?: boolean
+    price12Hour?: boolean
+    freeKm12Hour?: boolean
+    price24Hour?: boolean
+    freeKm24Hour?: boolean
+    priceMonthly?: boolean
+    freeKmMonthly?: boolean
+    extraKmRate?: boolean
+    extraHourRate?: boolean
+    enabled?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["vehicleCustomPricing"]>
+
+  export type VehicleCustomPricingSelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    vehicleId?: boolean
+    hourlyRate?: boolean
+    price12Hour?: boolean
+    freeKm12Hour?: boolean
+    price24Hour?: boolean
+    freeKm24Hour?: boolean
+    priceMonthly?: boolean
+    freeKmMonthly?: boolean
+    extraKmRate?: boolean
+    extraHourRate?: boolean
+    enabled?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type VehicleCustomPricingInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+  }
+  export type VehicleCustomPricingIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+  }
+
+  export type $VehicleCustomPricingPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "VehicleCustomPricing"
+    objects: {
+      vehicle: Prisma.$VehiclePayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      vehicleId: number
+      hourlyRate: Prisma.Decimal | null
+      price12Hour: Prisma.Decimal | null
+      freeKm12Hour: number
+      price24Hour: Prisma.Decimal
+      freeKm24Hour: number
+      priceMonthly: Prisma.Decimal | null
+      freeKmMonthly: number
+      extraKmRate: Prisma.Decimal
+      extraHourRate: Prisma.Decimal
+      enabled: boolean
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["vehicleCustomPricing"]>
+    composites: {}
+  }
+
+  type VehicleCustomPricingGetPayload<S extends boolean | null | undefined | VehicleCustomPricingDefaultArgs> = $Result.GetResult<Prisma.$VehicleCustomPricingPayload, S>
+
+  type VehicleCustomPricingCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<VehicleCustomPricingFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: VehicleCustomPricingCountAggregateInputType | true
+    }
+
+  export interface VehicleCustomPricingDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['VehicleCustomPricing'], meta: { name: 'VehicleCustomPricing' } }
+    /**
+     * Find zero or one VehicleCustomPricing that matches the filter.
+     * @param {VehicleCustomPricingFindUniqueArgs} args - Arguments to find a VehicleCustomPricing
+     * @example
+     * // Get one VehicleCustomPricing
+     * const vehicleCustomPricing = await prisma.vehicleCustomPricing.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends VehicleCustomPricingFindUniqueArgs>(args: SelectSubset<T, VehicleCustomPricingFindUniqueArgs<ExtArgs>>): Prisma__VehicleCustomPricingClient<$Result.GetResult<Prisma.$VehicleCustomPricingPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one VehicleCustomPricing that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {VehicleCustomPricingFindUniqueOrThrowArgs} args - Arguments to find a VehicleCustomPricing
+     * @example
+     * // Get one VehicleCustomPricing
+     * const vehicleCustomPricing = await prisma.vehicleCustomPricing.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends VehicleCustomPricingFindUniqueOrThrowArgs>(args: SelectSubset<T, VehicleCustomPricingFindUniqueOrThrowArgs<ExtArgs>>): Prisma__VehicleCustomPricingClient<$Result.GetResult<Prisma.$VehicleCustomPricingPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first VehicleCustomPricing that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleCustomPricingFindFirstArgs} args - Arguments to find a VehicleCustomPricing
+     * @example
+     * // Get one VehicleCustomPricing
+     * const vehicleCustomPricing = await prisma.vehicleCustomPricing.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends VehicleCustomPricingFindFirstArgs>(args?: SelectSubset<T, VehicleCustomPricingFindFirstArgs<ExtArgs>>): Prisma__VehicleCustomPricingClient<$Result.GetResult<Prisma.$VehicleCustomPricingPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first VehicleCustomPricing that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleCustomPricingFindFirstOrThrowArgs} args - Arguments to find a VehicleCustomPricing
+     * @example
+     * // Get one VehicleCustomPricing
+     * const vehicleCustomPricing = await prisma.vehicleCustomPricing.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends VehicleCustomPricingFindFirstOrThrowArgs>(args?: SelectSubset<T, VehicleCustomPricingFindFirstOrThrowArgs<ExtArgs>>): Prisma__VehicleCustomPricingClient<$Result.GetResult<Prisma.$VehicleCustomPricingPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more VehicleCustomPricings that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleCustomPricingFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all VehicleCustomPricings
+     * const vehicleCustomPricings = await prisma.vehicleCustomPricing.findMany()
+     * 
+     * // Get first 10 VehicleCustomPricings
+     * const vehicleCustomPricings = await prisma.vehicleCustomPricing.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const vehicleCustomPricingWithIdOnly = await prisma.vehicleCustomPricing.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends VehicleCustomPricingFindManyArgs>(args?: SelectSubset<T, VehicleCustomPricingFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleCustomPricingPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a VehicleCustomPricing.
+     * @param {VehicleCustomPricingCreateArgs} args - Arguments to create a VehicleCustomPricing.
+     * @example
+     * // Create one VehicleCustomPricing
+     * const VehicleCustomPricing = await prisma.vehicleCustomPricing.create({
+     *   data: {
+     *     // ... data to create a VehicleCustomPricing
+     *   }
+     * })
+     * 
+     */
+    create<T extends VehicleCustomPricingCreateArgs>(args: SelectSubset<T, VehicleCustomPricingCreateArgs<ExtArgs>>): Prisma__VehicleCustomPricingClient<$Result.GetResult<Prisma.$VehicleCustomPricingPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many VehicleCustomPricings.
+     * @param {VehicleCustomPricingCreateManyArgs} args - Arguments to create many VehicleCustomPricings.
+     * @example
+     * // Create many VehicleCustomPricings
+     * const vehicleCustomPricing = await prisma.vehicleCustomPricing.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends VehicleCustomPricingCreateManyArgs>(args?: SelectSubset<T, VehicleCustomPricingCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many VehicleCustomPricings and returns the data saved in the database.
+     * @param {VehicleCustomPricingCreateManyAndReturnArgs} args - Arguments to create many VehicleCustomPricings.
+     * @example
+     * // Create many VehicleCustomPricings
+     * const vehicleCustomPricing = await prisma.vehicleCustomPricing.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many VehicleCustomPricings and only return the `id`
+     * const vehicleCustomPricingWithIdOnly = await prisma.vehicleCustomPricing.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends VehicleCustomPricingCreateManyAndReturnArgs>(args?: SelectSubset<T, VehicleCustomPricingCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleCustomPricingPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a VehicleCustomPricing.
+     * @param {VehicleCustomPricingDeleteArgs} args - Arguments to delete one VehicleCustomPricing.
+     * @example
+     * // Delete one VehicleCustomPricing
+     * const VehicleCustomPricing = await prisma.vehicleCustomPricing.delete({
+     *   where: {
+     *     // ... filter to delete one VehicleCustomPricing
+     *   }
+     * })
+     * 
+     */
+    delete<T extends VehicleCustomPricingDeleteArgs>(args: SelectSubset<T, VehicleCustomPricingDeleteArgs<ExtArgs>>): Prisma__VehicleCustomPricingClient<$Result.GetResult<Prisma.$VehicleCustomPricingPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one VehicleCustomPricing.
+     * @param {VehicleCustomPricingUpdateArgs} args - Arguments to update one VehicleCustomPricing.
+     * @example
+     * // Update one VehicleCustomPricing
+     * const vehicleCustomPricing = await prisma.vehicleCustomPricing.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends VehicleCustomPricingUpdateArgs>(args: SelectSubset<T, VehicleCustomPricingUpdateArgs<ExtArgs>>): Prisma__VehicleCustomPricingClient<$Result.GetResult<Prisma.$VehicleCustomPricingPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more VehicleCustomPricings.
+     * @param {VehicleCustomPricingDeleteManyArgs} args - Arguments to filter VehicleCustomPricings to delete.
+     * @example
+     * // Delete a few VehicleCustomPricings
+     * const { count } = await prisma.vehicleCustomPricing.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends VehicleCustomPricingDeleteManyArgs>(args?: SelectSubset<T, VehicleCustomPricingDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more VehicleCustomPricings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleCustomPricingUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many VehicleCustomPricings
+     * const vehicleCustomPricing = await prisma.vehicleCustomPricing.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends VehicleCustomPricingUpdateManyArgs>(args: SelectSubset<T, VehicleCustomPricingUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one VehicleCustomPricing.
+     * @param {VehicleCustomPricingUpsertArgs} args - Arguments to update or create a VehicleCustomPricing.
+     * @example
+     * // Update or create a VehicleCustomPricing
+     * const vehicleCustomPricing = await prisma.vehicleCustomPricing.upsert({
+     *   create: {
+     *     // ... data to create a VehicleCustomPricing
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the VehicleCustomPricing we want to update
+     *   }
+     * })
+     */
+    upsert<T extends VehicleCustomPricingUpsertArgs>(args: SelectSubset<T, VehicleCustomPricingUpsertArgs<ExtArgs>>): Prisma__VehicleCustomPricingClient<$Result.GetResult<Prisma.$VehicleCustomPricingPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of VehicleCustomPricings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleCustomPricingCountArgs} args - Arguments to filter VehicleCustomPricings to count.
+     * @example
+     * // Count the number of VehicleCustomPricings
+     * const count = await prisma.vehicleCustomPricing.count({
+     *   where: {
+     *     // ... the filter for the VehicleCustomPricings we want to count
+     *   }
+     * })
+    **/
+    count<T extends VehicleCustomPricingCountArgs>(
+      args?: Subset<T, VehicleCustomPricingCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], VehicleCustomPricingCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a VehicleCustomPricing.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleCustomPricingAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends VehicleCustomPricingAggregateArgs>(args: Subset<T, VehicleCustomPricingAggregateArgs>): Prisma.PrismaPromise<GetVehicleCustomPricingAggregateType<T>>
+
+    /**
+     * Group by VehicleCustomPricing.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleCustomPricingGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends VehicleCustomPricingGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: VehicleCustomPricingGroupByArgs['orderBy'] }
+        : { orderBy?: VehicleCustomPricingGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, VehicleCustomPricingGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetVehicleCustomPricingGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the VehicleCustomPricing model
+   */
+  readonly fields: VehicleCustomPricingFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for VehicleCustomPricing.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__VehicleCustomPricingClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    vehicle<T extends VehicleDefaultArgs<ExtArgs> = {}>(args?: Subset<T, VehicleDefaultArgs<ExtArgs>>): Prisma__VehicleClient<$Result.GetResult<Prisma.$VehiclePayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the VehicleCustomPricing model
+   */ 
+  interface VehicleCustomPricingFieldRefs {
+    readonly id: FieldRef<"VehicleCustomPricing", 'Int'>
+    readonly publicId: FieldRef<"VehicleCustomPricing", 'String'>
+    readonly vehicleId: FieldRef<"VehicleCustomPricing", 'Int'>
+    readonly hourlyRate: FieldRef<"VehicleCustomPricing", 'Decimal'>
+    readonly price12Hour: FieldRef<"VehicleCustomPricing", 'Decimal'>
+    readonly freeKm12Hour: FieldRef<"VehicleCustomPricing", 'Int'>
+    readonly price24Hour: FieldRef<"VehicleCustomPricing", 'Decimal'>
+    readonly freeKm24Hour: FieldRef<"VehicleCustomPricing", 'Int'>
+    readonly priceMonthly: FieldRef<"VehicleCustomPricing", 'Decimal'>
+    readonly freeKmMonthly: FieldRef<"VehicleCustomPricing", 'Int'>
+    readonly extraKmRate: FieldRef<"VehicleCustomPricing", 'Decimal'>
+    readonly extraHourRate: FieldRef<"VehicleCustomPricing", 'Decimal'>
+    readonly enabled: FieldRef<"VehicleCustomPricing", 'Boolean'>
+    readonly createdAt: FieldRef<"VehicleCustomPricing", 'DateTime'>
+    readonly updatedAt: FieldRef<"VehicleCustomPricing", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * VehicleCustomPricing findUnique
+   */
+  export type VehicleCustomPricingFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleCustomPricing
+     */
+    select?: VehicleCustomPricingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleCustomPricingInclude<ExtArgs> | null
+    /**
+     * Filter, which VehicleCustomPricing to fetch.
+     */
+    where: VehicleCustomPricingWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleCustomPricing findUniqueOrThrow
+   */
+  export type VehicleCustomPricingFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleCustomPricing
+     */
+    select?: VehicleCustomPricingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleCustomPricingInclude<ExtArgs> | null
+    /**
+     * Filter, which VehicleCustomPricing to fetch.
+     */
+    where: VehicleCustomPricingWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleCustomPricing findFirst
+   */
+  export type VehicleCustomPricingFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleCustomPricing
+     */
+    select?: VehicleCustomPricingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleCustomPricingInclude<ExtArgs> | null
+    /**
+     * Filter, which VehicleCustomPricing to fetch.
+     */
+    where?: VehicleCustomPricingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehicleCustomPricings to fetch.
+     */
+    orderBy?: VehicleCustomPricingOrderByWithRelationInput | VehicleCustomPricingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for VehicleCustomPricings.
+     */
+    cursor?: VehicleCustomPricingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehicleCustomPricings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehicleCustomPricings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of VehicleCustomPricings.
+     */
+    distinct?: VehicleCustomPricingScalarFieldEnum | VehicleCustomPricingScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleCustomPricing findFirstOrThrow
+   */
+  export type VehicleCustomPricingFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleCustomPricing
+     */
+    select?: VehicleCustomPricingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleCustomPricingInclude<ExtArgs> | null
+    /**
+     * Filter, which VehicleCustomPricing to fetch.
+     */
+    where?: VehicleCustomPricingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehicleCustomPricings to fetch.
+     */
+    orderBy?: VehicleCustomPricingOrderByWithRelationInput | VehicleCustomPricingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for VehicleCustomPricings.
+     */
+    cursor?: VehicleCustomPricingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehicleCustomPricings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehicleCustomPricings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of VehicleCustomPricings.
+     */
+    distinct?: VehicleCustomPricingScalarFieldEnum | VehicleCustomPricingScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleCustomPricing findMany
+   */
+  export type VehicleCustomPricingFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleCustomPricing
+     */
+    select?: VehicleCustomPricingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleCustomPricingInclude<ExtArgs> | null
+    /**
+     * Filter, which VehicleCustomPricings to fetch.
+     */
+    where?: VehicleCustomPricingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehicleCustomPricings to fetch.
+     */
+    orderBy?: VehicleCustomPricingOrderByWithRelationInput | VehicleCustomPricingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing VehicleCustomPricings.
+     */
+    cursor?: VehicleCustomPricingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehicleCustomPricings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehicleCustomPricings.
+     */
+    skip?: number
+    distinct?: VehicleCustomPricingScalarFieldEnum | VehicleCustomPricingScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleCustomPricing create
+   */
+  export type VehicleCustomPricingCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleCustomPricing
+     */
+    select?: VehicleCustomPricingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleCustomPricingInclude<ExtArgs> | null
+    /**
+     * The data needed to create a VehicleCustomPricing.
+     */
+    data: XOR<VehicleCustomPricingCreateInput, VehicleCustomPricingUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleCustomPricing createMany
+   */
+  export type VehicleCustomPricingCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many VehicleCustomPricings.
+     */
+    data: VehicleCustomPricingCreateManyInput | VehicleCustomPricingCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * VehicleCustomPricing createManyAndReturn
+   */
+  export type VehicleCustomPricingCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleCustomPricing
+     */
+    select?: VehicleCustomPricingSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many VehicleCustomPricings.
+     */
+    data: VehicleCustomPricingCreateManyInput | VehicleCustomPricingCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleCustomPricingIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * VehicleCustomPricing update
+   */
+  export type VehicleCustomPricingUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleCustomPricing
+     */
+    select?: VehicleCustomPricingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleCustomPricingInclude<ExtArgs> | null
+    /**
+     * The data needed to update a VehicleCustomPricing.
+     */
+    data: XOR<VehicleCustomPricingUpdateInput, VehicleCustomPricingUncheckedUpdateInput>
+    /**
+     * Choose, which VehicleCustomPricing to update.
+     */
+    where: VehicleCustomPricingWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleCustomPricing updateMany
+   */
+  export type VehicleCustomPricingUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update VehicleCustomPricings.
+     */
+    data: XOR<VehicleCustomPricingUpdateManyMutationInput, VehicleCustomPricingUncheckedUpdateManyInput>
+    /**
+     * Filter which VehicleCustomPricings to update
+     */
+    where?: VehicleCustomPricingWhereInput
+  }
+
+  /**
+   * VehicleCustomPricing upsert
+   */
+  export type VehicleCustomPricingUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleCustomPricing
+     */
+    select?: VehicleCustomPricingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleCustomPricingInclude<ExtArgs> | null
+    /**
+     * The filter to search for the VehicleCustomPricing to update in case it exists.
+     */
+    where: VehicleCustomPricingWhereUniqueInput
+    /**
+     * In case the VehicleCustomPricing found by the `where` argument doesn't exist, create a new VehicleCustomPricing with this data.
+     */
+    create: XOR<VehicleCustomPricingCreateInput, VehicleCustomPricingUncheckedCreateInput>
+    /**
+     * In case the VehicleCustomPricing was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<VehicleCustomPricingUpdateInput, VehicleCustomPricingUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleCustomPricing delete
+   */
+  export type VehicleCustomPricingDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleCustomPricing
+     */
+    select?: VehicleCustomPricingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleCustomPricingInclude<ExtArgs> | null
+    /**
+     * Filter which VehicleCustomPricing to delete.
+     */
+    where: VehicleCustomPricingWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleCustomPricing deleteMany
+   */
+  export type VehicleCustomPricingDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which VehicleCustomPricings to delete
+     */
+    where?: VehicleCustomPricingWhereInput
+  }
+
+  /**
+   * VehicleCustomPricing without action
+   */
+  export type VehicleCustomPricingDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleCustomPricing
+     */
+    select?: VehicleCustomPricingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleCustomPricingInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model BranchPricingDefaults
+   */
+
+  export type AggregateBranchPricingDefaults = {
+    _count: BranchPricingDefaultsCountAggregateOutputType | null
+    _avg: BranchPricingDefaultsAvgAggregateOutputType | null
+    _sum: BranchPricingDefaultsSumAggregateOutputType | null
+    _min: BranchPricingDefaultsMinAggregateOutputType | null
+    _max: BranchPricingDefaultsMaxAggregateOutputType | null
+  }
+
+  export type BranchPricingDefaultsAvgAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    categoryId: number | null
+    hourlyRate: Decimal | null
+    price12Hour: Decimal | null
+    freeKm12Hour: number | null
+    price24Hour: Decimal | null
+    freeKm24Hour: number | null
+    priceMonthly: Decimal | null
+    freeKmMonthly: number | null
+    extraKmRate: Decimal | null
+    extraHourRate: Decimal | null
+  }
+
+  export type BranchPricingDefaultsSumAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    categoryId: number | null
+    hourlyRate: Decimal | null
+    price12Hour: Decimal | null
+    freeKm12Hour: number | null
+    price24Hour: Decimal | null
+    freeKm24Hour: number | null
+    priceMonthly: Decimal | null
+    freeKmMonthly: number | null
+    extraKmRate: Decimal | null
+    extraHourRate: Decimal | null
+  }
+
+  export type BranchPricingDefaultsMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    branchId: number | null
+    categoryId: number | null
+    hourlyRate: Decimal | null
+    price12Hour: Decimal | null
+    freeKm12Hour: number | null
+    price24Hour: Decimal | null
+    freeKm24Hour: number | null
+    priceMonthly: Decimal | null
+    freeKmMonthly: number | null
+    extraKmRate: Decimal | null
+    extraHourRate: Decimal | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type BranchPricingDefaultsMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    branchId: number | null
+    categoryId: number | null
+    hourlyRate: Decimal | null
+    price12Hour: Decimal | null
+    freeKm12Hour: number | null
+    price24Hour: Decimal | null
+    freeKm24Hour: number | null
+    priceMonthly: Decimal | null
+    freeKmMonthly: number | null
+    extraKmRate: Decimal | null
+    extraHourRate: Decimal | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type BranchPricingDefaultsCountAggregateOutputType = {
+    id: number
+    publicId: number
+    branchId: number
+    categoryId: number
+    hourlyRate: number
+    price12Hour: number
+    freeKm12Hour: number
+    price24Hour: number
+    freeKm24Hour: number
+    priceMonthly: number
+    freeKmMonthly: number
+    extraKmRate: number
+    extraHourRate: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type BranchPricingDefaultsAvgAggregateInputType = {
+    id?: true
+    branchId?: true
+    categoryId?: true
+    hourlyRate?: true
+    price12Hour?: true
+    freeKm12Hour?: true
+    price24Hour?: true
+    freeKm24Hour?: true
+    priceMonthly?: true
+    freeKmMonthly?: true
+    extraKmRate?: true
+    extraHourRate?: true
+  }
+
+  export type BranchPricingDefaultsSumAggregateInputType = {
+    id?: true
+    branchId?: true
+    categoryId?: true
+    hourlyRate?: true
+    price12Hour?: true
+    freeKm12Hour?: true
+    price24Hour?: true
+    freeKm24Hour?: true
+    priceMonthly?: true
+    freeKmMonthly?: true
+    extraKmRate?: true
+    extraHourRate?: true
+  }
+
+  export type BranchPricingDefaultsMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    branchId?: true
+    categoryId?: true
+    hourlyRate?: true
+    price12Hour?: true
+    freeKm12Hour?: true
+    price24Hour?: true
+    freeKm24Hour?: true
+    priceMonthly?: true
+    freeKmMonthly?: true
+    extraKmRate?: true
+    extraHourRate?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type BranchPricingDefaultsMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    branchId?: true
+    categoryId?: true
+    hourlyRate?: true
+    price12Hour?: true
+    freeKm12Hour?: true
+    price24Hour?: true
+    freeKm24Hour?: true
+    priceMonthly?: true
+    freeKmMonthly?: true
+    extraKmRate?: true
+    extraHourRate?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type BranchPricingDefaultsCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    branchId?: true
+    categoryId?: true
+    hourlyRate?: true
+    price12Hour?: true
+    freeKm12Hour?: true
+    price24Hour?: true
+    freeKm24Hour?: true
+    priceMonthly?: true
+    freeKmMonthly?: true
+    extraKmRate?: true
+    extraHourRate?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type BranchPricingDefaultsAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which BranchPricingDefaults to aggregate.
+     */
+    where?: BranchPricingDefaultsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchPricingDefaults to fetch.
+     */
+    orderBy?: BranchPricingDefaultsOrderByWithRelationInput | BranchPricingDefaultsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: BranchPricingDefaultsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchPricingDefaults from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchPricingDefaults.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned BranchPricingDefaults
+    **/
+    _count?: true | BranchPricingDefaultsCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: BranchPricingDefaultsAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: BranchPricingDefaultsSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: BranchPricingDefaultsMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: BranchPricingDefaultsMaxAggregateInputType
+  }
+
+  export type GetBranchPricingDefaultsAggregateType<T extends BranchPricingDefaultsAggregateArgs> = {
+        [P in keyof T & keyof AggregateBranchPricingDefaults]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateBranchPricingDefaults[P]>
+      : GetScalarType<T[P], AggregateBranchPricingDefaults[P]>
+  }
+
+
+
+
+  export type BranchPricingDefaultsGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BranchPricingDefaultsWhereInput
+    orderBy?: BranchPricingDefaultsOrderByWithAggregationInput | BranchPricingDefaultsOrderByWithAggregationInput[]
+    by: BranchPricingDefaultsScalarFieldEnum[] | BranchPricingDefaultsScalarFieldEnum
+    having?: BranchPricingDefaultsScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: BranchPricingDefaultsCountAggregateInputType | true
+    _avg?: BranchPricingDefaultsAvgAggregateInputType
+    _sum?: BranchPricingDefaultsSumAggregateInputType
+    _min?: BranchPricingDefaultsMinAggregateInputType
+    _max?: BranchPricingDefaultsMaxAggregateInputType
+  }
+
+  export type BranchPricingDefaultsGroupByOutputType = {
+    id: number
+    publicId: string
+    branchId: number
+    categoryId: number
+    hourlyRate: Decimal | null
+    price12Hour: Decimal | null
+    freeKm12Hour: number
+    price24Hour: Decimal
+    freeKm24Hour: number
+    priceMonthly: Decimal | null
+    freeKmMonthly: number
+    extraKmRate: Decimal
+    extraHourRate: Decimal
+    createdAt: Date
+    updatedAt: Date
+    _count: BranchPricingDefaultsCountAggregateOutputType | null
+    _avg: BranchPricingDefaultsAvgAggregateOutputType | null
+    _sum: BranchPricingDefaultsSumAggregateOutputType | null
+    _min: BranchPricingDefaultsMinAggregateOutputType | null
+    _max: BranchPricingDefaultsMaxAggregateOutputType | null
+  }
+
+  type GetBranchPricingDefaultsGroupByPayload<T extends BranchPricingDefaultsGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<BranchPricingDefaultsGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof BranchPricingDefaultsGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], BranchPricingDefaultsGroupByOutputType[P]>
+            : GetScalarType<T[P], BranchPricingDefaultsGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type BranchPricingDefaultsSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    branchId?: boolean
+    categoryId?: boolean
+    hourlyRate?: boolean
+    price12Hour?: boolean
+    freeKm12Hour?: boolean
+    price24Hour?: boolean
+    freeKm24Hour?: boolean
+    priceMonthly?: boolean
+    freeKmMonthly?: boolean
+    extraKmRate?: boolean
+    extraHourRate?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    category?: boolean | VehicleCategoryDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["branchPricingDefaults"]>
+
+  export type BranchPricingDefaultsSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    branchId?: boolean
+    categoryId?: boolean
+    hourlyRate?: boolean
+    price12Hour?: boolean
+    freeKm12Hour?: boolean
+    price24Hour?: boolean
+    freeKm24Hour?: boolean
+    priceMonthly?: boolean
+    freeKmMonthly?: boolean
+    extraKmRate?: boolean
+    extraHourRate?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    category?: boolean | VehicleCategoryDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["branchPricingDefaults"]>
+
+  export type BranchPricingDefaultsSelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    branchId?: boolean
+    categoryId?: boolean
+    hourlyRate?: boolean
+    price12Hour?: boolean
+    freeKm12Hour?: boolean
+    price24Hour?: boolean
+    freeKm24Hour?: boolean
+    priceMonthly?: boolean
+    freeKmMonthly?: boolean
+    extraKmRate?: boolean
+    extraHourRate?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type BranchPricingDefaultsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    category?: boolean | VehicleCategoryDefaultArgs<ExtArgs>
+  }
+  export type BranchPricingDefaultsIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    category?: boolean | VehicleCategoryDefaultArgs<ExtArgs>
+  }
+
+  export type $BranchPricingDefaultsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "BranchPricingDefaults"
+    objects: {
+      branch: Prisma.$BranchPayload<ExtArgs>
+      category: Prisma.$VehicleCategoryPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      branchId: number
+      categoryId: number
+      hourlyRate: Prisma.Decimal | null
+      price12Hour: Prisma.Decimal | null
+      freeKm12Hour: number
+      price24Hour: Prisma.Decimal
+      freeKm24Hour: number
+      priceMonthly: Prisma.Decimal | null
+      freeKmMonthly: number
+      extraKmRate: Prisma.Decimal
+      extraHourRate: Prisma.Decimal
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["branchPricingDefaults"]>
+    composites: {}
+  }
+
+  type BranchPricingDefaultsGetPayload<S extends boolean | null | undefined | BranchPricingDefaultsDefaultArgs> = $Result.GetResult<Prisma.$BranchPricingDefaultsPayload, S>
+
+  type BranchPricingDefaultsCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<BranchPricingDefaultsFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: BranchPricingDefaultsCountAggregateInputType | true
+    }
+
+  export interface BranchPricingDefaultsDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['BranchPricingDefaults'], meta: { name: 'BranchPricingDefaults' } }
+    /**
+     * Find zero or one BranchPricingDefaults that matches the filter.
+     * @param {BranchPricingDefaultsFindUniqueArgs} args - Arguments to find a BranchPricingDefaults
+     * @example
+     * // Get one BranchPricingDefaults
+     * const branchPricingDefaults = await prisma.branchPricingDefaults.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends BranchPricingDefaultsFindUniqueArgs>(args: SelectSubset<T, BranchPricingDefaultsFindUniqueArgs<ExtArgs>>): Prisma__BranchPricingDefaultsClient<$Result.GetResult<Prisma.$BranchPricingDefaultsPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one BranchPricingDefaults that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {BranchPricingDefaultsFindUniqueOrThrowArgs} args - Arguments to find a BranchPricingDefaults
+     * @example
+     * // Get one BranchPricingDefaults
+     * const branchPricingDefaults = await prisma.branchPricingDefaults.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends BranchPricingDefaultsFindUniqueOrThrowArgs>(args: SelectSubset<T, BranchPricingDefaultsFindUniqueOrThrowArgs<ExtArgs>>): Prisma__BranchPricingDefaultsClient<$Result.GetResult<Prisma.$BranchPricingDefaultsPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first BranchPricingDefaults that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchPricingDefaultsFindFirstArgs} args - Arguments to find a BranchPricingDefaults
+     * @example
+     * // Get one BranchPricingDefaults
+     * const branchPricingDefaults = await prisma.branchPricingDefaults.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends BranchPricingDefaultsFindFirstArgs>(args?: SelectSubset<T, BranchPricingDefaultsFindFirstArgs<ExtArgs>>): Prisma__BranchPricingDefaultsClient<$Result.GetResult<Prisma.$BranchPricingDefaultsPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first BranchPricingDefaults that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchPricingDefaultsFindFirstOrThrowArgs} args - Arguments to find a BranchPricingDefaults
+     * @example
+     * // Get one BranchPricingDefaults
+     * const branchPricingDefaults = await prisma.branchPricingDefaults.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends BranchPricingDefaultsFindFirstOrThrowArgs>(args?: SelectSubset<T, BranchPricingDefaultsFindFirstOrThrowArgs<ExtArgs>>): Prisma__BranchPricingDefaultsClient<$Result.GetResult<Prisma.$BranchPricingDefaultsPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more BranchPricingDefaults that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchPricingDefaultsFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all BranchPricingDefaults
+     * const branchPricingDefaults = await prisma.branchPricingDefaults.findMany()
+     * 
+     * // Get first 10 BranchPricingDefaults
+     * const branchPricingDefaults = await prisma.branchPricingDefaults.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const branchPricingDefaultsWithIdOnly = await prisma.branchPricingDefaults.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends BranchPricingDefaultsFindManyArgs>(args?: SelectSubset<T, BranchPricingDefaultsFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BranchPricingDefaultsPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a BranchPricingDefaults.
+     * @param {BranchPricingDefaultsCreateArgs} args - Arguments to create a BranchPricingDefaults.
+     * @example
+     * // Create one BranchPricingDefaults
+     * const BranchPricingDefaults = await prisma.branchPricingDefaults.create({
+     *   data: {
+     *     // ... data to create a BranchPricingDefaults
+     *   }
+     * })
+     * 
+     */
+    create<T extends BranchPricingDefaultsCreateArgs>(args: SelectSubset<T, BranchPricingDefaultsCreateArgs<ExtArgs>>): Prisma__BranchPricingDefaultsClient<$Result.GetResult<Prisma.$BranchPricingDefaultsPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many BranchPricingDefaults.
+     * @param {BranchPricingDefaultsCreateManyArgs} args - Arguments to create many BranchPricingDefaults.
+     * @example
+     * // Create many BranchPricingDefaults
+     * const branchPricingDefaults = await prisma.branchPricingDefaults.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends BranchPricingDefaultsCreateManyArgs>(args?: SelectSubset<T, BranchPricingDefaultsCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many BranchPricingDefaults and returns the data saved in the database.
+     * @param {BranchPricingDefaultsCreateManyAndReturnArgs} args - Arguments to create many BranchPricingDefaults.
+     * @example
+     * // Create many BranchPricingDefaults
+     * const branchPricingDefaults = await prisma.branchPricingDefaults.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many BranchPricingDefaults and only return the `id`
+     * const branchPricingDefaultsWithIdOnly = await prisma.branchPricingDefaults.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends BranchPricingDefaultsCreateManyAndReturnArgs>(args?: SelectSubset<T, BranchPricingDefaultsCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BranchPricingDefaultsPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a BranchPricingDefaults.
+     * @param {BranchPricingDefaultsDeleteArgs} args - Arguments to delete one BranchPricingDefaults.
+     * @example
+     * // Delete one BranchPricingDefaults
+     * const BranchPricingDefaults = await prisma.branchPricingDefaults.delete({
+     *   where: {
+     *     // ... filter to delete one BranchPricingDefaults
+     *   }
+     * })
+     * 
+     */
+    delete<T extends BranchPricingDefaultsDeleteArgs>(args: SelectSubset<T, BranchPricingDefaultsDeleteArgs<ExtArgs>>): Prisma__BranchPricingDefaultsClient<$Result.GetResult<Prisma.$BranchPricingDefaultsPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one BranchPricingDefaults.
+     * @param {BranchPricingDefaultsUpdateArgs} args - Arguments to update one BranchPricingDefaults.
+     * @example
+     * // Update one BranchPricingDefaults
+     * const branchPricingDefaults = await prisma.branchPricingDefaults.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends BranchPricingDefaultsUpdateArgs>(args: SelectSubset<T, BranchPricingDefaultsUpdateArgs<ExtArgs>>): Prisma__BranchPricingDefaultsClient<$Result.GetResult<Prisma.$BranchPricingDefaultsPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more BranchPricingDefaults.
+     * @param {BranchPricingDefaultsDeleteManyArgs} args - Arguments to filter BranchPricingDefaults to delete.
+     * @example
+     * // Delete a few BranchPricingDefaults
+     * const { count } = await prisma.branchPricingDefaults.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends BranchPricingDefaultsDeleteManyArgs>(args?: SelectSubset<T, BranchPricingDefaultsDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more BranchPricingDefaults.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchPricingDefaultsUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many BranchPricingDefaults
+     * const branchPricingDefaults = await prisma.branchPricingDefaults.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends BranchPricingDefaultsUpdateManyArgs>(args: SelectSubset<T, BranchPricingDefaultsUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one BranchPricingDefaults.
+     * @param {BranchPricingDefaultsUpsertArgs} args - Arguments to update or create a BranchPricingDefaults.
+     * @example
+     * // Update or create a BranchPricingDefaults
+     * const branchPricingDefaults = await prisma.branchPricingDefaults.upsert({
+     *   create: {
+     *     // ... data to create a BranchPricingDefaults
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the BranchPricingDefaults we want to update
+     *   }
+     * })
+     */
+    upsert<T extends BranchPricingDefaultsUpsertArgs>(args: SelectSubset<T, BranchPricingDefaultsUpsertArgs<ExtArgs>>): Prisma__BranchPricingDefaultsClient<$Result.GetResult<Prisma.$BranchPricingDefaultsPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of BranchPricingDefaults.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchPricingDefaultsCountArgs} args - Arguments to filter BranchPricingDefaults to count.
+     * @example
+     * // Count the number of BranchPricingDefaults
+     * const count = await prisma.branchPricingDefaults.count({
+     *   where: {
+     *     // ... the filter for the BranchPricingDefaults we want to count
+     *   }
+     * })
+    **/
+    count<T extends BranchPricingDefaultsCountArgs>(
+      args?: Subset<T, BranchPricingDefaultsCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], BranchPricingDefaultsCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a BranchPricingDefaults.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchPricingDefaultsAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends BranchPricingDefaultsAggregateArgs>(args: Subset<T, BranchPricingDefaultsAggregateArgs>): Prisma.PrismaPromise<GetBranchPricingDefaultsAggregateType<T>>
+
+    /**
+     * Group by BranchPricingDefaults.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchPricingDefaultsGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends BranchPricingDefaultsGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: BranchPricingDefaultsGroupByArgs['orderBy'] }
+        : { orderBy?: BranchPricingDefaultsGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, BranchPricingDefaultsGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetBranchPricingDefaultsGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the BranchPricingDefaults model
+   */
+  readonly fields: BranchPricingDefaultsFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for BranchPricingDefaults.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__BranchPricingDefaultsClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    branch<T extends BranchDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BranchDefaultArgs<ExtArgs>>): Prisma__BranchClient<$Result.GetResult<Prisma.$BranchPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    category<T extends VehicleCategoryDefaultArgs<ExtArgs> = {}>(args?: Subset<T, VehicleCategoryDefaultArgs<ExtArgs>>): Prisma__VehicleCategoryClient<$Result.GetResult<Prisma.$VehicleCategoryPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the BranchPricingDefaults model
+   */ 
+  interface BranchPricingDefaultsFieldRefs {
+    readonly id: FieldRef<"BranchPricingDefaults", 'Int'>
+    readonly publicId: FieldRef<"BranchPricingDefaults", 'String'>
+    readonly branchId: FieldRef<"BranchPricingDefaults", 'Int'>
+    readonly categoryId: FieldRef<"BranchPricingDefaults", 'Int'>
+    readonly hourlyRate: FieldRef<"BranchPricingDefaults", 'Decimal'>
+    readonly price12Hour: FieldRef<"BranchPricingDefaults", 'Decimal'>
+    readonly freeKm12Hour: FieldRef<"BranchPricingDefaults", 'Int'>
+    readonly price24Hour: FieldRef<"BranchPricingDefaults", 'Decimal'>
+    readonly freeKm24Hour: FieldRef<"BranchPricingDefaults", 'Int'>
+    readonly priceMonthly: FieldRef<"BranchPricingDefaults", 'Decimal'>
+    readonly freeKmMonthly: FieldRef<"BranchPricingDefaults", 'Int'>
+    readonly extraKmRate: FieldRef<"BranchPricingDefaults", 'Decimal'>
+    readonly extraHourRate: FieldRef<"BranchPricingDefaults", 'Decimal'>
+    readonly createdAt: FieldRef<"BranchPricingDefaults", 'DateTime'>
+    readonly updatedAt: FieldRef<"BranchPricingDefaults", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * BranchPricingDefaults findUnique
+   */
+  export type BranchPricingDefaultsFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingDefaults
+     */
+    select?: BranchPricingDefaultsSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingDefaultsInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchPricingDefaults to fetch.
+     */
+    where: BranchPricingDefaultsWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchPricingDefaults findUniqueOrThrow
+   */
+  export type BranchPricingDefaultsFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingDefaults
+     */
+    select?: BranchPricingDefaultsSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingDefaultsInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchPricingDefaults to fetch.
+     */
+    where: BranchPricingDefaultsWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchPricingDefaults findFirst
+   */
+  export type BranchPricingDefaultsFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingDefaults
+     */
+    select?: BranchPricingDefaultsSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingDefaultsInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchPricingDefaults to fetch.
+     */
+    where?: BranchPricingDefaultsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchPricingDefaults to fetch.
+     */
+    orderBy?: BranchPricingDefaultsOrderByWithRelationInput | BranchPricingDefaultsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for BranchPricingDefaults.
+     */
+    cursor?: BranchPricingDefaultsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchPricingDefaults from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchPricingDefaults.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of BranchPricingDefaults.
+     */
+    distinct?: BranchPricingDefaultsScalarFieldEnum | BranchPricingDefaultsScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchPricingDefaults findFirstOrThrow
+   */
+  export type BranchPricingDefaultsFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingDefaults
+     */
+    select?: BranchPricingDefaultsSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingDefaultsInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchPricingDefaults to fetch.
+     */
+    where?: BranchPricingDefaultsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchPricingDefaults to fetch.
+     */
+    orderBy?: BranchPricingDefaultsOrderByWithRelationInput | BranchPricingDefaultsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for BranchPricingDefaults.
+     */
+    cursor?: BranchPricingDefaultsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchPricingDefaults from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchPricingDefaults.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of BranchPricingDefaults.
+     */
+    distinct?: BranchPricingDefaultsScalarFieldEnum | BranchPricingDefaultsScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchPricingDefaults findMany
+   */
+  export type BranchPricingDefaultsFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingDefaults
+     */
+    select?: BranchPricingDefaultsSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingDefaultsInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchPricingDefaults to fetch.
+     */
+    where?: BranchPricingDefaultsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchPricingDefaults to fetch.
+     */
+    orderBy?: BranchPricingDefaultsOrderByWithRelationInput | BranchPricingDefaultsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing BranchPricingDefaults.
+     */
+    cursor?: BranchPricingDefaultsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchPricingDefaults from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchPricingDefaults.
+     */
+    skip?: number
+    distinct?: BranchPricingDefaultsScalarFieldEnum | BranchPricingDefaultsScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchPricingDefaults create
+   */
+  export type BranchPricingDefaultsCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingDefaults
+     */
+    select?: BranchPricingDefaultsSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingDefaultsInclude<ExtArgs> | null
+    /**
+     * The data needed to create a BranchPricingDefaults.
+     */
+    data: XOR<BranchPricingDefaultsCreateInput, BranchPricingDefaultsUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchPricingDefaults createMany
+   */
+  export type BranchPricingDefaultsCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many BranchPricingDefaults.
+     */
+    data: BranchPricingDefaultsCreateManyInput | BranchPricingDefaultsCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * BranchPricingDefaults createManyAndReturn
+   */
+  export type BranchPricingDefaultsCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingDefaults
+     */
+    select?: BranchPricingDefaultsSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many BranchPricingDefaults.
+     */
+    data: BranchPricingDefaultsCreateManyInput | BranchPricingDefaultsCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingDefaultsIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * BranchPricingDefaults update
+   */
+  export type BranchPricingDefaultsUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingDefaults
+     */
+    select?: BranchPricingDefaultsSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingDefaultsInclude<ExtArgs> | null
+    /**
+     * The data needed to update a BranchPricingDefaults.
+     */
+    data: XOR<BranchPricingDefaultsUpdateInput, BranchPricingDefaultsUncheckedUpdateInput>
+    /**
+     * Choose, which BranchPricingDefaults to update.
+     */
+    where: BranchPricingDefaultsWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchPricingDefaults updateMany
+   */
+  export type BranchPricingDefaultsUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update BranchPricingDefaults.
+     */
+    data: XOR<BranchPricingDefaultsUpdateManyMutationInput, BranchPricingDefaultsUncheckedUpdateManyInput>
+    /**
+     * Filter which BranchPricingDefaults to update
+     */
+    where?: BranchPricingDefaultsWhereInput
+  }
+
+  /**
+   * BranchPricingDefaults upsert
+   */
+  export type BranchPricingDefaultsUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingDefaults
+     */
+    select?: BranchPricingDefaultsSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingDefaultsInclude<ExtArgs> | null
+    /**
+     * The filter to search for the BranchPricingDefaults to update in case it exists.
+     */
+    where: BranchPricingDefaultsWhereUniqueInput
+    /**
+     * In case the BranchPricingDefaults found by the `where` argument doesn't exist, create a new BranchPricingDefaults with this data.
+     */
+    create: XOR<BranchPricingDefaultsCreateInput, BranchPricingDefaultsUncheckedCreateInput>
+    /**
+     * In case the BranchPricingDefaults was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<BranchPricingDefaultsUpdateInput, BranchPricingDefaultsUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchPricingDefaults delete
+   */
+  export type BranchPricingDefaultsDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingDefaults
+     */
+    select?: BranchPricingDefaultsSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingDefaultsInclude<ExtArgs> | null
+    /**
+     * Filter which BranchPricingDefaults to delete.
+     */
+    where: BranchPricingDefaultsWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchPricingDefaults deleteMany
+   */
+  export type BranchPricingDefaultsDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which BranchPricingDefaults to delete
+     */
+    where?: BranchPricingDefaultsWhereInput
+  }
+
+  /**
+   * BranchPricingDefaults without action
+   */
+  export type BranchPricingDefaultsDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPricingDefaults
+     */
+    select?: BranchPricingDefaultsSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPricingDefaultsInclude<ExtArgs> | null
   }
 
 
@@ -23102,6 +25656,13 @@ export namespace Prisma {
     customerId: number | null
     branchId: number | null
     days: number | null
+    actualHours: Decimal | null
+    billableHours: Decimal | null
+    startOdometer: number | null
+    endOdometer: number | null
+    totalKmDriven: number | null
+    freeKmLimit: number | null
+    extraKmCharged: number | null
     totalBase: Decimal | null
     totalDiscount: Decimal | null
     totalDeposit: Decimal | null
@@ -23116,6 +25677,13 @@ export namespace Prisma {
     customerId: number | null
     branchId: number | null
     days: number | null
+    actualHours: Decimal | null
+    billableHours: Decimal | null
+    startOdometer: number | null
+    endOdometer: number | null
+    totalKmDriven: number | null
+    freeKmLimit: number | null
+    extraKmCharged: number | null
     totalBase: Decimal | null
     totalDiscount: Decimal | null
     totalDeposit: Decimal | null
@@ -23133,6 +25701,14 @@ export namespace Prisma {
     startAt: Date | null
     endAt: Date | null
     days: number | null
+    rentalPeriodType: $Enums.RentalPeriodType | null
+    actualHours: Decimal | null
+    billableHours: Decimal | null
+    startOdometer: number | null
+    endOdometer: number | null
+    totalKmDriven: number | null
+    freeKmLimit: number | null
+    extraKmCharged: number | null
     holdExpiresAt: Date | null
     totalBase: Decimal | null
     totalDiscount: Decimal | null
@@ -23158,6 +25734,14 @@ export namespace Prisma {
     startAt: Date | null
     endAt: Date | null
     days: number | null
+    rentalPeriodType: $Enums.RentalPeriodType | null
+    actualHours: Decimal | null
+    billableHours: Decimal | null
+    startOdometer: number | null
+    endOdometer: number | null
+    totalKmDriven: number | null
+    freeKmLimit: number | null
+    extraKmCharged: number | null
     holdExpiresAt: Date | null
     totalBase: Decimal | null
     totalDiscount: Decimal | null
@@ -23183,6 +25767,14 @@ export namespace Prisma {
     startAt: number
     endAt: number
     days: number
+    rentalPeriodType: number
+    actualHours: number
+    billableHours: number
+    startOdometer: number
+    endOdometer: number
+    totalKmDriven: number
+    freeKmLimit: number
+    extraKmCharged: number
     holdExpiresAt: number
     totalBase: number
     totalDiscount: number
@@ -23208,6 +25800,13 @@ export namespace Prisma {
     customerId?: true
     branchId?: true
     days?: true
+    actualHours?: true
+    billableHours?: true
+    startOdometer?: true
+    endOdometer?: true
+    totalKmDriven?: true
+    freeKmLimit?: true
+    extraKmCharged?: true
     totalBase?: true
     totalDiscount?: true
     totalDeposit?: true
@@ -23222,6 +25821,13 @@ export namespace Prisma {
     customerId?: true
     branchId?: true
     days?: true
+    actualHours?: true
+    billableHours?: true
+    startOdometer?: true
+    endOdometer?: true
+    totalKmDriven?: true
+    freeKmLimit?: true
+    extraKmCharged?: true
     totalBase?: true
     totalDiscount?: true
     totalDeposit?: true
@@ -23239,6 +25845,14 @@ export namespace Prisma {
     startAt?: true
     endAt?: true
     days?: true
+    rentalPeriodType?: true
+    actualHours?: true
+    billableHours?: true
+    startOdometer?: true
+    endOdometer?: true
+    totalKmDriven?: true
+    freeKmLimit?: true
+    extraKmCharged?: true
     holdExpiresAt?: true
     totalBase?: true
     totalDiscount?: true
@@ -23264,6 +25878,14 @@ export namespace Prisma {
     startAt?: true
     endAt?: true
     days?: true
+    rentalPeriodType?: true
+    actualHours?: true
+    billableHours?: true
+    startOdometer?: true
+    endOdometer?: true
+    totalKmDriven?: true
+    freeKmLimit?: true
+    extraKmCharged?: true
     holdExpiresAt?: true
     totalBase?: true
     totalDiscount?: true
@@ -23289,6 +25911,14 @@ export namespace Prisma {
     startAt?: true
     endAt?: true
     days?: true
+    rentalPeriodType?: true
+    actualHours?: true
+    billableHours?: true
+    startOdometer?: true
+    endOdometer?: true
+    totalKmDriven?: true
+    freeKmLimit?: true
+    extraKmCharged?: true
     holdExpiresAt?: true
     totalBase?: true
     totalDiscount?: true
@@ -23402,6 +26032,14 @@ export namespace Prisma {
     startAt: Date
     endAt: Date
     days: number
+    rentalPeriodType: $Enums.RentalPeriodType | null
+    actualHours: Decimal | null
+    billableHours: Decimal | null
+    startOdometer: number | null
+    endOdometer: number | null
+    totalKmDriven: number | null
+    freeKmLimit: number | null
+    extraKmCharged: number | null
     holdExpiresAt: Date | null
     totalBase: Decimal
     totalDiscount: Decimal
@@ -23447,6 +26085,14 @@ export namespace Prisma {
     startAt?: boolean
     endAt?: boolean
     days?: boolean
+    rentalPeriodType?: boolean
+    actualHours?: boolean
+    billableHours?: boolean
+    startOdometer?: boolean
+    endOdometer?: boolean
+    totalKmDriven?: boolean
+    freeKmLimit?: boolean
+    extraKmCharged?: boolean
     holdExpiresAt?: boolean
     totalBase?: boolean
     totalDiscount?: boolean
@@ -23483,6 +26129,14 @@ export namespace Prisma {
     startAt?: boolean
     endAt?: boolean
     days?: boolean
+    rentalPeriodType?: boolean
+    actualHours?: boolean
+    billableHours?: boolean
+    startOdometer?: boolean
+    endOdometer?: boolean
+    totalKmDriven?: boolean
+    freeKmLimit?: boolean
+    extraKmCharged?: boolean
     holdExpiresAt?: boolean
     totalBase?: boolean
     totalDiscount?: boolean
@@ -23513,6 +26167,14 @@ export namespace Prisma {
     startAt?: boolean
     endAt?: boolean
     days?: boolean
+    rentalPeriodType?: boolean
+    actualHours?: boolean
+    billableHours?: boolean
+    startOdometer?: boolean
+    endOdometer?: boolean
+    totalKmDriven?: boolean
+    freeKmLimit?: boolean
+    extraKmCharged?: boolean
     holdExpiresAt?: boolean
     totalBase?: boolean
     totalDiscount?: boolean
@@ -23571,6 +26233,14 @@ export namespace Prisma {
       startAt: Date
       endAt: Date
       days: number
+      rentalPeriodType: $Enums.RentalPeriodType | null
+      actualHours: Prisma.Decimal | null
+      billableHours: Prisma.Decimal | null
+      startOdometer: number | null
+      endOdometer: number | null
+      totalKmDriven: number | null
+      freeKmLimit: number | null
+      extraKmCharged: number | null
       holdExpiresAt: Date | null
       totalBase: Prisma.Decimal
       totalDiscount: Prisma.Decimal
@@ -23996,6 +26666,14 @@ export namespace Prisma {
     readonly startAt: FieldRef<"Booking", 'DateTime'>
     readonly endAt: FieldRef<"Booking", 'DateTime'>
     readonly days: FieldRef<"Booking", 'Int'>
+    readonly rentalPeriodType: FieldRef<"Booking", 'RentalPeriodType'>
+    readonly actualHours: FieldRef<"Booking", 'Decimal'>
+    readonly billableHours: FieldRef<"Booking", 'Decimal'>
+    readonly startOdometer: FieldRef<"Booking", 'Int'>
+    readonly endOdometer: FieldRef<"Booking", 'Int'>
+    readonly totalKmDriven: FieldRef<"Booking", 'Int'>
+    readonly freeKmLimit: FieldRef<"Booking", 'Int'>
+    readonly extraKmCharged: FieldRef<"Booking", 'Int'>
     readonly holdExpiresAt: FieldRef<"Booking", 'DateTime'>
     readonly totalBase: FieldRef<"Booking", 'Decimal'>
     readonly totalDiscount: FieldRef<"Booking", 'Decimal'>
@@ -37009,6 +39687,48 @@ export namespace Prisma {
   export type VehiclePricingOverrideScalarFieldEnum = (typeof VehiclePricingOverrideScalarFieldEnum)[keyof typeof VehiclePricingOverrideScalarFieldEnum]
 
 
+  export const VehicleCustomPricingScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    vehicleId: 'vehicleId',
+    hourlyRate: 'hourlyRate',
+    price12Hour: 'price12Hour',
+    freeKm12Hour: 'freeKm12Hour',
+    price24Hour: 'price24Hour',
+    freeKm24Hour: 'freeKm24Hour',
+    priceMonthly: 'priceMonthly',
+    freeKmMonthly: 'freeKmMonthly',
+    extraKmRate: 'extraKmRate',
+    extraHourRate: 'extraHourRate',
+    enabled: 'enabled',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type VehicleCustomPricingScalarFieldEnum = (typeof VehicleCustomPricingScalarFieldEnum)[keyof typeof VehicleCustomPricingScalarFieldEnum]
+
+
+  export const BranchPricingDefaultsScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    branchId: 'branchId',
+    categoryId: 'categoryId',
+    hourlyRate: 'hourlyRate',
+    price12Hour: 'price12Hour',
+    freeKm12Hour: 'freeKm12Hour',
+    price24Hour: 'price24Hour',
+    freeKm24Hour: 'freeKm24Hour',
+    priceMonthly: 'priceMonthly',
+    freeKmMonthly: 'freeKmMonthly',
+    extraKmRate: 'extraKmRate',
+    extraHourRate: 'extraHourRate',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type BranchPricingDefaultsScalarFieldEnum = (typeof BranchPricingDefaultsScalarFieldEnum)[keyof typeof BranchPricingDefaultsScalarFieldEnum]
+
+
   export const VehicleInsuranceScalarFieldEnum: {
     id: 'id',
     publicId: 'publicId',
@@ -37086,6 +39806,14 @@ export namespace Prisma {
     startAt: 'startAt',
     endAt: 'endAt',
     days: 'days',
+    rentalPeriodType: 'rentalPeriodType',
+    actualHours: 'actualHours',
+    billableHours: 'billableHours',
+    startOdometer: 'startOdometer',
+    endOdometer: 'endOdometer',
+    totalKmDriven: 'totalKmDriven',
+    freeKmLimit: 'freeKmLimit',
+    extraKmCharged: 'extraKmCharged',
     holdExpiresAt: 'holdExpiresAt',
     totalBase: 'totalBase',
     totalDiscount: 'totalDiscount',
@@ -37479,6 +40207,20 @@ export namespace Prisma {
    * Reference to a field of type 'PricingRuleType[]'
    */
   export type ListEnumPricingRuleTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PricingRuleType[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'RentalPeriodType'
+   */
+  export type EnumRentalPeriodTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RentalPeriodType'>
+    
+
+
+  /**
+   * Reference to a field of type 'RentalPeriodType[]'
+   */
+  export type ListEnumRentalPeriodTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RentalPeriodType[]'>
     
 
 
@@ -38139,6 +40881,7 @@ export namespace Prisma {
     pricingSetting?: XOR<BranchPricingSettingNullableRelationFilter, BranchPricingSettingWhereInput> | null
     pricingDiscountSlabs?: PricingDiscountSlabListRelationFilter
     categoryDepositSettings?: CategoryDepositSettingListRelationFilter
+    branchPricingDefaults?: BranchPricingDefaultsListRelationFilter
     gstRule?: XOR<GSTRuleNullableRelationFilter, GSTRuleWhereInput> | null
   }
 
@@ -38156,6 +40899,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingOrderByWithRelationInput
     pricingDiscountSlabs?: PricingDiscountSlabOrderByRelationAggregateInput
     categoryDepositSettings?: CategoryDepositSettingOrderByRelationAggregateInput
+    branchPricingDefaults?: BranchPricingDefaultsOrderByRelationAggregateInput
     gstRule?: GSTRuleOrderByWithRelationInput
   }
 
@@ -38176,6 +40920,7 @@ export namespace Prisma {
     pricingSetting?: XOR<BranchPricingSettingNullableRelationFilter, BranchPricingSettingWhereInput> | null
     pricingDiscountSlabs?: PricingDiscountSlabListRelationFilter
     categoryDepositSettings?: CategoryDepositSettingListRelationFilter
+    branchPricingDefaults?: BranchPricingDefaultsListRelationFilter
     gstRule?: XOR<GSTRuleNullableRelationFilter, GSTRuleWhereInput> | null
   }, "id" | "publicId">
 
@@ -38365,6 +41110,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingListRelationFilter
     vehicles?: VehicleListRelationFilter
     pricingRules?: PricingRuleListRelationFilter
+    branchPricingDefaults?: BranchPricingDefaultsListRelationFilter
   }
 
   export type VehicleCategoryOrderByWithRelationInput = {
@@ -38376,6 +41122,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingOrderByRelationAggregateInput
     vehicles?: VehicleOrderByRelationAggregateInput
     pricingRules?: PricingRuleOrderByRelationAggregateInput
+    branchPricingDefaults?: BranchPricingDefaultsOrderByRelationAggregateInput
   }
 
   export type VehicleCategoryWhereUniqueInput = Prisma.AtLeast<{
@@ -38390,6 +41137,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingListRelationFilter
     vehicles?: VehicleListRelationFilter
     pricingRules?: PricingRuleListRelationFilter
+    branchPricingDefaults?: BranchPricingDefaultsListRelationFilter
   }, "id" | "publicId">
 
   export type VehicleCategoryOrderByWithAggregationInput = {
@@ -38439,6 +41187,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordListRelationFilter
     damageReports?: DamageReportListRelationFilter
     pricingOverride?: XOR<VehiclePricingOverrideNullableRelationFilter, VehiclePricingOverrideWhereInput> | null
+    customPricing?: XOR<VehicleCustomPricingNullableRelationFilter, VehicleCustomPricingWhereInput> | null
     images?: VehicleImageListRelationFilter
     bookingItems?: BookingItemListRelationFilter
   }
@@ -38465,6 +41214,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordOrderByRelationAggregateInput
     damageReports?: DamageReportOrderByRelationAggregateInput
     pricingOverride?: VehiclePricingOverrideOrderByWithRelationInput
+    customPricing?: VehicleCustomPricingOrderByWithRelationInput
     images?: VehicleImageOrderByRelationAggregateInput
     bookingItems?: BookingItemOrderByRelationAggregateInput
   }
@@ -38494,6 +41244,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordListRelationFilter
     damageReports?: DamageReportListRelationFilter
     pricingOverride?: XOR<VehiclePricingOverrideNullableRelationFilter, VehiclePricingOverrideWhereInput> | null
+    customPricing?: XOR<VehicleCustomPricingNullableRelationFilter, VehicleCustomPricingWhereInput> | null
     images?: VehicleImageListRelationFilter
     bookingItems?: BookingItemListRelationFilter
   }, "id" | "publicId" | "regNo">
@@ -38597,6 +41348,224 @@ export namespace Prisma {
     customPrice?: DecimalNullableWithAggregatesFilter<"VehiclePricingOverride"> | Decimal | DecimalJsLike | number | string | null
     multiplier?: DecimalNullableWithAggregatesFilter<"VehiclePricingOverride"> | Decimal | DecimalJsLike | number | string | null
     enabled?: BoolWithAggregatesFilter<"VehiclePricingOverride"> | boolean
+  }
+
+  export type VehicleCustomPricingWhereInput = {
+    AND?: VehicleCustomPricingWhereInput | VehicleCustomPricingWhereInput[]
+    OR?: VehicleCustomPricingWhereInput[]
+    NOT?: VehicleCustomPricingWhereInput | VehicleCustomPricingWhereInput[]
+    id?: IntFilter<"VehicleCustomPricing"> | number
+    publicId?: StringFilter<"VehicleCustomPricing"> | string
+    vehicleId?: IntFilter<"VehicleCustomPricing"> | number
+    hourlyRate?: DecimalNullableFilter<"VehicleCustomPricing"> | Decimal | DecimalJsLike | number | string | null
+    price12Hour?: DecimalNullableFilter<"VehicleCustomPricing"> | Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: IntFilter<"VehicleCustomPricing"> | number
+    price24Hour?: DecimalFilter<"VehicleCustomPricing"> | Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: IntFilter<"VehicleCustomPricing"> | number
+    priceMonthly?: DecimalNullableFilter<"VehicleCustomPricing"> | Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: IntFilter<"VehicleCustomPricing"> | number
+    extraKmRate?: DecimalFilter<"VehicleCustomPricing"> | Decimal | DecimalJsLike | number | string
+    extraHourRate?: DecimalFilter<"VehicleCustomPricing"> | Decimal | DecimalJsLike | number | string
+    enabled?: BoolFilter<"VehicleCustomPricing"> | boolean
+    createdAt?: DateTimeFilter<"VehicleCustomPricing"> | Date | string
+    updatedAt?: DateTimeFilter<"VehicleCustomPricing"> | Date | string
+    vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
+  }
+
+  export type VehicleCustomPricingOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    vehicleId?: SortOrder
+    hourlyRate?: SortOrderInput | SortOrder
+    price12Hour?: SortOrderInput | SortOrder
+    freeKm12Hour?: SortOrder
+    price24Hour?: SortOrder
+    freeKm24Hour?: SortOrder
+    priceMonthly?: SortOrderInput | SortOrder
+    freeKmMonthly?: SortOrder
+    extraKmRate?: SortOrder
+    extraHourRate?: SortOrder
+    enabled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    vehicle?: VehicleOrderByWithRelationInput
+  }
+
+  export type VehicleCustomPricingWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    vehicleId?: number
+    AND?: VehicleCustomPricingWhereInput | VehicleCustomPricingWhereInput[]
+    OR?: VehicleCustomPricingWhereInput[]
+    NOT?: VehicleCustomPricingWhereInput | VehicleCustomPricingWhereInput[]
+    hourlyRate?: DecimalNullableFilter<"VehicleCustomPricing"> | Decimal | DecimalJsLike | number | string | null
+    price12Hour?: DecimalNullableFilter<"VehicleCustomPricing"> | Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: IntFilter<"VehicleCustomPricing"> | number
+    price24Hour?: DecimalFilter<"VehicleCustomPricing"> | Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: IntFilter<"VehicleCustomPricing"> | number
+    priceMonthly?: DecimalNullableFilter<"VehicleCustomPricing"> | Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: IntFilter<"VehicleCustomPricing"> | number
+    extraKmRate?: DecimalFilter<"VehicleCustomPricing"> | Decimal | DecimalJsLike | number | string
+    extraHourRate?: DecimalFilter<"VehicleCustomPricing"> | Decimal | DecimalJsLike | number | string
+    enabled?: BoolFilter<"VehicleCustomPricing"> | boolean
+    createdAt?: DateTimeFilter<"VehicleCustomPricing"> | Date | string
+    updatedAt?: DateTimeFilter<"VehicleCustomPricing"> | Date | string
+    vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
+  }, "id" | "publicId" | "vehicleId">
+
+  export type VehicleCustomPricingOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    vehicleId?: SortOrder
+    hourlyRate?: SortOrderInput | SortOrder
+    price12Hour?: SortOrderInput | SortOrder
+    freeKm12Hour?: SortOrder
+    price24Hour?: SortOrder
+    freeKm24Hour?: SortOrder
+    priceMonthly?: SortOrderInput | SortOrder
+    freeKmMonthly?: SortOrder
+    extraKmRate?: SortOrder
+    extraHourRate?: SortOrder
+    enabled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: VehicleCustomPricingCountOrderByAggregateInput
+    _avg?: VehicleCustomPricingAvgOrderByAggregateInput
+    _max?: VehicleCustomPricingMaxOrderByAggregateInput
+    _min?: VehicleCustomPricingMinOrderByAggregateInput
+    _sum?: VehicleCustomPricingSumOrderByAggregateInput
+  }
+
+  export type VehicleCustomPricingScalarWhereWithAggregatesInput = {
+    AND?: VehicleCustomPricingScalarWhereWithAggregatesInput | VehicleCustomPricingScalarWhereWithAggregatesInput[]
+    OR?: VehicleCustomPricingScalarWhereWithAggregatesInput[]
+    NOT?: VehicleCustomPricingScalarWhereWithAggregatesInput | VehicleCustomPricingScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"VehicleCustomPricing"> | number
+    publicId?: StringWithAggregatesFilter<"VehicleCustomPricing"> | string
+    vehicleId?: IntWithAggregatesFilter<"VehicleCustomPricing"> | number
+    hourlyRate?: DecimalNullableWithAggregatesFilter<"VehicleCustomPricing"> | Decimal | DecimalJsLike | number | string | null
+    price12Hour?: DecimalNullableWithAggregatesFilter<"VehicleCustomPricing"> | Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: IntWithAggregatesFilter<"VehicleCustomPricing"> | number
+    price24Hour?: DecimalWithAggregatesFilter<"VehicleCustomPricing"> | Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: IntWithAggregatesFilter<"VehicleCustomPricing"> | number
+    priceMonthly?: DecimalNullableWithAggregatesFilter<"VehicleCustomPricing"> | Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: IntWithAggregatesFilter<"VehicleCustomPricing"> | number
+    extraKmRate?: DecimalWithAggregatesFilter<"VehicleCustomPricing"> | Decimal | DecimalJsLike | number | string
+    extraHourRate?: DecimalWithAggregatesFilter<"VehicleCustomPricing"> | Decimal | DecimalJsLike | number | string
+    enabled?: BoolWithAggregatesFilter<"VehicleCustomPricing"> | boolean
+    createdAt?: DateTimeWithAggregatesFilter<"VehicleCustomPricing"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"VehicleCustomPricing"> | Date | string
+  }
+
+  export type BranchPricingDefaultsWhereInput = {
+    AND?: BranchPricingDefaultsWhereInput | BranchPricingDefaultsWhereInput[]
+    OR?: BranchPricingDefaultsWhereInput[]
+    NOT?: BranchPricingDefaultsWhereInput | BranchPricingDefaultsWhereInput[]
+    id?: IntFilter<"BranchPricingDefaults"> | number
+    publicId?: StringFilter<"BranchPricingDefaults"> | string
+    branchId?: IntFilter<"BranchPricingDefaults"> | number
+    categoryId?: IntFilter<"BranchPricingDefaults"> | number
+    hourlyRate?: DecimalNullableFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string | null
+    price12Hour?: DecimalNullableFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: IntFilter<"BranchPricingDefaults"> | number
+    price24Hour?: DecimalFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: IntFilter<"BranchPricingDefaults"> | number
+    priceMonthly?: DecimalNullableFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: IntFilter<"BranchPricingDefaults"> | number
+    extraKmRate?: DecimalFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string
+    extraHourRate?: DecimalFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFilter<"BranchPricingDefaults"> | Date | string
+    updatedAt?: DateTimeFilter<"BranchPricingDefaults"> | Date | string
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+    category?: XOR<VehicleCategoryRelationFilter, VehicleCategoryWhereInput>
+  }
+
+  export type BranchPricingDefaultsOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+    hourlyRate?: SortOrderInput | SortOrder
+    price12Hour?: SortOrderInput | SortOrder
+    freeKm12Hour?: SortOrder
+    price24Hour?: SortOrder
+    freeKm24Hour?: SortOrder
+    priceMonthly?: SortOrderInput | SortOrder
+    freeKmMonthly?: SortOrder
+    extraKmRate?: SortOrder
+    extraHourRate?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    branch?: BranchOrderByWithRelationInput
+    category?: VehicleCategoryOrderByWithRelationInput
+  }
+
+  export type BranchPricingDefaultsWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    branchId_categoryId?: BranchPricingDefaultsBranchIdCategoryIdCompoundUniqueInput
+    AND?: BranchPricingDefaultsWhereInput | BranchPricingDefaultsWhereInput[]
+    OR?: BranchPricingDefaultsWhereInput[]
+    NOT?: BranchPricingDefaultsWhereInput | BranchPricingDefaultsWhereInput[]
+    branchId?: IntFilter<"BranchPricingDefaults"> | number
+    categoryId?: IntFilter<"BranchPricingDefaults"> | number
+    hourlyRate?: DecimalNullableFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string | null
+    price12Hour?: DecimalNullableFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: IntFilter<"BranchPricingDefaults"> | number
+    price24Hour?: DecimalFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: IntFilter<"BranchPricingDefaults"> | number
+    priceMonthly?: DecimalNullableFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: IntFilter<"BranchPricingDefaults"> | number
+    extraKmRate?: DecimalFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string
+    extraHourRate?: DecimalFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFilter<"BranchPricingDefaults"> | Date | string
+    updatedAt?: DateTimeFilter<"BranchPricingDefaults"> | Date | string
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+    category?: XOR<VehicleCategoryRelationFilter, VehicleCategoryWhereInput>
+  }, "id" | "publicId" | "branchId_categoryId">
+
+  export type BranchPricingDefaultsOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+    hourlyRate?: SortOrderInput | SortOrder
+    price12Hour?: SortOrderInput | SortOrder
+    freeKm12Hour?: SortOrder
+    price24Hour?: SortOrder
+    freeKm24Hour?: SortOrder
+    priceMonthly?: SortOrderInput | SortOrder
+    freeKmMonthly?: SortOrder
+    extraKmRate?: SortOrder
+    extraHourRate?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: BranchPricingDefaultsCountOrderByAggregateInput
+    _avg?: BranchPricingDefaultsAvgOrderByAggregateInput
+    _max?: BranchPricingDefaultsMaxOrderByAggregateInput
+    _min?: BranchPricingDefaultsMinOrderByAggregateInput
+    _sum?: BranchPricingDefaultsSumOrderByAggregateInput
+  }
+
+  export type BranchPricingDefaultsScalarWhereWithAggregatesInput = {
+    AND?: BranchPricingDefaultsScalarWhereWithAggregatesInput | BranchPricingDefaultsScalarWhereWithAggregatesInput[]
+    OR?: BranchPricingDefaultsScalarWhereWithAggregatesInput[]
+    NOT?: BranchPricingDefaultsScalarWhereWithAggregatesInput | BranchPricingDefaultsScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"BranchPricingDefaults"> | number
+    publicId?: StringWithAggregatesFilter<"BranchPricingDefaults"> | string
+    branchId?: IntWithAggregatesFilter<"BranchPricingDefaults"> | number
+    categoryId?: IntWithAggregatesFilter<"BranchPricingDefaults"> | number
+    hourlyRate?: DecimalNullableWithAggregatesFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string | null
+    price12Hour?: DecimalNullableWithAggregatesFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: IntWithAggregatesFilter<"BranchPricingDefaults"> | number
+    price24Hour?: DecimalWithAggregatesFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: IntWithAggregatesFilter<"BranchPricingDefaults"> | number
+    priceMonthly?: DecimalNullableWithAggregatesFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: IntWithAggregatesFilter<"BranchPricingDefaults"> | number
+    extraKmRate?: DecimalWithAggregatesFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string
+    extraHourRate?: DecimalWithAggregatesFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeWithAggregatesFilter<"BranchPricingDefaults"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"BranchPricingDefaults"> | Date | string
   }
 
   export type VehicleInsuranceWhereInput = {
@@ -38977,6 +41946,14 @@ export namespace Prisma {
     startAt?: DateTimeFilter<"Booking"> | Date | string
     endAt?: DateTimeFilter<"Booking"> | Date | string
     days?: IntFilter<"Booking"> | number
+    rentalPeriodType?: EnumRentalPeriodTypeNullableFilter<"Booking"> | $Enums.RentalPeriodType | null
+    actualHours?: DecimalNullableFilter<"Booking"> | Decimal | DecimalJsLike | number | string | null
+    billableHours?: DecimalNullableFilter<"Booking"> | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: IntNullableFilter<"Booking"> | number | null
+    endOdometer?: IntNullableFilter<"Booking"> | number | null
+    totalKmDriven?: IntNullableFilter<"Booking"> | number | null
+    freeKmLimit?: IntNullableFilter<"Booking"> | number | null
+    extraKmCharged?: IntNullableFilter<"Booking"> | number | null
     holdExpiresAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     totalBase?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
@@ -39012,6 +41989,14 @@ export namespace Prisma {
     startAt?: SortOrder
     endAt?: SortOrder
     days?: SortOrder
+    rentalPeriodType?: SortOrderInput | SortOrder
+    actualHours?: SortOrderInput | SortOrder
+    billableHours?: SortOrderInput | SortOrder
+    startOdometer?: SortOrderInput | SortOrder
+    endOdometer?: SortOrderInput | SortOrder
+    totalKmDriven?: SortOrderInput | SortOrder
+    freeKmLimit?: SortOrderInput | SortOrder
+    extraKmCharged?: SortOrderInput | SortOrder
     holdExpiresAt?: SortOrderInput | SortOrder
     totalBase?: SortOrder
     totalDiscount?: SortOrder
@@ -39051,6 +42036,14 @@ export namespace Prisma {
     startAt?: DateTimeFilter<"Booking"> | Date | string
     endAt?: DateTimeFilter<"Booking"> | Date | string
     days?: IntFilter<"Booking"> | number
+    rentalPeriodType?: EnumRentalPeriodTypeNullableFilter<"Booking"> | $Enums.RentalPeriodType | null
+    actualHours?: DecimalNullableFilter<"Booking"> | Decimal | DecimalJsLike | number | string | null
+    billableHours?: DecimalNullableFilter<"Booking"> | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: IntNullableFilter<"Booking"> | number | null
+    endOdometer?: IntNullableFilter<"Booking"> | number | null
+    totalKmDriven?: IntNullableFilter<"Booking"> | number | null
+    freeKmLimit?: IntNullableFilter<"Booking"> | number | null
+    extraKmCharged?: IntNullableFilter<"Booking"> | number | null
     holdExpiresAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     totalBase?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
@@ -39085,6 +42078,14 @@ export namespace Prisma {
     startAt?: SortOrder
     endAt?: SortOrder
     days?: SortOrder
+    rentalPeriodType?: SortOrderInput | SortOrder
+    actualHours?: SortOrderInput | SortOrder
+    billableHours?: SortOrderInput | SortOrder
+    startOdometer?: SortOrderInput | SortOrder
+    endOdometer?: SortOrderInput | SortOrder
+    totalKmDriven?: SortOrderInput | SortOrder
+    freeKmLimit?: SortOrderInput | SortOrder
+    extraKmCharged?: SortOrderInput | SortOrder
     holdExpiresAt?: SortOrderInput | SortOrder
     totalBase?: SortOrder
     totalDiscount?: SortOrder
@@ -39119,6 +42120,14 @@ export namespace Prisma {
     startAt?: DateTimeWithAggregatesFilter<"Booking"> | Date | string
     endAt?: DateTimeWithAggregatesFilter<"Booking"> | Date | string
     days?: IntWithAggregatesFilter<"Booking"> | number
+    rentalPeriodType?: EnumRentalPeriodTypeNullableWithAggregatesFilter<"Booking"> | $Enums.RentalPeriodType | null
+    actualHours?: DecimalNullableWithAggregatesFilter<"Booking"> | Decimal | DecimalJsLike | number | string | null
+    billableHours?: DecimalNullableWithAggregatesFilter<"Booking"> | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: IntNullableWithAggregatesFilter<"Booking"> | number | null
+    endOdometer?: IntNullableWithAggregatesFilter<"Booking"> | number | null
+    totalKmDriven?: IntNullableWithAggregatesFilter<"Booking"> | number | null
+    freeKmLimit?: IntNullableWithAggregatesFilter<"Booking"> | number | null
+    extraKmCharged?: IntNullableWithAggregatesFilter<"Booking"> | number | null
     holdExpiresAt?: DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
     totalBase?: DecimalWithAggregatesFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalWithAggregatesFilter<"Booking"> | Decimal | DecimalJsLike | number | string
@@ -40620,6 +43629,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
   }
 
@@ -40637,6 +43647,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
   }
 
@@ -40653,6 +43664,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
   }
 
@@ -40670,6 +43682,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
   }
 
@@ -40864,6 +43877,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleCreateNestedManyWithoutCategoryInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutCategoryInput
   }
 
   export type VehicleCategoryUncheckedCreateInput = {
@@ -40875,6 +43889,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleUncheckedCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleUncheckedCreateNestedManyWithoutCategoryInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutCategoryInput
   }
 
   export type VehicleCategoryUpdateInput = {
@@ -40885,6 +43900,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUpdateManyWithoutCategoryNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutCategoryNestedInput
   }
 
   export type VehicleCategoryUncheckedUpdateInput = {
@@ -40896,6 +43912,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUncheckedUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUncheckedUpdateManyWithoutCategoryNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutCategoryNestedInput
   }
 
   export type VehicleCategoryCreateManyInput = {
@@ -40937,6 +43954,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
   }
@@ -40961,6 +43979,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
   }
@@ -40984,6 +44003,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
   }
@@ -41008,6 +44028,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
   }
@@ -41113,6 +44134,249 @@ export namespace Prisma {
     customPrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     multiplier?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     enabled?: BoolFieldUpdateOperationsInput | boolean
+  }
+
+  export type VehicleCustomPricingCreateInput = {
+    publicId: string
+    hourlyRate?: Decimal | DecimalJsLike | number | string | null
+    price12Hour?: Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: number
+    price24Hour: Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: number
+    priceMonthly?: Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: number
+    extraKmRate?: Decimal | DecimalJsLike | number | string
+    extraHourRate?: Decimal | DecimalJsLike | number | string
+    enabled?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    vehicle: VehicleCreateNestedOneWithoutCustomPricingInput
+  }
+
+  export type VehicleCustomPricingUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    vehicleId: number
+    hourlyRate?: Decimal | DecimalJsLike | number | string | null
+    price12Hour?: Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: number
+    price24Hour: Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: number
+    priceMonthly?: Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: number
+    extraKmRate?: Decimal | DecimalJsLike | number | string
+    extraHourRate?: Decimal | DecimalJsLike | number | string
+    enabled?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehicleCustomPricingUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    hourlyRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    price12Hour?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: IntFieldUpdateOperationsInput | number
+    price24Hour?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: IntFieldUpdateOperationsInput | number
+    priceMonthly?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: IntFieldUpdateOperationsInput | number
+    extraKmRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    extraHourRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    vehicle?: VehicleUpdateOneRequiredWithoutCustomPricingNestedInput
+  }
+
+  export type VehicleCustomPricingUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    vehicleId?: IntFieldUpdateOperationsInput | number
+    hourlyRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    price12Hour?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: IntFieldUpdateOperationsInput | number
+    price24Hour?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: IntFieldUpdateOperationsInput | number
+    priceMonthly?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: IntFieldUpdateOperationsInput | number
+    extraKmRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    extraHourRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleCustomPricingCreateManyInput = {
+    id?: number
+    publicId: string
+    vehicleId: number
+    hourlyRate?: Decimal | DecimalJsLike | number | string | null
+    price12Hour?: Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: number
+    price24Hour: Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: number
+    priceMonthly?: Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: number
+    extraKmRate?: Decimal | DecimalJsLike | number | string
+    extraHourRate?: Decimal | DecimalJsLike | number | string
+    enabled?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehicleCustomPricingUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    hourlyRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    price12Hour?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: IntFieldUpdateOperationsInput | number
+    price24Hour?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: IntFieldUpdateOperationsInput | number
+    priceMonthly?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: IntFieldUpdateOperationsInput | number
+    extraKmRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    extraHourRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleCustomPricingUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    vehicleId?: IntFieldUpdateOperationsInput | number
+    hourlyRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    price12Hour?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: IntFieldUpdateOperationsInput | number
+    price24Hour?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: IntFieldUpdateOperationsInput | number
+    priceMonthly?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: IntFieldUpdateOperationsInput | number
+    extraKmRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    extraHourRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchPricingDefaultsCreateInput = {
+    publicId: string
+    hourlyRate?: Decimal | DecimalJsLike | number | string | null
+    price12Hour?: Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: number
+    price24Hour: Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: number
+    priceMonthly?: Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: number
+    extraKmRate?: Decimal | DecimalJsLike | number | string
+    extraHourRate?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    branch: BranchCreateNestedOneWithoutBranchPricingDefaultsInput
+    category: VehicleCategoryCreateNestedOneWithoutBranchPricingDefaultsInput
+  }
+
+  export type BranchPricingDefaultsUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    categoryId: number
+    hourlyRate?: Decimal | DecimalJsLike | number | string | null
+    price12Hour?: Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: number
+    price24Hour: Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: number
+    priceMonthly?: Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: number
+    extraKmRate?: Decimal | DecimalJsLike | number | string
+    extraHourRate?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchPricingDefaultsUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    hourlyRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    price12Hour?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: IntFieldUpdateOperationsInput | number
+    price24Hour?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: IntFieldUpdateOperationsInput | number
+    priceMonthly?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: IntFieldUpdateOperationsInput | number
+    extraKmRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    extraHourRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    branch?: BranchUpdateOneRequiredWithoutBranchPricingDefaultsNestedInput
+    category?: VehicleCategoryUpdateOneRequiredWithoutBranchPricingDefaultsNestedInput
+  }
+
+  export type BranchPricingDefaultsUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    categoryId?: IntFieldUpdateOperationsInput | number
+    hourlyRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    price12Hour?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: IntFieldUpdateOperationsInput | number
+    price24Hour?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: IntFieldUpdateOperationsInput | number
+    priceMonthly?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: IntFieldUpdateOperationsInput | number
+    extraKmRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    extraHourRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchPricingDefaultsCreateManyInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    categoryId: number
+    hourlyRate?: Decimal | DecimalJsLike | number | string | null
+    price12Hour?: Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: number
+    price24Hour: Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: number
+    priceMonthly?: Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: number
+    extraKmRate?: Decimal | DecimalJsLike | number | string
+    extraHourRate?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchPricingDefaultsUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    hourlyRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    price12Hour?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: IntFieldUpdateOperationsInput | number
+    price24Hour?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: IntFieldUpdateOperationsInput | number
+    priceMonthly?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: IntFieldUpdateOperationsInput | number
+    extraKmRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    extraHourRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchPricingDefaultsUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    categoryId?: IntFieldUpdateOperationsInput | number
+    hourlyRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    price12Hour?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: IntFieldUpdateOperationsInput | number
+    price24Hour?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: IntFieldUpdateOperationsInput | number
+    priceMonthly?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: IntFieldUpdateOperationsInput | number
+    extraKmRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    extraHourRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type VehicleInsuranceCreateInput = {
@@ -41450,6 +44714,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -41483,6 +44755,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -41511,6 +44791,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -41544,6 +44832,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -41575,6 +44871,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -41598,6 +44902,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -41622,6 +44934,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -43271,6 +46591,12 @@ export namespace Prisma {
     none?: CategoryDepositSettingWhereInput
   }
 
+  export type BranchPricingDefaultsListRelationFilter = {
+    every?: BranchPricingDefaultsWhereInput
+    some?: BranchPricingDefaultsWhereInput
+    none?: BranchPricingDefaultsWhereInput
+  }
+
   export type GSTRuleNullableRelationFilter = {
     is?: GSTRuleWhereInput | null
     isNot?: GSTRuleWhereInput | null
@@ -43289,6 +46615,10 @@ export namespace Prisma {
   }
 
   export type CategoryDepositSettingOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type BranchPricingDefaultsOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -43525,6 +46855,11 @@ export namespace Prisma {
     isNot?: VehiclePricingOverrideWhereInput | null
   }
 
+  export type VehicleCustomPricingNullableRelationFilter = {
+    is?: VehicleCustomPricingWhereInput | null
+    isNot?: VehicleCustomPricingWhereInput | null
+  }
+
   export type BookingItemListRelationFilter = {
     every?: BookingItemWhereInput
     some?: BookingItemWhereInput
@@ -43693,6 +47028,177 @@ export namespace Prisma {
     _sum?: NestedDecimalNullableFilter<$PrismaModel>
     _min?: NestedDecimalNullableFilter<$PrismaModel>
     _max?: NestedDecimalNullableFilter<$PrismaModel>
+  }
+
+  export type VehicleCustomPricingCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    vehicleId?: SortOrder
+    hourlyRate?: SortOrder
+    price12Hour?: SortOrder
+    freeKm12Hour?: SortOrder
+    price24Hour?: SortOrder
+    freeKm24Hour?: SortOrder
+    priceMonthly?: SortOrder
+    freeKmMonthly?: SortOrder
+    extraKmRate?: SortOrder
+    extraHourRate?: SortOrder
+    enabled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type VehicleCustomPricingAvgOrderByAggregateInput = {
+    id?: SortOrder
+    vehicleId?: SortOrder
+    hourlyRate?: SortOrder
+    price12Hour?: SortOrder
+    freeKm12Hour?: SortOrder
+    price24Hour?: SortOrder
+    freeKm24Hour?: SortOrder
+    priceMonthly?: SortOrder
+    freeKmMonthly?: SortOrder
+    extraKmRate?: SortOrder
+    extraHourRate?: SortOrder
+  }
+
+  export type VehicleCustomPricingMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    vehicleId?: SortOrder
+    hourlyRate?: SortOrder
+    price12Hour?: SortOrder
+    freeKm12Hour?: SortOrder
+    price24Hour?: SortOrder
+    freeKm24Hour?: SortOrder
+    priceMonthly?: SortOrder
+    freeKmMonthly?: SortOrder
+    extraKmRate?: SortOrder
+    extraHourRate?: SortOrder
+    enabled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type VehicleCustomPricingMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    vehicleId?: SortOrder
+    hourlyRate?: SortOrder
+    price12Hour?: SortOrder
+    freeKm12Hour?: SortOrder
+    price24Hour?: SortOrder
+    freeKm24Hour?: SortOrder
+    priceMonthly?: SortOrder
+    freeKmMonthly?: SortOrder
+    extraKmRate?: SortOrder
+    extraHourRate?: SortOrder
+    enabled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type VehicleCustomPricingSumOrderByAggregateInput = {
+    id?: SortOrder
+    vehicleId?: SortOrder
+    hourlyRate?: SortOrder
+    price12Hour?: SortOrder
+    freeKm12Hour?: SortOrder
+    price24Hour?: SortOrder
+    freeKm24Hour?: SortOrder
+    priceMonthly?: SortOrder
+    freeKmMonthly?: SortOrder
+    extraKmRate?: SortOrder
+    extraHourRate?: SortOrder
+  }
+
+  export type BranchPricingDefaultsBranchIdCategoryIdCompoundUniqueInput = {
+    branchId: number
+    categoryId: number
+  }
+
+  export type BranchPricingDefaultsCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+    hourlyRate?: SortOrder
+    price12Hour?: SortOrder
+    freeKm12Hour?: SortOrder
+    price24Hour?: SortOrder
+    freeKm24Hour?: SortOrder
+    priceMonthly?: SortOrder
+    freeKmMonthly?: SortOrder
+    extraKmRate?: SortOrder
+    extraHourRate?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BranchPricingDefaultsAvgOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+    hourlyRate?: SortOrder
+    price12Hour?: SortOrder
+    freeKm12Hour?: SortOrder
+    price24Hour?: SortOrder
+    freeKm24Hour?: SortOrder
+    priceMonthly?: SortOrder
+    freeKmMonthly?: SortOrder
+    extraKmRate?: SortOrder
+    extraHourRate?: SortOrder
+  }
+
+  export type BranchPricingDefaultsMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+    hourlyRate?: SortOrder
+    price12Hour?: SortOrder
+    freeKm12Hour?: SortOrder
+    price24Hour?: SortOrder
+    freeKm24Hour?: SortOrder
+    priceMonthly?: SortOrder
+    freeKmMonthly?: SortOrder
+    extraKmRate?: SortOrder
+    extraHourRate?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BranchPricingDefaultsMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+    hourlyRate?: SortOrder
+    price12Hour?: SortOrder
+    freeKm12Hour?: SortOrder
+    price24Hour?: SortOrder
+    freeKm24Hour?: SortOrder
+    priceMonthly?: SortOrder
+    freeKmMonthly?: SortOrder
+    extraKmRate?: SortOrder
+    extraHourRate?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BranchPricingDefaultsSumOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+    hourlyRate?: SortOrder
+    price12Hour?: SortOrder
+    freeKm12Hour?: SortOrder
+    price24Hour?: SortOrder
+    freeKm24Hour?: SortOrder
+    priceMonthly?: SortOrder
+    freeKmMonthly?: SortOrder
+    extraKmRate?: SortOrder
+    extraHourRate?: SortOrder
   }
 
   export type VehicleInsuranceCountOrderByAggregateInput = {
@@ -43951,6 +47457,13 @@ export namespace Prisma {
     amount?: SortOrder
   }
 
+  export type EnumRentalPeriodTypeNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.RentalPeriodType | EnumRentalPeriodTypeFieldRefInput<$PrismaModel> | null
+    in?: $Enums.RentalPeriodType[] | ListEnumRentalPeriodTypeFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.RentalPeriodType[] | ListEnumRentalPeriodTypeFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumRentalPeriodTypeNullableFilter<$PrismaModel> | $Enums.RentalPeriodType | null
+  }
+
   export type EnumBookingStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.BookingStatus | EnumBookingStatusFieldRefInput<$PrismaModel>
     in?: $Enums.BookingStatus[] | ListEnumBookingStatusFieldRefInput<$PrismaModel>
@@ -44017,6 +47530,14 @@ export namespace Prisma {
     startAt?: SortOrder
     endAt?: SortOrder
     days?: SortOrder
+    rentalPeriodType?: SortOrder
+    actualHours?: SortOrder
+    billableHours?: SortOrder
+    startOdometer?: SortOrder
+    endOdometer?: SortOrder
+    totalKmDriven?: SortOrder
+    freeKmLimit?: SortOrder
+    extraKmCharged?: SortOrder
     holdExpiresAt?: SortOrder
     totalBase?: SortOrder
     totalDiscount?: SortOrder
@@ -44040,6 +47561,13 @@ export namespace Prisma {
     customerId?: SortOrder
     branchId?: SortOrder
     days?: SortOrder
+    actualHours?: SortOrder
+    billableHours?: SortOrder
+    startOdometer?: SortOrder
+    endOdometer?: SortOrder
+    totalKmDriven?: SortOrder
+    freeKmLimit?: SortOrder
+    extraKmCharged?: SortOrder
     totalBase?: SortOrder
     totalDiscount?: SortOrder
     totalDeposit?: SortOrder
@@ -44057,6 +47585,14 @@ export namespace Prisma {
     startAt?: SortOrder
     endAt?: SortOrder
     days?: SortOrder
+    rentalPeriodType?: SortOrder
+    actualHours?: SortOrder
+    billableHours?: SortOrder
+    startOdometer?: SortOrder
+    endOdometer?: SortOrder
+    totalKmDriven?: SortOrder
+    freeKmLimit?: SortOrder
+    extraKmCharged?: SortOrder
     holdExpiresAt?: SortOrder
     totalBase?: SortOrder
     totalDiscount?: SortOrder
@@ -44082,6 +47618,14 @@ export namespace Prisma {
     startAt?: SortOrder
     endAt?: SortOrder
     days?: SortOrder
+    rentalPeriodType?: SortOrder
+    actualHours?: SortOrder
+    billableHours?: SortOrder
+    startOdometer?: SortOrder
+    endOdometer?: SortOrder
+    totalKmDriven?: SortOrder
+    freeKmLimit?: SortOrder
+    extraKmCharged?: SortOrder
     holdExpiresAt?: SortOrder
     totalBase?: SortOrder
     totalDiscount?: SortOrder
@@ -44104,6 +47648,13 @@ export namespace Prisma {
     customerId?: SortOrder
     branchId?: SortOrder
     days?: SortOrder
+    actualHours?: SortOrder
+    billableHours?: SortOrder
+    startOdometer?: SortOrder
+    endOdometer?: SortOrder
+    totalKmDriven?: SortOrder
+    freeKmLimit?: SortOrder
+    extraKmCharged?: SortOrder
     totalBase?: SortOrder
     totalDiscount?: SortOrder
     totalDeposit?: SortOrder
@@ -44111,6 +47662,16 @@ export namespace Prisma {
     totalFinal?: SortOrder
     createdById?: SortOrder
     kycFileId?: SortOrder
+  }
+
+  export type EnumRentalPeriodTypeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.RentalPeriodType | EnumRentalPeriodTypeFieldRefInput<$PrismaModel> | null
+    in?: $Enums.RentalPeriodType[] | ListEnumRentalPeriodTypeFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.RentalPeriodType[] | ListEnumRentalPeriodTypeFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumRentalPeriodTypeNullableWithAggregatesFilter<$PrismaModel> | $Enums.RentalPeriodType | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumRentalPeriodTypeNullableFilter<$PrismaModel>
+    _max?: NestedEnumRentalPeriodTypeNullableFilter<$PrismaModel>
   }
 
   export type EnumBookingStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -45634,6 +49195,13 @@ export namespace Prisma {
     connect?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
   }
 
+  export type BranchPricingDefaultsCreateNestedManyWithoutBranchInput = {
+    create?: XOR<BranchPricingDefaultsCreateWithoutBranchInput, BranchPricingDefaultsUncheckedCreateWithoutBranchInput> | BranchPricingDefaultsCreateWithoutBranchInput[] | BranchPricingDefaultsUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: BranchPricingDefaultsCreateOrConnectWithoutBranchInput | BranchPricingDefaultsCreateOrConnectWithoutBranchInput[]
+    createMany?: BranchPricingDefaultsCreateManyBranchInputEnvelope
+    connect?: BranchPricingDefaultsWhereUniqueInput | BranchPricingDefaultsWhereUniqueInput[]
+  }
+
   export type GSTRuleCreateNestedOneWithoutBranchInput = {
     create?: XOR<GSTRuleCreateWithoutBranchInput, GSTRuleUncheckedCreateWithoutBranchInput>
     connectOrCreate?: GSTRuleCreateOrConnectWithoutBranchInput
@@ -45679,6 +49247,13 @@ export namespace Prisma {
     connectOrCreate?: CategoryDepositSettingCreateOrConnectWithoutBranchInput | CategoryDepositSettingCreateOrConnectWithoutBranchInput[]
     createMany?: CategoryDepositSettingCreateManyBranchInputEnvelope
     connect?: CategoryDepositSettingWhereUniqueInput | CategoryDepositSettingWhereUniqueInput[]
+  }
+
+  export type BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput = {
+    create?: XOR<BranchPricingDefaultsCreateWithoutBranchInput, BranchPricingDefaultsUncheckedCreateWithoutBranchInput> | BranchPricingDefaultsCreateWithoutBranchInput[] | BranchPricingDefaultsUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: BranchPricingDefaultsCreateOrConnectWithoutBranchInput | BranchPricingDefaultsCreateOrConnectWithoutBranchInput[]
+    createMany?: BranchPricingDefaultsCreateManyBranchInputEnvelope
+    connect?: BranchPricingDefaultsWhereUniqueInput | BranchPricingDefaultsWhereUniqueInput[]
   }
 
   export type GSTRuleUncheckedCreateNestedOneWithoutBranchInput = {
@@ -45765,6 +49340,20 @@ export namespace Prisma {
     update?: CategoryDepositSettingUpdateWithWhereUniqueWithoutBranchInput | CategoryDepositSettingUpdateWithWhereUniqueWithoutBranchInput[]
     updateMany?: CategoryDepositSettingUpdateManyWithWhereWithoutBranchInput | CategoryDepositSettingUpdateManyWithWhereWithoutBranchInput[]
     deleteMany?: CategoryDepositSettingScalarWhereInput | CategoryDepositSettingScalarWhereInput[]
+  }
+
+  export type BranchPricingDefaultsUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<BranchPricingDefaultsCreateWithoutBranchInput, BranchPricingDefaultsUncheckedCreateWithoutBranchInput> | BranchPricingDefaultsCreateWithoutBranchInput[] | BranchPricingDefaultsUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: BranchPricingDefaultsCreateOrConnectWithoutBranchInput | BranchPricingDefaultsCreateOrConnectWithoutBranchInput[]
+    upsert?: BranchPricingDefaultsUpsertWithWhereUniqueWithoutBranchInput | BranchPricingDefaultsUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: BranchPricingDefaultsCreateManyBranchInputEnvelope
+    set?: BranchPricingDefaultsWhereUniqueInput | BranchPricingDefaultsWhereUniqueInput[]
+    disconnect?: BranchPricingDefaultsWhereUniqueInput | BranchPricingDefaultsWhereUniqueInput[]
+    delete?: BranchPricingDefaultsWhereUniqueInput | BranchPricingDefaultsWhereUniqueInput[]
+    connect?: BranchPricingDefaultsWhereUniqueInput | BranchPricingDefaultsWhereUniqueInput[]
+    update?: BranchPricingDefaultsUpdateWithWhereUniqueWithoutBranchInput | BranchPricingDefaultsUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: BranchPricingDefaultsUpdateManyWithWhereWithoutBranchInput | BranchPricingDefaultsUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: BranchPricingDefaultsScalarWhereInput | BranchPricingDefaultsScalarWhereInput[]
   }
 
   export type GSTRuleUpdateOneWithoutBranchNestedInput = {
@@ -45857,6 +49446,20 @@ export namespace Prisma {
     deleteMany?: CategoryDepositSettingScalarWhereInput | CategoryDepositSettingScalarWhereInput[]
   }
 
+  export type BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<BranchPricingDefaultsCreateWithoutBranchInput, BranchPricingDefaultsUncheckedCreateWithoutBranchInput> | BranchPricingDefaultsCreateWithoutBranchInput[] | BranchPricingDefaultsUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: BranchPricingDefaultsCreateOrConnectWithoutBranchInput | BranchPricingDefaultsCreateOrConnectWithoutBranchInput[]
+    upsert?: BranchPricingDefaultsUpsertWithWhereUniqueWithoutBranchInput | BranchPricingDefaultsUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: BranchPricingDefaultsCreateManyBranchInputEnvelope
+    set?: BranchPricingDefaultsWhereUniqueInput | BranchPricingDefaultsWhereUniqueInput[]
+    disconnect?: BranchPricingDefaultsWhereUniqueInput | BranchPricingDefaultsWhereUniqueInput[]
+    delete?: BranchPricingDefaultsWhereUniqueInput | BranchPricingDefaultsWhereUniqueInput[]
+    connect?: BranchPricingDefaultsWhereUniqueInput | BranchPricingDefaultsWhereUniqueInput[]
+    update?: BranchPricingDefaultsUpdateWithWhereUniqueWithoutBranchInput | BranchPricingDefaultsUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: BranchPricingDefaultsUpdateManyWithWhereWithoutBranchInput | BranchPricingDefaultsUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: BranchPricingDefaultsScalarWhereInput | BranchPricingDefaultsScalarWhereInput[]
+  }
+
   export type GSTRuleUncheckedUpdateOneWithoutBranchNestedInput = {
     create?: XOR<GSTRuleCreateWithoutBranchInput, GSTRuleUncheckedCreateWithoutBranchInput>
     connectOrCreate?: GSTRuleCreateOrConnectWithoutBranchInput
@@ -45917,6 +49520,13 @@ export namespace Prisma {
     connect?: PricingRuleWhereUniqueInput | PricingRuleWhereUniqueInput[]
   }
 
+  export type BranchPricingDefaultsCreateNestedManyWithoutCategoryInput = {
+    create?: XOR<BranchPricingDefaultsCreateWithoutCategoryInput, BranchPricingDefaultsUncheckedCreateWithoutCategoryInput> | BranchPricingDefaultsCreateWithoutCategoryInput[] | BranchPricingDefaultsUncheckedCreateWithoutCategoryInput[]
+    connectOrCreate?: BranchPricingDefaultsCreateOrConnectWithoutCategoryInput | BranchPricingDefaultsCreateOrConnectWithoutCategoryInput[]
+    createMany?: BranchPricingDefaultsCreateManyCategoryInputEnvelope
+    connect?: BranchPricingDefaultsWhereUniqueInput | BranchPricingDefaultsWhereUniqueInput[]
+  }
+
   export type PricingDiscountSlabUncheckedCreateNestedManyWithoutCategoryInput = {
     create?: XOR<PricingDiscountSlabCreateWithoutCategoryInput, PricingDiscountSlabUncheckedCreateWithoutCategoryInput> | PricingDiscountSlabCreateWithoutCategoryInput[] | PricingDiscountSlabUncheckedCreateWithoutCategoryInput[]
     connectOrCreate?: PricingDiscountSlabCreateOrConnectWithoutCategoryInput | PricingDiscountSlabCreateOrConnectWithoutCategoryInput[]
@@ -45943,6 +49553,13 @@ export namespace Prisma {
     connectOrCreate?: PricingRuleCreateOrConnectWithoutCategoryInput | PricingRuleCreateOrConnectWithoutCategoryInput[]
     createMany?: PricingRuleCreateManyCategoryInputEnvelope
     connect?: PricingRuleWhereUniqueInput | PricingRuleWhereUniqueInput[]
+  }
+
+  export type BranchPricingDefaultsUncheckedCreateNestedManyWithoutCategoryInput = {
+    create?: XOR<BranchPricingDefaultsCreateWithoutCategoryInput, BranchPricingDefaultsUncheckedCreateWithoutCategoryInput> | BranchPricingDefaultsCreateWithoutCategoryInput[] | BranchPricingDefaultsUncheckedCreateWithoutCategoryInput[]
+    connectOrCreate?: BranchPricingDefaultsCreateOrConnectWithoutCategoryInput | BranchPricingDefaultsCreateOrConnectWithoutCategoryInput[]
+    createMany?: BranchPricingDefaultsCreateManyCategoryInputEnvelope
+    connect?: BranchPricingDefaultsWhereUniqueInput | BranchPricingDefaultsWhereUniqueInput[]
   }
 
   export type PricingDiscountSlabUpdateManyWithoutCategoryNestedInput = {
@@ -46001,6 +49618,20 @@ export namespace Prisma {
     deleteMany?: PricingRuleScalarWhereInput | PricingRuleScalarWhereInput[]
   }
 
+  export type BranchPricingDefaultsUpdateManyWithoutCategoryNestedInput = {
+    create?: XOR<BranchPricingDefaultsCreateWithoutCategoryInput, BranchPricingDefaultsUncheckedCreateWithoutCategoryInput> | BranchPricingDefaultsCreateWithoutCategoryInput[] | BranchPricingDefaultsUncheckedCreateWithoutCategoryInput[]
+    connectOrCreate?: BranchPricingDefaultsCreateOrConnectWithoutCategoryInput | BranchPricingDefaultsCreateOrConnectWithoutCategoryInput[]
+    upsert?: BranchPricingDefaultsUpsertWithWhereUniqueWithoutCategoryInput | BranchPricingDefaultsUpsertWithWhereUniqueWithoutCategoryInput[]
+    createMany?: BranchPricingDefaultsCreateManyCategoryInputEnvelope
+    set?: BranchPricingDefaultsWhereUniqueInput | BranchPricingDefaultsWhereUniqueInput[]
+    disconnect?: BranchPricingDefaultsWhereUniqueInput | BranchPricingDefaultsWhereUniqueInput[]
+    delete?: BranchPricingDefaultsWhereUniqueInput | BranchPricingDefaultsWhereUniqueInput[]
+    connect?: BranchPricingDefaultsWhereUniqueInput | BranchPricingDefaultsWhereUniqueInput[]
+    update?: BranchPricingDefaultsUpdateWithWhereUniqueWithoutCategoryInput | BranchPricingDefaultsUpdateWithWhereUniqueWithoutCategoryInput[]
+    updateMany?: BranchPricingDefaultsUpdateManyWithWhereWithoutCategoryInput | BranchPricingDefaultsUpdateManyWithWhereWithoutCategoryInput[]
+    deleteMany?: BranchPricingDefaultsScalarWhereInput | BranchPricingDefaultsScalarWhereInput[]
+  }
+
   export type PricingDiscountSlabUncheckedUpdateManyWithoutCategoryNestedInput = {
     create?: XOR<PricingDiscountSlabCreateWithoutCategoryInput, PricingDiscountSlabUncheckedCreateWithoutCategoryInput> | PricingDiscountSlabCreateWithoutCategoryInput[] | PricingDiscountSlabUncheckedCreateWithoutCategoryInput[]
     connectOrCreate?: PricingDiscountSlabCreateOrConnectWithoutCategoryInput | PricingDiscountSlabCreateOrConnectWithoutCategoryInput[]
@@ -46057,6 +49688,20 @@ export namespace Prisma {
     deleteMany?: PricingRuleScalarWhereInput | PricingRuleScalarWhereInput[]
   }
 
+  export type BranchPricingDefaultsUncheckedUpdateManyWithoutCategoryNestedInput = {
+    create?: XOR<BranchPricingDefaultsCreateWithoutCategoryInput, BranchPricingDefaultsUncheckedCreateWithoutCategoryInput> | BranchPricingDefaultsCreateWithoutCategoryInput[] | BranchPricingDefaultsUncheckedCreateWithoutCategoryInput[]
+    connectOrCreate?: BranchPricingDefaultsCreateOrConnectWithoutCategoryInput | BranchPricingDefaultsCreateOrConnectWithoutCategoryInput[]
+    upsert?: BranchPricingDefaultsUpsertWithWhereUniqueWithoutCategoryInput | BranchPricingDefaultsUpsertWithWhereUniqueWithoutCategoryInput[]
+    createMany?: BranchPricingDefaultsCreateManyCategoryInputEnvelope
+    set?: BranchPricingDefaultsWhereUniqueInput | BranchPricingDefaultsWhereUniqueInput[]
+    disconnect?: BranchPricingDefaultsWhereUniqueInput | BranchPricingDefaultsWhereUniqueInput[]
+    delete?: BranchPricingDefaultsWhereUniqueInput | BranchPricingDefaultsWhereUniqueInput[]
+    connect?: BranchPricingDefaultsWhereUniqueInput | BranchPricingDefaultsWhereUniqueInput[]
+    update?: BranchPricingDefaultsUpdateWithWhereUniqueWithoutCategoryInput | BranchPricingDefaultsUpdateWithWhereUniqueWithoutCategoryInput[]
+    updateMany?: BranchPricingDefaultsUpdateManyWithWhereWithoutCategoryInput | BranchPricingDefaultsUpdateManyWithWhereWithoutCategoryInput[]
+    deleteMany?: BranchPricingDefaultsScalarWhereInput | BranchPricingDefaultsScalarWhereInput[]
+  }
+
   export type BranchCreateNestedOneWithoutVehiclesInput = {
     create?: XOR<BranchCreateWithoutVehiclesInput, BranchUncheckedCreateWithoutVehiclesInput>
     connectOrCreate?: BranchCreateOrConnectWithoutVehiclesInput
@@ -46094,6 +49739,12 @@ export namespace Prisma {
     create?: XOR<VehiclePricingOverrideCreateWithoutVehicleInput, VehiclePricingOverrideUncheckedCreateWithoutVehicleInput>
     connectOrCreate?: VehiclePricingOverrideCreateOrConnectWithoutVehicleInput
     connect?: VehiclePricingOverrideWhereUniqueInput
+  }
+
+  export type VehicleCustomPricingCreateNestedOneWithoutVehicleInput = {
+    create?: XOR<VehicleCustomPricingCreateWithoutVehicleInput, VehicleCustomPricingUncheckedCreateWithoutVehicleInput>
+    connectOrCreate?: VehicleCustomPricingCreateOrConnectWithoutVehicleInput
+    connect?: VehicleCustomPricingWhereUniqueInput
   }
 
   export type VehicleImageCreateNestedManyWithoutVehicleInput = {
@@ -46135,6 +49786,12 @@ export namespace Prisma {
     create?: XOR<VehiclePricingOverrideCreateWithoutVehicleInput, VehiclePricingOverrideUncheckedCreateWithoutVehicleInput>
     connectOrCreate?: VehiclePricingOverrideCreateOrConnectWithoutVehicleInput
     connect?: VehiclePricingOverrideWhereUniqueInput
+  }
+
+  export type VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput = {
+    create?: XOR<VehicleCustomPricingCreateWithoutVehicleInput, VehicleCustomPricingUncheckedCreateWithoutVehicleInput>
+    connectOrCreate?: VehicleCustomPricingCreateOrConnectWithoutVehicleInput
+    connect?: VehicleCustomPricingWhereUniqueInput
   }
 
   export type VehicleImageUncheckedCreateNestedManyWithoutVehicleInput = {
@@ -46223,6 +49880,16 @@ export namespace Prisma {
     update?: XOR<XOR<VehiclePricingOverrideUpdateToOneWithWhereWithoutVehicleInput, VehiclePricingOverrideUpdateWithoutVehicleInput>, VehiclePricingOverrideUncheckedUpdateWithoutVehicleInput>
   }
 
+  export type VehicleCustomPricingUpdateOneWithoutVehicleNestedInput = {
+    create?: XOR<VehicleCustomPricingCreateWithoutVehicleInput, VehicleCustomPricingUncheckedCreateWithoutVehicleInput>
+    connectOrCreate?: VehicleCustomPricingCreateOrConnectWithoutVehicleInput
+    upsert?: VehicleCustomPricingUpsertWithoutVehicleInput
+    disconnect?: VehicleCustomPricingWhereInput | boolean
+    delete?: VehicleCustomPricingWhereInput | boolean
+    connect?: VehicleCustomPricingWhereUniqueInput
+    update?: XOR<XOR<VehicleCustomPricingUpdateToOneWithWhereWithoutVehicleInput, VehicleCustomPricingUpdateWithoutVehicleInput>, VehicleCustomPricingUncheckedUpdateWithoutVehicleInput>
+  }
+
   export type VehicleImageUpdateManyWithoutVehicleNestedInput = {
     create?: XOR<VehicleImageCreateWithoutVehicleInput, VehicleImageUncheckedCreateWithoutVehicleInput> | VehicleImageCreateWithoutVehicleInput[] | VehicleImageUncheckedCreateWithoutVehicleInput[]
     connectOrCreate?: VehicleImageCreateOrConnectWithoutVehicleInput | VehicleImageCreateOrConnectWithoutVehicleInput[]
@@ -46303,6 +49970,16 @@ export namespace Prisma {
     update?: XOR<XOR<VehiclePricingOverrideUpdateToOneWithWhereWithoutVehicleInput, VehiclePricingOverrideUpdateWithoutVehicleInput>, VehiclePricingOverrideUncheckedUpdateWithoutVehicleInput>
   }
 
+  export type VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput = {
+    create?: XOR<VehicleCustomPricingCreateWithoutVehicleInput, VehicleCustomPricingUncheckedCreateWithoutVehicleInput>
+    connectOrCreate?: VehicleCustomPricingCreateOrConnectWithoutVehicleInput
+    upsert?: VehicleCustomPricingUpsertWithoutVehicleInput
+    disconnect?: VehicleCustomPricingWhereInput | boolean
+    delete?: VehicleCustomPricingWhereInput | boolean
+    connect?: VehicleCustomPricingWhereUniqueInput
+    update?: XOR<XOR<VehicleCustomPricingUpdateToOneWithWhereWithoutVehicleInput, VehicleCustomPricingUpdateWithoutVehicleInput>, VehicleCustomPricingUncheckedUpdateWithoutVehicleInput>
+  }
+
   export type VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput = {
     create?: XOR<VehicleImageCreateWithoutVehicleInput, VehicleImageUncheckedCreateWithoutVehicleInput> | VehicleImageCreateWithoutVehicleInput[] | VehicleImageUncheckedCreateWithoutVehicleInput[]
     connectOrCreate?: VehicleImageCreateOrConnectWithoutVehicleInput | VehicleImageCreateOrConnectWithoutVehicleInput[]
@@ -46351,6 +50028,48 @@ export namespace Prisma {
     upsert?: VehicleUpsertWithoutPricingOverrideInput
     connect?: VehicleWhereUniqueInput
     update?: XOR<XOR<VehicleUpdateToOneWithWhereWithoutPricingOverrideInput, VehicleUpdateWithoutPricingOverrideInput>, VehicleUncheckedUpdateWithoutPricingOverrideInput>
+  }
+
+  export type VehicleCreateNestedOneWithoutCustomPricingInput = {
+    create?: XOR<VehicleCreateWithoutCustomPricingInput, VehicleUncheckedCreateWithoutCustomPricingInput>
+    connectOrCreate?: VehicleCreateOrConnectWithoutCustomPricingInput
+    connect?: VehicleWhereUniqueInput
+  }
+
+  export type VehicleUpdateOneRequiredWithoutCustomPricingNestedInput = {
+    create?: XOR<VehicleCreateWithoutCustomPricingInput, VehicleUncheckedCreateWithoutCustomPricingInput>
+    connectOrCreate?: VehicleCreateOrConnectWithoutCustomPricingInput
+    upsert?: VehicleUpsertWithoutCustomPricingInput
+    connect?: VehicleWhereUniqueInput
+    update?: XOR<XOR<VehicleUpdateToOneWithWhereWithoutCustomPricingInput, VehicleUpdateWithoutCustomPricingInput>, VehicleUncheckedUpdateWithoutCustomPricingInput>
+  }
+
+  export type BranchCreateNestedOneWithoutBranchPricingDefaultsInput = {
+    create?: XOR<BranchCreateWithoutBranchPricingDefaultsInput, BranchUncheckedCreateWithoutBranchPricingDefaultsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutBranchPricingDefaultsInput
+    connect?: BranchWhereUniqueInput
+  }
+
+  export type VehicleCategoryCreateNestedOneWithoutBranchPricingDefaultsInput = {
+    create?: XOR<VehicleCategoryCreateWithoutBranchPricingDefaultsInput, VehicleCategoryUncheckedCreateWithoutBranchPricingDefaultsInput>
+    connectOrCreate?: VehicleCategoryCreateOrConnectWithoutBranchPricingDefaultsInput
+    connect?: VehicleCategoryWhereUniqueInput
+  }
+
+  export type BranchUpdateOneRequiredWithoutBranchPricingDefaultsNestedInput = {
+    create?: XOR<BranchCreateWithoutBranchPricingDefaultsInput, BranchUncheckedCreateWithoutBranchPricingDefaultsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutBranchPricingDefaultsInput
+    upsert?: BranchUpsertWithoutBranchPricingDefaultsInput
+    connect?: BranchWhereUniqueInput
+    update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutBranchPricingDefaultsInput, BranchUpdateWithoutBranchPricingDefaultsInput>, BranchUncheckedUpdateWithoutBranchPricingDefaultsInput>
+  }
+
+  export type VehicleCategoryUpdateOneRequiredWithoutBranchPricingDefaultsNestedInput = {
+    create?: XOR<VehicleCategoryCreateWithoutBranchPricingDefaultsInput, VehicleCategoryUncheckedCreateWithoutBranchPricingDefaultsInput>
+    connectOrCreate?: VehicleCategoryCreateOrConnectWithoutBranchPricingDefaultsInput
+    upsert?: VehicleCategoryUpsertWithoutBranchPricingDefaultsInput
+    connect?: VehicleCategoryWhereUniqueInput
+    update?: XOR<XOR<VehicleCategoryUpdateToOneWithWhereWithoutBranchPricingDefaultsInput, VehicleCategoryUpdateWithoutBranchPricingDefaultsInput>, VehicleCategoryUncheckedUpdateWithoutBranchPricingDefaultsInput>
   }
 
   export type VehicleCreateNestedOneWithoutInsuranceRecordsInput = {
@@ -46577,6 +50296,10 @@ export namespace Prisma {
     create?: XOR<InvoiceCreateWithoutBookingInput, InvoiceUncheckedCreateWithoutBookingInput>
     connectOrCreate?: InvoiceCreateOrConnectWithoutBookingInput
     connect?: InvoiceWhereUniqueInput
+  }
+
+  export type NullableEnumRentalPeriodTypeFieldUpdateOperationsInput = {
+    set?: $Enums.RentalPeriodType | null
   }
 
   export type EnumBookingStatusFieldUpdateOperationsInput = {
@@ -47468,6 +51191,13 @@ export namespace Prisma {
     _max?: NestedEnumPricingRuleTypeFilter<$PrismaModel>
   }
 
+  export type NestedEnumRentalPeriodTypeNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.RentalPeriodType | EnumRentalPeriodTypeFieldRefInput<$PrismaModel> | null
+    in?: $Enums.RentalPeriodType[] | ListEnumRentalPeriodTypeFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.RentalPeriodType[] | ListEnumRentalPeriodTypeFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumRentalPeriodTypeNullableFilter<$PrismaModel> | $Enums.RentalPeriodType | null
+  }
+
   export type NestedEnumBookingStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.BookingStatus | EnumBookingStatusFieldRefInput<$PrismaModel>
     in?: $Enums.BookingStatus[] | ListEnumBookingStatusFieldRefInput<$PrismaModel>
@@ -47487,6 +51217,16 @@ export namespace Prisma {
     in?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel> | null
     notIn?: $Enums.DepositMethod[] | ListEnumDepositMethodFieldRefInput<$PrismaModel> | null
     not?: NestedEnumDepositMethodNullableFilter<$PrismaModel> | $Enums.DepositMethod | null
+  }
+
+  export type NestedEnumRentalPeriodTypeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.RentalPeriodType | EnumRentalPeriodTypeFieldRefInput<$PrismaModel> | null
+    in?: $Enums.RentalPeriodType[] | ListEnumRentalPeriodTypeFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.RentalPeriodType[] | ListEnumRentalPeriodTypeFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumRentalPeriodTypeNullableWithAggregatesFilter<$PrismaModel> | $Enums.RentalPeriodType | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumRentalPeriodTypeNullableFilter<$PrismaModel>
+    _max?: NestedEnumRentalPeriodTypeNullableFilter<$PrismaModel>
   }
 
   export type NestedEnumBookingStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -47660,6 +51400,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
   }
 
@@ -47676,6 +51417,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
   }
 
@@ -47818,6 +51560,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -47850,6 +51600,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -47944,6 +51702,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
   }
 
@@ -47960,6 +51719,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
   }
 
@@ -48127,6 +51887,14 @@ export namespace Prisma {
     startAt?: DateTimeFilter<"Booking"> | Date | string
     endAt?: DateTimeFilter<"Booking"> | Date | string
     days?: IntFilter<"Booking"> | number
+    rentalPeriodType?: EnumRentalPeriodTypeNullableFilter<"Booking"> | $Enums.RentalPeriodType | null
+    actualHours?: DecimalNullableFilter<"Booking"> | Decimal | DecimalJsLike | number | string | null
+    billableHours?: DecimalNullableFilter<"Booking"> | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: IntNullableFilter<"Booking"> | number | null
+    endOdometer?: IntNullableFilter<"Booking"> | number | null
+    totalKmDriven?: IntNullableFilter<"Booking"> | number | null
+    freeKmLimit?: IntNullableFilter<"Booking"> | number | null
+    extraKmCharged?: IntNullableFilter<"Booking"> | number | null
     holdExpiresAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     totalBase?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
@@ -48453,6 +52221,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -48484,6 +52260,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -48829,6 +52613,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -48861,6 +52653,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -49154,6 +52954,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
   }
@@ -49177,6 +52978,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
   }
@@ -49196,6 +52998,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -49227,6 +53037,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -49329,6 +53147,49 @@ export namespace Prisma {
 
   export type CategoryDepositSettingCreateManyBranchInputEnvelope = {
     data: CategoryDepositSettingCreateManyBranchInput | CategoryDepositSettingCreateManyBranchInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type BranchPricingDefaultsCreateWithoutBranchInput = {
+    publicId: string
+    hourlyRate?: Decimal | DecimalJsLike | number | string | null
+    price12Hour?: Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: number
+    price24Hour: Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: number
+    priceMonthly?: Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: number
+    extraKmRate?: Decimal | DecimalJsLike | number | string
+    extraHourRate?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    category: VehicleCategoryCreateNestedOneWithoutBranchPricingDefaultsInput
+  }
+
+  export type BranchPricingDefaultsUncheckedCreateWithoutBranchInput = {
+    id?: number
+    publicId: string
+    categoryId: number
+    hourlyRate?: Decimal | DecimalJsLike | number | string | null
+    price12Hour?: Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: number
+    price24Hour: Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: number
+    priceMonthly?: Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: number
+    extraKmRate?: Decimal | DecimalJsLike | number | string
+    extraHourRate?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchPricingDefaultsCreateOrConnectWithoutBranchInput = {
+    where: BranchPricingDefaultsWhereUniqueInput
+    create: XOR<BranchPricingDefaultsCreateWithoutBranchInput, BranchPricingDefaultsUncheckedCreateWithoutBranchInput>
+  }
+
+  export type BranchPricingDefaultsCreateManyBranchInputEnvelope = {
+    data: BranchPricingDefaultsCreateManyBranchInput | BranchPricingDefaultsCreateManyBranchInput[]
     skipDuplicates?: boolean
   }
 
@@ -49533,6 +53394,43 @@ export namespace Prisma {
     amount?: DecimalFilter<"CategoryDepositSetting"> | Decimal | DecimalJsLike | number | string
   }
 
+  export type BranchPricingDefaultsUpsertWithWhereUniqueWithoutBranchInput = {
+    where: BranchPricingDefaultsWhereUniqueInput
+    update: XOR<BranchPricingDefaultsUpdateWithoutBranchInput, BranchPricingDefaultsUncheckedUpdateWithoutBranchInput>
+    create: XOR<BranchPricingDefaultsCreateWithoutBranchInput, BranchPricingDefaultsUncheckedCreateWithoutBranchInput>
+  }
+
+  export type BranchPricingDefaultsUpdateWithWhereUniqueWithoutBranchInput = {
+    where: BranchPricingDefaultsWhereUniqueInput
+    data: XOR<BranchPricingDefaultsUpdateWithoutBranchInput, BranchPricingDefaultsUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type BranchPricingDefaultsUpdateManyWithWhereWithoutBranchInput = {
+    where: BranchPricingDefaultsScalarWhereInput
+    data: XOR<BranchPricingDefaultsUpdateManyMutationInput, BranchPricingDefaultsUncheckedUpdateManyWithoutBranchInput>
+  }
+
+  export type BranchPricingDefaultsScalarWhereInput = {
+    AND?: BranchPricingDefaultsScalarWhereInput | BranchPricingDefaultsScalarWhereInput[]
+    OR?: BranchPricingDefaultsScalarWhereInput[]
+    NOT?: BranchPricingDefaultsScalarWhereInput | BranchPricingDefaultsScalarWhereInput[]
+    id?: IntFilter<"BranchPricingDefaults"> | number
+    publicId?: StringFilter<"BranchPricingDefaults"> | string
+    branchId?: IntFilter<"BranchPricingDefaults"> | number
+    categoryId?: IntFilter<"BranchPricingDefaults"> | number
+    hourlyRate?: DecimalNullableFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string | null
+    price12Hour?: DecimalNullableFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: IntFilter<"BranchPricingDefaults"> | number
+    price24Hour?: DecimalFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: IntFilter<"BranchPricingDefaults"> | number
+    priceMonthly?: DecimalNullableFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: IntFilter<"BranchPricingDefaults"> | number
+    extraKmRate?: DecimalFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string
+    extraHourRate?: DecimalFilter<"BranchPricingDefaults"> | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFilter<"BranchPricingDefaults"> | Date | string
+    updatedAt?: DateTimeFilter<"BranchPricingDefaults"> | Date | string
+  }
+
   export type GSTRuleUpsertWithoutBranchInput = {
     update: XOR<GSTRuleUpdateWithoutBranchInput, GSTRuleUncheckedUpdateWithoutBranchInput>
     create: XOR<GSTRuleCreateWithoutBranchInput, GSTRuleUncheckedCreateWithoutBranchInput>
@@ -49577,6 +53475,7 @@ export namespace Prisma {
     bookings?: BookingCreateNestedManyWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
   }
 
@@ -49593,6 +53492,7 @@ export namespace Prisma {
     bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
   }
 
@@ -49624,6 +53524,7 @@ export namespace Prisma {
     bookings?: BookingUpdateManyWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
   }
 
@@ -49640,6 +53541,7 @@ export namespace Prisma {
     bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
   }
 
@@ -49705,6 +53607,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
   }
@@ -49728,6 +53631,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
   }
@@ -49764,6 +53668,49 @@ export namespace Prisma {
 
   export type PricingRuleCreateManyCategoryInputEnvelope = {
     data: PricingRuleCreateManyCategoryInput | PricingRuleCreateManyCategoryInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type BranchPricingDefaultsCreateWithoutCategoryInput = {
+    publicId: string
+    hourlyRate?: Decimal | DecimalJsLike | number | string | null
+    price12Hour?: Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: number
+    price24Hour: Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: number
+    priceMonthly?: Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: number
+    extraKmRate?: Decimal | DecimalJsLike | number | string
+    extraHourRate?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    branch: BranchCreateNestedOneWithoutBranchPricingDefaultsInput
+  }
+
+  export type BranchPricingDefaultsUncheckedCreateWithoutCategoryInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    hourlyRate?: Decimal | DecimalJsLike | number | string | null
+    price12Hour?: Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: number
+    price24Hour: Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: number
+    priceMonthly?: Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: number
+    extraKmRate?: Decimal | DecimalJsLike | number | string
+    extraHourRate?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchPricingDefaultsCreateOrConnectWithoutCategoryInput = {
+    where: BranchPricingDefaultsWhereUniqueInput
+    create: XOR<BranchPricingDefaultsCreateWithoutCategoryInput, BranchPricingDefaultsUncheckedCreateWithoutCategoryInput>
+  }
+
+  export type BranchPricingDefaultsCreateManyCategoryInputEnvelope = {
+    data: BranchPricingDefaultsCreateManyCategoryInput | BranchPricingDefaultsCreateManyCategoryInput[]
     skipDuplicates?: boolean
   }
 
@@ -49843,6 +53790,22 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"PricingRule"> | Date | string
   }
 
+  export type BranchPricingDefaultsUpsertWithWhereUniqueWithoutCategoryInput = {
+    where: BranchPricingDefaultsWhereUniqueInput
+    update: XOR<BranchPricingDefaultsUpdateWithoutCategoryInput, BranchPricingDefaultsUncheckedUpdateWithoutCategoryInput>
+    create: XOR<BranchPricingDefaultsCreateWithoutCategoryInput, BranchPricingDefaultsUncheckedCreateWithoutCategoryInput>
+  }
+
+  export type BranchPricingDefaultsUpdateWithWhereUniqueWithoutCategoryInput = {
+    where: BranchPricingDefaultsWhereUniqueInput
+    data: XOR<BranchPricingDefaultsUpdateWithoutCategoryInput, BranchPricingDefaultsUncheckedUpdateWithoutCategoryInput>
+  }
+
+  export type BranchPricingDefaultsUpdateManyWithWhereWithoutCategoryInput = {
+    where: BranchPricingDefaultsScalarWhereInput
+    data: XOR<BranchPricingDefaultsUpdateManyMutationInput, BranchPricingDefaultsUncheckedUpdateManyWithoutCategoryInput>
+  }
+
   export type BranchCreateWithoutVehiclesInput = {
     publicId: string
     name: string
@@ -49855,6 +53818,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
   }
 
@@ -49871,6 +53835,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
   }
 
@@ -49886,6 +53851,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutCategoryInput
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleCreateNestedManyWithoutCategoryInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutCategoryInput
   }
 
   export type VehicleCategoryUncheckedCreateWithoutVehiclesInput = {
@@ -49896,6 +53862,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutCategoryInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleUncheckedCreateNestedManyWithoutCategoryInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutCategoryInput
   }
 
   export type VehicleCategoryCreateOrConnectWithoutVehiclesInput = {
@@ -50010,6 +53977,44 @@ export namespace Prisma {
     create: XOR<VehiclePricingOverrideCreateWithoutVehicleInput, VehiclePricingOverrideUncheckedCreateWithoutVehicleInput>
   }
 
+  export type VehicleCustomPricingCreateWithoutVehicleInput = {
+    publicId: string
+    hourlyRate?: Decimal | DecimalJsLike | number | string | null
+    price12Hour?: Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: number
+    price24Hour: Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: number
+    priceMonthly?: Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: number
+    extraKmRate?: Decimal | DecimalJsLike | number | string
+    extraHourRate?: Decimal | DecimalJsLike | number | string
+    enabled?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehicleCustomPricingUncheckedCreateWithoutVehicleInput = {
+    id?: number
+    publicId: string
+    hourlyRate?: Decimal | DecimalJsLike | number | string | null
+    price12Hour?: Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: number
+    price24Hour: Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: number
+    priceMonthly?: Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: number
+    extraKmRate?: Decimal | DecimalJsLike | number | string
+    extraHourRate?: Decimal | DecimalJsLike | number | string
+    enabled?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehicleCustomPricingCreateOrConnectWithoutVehicleInput = {
+    where: VehicleCustomPricingWhereUniqueInput
+    create: XOR<VehicleCustomPricingCreateWithoutVehicleInput, VehicleCustomPricingUncheckedCreateWithoutVehicleInput>
+  }
+
   export type VehicleImageCreateWithoutVehicleInput = {
     publicId: string
     isThumbnail?: boolean
@@ -50097,6 +54102,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
   }
 
@@ -50113,6 +54119,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
   }
 
@@ -50134,6 +54141,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutCategoryNestedInput
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUpdateManyWithoutCategoryNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutCategoryNestedInput
   }
 
   export type VehicleCategoryUncheckedUpdateWithoutVehiclesInput = {
@@ -50144,6 +54152,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutCategoryNestedInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUncheckedUpdateManyWithoutCategoryNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutCategoryNestedInput
   }
 
   export type VehicleInsuranceUpsertWithWhereUniqueWithoutVehicleInput = {
@@ -50242,6 +54251,50 @@ export namespace Prisma {
     enabled?: BoolFieldUpdateOperationsInput | boolean
   }
 
+  export type VehicleCustomPricingUpsertWithoutVehicleInput = {
+    update: XOR<VehicleCustomPricingUpdateWithoutVehicleInput, VehicleCustomPricingUncheckedUpdateWithoutVehicleInput>
+    create: XOR<VehicleCustomPricingCreateWithoutVehicleInput, VehicleCustomPricingUncheckedCreateWithoutVehicleInput>
+    where?: VehicleCustomPricingWhereInput
+  }
+
+  export type VehicleCustomPricingUpdateToOneWithWhereWithoutVehicleInput = {
+    where?: VehicleCustomPricingWhereInput
+    data: XOR<VehicleCustomPricingUpdateWithoutVehicleInput, VehicleCustomPricingUncheckedUpdateWithoutVehicleInput>
+  }
+
+  export type VehicleCustomPricingUpdateWithoutVehicleInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    hourlyRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    price12Hour?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: IntFieldUpdateOperationsInput | number
+    price24Hour?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: IntFieldUpdateOperationsInput | number
+    priceMonthly?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: IntFieldUpdateOperationsInput | number
+    extraKmRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    extraHourRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleCustomPricingUncheckedUpdateWithoutVehicleInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    hourlyRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    price12Hour?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: IntFieldUpdateOperationsInput | number
+    price24Hour?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: IntFieldUpdateOperationsInput | number
+    priceMonthly?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: IntFieldUpdateOperationsInput | number
+    extraKmRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    extraHourRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type VehicleImageUpsertWithWhereUniqueWithoutVehicleInput = {
     where: VehicleImageWhereUniqueInput
     update: XOR<VehicleImageUpdateWithoutVehicleInput, VehicleImageUncheckedUpdateWithoutVehicleInput>
@@ -50311,6 +54364,7 @@ export namespace Prisma {
     insuranceRecords?: VehicleInsuranceCreateNestedManyWithoutVehicleInput
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
+    customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
   }
@@ -50334,6 +54388,7 @@ export namespace Prisma {
     insuranceRecords?: VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
+    customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
   }
@@ -50372,6 +54427,7 @@ export namespace Prisma {
     insuranceRecords?: VehicleInsuranceUpdateManyWithoutVehicleNestedInput
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
   }
@@ -50395,8 +54451,259 @@ export namespace Prisma {
     insuranceRecords?: VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
+  }
+
+  export type VehicleCreateWithoutCustomPricingInput = {
+    publicId: string
+    make: string
+    model: string
+    regNo: string
+    odo: number
+    fuelLevel?: number
+    insuranceExpiry: Date | string
+    status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch: BranchCreateNestedOneWithoutVehiclesInput
+    category: VehicleCategoryCreateNestedOneWithoutVehiclesInput
+    insuranceRecords?: VehicleInsuranceCreateNestedManyWithoutVehicleInput
+    maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
+    damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
+  }
+
+  export type VehicleUncheckedCreateWithoutCustomPricingInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    categoryId: number
+    make: string
+    model: string
+    regNo: string
+    odo: number
+    fuelLevel?: number
+    insuranceExpiry: Date | string
+    status?: $Enums.VehicleStatus
+    baseDailyPrice?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    insuranceRecords?: VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput
+    maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
+    damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
+  }
+
+  export type VehicleCreateOrConnectWithoutCustomPricingInput = {
+    where: VehicleWhereUniqueInput
+    create: XOR<VehicleCreateWithoutCustomPricingInput, VehicleUncheckedCreateWithoutCustomPricingInput>
+  }
+
+  export type VehicleUpsertWithoutCustomPricingInput = {
+    update: XOR<VehicleUpdateWithoutCustomPricingInput, VehicleUncheckedUpdateWithoutCustomPricingInput>
+    create: XOR<VehicleCreateWithoutCustomPricingInput, VehicleUncheckedCreateWithoutCustomPricingInput>
+    where?: VehicleWhereInput
+  }
+
+  export type VehicleUpdateToOneWithWhereWithoutCustomPricingInput = {
+    where?: VehicleWhereInput
+    data: XOR<VehicleUpdateWithoutCustomPricingInput, VehicleUncheckedUpdateWithoutCustomPricingInput>
+  }
+
+  export type VehicleUpdateWithoutCustomPricingInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    make?: StringFieldUpdateOperationsInput | string
+    model?: StringFieldUpdateOperationsInput | string
+    regNo?: StringFieldUpdateOperationsInput | string
+    odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
+    insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneRequiredWithoutVehiclesNestedInput
+    category?: VehicleCategoryUpdateOneRequiredWithoutVehiclesNestedInput
+    insuranceRecords?: VehicleInsuranceUpdateManyWithoutVehicleNestedInput
+    maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
+    damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
+  }
+
+  export type VehicleUncheckedUpdateWithoutCustomPricingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    categoryId?: IntFieldUpdateOperationsInput | number
+    make?: StringFieldUpdateOperationsInput | string
+    model?: StringFieldUpdateOperationsInput | string
+    regNo?: StringFieldUpdateOperationsInput | string
+    odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
+    insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    baseDailyPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    insuranceRecords?: VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput
+    maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
+    damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
+  }
+
+  export type BranchCreateWithoutBranchPricingDefaultsInput = {
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleCreateNestedManyWithoutBranchInput
+    bookings?: BookingCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
+  }
+
+  export type BranchUncheckedCreateWithoutBranchPricingDefaultsInput = {
+    id?: number
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserUncheckedCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
+  }
+
+  export type BranchCreateOrConnectWithoutBranchPricingDefaultsInput = {
+    where: BranchWhereUniqueInput
+    create: XOR<BranchCreateWithoutBranchPricingDefaultsInput, BranchUncheckedCreateWithoutBranchPricingDefaultsInput>
+  }
+
+  export type VehicleCategoryCreateWithoutBranchPricingDefaultsInput = {
+    publicId: string
+    name: string
+    description?: string | null
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutCategoryInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutCategoryInput
+    vehicles?: VehicleCreateNestedManyWithoutCategoryInput
+    pricingRules?: PricingRuleCreateNestedManyWithoutCategoryInput
+  }
+
+  export type VehicleCategoryUncheckedCreateWithoutBranchPricingDefaultsInput = {
+    id?: number
+    publicId: string
+    name: string
+    description?: string | null
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutCategoryInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutCategoryInput
+    vehicles?: VehicleUncheckedCreateNestedManyWithoutCategoryInput
+    pricingRules?: PricingRuleUncheckedCreateNestedManyWithoutCategoryInput
+  }
+
+  export type VehicleCategoryCreateOrConnectWithoutBranchPricingDefaultsInput = {
+    where: VehicleCategoryWhereUniqueInput
+    create: XOR<VehicleCategoryCreateWithoutBranchPricingDefaultsInput, VehicleCategoryUncheckedCreateWithoutBranchPricingDefaultsInput>
+  }
+
+  export type BranchUpsertWithoutBranchPricingDefaultsInput = {
+    update: XOR<BranchUpdateWithoutBranchPricingDefaultsInput, BranchUncheckedUpdateWithoutBranchPricingDefaultsInput>
+    create: XOR<BranchCreateWithoutBranchPricingDefaultsInput, BranchUncheckedCreateWithoutBranchPricingDefaultsInput>
+    where?: BranchWhereInput
+  }
+
+  export type BranchUpdateToOneWithWhereWithoutBranchPricingDefaultsInput = {
+    where?: BranchWhereInput
+    data: XOR<BranchUpdateWithoutBranchPricingDefaultsInput, BranchUncheckedUpdateWithoutBranchPricingDefaultsInput>
+  }
+
+  export type BranchUpdateWithoutBranchPricingDefaultsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
+  }
+
+  export type BranchUncheckedUpdateWithoutBranchPricingDefaultsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUncheckedUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
+  }
+
+  export type VehicleCategoryUpsertWithoutBranchPricingDefaultsInput = {
+    update: XOR<VehicleCategoryUpdateWithoutBranchPricingDefaultsInput, VehicleCategoryUncheckedUpdateWithoutBranchPricingDefaultsInput>
+    create: XOR<VehicleCategoryCreateWithoutBranchPricingDefaultsInput, VehicleCategoryUncheckedCreateWithoutBranchPricingDefaultsInput>
+    where?: VehicleCategoryWhereInput
+  }
+
+  export type VehicleCategoryUpdateToOneWithWhereWithoutBranchPricingDefaultsInput = {
+    where?: VehicleCategoryWhereInput
+    data: XOR<VehicleCategoryUpdateWithoutBranchPricingDefaultsInput, VehicleCategoryUncheckedUpdateWithoutBranchPricingDefaultsInput>
+  }
+
+  export type VehicleCategoryUpdateWithoutBranchPricingDefaultsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutCategoryNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutCategoryNestedInput
+    vehicles?: VehicleUpdateManyWithoutCategoryNestedInput
+    pricingRules?: PricingRuleUpdateManyWithoutCategoryNestedInput
+  }
+
+  export type VehicleCategoryUncheckedUpdateWithoutBranchPricingDefaultsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutCategoryNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutCategoryNestedInput
+    vehicles?: VehicleUncheckedUpdateManyWithoutCategoryNestedInput
+    pricingRules?: PricingRuleUncheckedUpdateManyWithoutCategoryNestedInput
   }
 
   export type VehicleCreateWithoutInsuranceRecordsInput = {
@@ -50417,6 +54724,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
   }
@@ -50440,6 +54748,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
   }
@@ -50478,6 +54787,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
   }
@@ -50501,6 +54811,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
   }
@@ -50523,6 +54834,7 @@ export namespace Prisma {
     insuranceRecords?: VehicleInsuranceCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
   }
@@ -50546,6 +54858,7 @@ export namespace Prisma {
     insuranceRecords?: VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
   }
@@ -50584,6 +54897,7 @@ export namespace Prisma {
     insuranceRecords?: VehicleInsuranceUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
   }
@@ -50607,6 +54921,7 @@ export namespace Prisma {
     insuranceRecords?: VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
   }
@@ -50630,6 +54945,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
   }
 
@@ -50653,6 +54969,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
   }
 
@@ -50723,6 +55040,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
   }
 
@@ -50746,6 +55064,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
@@ -50794,6 +55113,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutCategoryInput
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleCreateNestedManyWithoutCategoryInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutCategoryInput
   }
 
   export type VehicleCategoryUncheckedCreateWithoutPricingRulesInput = {
@@ -50804,6 +55124,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutCategoryInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleUncheckedCreateNestedManyWithoutCategoryInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutCategoryInput
   }
 
   export type VehicleCategoryCreateOrConnectWithoutPricingRulesInput = {
@@ -50829,6 +55150,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutCategoryNestedInput
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUpdateManyWithoutCategoryNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutCategoryNestedInput
   }
 
   export type VehicleCategoryUncheckedUpdateWithoutPricingRulesInput = {
@@ -50839,6 +55161,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutCategoryNestedInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUncheckedUpdateManyWithoutCategoryNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutCategoryNestedInput
   }
 
   export type BranchCreateWithoutPricingDiscountSlabsInput = {
@@ -50853,6 +55176,7 @@ export namespace Prisma {
     bookings?: BookingCreateNestedManyWithoutBranchInput
     pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
   }
 
@@ -50869,6 +55193,7 @@ export namespace Prisma {
     bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
     pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
   }
 
@@ -50884,6 +55209,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleCreateNestedManyWithoutCategoryInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutCategoryInput
   }
 
   export type VehicleCategoryUncheckedCreateWithoutPricingDiscountSlabsInput = {
@@ -50894,6 +55220,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleUncheckedCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleUncheckedCreateNestedManyWithoutCategoryInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutCategoryInput
   }
 
   export type VehicleCategoryCreateOrConnectWithoutPricingDiscountSlabsInput = {
@@ -50924,6 +55251,7 @@ export namespace Prisma {
     bookings?: BookingUpdateManyWithoutBranchNestedInput
     pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
   }
 
@@ -50940,6 +55268,7 @@ export namespace Prisma {
     bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
     pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
   }
 
@@ -50961,6 +55290,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUpdateManyWithoutCategoryNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutCategoryNestedInput
   }
 
   export type VehicleCategoryUncheckedUpdateWithoutPricingDiscountSlabsInput = {
@@ -50971,6 +55301,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUncheckedUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUncheckedUpdateManyWithoutCategoryNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutCategoryNestedInput
   }
 
   export type BranchCreateWithoutCategoryDepositSettingsInput = {
@@ -50985,6 +55316,7 @@ export namespace Prisma {
     bookings?: BookingCreateNestedManyWithoutBranchInput
     pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
   }
 
@@ -51001,6 +55333,7 @@ export namespace Prisma {
     bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
     pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
   }
 
@@ -51016,6 +55349,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleCreateNestedManyWithoutCategoryInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutCategoryInput
   }
 
   export type VehicleCategoryUncheckedCreateWithoutCategoryDepositSettingsInput = {
@@ -51026,6 +55360,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleUncheckedCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleUncheckedCreateNestedManyWithoutCategoryInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutCategoryInput
   }
 
   export type VehicleCategoryCreateOrConnectWithoutCategoryDepositSettingsInput = {
@@ -51056,6 +55391,7 @@ export namespace Prisma {
     bookings?: BookingUpdateManyWithoutBranchNestedInput
     pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
   }
 
@@ -51072,6 +55408,7 @@ export namespace Prisma {
     bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
     pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
   }
 
@@ -51093,6 +55430,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUpdateManyWithoutCategoryNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutCategoryNestedInput
   }
 
   export type VehicleCategoryUncheckedUpdateWithoutCategoryDepositSettingsInput = {
@@ -51103,6 +55441,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUncheckedUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUncheckedUpdateManyWithoutCategoryNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutCategoryNestedInput
   }
 
   export type FileObjectCreateWithoutBookingKycsInput = {
@@ -51189,6 +55528,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
   }
 
@@ -51205,6 +55545,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
   }
 
@@ -51535,6 +55876,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
   }
 
@@ -51551,6 +55893,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
   }
 
@@ -51749,6 +56092,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
   }
 
@@ -51772,6 +56116,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
     damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
   }
 
@@ -51785,6 +56130,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -51817,6 +56170,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -51874,6 +56235,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
   }
 
@@ -51897,6 +56259,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
@@ -51916,6 +56279,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -51948,6 +56319,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -51975,6 +56354,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -52007,6 +56394,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -52116,6 +56511,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -52148,6 +56551,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -52253,6 +56664,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -52285,6 +56704,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -52330,6 +56757,7 @@ export namespace Prisma {
     insuranceRecords?: VehicleInsuranceCreateNestedManyWithoutVehicleInput
     maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
   }
@@ -52353,6 +56781,7 @@ export namespace Prisma {
     insuranceRecords?: VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput
     maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
   }
@@ -52451,6 +56880,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -52483,6 +56920,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -52534,6 +56979,7 @@ export namespace Prisma {
     insuranceRecords?: VehicleInsuranceUpdateManyWithoutVehicleNestedInput
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
   }
@@ -52557,6 +57003,7 @@ export namespace Prisma {
     insuranceRecords?: VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
   }
@@ -52634,6 +57081,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -52666,6 +57121,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -52709,6 +57172,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -52741,6 +57212,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -52882,6 +57361,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -52914,6 +57401,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -53049,6 +57544,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -53081,6 +57584,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -53354,6 +57865,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutGstRuleInput = {
@@ -53370,6 +57882,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutGstRuleInput = {
@@ -53401,6 +57914,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutGstRuleInput = {
@@ -53417,6 +57931,7 @@ export namespace Prisma {
     pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type EmailVerificationOtpCreateManyUserInput = {
@@ -53458,6 +57973,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -53584,6 +58107,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -53616,6 +58147,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -53646,6 +58185,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -53722,6 +58269,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -53771,6 +58326,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -53802,6 +58365,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -53832,6 +58403,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -53876,6 +58455,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -53973,6 +58560,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -54005,6 +58600,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -54035,6 +58638,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -54162,6 +58773,14 @@ export namespace Prisma {
     startAt: Date | string
     endAt: Date | string
     days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
     holdExpiresAt?: Date | string | null
     totalBase: Decimal | DecimalJsLike | number | string
     totalDiscount: Decimal | DecimalJsLike | number | string
@@ -54191,6 +58810,23 @@ export namespace Prisma {
     id?: number
     categoryId: number
     amount: Decimal | DecimalJsLike | number | string
+  }
+
+  export type BranchPricingDefaultsCreateManyBranchInput = {
+    id?: number
+    publicId: string
+    categoryId: number
+    hourlyRate?: Decimal | DecimalJsLike | number | string | null
+    price12Hour?: Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: number
+    price24Hour: Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: number
+    priceMonthly?: Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: number
+    extraKmRate?: Decimal | DecimalJsLike | number | string
+    extraHourRate?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type UserUpdateWithoutBranchInput = {
@@ -54267,6 +58903,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
   }
@@ -54290,6 +58927,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
   }
@@ -54316,6 +58954,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -54347,6 +58993,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -54377,6 +59031,14 @@ export namespace Prisma {
     startAt?: DateTimeFieldUpdateOperationsInput | Date | string
     endAt?: DateTimeFieldUpdateOperationsInput | Date | string
     days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
     holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -54432,6 +59094,56 @@ export namespace Prisma {
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
+  export type BranchPricingDefaultsUpdateWithoutBranchInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    hourlyRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    price12Hour?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: IntFieldUpdateOperationsInput | number
+    price24Hour?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: IntFieldUpdateOperationsInput | number
+    priceMonthly?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: IntFieldUpdateOperationsInput | number
+    extraKmRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    extraHourRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    category?: VehicleCategoryUpdateOneRequiredWithoutBranchPricingDefaultsNestedInput
+  }
+
+  export type BranchPricingDefaultsUncheckedUpdateWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    categoryId?: IntFieldUpdateOperationsInput | number
+    hourlyRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    price12Hour?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: IntFieldUpdateOperationsInput | number
+    price24Hour?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: IntFieldUpdateOperationsInput | number
+    priceMonthly?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: IntFieldUpdateOperationsInput | number
+    extraKmRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    extraHourRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchPricingDefaultsUncheckedUpdateManyWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    categoryId?: IntFieldUpdateOperationsInput | number
+    hourlyRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    price12Hour?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: IntFieldUpdateOperationsInput | number
+    price24Hour?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: IntFieldUpdateOperationsInput | number
+    priceMonthly?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: IntFieldUpdateOperationsInput | number
+    extraKmRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    extraHourRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type PricingDiscountSlabCreateManyCategoryInput = {
     id?: number
     days: number
@@ -54468,6 +59180,23 @@ export namespace Prisma {
     ruleType: $Enums.PricingRuleType
     multiplier: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
+  }
+
+  export type BranchPricingDefaultsCreateManyCategoryInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    hourlyRate?: Decimal | DecimalJsLike | number | string | null
+    price12Hour?: Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: number
+    price24Hour: Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: number
+    priceMonthly?: Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: number
+    extraKmRate?: Decimal | DecimalJsLike | number | string
+    extraHourRate?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type PricingDiscountSlabUpdateWithoutCategoryInput = {
@@ -54525,6 +59254,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
   }
@@ -54548,6 +59278,7 @@ export namespace Prisma {
     maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
     damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
   }
@@ -54590,6 +59321,56 @@ export namespace Prisma {
     ruleType?: EnumPricingRuleTypeFieldUpdateOperationsInput | $Enums.PricingRuleType
     multiplier?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchPricingDefaultsUpdateWithoutCategoryInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    hourlyRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    price12Hour?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: IntFieldUpdateOperationsInput | number
+    price24Hour?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: IntFieldUpdateOperationsInput | number
+    priceMonthly?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: IntFieldUpdateOperationsInput | number
+    extraKmRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    extraHourRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    branch?: BranchUpdateOneRequiredWithoutBranchPricingDefaultsNestedInput
+  }
+
+  export type BranchPricingDefaultsUncheckedUpdateWithoutCategoryInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    hourlyRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    price12Hour?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: IntFieldUpdateOperationsInput | number
+    price24Hour?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: IntFieldUpdateOperationsInput | number
+    priceMonthly?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: IntFieldUpdateOperationsInput | number
+    extraKmRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    extraHourRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchPricingDefaultsUncheckedUpdateManyWithoutCategoryInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    hourlyRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    price12Hour?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKm12Hour?: IntFieldUpdateOperationsInput | number
+    price24Hour?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    freeKm24Hour?: IntFieldUpdateOperationsInput | number
+    priceMonthly?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    freeKmMonthly?: IntFieldUpdateOperationsInput | number
+    extraKmRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    extraHourRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type VehicleInsuranceCreateManyVehicleInput = {
@@ -55146,6 +59927,14 @@ export namespace Prisma {
      * @deprecated Use VehiclePricingOverrideDefaultArgs instead
      */
     export type VehiclePricingOverrideArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = VehiclePricingOverrideDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use VehicleCustomPricingDefaultArgs instead
+     */
+    export type VehicleCustomPricingArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = VehicleCustomPricingDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use BranchPricingDefaultsDefaultArgs instead
+     */
+    export type BranchPricingDefaultsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = BranchPricingDefaultsDefaultArgs<ExtArgs>
     /**
      * @deprecated Use VehicleInsuranceDefaultArgs instead
      */

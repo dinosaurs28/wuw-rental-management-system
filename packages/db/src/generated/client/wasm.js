@@ -268,6 +268,42 @@ exports.Prisma.VehiclePricingOverrideScalarFieldEnum = {
   enabled: 'enabled'
 };
 
+exports.Prisma.VehicleCustomPricingScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  vehicleId: 'vehicleId',
+  hourlyRate: 'hourlyRate',
+  price12Hour: 'price12Hour',
+  freeKm12Hour: 'freeKm12Hour',
+  price24Hour: 'price24Hour',
+  freeKm24Hour: 'freeKm24Hour',
+  priceMonthly: 'priceMonthly',
+  freeKmMonthly: 'freeKmMonthly',
+  extraKmRate: 'extraKmRate',
+  extraHourRate: 'extraHourRate',
+  enabled: 'enabled',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.BranchPricingDefaultsScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  branchId: 'branchId',
+  categoryId: 'categoryId',
+  hourlyRate: 'hourlyRate',
+  price12Hour: 'price12Hour',
+  freeKm12Hour: 'freeKm12Hour',
+  price24Hour: 'price24Hour',
+  freeKm24Hour: 'freeKm24Hour',
+  priceMonthly: 'priceMonthly',
+  freeKmMonthly: 'freeKmMonthly',
+  extraKmRate: 'extraKmRate',
+  extraHourRate: 'extraHourRate',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.VehicleInsuranceScalarFieldEnum = {
   id: 'id',
   publicId: 'publicId',
@@ -327,6 +363,14 @@ exports.Prisma.BookingScalarFieldEnum = {
   startAt: 'startAt',
   endAt: 'endAt',
   days: 'days',
+  rentalPeriodType: 'rentalPeriodType',
+  actualHours: 'actualHours',
+  billableHours: 'billableHours',
+  startOdometer: 'startOdometer',
+  endOdometer: 'endOdometer',
+  totalKmDriven: 'totalKmDriven',
+  freeKmLimit: 'freeKmLimit',
+  extraKmCharged: 'extraKmCharged',
   holdExpiresAt: 'holdExpiresAt',
   totalBase: 'totalBase',
   totalDiscount: 'totalDiscount',
@@ -553,6 +597,14 @@ exports.PricingRuleType = exports.$Enums.PricingRuleType = {
   CUSTOM: 'CUSTOM'
 };
 
+exports.RentalPeriodType = exports.$Enums.RentalPeriodType = {
+  HOURLY: 'HOURLY',
+  HALF_DAY: 'HALF_DAY',
+  FULL_DAY: 'FULL_DAY',
+  MULTI_DAY: 'MULTI_DAY',
+  MONTHLY: 'MONTHLY'
+};
+
 exports.BookingStatus = exports.$Enums.BookingStatus = {
   HOLD: 'HOLD',
   CONFIRMED: 'CONFIRMED',
@@ -613,6 +665,8 @@ exports.Prisma.ModelName = {
   VehicleCategory: 'VehicleCategory',
   Vehicle: 'Vehicle',
   VehiclePricingOverride: 'VehiclePricingOverride',
+  VehicleCustomPricing: 'VehicleCustomPricing',
+  BranchPricingDefaults: 'BranchPricingDefaults',
   VehicleInsurance: 'VehicleInsurance',
   VehicleMaintenanceRecord: 'VehicleMaintenanceRecord',
   VehicleImage: 'VehicleImage',

@@ -38,7 +38,7 @@ function getConnection(): Redis {
 export function getImageQueue(): Queue {
     if (!imageQueueInstance) {
         imageQueueInstance = new Queue("{bull}image-processing", {
-            connection: getConnection(),
+            connection: getConnection() as any,
             defaultJobOptions: {
                 attempts: 3,
                 backoff: {
@@ -56,7 +56,7 @@ export function getImageQueue(): Queue {
 export function getCleanupQueue(): Queue {
     if (!cleanupQueueInstance) {
         cleanupQueueInstance = new Queue("{bull}cleanup-processing", {
-            connection: getConnection(),
+            connection: getConnection() as any ,
             defaultJobOptions: {
                 attempts: 3,
                 backoff: {
@@ -74,7 +74,7 @@ export function getCleanupQueue(): Queue {
 export function getFileCleanupQueue(): Queue {
     if (!fileCleanupQueueInstance) {
         fileCleanupQueueInstance = new Queue("{bull}file-cleanup", {
-            connection: getConnection(),
+            connection: getConnection() as any,
             defaultJobOptions: {
                 attempts: 5,
                 backoff: {
@@ -92,7 +92,7 @@ export function getFileCleanupQueue(): Queue {
 export function getInvoiceQueue(): Queue {
     if (!invoiceQueueInstance) {
         invoiceQueueInstance = new Queue("{bull}invoice-generation", {
-            connection: getConnection(),
+            connection: getConnection() as any,
             defaultJobOptions: {
                 attempts: 3,
                 backoff: {

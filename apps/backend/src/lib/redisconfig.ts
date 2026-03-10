@@ -25,10 +25,12 @@ function createRedisClient(): Redis {
   });
 }
 
-// Export a getter that creates the client on first access
 export const getRedis = (): Redis => {
   if (!redisInstance) {
     redisInstance = createRedisClient();
+    redisInstance.on('error', (err) => {
+      console.warn('[Redis] Connection Error:', err.message);
+    });
   }
   return redisInstance;
 };
@@ -36,7 +38,12 @@ export const getRedis = (): Redis => {
 // For backward compatibility, export redis as a getter property
 export const redis = new Proxy({} as Redis, {
   get(_target, prop) {
-    return getRedis()[prop as keyof Redis];
+    const instance = getRedis();
+    const value = instance[prop as keyof Redis];
+    if (typeof value === 'function') {
+      return value.bind(instance);
+    }
+    return value;
   },
   set(_target, prop, value) {
     (getRedis() as any)[prop] = value;

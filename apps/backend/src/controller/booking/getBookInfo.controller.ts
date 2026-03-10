@@ -3,15 +3,16 @@ import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
 import { bookingSummarySchema } from "@repo/schemas";
 import { redis } from "../../lib/redisconfig.js";
-import { calculatePricingForVehicleFromRecord } from "../../utils/pricing/calcPricingInd.js";
 import { checkVehicleAvailability } from "../../utils/availability/checkAvailability.js";
-import { getDepositAmount } from "../../utils/pricing/getDepositAmount.js";
-import { calculateMultiDayTotalPrice } from "../../utils/pricing/calcMultiDayPrice.js";
-import { getDiscountForDays } from "../../utils/pricing/getDiscountForDays.js";
 import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
 import { createID } from "../../utils/nanoID.js";
 import jwt from "jsonwebtoken";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
+import { PricingEngineService } from "../../services/pricing/pricing-engine.service.js";
+import { DurationCalculatorService } from "../../services/pricing/duration-calculator.service.js";
+import Decimal from "decimal.js";
+
+const pricingEngine = new PricingEngineService();
 
 export const createBookingSummary = async (req: Request, res: Response) => {
   try {
@@ -130,6 +131,9 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     let grandSGSTTotal = 0;
     let grandDeposit = 0;
     let grandFinalTotal = 0;
+    
+    // Calculate total duration info once for the booking overall constraints
+    const bookingDuration = DurationCalculatorService.calculate(startDateDt, endDateDt);
 
     for (const v of vehiclesData) {
       const availability = await checkVehicleAvailability(
@@ -149,22 +153,27 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           message: `Vehicle ${v.make} ${v.model} is currently being booked by another user. Please try again in a few minutes.`
         });
       }
-      const pricing = await calculatePricingForVehicleFromRecord(v);
-      const multi = calculateMultiDayTotalPrice(startDate, endDate, pricing.daily);
-      const baseTotal = multi.total;
-      const days = multi.days;
-      const discountPercent = (await getDiscountForDays(v.branchId, v.categoryId, days)) || 0;
-      const discountedTotal = Number((baseTotal * (1 - discountPercent)).toFixed(2));
-      const discountAmount = Number((baseTotal - discountedTotal).toFixed(2));
 
+      // Calculate pricing via Phase 2 Pricing Engine
+      const pricingResult = await pricingEngine.calculateBookingPrice(
+        v.id,
+        startDateDt,
+        endDateDt,
+        v.branchId
+      );
 
-      const deposit = (await getDepositAmount(v.branchId, v.categoryId)) || 0;
-      // Calculate Tax
-      const taxAmount = Number((discountedTotal * (totalTaxRate / 100)).toFixed(2));
-      const cgstAmount = Number((discountedTotal * (cgstRate / 100)).toFixed(2));
-      const sgstAmount = Number((discountedTotal * (sgstRate / 100)).toFixed(2));
+      const baseTotal = Number(pricingResult.basePrice.toString());
+      const days = bookingDuration.days;
+      const discountPercent = Number(pricingResult.discountPercent.toString()) / 100;
+      const discountAmount = Number(pricingResult.discountAmount.toString());
 
-      const finalTotal = Number((discountedTotal + taxAmount + deposit).toFixed(2));
+      const deposit = Number(pricingResult.deposit.toString());
+      
+      const taxAmount = Number(pricingResult.taxAmount.toString());
+      const cgstAmount = Number(pricingResult.cgstAmount.toString());
+      const sgstAmount = Number(pricingResult.sgstAmount.toString());
+
+      const finalTotal = Number(pricingResult.finalTotal.add(pricingResult.deposit).toString());
 
       items.push({
         publicId: v.publicId,
@@ -173,16 +182,24 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         category: v.category.name,
         branch: v.branch.name,
         vehicleId: v.id,
-        days,
+        days: bookingDuration.days,
         baseTotal,
         discountAmount,
-        discountPercent,
+        discountPercent: discountPercent * 100, // as percentage (e.g., 10 instead of 0.1)
         deposit,
         taxAmount,
         cgstAmount,
         sgstAmount,
-        taxRate: totalTaxRate,
-        finalTotal
+        taxRate: Number(pricingResult.taxRate.toString()),
+        finalTotal,
+        // Include new details for frontend or snapshot
+        pricingBreakdown: {
+          periodType: pricingResult.pricingBreakdown.periodType,
+          billableHours: bookingDuration.billableDuration,
+          actualHours: bookingDuration.actualDuration,
+          freeKmLimit: pricingResult.freeKmLimit,
+          extraKmRate: Number(pricingResult.extraKmRate.toString())
+        }
       });
 
       grandBaseTotal += baseTotal;
@@ -239,7 +256,10 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           branchId: vehiclesData[0]!.branchId,
           startAt: startDate,
           endAt: endDate,
-          days: items[0]!.days,
+          days: bookingDuration.days,
+          rentalPeriodType: bookingDuration.periodType,
+          actualHours: new Decimal(bookingDuration.actualDuration.toString()),
+          billableHours: new Decimal(bookingDuration.billableDuration.toString()),
           holdExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
           totalBase: grandBaseTotal,
           totalDiscount: grandDiscountTotal,

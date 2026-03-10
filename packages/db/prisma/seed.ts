@@ -13,6 +13,8 @@ async function main() {
   await prisma.vehicleMaintenanceRecord.deleteMany();
   await prisma.vehicleInsurance.deleteMany();
   await prisma.vehiclePricingOverride.deleteMany();
+  await prisma.vehicleCustomPricing.deleteMany();
+  await prisma.branchPricingDefaults.deleteMany();
   await prisma.vehicleImage.deleteMany();
   await prisma.vehicle.deleteMany();
   await prisma.pricingRule.deleteMany();
@@ -198,6 +200,48 @@ async function main() {
     },
   });
 
+  // 3.5. Pricing Defaults
+  await prisma.branchPricingDefaults.createMany({
+    data: [
+      {
+        publicId: nanoid(),
+        branchId: mangaloreBranch.id,
+        categoryId: twoWheeler.id,
+        hourlyRate: 80,
+        price12Hour: 450,
+        price24Hour: 800,
+        priceMonthly: 15000,
+      },
+      {
+        publicId: nanoid(),
+        branchId: udupiBranch.id,
+        categoryId: twoWheeler.id,
+        hourlyRate: 80,
+        price12Hour: 500,
+        price24Hour: 900,
+        priceMonthly: 16000,
+      },
+      {
+        publicId: nanoid(),
+        branchId: mangaloreBranch.id,
+        categoryId: fourWheeler.id,
+        hourlyRate: 150,
+        price12Hour: 900,
+        price24Hour: 1500,
+        priceMonthly: 35000,
+      },
+      {
+        publicId: nanoid(),
+        branchId: udupiBranch.id,
+        categoryId: fourWheeler.id,
+        hourlyRate: 160,
+        price12Hour: 1000,
+        price24Hour: 1800,
+        priceMonthly: 38000,
+      }
+    ]
+  });
+
   // 4. Vehicles
   // Activa (Mangalore, 2W)
   const activa = await prisma.vehicle.create({
@@ -208,22 +252,16 @@ async function main() {
       regNo: "KA19AB1234",
       odo: 12000,
       fuelLevel: 100,
-      insuranceExpiry: new Date("2026-12-31"), // Valid
+      insuranceExpiry: new Date("2026-12-31T00:00:00+05:30"), // Valid
       branchId: mangaloreBranch.id,
       categoryId: twoWheeler.id,
       status: VehicleStatus.AVAILABLE,
-      baseDailyPrice: 800,
-      pricingOverride: {
-        create: {
-          enabled: false
-        }
-      },
       insuranceRecords: {
         create: {
           publicId: nanoid(),
           policyNumber: "POL1001",
           provider: "ICICI Lombard",
-          validTill: new Date("2026-01-01"),
+          validTill: new Date("2026-01-01T00:00:00+05:30"),
         }
       },
       maintenance: {
@@ -231,7 +269,7 @@ async function main() {
           publicId: nanoid(),
           description: "Oil change + brake service",
           cost: 1500,
-          servicedAt: new Date("2024-09-20"),
+          servicedAt: new Date("2024-09-20T00:00:00+05:30"),
         }
       }
     },
@@ -246,14 +284,18 @@ async function main() {
       regNo: "KA19CD5678",
       odo: 8000,
       fuelLevel: 80,
-      insuranceExpiry: new Date("2026-06-01"), // Valid
+      insuranceExpiry: new Date("2026-06-01T00:00:00+05:30"), // Valid
       branchId: mangaloreBranch.id,
       categoryId: twoWheeler.id,
       status: VehicleStatus.AVAILABLE,
-      baseDailyPrice: 900,
-      pricingOverride: {
+      customPricing: {
         create: {
-          enabled: false
+          publicId: nanoid(),
+          hourlyRate: 100,
+          price12Hour: 600,
+          price24Hour: 1000,
+          priceMonthly: 18000,
+          enabled: true
         }
       }
     },
@@ -268,22 +310,16 @@ async function main() {
       regNo: "KA20EF4321",
       odo: 34000,
       fuelLevel: 50,
-      insuranceExpiry: new Date("2025-11-20"), // Valid (assuming current date is early 2025 or late 2024)
+      insuranceExpiry: new Date("2025-11-20T00:00:00+05:30"), // Valid (assuming current date is early 2025 or late 2024)
       branchId: udupiBranch.id,
       categoryId: fourWheeler.id,
       status: VehicleStatus.AVAILABLE,
-      baseDailyPrice: 1550,
-      pricingOverride: {
-        create: {
-          enabled: false
-        }
-      },
       insuranceRecords: {
         create: {
           publicId: nanoid(),
           policyNumber: "POL2001",
           provider: "HDFC Ergo",
-          validTill: new Date("2025-11-01"),
+          validTill: new Date("2025-11-01T00:00:00+05:30"),
         }
       },
       maintenance: {
@@ -291,7 +327,7 @@ async function main() {
           publicId: nanoid(),
           description: "AC gas refill + wheel alignment",
           cost: 3500,
-          servicedAt: new Date("2024-08-14"),
+          servicedAt: new Date("2024-08-14T00:00:00+05:30"),
         }
       }
     },
@@ -306,14 +342,18 @@ async function main() {
       regNo: "KA20GH8765",
       odo: 29000,
       fuelLevel: 40,
-      insuranceExpiry: new Date("2023-01-01"), // EXPIRED
+      insuranceExpiry: new Date("2023-01-01T00:00:00+05:30"), // EXPIRED
       branchId: udupiBranch.id,
       categoryId: fourWheeler.id,
       status: VehicleStatus.AVAILABLE, // Status is available but should be filtered out by date check
-      baseDailyPrice: 1800,
-      pricingOverride: {
+      customPricing: {
         create: {
-          enabled: false
+          publicId: nanoid(),
+          hourlyRate: 200,
+          price12Hour: 1200,
+          price24Hour: 2000,
+          priceMonthly: 45000,
+          enabled: true
         }
       }
     },

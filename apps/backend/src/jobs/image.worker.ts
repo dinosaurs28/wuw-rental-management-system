@@ -125,10 +125,10 @@ export function initImageWorker(): void {
             throw error;
         }
     }, {
-        connection: getConnection()
+        connection: getConnection() as any
     });
 
-    imageWorker.on('completed', job => {
+    imageWorker.on("completed", (job) => {
         console.log(`${job.id} has completed!`);
     });
 
