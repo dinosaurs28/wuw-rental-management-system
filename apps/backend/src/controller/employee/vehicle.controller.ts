@@ -9,6 +9,11 @@ import { calculateMultiDayTotalPrice } from "../../utils/pricing/calcMultiDayPri
 import { checkVehicleAvailability } from "../../utils/availability/checkAvailability.js";
 import { getDepositAmount } from "../../utils/pricing/getDepositAmount.js";
 import { getDiscountForDays } from "../../utils/pricing/getDiscountForDays.js";
+import { TimezoneService } from "../../services/timezone/timezone.service.js";
+import { PricingEngineService } from "../../services/pricing/pricing-engine.service.js";
+import { DateTime } from "luxon";
+
+const pricingEngine = new PricingEngineService();
 
 export const searchVehicles = async (req: Request, res: Response) => {
     try {
@@ -28,15 +33,23 @@ export const searchVehicles = async (req: Request, res: Response) => {
         const offsetNum = Number(offset);
 
         // Basic validation for dates if provided
-        let startDate: Date | null = null;
-        let endDate: Date | null = null;
-        if (start && end) {
-            startDate = new Date(start as string);
-            endDate = new Date(end as string);
-            // Set end date to end of day to cover full day (23:59:59.999)
-            endDate.setHours(23, 59, 59, 999);
+        let startDate: DateTime | null = null;
+        let endDate: DateTime | null = null;
 
-            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        if (start) {
+            startDate = TimezoneService.parseISO(start as string);
+
+            if (end) {
+                endDate = TimezoneService.parseISO(end as string);
+            } else {
+                endDate = startDate.plus({ hours: 24 });
+            }
+
+            if (startDate.toMillis() === endDate.toMillis()) {
+                endDate = startDate.plus({ hours: 24 });
+            }
+
+            if (!startDate?.isValid || !endDate?.isValid) {
                 return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid date format" });
             }
         }
@@ -77,10 +90,10 @@ export const searchVehicles = async (req: Request, res: Response) => {
                 bookingItems: {
                     some: {
                         booking: {
-                            status: { in: ["CONFIRMED", "PICKED_UP", "HOLD"] }, // Assuming logic matches public controller
+                            status: { in: ["CONFIRMED", "PICKED_UP", "HOLD"] },
                             // Check for overlap: (StartA <= EndB) and (EndA >= StartB)
-                            startAt: { lte: endDate },
-                            endAt: { gte: startDate }
+                            startAt: { lte: TimezoneService.toPrisma(endDate) },
+                            endAt: { gte: TimezoneService.toPrisma(startDate) }
                         }
                     }
                 }
@@ -107,27 +120,26 @@ export const searchVehicles = async (req: Request, res: Response) => {
 
         const formatted = [];
         for (const v of vehicles) {
-            // In-memory pricing calculation to avoid N+1 calls
-            const base = Number(v.baseDailyPrice);
-            let finalDailyPrice = base;
+            let pricingDetails: any = undefined;
 
-            if (v.pricingOverride?.enabled) {
-                if (v.pricingOverride.customPrice) {
-                    finalDailyPrice = Number(v.pricingOverride.customPrice);
-                } else if (v.pricingOverride.multiplier) {
-                    finalDailyPrice = base * Number(v.pricingOverride.multiplier);
-                }
-            } else {
-                const settings = v.branch?.pricingSetting;
-                if (settings) {
-                    if (settings.customEnabled) {
-                        finalDailyPrice = base * Number(settings.customMultiplier);
-                    } else if (settings.peakEnabled) {
-                        finalDailyPrice = base * Number(settings.peakMultiplier);
-                    } else if (settings.weekendEnabled) {
-                        finalDailyPrice = base * Number(settings.weekendMultiplier);
-                    }
-                }
+            if (startDate && endDate) {
+                const pricingResult = await pricingEngine.calculateListingPrice(
+                    v.id,
+                    startDate,
+                    endDate,
+                    v.branchId
+                );
+
+                pricingDetails = {
+                    price: Number(pricingResult.price),
+                    finalPrice: Number(pricingResult.finalPrice),
+                    type: pricingResult.type
+                };
+            }
+
+            let fallbackPricing: any = null;
+            if (!pricingDetails) {
+                fallbackPricing = await calculatePricingForVehicle(v.id);
             }
 
             formatted.push({
@@ -137,9 +149,14 @@ export const searchVehicles = async (req: Request, res: Response) => {
                 category: v.category.name,
                 branch: v.branch.name,
                 imageUrl: v.images, // Structure matching public controller response for consistency
-                pricing: {
-                    daily: Number(finalDailyPrice.toFixed(2))
+                pricing: pricingDetails ? {
+                    daily: pricingDetails.price
+                } : {
+                    daily: fallbackPricing.daily,
+                    hourly: fallbackPricing.hourly,
+                    halfDay: fallbackPricing.halfDay
                 },
+                pricingDetails,
                 status: v.status
             });
         }
@@ -166,15 +183,23 @@ export const getEmployeeVehicleDetails = async (req: Request, res: Response) => 
     try {
         const { id } = req.params;
         const { start, end } = req.query;
-        let startDate: Date | null = null;
-        let endDate: Date | null = null;
-        if (start && end) {
-            startDate = new Date(start as string);
-            endDate = new Date(end as string);
-            // Set end date to end of day to cover full day (23:59:59.999)
-            endDate.setHours(23, 59, 59, 999);
+        let startDate: DateTime | null = null;
+        let endDate: DateTime | null = null;
 
-            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        if (start) {
+            startDate = TimezoneService.parseISO(start as string);
+
+            if (end) {
+                endDate = TimezoneService.parseISO(end as string);
+            } else {
+                endDate = startDate.plus({ hours: 24 });
+            }
+
+            if (startDate.toMillis() === endDate.toMillis()) {
+                endDate = startDate.plus({ hours: 24 });
+            }
+
+            if (!startDate?.isValid || !endDate?.isValid) {
                 return res.status(StatusCode.BAD_REQUEST).json({
                     message: "Invalid start or end date format",
                 });
@@ -198,14 +223,10 @@ export const getEmployeeVehicleDetails = async (req: Request, res: Response) => 
             return res.status(StatusCode.NOT_FOUND).json({ message: "Vehicle not found" });
         }
 
-        const pricing = await calculatePricingForVehicleFromRecord(vehicleData);
-        const deposit = await getDepositAmount(vehicleData.branchId, vehicleData.categoryId);
+        let deposit = await getDepositAmount(vehicleData.branchId, vehicleData.categoryId);
 
         let availability: boolean | null = null;
-        let baseTotal: number | null = null;
-        let totalDays: number | null = null;
-        let discountPrice: number | null = null;
-        let totalPrice: number | null = null;
+        let pricingDetails: any = null;
 
         // Check insurance expiry
         const isInsuranceValid = new Date(vehicleData.insuranceExpiry) > new Date();
@@ -215,22 +236,49 @@ export const getEmployeeVehicleDetails = async (req: Request, res: Response) => 
             if (!isInsuranceValid || !isBookableStatus) {
                 availability = false; // Not available if insurance expired or status not bookable
             } else {
-                availability = await checkVehicleAvailability(vehicleData.id, startDate, endDate);
+                availability = await checkVehicleAvailability(vehicleData.id, TimezoneService.toPrisma(startDate), TimezoneService.toPrisma(endDate));
             }
 
-            const multi = calculateMultiDayTotalPrice(startDate, endDate, pricing.daily);
-            baseTotal = multi.total;
-            totalDays = multi.days;
-            const discountPercent = await getDiscountForDays(vehicleData.branchId, vehicleData.categoryId, totalDays);
-            const finalTotal = baseTotal * (1 - discountPercent);
-            totalPrice = Number(finalTotal.toFixed(2));
-            discountPrice = Number((baseTotal - finalTotal).toFixed(2));
+            // Calculate pricing via Phase 2 Pricing Engine
+            const pricingResult = await pricingEngine.calculateBookingPrice(
+                vehicleData.id,
+                startDate,
+                endDate,
+                vehicleData.branchId
+            );
+
+            pricingDetails = {
+                basePrice: Number(pricingResult.basePrice),
+                discountAmount: Number(pricingResult.discountAmount),
+                discountPercent: Number(pricingResult.discountPercent),
+                deposit: Number(pricingResult.deposit),
+                taxAmount: Number(pricingResult.taxAmount),
+                cgstAmount: Number(pricingResult.cgstAmount),
+                sgstAmount: Number(pricingResult.sgstAmount),
+                taxRate: Number(pricingResult.taxRate),
+                finalTotal: Number(pricingResult.finalTotal),
+                freeKmLimit: pricingResult.freeKmLimit,
+                extraKmRate: Number(pricingResult.extraKmRate),
+                pricingBreakdown: {
+                    periodType: pricingResult.pricingBreakdown.periodType,
+                    duration: pricingResult.pricingBreakdown.duration,
+                    applicablePrice: Number(pricingResult.pricingBreakdown.applicablePrice),
+                    priceSource: pricingResult.pricingBreakdown.priceSource
+                }
+            };
+
+            deposit = pricingDetails.deposit;
         } else if (!isInsuranceValid) {
             // If no dates provided but insurance expired, mark as explicitly unavailable
             availability = false;
         }
 
         const imageUrls = vehicleData.images.map(img => img.file.url);
+
+        let fallbackPricing: any = null;
+        if (!pricingDetails) {
+            fallbackPricing = await calculatePricingForVehicle(vehicleData.id);
+        }
 
         return res.status(StatusCode.OK).json({
             message: "Success",
@@ -242,13 +290,16 @@ export const getEmployeeVehicleDetails = async (req: Request, res: Response) => 
                 category: vehicleData.category.name,
                 branch: vehicleData.branch.name,
                 images: imageUrls,
-                pricing,
+                pricing: pricingDetails ? {
+                    daily: pricingDetails.pricingBreakdown.applicablePrice
+                } : {
+                    daily: fallbackPricing.daily,
+                    hourly: fallbackPricing.hourly,
+                    halfDay: fallbackPricing.halfDay
+                },
+                pricingDetails,
                 deposit,
-                availability,
-                totalDays,
-                baseTotal,
-                discountPrice,
-                finalTotal: totalPrice
+                availability
             }
         });
 

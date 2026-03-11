@@ -170,7 +170,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
           continue; // Skip vehicles that are not available for the selected dates
         }
 
-        const pricingResult = await pricingEngine.calculateBookingPrice(
+        const pricingResult = await pricingEngine.calculateListingPrice(
           v.id,
           startDate,
           endDate,
@@ -178,23 +178,9 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
         );
 
         pricingDetails = {
-          basePrice: Number(pricingResult.basePrice),
-          discountAmount: Number(pricingResult.discountAmount),
-          discountPercent: Number(pricingResult.discountPercent),
-          deposit: Number(pricingResult.deposit),
-          taxAmount: Number(pricingResult.taxAmount),
-          cgstAmount: Number(pricingResult.cgstAmount),
-          sgstAmount: Number(pricingResult.sgstAmount),
-          taxRate: Number(pricingResult.taxRate),
-          finalTotal: Number(pricingResult.finalTotal),
-          freeKmLimit: pricingResult.freeKmLimit,
-          extraKmRate: Number(pricingResult.extraKmRate),
-          pricingBreakdown: {
-            periodType: pricingResult.pricingBreakdown.periodType,
-            duration: pricingResult.pricingBreakdown.duration,
-            applicablePrice: Number(pricingResult.pricingBreakdown.applicablePrice),
-            priceSource: pricingResult.pricingBreakdown.priceSource
-          }
+          price: Number(pricingResult.price),
+          finalPrice: Number(pricingResult.finalPrice),
+          type: pricingResult.type
         };
       }
 
@@ -211,7 +197,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
         branch: v.branch.name,
         imageUrl: v.images,
         pricing: pricingDetails ? {
-          daily: pricingDetails.pricingBreakdown.applicablePrice
+          daily: pricingDetails.price
         } : {
           daily: fallbackPricing.daily,
           hourly: fallbackPricing.hourly,
