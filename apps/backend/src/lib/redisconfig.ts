@@ -19,17 +19,19 @@ function createRedisClient(): Redis {
       return delay;
     },
     // TLS configuration for Azure Redis (rediss://)
-    tls: redisUrl.startsWith('rediss://') ? {
-      rejectUnauthorized: true,
-    } : undefined,
+    tls: redisUrl.startsWith("rediss://")
+      ? {
+          rejectUnauthorized: true,
+        }
+      : undefined,
   });
 }
 
 export const getRedis = (): Redis => {
   if (!redisInstance) {
     redisInstance = createRedisClient();
-    redisInstance.on('error', (err) => {
-      console.warn('[Redis] Connection Error:', err.message);
+    redisInstance.on("error", (err) => {
+      console.warn("[Redis] Connection Error:", err.message);
     });
   }
   return redisInstance;
@@ -40,7 +42,7 @@ export const redis = new Proxy({} as Redis, {
   get(_target, prop) {
     const instance = getRedis();
     const value = instance[prop as keyof Redis];
-    if (typeof value === 'function') {
+    if (typeof value === "function") {
       return value.bind(instance);
     }
     return value;
@@ -48,5 +50,5 @@ export const redis = new Proxy({} as Redis, {
   set(_target, prop, value) {
     (getRedis() as any)[prop] = value;
     return true;
-  }
+  },
 });

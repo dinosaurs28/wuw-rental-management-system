@@ -11,260 +11,261 @@ import path from "path";
 const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL!;
 
-
 // Helper to get Customer ID from Request
 const getCustomerId = async (publicId: string) => {
-    const user = await prisma.user.findUnique({
-        where: { publicId },
-        select: { id: true }
-    });
+  const user = await prisma.user.findUnique({
+    where: { publicId },
+    select: { id: true },
+  });
 
-    if (!user) return null;
+  if (!user) return null;
 
-    const customer = await prisma.customer.findUnique({
-        where: { userId: user.id },
-        select: { id: true }
-    });
-    return customer?.id;
+  const customer = await prisma.customer.findUnique({
+    where: { userId: user.id },
+    select: { id: true },
+  });
+  return customer?.id;
 };
 
 export const GetKycDocuments = async (req: Request, res: Response) => {
-    try {
-        const publicId = req.public_Id;
-        const customerId = await getCustomerId(publicId);
+  try {
+    const publicId = req.public_Id;
+    const customerId = await getCustomerId(publicId);
 
-        if (!customerId) {
-            return res.status(StatusCode.NOT_FOUND).json({
-                message: "Customer profile not found"
-            });
-        }
-
-        const documents = await prisma.customerKyc.findMany({
-            where: { customerId },
-            include: {
-                file: true,
-            },
-            orderBy: { createdAt: 'desc' }
-        });
-
-        return res.status(StatusCode.OK).json({
-            message: "KYC documents fetched successfully",
-            data: documents
-        });
-
-    } catch (error) {
-        console.error("Get KYC Error:", error);
-        return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
-            message: "Internal Server Error fetching KYC documents"
-        });
+    if (!customerId) {
+      return res.status(StatusCode.NOT_FOUND).json({
+        message: "Customer profile not found",
+      });
     }
-};
 
+    const documents = await prisma.customerKyc.findMany({
+      where: { customerId },
+      include: {
+        file: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return res.status(StatusCode.OK).json({
+      message: "KYC documents fetched successfully",
+      data: documents,
+    });
+  } catch (error) {
+    console.error("Get KYC Error:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+      message: "Internal Server Error fetching KYC documents",
+    });
+  }
+};
 
 export const UploadKycDocument = async (req: Request, res: Response) => {
-    try {
-        const publicId = req.public_Id;
-        const customerId = await getCustomerId(publicId);
+  try {
+    const publicId = req.public_Id;
+    const customerId = await getCustomerId(publicId);
 
-        if (!customerId) {
-            return res.status(StatusCode.NOT_FOUND).json({
-                message: "Customer profile not found"
-            });
-        }
-
-        const { type } = req.body;
-        const file = req.file;
-
-        if (!file) {
-            return res.status(StatusCode.BAD_REQUEST).json({
-                message: "No file uploaded"
-            });
-        }
-
-        if (!type || !Object.values(KycType).includes(type as KycType)) {
-            // Cleanup temp file if validation fails
-            await fs.unlink(file.path).catch(() => { });
-            return res.status(StatusCode.BAD_REQUEST).json({
-                message: "Invalid or missing KYC document type"
-            });
-        }
-
-        // Check if document of this type already exists (optional: business rule?)
-        // The schema has @@unique([customerId, type]), so we must check or handle conflict.
-        const existingKyc = await prisma.customerKyc.findUnique({
-            where: {
-                customerId_type: {
-                    customerId,
-                    type: type as KycType
-                }
-            }
-        });
-
-        if (existingKyc) {
-            await fs.unlink(file.path).catch(() => { });
-            return res.status(StatusCode.CONFLICT).json({
-                message: `Document of type ${type} already exists. Please delete it first if you want to replace it.`
-            });
-        }
-
-        // Upload to R2
-        const fileContent = await fs.readFile(file.path);
-        const ext = path.extname(file.originalname);
-        const key = `kyc/${customerId}/${type.toLowerCase()}_${createID()}${ext}`;
-
-        await r2.send(new PutObjectCommand({
-            Bucket: BUCKET_NAME,
-            Key: key,
-            Body: fileContent,
-            ContentType: file.mimetype,
-        }));
-
-        // Clean up local file
-        await fs.unlink(file.path);
-
-        // Save to DB Transaction
-        const kycRecord = await prisma.$transaction(async (tx) => {
-            const fileObj = await tx.fileObject.create({
-                data: {
-                    publicId: createID(),
-                    key: key,
-                    url: `${R2_PUBLIC_URL}/${key}`,
-                    mime: file.mimetype,
-                    size: file.size
-                }
-            });
-
-            return await tx.customerKyc.create({
-                data: {
-                    publicId: createID(),
-                    customerId,
-                    type: type as KycType,
-                    fileId: fileObj.id,
-                    status: KycStatus.PENDING
-                },
-                include: { file: true }
-            });
-        });
-
-        return res.status(StatusCode.CREATED).json({
-            message: "KYC document uploaded successfully",
-            data: kycRecord
-        });
-
-    } catch (error) {
-        console.error("Upload KYC Error:", error);
-        // Try to cleanup temp file if it exists and error happened before unlink
-        if (req.file) {
-            await fs.unlink(req.file.path).catch(() => { });
-        }
-        return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
-            message: "Internal Server Error uploading KYC document"
-        });
+    if (!customerId) {
+      return res.status(StatusCode.NOT_FOUND).json({
+        message: "Customer profile not found",
+      });
     }
+
+    const { type } = req.body;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        message: "No file uploaded",
+      });
+    }
+
+    if (!type || !Object.values(KycType).includes(type as KycType)) {
+      // Cleanup temp file if validation fails
+      await fs.unlink(file.path).catch(() => {});
+      return res.status(StatusCode.BAD_REQUEST).json({
+        message: "Invalid or missing KYC document type",
+      });
+    }
+
+    // Check if document of this type already exists (optional: business rule?)
+    // The schema has @@unique([customerId, type]), so we must check or handle conflict.
+    const existingKyc = await prisma.customerKyc.findUnique({
+      where: {
+        customerId_type: {
+          customerId,
+          type: type as KycType,
+        },
+      },
+    });
+
+    if (existingKyc) {
+      await fs.unlink(file.path).catch(() => {});
+      return res.status(StatusCode.CONFLICT).json({
+        message: `Document of type ${type} already exists. Please delete it first if you want to replace it.`,
+      });
+    }
+
+    // Upload to R2
+    const fileContent = await fs.readFile(file.path);
+    const ext = path.extname(file.originalname);
+    const key = `kyc/${customerId}/${type.toLowerCase()}_${createID()}${ext}`;
+
+    await r2.send(
+      new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: key,
+        Body: fileContent,
+        ContentType: file.mimetype,
+      }),
+    );
+
+    // Clean up local file
+    await fs.unlink(file.path);
+
+    // Save to DB Transaction
+    const kycRecord = await prisma.$transaction(async (tx) => {
+      const fileObj = await tx.fileObject.create({
+        data: {
+          publicId: createID(),
+          key: key,
+          url: `${R2_PUBLIC_URL}/${key}`,
+          mime: file.mimetype,
+          size: file.size,
+        },
+      });
+
+      return await tx.customerKyc.create({
+        data: {
+          publicId: createID(),
+          customerId,
+          type: type as KycType,
+          fileId: fileObj.id,
+          status: KycStatus.PENDING,
+        },
+        include: { file: true },
+      });
+    });
+
+    return res.status(StatusCode.CREATED).json({
+      message: "KYC document uploaded successfully",
+      data: kycRecord,
+    });
+  } catch (error) {
+    console.error("Upload KYC Error:", error);
+    // Try to cleanup temp file if it exists and error happened before unlink
+    if (req.file) {
+      await fs.unlink(req.file.path).catch(() => {});
+    }
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+      message: "Internal Server Error uploading KYC document",
+    });
+  }
 };
 
-
 export const DeleteKycDocument = async (req: Request, res: Response) => {
-    try {
-        const { id, customer_public_id } = req.body; // id = KYC Public ID, customer_public_id = Customer User Public ID
+  try {
+    const { id, customer_public_id } = req.body; // id = KYC Public ID, customer_public_id = Customer User Public ID
 
-        // authenticated user (Employee or Customer themselves)
-        const actingUserPublicId = req.public_Id;
+    // authenticated user (Employee or Customer themselves)
+    const actingUserPublicId = req.public_Id;
 
-        if (!actingUserPublicId) {
-            return res.status(StatusCode.UNAUTHORIZED).json({
-                message: "Unauthorized: Missing user context"
-            });
-        }
-
-        const actingUser = await prisma.user.findUnique({
-            where: { publicId: actingUserPublicId },
-            select: {
-                id: true,
-                role: true,
-                customerProfile: {
-                    select: { id: true }
-                }
-            }
-        });
-
-        if (!actingUser) {
-            return res.status(StatusCode.UNAUTHORIZED).json({
-                message: "Unauthorized: User not found"
-            });
-        }
-
-        const kycRecord = await prisma.customerKyc.findUnique({
-            where: { publicId: id },
-            include: {
-                file: true,
-                customer: {
-                    include: { user: true }
-                }
-            }
-        });
-
-        if (!kycRecord) {
-            return res.status(StatusCode.NOT_FOUND).json({
-                message: "KYC document not found"
-            });
-        }
-
-        // Authorization Check
-        const isStaff = ([Role.STAFF, Role.ADMIN, Role.MANAGER] as Role[]).includes(actingUser.role);
-
-        if (!isStaff) {
-            // If Customer, they can only delete their own
-            const customerId = actingUser.customerProfile?.id;
-            if (!customerId || kycRecord.customerId !== customerId) {
-                return res.status(StatusCode.FORBIDDEN).json({
-                    message: "You are not authorized to delete this document"
-                });
-            }
-        } else {
-            // If Staff, validate that the KYC belongs to the expected customer (if customer_public_id provided)
-            if (customer_public_id && kycRecord.customer?.user?.publicId !== customer_public_id) {
-                return res.status(StatusCode.BAD_REQUEST).json({
-                    message: "KYC document does not belong to the specified customer"
-                });
-            }
-        }
-
-        await prisma.$transaction(async (tx) => {
-            await tx.customerKyc.delete({ where: { id: kycRecord.id } });
-            // Only delete FileObject if it exists
-            if (kycRecord.fileId) {
-                await tx.fileObject.delete({ where: { id: kycRecord.fileId } });
-            }
-
-            // Audit Log if Employee
-            if (isStaff) {
-                await tx.staffActivityLog.create({
-                    data: {
-                        publicId: createID(),
-                        staffId: actingUser.id,
-                        action: "WALKIN_KYC_DELETE",
-                        entity: "CustomerKyc",
-                        entityId: kycRecord.publicId
-                    }
-                });
-            }
-        });
-
-        if (kycRecord.file && kycRecord.file.key) {
-            await fileCleanupQueue.add('delete-kyc-file', {
-                key: kycRecord.file.key
-            });
-        }
-
-        return res.status(StatusCode.OK).json({
-            message: "KYC document deleted successfully"
-        });
-
-    } catch (error) {
-        console.error("Delete KYC Error:", error);
-        return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
-            message: "Internal Server Error deleting KYC document"
-        });
+    if (!actingUserPublicId) {
+      return res.status(StatusCode.UNAUTHORIZED).json({
+        message: "Unauthorized: Missing user context",
+      });
     }
+
+    const actingUser = await prisma.user.findUnique({
+      where: { publicId: actingUserPublicId },
+      select: {
+        id: true,
+        role: true,
+        customerProfile: {
+          select: { id: true },
+        },
+      },
+    });
+
+    if (!actingUser) {
+      return res.status(StatusCode.UNAUTHORIZED).json({
+        message: "Unauthorized: User not found",
+      });
+    }
+
+    const kycRecord = await prisma.customerKyc.findUnique({
+      where: { publicId: id },
+      include: {
+        file: true,
+        customer: {
+          include: { user: true },
+        },
+      },
+    });
+
+    if (!kycRecord) {
+      return res.status(StatusCode.NOT_FOUND).json({
+        message: "KYC document not found",
+      });
+    }
+
+    // Authorization Check
+    const isStaff = ([Role.STAFF, Role.ADMIN, Role.MANAGER] as Role[]).includes(
+      actingUser.role,
+    );
+
+    if (!isStaff) {
+      // If Customer, they can only delete their own
+      const customerId = actingUser.customerProfile?.id;
+      if (!customerId || kycRecord.customerId !== customerId) {
+        return res.status(StatusCode.FORBIDDEN).json({
+          message: "You are not authorized to delete this document",
+        });
+      }
+    } else {
+      // If Staff, validate that the KYC belongs to the expected customer (if customer_public_id provided)
+      if (
+        customer_public_id &&
+        kycRecord.customer?.user?.publicId !== customer_public_id
+      ) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+          message: "KYC document does not belong to the specified customer",
+        });
+      }
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.customerKyc.delete({ where: { id: kycRecord.id } });
+      // Only delete FileObject if it exists
+      if (kycRecord.fileId) {
+        await tx.fileObject.delete({ where: { id: kycRecord.fileId } });
+      }
+
+      // Audit Log if Employee
+      if (isStaff) {
+        await tx.staffActivityLog.create({
+          data: {
+            publicId: createID(),
+            staffId: actingUser.id,
+            action: "WALKIN_KYC_DELETE",
+            entity: "CustomerKyc",
+            entityId: kycRecord.publicId,
+          },
+        });
+      }
+    });
+
+    if (kycRecord.file && kycRecord.file.key) {
+      await fileCleanupQueue.add("delete-kyc-file", {
+        key: kycRecord.file.key,
+      });
+    }
+
+    return res.status(StatusCode.OK).json({
+      message: "KYC document deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete KYC Error:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+      message: "Internal Server Error deleting KYC document",
+    });
+  }
 };

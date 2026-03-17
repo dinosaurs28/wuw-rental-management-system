@@ -1,7 +1,10 @@
-import axios, { AxiosResponse } from 'axios';
-import { generateOTPEmailTemplate, OTPTemplateOptions } from "./emailtemplate.js"
-import dotenv from "dotenv"
-dotenv.config()
+import axios, { AxiosResponse } from "axios";
+import {
+  generateOTPEmailTemplate,
+  OTPTemplateOptions,
+} from "./emailtemplate.js";
+import dotenv from "dotenv";
+dotenv.config();
 interface MSG91Config {
   authKey: string;
   apiUrl: string;
@@ -40,8 +43,8 @@ interface SendOTPEmailParams {
 }
 
 const MSG91_CONFIG: MSG91Config = {
-  authKey: process.env.MSG91_AUTH_KEY || 'YOUR_AUTH_KEY_HERE',
-  apiUrl: 'https://control.msg91.com/api/v5/email/send'
+  authKey: process.env.MSG91_AUTH_KEY || "YOUR_AUTH_KEY_HERE",
+  apiUrl: "https://control.msg91.com/api/v5/email/send",
 };
 
 /**
@@ -49,14 +52,16 @@ const MSG91_CONFIG: MSG91Config = {
  * @param params - Email parameters
  * @returns Promise with success status and response data
  */
-export async function sendOTPEmail(params: SendOTPEmailParams): Promise<EmailResponse> {
+export async function sendOTPEmail(
+  params: SendOTPEmailParams,
+): Promise<EmailResponse> {
   const {
     recipientEmail,
     recipientName,
     otp,
     senderEmail,
-    senderName = 'Your Company',
-    expiryMinutes = 10
+    senderName = "Your Company",
+    expiryMinutes = 10,
   } = params;
 
   try {
@@ -64,22 +69,22 @@ export async function sendOTPEmail(params: SendOTPEmailParams): Promise<EmailRes
       otp,
       userName: recipientName,
       expiryMinutes,
-      companyName: senderName
+      companyName: senderName,
     });
-    
+
     const payload: MSG91EmailPayload = {
       to: [
         {
           name: recipientName,
-          email: recipientEmail
-        }
+          email: recipientEmail,
+        },
       ],
       from: {
         name: senderName,
-        email: senderEmail
+        email: senderEmail,
       },
       subject: `Your OTP Code: ${otp}`,
-      body: htmlContent
+      body: htmlContent,
     };
 
     const response: AxiosResponse = await axios.post(
@@ -87,23 +92,25 @@ export async function sendOTPEmail(params: SendOTPEmailParams): Promise<EmailRes
       payload,
       {
         headers: {
-          'authkey': MSG91_CONFIG.authKey,
-          'Content-Type': 'application/json'
-        }
-      }
+          authkey: MSG91_CONFIG.authKey,
+          "Content-Type": "application/json",
+        },
+      },
     );
 
-    console.log('OTP email sent successfully:', response.data);
+    console.log("OTP email sent successfully:", response.data);
     return {
       success: true,
-      data: response.data
+      data: response.data,
     };
-
   } catch (error: any) {
-    console.error('Error sending OTP email:', error.response?.data || error.message);
+    console.error(
+      "Error sending OTP email:",
+      error.response?.data || error.message,
+    );
     return {
       success: false,
-      error: error.response?.data || error.message
+      error: error.response?.data || error.message,
     };
   }
 }

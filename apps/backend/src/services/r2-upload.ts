@@ -1,15 +1,15 @@
-import { r2 } from '../lib/r2.client.js';
-import { PutObjectCommand } from '@aws-sdk/client-s3';
-import { prisma } from '@repo/database/client';
-import { createID } from '../utils/nanoID.js';
+import { r2 } from "../lib/r2.client.js";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { prisma } from "@repo/database/client";
+import { createID } from "../utils/nanoID.js";
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL!;
 
 interface UploadResult {
-    fileId: number;
-    url: string;
-    key: string;
+  fileId: number;
+  url: string;
+  key: string;
 }
 
 /**
@@ -20,51 +20,50 @@ interface UploadResult {
  * @returns File ID and URL
  */
 export async function uploadInvoicePDFToR2(
-    pdfBuffer: Buffer,
-    invoiceNumber: string,
-    bookingId: number
+  pdfBuffer: Buffer,
+  invoiceNumber: string,
+  bookingId: number,
 ): Promise<UploadResult> {
-    try {
-        console.log(`[R2 Upload] Uploading invoice ${invoiceNumber} to R2`);
+  try {
+    console.log(`[R2 Upload] Uploading invoice ${invoiceNumber} to R2`);
 
-        // Create safe filename from invoice number (replace slashes with dashes)
-        const safeInvoiceNumber = invoiceNumber.replace(/\//g, '-');
-        const key = `invoices/${safeInvoiceNumber}.pdf`;
+    // Create safe filename from invoice number (replace slashes with dashes)
+    const safeInvoiceNumber = invoiceNumber.replace(/\//g, "-");
+    const key = `invoices/${safeInvoiceNumber}.pdf`;
 
-        // Upload to R2
-        await r2.send(
-            new PutObjectCommand({
-                Bucket: BUCKET_NAME,
-                Key: key,
-                Body: pdfBuffer,
-                ContentType: 'application/pdf',
-                ContentDisposition: `inline; filename="${safeInvoiceNumber}.pdf"`,
-            })
-        );
+    // Upload to R2
+    await r2.send(
+      new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: key,
+        Body: pdfBuffer,
+        ContentType: "application/pdf",
+        ContentDisposition: `inline; filename="${safeInvoiceNumber}.pdf"`,
+      }),
+    );
 
-        console.log(`[R2 Upload] Successfully uploaded to R2: ${key}`);
+    console.log(`[R2 Upload] Successfully uploaded to R2: ${key}`);
 
-        // Create FileObject record in database
-        const fileObject = await prisma.fileObject.create({
-            data: {
-                publicId: createID(),
-                key: key,
-                url: `${R2_PUBLIC_URL}/${key}`,
-                mime: 'application/pdf',
-                size: pdfBuffer.length,
-            },
-        });
+    // Create FileObject record in database
+    const fileObject = await prisma.fileObject.create({
+      data: {
+        publicId: createID(),
+        key: key,
+        url: `${R2_PUBLIC_URL}/${key}`,
+        mime: "application/pdf",
+        size: pdfBuffer.length,
+      },
+    });
 
-        console.log(`[R2 Upload] Created FileObject record: ${fileObject.id}`);
+    console.log(`[R2 Upload] Created FileObject record: ${fileObject.id}`);
 
-        return {
-            fileId: fileObject.id,
-            url: fileObject.url,
-            key: fileObject.key,
-        };
-
-    } catch (error) {
-        console.error('[R2 Upload] Error uploading PDF to R2:', error);
-        throw error;
-    }
+    return {
+      fileId: fileObject.id,
+      url: fileObject.url,
+      key: fileObject.key,
+    };
+  } catch (error) {
+    console.error("[R2 Upload] Error uploading PDF to R2:", error);
+    throw error;
+  }
 }

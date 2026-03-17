@@ -4,7 +4,7 @@ import { prisma } from "@repo/database/client";
 
 export async function calculatePricingForVehicle(vehicleId: number) {
   const vehicle = await prisma.vehicle.findUnique({
-    where: { id: vehicleId }
+    where: { id: vehicleId },
   });
 
   if (!vehicle) {
@@ -15,12 +15,12 @@ export async function calculatePricingForVehicle(vehicleId: number) {
   const pricingEngine = new PricingEngineService();
   const startAt = TimezoneService.getCurrentTime();
   const endAt = startAt.plus({ hours: 24 });
-  
+
   const pricingResult = await pricingEngine.calculateBookingPrice(
     vehicleId,
     startAt,
     endAt,
-    vehicle.branchId
+    vehicle.branchId,
   );
 
   return {

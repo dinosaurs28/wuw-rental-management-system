@@ -11,7 +11,7 @@ export function initializePassport() {
         clientID: process.env.GOOGLE_CLIENT_ID!,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
         callbackURL: process.env.GOOGLE_CALLBACK_URL!,
-        passReqToCallback: false
+        passReqToCallback: false,
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
@@ -31,8 +31,8 @@ export function initializePassport() {
               where: {
                 provider_providerUserId: {
                   provider: AuthProvider.GOOGLE,
-                  providerUserId: profile.id
-                }
+                  providerUserId: profile.id,
+                },
               },
               update: {},
               create: {
@@ -40,7 +40,7 @@ export function initializePassport() {
                 userId: user.id,
                 provider: AuthProvider.GOOGLE,
                 providerUserId: profile.id,
-              }
+              },
             });
 
             return done(null, user);
@@ -66,13 +66,12 @@ export function initializePassport() {
           });
 
           return done(null, newUser);
-
         } catch (err) {
           console.error("Google Auth Error:", err);
           return done(err, false);
         }
-      }
-    )
+      },
+    ),
   );
 }
 

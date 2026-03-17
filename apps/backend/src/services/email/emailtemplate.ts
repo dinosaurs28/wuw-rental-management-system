@@ -13,9 +13,9 @@ interface OTPTemplateOptions {
 export function generateOTPEmailTemplate(options: OTPTemplateOptions): string {
   const {
     otp,
-    userName = 'User',
+    userName = "User",
     expiryMinutes = 10,
-    companyName = 'Your Company'
+    companyName = "Your Company",
   } = options;
 
   return `

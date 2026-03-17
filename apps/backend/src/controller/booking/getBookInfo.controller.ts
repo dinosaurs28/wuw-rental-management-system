@@ -17,40 +17,41 @@ const pricingEngine = new PricingEngineService();
 export const createBookingSummary = async (req: Request, res: Response) => {
   try {
     const parsed = bookingSummarySchema.safeParse(req.body);
-    const customerpubId = req.public_Id
+    const customerpubId = req.public_Id;
     if (!parsed.success) {
       return res.status(StatusCode.BAD_REQUEST).json({
         message: "Invalid request data",
-        errors: parsed.error.flatten()
+        errors: parsed.error.flatten(),
       });
     }
     const userData = await prisma.user.findUnique({
       where: {
-        publicId: customerpubId
-      }, select: {
+        publicId: customerpubId,
+      },
+      select: {
         id: true,
         customerProfile: {
           select: {
-            id: true
-          }
-        }
-      }
-    })
+            id: true,
+          },
+        },
+      },
+    });
     if (!userData?.customerProfile) {
       return res.status(StatusCode.BAD_REQUEST).json({
-        message: "Customer doesnt Exists"
-      })
+        message: "Customer doesnt Exists",
+      });
     }
     const { vehicles, start, end, file_public_id } = parsed.data;
-    const customerId = userData.customerProfile.id
+    const customerId = userData.customerProfile.id;
     const kycFile = await prisma.fileObject.findUnique({
       where: { publicId: file_public_id },
-      select: { id: true }
+      select: { id: true },
     });
 
     if (!kycFile) {
       return res.status(StatusCode.BAD_REQUEST).json({
-        message: "Invalid KYC document"
+        message: "Invalid KYC document",
       });
     }
     const startDateDt = TimezoneService.parseISO(start);
@@ -58,17 +59,16 @@ export const createBookingSummary = async (req: Request, res: Response) => {
 
     if (!startDateDt.isValid || !endDateDt.isValid) {
       return res.status(StatusCode.BAD_REQUEST).json({
-        message: "Invalid start or end date format"
+        message: "Invalid start or end date format",
       });
     }
 
     const startDate = TimezoneService.toPrisma(startDateDt);
     const endDate = TimezoneService.toPrisma(endDateDt);
 
-
     if (endDate <= startDate) {
       return res.status(StatusCode.BAD_REQUEST).json({
-        message: "End date must be after start date"
+        message: "End date must be after start date",
       });
     }
 
@@ -80,29 +80,27 @@ export const createBookingSummary = async (req: Request, res: Response) => {
 
     if (startDateOnly < todayOnly) {
       return res.status(StatusCode.BAD_REQUEST).json({
-        message: "Start date cannot be in the past"
+        message: "Start date cannot be in the past",
       });
     }
-
 
     const vehiclesData = await prisma.vehicle.findMany({
       where: { publicId: { in: vehicles } },
       include: {
         category: true,
         branch: {
-          include: { pricingSetting: true }
+          include: { pricingSetting: true },
         },
-        pricingOverride: true
-      }
+        pricingOverride: true,
+      },
     });
 
-
     if (vehiclesData.length !== vehicles.length) {
-      const foundIds = vehiclesData.map(v => v.publicId);
-      const missingIds = vehicles.filter(id => !foundIds.includes(id));
+      const foundIds = vehiclesData.map((v) => v.publicId);
+      const missingIds = vehicles.filter((id) => !foundIds.includes(id));
       return res.status(StatusCode.NOT_FOUND).json({
         message: "One or more vehicles not found",
-        missingVehicles: missingIds
+        missingVehicles: missingIds,
       });
     }
 
@@ -115,7 +113,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
 
     if (branchId) {
       const gstRule = await prisma.gSTRule.findUnique({
-        where: { branchId }
+        where: { branchId },
       });
       if (gstRule) {
         cgstRate = Number(gstRule.cgstRate);
@@ -131,26 +129,29 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     let grandSGSTTotal = 0;
     let grandDeposit = 0;
     let grandFinalTotal = 0;
-    
+
     // Calculate total duration info once for the booking overall constraints
-    const bookingDuration = DurationCalculatorService.calculate(startDateDt, endDateDt);
+    const bookingDuration = DurationCalculatorService.calculate(
+      startDateDt,
+      endDateDt,
+    );
 
     for (const v of vehiclesData) {
       const availability = await checkVehicleAvailability(
         v.id,
         startDate,
-        endDate
+        endDate,
       );
 
       if (!availability) {
         return res.status(StatusCode.CONFLICT).json({
-          message: `Vehicle ${v.make} ${v.model} is not available for selected dates`
+          message: `Vehicle ${v.make} ${v.model} is not available for selected dates`,
         });
       }
       const vehicleHolds = await redis.smembers(`vehicle_holds:${v.publicId}`);
       if (vehicleHolds && vehicleHolds.length > 0) {
         return res.status(StatusCode.CONFLICT).json({
-          message: `Vehicle ${v.make} ${v.model} is currently being booked by another user. Please try again in a few minutes.`
+          message: `Vehicle ${v.make} ${v.model} is currently being booked by another user. Please try again in a few minutes.`,
         });
       }
 
@@ -159,21 +160,24 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         v.id,
         startDateDt,
         endDateDt,
-        v.branchId
+        v.branchId,
       );
 
       const baseTotal = Number(pricingResult.basePrice.toString());
       const days = bookingDuration.days;
-      const discountPercent = Number(pricingResult.discountPercent.toString()) / 100;
+      const discountPercent =
+        Number(pricingResult.discountPercent.toString()) / 100;
       const discountAmount = Number(pricingResult.discountAmount.toString());
 
       const deposit = Number(pricingResult.deposit.toString());
-      
+
       const taxAmount = Number(pricingResult.taxAmount.toString());
       const cgstAmount = Number(pricingResult.cgstAmount.toString());
       const sgstAmount = Number(pricingResult.sgstAmount.toString());
 
-      const finalTotal = Number(pricingResult.finalTotal.add(pricingResult.deposit).toString());
+      const finalTotal = Number(
+        pricingResult.finalTotal.add(pricingResult.deposit).toString(),
+      );
 
       items.push({
         publicId: v.publicId,
@@ -198,8 +202,8 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           billableHours: bookingDuration.billableDuration,
           actualHours: bookingDuration.actualDuration,
           freeKmLimit: pricingResult.freeKmLimit,
-          extraKmRate: Number(pricingResult.extraKmRate.toString())
-        }
+          extraKmRate: Number(pricingResult.extraKmRate.toString()),
+        },
       });
 
       grandBaseTotal += baseTotal;
@@ -211,7 +215,6 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       grandFinalTotal += finalTotal;
     }
 
-
     grandBaseTotal = Number(grandBaseTotal.toFixed(2));
     grandDiscountTotal = Number(grandDiscountTotal.toFixed(2));
     grandTaxTotal = Number(grandTaxTotal.toFixed(2));
@@ -220,19 +223,22 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     grandDeposit = Number(grandDeposit.toFixed(2));
     grandFinalTotal = Number(grandFinalTotal.toFixed(2));
 
-    let transactionId: string
-    let paymentURL: string
-    let encryptedFinalPrice: string | null = null
+    let transactionId: string;
+    let paymentURL: string;
+    let encryptedFinalPrice: string | null = null;
     if (parsed.data.payment_type === "ONLINE") {
-      const redirectUrl = process.env.REDIRECT_URL_PAY
-      const customerRedirectUrl = `${redirectUrl}/booking/status`
+      const redirectUrl = process.env.REDIRECT_URL_PAY;
+      const customerRedirectUrl = `${redirectUrl}/booking/status`;
       try {
-        const paymentDetails = await initiatePhonePePayment(grandFinalTotal, customerRedirectUrl)
+        const paymentDetails = await initiatePhonePePayment(
+          grandFinalTotal,
+          customerRedirectUrl,
+        );
         if (!paymentDetails || !paymentDetails.merchantTransactionId) {
-          throw new Error("Invalid payment details received")
+          throw new Error("Invalid payment details received");
         }
-        transactionId = paymentDetails.merchantTransactionId
-        paymentURL = paymentDetails.instrumentResponse.redirectInfo.url
+        transactionId = paymentDetails.merchantTransactionId;
+        paymentURL = paymentDetails.instrumentResponse.redirectInfo.url;
       } catch (error: any) {
         console.error("Error initiating payment:", error);
         return res.status(StatusCode.BAD_REQUEST).json({
@@ -241,11 +247,15 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         });
       }
     } else {
-      transactionId = createID()
-      paymentURL = ""
-      encryptedFinalPrice = await jwt.sign({ finalPrice: grandFinalTotal }, process.env.JWT_SECERT!, {
-        expiresIn: "10m"
-      })
+      transactionId = createID();
+      paymentURL = "";
+      encryptedFinalPrice = await jwt.sign(
+        { finalPrice: grandFinalTotal },
+        process.env.JWT_SECERT!,
+        {
+          expiresIn: "10m",
+        },
+      );
     }
     const booking = await prisma.$transaction(async (tx) => {
       const newBooking = await tx.booking.create({
@@ -259,7 +269,9 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           days: bookingDuration.days,
           rentalPeriodType: bookingDuration.periodType,
           actualHours: new Decimal(bookingDuration.actualDuration.toString()),
-          billableHours: new Decimal(bookingDuration.billableDuration.toString()),
+          billableHours: new Decimal(
+            bookingDuration.billableDuration.toString(),
+          ),
           holdExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
           totalBase: grandBaseTotal,
           totalDiscount: grandDiscountTotal,
@@ -303,7 +315,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       return newBooking;
     });
 
-    const holdId = booking.publicId
+    const holdId = booking.publicId;
     const holdExpiry = 10 * 60;
 
     const holdData = {
@@ -318,12 +330,11 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         grandCGSTTotal,
         grandSGSTTotal,
         taxRate: totalTaxRate,
-        grandFinalTotal
+        grandFinalTotal,
       },
       createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + holdExpiry * 1000).toISOString()
+      expiresAt: new Date(Date.now() + holdExpiry * 1000).toISOString(),
     };
-
 
     await redis.setex(holdId, holdExpiry, JSON.stringify(holdData));
 
@@ -337,7 +348,13 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     // Invalidate public vehicle cache
     let cursor = "0";
     do {
-      const reply = await redis.scan(cursor, "MATCH", "public:vehicles:*", "COUNT", 100);
+      const reply = await redis.scan(
+        cursor,
+        "MATCH",
+        "public:vehicles:*",
+        "COUNT",
+        100,
+      );
       cursor = reply[0];
       const keys = reply[1];
       if (keys.length > 0) {
@@ -366,11 +383,10 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           grandFinalTotal,
           paymentURL,
           encryptedFinalPrice,
-          transactionId
-        }
-      }
+          transactionId,
+        },
+      },
     });
-
   } catch (e: any) {
     console.error("Error generating booking summary:", e);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({

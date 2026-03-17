@@ -56,7 +56,6 @@ import { CollectionReportPage } from "./pages/admin/reports/CollectionReportPage
 import { FleetExecutivePage } from "./pages/admin/reports/FleetExecutivePage";
 import { GSTReportPage } from "./pages/admin/reports/GSTReportPage";
 
-
 function App() {
   return (
     <BrowserRouter>
@@ -73,13 +72,22 @@ function App() {
         {/* Public Auth Routes */}
         <Route element={<PublicRoute />}>
           <Route path="/auth/sign-in" element={<SignInPage />} />
-          <Route path="/auth/sign-up" element={<SignInPage defaultTab="sign-up" />} />
+          <Route
+            path="/auth/sign-up"
+            element={<SignInPage defaultTab="sign-up" />}
+          />
           <Route path="/auth/verify-otp" element={<OtpPage />} />
           <Route path="/employee/sign-in" element={<EmployeeSignInPage />} />
-          <Route path="/employee/booking/status/:transactionId" element={<EmployeeBookingStatusPage />} />
+          <Route
+            path="/employee/booking/status/:transactionId"
+            element={<EmployeeBookingStatusPage />}
+          />
         </Route>
 
-        <Route path="/branch-manager/sign-in" element={<BranchManagerSignInPage />} />
+        <Route
+          path="/branch-manager/sign-in"
+          element={<BranchManagerSignInPage />}
+        />
         <Route path="/admin/sign-in" element={<AdminSignInPage />} />
 
         {/* Protected Routes */}
@@ -88,10 +96,22 @@ function App() {
           <Route path="/documents" element={<DocumentsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/verification/kyc" element={<KycVerificationPage />} />
-          <Route path="/profile/personal-information" element={<PersonalInformationPage />} />
-          <Route path="/booking/review-confirm" element={<ReviewConfirmPage />} />
-          <Route path="/booking/confirmation" element={<BookingConfirmationPage />} />
-          <Route path="/booking/status/:transactionId" element={<BookingStatusPage />} />
+          <Route
+            path="/profile/personal-information"
+            element={<PersonalInformationPage />}
+          />
+          <Route
+            path="/booking/review-confirm"
+            element={<ReviewConfirmPage />}
+          />
+          <Route
+            path="/booking/confirmation"
+            element={<BookingConfirmationPage />}
+          />
+          <Route
+            path="/booking/status/:transactionId"
+            element={<BookingStatusPage />}
+          />
         </Route>
 
         {/* Branch Manager Protected Routes */}
@@ -99,14 +119,32 @@ function App() {
           <Route path="/manager/dashboard" element={<DashboardPage />} />
           <Route path="/manager/employees" element={<ManagerEmployeesPage />} />
           <Route path="/manager/vehicles" element={<ManagerVehiclesPage />} />
-          <Route path="/manager/vehicles/add" element={<ManagerVehicleFormPage />} />
-          <Route path="/manager/vehicles/edit/:vehicleId" element={<ManagerVehicleFormPage />} />
-          <Route path="/manager/insurance-expiry" element={<ManagerInsuranceExpiryPage />} />
-          <Route path="/manager/deposit-rules" element={<ManagerDepositRulesPage />} />
+          <Route
+            path="/manager/vehicles/add"
+            element={<ManagerVehicleFormPage />}
+          />
+          <Route
+            path="/manager/vehicles/edit/:vehicleId"
+            element={<ManagerVehicleFormPage />}
+          />
+          <Route
+            path="/manager/insurance-expiry"
+            element={<ManagerInsuranceExpiryPage />}
+          />
+          <Route
+            path="/manager/deposit-rules"
+            element={<ManagerDepositRulesPage />}
+          />
           <Route path="/manager/gst-rules" element={<ManagerGSTRulesPage />} />
           <Route path="/manager/profile" element={<ManagerProfilePage />} />
-          <Route path="/manager/payment/fine-status/:transactionId" element={<FinePaymentStatusPage />} />
-          <Route path="/damage/:damageReportId" element={<DamageReviewPage />} />
+          <Route
+            path="/manager/payment/fine-status/:transactionId"
+            element={<FinePaymentStatusPage />}
+          />
+          <Route
+            path="/damage/:damageReportId"
+            element={<DamageReviewPage />}
+          />
         </Route>
 
         {/* Admin Protected Routes */}
@@ -116,31 +154,75 @@ function App() {
             {/* Future Admin Routes */}
             <Route path="/admin/branches" element={<AdminBranchesPage />} />
             <Route path="/admin/reports" element={<GlobalReports />} />
-            <Route path="/admin/vehicle-reports" element={<VehicleReportsListPage />} />
+            <Route
+              path="/admin/vehicle-reports"
+              element={<VehicleReportsListPage />}
+            />
 
             {/* Admin Report Routes */}
-            <Route path="/admin/reports/daily-summary" element={<DailySummaryPage />} />
+            <Route
+              path="/admin/reports/daily-summary"
+              element={<DailySummaryPage />}
+            />
             <Route path="/admin/reports/sales" element={<SalesReportPage />} />
-            <Route path="/admin/reports/vehicle/:vehicleId" element={<VehicleHistoryPage />} />
-            <Route path="/admin/reports/vehicle-availability" element={<VehicleAvailabilityPage />} />
-            <Route path="/admin/reports/insurance-permit-expiry" element={<InsurancePermitExpiryPage />} />
-            <Route path="/admin/reports/collection" element={<CollectionReportPage />} />
-            <Route path="/admin/reports/fleet-executive" element={<FleetExecutivePage />} />
+            <Route
+              path="/admin/reports/vehicle/:vehicleId"
+              element={<VehicleHistoryPage />}
+            />
+            <Route
+              path="/admin/reports/vehicle-availability"
+              element={<VehicleAvailabilityPage />}
+            />
+            <Route
+              path="/admin/reports/insurance-permit-expiry"
+              element={<InsurancePermitExpiryPage />}
+            />
+            <Route
+              path="/admin/reports/collection"
+              element={<CollectionReportPage />}
+            />
+            <Route
+              path="/admin/reports/fleet-executive"
+              element={<FleetExecutivePage />}
+            />
             <Route path="/admin/reports/gst" element={<GSTReportPage />} />
           </Route>
         </Route>
 
-
         {/* Employee Protected Routes */}
         <Route element={<EmployeeProtectedRoute />}>
-          <Route path="/employee/dashboard" element={<EmployeeDashboardPage />} />
-          <Route path="/employee/new-booking" element={<EmployeeCustomerSelectPage />} />
-          <Route path="/employee/customer/create" element={<EmployeeCreateCustomerPage />} />
-          <Route path="/employee/vehicles" element={<EmployeeVehicleListingPage />} />
-          <Route path="/employee/vehicle/:id" element={<EmployeeVehicleDetailsPage />} />
-          <Route path="/employee/booking/summary" element={<EmployeeBookingSummaryPage />} />
-          <Route path="/staff/pickups/:bookingId" element={<StaffPickupsPage />} />
-          <Route path="/employee/dashboard/return/:bookingId" element={<ReturnProcessPage />} />
+          <Route
+            path="/employee/dashboard"
+            element={<EmployeeDashboardPage />}
+          />
+          <Route
+            path="/employee/new-booking"
+            element={<EmployeeCustomerSelectPage />}
+          />
+          <Route
+            path="/employee/customer/create"
+            element={<EmployeeCreateCustomerPage />}
+          />
+          <Route
+            path="/employee/vehicles"
+            element={<EmployeeVehicleListingPage />}
+          />
+          <Route
+            path="/employee/vehicle/:id"
+            element={<EmployeeVehicleDetailsPage />}
+          />
+          <Route
+            path="/employee/booking/summary"
+            element={<EmployeeBookingSummaryPage />}
+          />
+          <Route
+            path="/staff/pickups/:bookingId"
+            element={<StaffPickupsPage />}
+          />
+          <Route
+            path="/employee/dashboard/return/:bookingId"
+            element={<ReturnProcessPage />}
+          />
           <Route path="/returns/:bookingId" element={<ReturnProcessPage />} />
         </Route>
 

@@ -6,12 +6,12 @@ export async function calculatePricingForVehicleFromRecord(vehicle: any) {
   const pricingEngine = new PricingEngineService();
   const startAt = TimezoneService.getCurrentTime();
   const endAt = startAt.plus({ hours: 24 });
-  
+
   const pricingResult = await pricingEngine.calculateBookingPrice(
     vehicle.id,
     startAt,
     endAt,
-    vehicle.branchId
+    vehicle.branchId,
   );
 
   return {

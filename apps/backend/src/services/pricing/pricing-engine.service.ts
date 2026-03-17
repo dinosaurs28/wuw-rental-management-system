@@ -1,7 +1,11 @@
-import { prisma } from '@repo/database/client';
-import { DateTime } from 'luxon';
-import Decimal from 'decimal.js';
-import { DurationCalculatorService, RentalPeriodType, RentalDuration } from './duration-calculator.service';
+import { prisma } from "@repo/database/client";
+import { DateTime } from "luxon";
+import Decimal from "decimal.js";
+import {
+  DurationCalculatorService,
+  RentalPeriodType,
+  RentalDuration,
+} from "./duration-calculator.service";
 
 /**
  * Vehicle pricing configuration
@@ -48,7 +52,7 @@ export interface PricingResult {
     periodType: RentalPeriodType;
     duration: RentalDuration;
     applicablePrice: Decimal;
-    priceSource: 'vehicle_custom' | 'branch_default' | 'fallback';
+    priceSource: "vehicle_custom" | "branch_default" | "fallback";
   };
 }
 
@@ -79,10 +83,9 @@ interface TaxResult {
  * Service for calculating booking prices
  */
 export class PricingEngineService {
-
   /**
    * Calculate complete booking price
-   * 
+   *
    * @param vehicleId - ID of the vehicle
    * @param startAt - Rental start datetime (IST)
    * @param endAt - Rental end datetime (IST)
@@ -93,9 +96,8 @@ export class PricingEngineService {
     vehicleId: number,
     startAt: DateTime,
     endAt: DateTime,
-    branchId: number
+    branchId: number,
   ): Promise<PricingResult> {
-
     // 1. Calculate rental duration
     const duration = DurationCalculatorService.calculate(startAt, endAt);
 
@@ -103,19 +105,15 @@ export class PricingEngineService {
     const pricing = await this.getVehiclePricing(vehicleId, branchId);
 
     // 3. Determine base price based on duration
-    const { basePrice, freeKmLimit, priceSource } = await this.determineBasePrice(
-      pricing,
-      duration,
-      vehicleId,
-      branchId
-    );
+    const { basePrice, freeKmLimit, priceSource } =
+      await this.determineBasePrice(pricing, duration, vehicleId, branchId);
 
     // 4. Apply discount slabs for multi-day bookings
     const discountResult = await this.applyDiscountSlabs(
       basePrice,
       duration.days,
       branchId,
-      vehicleId
+      vehicleId,
     );
 
     // 5. Get deposit amount
@@ -124,7 +122,7 @@ export class PricingEngineService {
     // 6. Calculate tax on discounted amount
     const taxResult = await this.calculateTax(
       discountResult.finalAmount,
-      branchId
+      branchId,
     );
 
     // 7. Calculate final total
@@ -146,15 +144,15 @@ export class PricingEngineService {
         periodType: duration.periodType,
         duration,
         applicablePrice: basePrice,
-        priceSource: pricing.source as any
-      }
+        priceSource: pricing.source as any,
+      },
     };
   }
 
   /**
    * Calculate limited pricing for listing pages
    * Skips overhead of taxes and deposits
-   * 
+   *
    * @param vehicleId - ID of the vehicle
    * @param startAt - Rental start datetime (IST)
    * @param endAt - Rental end datetime (IST)
@@ -165,9 +163,8 @@ export class PricingEngineService {
     vehicleId: number,
     startAt: DateTime,
     endAt: DateTime,
-    branchId: number
+    branchId: number,
   ): Promise<{ price: Decimal; finalPrice: Decimal; type: RentalPeriodType }> {
-
     // 1. Calculate rental duration
     const duration = DurationCalculatorService.calculate(startAt, endAt);
 
@@ -179,7 +176,7 @@ export class PricingEngineService {
       pricing,
       duration,
       vehicleId,
-      branchId
+      branchId,
     );
 
     // 4. Apply discount slabs for multi-day bookings
@@ -187,13 +184,13 @@ export class PricingEngineService {
       basePrice,
       duration.days,
       branchId,
-      vehicleId
+      vehicleId,
     );
 
     return {
       price: basePrice,
       finalPrice: discountResult.finalAmount,
-      type: duration.periodType
+      type: duration.periodType,
     };
   }
 
@@ -203,63 +200,76 @@ export class PricingEngineService {
    */
   private async getVehiclePricing(
     vehicleId: number,
-    branchId: number
-  ): Promise<VehiclePricing & { source: 'vehicle_custom' | 'branch_default' }> {
-
+    branchId: number,
+  ): Promise<VehiclePricing & { source: "vehicle_custom" | "branch_default" }> {
     // Try to get vehicle custom pricing first
     const customPricing = await prisma.vehicleCustomPricing.findUnique({
-      where: { vehicleId }
+      where: { vehicleId },
     });
 
     if (customPricing && customPricing.enabled) {
       return {
-        hourlyRate: customPricing.hourlyRate ? new Decimal(customPricing.hourlyRate.toString()) : null,
-        price12Hour: customPricing.price12Hour ? new Decimal(customPricing.price12Hour.toString()) : null,
+        hourlyRate: customPricing.hourlyRate
+          ? new Decimal(customPricing.hourlyRate.toString())
+          : null,
+        price12Hour: customPricing.price12Hour
+          ? new Decimal(customPricing.price12Hour.toString())
+          : null,
         price24Hour: new Decimal(customPricing.price24Hour.toString()),
-        priceMonthly: customPricing.priceMonthly ? new Decimal(customPricing.priceMonthly.toString()) : null,
+        priceMonthly: customPricing.priceMonthly
+          ? new Decimal(customPricing.priceMonthly.toString())
+          : null,
         freeKm12Hour: customPricing.freeKm12Hour,
         freeKm24Hour: customPricing.freeKm24Hour,
         freeKmMonthly: customPricing.freeKmMonthly,
         extraKmRate: new Decimal(customPricing.extraKmRate.toString()),
         extraHourRate: new Decimal(customPricing.extraHourRate.toString()),
-        source: 'vehicle_custom'
+        source: "vehicle_custom",
       };
     }
 
     // Fall back to branch defaults
     const vehicle = await prisma.vehicle.findUnique({
       where: { id: vehicleId },
-      select: { categoryId: true }
+      select: { categoryId: true },
     });
 
     if (!vehicle) {
-      throw new Error('Vehicle not found');
+      throw new Error("Vehicle not found");
     }
 
     const branchDefaults = await prisma.branchPricingDefaults.findUnique({
       where: {
         branchId_categoryId: {
           branchId,
-          categoryId: vehicle.categoryId
-        }
-      }
+          categoryId: vehicle.categoryId,
+        },
+      },
     });
 
     if (!branchDefaults) {
-      throw new Error(`No pricing configured for this vehicle category at branch ${branchId}`);
+      throw new Error(
+        `No pricing configured for this vehicle category at branch ${branchId}`,
+      );
     }
 
     return {
-      hourlyRate: branchDefaults.hourlyRate ? new Decimal(branchDefaults.hourlyRate.toString()) : null,
-      price12Hour: branchDefaults.price12Hour ? new Decimal(branchDefaults.price12Hour.toString()) : null,
+      hourlyRate: branchDefaults.hourlyRate
+        ? new Decimal(branchDefaults.hourlyRate.toString())
+        : null,
+      price12Hour: branchDefaults.price12Hour
+        ? new Decimal(branchDefaults.price12Hour.toString())
+        : null,
       price24Hour: new Decimal(branchDefaults.price24Hour.toString()),
-      priceMonthly: branchDefaults.priceMonthly ? new Decimal(branchDefaults.priceMonthly.toString()) : null,
+      priceMonthly: branchDefaults.priceMonthly
+        ? new Decimal(branchDefaults.priceMonthly.toString())
+        : null,
       freeKm12Hour: branchDefaults.freeKm12Hour,
       freeKm24Hour: branchDefaults.freeKm24Hour,
       freeKmMonthly: branchDefaults.freeKmMonthly,
       extraKmRate: new Decimal(branchDefaults.extraKmRate.toString()),
       extraHourRate: new Decimal(branchDefaults.extraHourRate.toString()),
-      source: 'branch_default'
+      source: "branch_default",
     };
   }
 
@@ -270,16 +280,15 @@ export class PricingEngineService {
     pricing: VehiclePricing & { source: string },
     duration: RentalDuration,
     vehicleId: number,
-    branchId: number
+    branchId: number,
   ): Promise<{ basePrice: Decimal; freeKmLimit: number; priceSource: string }> {
-
     let basePrice: Decimal;
     let freeKmLimit: number;
 
     switch (duration.periodType) {
       case RentalPeriodType.HOURLY:
         if (!pricing.hourlyRate) {
-          throw new Error('Hourly rental not available for this vehicle');
+          throw new Error("Hourly rental not available for this vehicle");
         }
         basePrice = pricing.hourlyRate.mul(duration.billableDuration);
         freeKmLimit = Math.floor(duration.billableDuration * 8); // ~8 km per hour
@@ -287,7 +296,7 @@ export class PricingEngineService {
 
       case RentalPeriodType.HALF_DAY:
         if (!pricing.price12Hour) {
-          throw new Error('12-hour rental not available for this vehicle');
+          throw new Error("12-hour rental not available for this vehicle");
         }
         basePrice = pricing.price12Hour;
         freeKmLimit = pricing.freeKm12Hour;
@@ -318,13 +327,13 @@ export class PricingEngineService {
         break;
 
       default:
-        throw new Error('Invalid rental period type');
+        throw new Error("Invalid rental period type");
     }
 
     return {
       basePrice,
       freeKmLimit,
-      priceSource: pricing.source
+      priceSource: pricing.source,
     };
   }
 
@@ -336,28 +345,27 @@ export class PricingEngineService {
     basePrice: Decimal,
     days: number,
     branchId: number,
-    vehicleId: number
+    vehicleId: number,
   ): Promise<DiscountResult> {
-
     // Get vehicle category
     const vehicle = await prisma.vehicle.findUnique({
       where: { id: vehicleId },
-      select: { categoryId: true }
+      select: { categoryId: true },
     });
 
     if (!vehicle) {
-      throw new Error('Vehicle not found');
+      throw new Error("Vehicle not found");
     }
 
     // Try category-specific slab first
     let slab = await prisma.pricingDiscountSlab.findFirst({
       where: {
         categoryId: vehicle.categoryId,
-        days: { lte: days }
+        days: { lte: days },
       },
       orderBy: {
-        days: 'desc'  // Get the highest applicable slab
-      }
+        days: "desc", // Get the highest applicable slab
+      },
     });
 
     // Fall back to branch-level slab
@@ -366,11 +374,11 @@ export class PricingEngineService {
         where: {
           branchId,
           categoryId: null,
-          days: { lte: days }
+          days: { lte: days },
         },
         orderBy: {
-          days: 'desc'
-        }
+          days: "desc",
+        },
       });
     }
 
@@ -379,7 +387,7 @@ export class PricingEngineService {
       return {
         finalAmount: basePrice,
         discountAmount: new Decimal(0),
-        discountPercent: new Decimal(0)
+        discountPercent: new Decimal(0),
       };
     }
 
@@ -394,8 +402,8 @@ export class PricingEngineService {
       discountPercent,
       slabApplied: {
         days: slab.days,
-        multiplier
-      }
+        multiplier,
+      },
     };
   }
 
@@ -404,25 +412,24 @@ export class PricingEngineService {
    */
   private async getDepositAmount(
     vehicleId: number,
-    branchId: number
+    branchId: number,
   ): Promise<Decimal> {
-
     const vehicle = await prisma.vehicle.findUnique({
       where: { id: vehicleId },
-      select: { categoryId: true }
+      select: { categoryId: true },
     });
 
     if (!vehicle) {
-      throw new Error('Vehicle not found');
+      throw new Error("Vehicle not found");
     }
 
     const depositSetting = await prisma.categoryDepositSetting.findUnique({
       where: {
         branchId_categoryId: {
           branchId,
-          categoryId: vehicle.categoryId
-        }
-      }
+          categoryId: vehicle.categoryId,
+        },
+      },
     });
 
     // Default to 5000 if not configured
@@ -436,15 +443,14 @@ export class PricingEngineService {
    */
   private async calculateTax(
     amount: Decimal,
-    branchId: number
+    branchId: number,
   ): Promise<TaxResult> {
-
     const gstRule = await prisma.gSTRule.findUnique({
-      where: { branchId }
+      where: { branchId },
     });
 
     if (!gstRule) {
-      throw new Error('GST rules not configured for this branch');
+      throw new Error("GST rules not configured for this branch");
     }
 
     const cgstRate = new Decimal(gstRule.cgstRate.toString());
@@ -459,13 +465,13 @@ export class PricingEngineService {
       totalTax,
       cgst,
       sgst,
-      rate: totalRate
+      rate: totalRate,
     };
   }
 
   /**
    * Calculate extra km charges
-   * 
+   *
    * @param kmDriven - Total kilometers driven
    * @param freeKmLimit - Free kilometers included
    * @param extraKmRate - Rate per extra km
@@ -474,7 +480,7 @@ export class PricingEngineService {
   calculateExtraKmCharges(
     kmDriven: number,
     freeKmLimit: number,
-    extraKmRate: Decimal
+    extraKmRate: Decimal,
   ): Decimal {
     const extraKm = Math.max(0, kmDriven - freeKmLimit);
     return extraKmRate.mul(extraKm);
@@ -482,15 +488,12 @@ export class PricingEngineService {
 
   /**
    * Calculate extra hour charges (for late returns)
-   * 
+   *
    * @param extraHours - Number of extra hours
    * @param hourlyRate - Rate per hour
    * @returns Extra hour charge amount
    */
-  calculateExtraHourCharges(
-    extraHours: number,
-    hourlyRate: Decimal
-  ): Decimal {
+  calculateExtraHourCharges(extraHours: number, hourlyRate: Decimal): Decimal {
     return hourlyRate.mul(extraHours);
   }
 }

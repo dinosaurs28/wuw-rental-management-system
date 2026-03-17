@@ -1,7 +1,14 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { paymentStatusCheck } from "../../utils/payment/paymentStatusCheck.utils.js";
-import { prisma, BookingStatus, PaymentStatus, VehicleStatus, DepositMethod, InvoiceStatus } from "@repo/database/client";
+import {
+  prisma,
+  BookingStatus,
+  PaymentStatus,
+  VehicleStatus,
+  DepositMethod,
+  InvoiceStatus,
+} from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
 import { createID } from "../../utils/nanoID.js";
 
@@ -54,7 +61,9 @@ export const checkPayment = async (req: Request, res: Response) => {
 
     if (isOnlineSuccess || isCash) {
       await prisma.$transaction(async (tx) => {
-        const method = isCash ? DepositMethod.CASH : DepositMethod.ONLINE_RAZORPAY;
+        const method = isCash
+          ? DepositMethod.CASH
+          : DepositMethod.ONLINE_RAZORPAY;
 
         await tx.booking.update({
           where: { id: booking.id },
@@ -68,7 +77,7 @@ export const checkPayment = async (req: Request, res: Response) => {
 
         await tx.vehicle.updateMany({
           where: {
-            id: { in: booking.items.map(i => i.vehicleId) },
+            id: { in: booking.items.map((i) => i.vehicleId) },
           },
           data: {
             status: VehicleStatus.AVAILABLE,
@@ -100,7 +109,7 @@ export const checkPayment = async (req: Request, res: Response) => {
         });
 
         await tx.invoiceItem.createMany({
-          data: booking.items.map(item => ({
+          data: booking.items.map((item) => ({
             publicId: createID(),
             invoiceId: invoice.id,
             label: `${item.vehicle.make} ${item.vehicle.model}`,
@@ -147,14 +156,19 @@ export const checkPayment = async (req: Request, res: Response) => {
     // Invalidate vehicle cache
     let cursor = "0";
     do {
-      const reply = await redis.scan(cursor, "MATCH", "public:vehicles:*", "COUNT", 100);
+      const reply = await redis.scan(
+        cursor,
+        "MATCH",
+        "public:vehicles:*",
+        "COUNT",
+        100,
+      );
       cursor = reply[0];
       const keys = reply[1];
       if (keys.length > 0) {
         await redis.del(keys);
       }
     } while (cursor !== "0");
-
 
     if (isOnlinePending) {
       return res.status(StatusCode.OK).json({
@@ -177,7 +191,6 @@ export const checkPayment = async (req: Request, res: Response) => {
       status: "Failed",
       redirectURL: "FRONTEND_FAILED_URL",
     });
-
   } catch (error) {
     console.error("Error checking payment:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({

@@ -3,7 +3,7 @@ import { prisma } from "@repo/database/client";
 export async function getDiscountForDays(
   branchId: number,
   categoryId: number,
-  days: number
+  days: number,
 ): Promise<number> {
   // Fetch all discount slabs for this branch and category
   const slabs = await prisma.pricingDiscountSlab.findMany({

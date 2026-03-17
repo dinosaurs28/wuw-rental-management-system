@@ -1,9 +1,9 @@
-import { Job } from 'bullmq';
-import { getInvoiceQueue } from '../lib/queue.client.js';
+import { Job } from "bullmq";
+import { getInvoiceQueue } from "../lib/queue.client.js";
 
 interface InvoiceJobData {
-    bookingId: number;
-    invoiceId: number;
+  bookingId: number;
+  invoiceId: number;
 }
 
 /**
@@ -12,37 +12,46 @@ interface InvoiceJobData {
  * @param invoiceId - Invoice ID
  * @returns The queued job
  */
-export async function queueInvoiceGeneration(bookingId: number, invoiceId: number) {
-    const jobId = `invoice-${invoiceId}`;
-    const queue = getInvoiceQueue();
+export async function queueInvoiceGeneration(
+  bookingId: number,
+  invoiceId: number,
+) {
+  const jobId = `invoice-${invoiceId}`;
+  const queue = getInvoiceQueue();
 
-    // Check if job already exists
-    const existingJob = await queue.getJob(jobId);
-    if (existingJob) {
-        const state = await existingJob.getState();
-        if (['waiting', 'active'].includes(state)) {
-            console.log(`[Queue] Job already exists and is active/waiting for invoice ${invoiceId}`);
-            return existingJob;
-        }
-
-        // If job exists but is failed or completed, remove it so we can retry
-        try {
-            await existingJob.remove();
-            console.log(`[Queue] Removed existing ${state} job for invoice ${invoiceId}`);
-        } catch (error) {
-            console.error(`[Queue] Failed to remove existing job:`, error);
-        }
+  // Check if job already exists
+  const existingJob = await queue.getJob(jobId);
+  if (existingJob) {
+    const state = await existingJob.getState();
+    if (["waiting", "active"].includes(state)) {
+      console.log(
+        `[Queue] Job already exists and is active/waiting for invoice ${invoiceId}`,
+      );
+      return existingJob;
     }
 
-    // Queue new job with unique jobId to prevent duplicates
-    const job = await queue.add(
-        'generate-invoice',
-        { bookingId, invoiceId } as InvoiceJobData,
-        { jobId } // Prevents duplicate jobs
-    );
+    // If job exists but is failed or completed, remove it so we can retry
+    try {
+      await existingJob.remove();
+      console.log(
+        `[Queue] Removed existing ${state} job for invoice ${invoiceId}`,
+      );
+    } catch (error) {
+      console.error(`[Queue] Failed to remove existing job:`, error);
+    }
+  }
 
-    console.log(`[Queue] Queued invoice generation job ${jobId} for booking ${bookingId}`);
-    return job;
+  // Queue new job with unique jobId to prevent duplicates
+  const job = await queue.add(
+    "generate-invoice",
+    { bookingId, invoiceId } as InvoiceJobData,
+    { jobId }, // Prevents duplicate jobs
+  );
+
+  console.log(
+    `[Queue] Queued invoice generation job ${jobId} for booking ${bookingId}`,
+  );
+  return job;
 }
 
 /**
@@ -51,21 +60,21 @@ export async function queueInvoiceGeneration(bookingId: number, invoiceId: numbe
  * @returns Job status or null if not found
  */
 export async function getInvoiceJobStatus(invoiceId: number) {
-    const jobId = `invoice-${invoiceId}`;
-    const queue = getInvoiceQueue();
-    const job = await queue.getJob(jobId);
+  const jobId = `invoice-${invoiceId}`;
+  const queue = getInvoiceQueue();
+  const job = await queue.getJob(jobId);
 
-    if (!job) {
-        return null;
-    }
+  if (!job) {
+    return null;
+  }
 
-    const state = await job.getState();
+  const state = await job.getState();
 
-    return {
-        jobId: job.id,
-        state,
-        progress: job.progress || 0,
-        attemptsMade: job.attemptsMade,
-        data: job.data,
-    };
+  return {
+    jobId: job.id,
+    state,
+    progress: job.progress || 0,
+    attemptsMade: job.attemptsMade,
+    data: job.data,
+  };
 }

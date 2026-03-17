@@ -4,30 +4,35 @@ import { jwtverfiy } from "../utils/token/tokenverfiy.utlis.js"; // Note: .js ex
 import { jwtinterface } from "../utils/token/tokensign.utlis.js";
 import { Role } from "@repo/database/client";
 
-export const ManagerCheck = async (req: Request, res: Response, next: NextFunction) => {
-    const token = req.cookies;
+export const ManagerCheck = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const token = req.cookies;
 
-    if (!token.accessToken) {
-        return res.status(StatusCode.FORBIDDEN).json({
-            message: "The Access Token Is Missing Please login Again"
-        });
-    }
-
-    const isverified = await jwtverfiy(token.accessToken) as jwtinterface;
-
-    if (!isverified) {
-        return res.status(StatusCode.UNAUTHORIZED).json({
-            message: "Authentication required. Your session has expired or is invalid."
-        });
-    }
-
-    if (isverified.role === Role.MANAGER) {
-        req.public_Id = isverified.sub;
-        req.branch_Id = isverified.branchId as number;
-        return next();
-    }
-
+  if (!token.accessToken) {
     return res.status(StatusCode.FORBIDDEN).json({
-        message: "Access Denied: Branch Managers Only"
+      message: "The Access Token Is Missing Please login Again",
     });
-}
+  }
+
+  const isverified = (await jwtverfiy(token.accessToken)) as jwtinterface;
+
+  if (!isverified) {
+    return res.status(StatusCode.UNAUTHORIZED).json({
+      message:
+        "Authentication required. Your session has expired or is invalid.",
+    });
+  }
+
+  if (isverified.role === Role.MANAGER) {
+    req.public_Id = isverified.sub;
+    req.branch_Id = isverified.branchId as number;
+    return next();
+  }
+
+  return res.status(StatusCode.FORBIDDEN).json({
+    message: "Access Denied: Branch Managers Only",
+  });
+};

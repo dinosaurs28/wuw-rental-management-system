@@ -1,5 +1,8 @@
 import { Router } from "express";
-import { downloadInvoice, getInvoiceStatus } from "../../controller/invoice.controller.js";
+import {
+  downloadInvoice,
+  getInvoiceStatus,
+} from "../../controller/invoice.controller.js";
 import { authCheckJwt } from "../../middlewares/authCheck.middlewares.js";
 
 const router: Router = Router();

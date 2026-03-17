@@ -50,8 +50,9 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       }
     }
 
-    const cacheKey = `public:vehicles:${category || "all"}:${branch || "all"}:${search || "all"
-      }:${make || "all"}:${model || "all"}:${sort || "none"}:${start || "all"}:${end || "all"}:${limit}:${offset}`;
+    const cacheKey = `public:vehicles:${category || "all"}:${branch || "all"}:${
+      search || "all"
+    }:${make || "all"}:${model || "all"}:${sort || "none"}:${start || "all"}:${end || "all"}:${limit}:${offset}`;
 
     const cachedData = await redis.get(cacheKey);
     if (cachedData) {
@@ -61,8 +62,8 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       status: "AVAILABLE",
       deletedAt: null,
       insuranceExpiry: {
-        gt: new Date() // Only show vehicles with valid insurance
-      }
+        gt: new Date(), // Only show vehicles with valid insurance
+      },
     };
 
     if (category) {
@@ -105,13 +106,14 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
         branch: true,
         images: {
           where: {
-            isThumbnail: true
-          }, select: {
+            isThumbnail: true,
+          },
+          select: {
             file: {
-              select: { url: true }
-            }
-          }
-        }
+              select: { url: true },
+            },
+          },
+        },
       },
       orderBy:
         sort === "price_low_to_high"
@@ -131,22 +133,21 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       const t = search.toLowerCase();
       filteredVehicles = filteredVehicles.filter(
         (v) =>
-          v.make.toLowerCase().includes(t) ||
-          v.model.toLowerCase().includes(t)
+          v.make.toLowerCase().includes(t) || v.model.toLowerCase().includes(t),
       );
     }
 
     if (make) {
       const t = make.toLowerCase();
       filteredVehicles = filteredVehicles.filter((v) =>
-        v.make.toLowerCase().includes(t)
+        v.make.toLowerCase().includes(t),
       );
     }
 
     if (model) {
       const t = model.toLowerCase();
       filteredVehicles = filteredVehicles.filter((v) =>
-        v.model.toLowerCase().includes(t)
+        v.model.toLowerCase().includes(t),
       );
     }
 
@@ -154,7 +155,11 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
     for (const v of filteredVehicles) {
       // Check availability if dates are provided
       if (startDate && endDate) {
-        const isAvailable = await checkVehicleAvailability(v.id, startDate, endDate);
+        const isAvailable = await checkVehicleAvailability(
+          v.id,
+          startDate,
+          endDate,
+        );
         if (!isAvailable) {
           continue; // Skip vehicles that are not available for the selected dates
         }
@@ -201,11 +206,11 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
 
 export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
   try {
-    const parasedData = getVehicleDetailsSchema.safeParse(req.params)
+    const parasedData = getVehicleDetailsSchema.safeParse(req.params);
     if (!parasedData.success) {
       return res.status(StatusCode.BAD_REQUEST).json({
-        message: parasedData.error.flatten()
-      })
+        message: parasedData.error.flatten(),
+      });
     }
     const { start, end } = req.query as { start?: string; end?: string };
 
@@ -240,25 +245,27 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
         },
         images: {
           include: {
-            file: true
-          }
+            file: true,
+          },
         },
         pricingOverride: true,
-
       },
     });
     if (!vehicleData) {
       return res.status(StatusCode.NOT_FOUND).json({
-        message: "Vehicle details could not be found for the provided ID."
-      })
+        message: "Vehicle details could not be found for the provided ID.",
+      });
     }
-    const pricing = await calculatePricingForVehicleFromRecord(vehicleData)
-    const deposit = await getDepositAmount(vehicleData.branchId, vehicleData.categoryId);
+    const pricing = await calculatePricingForVehicleFromRecord(vehicleData);
+    const deposit = await getDepositAmount(
+      vehicleData.branchId,
+      vehicleData.categoryId,
+    );
     let availability: boolean | null = null;
     let totalPrice: number | null = null;
     let totalDays: number | null = null;
     let baseTotal: number | null = null;
-    let discountPrice: number | null = null
+    let discountPrice: number | null = null;
 
     // Check insurance expiry
     const isInsuranceValid = new Date(vehicleData.insuranceExpiry) > new Date();
@@ -267,13 +274,25 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
       if (!isInsuranceValid) {
         availability = false; // Not available if insurance expired
       } else {
-        availability = await checkVehicleAvailability(vehicleData.id, startDate, endDate);
+        availability = await checkVehicleAvailability(
+          vehicleData.id,
+          startDate,
+          endDate,
+        );
       }
 
-      const multi = calculateMultiDayTotalPrice(startDate, endDate, pricing.daily);
+      const multi = calculateMultiDayTotalPrice(
+        startDate,
+        endDate,
+        pricing.daily,
+      );
       baseTotal = multi.total;
       totalDays = multi.days;
-      const discountPercent = await getDiscountForDays(vehicleData.branchId, vehicleData.categoryId, totalDays);
+      const discountPercent = await getDiscountForDays(
+        vehicleData.branchId,
+        vehicleData.categoryId,
+        totalDays,
+      );
       const finalTotal = baseTotal * (1 - discountPercent);
       totalPrice = Number(finalTotal.toFixed(2));
       discountPrice = Number((baseTotal - finalTotal).toFixed(2));
@@ -281,7 +300,7 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
       // If no dates provided but insurance expired, mark as explicitly unavailable
       availability = false;
     }
-    const imageUrls = vehicleData.images.map(img => img.file.url);
+    const imageUrls = vehicleData.images.map((img) => img.file.url);
     const response = {
       publicId: vehicleData.publicId,
       make: vehicleData.make,
@@ -291,24 +310,23 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
       branch: vehicleData.branch.name,
       images: imageUrls,
       pricing: {
-        daily: pricing.daily
+        daily: pricing.daily,
       },
       deposit,
       availability,
       totalDays,
       baseTotal,
-      discountPrice
+      discountPrice,
     };
 
     return res.status(StatusCode.OK).json({
       message: "Success",
-      data: response
+      data: response,
     });
   } catch (e: any) {
-    console.log("Internal Error While Fetching the Vehicle Details", e)
+    console.log("Internal Error While Fetching the Vehicle Details", e);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
-      message: "Internal Error While Fetching the Vehicle Details"
-    })
+      message: "Internal Error While Fetching the Vehicle Details",
+    });
   }
-
-}
+};

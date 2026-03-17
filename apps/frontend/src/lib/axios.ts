@@ -2,24 +2,24 @@ import axios from "axios";
 import { API_BASE_URL } from "./constants";
 
 const apiClient = axios.create({
-    baseURL: API_BASE_URL,
-    withCredentials: true, // Important for cookies
+  baseURL: API_BASE_URL,
+  withCredentials: true, // Important for cookies
 });
 
 apiClient.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        // Optional: Global error handling hook
-        // const status = error.response?.status;
-        // if (status === 401) {
-        //   // Handle unauthorized (e.g., redirect to login) if needed
-        // }
+  (response) => response,
+  (error) => {
+    // Optional: Global error handling hook
+    // const status = error.response?.status;
+    // if (status === 401) {
+    //   // Handle unauthorized (e.g., redirect to login) if needed
+    // }
 
-        if (error.response?.data?.message === "Access Denied: Admins Only") {
-            window.location.href = "/admin/sign-in";
-        }
-        return Promise.reject(error);
+    if (error.response?.data?.message === "Access Denied: Admins Only") {
+      window.location.href = "/admin/sign-in";
     }
+    return Promise.reject(error);
+  },
 );
 
 export default apiClient;

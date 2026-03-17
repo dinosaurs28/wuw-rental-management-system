@@ -5,14 +5,14 @@ const accessKeyId = process.env.R2_ACCESS_KEY_ID;
 const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
 
 if (!accountId || !accessKeyId || !secretAccessKey) {
-    console.warn("R2 credentials missing. R2 client will not work.");
+  console.warn("R2 credentials missing. R2 client will not work.");
 }
 
 export const r2 = new S3Client({
-    region: "auto",
-    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-    credentials: {
-        accessKeyId: accessKeyId || "",
-        secretAccessKey: secretAccessKey || "",
-    },
+  region: "auto",
+  endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: accessKeyId || "",
+    secretAccessKey: secretAccessKey || "",
+  },
 });

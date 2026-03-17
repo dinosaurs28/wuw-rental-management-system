@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { CalendarIcon, Loader2, MapPin, ArrowRight } from "lucide-react";
+import { CalendarIcon, Loader2, MapPin, ArrowRight, Clock } from "lucide-react";
 
 import { useBranches } from "@/hooks/useBranches";
 import { useSearchStore } from "@/store/search.store";
@@ -30,7 +30,9 @@ export const SearchForm = () => {
         branchPublicId,
         pickupDate,
         returnDate,
-        setSearchCriteria
+        pickupTime,
+        returnTime,
+        setSearchCriteria,
     } = useSearchStore();
 
     const handleSearch = () => {
@@ -42,74 +44,69 @@ export const SearchForm = () => {
     const isFormValid = branchPublicId && pickupDate && returnDate;
 
     return (
-        <div className="w-full max-w-5xl mx-auto relative group z-10">
+        <div className="w-full max-w-6xl mx-auto relative group z-10 font-sans">
             {/* Glowing background effect */}
-            <div className="absolute -inset-4 bg-zinc-200/50 rounded-full blur-2xl opacity-40 group-hover:opacity-100 transition duration-1000"></div>
-            
-            {/* Main Unified Pill Container */}
-            <div className="relative bg-white rounded-[2rem] md:rounded-full shadow-2xl p-2 md:p-3 border border-zinc-100">
-                <div className="flex flex-col md:flex-row items-center divide-y md:divide-y-0 md:divide-x divide-zinc-200">
+            <div className="absolute -inset-4 bg-orange-500/10 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition duration-1000"></div>
 
+            {/* Main Container */}
+            <div className="relative bg-white xl:rounded-full rounded-[2.5rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] p-2 md:p-3 border border-zinc-100 overflow-hidden xl:overflow-visible">
+                <div className="flex flex-col xl:flex-row items-center gap-2 xl:gap-0 w-full min-w-0">
+                    
                     {/* Branch Selection */}
-                    <div className="flex-1 min-w-0 w-full hover:bg-zinc-50 rounded-[1.5rem] md:rounded-full transition-colors">
-                        <div className="px-6 py-3">
-                            <label className="block text-[11px] font-bold text-zinc-800 uppercase tracking-widest mb-1 cursor-pointer">
-                                Location
-                            </label>
-                            <Select
-                                value={branchPublicId || ""}
-                                onValueChange={(value: string) => setSearchCriteria({ branchPublicId: value })}
-                                disabled={isLoading || isError}
-                            >
-                                <SelectTrigger className="h-8 w-full bg-transparent border-0 shadow-none p-0 text-left font-medium text-zinc-500 hover:bg-transparent focus:ring-0 [&>svg]:text-orange-500 [&>svg]:size-5">
-                                    <div className="flex items-center gap-2 text-base md:text-lg">
-                                        <MapPin className="size-5 shrink-0 text-zinc-400" />
-                                        <div className="truncate">
-                                            <SelectValue placeholder={isLoading ? "Loading..." : "Where are you going?"} />
-                                        </div>
-                                    </div>
-                                </SelectTrigger>
-                                <SelectContent className="rounded-3xl border-zinc-200 p-2 shadow-2xl mt-4">
-                                    {branches?.map((branch) => (
-                                        <SelectItem
-                                            key={branch.publicId}
-                                            value={branch.publicId}
-                                            className="rounded-2xl py-3 px-4 cursor-pointer font-medium focus:bg-zinc-100 focus:text-zinc-900"
-                                        >
-                                            {branch.name}
-                                        </SelectItem>
-                                    ))}
-                                    {!isLoading && (!branches || branches.length === 0) && (
-                                        <div className="p-4 text-sm text-center text-zinc-500">No locations available</div>
-                                    )}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                    <div className="flex-[0.8] flex-1 w-full min-w-0 hover:bg-zinc-100/70 rounded-3xl xl:rounded-full transition-all duration-300 px-4 md:px-5 py-3">
+                        <label className="block text-[11px] font-extrabold text-zinc-800 uppercase tracking-widest mb-1.5 pl-1">
+                            Location
+                        </label>
+                        <Select
+                            value={branchPublicId || ""}
+                            onValueChange={(value: string) => setSearchCriteria({ branchPublicId: value })}
+                            disabled={isLoading || isError}
+                        >
+                            <SelectTrigger className="w-full bg-transparent border-0 shadow-none p-0 px-1 text-left font-semibold text-zinc-900 hover:bg-transparent focus:ring-0 [&>svg]:text-orange-500 [&>svg]:size-5 h-auto">
+                                <div className="flex items-center gap-2 text-base md:text-lg w-full min-w-0">
+                                    <MapPin className="size-5 shrink-0 text-orange-500" />
+                                    <span className="truncate flex-1">
+                                        <SelectValue placeholder={isLoading ? "Loading..." : "Where are you going?"} />
+                                    </span>
+                                </div>
+                            </SelectTrigger>
+                            <SelectContent className="rounded-3xl border-zinc-200 p-2 shadow-2xl mt-4 max-w-[200px] sm:max-w-full">
+                                {branches?.map((branch) => (
+                                    <SelectItem
+                                        key={branch.publicId}
+                                        value={branch.publicId}
+                                        className="rounded-2xl py-3 px-4 cursor-pointer font-medium focus:bg-zinc-100 focus:text-zinc-900 truncate"
+                                    >
+                                        {branch.name}
+                                    </SelectItem>
+                                ))}
+                                {!isLoading && (!branches || branches.length === 0) && (
+                                    <div className="p-4 text-sm text-center text-zinc-500">No locations available</div>
+                                )}
+                            </SelectContent>
+                        </Select>
                     </div>
 
-                    {/* Pickup Date */}
-                    <div className="w-full md:w-[280px] hover:bg-zinc-50 rounded-[1.5rem] md:rounded-full transition-colors">
-                        <div className="px-6 py-3">
-                            <label className="block text-[11px] font-bold text-zinc-800 uppercase tracking-widest mb-1 cursor-pointer">
-                                Pick-up
+                    <div className="hidden xl:block w-[1px] h-12 bg-zinc-200 shrink-0" />
+
+                    {/* Pickup Container */}
+                    <div className="flex-[1.2] flex-1 flex w-full min-w-0 flex-col sm:flex-row items-center gap-0 hover:bg-zinc-100/70 rounded-3xl xl:rounded-full transition-all duration-300">
+                        {/* Pickup Date */}
+                        <div className="flex-1 w-full min-w-0 px-4 md:px-5 py-3">
+                            <label className="block text-[11px] font-extrabold text-zinc-800 uppercase tracking-widest mb-1.5 pl-1 shrink-0">
+                                Pick-up Date
                             </label>
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Button
                                         variant="ghost"
                                         className={cn(
-                                            "h-8 w-full justify-start text-left bg-transparent hover:bg-transparent border-0 shadow-none p-0 focus:ring-0 text-base md:text-lg hover:text-orange-600 transition-colors",
+                                            "w-full justify-start text-left bg-transparent hover:bg-transparent border-0 shadow-none p-0 px-1 focus:ring-0 text-base md:text-lg hover:text-orange-600 transition-colors h-auto",
                                             !pickupDate ? "text-zinc-500 font-medium" : "text-zinc-900 font-semibold"
                                         )}
                                     >
-                                        <div className="text-zinc-400 mr-2">
-                                            <CalendarIcon className="size-5" />
-                                        </div>
-                                        {pickupDate ? (
-                                            <span className="truncate">{format(pickupDate, "MMM dd, yyyy")}</span>
-                                        ) : (
-                                            <span className="truncate">Add dates</span>
-                                        )}
+                                        <CalendarIcon className="size-5 shrink-0 text-zinc-400 mr-2" />
+                                        <span className="truncate flex-1">{pickupDate ? format(pickupDate, "MMM dd, yyyy") : "Add date"}</span>
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-2 rounded-3xl border-zinc-200 shadow-2xl mt-4" align="center">
@@ -128,31 +125,44 @@ export const SearchForm = () => {
                                 </PopoverContent>
                             </Popover>
                         </div>
+
+                        {/* Pickup Time */}
+                        <div className="w-full sm:w-[130px] lg:w-[140px] xl:w-[120px] shrink-0 min-w-0 px-4 md:px-5 py-3 border-t sm:border-t-0 sm:border-l border-zinc-200/50">
+                            <label className="block text-[11px] font-extrabold text-zinc-800 uppercase tracking-widest mb-1.5 pl-1 shrink-0">
+                                Time
+                            </label>
+                            <div className="flex items-center gap-2 px-1">
+                                <Clock className="size-5 shrink-0 text-zinc-400" />
+                                <input
+                                    type="time"
+                                    value={pickupTime || "10:00"}
+                                    onChange={(e) => setSearchCriteria({ pickupTime: e.target.value })}
+                                    className="bg-transparent border-0 text-zinc-900 font-semibold text-base md:text-lg focus:outline-none w-full min-w-0 shrink [color-scheme:light] p-0 h-auto"
+                                />
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Return Date */}
-                    <div className="w-full md:w-[280px] hover:bg-zinc-50 rounded-[1.5rem] md:rounded-full transition-colors">
-                        <div className="px-6 py-3">
-                            <label className="block text-[11px] font-bold text-zinc-800 uppercase tracking-widest mb-1 cursor-pointer">
-                                Return
+                    <div className="hidden xl:block w-[1px] h-12 bg-zinc-200 shrink-0" />
+
+                    {/* Return Container */}
+                    <div className="flex-[1.2] flex-1 flex w-full min-w-0 flex-col sm:flex-row items-center gap-0 hover:bg-zinc-100/70 rounded-3xl xl:rounded-full transition-all duration-300">
+                        {/* Return Date */}
+                        <div className="flex-1 w-full min-w-0 px-4 md:px-5 py-3">
+                            <label className="block text-[11px] font-extrabold text-zinc-800 uppercase tracking-widest mb-1.5 pl-1 shrink-0">
+                                Return Date
                             </label>
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Button
                                         variant="ghost"
                                         className={cn(
-                                            "h-8 w-full justify-start text-left bg-transparent hover:bg-transparent border-0 shadow-none p-0 focus:ring-0 text-base md:text-lg hover:text-orange-600 transition-colors",
+                                            "w-full justify-start text-left bg-transparent hover:bg-transparent border-0 shadow-none p-0 px-1 focus:ring-0 text-base md:text-lg hover:text-orange-600 transition-colors h-auto",
                                             !returnDate ? "text-zinc-500 font-medium" : "text-zinc-900 font-semibold"
                                         )}
                                     >
-                                        <div className="text-zinc-400 mr-2">
-                                            <CalendarIcon className="size-5" />
-                                        </div>
-                                        {returnDate ? (
-                                            <span className="truncate">{format(returnDate, "MMM dd, yyyy")}</span>
-                                        ) : (
-                                            <span className="truncate">Add dates</span>
-                                        )}
+                                        <CalendarIcon className="size-5 shrink-0 text-zinc-400 mr-2" />
+                                        <span className="truncate flex-1">{returnDate ? format(returnDate, "MMM dd, yyyy") : "Add date"}</span>
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-2 rounded-3xl border-zinc-200 shadow-2xl mt-4" align="center">
@@ -170,18 +180,33 @@ export const SearchForm = () => {
                                 </PopoverContent>
                             </Popover>
                         </div>
+
+                        {/* Return Time */}
+                        <div className="w-full sm:w-[130px] lg:w-[140px] xl:w-[120px] shrink-0 min-w-0 px-4 md:px-5 py-3 border-t sm:border-t-0 sm:border-l border-zinc-200/50">
+                            <label className="block text-[11px] font-extrabold text-zinc-800 uppercase tracking-widest mb-1.5 pl-1 shrink-0">
+                                Time
+                            </label>
+                            <div className="flex items-center gap-2 px-1">
+                                <Clock className="size-5 shrink-0 text-zinc-400" />
+                                <input
+                                    type="time"
+                                    value={returnTime || "10:00"}
+                                    onChange={(e) => setSearchCriteria({ returnTime: e.target.value })}
+                                    className="bg-transparent border-0 text-zinc-900 font-semibold text-base md:text-lg focus:outline-none w-full min-w-0 shrink [color-scheme:light] p-0 h-auto"
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     {/* Search Button */}
-                    <div className="w-full md:w-auto p-2 md:pl-4">
+                    <div className="w-full xl:w-auto p-1 xl:pl-2 shrink-0">
                         <motion.button
                             whileHover={isFormValid ? { scale: 1.05 } : {}}
                             whileTap={isFormValid ? { scale: 0.95 } : {}}
                             className={cn(
-                                "h-16 w-full md:w-20 lg:w-32 flex items-center justify-center rounded-[1.5rem] md:rounded-full font-bold transition-all duration-300 gap-2",
-                                "bg-zinc-950 text-white hover:bg-orange-500",
-                                "shadow-xl shadow-zinc-950/20 hover:shadow-orange-500/30",
-                                "disabled:bg-zinc-100 disabled:text-zinc-400 disabled:shadow-none disabled:cursor-not-allowed",
+                                "h-16 w-full xl:w-20 rounded-[2rem] xl:rounded-[1.5rem] xl:hover:rounded-full bg-zinc-950 text-white flex items-center justify-center font-bold transition-all duration-300 gap-2",
+                                "hover:bg-orange-500 shadow-xl shadow-zinc-950/20 hover:shadow-orange-500/30",
+                                "disabled:bg-zinc-100 disabled:text-zinc-600 disabled:shadow-none disabled:cursor-not-allowed",
                                 !isFormValid && "opacity-80"
                             )}
                             onClick={handleSearch}
@@ -191,8 +216,8 @@ export const SearchForm = () => {
                                 <Loader2 className="size-6 animate-spin" />
                             ) : (
                                 <>
-                                    <span className="md:hidden lg:inline-block font-bold">Search</span>
-                                    <ArrowRight className="size-5 md:size-6" />
+                                    <span className="xl:hidden font-bold text-lg">Search Fleet</span>
+                                    <ArrowRight className="size-6" />
                                 </>
                             )}
                         </motion.button>

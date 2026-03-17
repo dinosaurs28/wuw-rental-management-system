@@ -1,7 +1,7 @@
 import { StatusCode } from "../../types/statusCode.js";
 import { jwtsign } from "../../utils/token/tokensign.utlis.js";
 
-import { Request,Response } from "express"
+import { Request, Response } from "express";
 
 declare global {
   namespace Express {
@@ -9,24 +9,25 @@ declare global {
       publicId: string;
       email: string;
       name: string;
-      role: "CUSTOMER" | "ADMIN" | "STAFF"| "MANAGER";
-      emailVerifiedAt:Date | null
+      role: "CUSTOMER" | "ADMIN" | "STAFF" | "MANAGER";
+      emailVerifiedAt: Date | null;
     }
   }
 }
 
-export const googleSignIn=async (req:Request,res:Response)=>{
-    try{
-        const user=req.user
-        if(!user){
+export const googleSignIn = async (req: Request, res: Response) => {
+  try {
+    const user = req.user;
+    if (!user) {
       return res.status(StatusCode.UNAUTHORIZED).json({
-                message:"No user Id Found"
-            })
+        message: "No user Id Found",
+      });
     }
 
     // If user is not verified, redirect to OTP page
     if (!user.emailVerifiedAt) {
-      return res.status(StatusCode.OK)
+      return res
+        .status(StatusCode.OK)
         .cookie("verifySession", user.publicId, {
           httpOnly: false,
           secure: true, // Should be true in production
@@ -39,7 +40,7 @@ export const googleSignIn=async (req:Request,res:Response)=>{
       sub: user.publicId,
       role: user.role,
       provider: "GOOGLE",
-      verified: true
+      verified: true,
     });
 
     res.cookie("accessToken", token, {
@@ -49,11 +50,10 @@ export const googleSignIn=async (req:Request,res:Response)=>{
     });
 
     res.redirect(process.env.FRONTEND_REDIRECT_URL!);
-
   } catch (e: any) {
     console.log("Internal Error While Processing the Google Sign In", e);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
-      message: "Internal Error While Processing The Google Sign In"
+      message: "Internal Error While Processing The Google Sign In",
     });
   }
-}
+};

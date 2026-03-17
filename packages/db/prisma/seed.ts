@@ -1,6 +1,12 @@
 /// <reference types="node" />
 
-import { Role, AuthProvider, PricingRuleType, VehicleStatus, prisma } from "@repo/database/client";
+import {
+  Role,
+  AuthProvider,
+  PricingRuleType,
+  VehicleStatus,
+  prisma,
+} from "@repo/database/client";
 import { customAlphabet } from "nanoid";
 
 const nanoid = customAlphabet("1234567890abcdefghijklmnopqrstuvwxyz", 16);
@@ -64,8 +70,8 @@ async function main() {
           weekendMultiplier: 1.2,
           peakMultiplier: 1.5,
           customMultiplier: 1.0,
-        }
-      }
+        },
+      },
     },
   });
 
@@ -83,13 +89,14 @@ async function main() {
           weekendMultiplier: 1.2,
           peakMultiplier: 1.5,
           customMultiplier: 1.0,
-        }
-      }
+        },
+      },
     },
   });
 
   // 2. Users
-  const passwordHash = "$2a$10$C4fvLnge/TjgAjXiez26YeKCstsvpjdby.shoMyIZePHgGo5UixDG"; // Markjeo076&
+  const passwordHash =
+    "$2a$10$C4fvLnge/TjgAjXiez26YeKCstsvpjdby.shoMyIZePHgGo5UixDG"; // Markjeo076&
 
   // Admin
   const admin = await prisma.user.create({
@@ -106,8 +113,8 @@ async function main() {
           publicId: nanoid(),
           provider: AuthProvider.PASSWORD,
           providerUserId: "admin@vrms.com",
-        }
-      }
+        },
+      },
     },
   });
 
@@ -127,8 +134,8 @@ async function main() {
           publicId: nanoid(),
           provider: AuthProvider.PASSWORD,
           providerUserId: "manager@vrms.com",
-        }
-      }
+        },
+      },
     },
   });
 
@@ -148,8 +155,8 @@ async function main() {
           publicId: nanoid(),
           provider: AuthProvider.PASSWORD,
           providerUserId: "staff@vrms.com",
-        }
-      }
+        },
+      },
     },
   });
 
@@ -168,7 +175,7 @@ async function main() {
           publicId: nanoid(),
           provider: AuthProvider.PASSWORD,
           providerUserId: "customer@vrms.com",
-        }
+        },
       },
       customerProfile: {
         create: {
@@ -178,8 +185,8 @@ async function main() {
           state: "Karnataka",
           zipCode: "575001",
           isProfileCompleted: true,
-        }
-      }
+        },
+      },
     },
   });
 
@@ -238,8 +245,8 @@ async function main() {
         price12Hour: 1000,
         price24Hour: 1800,
         priceMonthly: 38000,
-      }
-    ]
+      },
+    ],
   });
 
   // 4. Vehicles
@@ -262,7 +269,7 @@ async function main() {
           policyNumber: "POL1001",
           provider: "ICICI Lombard",
           validTill: new Date("2026-01-01T00:00:00+05:30"),
-        }
+        },
       },
       maintenance: {
         create: {
@@ -270,8 +277,8 @@ async function main() {
           description: "Oil change + brake service",
           cost: 1500,
           servicedAt: new Date("2024-09-20T00:00:00+05:30"),
-        }
-      }
+        },
+      },
     },
   });
 
@@ -295,9 +302,9 @@ async function main() {
           price12Hour: 600,
           price24Hour: 1000,
           priceMonthly: 18000,
-          enabled: true
-        }
-      }
+          enabled: true,
+        },
+      },
     },
   });
 
@@ -320,7 +327,7 @@ async function main() {
           policyNumber: "POL2001",
           provider: "HDFC Ergo",
           validTill: new Date("2025-11-01T00:00:00+05:30"),
-        }
+        },
       },
       maintenance: {
         create: {
@@ -328,8 +335,8 @@ async function main() {
           description: "AC gas refill + wheel alignment",
           cost: 3500,
           servicedAt: new Date("2024-08-14T00:00:00+05:30"),
-        }
-      }
+        },
+      },
     },
   });
 
@@ -353,9 +360,9 @@ async function main() {
           price12Hour: 1200,
           price24Hour: 2000,
           priceMonthly: 45000,
-          enabled: true
-        }
-      }
+          enabled: true,
+        },
+      },
     },
   });
 
@@ -390,7 +397,7 @@ async function main() {
   });
 }
 
-import * as fs from 'fs';
+import * as fs from "fs";
 
 main()
   .then(async () => {
@@ -399,7 +406,10 @@ main()
   })
   .catch(async (err) => {
     console.error("Seed failed:", err);
-    fs.writeFileSync('seed_failure.txt', JSON.stringify(err, null, 2) + '\n' + err.toString());
+    fs.writeFileSync(
+      "seed_failure.txt",
+      JSON.stringify(err, null, 2) + "\n" + err.toString(),
+    );
     await prisma.$disconnect();
     process.exit(1);
   });

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -12,9 +11,9 @@ import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@/components/ui/popover";
 
 import { useEmployeeAuthStore } from "@/store/employeeAuth.store";
@@ -28,14 +27,20 @@ import { useEmployeeAuthStore } from "@/store/employeeAuth.store";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { customerSession, type CustomerSession } from "@/utils/customerSession";
 import apiClient from "@/lib/axios";
@@ -45,384 +50,419 @@ type Step = "PHONE_OTP" | "PROFILE_DETAILS";
 
 // --- SCHEMAS ---
 const phoneSchema = z.object({
-    phone: z.string().min(10, "Phone number must be at least 10 digits"),
-    otp: z.string().optional(),
+  phone: z.string().min(10, "Phone number must be at least 10 digits"),
+  otp: z.string().optional(),
 });
 
 const profileSchema = z.object({
-    name: z.string().min(2, "Name is required"),
-    email: z.string().email("Invalid email address"),
-    dob: z.date({
-        required_error: "Date of birth is required.",
-    }),
-    addressLine1: z.string().min(5, "Address is required"),
-    city: z.string().min(2, "City is required"),
-    state: z.string().min(2, "State is required"),
-    zipCode: z.string().min(5, "Zip code is required"),
-    country: z.string().min(2, "Country is required"),
+  name: z.string().min(2, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  dob: z.date({
+    required_error: "Date of birth is required.",
+  }),
+  addressLine1: z.string().min(5, "Address is required"),
+  city: z.string().min(2, "City is required"),
+  state: z.string().min(2, "State is required"),
+  zipCode: z.string().min(5, "Zip code is required"),
+  country: z.string().min(2, "Country is required"),
 });
 
 export default function EmployeeCreateCustomerPage() {
-    const navigate = useNavigate();
-    const { isAuthenticated } = useEmployeeAuthStore();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useEmployeeAuthStore();
 
-    const [step, setStep] = useState<Step>("PHONE_OTP");
-    const [isLoading, setIsLoading] = useState(false);
-    const [otpSent, setOtpSent] = useState(false);
-    const [customerPublicId, setCustomerPublicId] = useState<string | null>(null);
-    const [receivedOtp, setReceivedOtp] = useState<string | null>(null);
+  const [step, setStep] = useState<Step>("PHONE_OTP");
+  const [isLoading, setIsLoading] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [customerPublicId, setCustomerPublicId] = useState<string | null>(null);
+  const [receivedOtp, setReceivedOtp] = useState<string | null>(null);
 
-    // Forms
-    const phoneForm = useForm<z.infer<typeof phoneSchema>>({
-        resolver: zodResolver(phoneSchema),
-        defaultValues: { phone: "", otp: "" },
-    });
+  // Forms
+  const phoneForm = useForm<z.infer<typeof phoneSchema>>({
+    resolver: zodResolver(phoneSchema),
+    defaultValues: { phone: "", otp: "" },
+  });
 
-    const profileForm = useForm<z.infer<typeof profileSchema>>({
-        resolver: zodResolver(profileSchema),
-        defaultValues: {
-            country: "India", // Default
-        },
-    });
+  const profileForm = useForm<z.infer<typeof profileSchema>>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      country: "India", // Default
+    },
+  });
 
-    // --- HANDLERS ---
+  // --- HANDLERS ---
 
-    const handleSendOtp = async (data: z.infer<typeof phoneSchema>) => {
-        setIsLoading(true);
-        try {
-            // Call Backend: Initiate Walkin (req.body: { phone })
-            const response = await apiClient.post("/employee/walkin/initiate", { phone: data.phone });
+  const handleSendOtp = async (data: z.infer<typeof phoneSchema>) => {
+    setIsLoading(true);
+    try {
+      // Call Backend: Initiate Walkin (req.body: { phone })
+      const response = await apiClient.post("/employee/walkin/initiate", {
+        phone: data.phone,
+      });
 
-            setCustomerPublicId(response.data.customer_public_id);
-            setReceivedOtp(response.data.otp);
-            setOtpSent(true);
-            toast.success(`OTP sent explicitly to customer phone: ${response.data.otp}`);
-        } catch (error: any) {
-            console.error(error);
-            toast.error(error.response?.data?.message || "Failed to send OTP");
-        } finally {
-            setIsLoading(false);
-        }
-    };
+      setCustomerPublicId(response.data.customer_public_id);
+      setReceivedOtp(response.data.otp);
+      setOtpSent(true);
+      toast.success(
+        `OTP sent explicitly to customer phone: ${response.data.otp}`,
+      );
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.response?.data?.message || "Failed to send OTP");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    const handleVerifyOtp = async () => {
-        const otp = phoneForm.getValues("otp");
+  const handleVerifyOtp = async () => {
+    const otp = phoneForm.getValues("otp");
 
-        if (!otp || otp.length !== 6) {
-            phoneForm.setError("otp", { message: "Enter a valid 6-digit OTP" });
-            return;
-        }
+    if (!otp || otp.length !== 6) {
+      phoneForm.setError("otp", { message: "Enter a valid 6-digit OTP" });
+      return;
+    }
 
-        setIsLoading(true);
-        try {
-            // Call Backend: Verify Walkin OTP
-            await apiClient.post("/employee/walkin/verify", {
-                otp,
-                customer_public_id: customerPublicId
-            });
+    setIsLoading(true);
+    try {
+      // Call Backend: Verify Walkin OTP
+      await apiClient.post("/employee/walkin/verify", {
+        otp,
+        customer_public_id: customerPublicId,
+      });
 
-            toast.success("Phone verified successfully");
-            setStep("PROFILE_DETAILS");
-        } catch (error: any) {
-            console.error(error);
-            toast.error(error.response?.data?.message || "Invalid OTP");
-        } finally {
-            setIsLoading(false);
-        }
-    };
+      toast.success("Phone verified successfully");
+      setStep("PROFILE_DETAILS");
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.response?.data?.message || "Invalid OTP");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    const handleCreateProfile = async (data: z.infer<typeof profileSchema>) => {
-        if (!customerPublicId) {
-            toast.error("Missing customer ID");
-            return;
-        }
+  const handleCreateProfile = async (data: z.infer<typeof profileSchema>) => {
+    if (!customerPublicId) {
+      toast.error("Missing customer ID");
+      return;
+    }
 
-        setIsLoading(true);
-        try {
-            // Call Backend: Complete Walkin Profile
-            const payload = {
-                customer_public_id: customerPublicId,
-                name: data.name,
-                email: data.email,
-                dob: data.dob.toISOString().split('T')[0], // Format as YYYY-MM-DD
-                addressLine1: data.addressLine1,
-                city: data.city,
-                state: data.state,
-                zipCode: data.zipCode,
-                country: data.country,
-            };
+    setIsLoading(true);
+    try {
+      // Call Backend: Complete Walkin Profile
+      const payload = {
+        customer_public_id: customerPublicId,
+        name: data.name,
+        email: data.email,
+        dob: data.dob.toISOString().split("T")[0], // Format as YYYY-MM-DD
+        addressLine1: data.addressLine1,
+        city: data.city,
+        state: data.state,
+        zipCode: data.zipCode,
+        country: data.country,
+      };
 
-            await apiClient.post("/employee/walkin/complete", payload);
+      await apiClient.post("/employee/walkin/complete", payload);
 
-            // Fetch fresh customer details to get the updated profile status
-            const detailsResponse = await apiClient.get(`/employee/customer/${customerPublicId}`);
-            const freshData = detailsResponse.data.data;
+      // Fetch fresh customer details to get the updated profile status
+      const detailsResponse = await apiClient.get(
+        `/employee/customer/${customerPublicId}`,
+      );
+      const freshData = detailsResponse.data.data;
 
-            // Success! Store session with fresh data
-            const session: CustomerSession = {
-                publicId: customerPublicId,
-                name: freshData.name,
-                phone: phoneForm.getValues("phone"),
-                profileCompleted: freshData.isProfileCompleted,
-                kycStatus: false // New customer, no KYC yet
-            };
-            customerSession.set(session);
+      // Success! Store session with fresh data
+      const session: CustomerSession = {
+        publicId: customerPublicId,
+        name: freshData.name,
+        phone: phoneForm.getValues("phone"),
+        profileCompleted: freshData.isProfileCompleted,
+        kycStatus: false, // New customer, no KYC yet
+      };
+      customerSession.set(session);
 
-            toast.success("Customer profile created!");
-            navigate("/employee/vehicles");
+      toast.success("Customer profile created!");
+      navigate("/employee/vehicles");
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.response?.data?.message || "Failed to create profile");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-        } catch (error: any) {
-            console.error(error);
-            toast.error(error.response?.data?.message || "Failed to create profile");
-        } finally {
-            setIsLoading(false);
-        }
-    };
+  if (!isAuthenticated) return null;
 
-    if (!isAuthenticated) return null;
+  return (
+    <div className="min-h-screen bg-gray-50/50 pb-20 pt-6">
+      <div className="container max-w-lg mx-auto px-4">
+        <Button
+          variant="ghost"
+          className="mb-4 pl-0 hover:bg-transparent hover:text-primary"
+          onClick={() => navigate(-1)}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back
+        </Button>
 
-    return (
-        <div className="min-h-screen bg-gray-50/50 pb-20 pt-6">
-            <div className="container max-w-lg mx-auto px-4">
-                <Button variant="ghost" className="mb-4 pl-0 hover:bg-transparent hover:text-primary" onClick={() => navigate(-1)}>
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Back
-                </Button>
+        <Card>
+          <CardHeader>
+            <CardTitle>Create New Customer</CardTitle>
+            <CardDescription>
+              {step === "PHONE_OTP"
+                ? "Verify customer phone number"
+                : "Enter customer details"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {step === "PHONE_OTP" && (
+              <div className="space-y-4">
+                <Form {...phoneForm}>
+                  <form className="space-y-4">
+                    <FormField
+                      control={phoneForm.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone Number</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="+91 98765 43210"
+                              {...field}
+                              disabled={otpSent}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Create New Customer</CardTitle>
-                        <CardDescription>
-                            {step === "PHONE_OTP" ? "Verify customer phone number" : "Enter customer details"}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {step === "PHONE_OTP" && (
-                            <div className="space-y-4">
-                                <Form {...phoneForm}>
-                                    <form className="space-y-4">
-                                        <FormField
-                                            control={phoneForm.control}
-                                            name="phone"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Phone Number</FormLabel>
-                                                    <FormControl>
-                                                        <Input placeholder="+91 98765 43210" {...field} disabled={otpSent} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-
-                                        {otpSent && (
-                                            <>
-                                                {receivedOtp && (
-                                                    <div className="mb-6 rounded-lg border bg-card text-card-foreground shadow-sm p-4">
-                                                        <div className="flex flex-col space-y-1.5">
-                                                            <h3 className="font-semibold leading-none tracking-tight">One-Time Password</h3>
-                                                            <p className="text-sm text-muted-foreground">Share this code with the customer.</p>
-                                                        </div>
-                                                        <div className="mt-4 flex items-center justify-center rounded-md bg-muted p-4">
-                                                            <span className="text-2xl font-bold tracking-widest">{receivedOtp}</span>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                <FormField
-                                                    control={phoneForm.control}
-                                                    name="otp"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Enter OTP</FormLabel>
-                                                            <FormControl>
-                                                                <Input placeholder="123456" maxLength={6} {...field} />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                            </>
-                                        )}
-
-                                        {!otpSent ? (
-                                            <Button
-                                                type="button"
-                                                className="w-full"
-                                                onClick={phoneForm.handleSubmit(handleSendOtp)}
-                                                disabled={isLoading}
-                                            >
-                                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                Send OTP
-                                            </Button>
-                                        ) : (
-                                            <Button
-                                                type="button"
-                                                className="w-full"
-                                                onClick={handleVerifyOtp}
-                                                disabled={isLoading}
-                                            >
-                                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                Verify OTP
-                                            </Button>
-                                        )}
-                                    </form>
-                                </Form>
+                    {otpSent && (
+                      <>
+                        {receivedOtp && (
+                          <div className="mb-6 rounded-lg border bg-card text-card-foreground shadow-sm p-4">
+                            <div className="flex flex-col space-y-1.5">
+                              <h3 className="font-semibold leading-none tracking-tight">
+                                One-Time Password
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
+                                Share this code with the customer.
+                              </p>
                             </div>
+                            <div className="mt-4 flex items-center justify-center rounded-md bg-muted p-4">
+                              <span className="text-2xl font-bold tracking-widest">
+                                {receivedOtp}
+                              </span>
+                            </div>
+                          </div>
                         )}
+                        <FormField
+                          control={phoneForm.control}
+                          name="otp"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Enter OTP</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="123456"
+                                  maxLength={6}
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </>
+                    )}
 
-                        {step === "PROFILE_DETAILS" && (
-                            <Form {...profileForm}>
-                                <form onSubmit={profileForm.handleSubmit(handleCreateProfile)} className="space-y-4">
-                                    <FormField
-                                        control={profileForm.control}
-                                        name="name"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Full Name</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="John Doe" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={profileForm.control}
-                                        name="email"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Email</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="john@example.com" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={profileForm.control}
-                                        name="dob"
-                                        render={({ field }) => (
-                                            <FormItem className="flex flex-col">
-                                                <FormLabel>Date of Birth</FormLabel>
-                                                <Popover>
-                                                    <PopoverTrigger asChild>
-                                                        <FormControl>
-                                                            <Button
-                                                                variant={"outline"}
-                                                                className={cn(
-                                                                    "w-full pl-3 text-left font-normal",
-                                                                    !field.value && "text-muted-foreground"
-                                                                )}
-                                                            >
-                                                                {field.value ? (
-                                                                    format(field.value, "PPP")
-                                                                ) : (
-                                                                    <span>Pick a date</span>
-                                                                )}
-                                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                            </Button>
-                                                        </FormControl>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0" align="start">
-                                                        <Calendar
-                                                            mode="single"
-                                                            selected={field.value}
-                                                            onSelect={field.onChange}
-                                                            disabled={(date) =>
-                                                                date > new Date() || date < new Date("1900-01-01")
-                                                            }
-                                                            initialFocus
-                                                            captionLayout="dropdown"
-                                                            fromYear={1900}
-                                                            toYear={new Date().getFullYear()}
-                                                        />
-                                                    </PopoverContent>
-                                                </Popover>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={profileForm.control}
-                                        name="addressLine1"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Address</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="123 Main St" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <FormField
-                                            control={profileForm.control}
-                                            name="city"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>City</FormLabel>
-                                                    <FormControl>
-                                                        <Input placeholder="City" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={profileForm.control}
-                                            name="state"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>State</FormLabel>
-                                                    <FormControl>
-                                                        <Input placeholder="State" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <FormField
-                                            control={profileForm.control}
-                                            name="zipCode"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Zip Code</FormLabel>
-                                                    <FormControl>
-                                                        <Input placeholder="123456" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={profileForm.control}
-                                            name="country"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Country</FormLabel>
-                                                    <FormControl>
-                                                        <Input placeholder="Country" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </div>
-
-                                    <Button type="submit" className="w-full" disabled={isLoading}>
-                                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        Complete Profile
-                                    </Button>
-                                </form>
-                            </Form>
+                    {!otpSent ? (
+                      <Button
+                        type="button"
+                        className="w-full"
+                        onClick={phoneForm.handleSubmit(handleSendOtp)}
+                        disabled={isLoading}
+                      >
+                        {isLoading && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         )}
-                    </CardContent>
-                </Card>
-            </div>
-        </div>
-    );
+                        Send OTP
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        className="w-full"
+                        onClick={handleVerifyOtp}
+                        disabled={isLoading}
+                      >
+                        {isLoading && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        Verify OTP
+                      </Button>
+                    )}
+                  </form>
+                </Form>
+              </div>
+            )}
+
+            {step === "PROFILE_DETAILS" && (
+              <Form {...profileForm}>
+                <form
+                  onSubmit={profileForm.handleSubmit(handleCreateProfile)}
+                  className="space-y-4"
+                >
+                  <FormField
+                    control={profileForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Full Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="John Doe" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={profileForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="john@example.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={profileForm.control}
+                    name="dob"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Date of Birth</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground",
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP")
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              disabled={(date) =>
+                                date > new Date() ||
+                                date < new Date("1900-01-01")
+                              }
+                              initialFocus
+                              captionLayout="dropdown"
+                              fromYear={1900}
+                              toYear={new Date().getFullYear()}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={profileForm.control}
+                    name="addressLine1"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Address</FormLabel>
+                        <FormControl>
+                          <Input placeholder="123 Main St" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={profileForm.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>City</FormLabel>
+                          <FormControl>
+                            <Input placeholder="City" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={profileForm.control}
+                      name="state"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>State</FormLabel>
+                          <FormControl>
+                            <Input placeholder="State" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={profileForm.control}
+                      name="zipCode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Zip Code</FormLabel>
+                          <FormControl>
+                            <Input placeholder="123456" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={profileForm.control}
+                      name="country"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Country</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Country" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Complete Profile
+                  </Button>
+                </form>
+              </Form>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
 }

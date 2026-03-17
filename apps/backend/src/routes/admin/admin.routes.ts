@@ -1,9 +1,19 @@
 import { Router } from "express";
 import { Login } from "../../controller/admin/auth.controller.js";
 import { AdminCheck } from "../../middlewares/adminCheck.middleware.js";
-import { GetAllBranches, CreateBranch, EditBranch, DeleteBranch } from "../../controller/admin/branch.controller.js";
+import {
+  GetAllBranches,
+  CreateBranch,
+  EditBranch,
+  DeleteBranch,
+} from "../../controller/admin/branch.controller.js";
 import { GetBranchRevenue } from "../../controller/admin/report.controller.js";
-import { GetRevenueTrends, GetRevenueByCategory, GetKPISummary, GetPaymentMethodBreakdown } from "../../controller/admin/analytics.controller.js";
+import {
+  GetRevenueTrends,
+  GetRevenueByCategory,
+  GetKPISummary,
+  GetPaymentMethodBreakdown,
+} from "../../controller/admin/analytics.controller.js";
 import { GetDailySummary } from "../../controller/admin/dailySummaryController.js";
 import { GetSalesReport } from "../../controller/admin/salesReportController.js";
 import { GetVehicleHistory } from "../../controller/admin/vehicleHistoryController.js";
@@ -25,19 +35,43 @@ router.put("/dashboard/branches/edit/:branchId", AdminCheck, EditBranch);
 router.delete("/dashboard/branches/delete/:branchId", AdminCheck, DeleteBranch);
 router.get("/dashboard/reports/revenue", AdminCheck, GetBranchRevenue);
 router.get("/dashboard/reports/revenue-trends", AdminCheck, GetRevenueTrends);
-router.get("/dashboard/reports/revenue-by-category", AdminCheck, GetRevenueByCategory);
+router.get(
+  "/dashboard/reports/revenue-by-category",
+  AdminCheck,
+  GetRevenueByCategory,
+);
 router.get("/dashboard/reports/kpi-summary", AdminCheck, GetKPISummary);
-router.get("/dashboard/reports/payment-methods", AdminCheck, GetPaymentMethodBreakdown);
+router.get(
+  "/dashboard/reports/payment-methods",
+  AdminCheck,
+  GetPaymentMethodBreakdown,
+);
 router.get("/dashboard/reports/global-kpi", AdminCheck, getGlobalKpiStats);
 
 // New Reports System Routes (All 8 Reports)
 router.get("/dashboard/reports/daily-summary", AdminCheck, GetDailySummary);
 router.get("/dashboard/reports/sales", AdminCheck, GetSalesReport);
-router.get("/dashboard/reports/vehicle-history/:vehicleId", AdminCheck, GetVehicleHistory);
-router.get("/dashboard/reports/vehicle-availability", AdminCheck, GetVehicleAvailability);
-router.get("/dashboard/reports/insurance-permit-expiry", AdminCheck, GetInsurancePermitExpiry);
+router.get(
+  "/dashboard/reports/vehicle-history/:vehicleId",
+  AdminCheck,
+  GetVehicleHistory,
+);
+router.get(
+  "/dashboard/reports/vehicle-availability",
+  AdminCheck,
+  GetVehicleAvailability,
+);
+router.get(
+  "/dashboard/reports/insurance-permit-expiry",
+  AdminCheck,
+  GetInsurancePermitExpiry,
+);
 router.get("/dashboard/reports/collection", AdminCheck, GetCollectionReport);
-router.get("/dashboard/reports/fleet-executive", AdminCheck, GetFleetExecutiveReport);
+router.get(
+  "/dashboard/reports/fleet-executive",
+  AdminCheck,
+  GetFleetExecutiveReport,
+);
 router.get("/dashboard/reports/gst", AdminCheck, GetGSTReport);
 
 router.get("/dashboard/categories", AdminCheck, GetAllCategories);

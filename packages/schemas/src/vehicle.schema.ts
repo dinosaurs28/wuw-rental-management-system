@@ -1,16 +1,16 @@
 import { z } from "zod";
 
 export const getVehicleDetailsSchema = z.object({
-  id: z.string().min(16, "Vehicle ID length is invalid.")
-})
+  id: z.string().min(16, "Vehicle ID length is invalid."),
+});
 
 export const bookingSummarySchema = z.object({
   vehicles: z.array(z.string().min(1)),
   start: z.string().min(1),
   end: z.string().min(1),
   file_public_id: z.string().min(1),
-  payment_type: z.enum(['CASH', 'ONLINE'])
-})
+  payment_type: z.enum(["CASH", "ONLINE"]),
+});
 
 export const createVehicleSchema = z.object({
   make: z.string().min(1, "Make is required"),
@@ -21,24 +21,27 @@ export const createVehicleSchema = z.object({
   baseDailyPrice: z.coerce.number().positive(),
   categoryId: z.coerce.number().int().positive(),
   policyNumber: z.string().min(1, "Policy Number is required"),
-  provider: z.string().min(1, "Provider is required")
+  provider: z.string().min(1, "Provider is required"),
 });
 
 export const editVehicleSchema = createVehicleSchema.partial().extend({
-  status: z.enum(['AVAILABLE', 'MAINTENANCE', 'INACTIVE']).optional(),
-  deleteImageIds: z.string().optional()
+  status: z.enum(["AVAILABLE", "MAINTENANCE", "INACTIVE"]).optional(),
+  deleteImageIds: z.string().optional(),
 });
 
 export const pickUpVehicleSchema = z.object({
   odo: z.coerce.number().min(0),
   fuelLevel: z.coerce.number().min(0),
-  pickupImageIds: z.array(z.string().min(1)).optional()
-})
+  pickupImageIds: z.array(z.string().min(1)).optional(),
+});
 
 export const createDamageReportSchema = z.object({
   bookingId: z.string().min(1, "Booking ID is required"),
   odo: z.coerce.number().min(0, "Odometer reading must be non-negative"),
-  fuelLevel: z.coerce.number().min(0).max(100, "Fuel level must be between 0 and 100"),
+  fuelLevel: z.coerce
+    .number()
+    .min(0)
+    .max(100, "Fuel level must be between 0 and 100"),
   severity: z.string().min(1, "Severity is required"),
   damageImageIds: z.array(z.string().min(1)),
   returnImageIds: z.array(z.string().min(1)),
@@ -46,9 +49,9 @@ export const createDamageReportSchema = z.object({
 });
 
 export const closeDamageReportSchema = z.object({
-  disposition: z.enum(['AVAILABLE', 'MAINTENANCE', 'DAMAGED']),
+  disposition: z.enum(["AVAILABLE", "MAINTENANCE", "DAMAGED"]),
   finalCost: z.coerce.number().min(0, "Final cost must be non-negative"),
-  paymentMethod: z.enum(['CASH', 'ONLINE_RAZORPAY']).optional()
+  paymentMethod: z.enum(["CASH", "ONLINE_RAZORPAY"]).optional(),
 });
 
 export const createDepositRuleSchema = z.object({

@@ -283,19 +283,17 @@ model VehicleCategory {
 }
 
 model Vehicle {
-  id              Int           @id @default(autoincrement())
-  publicId        String        @unique
-  branchId        Int
-  categoryId      Int
-  make            String
-  model           String
-  regNo           String        @unique
-  odo             Int
-  fuelLevel       Int           @default(0)
-  insuranceExpiry DateTime
-  status          VehicleStatus @default(AVAILABLE)
-  baseDailyPrice  Decimal       @default(500)
-
+  id               Int                        @id @default(autoincrement())
+  publicId         String                     @unique
+  branchId         Int
+  categoryId       Int
+  make             String
+  model            String
+  regNo            String                     @unique
+  odo              Int
+  fuelLevel        Int                        @default(0)
+  insuranceExpiry  DateTime
+  status           VehicleStatus              @default(AVAILABLE)
   branch           Branch                     @relation(fields: [branchId], references: [id])
   category         VehicleCategory            @relation(fields: [categoryId], references: [id])
   insuranceRecords VehicleInsurance[]
