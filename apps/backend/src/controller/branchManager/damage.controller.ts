@@ -12,6 +12,7 @@ import {
 } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
 import { createID } from "../../utils/nanoID.js";
+import { damageChargeService } from "../../services/damage/damage-charge.service.js";
 import { closeDamageReportSchema } from "@repo/schemas";
 import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
 import { checkPhonePeStatus } from "../../utils/payment/paymentStatus.utils.js";
@@ -339,7 +340,7 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
       });
     }
 
-    const { disposition, finalCost, paymentMethod } = validation.data;
+    const { disposition, finalCost, paymentMethod, chargeType } = validation.data;
     const damageReportId = req.params.damageReportId;
     const managerId = req.public_Id;
     const branchId = req.branch_Id;
@@ -386,8 +387,20 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
 
     // 3. Financial Calculation
     const depositAmount = Number(booking.totalDeposit);
-    const fineAmount = finalCost;
-    const balance = depositAmount - fineAmount; // Positive = Refund, Negative = Due
+    
+    // Determine the active charge type (defaults to PENALTY if not provided, or fallback to the report's current chargeType)
+    const activeChargeType = chargeType ?? damageReport.chargeType ?? "PENALTY";
+    
+    // Calculate the tax
+    const taxCalculation = await damageChargeService.calculateDamageTax(
+      finalCost,
+      activeChargeType,
+      branchId
+    );
+    
+    // Total fine includes tax
+    const fineAmountInclTax = finalCost + taxCalculation.taxAmount;
+    const balance = depositAmount - fineAmountInclTax; // Positive = Refund, Negative = Due
 
     const managerUser = await prisma.user.findUnique({
       where: { publicId: managerId },
@@ -444,8 +457,9 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
       await tx.damageReport.update({
         where: { id: damageReport.id },
         data: {
-          finalCost: fineAmount,
+          finalCost: finalCost,
           disposition: disposition as VehicleReturnDisposition,
+          chargeType: activeChargeType,
           approvedById: managerUser.id,
           status: "APPROVED" as DamageReportStatus,
         },
@@ -503,15 +517,33 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
         }
       }
 
-      // 6. Finalize if Settled
+      // 6. Add Damage Charge to Invoice
+      if (booking.invoice) {
+        await damageChargeService.addDamageChargeToInvoice(
+          tx,
+          booking.invoice.id,
+          finalCost,
+          activeChargeType,
+          `Damage Charge: ${damageReport.publicId}`,
+          taxCalculation.taxAmount
+        );
+      }
+
+      // Update Booking Total
+      await tx.booking.update({
+        where: { id: booking.id },
+        data: {
+          totalFinal: { increment: fineAmountInclTax },
+        },
+      });
+
+      // 7. Finalize if Settled
       if (isFullySettled) {
         if (booking.invoice) {
           await tx.invoice.update({
             where: { id: booking.invoice.id },
             data: {
               status: InvoiceStatus.PAID,
-              damageCharges: fineAmount,
-              total: { increment: fineAmount },
             },
           });
         }
@@ -520,7 +552,6 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
           where: { id: booking.id },
           data: {
             status: BookingStatus.RETURNED,
-            totalFinal: { increment: fineAmount },
           },
         });
 
@@ -634,14 +665,12 @@ export const CheckDamagePaymentStatus = async (req: Request, res: Response) => {
         const invoice = payment.invoice;
         const booking = invoice.booking;
 
-        const damageCharges = payment.amount; // Use payment amount as the settled amount
-
+        // The invoice was ALREADY updated with damageCharges by CloseDamageReport.
+        // We just mark it as PAID.
         await tx.invoice.update({
           where: { id: invoice.id },
           data: {
             status: InvoiceStatus.PAID,
-            damageCharges: damageCharges,
-            total: { increment: damageCharges },
           },
         });
 
@@ -649,7 +678,6 @@ export const CheckDamagePaymentStatus = async (req: Request, res: Response) => {
           where: { id: booking.id },
           data: {
             status: BookingStatus.RETURNED,
-            totalFinal: { increment: damageCharges },
           },
         });
 
@@ -691,5 +719,62 @@ export const CheckDamagePaymentStatus = async (req: Request, res: Response) => {
     return res
       .status(StatusCode.INTERNAL_SERVER_ERROR)
       .json({ message: "Internal Error" });
+  }
+};
+
+export const UpdateDamageChargeType = async (req: Request, res: Response) => {
+  try {
+    const { damageReportId } = req.params;
+    const { chargeType } = req.body;
+    const branchId = req.branch_Id;
+
+    if (!damageReportId) {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Damage Report ID is required" });
+    }
+
+    if (chargeType !== "PENALTY" && chargeType !== "COMPENSATION") {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid charge type. Must be PENALTY or COMPENSATION." });
+    }
+
+    const isId = !isNaN(Number(damageReportId));
+    const whereCondition = isId
+      ? { id: Number(damageReportId) }
+      : { publicId: damageReportId };
+
+    const report = await prisma.damageReport.findUnique({
+      where: whereCondition,
+      include: { booking: true },
+    });
+
+    if (!report) {
+      return res.status(StatusCode.NOT_FOUND).json({ message: "Damage Report not found" });
+    }
+
+    if (report.booking.branchId !== branchId) {
+      return res.status(StatusCode.FORBIDDEN).json({
+        message: "Access Denied: This report belongs to another branch",
+      });
+    }
+
+    if (report.status !== "PENDING") {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        message: `Cannot update charge type. Current status: ${report.status}`,
+      });
+    }
+
+    const updatedReport = await damageChargeService.updateDamageChargeType(
+      report.id,
+      chargeType
+    );
+
+    return res.status(StatusCode.OK).json({
+      message: "Damage charge type updated successfully",
+      data: updatedReport,
+    });
+  } catch (error) {
+    console.error("Error updating damage charge type:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+      message: "Internal Server Error",
+    });
   }
 };

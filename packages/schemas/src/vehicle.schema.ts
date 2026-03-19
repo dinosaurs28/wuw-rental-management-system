@@ -52,6 +52,7 @@ export const closeDamageReportSchema = z.object({
   disposition: z.enum(["AVAILABLE", "MAINTENANCE", "DAMAGED"]),
   finalCost: z.coerce.number().min(0, "Final cost must be non-negative"),
   paymentMethod: z.enum(["CASH", "ONLINE_RAZORPAY"]).optional(),
+  chargeType: z.enum(["PENALTY", "COMPENSATION"]).optional(),
 });
 
 export const createDepositRuleSchema = z.object({

@@ -315,6 +315,14 @@ export const VehicleReturnDisposition: {
 export type VehicleReturnDisposition = (typeof VehicleReturnDisposition)[keyof typeof VehicleReturnDisposition]
 
 
+export const DamageChargeType: {
+  PENALTY: 'PENALTY',
+  COMPENSATION: 'COMPENSATION'
+};
+
+export type DamageChargeType = (typeof DamageChargeType)[keyof typeof DamageChargeType]
+
+
 export const InvoiceStatus: {
   PENDING: 'PENDING',
   APPROVED: 'APPROVED',
@@ -323,6 +331,21 @@ export const InvoiceStatus: {
 };
 
 export type InvoiceStatus = (typeof InvoiceStatus)[keyof typeof InvoiceStatus]
+
+
+export const ChargeType: {
+  RENTAL: 'RENTAL',
+  DAMAGE_PENALTY: 'DAMAGE_PENALTY',
+  DAMAGE_COMPENSATION: 'DAMAGE_COMPENSATION',
+  DISTANCE: 'DISTANCE',
+  DELAY: 'DELAY',
+  FUEL: 'FUEL',
+  CLEANING: 'CLEANING',
+  SPEEDING: 'SPEEDING',
+  OTHER: 'OTHER'
+};
+
+export type ChargeType = (typeof ChargeType)[keyof typeof ChargeType]
 
 }
 
@@ -378,9 +401,17 @@ export type VehicleReturnDisposition = $Enums.VehicleReturnDisposition
 
 export const VehicleReturnDisposition: typeof $Enums.VehicleReturnDisposition
 
+export type DamageChargeType = $Enums.DamageChargeType
+
+export const DamageChargeType: typeof $Enums.DamageChargeType
+
 export type InvoiceStatus = $Enums.InvoiceStatus
 
 export const InvoiceStatus: typeof $Enums.InvoiceStatus
+
+export type ChargeType = $Enums.ChargeType
+
+export const ChargeType: typeof $Enums.ChargeType
 
 /**
  * ##  Prisma Client ʲˢ
@@ -29649,6 +29680,7 @@ export namespace Prisma {
     approvedById: number | null
     status: $Enums.DamageReportStatus | null
     disposition: $Enums.VehicleReturnDisposition | null
+    chargeType: $Enums.DamageChargeType | null
     createdAt: Date | null
   }
 
@@ -29663,6 +29695,7 @@ export namespace Prisma {
     approvedById: number | null
     status: $Enums.DamageReportStatus | null
     disposition: $Enums.VehicleReturnDisposition | null
+    chargeType: $Enums.DamageChargeType | null
     createdAt: Date | null
   }
 
@@ -29678,6 +29711,7 @@ export namespace Prisma {
     approvedById: number
     status: number
     disposition: number
+    chargeType: number
     createdAt: number
     _all: number
   }
@@ -29712,6 +29746,7 @@ export namespace Prisma {
     approvedById?: true
     status?: true
     disposition?: true
+    chargeType?: true
     createdAt?: true
   }
 
@@ -29726,6 +29761,7 @@ export namespace Prisma {
     approvedById?: true
     status?: true
     disposition?: true
+    chargeType?: true
     createdAt?: true
   }
 
@@ -29741,6 +29777,7 @@ export namespace Prisma {
     approvedById?: true
     status?: true
     disposition?: true
+    chargeType?: true
     createdAt?: true
     _all?: true
   }
@@ -29843,6 +29880,7 @@ export namespace Prisma {
     approvedById: number | null
     status: $Enums.DamageReportStatus
     disposition: $Enums.VehicleReturnDisposition | null
+    chargeType: $Enums.DamageChargeType
     createdAt: Date
     _count: DamageReportCountAggregateOutputType | null
     _avg: DamageReportAvgAggregateOutputType | null
@@ -29877,6 +29915,7 @@ export namespace Prisma {
     approvedById?: boolean
     status?: boolean
     disposition?: boolean
+    chargeType?: boolean
     createdAt?: boolean
     booking?: boolean | BookingDefaultArgs<ExtArgs>
     vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
@@ -29897,6 +29936,7 @@ export namespace Prisma {
     approvedById?: boolean
     status?: boolean
     disposition?: boolean
+    chargeType?: boolean
     createdAt?: boolean
     booking?: boolean | BookingDefaultArgs<ExtArgs>
     vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
@@ -29915,6 +29955,7 @@ export namespace Prisma {
     approvedById?: boolean
     status?: boolean
     disposition?: boolean
+    chargeType?: boolean
     createdAt?: boolean
   }
 
@@ -29951,6 +29992,7 @@ export namespace Prisma {
       approvedById: number | null
       status: $Enums.DamageReportStatus
       disposition: $Enums.VehicleReturnDisposition | null
+      chargeType: $Enums.DamageChargeType
       createdAt: Date
     }, ExtArgs["result"]["damageReport"]>
     composites: {}
@@ -30360,6 +30402,7 @@ export namespace Prisma {
     readonly approvedById: FieldRef<"DamageReport", 'Int'>
     readonly status: FieldRef<"DamageReport", 'DamageReportStatus'>
     readonly disposition: FieldRef<"DamageReport", 'VehicleReturnDisposition'>
+    readonly chargeType: FieldRef<"DamageReport", 'DamageChargeType'>
     readonly createdAt: FieldRef<"DamageReport", 'DateTime'>
   }
     
@@ -34931,6 +34974,8 @@ export namespace Prisma {
     invoiceId: number | null
     label: string | null
     amount: Decimal | null
+    isTaxable: boolean | null
+    chargeType: $Enums.ChargeType | null
   }
 
   export type InvoiceItemMaxAggregateOutputType = {
@@ -34939,6 +34984,8 @@ export namespace Prisma {
     invoiceId: number | null
     label: string | null
     amount: Decimal | null
+    isTaxable: boolean | null
+    chargeType: $Enums.ChargeType | null
   }
 
   export type InvoiceItemCountAggregateOutputType = {
@@ -34947,6 +34994,8 @@ export namespace Prisma {
     invoiceId: number
     label: number
     amount: number
+    isTaxable: number
+    chargeType: number
     _all: number
   }
 
@@ -34969,6 +35018,8 @@ export namespace Prisma {
     invoiceId?: true
     label?: true
     amount?: true
+    isTaxable?: true
+    chargeType?: true
   }
 
   export type InvoiceItemMaxAggregateInputType = {
@@ -34977,6 +35028,8 @@ export namespace Prisma {
     invoiceId?: true
     label?: true
     amount?: true
+    isTaxable?: true
+    chargeType?: true
   }
 
   export type InvoiceItemCountAggregateInputType = {
@@ -34985,6 +35038,8 @@ export namespace Prisma {
     invoiceId?: true
     label?: true
     amount?: true
+    isTaxable?: true
+    chargeType?: true
     _all?: true
   }
 
@@ -35080,6 +35135,8 @@ export namespace Prisma {
     invoiceId: number
     label: string
     amount: Decimal
+    isTaxable: boolean
+    chargeType: $Enums.ChargeType
     _count: InvoiceItemCountAggregateOutputType | null
     _avg: InvoiceItemAvgAggregateOutputType | null
     _sum: InvoiceItemSumAggregateOutputType | null
@@ -35107,6 +35164,8 @@ export namespace Prisma {
     invoiceId?: boolean
     label?: boolean
     amount?: boolean
+    isTaxable?: boolean
+    chargeType?: boolean
     invoice?: boolean | InvoiceDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["invoiceItem"]>
 
@@ -35116,6 +35175,8 @@ export namespace Prisma {
     invoiceId?: boolean
     label?: boolean
     amount?: boolean
+    isTaxable?: boolean
+    chargeType?: boolean
     invoice?: boolean | InvoiceDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["invoiceItem"]>
 
@@ -35125,6 +35186,8 @@ export namespace Prisma {
     invoiceId?: boolean
     label?: boolean
     amount?: boolean
+    isTaxable?: boolean
+    chargeType?: boolean
   }
 
   export type InvoiceItemInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -35145,6 +35208,8 @@ export namespace Prisma {
       invoiceId: number
       label: string
       amount: Prisma.Decimal
+      isTaxable: boolean
+      chargeType: $Enums.ChargeType
     }, ExtArgs["result"]["invoiceItem"]>
     composites: {}
   }
@@ -35544,6 +35609,8 @@ export namespace Prisma {
     readonly invoiceId: FieldRef<"InvoiceItem", 'Int'>
     readonly label: FieldRef<"InvoiceItem", 'String'>
     readonly amount: FieldRef<"InvoiceItem", 'Decimal'>
+    readonly isTaxable: FieldRef<"InvoiceItem", 'Boolean'>
+    readonly chargeType: FieldRef<"InvoiceItem", 'ChargeType'>
   }
     
 
@@ -41340,6 +41407,7 @@ export namespace Prisma {
     approvedById: 'approvedById',
     status: 'status',
     disposition: 'disposition',
+    chargeType: 'chargeType',
     createdAt: 'createdAt'
   };
 
@@ -41412,7 +41480,9 @@ export namespace Prisma {
     publicId: 'publicId',
     invoiceId: 'invoiceId',
     label: 'label',
-    amount: 'amount'
+    amount: 'amount',
+    isTaxable: 'isTaxable',
+    chargeType: 'chargeType'
   };
 
   export type InvoiceItemScalarFieldEnum = (typeof InvoiceItemScalarFieldEnum)[keyof typeof InvoiceItemScalarFieldEnum]
@@ -41798,6 +41868,20 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'DamageChargeType'
+   */
+  export type EnumDamageChargeTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DamageChargeType'>
+    
+
+
+  /**
+   * Reference to a field of type 'DamageChargeType[]'
+   */
+  export type ListEnumDamageChargeTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DamageChargeType[]'>
+    
+
+
+  /**
    * Reference to a field of type 'InvoiceStatus'
    */
   export type EnumInvoiceStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'InvoiceStatus'>
@@ -41808,6 +41892,20 @@ export namespace Prisma {
    * Reference to a field of type 'InvoiceStatus[]'
    */
   export type ListEnumInvoiceStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'InvoiceStatus[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'ChargeType'
+   */
+  export type EnumChargeTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ChargeType'>
+    
+
+
+  /**
+   * Reference to a field of type 'ChargeType[]'
+   */
+  export type ListEnumChargeTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ChargeType[]'>
     
 
 
@@ -43880,6 +43978,7 @@ export namespace Prisma {
     approvedById?: IntNullableFilter<"DamageReport"> | number | null
     status?: EnumDamageReportStatusFilter<"DamageReport"> | $Enums.DamageReportStatus
     disposition?: EnumVehicleReturnDispositionNullableFilter<"DamageReport"> | $Enums.VehicleReturnDisposition | null
+    chargeType?: EnumDamageChargeTypeFilter<"DamageReport"> | $Enums.DamageChargeType
     createdAt?: DateTimeFilter<"DamageReport"> | Date | string
     booking?: XOR<BookingRelationFilter, BookingWhereInput>
     vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
@@ -43899,6 +43998,7 @@ export namespace Prisma {
     approvedById?: SortOrderInput | SortOrder
     status?: SortOrder
     disposition?: SortOrderInput | SortOrder
+    chargeType?: SortOrder
     createdAt?: SortOrder
     booking?: BookingOrderByWithRelationInput
     vehicle?: VehicleOrderByWithRelationInput
@@ -43921,6 +44021,7 @@ export namespace Prisma {
     approvedById?: IntNullableFilter<"DamageReport"> | number | null
     status?: EnumDamageReportStatusFilter<"DamageReport"> | $Enums.DamageReportStatus
     disposition?: EnumVehicleReturnDispositionNullableFilter<"DamageReport"> | $Enums.VehicleReturnDisposition | null
+    chargeType?: EnumDamageChargeTypeFilter<"DamageReport"> | $Enums.DamageChargeType
     createdAt?: DateTimeFilter<"DamageReport"> | Date | string
     booking?: XOR<BookingRelationFilter, BookingWhereInput>
     vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
@@ -43940,6 +44041,7 @@ export namespace Prisma {
     approvedById?: SortOrderInput | SortOrder
     status?: SortOrder
     disposition?: SortOrderInput | SortOrder
+    chargeType?: SortOrder
     createdAt?: SortOrder
     _count?: DamageReportCountOrderByAggregateInput
     _avg?: DamageReportAvgOrderByAggregateInput
@@ -43963,6 +44065,7 @@ export namespace Prisma {
     approvedById?: IntNullableWithAggregatesFilter<"DamageReport"> | number | null
     status?: EnumDamageReportStatusWithAggregatesFilter<"DamageReport"> | $Enums.DamageReportStatus
     disposition?: EnumVehicleReturnDispositionNullableWithAggregatesFilter<"DamageReport"> | $Enums.VehicleReturnDisposition | null
+    chargeType?: EnumDamageChargeTypeWithAggregatesFilter<"DamageReport"> | $Enums.DamageChargeType
     createdAt?: DateTimeWithAggregatesFilter<"DamageReport"> | Date | string
   }
 
@@ -44294,6 +44397,8 @@ export namespace Prisma {
     invoiceId?: IntFilter<"InvoiceItem"> | number
     label?: StringFilter<"InvoiceItem"> | string
     amount?: DecimalFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
+    isTaxable?: BoolFilter<"InvoiceItem"> | boolean
+    chargeType?: EnumChargeTypeFilter<"InvoiceItem"> | $Enums.ChargeType
     invoice?: XOR<InvoiceRelationFilter, InvoiceWhereInput>
   }
 
@@ -44303,6 +44408,8 @@ export namespace Prisma {
     invoiceId?: SortOrder
     label?: SortOrder
     amount?: SortOrder
+    isTaxable?: SortOrder
+    chargeType?: SortOrder
     invoice?: InvoiceOrderByWithRelationInput
   }
 
@@ -44315,6 +44422,8 @@ export namespace Prisma {
     invoiceId?: IntFilter<"InvoiceItem"> | number
     label?: StringFilter<"InvoiceItem"> | string
     amount?: DecimalFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
+    isTaxable?: BoolFilter<"InvoiceItem"> | boolean
+    chargeType?: EnumChargeTypeFilter<"InvoiceItem"> | $Enums.ChargeType
     invoice?: XOR<InvoiceRelationFilter, InvoiceWhereInput>
   }, "id" | "publicId">
 
@@ -44324,6 +44433,8 @@ export namespace Prisma {
     invoiceId?: SortOrder
     label?: SortOrder
     amount?: SortOrder
+    isTaxable?: SortOrder
+    chargeType?: SortOrder
     _count?: InvoiceItemCountOrderByAggregateInput
     _avg?: InvoiceItemAvgOrderByAggregateInput
     _max?: InvoiceItemMaxOrderByAggregateInput
@@ -44340,6 +44451,8 @@ export namespace Prisma {
     invoiceId?: IntWithAggregatesFilter<"InvoiceItem"> | number
     label?: StringWithAggregatesFilter<"InvoiceItem"> | string
     amount?: DecimalWithAggregatesFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
+    isTaxable?: BoolWithAggregatesFilter<"InvoiceItem"> | boolean
+    chargeType?: EnumChargeTypeWithAggregatesFilter<"InvoiceItem"> | $Enums.ChargeType
   }
 
   export type AuditLogWhereInput = {
@@ -46887,6 +47000,7 @@ export namespace Prisma {
     notes: JsonNullValueInput | InputJsonValue
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
+    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
     booking: BookingCreateNestedOneWithoutDamagesInput
     vehicle: VehicleCreateNestedOneWithoutDamageReportsInput
@@ -46906,6 +47020,7 @@ export namespace Prisma {
     approvedById?: number | null
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
+    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
     photos?: BookingPhotoUncheckedCreateNestedManyWithoutDamageReportInput
   }
@@ -46918,6 +47033,7 @@ export namespace Prisma {
     notes?: JsonNullValueInput | InputJsonValue
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     booking?: BookingUpdateOneRequiredWithoutDamagesNestedInput
     vehicle?: VehicleUpdateOneRequiredWithoutDamageReportsNestedInput
@@ -46937,6 +47053,7 @@ export namespace Prisma {
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     photos?: BookingPhotoUncheckedUpdateManyWithoutDamageReportNestedInput
   }
@@ -46953,6 +47070,7 @@ export namespace Prisma {
     approvedById?: number | null
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
+    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
   }
 
@@ -46964,6 +47082,7 @@ export namespace Prisma {
     notes?: JsonNullValueInput | InputJsonValue
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -46979,6 +47098,7 @@ export namespace Prisma {
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -47321,6 +47441,8 @@ export namespace Prisma {
     publicId: string
     label: string
     amount: Decimal | DecimalJsLike | number | string
+    isTaxable?: boolean
+    chargeType?: $Enums.ChargeType
     invoice: InvoiceCreateNestedOneWithoutItemsInput
   }
 
@@ -47330,12 +47452,16 @@ export namespace Prisma {
     invoiceId: number
     label: string
     amount: Decimal | DecimalJsLike | number | string
+    isTaxable?: boolean
+    chargeType?: $Enums.ChargeType
   }
 
   export type InvoiceItemUpdateInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     label?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isTaxable?: BoolFieldUpdateOperationsInput | boolean
+    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
     invoice?: InvoiceUpdateOneRequiredWithoutItemsNestedInput
   }
 
@@ -47345,6 +47471,8 @@ export namespace Prisma {
     invoiceId?: IntFieldUpdateOperationsInput | number
     label?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isTaxable?: BoolFieldUpdateOperationsInput | boolean
+    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
   }
 
   export type InvoiceItemCreateManyInput = {
@@ -47353,12 +47481,16 @@ export namespace Prisma {
     invoiceId: number
     label: string
     amount: Decimal | DecimalJsLike | number | string
+    isTaxable?: boolean
+    chargeType?: $Enums.ChargeType
   }
 
   export type InvoiceItemUpdateManyMutationInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     label?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isTaxable?: BoolFieldUpdateOperationsInput | boolean
+    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
   }
 
   export type InvoiceItemUncheckedUpdateManyInput = {
@@ -47367,6 +47499,8 @@ export namespace Prisma {
     invoiceId?: IntFieldUpdateOperationsInput | number
     label?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isTaxable?: BoolFieldUpdateOperationsInput | boolean
+    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
   }
 
   export type AuditLogCreateInput = {
@@ -49812,6 +49946,13 @@ export namespace Prisma {
     not?: NestedEnumVehicleReturnDispositionNullableFilter<$PrismaModel> | $Enums.VehicleReturnDisposition | null
   }
 
+  export type EnumDamageChargeTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.DamageChargeType | EnumDamageChargeTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.DamageChargeType[] | ListEnumDamageChargeTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DamageChargeType[] | ListEnumDamageChargeTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumDamageChargeTypeFilter<$PrismaModel> | $Enums.DamageChargeType
+  }
+
   export type UserNullableRelationFilter = {
     is?: UserWhereInput | null
     isNot?: UserWhereInput | null
@@ -49829,6 +49970,7 @@ export namespace Prisma {
     approvedById?: SortOrder
     status?: SortOrder
     disposition?: SortOrder
+    chargeType?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -49852,6 +49994,7 @@ export namespace Prisma {
     approvedById?: SortOrder
     status?: SortOrder
     disposition?: SortOrder
+    chargeType?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -49866,6 +50009,7 @@ export namespace Prisma {
     approvedById?: SortOrder
     status?: SortOrder
     disposition?: SortOrder
+    chargeType?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -49896,6 +50040,16 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedEnumVehicleReturnDispositionNullableFilter<$PrismaModel>
     _max?: NestedEnumVehicleReturnDispositionNullableFilter<$PrismaModel>
+  }
+
+  export type EnumDamageChargeTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.DamageChargeType | EnumDamageChargeTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.DamageChargeType[] | ListEnumDamageChargeTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DamageChargeType[] | ListEnumDamageChargeTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumDamageChargeTypeWithAggregatesFilter<$PrismaModel> | $Enums.DamageChargeType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumDamageChargeTypeFilter<$PrismaModel>
+    _max?: NestedEnumDamageChargeTypeFilter<$PrismaModel>
   }
 
   export type EnumDepositMethodFilter<$PrismaModel = never> = {
@@ -50156,12 +50310,21 @@ export namespace Prisma {
     _max?: NestedEnumInvoiceStatusFilter<$PrismaModel>
   }
 
+  export type EnumChargeTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.ChargeType | EnumChargeTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumChargeTypeFilter<$PrismaModel> | $Enums.ChargeType
+  }
+
   export type InvoiceItemCountOrderByAggregateInput = {
     id?: SortOrder
     publicId?: SortOrder
     invoiceId?: SortOrder
     label?: SortOrder
     amount?: SortOrder
+    isTaxable?: SortOrder
+    chargeType?: SortOrder
   }
 
   export type InvoiceItemAvgOrderByAggregateInput = {
@@ -50176,6 +50339,8 @@ export namespace Prisma {
     invoiceId?: SortOrder
     label?: SortOrder
     amount?: SortOrder
+    isTaxable?: SortOrder
+    chargeType?: SortOrder
   }
 
   export type InvoiceItemMinOrderByAggregateInput = {
@@ -50184,12 +50349,24 @@ export namespace Prisma {
     invoiceId?: SortOrder
     label?: SortOrder
     amount?: SortOrder
+    isTaxable?: SortOrder
+    chargeType?: SortOrder
   }
 
   export type InvoiceItemSumOrderByAggregateInput = {
     id?: SortOrder
     invoiceId?: SortOrder
     amount?: SortOrder
+  }
+
+  export type EnumChargeTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.ChargeType | EnumChargeTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumChargeTypeWithAggregatesFilter<$PrismaModel> | $Enums.ChargeType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumChargeTypeFilter<$PrismaModel>
+    _max?: NestedEnumChargeTypeFilter<$PrismaModel>
   }
   export type JsonNullableFilter<$PrismaModel = never> = 
     | PatchUndefined<
@@ -52694,6 +52871,10 @@ export namespace Prisma {
     set?: $Enums.VehicleReturnDisposition | null
   }
 
+  export type EnumDamageChargeTypeFieldUpdateOperationsInput = {
+    set?: $Enums.DamageChargeType
+  }
+
   export type BookingUpdateOneRequiredWithoutDamagesNestedInput = {
     create?: XOR<BookingCreateWithoutDamagesInput, BookingUncheckedCreateWithoutDamagesInput>
     connectOrCreate?: BookingCreateOrConnectWithoutDamagesInput
@@ -52902,6 +53083,10 @@ export namespace Prisma {
     create?: XOR<InvoiceCreateWithoutItemsInput, InvoiceUncheckedCreateWithoutItemsInput>
     connectOrCreate?: InvoiceCreateOrConnectWithoutItemsInput
     connect?: InvoiceWhereUniqueInput
+  }
+
+  export type EnumChargeTypeFieldUpdateOperationsInput = {
+    set?: $Enums.ChargeType
   }
 
   export type InvoiceUpdateOneRequiredWithoutItemsNestedInput = {
@@ -53462,6 +53647,13 @@ export namespace Prisma {
     not?: NestedEnumVehicleReturnDispositionNullableFilter<$PrismaModel> | $Enums.VehicleReturnDisposition | null
   }
 
+  export type NestedEnumDamageChargeTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.DamageChargeType | EnumDamageChargeTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.DamageChargeType[] | ListEnumDamageChargeTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DamageChargeType[] | ListEnumDamageChargeTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumDamageChargeTypeFilter<$PrismaModel> | $Enums.DamageChargeType
+  }
+
   export type NestedEnumDamageReportStatusWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.DamageReportStatus | EnumDamageReportStatusFieldRefInput<$PrismaModel>
     in?: $Enums.DamageReportStatus[] | ListEnumDamageReportStatusFieldRefInput<$PrismaModel>
@@ -53480,6 +53672,16 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedEnumVehicleReturnDispositionNullableFilter<$PrismaModel>
     _max?: NestedEnumVehicleReturnDispositionNullableFilter<$PrismaModel>
+  }
+
+  export type NestedEnumDamageChargeTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.DamageChargeType | EnumDamageChargeTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.DamageChargeType[] | ListEnumDamageChargeTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DamageChargeType[] | ListEnumDamageChargeTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumDamageChargeTypeWithAggregatesFilter<$PrismaModel> | $Enums.DamageChargeType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumDamageChargeTypeFilter<$PrismaModel>
+    _max?: NestedEnumDamageChargeTypeFilter<$PrismaModel>
   }
 
   export type NestedEnumDepositMethodFilter<$PrismaModel = never> = {
@@ -53514,6 +53716,23 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumInvoiceStatusFilter<$PrismaModel>
     _max?: NestedEnumInvoiceStatusFilter<$PrismaModel>
+  }
+
+  export type NestedEnumChargeTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.ChargeType | EnumChargeTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumChargeTypeFilter<$PrismaModel> | $Enums.ChargeType
+  }
+
+  export type NestedEnumChargeTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.ChargeType | EnumChargeTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumChargeTypeWithAggregatesFilter<$PrismaModel> | $Enums.ChargeType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumChargeTypeFilter<$PrismaModel>
+    _max?: NestedEnumChargeTypeFilter<$PrismaModel>
   }
   export type NestedJsonNullableFilter<$PrismaModel = never> = 
     | PatchUndefined<
@@ -53826,6 +54045,7 @@ export namespace Prisma {
     notes: JsonNullValueInput | InputJsonValue
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
+    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
     booking: BookingCreateNestedOneWithoutDamagesInput
     vehicle: VehicleCreateNestedOneWithoutDamageReportsInput
@@ -53843,6 +54063,7 @@ export namespace Prisma {
     notes: JsonNullValueInput | InputJsonValue
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
+    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
     photos?: BookingPhotoUncheckedCreateNestedManyWithoutDamageReportInput
   }
@@ -54136,6 +54357,7 @@ export namespace Prisma {
     approvedById?: IntNullableFilter<"DamageReport"> | number | null
     status?: EnumDamageReportStatusFilter<"DamageReport"> | $Enums.DamageReportStatus
     disposition?: EnumVehicleReturnDispositionNullableFilter<"DamageReport"> | $Enums.VehicleReturnDisposition | null
+    chargeType?: EnumDamageChargeTypeFilter<"DamageReport"> | $Enums.DamageChargeType
     createdAt?: DateTimeFilter<"DamageReport"> | Date | string
   }
 
@@ -56340,6 +56562,7 @@ export namespace Prisma {
     notes: JsonNullValueInput | InputJsonValue
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
+    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
     booking: BookingCreateNestedOneWithoutDamagesInput
     approvedBy?: UserCreateNestedOneWithoutApprovedDamageReportsInput
@@ -56357,6 +56580,7 @@ export namespace Prisma {
     approvedById?: number | null
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
+    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
     photos?: BookingPhotoUncheckedCreateNestedManyWithoutDamageReportInput
   }
@@ -58035,6 +58259,7 @@ export namespace Prisma {
     notes: JsonNullValueInput | InputJsonValue
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
+    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
     vehicle: VehicleCreateNestedOneWithoutDamageReportsInput
     approvedBy?: UserCreateNestedOneWithoutApprovedDamageReportsInput
@@ -58052,6 +58277,7 @@ export namespace Prisma {
     approvedById?: number | null
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
+    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
     photos?: BookingPhotoUncheckedCreateNestedManyWithoutDamageReportInput
   }
@@ -59031,6 +59257,7 @@ export namespace Prisma {
     notes: JsonNullValueInput | InputJsonValue
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
+    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
     booking: BookingCreateNestedOneWithoutDamagesInput
     vehicle: VehicleCreateNestedOneWithoutDamageReportsInput
@@ -59049,6 +59276,7 @@ export namespace Prisma {
     approvedById?: number | null
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
+    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
   }
 
@@ -59228,6 +59456,7 @@ export namespace Prisma {
     notes?: JsonNullValueInput | InputJsonValue
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     booking?: BookingUpdateOneRequiredWithoutDamagesNestedInput
     vehicle?: VehicleUpdateOneRequiredWithoutDamageReportsNestedInput
@@ -59246,6 +59475,7 @@ export namespace Prisma {
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -60158,6 +60388,8 @@ export namespace Prisma {
     publicId: string
     label: string
     amount: Decimal | DecimalJsLike | number | string
+    isTaxable?: boolean
+    chargeType?: $Enums.ChargeType
   }
 
   export type InvoiceItemUncheckedCreateWithoutInvoiceInput = {
@@ -60165,6 +60397,8 @@ export namespace Prisma {
     publicId: string
     label: string
     amount: Decimal | DecimalJsLike | number | string
+    isTaxable?: boolean
+    chargeType?: $Enums.ChargeType
   }
 
   export type InvoiceItemCreateOrConnectWithoutInvoiceInput = {
@@ -60385,6 +60619,8 @@ export namespace Prisma {
     invoiceId?: IntFilter<"InvoiceItem"> | number
     label?: StringFilter<"InvoiceItem"> | string
     amount?: DecimalFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
+    isTaxable?: BoolFilter<"InvoiceItem"> | boolean
+    chargeType?: EnumChargeTypeFilter<"InvoiceItem"> | $Enums.ChargeType
   }
 
   export type PaymentUpsertWithWhereUniqueWithoutInvoiceInput = {
@@ -61149,6 +61385,7 @@ export namespace Prisma {
     notes: JsonNullValueInput | InputJsonValue
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
+    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
   }
 
@@ -61396,6 +61633,7 @@ export namespace Prisma {
     notes?: JsonNullValueInput | InputJsonValue
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     booking?: BookingUpdateOneRequiredWithoutDamagesNestedInput
     vehicle?: VehicleUpdateOneRequiredWithoutDamageReportsNestedInput
@@ -61413,6 +61651,7 @@ export namespace Prisma {
     notes?: JsonNullValueInput | InputJsonValue
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     photos?: BookingPhotoUncheckedUpdateManyWithoutDamageReportNestedInput
   }
@@ -61428,6 +61667,7 @@ export namespace Prisma {
     notes?: JsonNullValueInput | InputJsonValue
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -62854,6 +63094,7 @@ export namespace Prisma {
     approvedById?: number | null
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
+    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
   }
 
@@ -62934,6 +63175,7 @@ export namespace Prisma {
     notes?: JsonNullValueInput | InputJsonValue
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     booking?: BookingUpdateOneRequiredWithoutDamagesNestedInput
     approvedBy?: UserUpdateOneWithoutApprovedDamageReportsNestedInput
@@ -62951,6 +63193,7 @@ export namespace Prisma {
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     photos?: BookingPhotoUncheckedUpdateManyWithoutDamageReportNestedInput
   }
@@ -62966,6 +63209,7 @@ export namespace Prisma {
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -63056,6 +63300,7 @@ export namespace Prisma {
     approvedById?: number | null
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
+    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
   }
 
@@ -63108,6 +63353,7 @@ export namespace Prisma {
     notes?: JsonNullValueInput | InputJsonValue
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     vehicle?: VehicleUpdateOneRequiredWithoutDamageReportsNestedInput
     approvedBy?: UserUpdateOneWithoutApprovedDamageReportsNestedInput
@@ -63125,6 +63371,7 @@ export namespace Prisma {
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     photos?: BookingPhotoUncheckedUpdateManyWithoutDamageReportNestedInput
   }
@@ -63140,6 +63387,7 @@ export namespace Prisma {
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -63227,6 +63475,8 @@ export namespace Prisma {
     publicId: string
     label: string
     amount: Decimal | DecimalJsLike | number | string
+    isTaxable?: boolean
+    chargeType?: $Enums.ChargeType
   }
 
   export type PaymentCreateManyInvoiceInput = {
@@ -63244,6 +63494,8 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     label?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isTaxable?: BoolFieldUpdateOperationsInput | boolean
+    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
   }
 
   export type InvoiceItemUncheckedUpdateWithoutInvoiceInput = {
@@ -63251,6 +63503,8 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     label?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isTaxable?: BoolFieldUpdateOperationsInput | boolean
+    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
   }
 
   export type InvoiceItemUncheckedUpdateManyWithoutInvoiceInput = {
@@ -63258,6 +63512,8 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     label?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isTaxable?: BoolFieldUpdateOperationsInput | boolean
+    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
   }
 
   export type PaymentUpdateWithoutInvoiceInput = {

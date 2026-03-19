@@ -18,6 +18,7 @@ import {
   GetMinimalDamageReport,
   GetDamageReportList,
   CheckDamagePaymentStatus,
+  UpdateDamageChargeType,
 } from "../../controller/branchManager/damage.controller.js";
 import {
   AddVehicle,
@@ -71,6 +72,11 @@ router.get(
   "/damage-reports/:damageReportId",
   ManagerCheck,
   GetMinimalDamageReport,
+);
+router.patch(
+  "/damage-reports/:damageReportId/charge-type",
+  ManagerCheck,
+  UpdateDamageChargeType,
 );
 router.patch(
   "/damage-reports/:damageReportId/close",

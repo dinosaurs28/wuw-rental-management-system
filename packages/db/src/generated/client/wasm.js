@@ -438,6 +438,7 @@ exports.Prisma.DamageReportScalarFieldEnum = {
   approvedById: 'approvedById',
   status: 'status',
   disposition: 'disposition',
+  chargeType: 'chargeType',
   createdAt: 'createdAt'
 };
 
@@ -495,7 +496,9 @@ exports.Prisma.InvoiceItemScalarFieldEnum = {
   publicId: 'publicId',
   invoiceId: 'invoiceId',
   label: 'label',
-  amount: 'amount'
+  amount: 'amount',
+  isTaxable: 'isTaxable',
+  chargeType: 'chargeType'
 };
 
 exports.Prisma.AuditLogScalarFieldEnum = {
@@ -674,11 +677,28 @@ exports.VehicleReturnDisposition = exports.$Enums.VehicleReturnDisposition = {
   DAMAGED: 'DAMAGED'
 };
 
+exports.DamageChargeType = exports.$Enums.DamageChargeType = {
+  PENALTY: 'PENALTY',
+  COMPENSATION: 'COMPENSATION'
+};
+
 exports.InvoiceStatus = exports.$Enums.InvoiceStatus = {
   PENDING: 'PENDING',
   APPROVED: 'APPROVED',
   FINALIZED: 'FINALIZED',
   PAID: 'PAID'
+};
+
+exports.ChargeType = exports.$Enums.ChargeType = {
+  RENTAL: 'RENTAL',
+  DAMAGE_PENALTY: 'DAMAGE_PENALTY',
+  DAMAGE_COMPENSATION: 'DAMAGE_COMPENSATION',
+  DISTANCE: 'DISTANCE',
+  DELAY: 'DELAY',
+  FUEL: 'FUEL',
+  CLEANING: 'CLEANING',
+  SPEEDING: 'SPEEDING',
+  OTHER: 'OTHER'
 };
 
 exports.Prisma.ModelName = {

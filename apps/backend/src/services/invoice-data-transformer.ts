@@ -80,7 +80,11 @@ export async function transformBookingToInvoiceData(
             },
           },
         },
-        invoice: true,
+        invoice: {
+          include: {
+            items: true,
+          },
+        },
       },
     });
 
@@ -118,6 +122,26 @@ export async function transformBookingToInvoiceData(
 
     // GST details from branch
     const gstNumber = booking.branch.gstRule?.gstNumber || "N/A";
+
+    // Map additional invoice items (like Damage Charges)
+    const gstRatePerComponent = booking.branch.gstRule ? Number(booking.branch.gstRule.cgstRate) : 9;
+    
+    booking.invoice.items.forEach((invItem) => {
+      const isTaxable = invItem.isTaxable;
+      const amount = Number(invItem.amount);
+      const taxComponent = isTaxable ? amount * (gstRatePerComponent / 100) : 0;
+      
+      items.push({
+        description: invItem.label,
+        days: 1,
+        rate: amount,
+        discount: 0,
+        taxRate: isTaxable ? gstRatePerComponent * 2 : 0,
+        cgst: taxComponent,
+        sgst: taxComponent,
+        amount: amount + taxComponent * 2,
+      });
+    });
 
     // Calculate total tax from items (CGST + SGST)
     const totalCgst = items.reduce((sum, item) => sum + item.cgst, 0);
