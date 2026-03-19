@@ -9,7 +9,7 @@ export const getPublicBranches = async (req: Request, res: Response) => {
     if (cachedBranches) {
       return res.status(StatusCode.OK).json({
         message: "Branches fetched successfully",
-        data: JSON.parse(cachedBranches),
+      data: JSON.parse(cachedBranches),
       });
     }
     const branches = await prisma.branch.findMany({

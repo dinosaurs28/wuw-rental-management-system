@@ -96,6 +96,11 @@ enum DamageReportStatus {
   REJECTED
 }
 
+enum DamageChargeType {
+  PENALTY
+  COMPENSATION
+}
+
 enum RentalPeriodType {
   HOURLY
   HALF_DAY
@@ -178,6 +183,8 @@ model Customer {
   kycs               CustomerKyc[]
   bookings           Booking[]
 
+  cancellationInvoices CancellationInvoice[]
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -204,18 +211,19 @@ model CustomerKyc {
 // FILE STORAGE (Cloudflare R2)
 
 model FileObject {
-  id            Int            @id @default(autoincrement())
-  publicId      String         @unique
-  key           String
-  url           String
-  mime          String
-  size          Int
-  createdAt     DateTime       @default(now())
-  bookingPhotos BookingPhoto[]
-  customerKycs  CustomerKyc[]
-  bookingKycs   Booking[]      @relation("BookingKyc")
-  vehicleImages VehicleImage[]
-  invoicePdfs   Invoice[]      @relation("InvoicePdf")
+  id                   Int                   @id @default(autoincrement())
+  publicId             String                @unique
+  key                  String
+  url                  String
+  mime                 String
+  size                 Int
+  createdAt            DateTime              @default(now())
+  bookingPhotos        BookingPhoto[]
+  customerKycs         CustomerKyc[]
+  bookingKycs          Booking[]             @relation("BookingKyc")
+  vehicleImages        VehicleImage[]
+  invoicePdfs          Invoice[]             @relation("InvoicePdf")
+  cancellationInvoices CancellationInvoice[] @relation("CancellationInvoicePdf")
 
   @@index([publicId])
 }
@@ -236,6 +244,7 @@ model Branch {
   categoryDepositSettings CategoryDepositSetting[]
   branchPricingDefaults   BranchPricingDefaults[]
   gstRule                 GSTRule?
+  featureFlags            BranchFeatureFlag[]
   createdAt               DateTime                 @default(now())
   deletedAt               DateTime?
 }
@@ -303,6 +312,7 @@ model Vehicle {
   customPricing    VehicleCustomPricing?
   images           VehicleImage[]
   bookingItems     BookingItem[]
+  featureFlags     VehicleFeatureFlag[]
   createdAt        DateTime                   @default(now())
   updatedAt        DateTime                   @updatedAt
   deletedAt        DateTime?
@@ -488,11 +498,30 @@ model Booking {
   branch           Branch            @relation(fields: [branchId], references: [id])
   createdBy        User              @relation("BookingCreator", fields: [createdById], references: [id])
 
-  photos  BookingPhoto[]
-  damages DamageReport[]
-  items   BookingItem[]
-  deposit Deposit?
-  invoice Invoice?
+  photos              BookingPhoto[]
+  damages             DamageReport[]
+  items               BookingItem[]
+  deposit             Deposit?
+  invoice             Invoice?
+  cancellationInvoice CancellationInvoice?
+
+  // Advance Payment Tracking
+  advanceAmount      Decimal        @default(0)
+  advancePaidAt      DateTime?
+  advancePaymentId   String?
+  advancePaymentMode DepositMethod?
+
+  // Safety Deposit Tracking
+  safetyDeposit           Decimal        @default(0)
+  safetyDepositPaidAt     DateTime?
+  safetyDepositMethod     DepositMethod?
+  safetyDepositRefunded   Boolean        @default(false)
+  safetyDepositRefundedAt DateTime?
+  safetyDepositSetOff     Boolean        @default(false)
+
+  // Cancellation Tracking
+  cancelledAt        DateTime?
+  cancellationReason String?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -503,6 +532,8 @@ model Booking {
   @@index([createdById])
   @@index([status])
   @@index([startAt, endAt])
+  @@index([advancePaymentId])
+  @@index([cancelledAt])
   // Performance index
   @@index([status, startAt, endAt])
   @@index([rentalPeriodType])
@@ -560,6 +591,7 @@ model DamageReport {
   finalCost     Decimal?
   notes         Json
   approvedById  Int?
+  chargeType    DamageChargeType          @default(PENALTY)
   status        DamageReportStatus        @default(PENDING)
   disposition   VehicleReturnDisposition?
   booking       Booking                   @relation(fields: [bookingId], references: [id])
@@ -699,4 +731,100 @@ model TimezoneSetting {
   updatedAt DateTime @updatedAt
 
   @@index([timezone])
+}
+
+model CancellationInvoice {
+  id         Int    @id @default(autoincrement())
+  publicId   String @unique
+  bookingId  Int    @unique
+  customerId Int
+
+  advanceAmount   Decimal
+  cancellationFee Decimal
+  reason          String?
+  notes           String?
+
+  invoiceNumber    String?   @unique
+  invoicePdfFileId Int?
+  generatedAt      DateTime?
+  sentToCustomer   Boolean   @default(false)
+  sentAt           DateTime?
+
+  booking        Booking     @relation(fields: [bookingId], references: [id])
+  customer       Customer    @relation(fields: [customerId], references: [id])
+  invoicePdfFile FileObject? @relation("CancellationInvoicePdf", fields: [invoicePdfFileId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bookingId])
+  @@index([customerId])
+  @@index([invoiceNumber])
+}
+
+// FEATURE FLAGS
+
+enum FeatureFlagScope {
+  SYSTEM
+  BRANCH
+  VEHICLE
+}
+
+model FeatureFlag {
+  id          Int              @id @default(autoincrement())
+  publicId    String           @unique
+  key         String           @unique
+  name        String
+  description String?
+  scope       FeatureFlagScope
+  enabled     Boolean          @default(false)
+  config      Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branchFlags  BranchFeatureFlag[]
+  vehicleFlags VehicleFeatureFlag[]
+
+  @@index([key])
+  @@index([scope])
+  @@index([enabled])
+}
+
+model BranchFeatureFlag {
+  id       Int     @id @default(autoincrement())
+  branchId Int
+  flagId   Int
+  enabled  Boolean @default(false)
+  config   Json?
+
+  branch Branch      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  flag   FeatureFlag @relation(fields: [flagId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([branchId, flagId])
+  @@index([branchId])
+  @@index([flagId])
+  @@index([enabled])
+}
+
+model VehicleFeatureFlag {
+  id        Int     @id @default(autoincrement())
+  vehicleId Int
+  flagId    Int
+  enabled   Boolean @default(false)
+  config    Json?
+
+  vehicle Vehicle     @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  flag    FeatureFlag @relation(fields: [flagId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([vehicleId, flagId])
+  @@index([vehicleId])
+  @@index([flagId])
+  @@index([enabled])
 }

@@ -256,7 +256,7 @@ export const ManagerVehiclesPage = () => {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right font-medium">
-                            ₹{vehicle.baseDailyPrice}
+                            ₹{vehicle.customPricing?.price24Hour}
                           </TableCell>
                           <TableCell>
                             <DropdownMenu>
@@ -351,7 +351,7 @@ export const ManagerVehiclesPage = () => {
                             {vehicle.status || "Unknown"}
                           </Badge>
                           <p className="font-semibold text-neutral-900">
-                            ₹{vehicle.baseDailyPrice}
+                            ₹{vehicle.customPricing?.price24Hour}
                             <span className="text-xs text-neutral-500 font-normal">
                               /day
                             </span>

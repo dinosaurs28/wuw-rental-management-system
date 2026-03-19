@@ -28,7 +28,6 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
     // Parse and validate dates if provided
     let startDate: Date | null = null;
     let endDate: Date | null = null;
-
     if (start) {
       // Force UTC parsing
       startDate = new Date(`${start}T00:00:00Z`);

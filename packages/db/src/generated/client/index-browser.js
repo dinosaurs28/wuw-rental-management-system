@@ -395,6 +395,7 @@ exports.Prisma.BookingScalarFieldEnum = {
   safetyDepositSetOff: 'safetyDepositSetOff',
   cancelledAt: 'cancelledAt',
   cancellationReason: 'cancellationReason',
+  requiresManagerConfirmation: 'requiresManagerConfirmation',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   deletedAt: 'deletedAt'
@@ -436,9 +437,9 @@ exports.Prisma.DamageReportScalarFieldEnum = {
   finalCost: 'finalCost',
   notes: 'notes',
   approvedById: 'approvedById',
+  chargeType: 'chargeType',
   status: 'status',
   disposition: 'disposition',
-  chargeType: 'chargeType',
   createdAt: 'createdAt'
 };
 
@@ -496,9 +497,7 @@ exports.Prisma.InvoiceItemScalarFieldEnum = {
   publicId: 'publicId',
   invoiceId: 'invoiceId',
   label: 'label',
-  amount: 'amount',
-  isTaxable: 'isTaxable',
-  chargeType: 'chargeType'
+  amount: 'amount'
 };
 
 exports.Prisma.AuditLogScalarFieldEnum = {
@@ -556,6 +555,39 @@ exports.Prisma.CancellationInvoiceScalarFieldEnum = {
   generatedAt: 'generatedAt',
   sentToCustomer: 'sentToCustomer',
   sentAt: 'sentAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.FeatureFlagScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  key: 'key',
+  name: 'name',
+  description: 'description',
+  scope: 'scope',
+  enabled: 'enabled',
+  config: 'config',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.BranchFeatureFlagScalarFieldEnum = {
+  id: 'id',
+  branchId: 'branchId',
+  flagId: 'flagId',
+  enabled: 'enabled',
+  config: 'config',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.VehicleFeatureFlagScalarFieldEnum = {
+  id: 'id',
+  vehicleId: 'vehicleId',
+  flagId: 'flagId',
+  enabled: 'enabled',
+  config: 'config',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -665,6 +697,11 @@ exports.BookingPhotoType = exports.$Enums.BookingPhotoType = {
   DAMAGE: 'DAMAGE'
 };
 
+exports.DamageChargeType = exports.$Enums.DamageChargeType = {
+  PENALTY: 'PENALTY',
+  COMPENSATION: 'COMPENSATION'
+};
+
 exports.DamageReportStatus = exports.$Enums.DamageReportStatus = {
   PENDING: 'PENDING',
   APPROVED: 'APPROVED',
@@ -677,11 +714,6 @@ exports.VehicleReturnDisposition = exports.$Enums.VehicleReturnDisposition = {
   DAMAGED: 'DAMAGED'
 };
 
-exports.DamageChargeType = exports.$Enums.DamageChargeType = {
-  PENALTY: 'PENALTY',
-  COMPENSATION: 'COMPENSATION'
-};
-
 exports.InvoiceStatus = exports.$Enums.InvoiceStatus = {
   PENDING: 'PENDING',
   APPROVED: 'APPROVED',
@@ -689,16 +721,10 @@ exports.InvoiceStatus = exports.$Enums.InvoiceStatus = {
   PAID: 'PAID'
 };
 
-exports.ChargeType = exports.$Enums.ChargeType = {
-  RENTAL: 'RENTAL',
-  DAMAGE_PENALTY: 'DAMAGE_PENALTY',
-  DAMAGE_COMPENSATION: 'DAMAGE_COMPENSATION',
-  DISTANCE: 'DISTANCE',
-  DELAY: 'DELAY',
-  FUEL: 'FUEL',
-  CLEANING: 'CLEANING',
-  SPEEDING: 'SPEEDING',
-  OTHER: 'OTHER'
+exports.FeatureFlagScope = exports.$Enums.FeatureFlagScope = {
+  SYSTEM: 'SYSTEM',
+  BRANCH: 'BRANCH',
+  VEHICLE: 'VEHICLE'
 };
 
 exports.Prisma.ModelName = {
@@ -735,7 +761,10 @@ exports.Prisma.ModelName = {
   SystemSetting: 'SystemSetting',
   GSTRule: 'GSTRule',
   TimezoneSetting: 'TimezoneSetting',
-  CancellationInvoice: 'CancellationInvoice'
+  CancellationInvoice: 'CancellationInvoice',
+  FeatureFlag: 'FeatureFlag',
+  BranchFeatureFlag: 'BranchFeatureFlag',
+  VehicleFeatureFlag: 'VehicleFeatureFlag'
 };
 
 /**

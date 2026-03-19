@@ -78,7 +78,7 @@ export const UploadReturnImage = async (req: Request, res: Response) => {
 
 export const CompleteReturn = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
-  const { returnImageIds } = req.body;
+  const { returnImageIds, requireManagerConfirmation } = req.body;
   const branchId = req.branch_Id;
 
   try {
@@ -123,21 +123,30 @@ export const CompleteReturn = async (req: Request, res: Response) => {
     const vehicleIds = booking.items.map((item) => item.vehicleId);
 
     await prisma.$transaction(async (tx) => {
-      await tx.booking.update({
-        where: { id: booking.id },
-        data: {
-          status: BookingStatus.RETURNED,
-        },
-      });
+      if (requireManagerConfirmation) {
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: {
+            requiresManagerConfirmation: true,
+          },
+        });
+      } else {
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: {
+            status: BookingStatus.RETURNED,
+          },
+        });
 
-      await tx.vehicle.updateMany({
-        where: {
-          id: { in: vehicleIds },
-        },
-        data: {
-          status: VehicleStatus.AVAILABLE,
-        },
-      });
+        await tx.vehicle.updateMany({
+          where: {
+            id: { in: vehicleIds },
+          },
+          data: {
+            status: VehicleStatus.AVAILABLE,
+          },
+        });
+      }
 
       if (
         returnImageIds &&
@@ -166,32 +175,36 @@ export const CompleteReturn = async (req: Request, res: Response) => {
         data: {
           publicId: createID(),
           staffId: actingUser.id,
-          action: "VEHICLE_RETURN",
+          action: requireManagerConfirmation ? "REQUESTED_MANAGER_CONFIRMATION_RETURN" : "VEHICLE_RETURN",
           entity: "Booking",
           entityId: booking.publicId,
         },
       });
     });
 
-    // Invalidate public vehicle cache
-    let cursor = "0";
-    do {
-      const reply = await redis.scan(
-        cursor,
-        "MATCH",
-        "public:vehicles:*",
-        "COUNT",
-        100,
-      );
-      cursor = reply[0];
-      const keys = reply[1];
-      if (keys.length > 0) {
-        await redis.del(keys);
-      }
-    } while (cursor !== "0");
+    // Invalidate public vehicle cache only if actual return occurred
+    if (!requireManagerConfirmation) {
+      let cursor = "0";
+      do {
+        const reply = await redis.scan(
+          cursor,
+          "MATCH",
+          "public:vehicles:*",
+          "COUNT",
+          100,
+        );
+        cursor = reply[0];
+        const keys = reply[1];
+        if (keys.length > 0) {
+          await redis.del(keys);
+        }
+      } while (cursor !== "0");
+    }
 
     return res.status(StatusCode.OK).json({
-      message: "Return Processed Successfully. Vehicle is now AVAILABLE.",
+      message: requireManagerConfirmation 
+        ? "Return sent to manager for confirmation." 
+        : "Return Processed Successfully. Vehicle is now AVAILABLE.",
     });
   } catch (error) {
     console.error("Return Action Error:", error);

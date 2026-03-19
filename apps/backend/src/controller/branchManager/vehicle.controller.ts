@@ -25,10 +25,19 @@ export const AddVehicle = async (req: Request, res: Response) => {
       regNo,
       odo,
       insuranceExpiry,
-      baseDailyPrice,
       categoryId,
       policyNumber,
       provider,
+      hourlyRate,
+      price12Hour,
+      freeKm12Hour,
+      price24Hour,
+      freeKm24Hour,
+      priceMonthly,
+      freeKmMonthly,
+      extraKmRate,
+      extraHourRate,
+      isCustomPricingEnabled,
     } = validation.data;
 
     const existingVehicle = await prisma.vehicle.findUnique({
@@ -51,8 +60,22 @@ export const AddVehicle = async (req: Request, res: Response) => {
         regNo,
         odo: Number(odo),
         insuranceExpiry: new Date(insuranceExpiry),
-        baseDailyPrice: Number(baseDailyPrice),
         status: VehicleStatus.AVAILABLE,
+        customPricing: price24Hour !== undefined ? {
+          create: {
+            publicId: createID(),
+            hourlyRate: hourlyRate ?? null,
+            price12Hour: price12Hour ?? null,
+            freeKm12Hour: freeKm12Hour ?? 100,
+            price24Hour: price24Hour,
+            freeKm24Hour: freeKm24Hour ?? 150,
+            priceMonthly: priceMonthly ?? null,
+            freeKmMonthly: freeKmMonthly ?? 1500,
+            extraKmRate: extraKmRate ?? 8.00,
+            extraHourRate: extraHourRate ?? 100.00,
+            enabled: isCustomPricingEnabled ?? true,
+          }
+        } : undefined,
         insuranceRecords: {
           create: {
             publicId: createID(),
@@ -205,6 +228,18 @@ export const EditVehicle = async (req: Request, res: Response) => {
     delete updateData.categoryId; // Remove raw categoryId from data object
     delete updateData.policyNumber;
     delete updateData.provider;
+    
+    // Remove custom pricing root fields from updateData
+    delete updateData.hourlyRate;
+    delete updateData.price12Hour;
+    delete updateData.freeKm12Hour;
+    delete updateData.price24Hour;
+    delete updateData.freeKm24Hour;
+    delete updateData.priceMonthly;
+    delete updateData.freeKmMonthly;
+    delete updateData.extraKmRate;
+    delete updateData.extraHourRate;
+    delete updateData.isCustomPricingEnabled;
 
     if (data.insuranceExpiry) {
       updateData.insuranceExpiry = new Date(data.insuranceExpiry);
@@ -217,6 +252,38 @@ export const EditVehicle = async (req: Request, res: Response) => {
     if (data.categoryId) {
       updateData.category = {
         connect: { id: Number(data.categoryId) },
+      };
+    }
+    
+    if (data.price24Hour !== undefined || data.isCustomPricingEnabled !== undefined) {
+      updateData.customPricing = {
+        upsert: {
+          create: {
+            publicId: createID(),
+            hourlyRate: data.hourlyRate ?? null,
+            price12Hour: data.price12Hour ?? null,
+            freeKm12Hour: data.freeKm12Hour ?? 100,
+            price24Hour: data.price24Hour ?? 0,
+            freeKm24Hour: data.freeKm24Hour ?? 150,
+            priceMonthly: data.priceMonthly ?? null,
+            freeKmMonthly: data.freeKmMonthly ?? 1500,
+            extraKmRate: data.extraKmRate ?? 8.00,
+            extraHourRate: data.extraHourRate ?? 100.00,
+            enabled: data.isCustomPricingEnabled ?? true,
+          },
+          update: {
+            hourlyRate: data.hourlyRate ?? null,
+            price12Hour: data.price12Hour ?? null,
+            ...(data.freeKm12Hour !== undefined && { freeKm12Hour: data.freeKm12Hour }),
+            ...(data.price24Hour !== undefined && { price24Hour: data.price24Hour }),
+            ...(data.freeKm24Hour !== undefined && { freeKm24Hour: data.freeKm24Hour }),
+            priceMonthly: data.priceMonthly ?? null,
+            ...(data.freeKmMonthly !== undefined && { freeKmMonthly: data.freeKmMonthly }),
+            ...(data.extraKmRate !== undefined && { extraKmRate: data.extraKmRate }),
+            ...(data.extraHourRate !== undefined && { extraHourRate: data.extraHourRate }),
+            ...(data.isCustomPricingEnabled !== undefined && { enabled: data.isCustomPricingEnabled }),
+          }
+        }
       };
     }
 
@@ -327,6 +394,7 @@ export const GetVehicleById = async (req: Request, res: Response) => {
             },
           },
         },
+        customPricing: true,
         insuranceRecords: {
           orderBy: { validTill: "desc" },
           take: 1,
@@ -485,6 +553,7 @@ export const GetVehicles = async (req: Request, res: Response) => {
               file: { select: { url: true } },
             },
           },
+          customPricing: true,
           category: true, // Include category to show name if needed
         },
       }),

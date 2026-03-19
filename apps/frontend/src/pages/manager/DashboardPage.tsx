@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner";
 import { DashboardKPIs } from "@/components/manager/dashboard/DashboardKPIs";
 import { DamageReports } from "@/components/manager/dashboard/DamageReports";
+import { ManagerConfirmations } from "@/components/manager/dashboard/ManagerConfirmations";
 import { StaffActivity } from "@/components/manager/dashboard/StaffActivity";
 import { QrScannerModal } from "@/components/employee/QrScannerModal";
 import {
@@ -216,6 +217,10 @@ export const DashboardPage = () => {
                 onLoadMore={handleLoadMoreDamages}
                 hasMore={hasMoreDamages}
               />
+            </section>
+
+            <section>
+              <ManagerConfirmations />
             </section>
           </div>
 

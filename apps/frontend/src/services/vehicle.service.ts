@@ -50,7 +50,9 @@ export interface ManagerVehicle {
   status?: string;
   regNo?: string;
   imageUrl: VehicleImage[];
-  baseDailyPrice: number;
+  customPricing?: {
+    price24Hour: number;
+  };
 }
 
 // Legacy alias for backward compatibility
@@ -166,6 +168,18 @@ export interface VehicleDetails {
   policyNumber?: string;
   provider?: string;
   insuranceExpiry?: string;
+  customPricing?: {
+    hourlyRate?: number;
+    price12Hour?: number;
+    freeKm12Hour?: number;
+    price24Hour?: number;
+    freeKm24Hour?: number;
+    priceMonthly?: number;
+    freeKmMonthly?: number;
+    extraKmRate?: number;
+    extraHourRate?: number;
+    enabled?: boolean;
+  } | null;
   pricing: {
     daily: number;
   };

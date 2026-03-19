@@ -388,6 +388,68 @@ async function main() {
     ],
   });
 
+  // 6. GST Rules
+  await prisma.gSTRule.createMany({
+    data: [
+      {
+        publicId: nanoid(),
+        branchId: mangaloreBranch.id,
+        gstNumber: "29ABCDE1234F1Z5",
+        cgstRate: 9.00,
+        sgstRate: 9.00,
+        igstRate: 0.00,
+      },
+      {
+        publicId: nanoid(),
+        branchId: udupiBranch.id,
+        gstNumber: "29ABCDE1234F1Z6",
+        cgstRate: 9.00,
+        sgstRate: 9.00,
+        igstRate: 0.00,
+      },
+    ],
+  });
+
+  // 7. Category Deposit Settings
+  await prisma.categoryDepositSetting.createMany({
+    data: [
+      { branchId: mangaloreBranch.id, categoryId: twoWheeler.id, amount: 1000 },
+      { branchId: udupiBranch.id, categoryId: twoWheeler.id, amount: 1000 },
+      { branchId: mangaloreBranch.id, categoryId: fourWheeler.id, amount: 5000 },
+      { branchId: udupiBranch.id, categoryId: fourWheeler.id, amount: 5000 },
+    ],
+  });
+
+  // 8. Timezone Setting
+  await prisma.timezoneSetting.create({
+    data: {
+      publicId: nanoid(),
+      timezone: "Asia/Kolkata",
+      enabled: true,
+    },
+  });
+
+  // 9. Feature Flags
+  const maintenanceFlag = await prisma.featureFlag.create({
+    data: {
+      publicId: nanoid(),
+      key: "system_maintenance",
+      name: "System Maintenance Mode",
+      scope: "SYSTEM",
+      enabled: false,
+    },
+  });
+
+  const branchDiscountFlag = await prisma.featureFlag.create({
+    data: {
+      publicId: nanoid(),
+      key: "branch_discount",
+      name: "Branch Discount",
+      scope: "BRANCH",
+      enabled: true,
+    },
+  });
+
   console.log("VRMS seed completed successfully!");
   console.log({
     admin: { email: admin.email, password: "Markjeo076&" },

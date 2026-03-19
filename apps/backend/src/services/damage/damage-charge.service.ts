@@ -1,4 +1,4 @@
-import { prisma, DamageChargeType, ChargeType, DamageReport } from "@repo/database/client";
+import { prisma, DamageChargeType, DamageReport } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
 
 export class DamageChargeService {

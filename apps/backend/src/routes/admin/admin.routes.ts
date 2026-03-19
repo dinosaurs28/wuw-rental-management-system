@@ -25,6 +25,7 @@ import { GetGSTReport } from "../../controller/admin/gstReportController.js";
 import { GetAllCategories } from "../../controller/admin/category.controller.js";
 import { getGlobalKpiStats } from "../../controller/admin/globalKpi.controller.js";
 import { GetAllVehicles } from "../../controller/admin/vehicle.controller.js";
+import featureFlagRouter from "./feature-flag.routes.js";
 
 const router: Router = Router();
 
@@ -76,5 +77,8 @@ router.get("/dashboard/reports/gst", AdminCheck, GetGSTReport);
 
 router.get("/dashboard/categories", AdminCheck, GetAllCategories);
 router.get("/dashboard/vehicles", AdminCheck, GetAllVehicles);
+
+// Feature Flags
+router.use("/feature-flags", featureFlagRouter);
 
 export default router;

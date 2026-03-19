@@ -23,6 +23,7 @@ import { cn, compressImage } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -83,6 +84,7 @@ const handoverSchema = z.object({
     .number({ invalid_type_error: "Must be a number" })
     .min(0, "Odometer must be positive"),
   fuelLevel: z.string({ required_error: "Fuel level is required" }), // Select returns string
+  requireManagerConfirmation: z.boolean().optional(),
 });
 
 type HandoverFormValues = z.infer<typeof handoverSchema>;
@@ -141,11 +143,13 @@ export default function StaffPickupsPage() {
       odo: number;
       fuelLevel: number;
       pickupImageIds?: string[];
+      requireManagerConfirmation?: boolean;
     }) => bookingService.approvePickup(bookingId!, data),
-    onSuccess: () => {
-      toast.success("Vehicle Handover Confirmed!");
+    onSuccess: (response: any) => {
+      toast.success(response?.message || "Vehicle Handover Confirmed!");
       setIsConfirmOpen(false);
       queryClient.invalidateQueries({ queryKey: ["booking", bookingId] }); // To update status banner
+      navigate("/employee/dashboard");
     },
     onError: (error: any) => {
       toast.error(
@@ -195,6 +199,7 @@ export default function StaffPickupsPage() {
     resolver: zodResolver(handoverSchema),
     defaultValues: {
       fuelLevel: "", // Force selection
+      requireManagerConfirmation: false,
     },
     mode: "onChange",
   });
@@ -243,6 +248,7 @@ export default function StaffPickupsPage() {
       odo: data.odo,
       fuelLevel: parseInt(data.fuelLevel),
       pickupImageIds: imageIds.length > 0 ? imageIds : undefined,
+      requireManagerConfirmation: data.requireManagerConfirmation,
     });
   };
 
@@ -641,7 +647,25 @@ export default function StaffPickupsPage() {
                   </div>
 
                   {!isPickedUp && (
-                    <div className="pt-4">
+                    <div className="pt-4 space-y-4">
+                      {/* Manager Confirmation Checkbox */}
+                      <Controller
+                        name="requireManagerConfirmation"
+                        control={control}
+                        render={({ field }) => (
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="requireManagerConfirmation"
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                            <Label htmlFor="requireManagerConfirmation" className="text-sm font-medium cursor-pointer">
+                              Confirm with Manager Before Final Pickup
+                            </Label>
+                          </div>
+                        )}
+                      />
+
                       <Dialog
                         open={isConfirmOpen}
                         onOpenChange={setIsConfirmOpen}

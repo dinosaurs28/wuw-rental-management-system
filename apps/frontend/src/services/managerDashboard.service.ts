@@ -166,4 +166,56 @@ export const managerDashboardService = {
     );
     return response.data.data;
   },
+
+  getManagerConfirmations: async (): Promise<any[]> => {
+    const response = await apiClient.get(
+      "/branchManager/dashboard/bookings/manager-confirmations",
+      { timeout: 10000 },
+    );
+    return response.data.data || [];
+  },
+
+  getConfirmationDetails: async (bookingId: string): Promise<any> => {
+    const response = await apiClient.get(
+      `/branchManager/dashboard/bookings/${bookingId}/confirmation-details`,
+      { timeout: 10000 },
+    );
+    return response.data.data;
+  },
+
+  collectSafetyDeposit: async (bookingId: string, data: any) => {
+    const response = await apiClient.post(
+      `/branchManager/dashboard/bookings/${bookingId}/safety-deposit`,
+      data,
+      { timeout: 10000 },
+    );
+    return response.data;
+  },
+
+  confirmPickupWithDeposit: async (bookingId: string, data: any) => {
+    const response = await apiClient.post(
+      `/branchManager/dashboard/bookings/${bookingId}/manager-confirm-pickup`,
+      data,
+      { timeout: 10000 },
+    );
+    return response.data;
+  },
+
+  confirmReturnManager: async (bookingId: string) => {
+    const response = await apiClient.post(
+      `/branchManager/dashboard/bookings/${bookingId}/manager-confirm-return`,
+      {},
+      { timeout: 10000 },
+    );
+    return response.data;
+  },
+
+  refundSafetyDeposit: async (bookingId: string, amount: number) => {
+    const response = await apiClient.post(
+      `/branchManager/dashboard/bookings/${bookingId}/refund-deposit`,
+      { amount },
+      { timeout: 10000 },
+    );
+    return response.data;
+  },
 };

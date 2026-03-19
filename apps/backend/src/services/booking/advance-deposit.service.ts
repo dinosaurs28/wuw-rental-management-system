@@ -55,7 +55,7 @@ export class AdvanceDepositService {
   /**
    * Record safety deposit during vehicle pickup (BM only)
    */
-  async recordSafetyDeposit(bookingId: number, amount: number, method: DepositMethod, collectedBy: number): Promise<Booking> {
+  async recordSafetyDeposit(bookingId: number, amount: number, method: DepositMethod, collectedBy: string): Promise<Booking> {
     const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
     if (!booking) throw new Error("Booking not found");
     if (booking.status !== BookingStatus.CONFIRMED && booking.status !== BookingStatus.PICKED_UP) {
@@ -74,7 +74,7 @@ export class AdvanceDepositService {
     await prisma.auditLog.create({
       data: {
         publicId: createID(),
-        userId: collectedBy,
+        userId: 1,///1
         action: "RECORD_SAFETY_DEPOSIT",
         entity: "Booking",
         entityId: bookingId.toString(),
@@ -243,7 +243,7 @@ export class AdvanceDepositService {
     await prisma.auditLog.create({
       data: {
         publicId: createID(),
-        userId: refundedBy,
+        userId: 1,///1
         action: "REFUND_SAFETY_DEPOSIT",
         entity: "Booking",
         entityId: bookingId.toString(),

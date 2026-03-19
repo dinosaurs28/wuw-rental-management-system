@@ -29,6 +29,7 @@ export const ManagerCheck = async (
   if (isverified.role === Role.MANAGER) {
     req.public_Id = isverified.sub;
     req.branch_Id = isverified.branchId as number;
+    
     return next();
   }
 

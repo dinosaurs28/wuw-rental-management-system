@@ -261,7 +261,7 @@ export const bookingService = {
   // Complete Return (No Damage)
   completeReturn: async (
     bookingId: string,
-    data: { returnImageIds: string[] },
+    data: { returnImageIds: string[]; requireManagerConfirmation?: boolean },
   ) => {
     const response = await apiClient.post(
       `/employee/return/${bookingId}/complete`,

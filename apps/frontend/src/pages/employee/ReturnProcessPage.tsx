@@ -78,6 +78,7 @@ export default function ReturnProcessPage() {
   >([]);
   const [hasDamage, setHasDamage] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [requireManagerConfirmation, setRequireManagerConfirmation] = useState(false);
 
   // Damage Report State
   const [damages, setDamages] = useState<DamageItem[]>([]);
@@ -136,7 +137,7 @@ export default function ReturnProcessPage() {
   });
 
   const completeReturnMutation = useMutation({
-    mutationFn: (data: { returnImageIds: string[] }) =>
+    mutationFn: (data: { returnImageIds: string[], requireManagerConfirmation?: boolean }) =>
       bookingService.completeReturn(bookingId!, data),
     onSuccess: (data: any) => {
       setSubmissionResult({
@@ -204,6 +205,7 @@ export default function ReturnProcessPage() {
     }
     completeReturnMutation.mutate({
       returnImageIds: returnPhotos.map((p) => p.publicId),
+      requireManagerConfirmation,
     });
   };
 
@@ -872,6 +874,20 @@ export default function ReturnProcessPage() {
                 </div>
 
                 <Separator className="bg-gray-700" />
+
+                {!isCompleted && (
+                  <div className="flex items-center space-x-2 py-2">
+                    <Checkbox
+                      id="requireManagerConfirmation"
+                      checked={requireManagerConfirmation}
+                      onCheckedChange={(c) => setRequireManagerConfirmation(!!c)}
+                      className="border-gray-500 data-[state=checked]:bg-[#FF5F00] data-[state=checked]:text-white cursor-pointer"
+                    />
+                    <Label htmlFor="requireManagerConfirmation" className="text-sm font-medium cursor-pointer text-gray-200">
+                      Confirm with Manager Before Final Return
+                    </Label>
+                  </div>
+                )}
 
                 {isCompleted ? (
                   <Button className="w-full" variant="outline" disabled>

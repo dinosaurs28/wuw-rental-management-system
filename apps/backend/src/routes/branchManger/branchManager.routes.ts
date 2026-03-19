@@ -10,6 +10,10 @@ import {
   CancelNoShow,
   CalculateFinalBilling,
   RefundDeposit,
+  ConfirmPickupWithDeposit,
+  ConfirmReturnByManager,
+  GetManagerConfirmations,
+  GetConfirmationDetails,
 } from "../../controller/branchManager/bookings.controller.js";
 
 import {
@@ -62,7 +66,11 @@ router.get("/dashboard/stats", ManagerCheck, GetDashboardStats);
 router.get("/dashboard/revenue", ManagerCheck, GetRevenueStats);
 router.get("/dashboard/bookings/active", ManagerCheck, GetActiveBookings);
 router.get("/dashboard/bookings/pending", ManagerCheck, GetPendingApprovals);
+router.get("/dashboard/bookings/manager-confirmations", ManagerCheck, GetManagerConfirmations);
+router.get("/dashboard/bookings/:bookingId/confirmation-details", ManagerCheck, GetConfirmationDetails);
 router.post("/dashboard/bookings/:bookingId/safety-deposit", ManagerCheck, CollectSafetyDeposit);
+router.post("/dashboard/bookings/:bookingId/manager-confirm-pickup", ManagerCheck, ConfirmPickupWithDeposit);
+router.post("/dashboard/bookings/:bookingId/manager-confirm-return", ManagerCheck, ConfirmReturnByManager);
 router.post("/dashboard/bookings/:bookingId/cancel-no-show", ManagerCheck, CancelNoShow);
 router.post("/dashboard/bookings/:bookingId/final-billing", ManagerCheck, CalculateFinalBilling);
 router.post("/dashboard/bookings/:bookingId/refund-deposit", ManagerCheck, RefundDeposit);

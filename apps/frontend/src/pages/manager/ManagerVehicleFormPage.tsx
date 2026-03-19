@@ -62,9 +62,16 @@ const vehicleSchema = z.object({
   odo: z.coerce.number().min(0, "Odometer reading is required"),
   category: z.string().min(1, "Category is required"),
   status: z.enum(["AVAILABLE", "MAINTENANCE", "INACTIVE"]),
-  pricing: z.object({
-    daily: z.coerce.number().positive("Daily price must be positive"),
-  }),
+  hourlyRate: z.coerce.number().min(0, "Hourly rate must be non-negative").optional(),
+  price12Hour: z.coerce.number().min(0, "12-hour price must be non-negative").optional(),
+  freeKm12Hour: z.coerce.number().min(0, "Free KM for 12 hours must be non-negative").optional(),
+  price24Hour: z.coerce.number().min(0, "24-hour price must be non-negative"),
+  freeKm24Hour: z.coerce.number().min(0, "Free KM for 24 hours must be non-negative").optional(),
+  priceMonthly: z.coerce.number().min(0, "Monthly price must be non-negative").optional(),
+  freeKmMonthly: z.coerce.number().min(0, "Free KM for month must be non-negative").optional(),
+  extraKmRate: z.coerce.number().min(0, "Extra KM rate must be non-negative"),
+  extraHourRate: z.coerce.number().min(0, "Extra Hour rate must be non-negative"),
+  isCustomPricingEnabled: z.boolean(),
   insuranceExpiry: z.date({
     required_error: "Insurance Expiry is required",
   }),
@@ -96,7 +103,16 @@ export const ManagerVehicleFormPage = () => {
       odo: 0,
       category: "",
       status: "AVAILABLE",
-      pricing: { daily: 0 },
+      hourlyRate: 0,
+      price12Hour: 0,
+      freeKm12Hour: 100,
+      price24Hour: 0,
+      freeKm24Hour: 150,
+      priceMonthly: 0,
+      freeKmMonthly: 1500,
+      extraKmRate: 8,
+      extraHourRate: 100,
+      isCustomPricingEnabled: true,
       policyNumber: "",
       provider: "",
       images: [],
@@ -144,9 +160,16 @@ export const ManagerVehicleFormPage = () => {
             odo: vehicle.odo || 0,
             category: String(vehicle.categoryId || ""),
             status: vehicle.status as "AVAILABLE" | "MAINTENANCE" | "INACTIVE",
-            pricing: {
-              daily: vehicle.baseDailyPrice,
-            },
+            hourlyRate: vehicle.customPricing?.hourlyRate ? Number(vehicle.customPricing.hourlyRate) : 0,
+            price12Hour: vehicle.customPricing?.price12Hour ? Number(vehicle.customPricing.price12Hour) : 0,
+            freeKm12Hour: vehicle.customPricing?.freeKm12Hour ?? 100,
+            price24Hour: vehicle.customPricing?.price24Hour ? Number(vehicle.customPricing.price24Hour) : 0,
+            freeKm24Hour: vehicle.customPricing?.freeKm24Hour ?? 150,
+            priceMonthly: vehicle.customPricing?.priceMonthly ? Number(vehicle.customPricing.priceMonthly) : 0,
+            freeKmMonthly: vehicle.customPricing?.freeKmMonthly ?? 1500,
+            extraKmRate: vehicle.customPricing?.extraKmRate ? Number(vehicle.customPricing.extraKmRate) : 8,
+            extraHourRate: vehicle.customPricing?.extraHourRate ? Number(vehicle.customPricing.extraHourRate) : 100,
+            isCustomPricingEnabled: vehicle.customPricing?.enabled ?? true,
             insuranceExpiry: vehicle.insuranceExpiry
               ? new Date(vehicle.insuranceExpiry)
               : undefined,
@@ -177,12 +200,22 @@ export const ManagerVehicleFormPage = () => {
       formData.append("model", data.model);
       formData.append("regNo", data.licensePlate);
       formData.append("odo", data.odo.toString());
-      formData.append("baseDailyPrice", data.pricing.daily.toString());
       formData.append("categoryId", data.category);
       formData.append("insuranceExpiry", data.insuranceExpiry.toISOString());
       formData.append("policyNumber", data.policyNumber);
       formData.append("provider", data.provider);
       formData.append("status", data.status);
+
+      formData.append("hourlyRate", data.hourlyRate?.toString() || "0");
+      formData.append("price12Hour", data.price12Hour?.toString() || "0");
+      formData.append("freeKm12Hour", data.freeKm12Hour?.toString() || "100");
+      formData.append("price24Hour", data.price24Hour.toString());
+      formData.append("freeKm24Hour", data.freeKm24Hour?.toString() || "150");
+      formData.append("priceMonthly", data.priceMonthly?.toString() || "0");
+      formData.append("freeKmMonthly", data.freeKmMonthly?.toString() || "1500");
+      formData.append("extraKmRate", data.extraKmRate.toString());
+      formData.append("extraHourRate", data.extraHourRate.toString());
+      formData.append("isCustomPricingEnabled", data.isCustomPricingEnabled.toString());
 
       // Handle Images
       data.images.forEach((img) => {
@@ -439,25 +472,128 @@ export const ManagerVehicleFormPage = () => {
                   Pricing & Insurance
                 </h2>
                 <Separator />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <FormField
                     control={form.control}
-                    name="pricing.daily"
+                    name="price24Hour"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Daily Price (₹)</FormLabel>
                         <FormControl>
-                          <Input
-                            type="number"
-                            min="0"
-                            className="h-12"
-                            {...field}
-                          />
+                          <Input type="number" min="0" className="h-12" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                  <FormField
+                    control={form.control}
+                    name="freeKm24Hour"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Free KM / Day</FormLabel>
+                        <FormControl>
+                          <Input type="number" min="0" className="h-12" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="hourlyRate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Hourly Rate (₹)</FormLabel>
+                        <FormControl>
+                          <Input type="number" min="0" className="h-12" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="price12Hour"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>12-Hour Price (₹)</FormLabel>
+                        <FormControl>
+                          <Input type="number" min="0" className="h-12" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="freeKm12Hour"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Free KM / 12-Hour</FormLabel>
+                        <FormControl>
+                          <Input type="number" min="0" className="h-12" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="priceMonthly"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Monthly Price (₹)</FormLabel>
+                        <FormControl>
+                          <Input type="number" min="0" className="h-12" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="freeKmMonthly"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Free KM / Month</FormLabel>
+                        <FormControl>
+                          <Input type="number" min="0" className="h-12" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="extraKmRate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Extra KM Rate (₹/km)</FormLabel>
+                        <FormControl>
+                          <Input type="number" min="0" className="h-12" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="extraHourRate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Extra Hour Rate (₹/hr)</FormLabel>
+                        <FormControl>
+                          <Input type="number" min="0" className="h-12" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <Separator />
+                <h3 className="font-medium text-neutral-800">Insurance Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={form.control}
                     name="insuranceExpiry"

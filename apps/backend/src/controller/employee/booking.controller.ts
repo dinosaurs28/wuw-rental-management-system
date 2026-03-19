@@ -460,6 +460,7 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
         endAt: true,
         status: true,
         totalFinal: true,
+        requiresManagerConfirmation: true,
         customer: {
           select: {
             user: {

@@ -18,10 +18,21 @@ export const createVehicleSchema = z.object({
   regNo: z.string().min(1, "Registration Number is required"),
   odo: z.coerce.number().min(0),
   insuranceExpiry: z.string(),
-  baseDailyPrice: z.coerce.number().positive(),
   categoryId: z.coerce.number().int().positive(),
   policyNumber: z.string().min(1, "Policy Number is required"),
   provider: z.string().min(1, "Provider is required"),
+  
+  // Custom Pricing Fields
+  hourlyRate: z.coerce.number().min(0).optional(),
+  price12Hour: z.coerce.number().min(0).optional(),
+  freeKm12Hour: z.coerce.number().min(0).optional(),
+  price24Hour: z.coerce.number().min(0).optional(),
+  freeKm24Hour: z.coerce.number().min(0).optional(),
+  priceMonthly: z.coerce.number().min(0).optional(),
+  freeKmMonthly: z.coerce.number().min(0).optional(),
+  extraKmRate: z.coerce.number().min(0).optional(),
+  extraHourRate: z.coerce.number().min(0).optional(),
+  isCustomPricingEnabled: z.boolean().or(z.string().transform(v => v === 'true')).optional(),
 });
 
 export const editVehicleSchema = createVehicleSchema.partial().extend({
@@ -33,6 +44,12 @@ export const pickUpVehicleSchema = z.object({
   odo: z.coerce.number().min(0),
   fuelLevel: z.coerce.number().min(0),
   pickupImageIds: z.array(z.string().min(1)).optional(),
+  requireManagerConfirmation: z.boolean().optional(),
+});
+
+export const managerConfirmPickupSchema = z.object({
+  safetyDeposit: z.coerce.number().min(0),
+  safetyDepositMethod: z.enum(["ONLINE_RAZORPAY", "CASH", "UPI"]).optional(),
 });
 
 export const createDamageReportSchema = z.object({

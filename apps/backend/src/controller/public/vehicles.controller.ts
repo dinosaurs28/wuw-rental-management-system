@@ -88,7 +88,6 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
 
       filters.categoryId = categoryObj.id;
     }
-
     if (branch) {
       const branchObj = await prisma.branch.findFirst({
         where: {

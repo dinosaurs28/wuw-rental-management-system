@@ -183,6 +183,21 @@ export type TimezoneSetting = $Result.DefaultSelection<Prisma.$TimezoneSettingPa
  * 
  */
 export type CancellationInvoice = $Result.DefaultSelection<Prisma.$CancellationInvoicePayload>
+/**
+ * Model FeatureFlag
+ * 
+ */
+export type FeatureFlag = $Result.DefaultSelection<Prisma.$FeatureFlagPayload>
+/**
+ * Model BranchFeatureFlag
+ * 
+ */
+export type BranchFeatureFlag = $Result.DefaultSelection<Prisma.$BranchFeatureFlagPayload>
+/**
+ * Model VehicleFeatureFlag
+ * 
+ */
+export type VehicleFeatureFlag = $Result.DefaultSelection<Prisma.$VehicleFeatureFlagPayload>
 
 /**
  * Enums
@@ -297,6 +312,14 @@ export const BookingPhotoType: {
 export type BookingPhotoType = (typeof BookingPhotoType)[keyof typeof BookingPhotoType]
 
 
+export const DamageChargeType: {
+  PENALTY: 'PENALTY',
+  COMPENSATION: 'COMPENSATION'
+};
+
+export type DamageChargeType = (typeof DamageChargeType)[keyof typeof DamageChargeType]
+
+
 export const DamageReportStatus: {
   PENDING: 'PENDING',
   APPROVED: 'APPROVED',
@@ -315,14 +338,6 @@ export const VehicleReturnDisposition: {
 export type VehicleReturnDisposition = (typeof VehicleReturnDisposition)[keyof typeof VehicleReturnDisposition]
 
 
-export const DamageChargeType: {
-  PENALTY: 'PENALTY',
-  COMPENSATION: 'COMPENSATION'
-};
-
-export type DamageChargeType = (typeof DamageChargeType)[keyof typeof DamageChargeType]
-
-
 export const InvoiceStatus: {
   PENDING: 'PENDING',
   APPROVED: 'APPROVED',
@@ -333,19 +348,13 @@ export const InvoiceStatus: {
 export type InvoiceStatus = (typeof InvoiceStatus)[keyof typeof InvoiceStatus]
 
 
-export const ChargeType: {
-  RENTAL: 'RENTAL',
-  DAMAGE_PENALTY: 'DAMAGE_PENALTY',
-  DAMAGE_COMPENSATION: 'DAMAGE_COMPENSATION',
-  DISTANCE: 'DISTANCE',
-  DELAY: 'DELAY',
-  FUEL: 'FUEL',
-  CLEANING: 'CLEANING',
-  SPEEDING: 'SPEEDING',
-  OTHER: 'OTHER'
+export const FeatureFlagScope: {
+  SYSTEM: 'SYSTEM',
+  BRANCH: 'BRANCH',
+  VEHICLE: 'VEHICLE'
 };
 
-export type ChargeType = (typeof ChargeType)[keyof typeof ChargeType]
+export type FeatureFlagScope = (typeof FeatureFlagScope)[keyof typeof FeatureFlagScope]
 
 }
 
@@ -393,6 +402,10 @@ export type BookingPhotoType = $Enums.BookingPhotoType
 
 export const BookingPhotoType: typeof $Enums.BookingPhotoType
 
+export type DamageChargeType = $Enums.DamageChargeType
+
+export const DamageChargeType: typeof $Enums.DamageChargeType
+
 export type DamageReportStatus = $Enums.DamageReportStatus
 
 export const DamageReportStatus: typeof $Enums.DamageReportStatus
@@ -401,17 +414,13 @@ export type VehicleReturnDisposition = $Enums.VehicleReturnDisposition
 
 export const VehicleReturnDisposition: typeof $Enums.VehicleReturnDisposition
 
-export type DamageChargeType = $Enums.DamageChargeType
-
-export const DamageChargeType: typeof $Enums.DamageChargeType
-
 export type InvoiceStatus = $Enums.InvoiceStatus
 
 export const InvoiceStatus: typeof $Enums.InvoiceStatus
 
-export type ChargeType = $Enums.ChargeType
+export type FeatureFlagScope = $Enums.FeatureFlagScope
 
-export const ChargeType: typeof $Enums.ChargeType
+export const FeatureFlagScope: typeof $Enums.FeatureFlagScope
 
 /**
  * ##  Prisma Client ʲˢ
@@ -875,6 +884,36 @@ export class PrismaClient<
     * ```
     */
   get cancellationInvoice(): Prisma.CancellationInvoiceDelegate<ExtArgs>;
+
+  /**
+   * `prisma.featureFlag`: Exposes CRUD operations for the **FeatureFlag** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more FeatureFlags
+    * const featureFlags = await prisma.featureFlag.findMany()
+    * ```
+    */
+  get featureFlag(): Prisma.FeatureFlagDelegate<ExtArgs>;
+
+  /**
+   * `prisma.branchFeatureFlag`: Exposes CRUD operations for the **BranchFeatureFlag** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more BranchFeatureFlags
+    * const branchFeatureFlags = await prisma.branchFeatureFlag.findMany()
+    * ```
+    */
+  get branchFeatureFlag(): Prisma.BranchFeatureFlagDelegate<ExtArgs>;
+
+  /**
+   * `prisma.vehicleFeatureFlag`: Exposes CRUD operations for the **VehicleFeatureFlag** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more VehicleFeatureFlags
+    * const vehicleFeatureFlags = await prisma.vehicleFeatureFlag.findMany()
+    * ```
+    */
+  get vehicleFeatureFlag(): Prisma.VehicleFeatureFlagDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -1349,7 +1388,10 @@ export namespace Prisma {
     SystemSetting: 'SystemSetting',
     GSTRule: 'GSTRule',
     TimezoneSetting: 'TimezoneSetting',
-    CancellationInvoice: 'CancellationInvoice'
+    CancellationInvoice: 'CancellationInvoice',
+    FeatureFlag: 'FeatureFlag',
+    BranchFeatureFlag: 'BranchFeatureFlag',
+    VehicleFeatureFlag: 'VehicleFeatureFlag'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1365,7 +1407,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehicle" | "vehiclePricingOverride" | "vehicleCustomPricing" | "branchPricingDefaults" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "gSTRule" | "timezoneSetting" | "cancellationInvoice"
+      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehicle" | "vehiclePricingOverride" | "vehicleCustomPricing" | "branchPricingDefaults" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "gSTRule" | "timezoneSetting" | "cancellationInvoice" | "featureFlag" | "branchFeatureFlag" | "vehicleFeatureFlag"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -3749,6 +3791,216 @@ export namespace Prisma {
           }
         }
       }
+      FeatureFlag: {
+        payload: Prisma.$FeatureFlagPayload<ExtArgs>
+        fields: Prisma.FeatureFlagFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.FeatureFlagFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FeatureFlagPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.FeatureFlagFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FeatureFlagPayload>
+          }
+          findFirst: {
+            args: Prisma.FeatureFlagFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FeatureFlagPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.FeatureFlagFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FeatureFlagPayload>
+          }
+          findMany: {
+            args: Prisma.FeatureFlagFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FeatureFlagPayload>[]
+          }
+          create: {
+            args: Prisma.FeatureFlagCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FeatureFlagPayload>
+          }
+          createMany: {
+            args: Prisma.FeatureFlagCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.FeatureFlagCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FeatureFlagPayload>[]
+          }
+          delete: {
+            args: Prisma.FeatureFlagDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FeatureFlagPayload>
+          }
+          update: {
+            args: Prisma.FeatureFlagUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FeatureFlagPayload>
+          }
+          deleteMany: {
+            args: Prisma.FeatureFlagDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.FeatureFlagUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.FeatureFlagUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FeatureFlagPayload>
+          }
+          aggregate: {
+            args: Prisma.FeatureFlagAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateFeatureFlag>
+          }
+          groupBy: {
+            args: Prisma.FeatureFlagGroupByArgs<ExtArgs>
+            result: $Utils.Optional<FeatureFlagGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.FeatureFlagCountArgs<ExtArgs>
+            result: $Utils.Optional<FeatureFlagCountAggregateOutputType> | number
+          }
+        }
+      }
+      BranchFeatureFlag: {
+        payload: Prisma.$BranchFeatureFlagPayload<ExtArgs>
+        fields: Prisma.BranchFeatureFlagFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.BranchFeatureFlagFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchFeatureFlagPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.BranchFeatureFlagFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchFeatureFlagPayload>
+          }
+          findFirst: {
+            args: Prisma.BranchFeatureFlagFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchFeatureFlagPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.BranchFeatureFlagFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchFeatureFlagPayload>
+          }
+          findMany: {
+            args: Prisma.BranchFeatureFlagFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchFeatureFlagPayload>[]
+          }
+          create: {
+            args: Prisma.BranchFeatureFlagCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchFeatureFlagPayload>
+          }
+          createMany: {
+            args: Prisma.BranchFeatureFlagCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.BranchFeatureFlagCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchFeatureFlagPayload>[]
+          }
+          delete: {
+            args: Prisma.BranchFeatureFlagDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchFeatureFlagPayload>
+          }
+          update: {
+            args: Prisma.BranchFeatureFlagUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchFeatureFlagPayload>
+          }
+          deleteMany: {
+            args: Prisma.BranchFeatureFlagDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.BranchFeatureFlagUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.BranchFeatureFlagUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchFeatureFlagPayload>
+          }
+          aggregate: {
+            args: Prisma.BranchFeatureFlagAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateBranchFeatureFlag>
+          }
+          groupBy: {
+            args: Prisma.BranchFeatureFlagGroupByArgs<ExtArgs>
+            result: $Utils.Optional<BranchFeatureFlagGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.BranchFeatureFlagCountArgs<ExtArgs>
+            result: $Utils.Optional<BranchFeatureFlagCountAggregateOutputType> | number
+          }
+        }
+      }
+      VehicleFeatureFlag: {
+        payload: Prisma.$VehicleFeatureFlagPayload<ExtArgs>
+        fields: Prisma.VehicleFeatureFlagFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.VehicleFeatureFlagFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleFeatureFlagPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.VehicleFeatureFlagFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleFeatureFlagPayload>
+          }
+          findFirst: {
+            args: Prisma.VehicleFeatureFlagFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleFeatureFlagPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.VehicleFeatureFlagFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleFeatureFlagPayload>
+          }
+          findMany: {
+            args: Prisma.VehicleFeatureFlagFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleFeatureFlagPayload>[]
+          }
+          create: {
+            args: Prisma.VehicleFeatureFlagCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleFeatureFlagPayload>
+          }
+          createMany: {
+            args: Prisma.VehicleFeatureFlagCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.VehicleFeatureFlagCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleFeatureFlagPayload>[]
+          }
+          delete: {
+            args: Prisma.VehicleFeatureFlagDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleFeatureFlagPayload>
+          }
+          update: {
+            args: Prisma.VehicleFeatureFlagUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleFeatureFlagPayload>
+          }
+          deleteMany: {
+            args: Prisma.VehicleFeatureFlagDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.VehicleFeatureFlagUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.VehicleFeatureFlagUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleFeatureFlagPayload>
+          }
+          aggregate: {
+            args: Prisma.VehicleFeatureFlagAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateVehicleFeatureFlag>
+          }
+          groupBy: {
+            args: Prisma.VehicleFeatureFlagGroupByArgs<ExtArgs>
+            result: $Utils.Optional<VehicleFeatureFlagGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.VehicleFeatureFlagCountArgs<ExtArgs>
+            result: $Utils.Optional<VehicleFeatureFlagCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -4108,6 +4360,7 @@ export namespace Prisma {
     pricingDiscountSlabs: number
     categoryDepositSettings: number
     branchPricingDefaults: number
+    featureFlags: number
   }
 
   export type BranchCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -4117,6 +4370,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: boolean | BranchCountOutputTypeCountPricingDiscountSlabsArgs
     categoryDepositSettings?: boolean | BranchCountOutputTypeCountCategoryDepositSettingsArgs
     branchPricingDefaults?: boolean | BranchCountOutputTypeCountBranchPricingDefaultsArgs
+    featureFlags?: boolean | BranchCountOutputTypeCountFeatureFlagsArgs
   }
 
   // Custom InputTypes
@@ -4170,6 +4424,13 @@ export namespace Prisma {
    */
   export type BranchCountOutputTypeCountBranchPricingDefaultsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: BranchPricingDefaultsWhereInput
+  }
+
+  /**
+   * BranchCountOutputType without action
+   */
+  export type BranchCountOutputTypeCountFeatureFlagsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BranchFeatureFlagWhereInput
   }
 
 
@@ -4250,6 +4511,7 @@ export namespace Prisma {
     damageReports: number
     images: number
     bookingItems: number
+    featureFlags: number
   }
 
   export type VehicleCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -4258,6 +4520,7 @@ export namespace Prisma {
     damageReports?: boolean | VehicleCountOutputTypeCountDamageReportsArgs
     images?: boolean | VehicleCountOutputTypeCountImagesArgs
     bookingItems?: boolean | VehicleCountOutputTypeCountBookingItemsArgs
+    featureFlags?: boolean | VehicleCountOutputTypeCountFeatureFlagsArgs
   }
 
   // Custom InputTypes
@@ -4304,6 +4567,13 @@ export namespace Prisma {
    */
   export type VehicleCountOutputTypeCountBookingItemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: BookingItemWhereInput
+  }
+
+  /**
+   * VehicleCountOutputType without action
+   */
+  export type VehicleCountOutputTypeCountFeatureFlagsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VehicleFeatureFlagWhereInput
   }
 
 
@@ -4424,6 +4694,46 @@ export namespace Prisma {
    */
   export type InvoiceCountOutputTypeCountPaymentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: PaymentWhereInput
+  }
+
+
+  /**
+   * Count Type FeatureFlagCountOutputType
+   */
+
+  export type FeatureFlagCountOutputType = {
+    branchFlags: number
+    vehicleFlags: number
+  }
+
+  export type FeatureFlagCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branchFlags?: boolean | FeatureFlagCountOutputTypeCountBranchFlagsArgs
+    vehicleFlags?: boolean | FeatureFlagCountOutputTypeCountVehicleFlagsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * FeatureFlagCountOutputType without action
+   */
+  export type FeatureFlagCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FeatureFlagCountOutputType
+     */
+    select?: FeatureFlagCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * FeatureFlagCountOutputType without action
+   */
+  export type FeatureFlagCountOutputTypeCountBranchFlagsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BranchFeatureFlagWhereInput
+  }
+
+  /**
+   * FeatureFlagCountOutputType without action
+   */
+  export type FeatureFlagCountOutputTypeCountVehicleFlagsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VehicleFeatureFlagWhereInput
   }
 
 
@@ -11232,6 +11542,7 @@ export namespace Prisma {
     categoryDepositSettings?: boolean | Branch$categoryDepositSettingsArgs<ExtArgs>
     branchPricingDefaults?: boolean | Branch$branchPricingDefaultsArgs<ExtArgs>
     gstRule?: boolean | Branch$gstRuleArgs<ExtArgs>
+    featureFlags?: boolean | Branch$featureFlagsArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["branch"]>
 
@@ -11264,6 +11575,7 @@ export namespace Prisma {
     categoryDepositSettings?: boolean | Branch$categoryDepositSettingsArgs<ExtArgs>
     branchPricingDefaults?: boolean | Branch$branchPricingDefaultsArgs<ExtArgs>
     gstRule?: boolean | Branch$gstRuleArgs<ExtArgs>
+    featureFlags?: boolean | Branch$featureFlagsArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type BranchIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -11279,6 +11591,7 @@ export namespace Prisma {
       categoryDepositSettings: Prisma.$CategoryDepositSettingPayload<ExtArgs>[]
       branchPricingDefaults: Prisma.$BranchPricingDefaultsPayload<ExtArgs>[]
       gstRule: Prisma.$GSTRulePayload<ExtArgs> | null
+      featureFlags: Prisma.$BranchFeatureFlagPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -11660,6 +11973,7 @@ export namespace Prisma {
     categoryDepositSettings<T extends Branch$categoryDepositSettingsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$categoryDepositSettingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CategoryDepositSettingPayload<ExtArgs>, T, "findMany"> | Null>
     branchPricingDefaults<T extends Branch$branchPricingDefaultsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$branchPricingDefaultsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BranchPricingDefaultsPayload<ExtArgs>, T, "findMany"> | Null>
     gstRule<T extends Branch$gstRuleArgs<ExtArgs> = {}>(args?: Subset<T, Branch$gstRuleArgs<ExtArgs>>): Prisma__GSTRuleClient<$Result.GetResult<Prisma.$GSTRulePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    featureFlags<T extends Branch$featureFlagsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$featureFlagsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BranchFeatureFlagPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -12166,6 +12480,26 @@ export namespace Prisma {
      */
     include?: GSTRuleInclude<ExtArgs> | null
     where?: GSTRuleWhereInput
+  }
+
+  /**
+   * Branch.featureFlags
+   */
+  export type Branch$featureFlagsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchFeatureFlag
+     */
+    select?: BranchFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchFeatureFlagInclude<ExtArgs> | null
+    where?: BranchFeatureFlagWhereInput
+    orderBy?: BranchFeatureFlagOrderByWithRelationInput | BranchFeatureFlagOrderByWithRelationInput[]
+    cursor?: BranchFeatureFlagWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: BranchFeatureFlagScalarFieldEnum | BranchFeatureFlagScalarFieldEnum[]
   }
 
   /**
@@ -15554,6 +15888,7 @@ export namespace Prisma {
     customPricing?: boolean | Vehicle$customPricingArgs<ExtArgs>
     images?: boolean | Vehicle$imagesArgs<ExtArgs>
     bookingItems?: boolean | Vehicle$bookingItemsArgs<ExtArgs>
+    featureFlags?: boolean | Vehicle$featureFlagsArgs<ExtArgs>
     _count?: boolean | VehicleCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["vehicle"]>
 
@@ -15603,6 +15938,7 @@ export namespace Prisma {
     customPricing?: boolean | Vehicle$customPricingArgs<ExtArgs>
     images?: boolean | Vehicle$imagesArgs<ExtArgs>
     bookingItems?: boolean | Vehicle$bookingItemsArgs<ExtArgs>
+    featureFlags?: boolean | Vehicle$featureFlagsArgs<ExtArgs>
     _count?: boolean | VehicleCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type VehicleIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -15622,6 +15958,7 @@ export namespace Prisma {
       customPricing: Prisma.$VehicleCustomPricingPayload<ExtArgs> | null
       images: Prisma.$VehicleImagePayload<ExtArgs>[]
       bookingItems: Prisma.$BookingItemPayload<ExtArgs>[]
+      featureFlags: Prisma.$VehicleFeatureFlagPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -16011,6 +16348,7 @@ export namespace Prisma {
     customPricing<T extends Vehicle$customPricingArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$customPricingArgs<ExtArgs>>): Prisma__VehicleCustomPricingClient<$Result.GetResult<Prisma.$VehicleCustomPricingPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     images<T extends Vehicle$imagesArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$imagesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleImagePayload<ExtArgs>, T, "findMany"> | Null>
     bookingItems<T extends Vehicle$bookingItemsArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$bookingItemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingItemPayload<ExtArgs>, T, "findMany"> | Null>
+    featureFlags<T extends Vehicle$featureFlagsArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$featureFlagsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleFeatureFlagPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -16508,6 +16846,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: BookingItemScalarFieldEnum | BookingItemScalarFieldEnum[]
+  }
+
+  /**
+   * Vehicle.featureFlags
+   */
+  export type Vehicle$featureFlagsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleFeatureFlag
+     */
+    select?: VehicleFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleFeatureFlagInclude<ExtArgs> | null
+    where?: VehicleFeatureFlagWhereInput
+    orderBy?: VehicleFeatureFlagOrderByWithRelationInput | VehicleFeatureFlagOrderByWithRelationInput[]
+    cursor?: VehicleFeatureFlagWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: VehicleFeatureFlagScalarFieldEnum | VehicleFeatureFlagScalarFieldEnum[]
   }
 
   /**
@@ -25904,6 +26262,7 @@ export namespace Prisma {
     safetyDepositSetOff: boolean | null
     cancelledAt: Date | null
     cancellationReason: string | null
+    requiresManagerConfirmation: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
     deletedAt: Date | null
@@ -25949,6 +26308,7 @@ export namespace Prisma {
     safetyDepositSetOff: boolean | null
     cancelledAt: Date | null
     cancellationReason: string | null
+    requiresManagerConfirmation: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
     deletedAt: Date | null
@@ -25995,6 +26355,7 @@ export namespace Prisma {
     safetyDepositSetOff: number
     cancelledAt: number
     cancellationReason: number
+    requiresManagerConfirmation: number
     createdAt: number
     updatedAt: number
     deletedAt: number
@@ -26088,6 +26449,7 @@ export namespace Prisma {
     safetyDepositSetOff?: true
     cancelledAt?: true
     cancellationReason?: true
+    requiresManagerConfirmation?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -26133,6 +26495,7 @@ export namespace Prisma {
     safetyDepositSetOff?: true
     cancelledAt?: true
     cancellationReason?: true
+    requiresManagerConfirmation?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -26179,6 +26542,7 @@ export namespace Prisma {
     safetyDepositSetOff?: true
     cancelledAt?: true
     cancellationReason?: true
+    requiresManagerConfirmation?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -26312,6 +26676,7 @@ export namespace Prisma {
     safetyDepositSetOff: boolean
     cancelledAt: Date | null
     cancellationReason: string | null
+    requiresManagerConfirmation: boolean
     createdAt: Date
     updatedAt: Date
     deletedAt: Date | null
@@ -26377,6 +26742,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: boolean
     cancellationReason?: boolean
+    requiresManagerConfirmation?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -26434,6 +26800,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: boolean
     cancellationReason?: boolean
+    requiresManagerConfirmation?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -26484,6 +26851,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: boolean
     cancellationReason?: boolean
+    requiresManagerConfirmation?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -26564,6 +26932,7 @@ export namespace Prisma {
       safetyDepositSetOff: boolean
       cancelledAt: Date | null
       cancellationReason: string | null
+      requiresManagerConfirmation: boolean
       createdAt: Date
       updatedAt: Date
       deletedAt: Date | null
@@ -27010,6 +27379,7 @@ export namespace Prisma {
     readonly safetyDepositSetOff: FieldRef<"Booking", 'Boolean'>
     readonly cancelledAt: FieldRef<"Booking", 'DateTime'>
     readonly cancellationReason: FieldRef<"Booking", 'String'>
+    readonly requiresManagerConfirmation: FieldRef<"Booking", 'Boolean'>
     readonly createdAt: FieldRef<"Booking", 'DateTime'>
     readonly updatedAt: FieldRef<"Booking", 'DateTime'>
     readonly deletedAt: FieldRef<"Booking", 'DateTime'>
@@ -29678,9 +30048,9 @@ export namespace Prisma {
     estimatedCost: Decimal | null
     finalCost: Decimal | null
     approvedById: number | null
+    chargeType: $Enums.DamageChargeType | null
     status: $Enums.DamageReportStatus | null
     disposition: $Enums.VehicleReturnDisposition | null
-    chargeType: $Enums.DamageChargeType | null
     createdAt: Date | null
   }
 
@@ -29693,9 +30063,9 @@ export namespace Prisma {
     estimatedCost: Decimal | null
     finalCost: Decimal | null
     approvedById: number | null
+    chargeType: $Enums.DamageChargeType | null
     status: $Enums.DamageReportStatus | null
     disposition: $Enums.VehicleReturnDisposition | null
-    chargeType: $Enums.DamageChargeType | null
     createdAt: Date | null
   }
 
@@ -29709,9 +30079,9 @@ export namespace Prisma {
     finalCost: number
     notes: number
     approvedById: number
+    chargeType: number
     status: number
     disposition: number
-    chargeType: number
     createdAt: number
     _all: number
   }
@@ -29744,9 +30114,9 @@ export namespace Prisma {
     estimatedCost?: true
     finalCost?: true
     approvedById?: true
+    chargeType?: true
     status?: true
     disposition?: true
-    chargeType?: true
     createdAt?: true
   }
 
@@ -29759,9 +30129,9 @@ export namespace Prisma {
     estimatedCost?: true
     finalCost?: true
     approvedById?: true
+    chargeType?: true
     status?: true
     disposition?: true
-    chargeType?: true
     createdAt?: true
   }
 
@@ -29775,9 +30145,9 @@ export namespace Prisma {
     finalCost?: true
     notes?: true
     approvedById?: true
+    chargeType?: true
     status?: true
     disposition?: true
-    chargeType?: true
     createdAt?: true
     _all?: true
   }
@@ -29878,9 +30248,9 @@ export namespace Prisma {
     finalCost: Decimal | null
     notes: JsonValue
     approvedById: number | null
+    chargeType: $Enums.DamageChargeType
     status: $Enums.DamageReportStatus
     disposition: $Enums.VehicleReturnDisposition | null
-    chargeType: $Enums.DamageChargeType
     createdAt: Date
     _count: DamageReportCountAggregateOutputType | null
     _avg: DamageReportAvgAggregateOutputType | null
@@ -29913,9 +30283,9 @@ export namespace Prisma {
     finalCost?: boolean
     notes?: boolean
     approvedById?: boolean
+    chargeType?: boolean
     status?: boolean
     disposition?: boolean
-    chargeType?: boolean
     createdAt?: boolean
     booking?: boolean | BookingDefaultArgs<ExtArgs>
     vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
@@ -29934,9 +30304,9 @@ export namespace Prisma {
     finalCost?: boolean
     notes?: boolean
     approvedById?: boolean
+    chargeType?: boolean
     status?: boolean
     disposition?: boolean
-    chargeType?: boolean
     createdAt?: boolean
     booking?: boolean | BookingDefaultArgs<ExtArgs>
     vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
@@ -29953,9 +30323,9 @@ export namespace Prisma {
     finalCost?: boolean
     notes?: boolean
     approvedById?: boolean
+    chargeType?: boolean
     status?: boolean
     disposition?: boolean
-    chargeType?: boolean
     createdAt?: boolean
   }
 
@@ -29990,9 +30360,9 @@ export namespace Prisma {
       finalCost: Prisma.Decimal | null
       notes: Prisma.JsonValue
       approvedById: number | null
+      chargeType: $Enums.DamageChargeType
       status: $Enums.DamageReportStatus
       disposition: $Enums.VehicleReturnDisposition | null
-      chargeType: $Enums.DamageChargeType
       createdAt: Date
     }, ExtArgs["result"]["damageReport"]>
     composites: {}
@@ -30400,9 +30770,9 @@ export namespace Prisma {
     readonly finalCost: FieldRef<"DamageReport", 'Decimal'>
     readonly notes: FieldRef<"DamageReport", 'Json'>
     readonly approvedById: FieldRef<"DamageReport", 'Int'>
+    readonly chargeType: FieldRef<"DamageReport", 'DamageChargeType'>
     readonly status: FieldRef<"DamageReport", 'DamageReportStatus'>
     readonly disposition: FieldRef<"DamageReport", 'VehicleReturnDisposition'>
-    readonly chargeType: FieldRef<"DamageReport", 'DamageChargeType'>
     readonly createdAt: FieldRef<"DamageReport", 'DateTime'>
   }
     
@@ -34974,8 +35344,6 @@ export namespace Prisma {
     invoiceId: number | null
     label: string | null
     amount: Decimal | null
-    isTaxable: boolean | null
-    chargeType: $Enums.ChargeType | null
   }
 
   export type InvoiceItemMaxAggregateOutputType = {
@@ -34984,8 +35352,6 @@ export namespace Prisma {
     invoiceId: number | null
     label: string | null
     amount: Decimal | null
-    isTaxable: boolean | null
-    chargeType: $Enums.ChargeType | null
   }
 
   export type InvoiceItemCountAggregateOutputType = {
@@ -34994,8 +35360,6 @@ export namespace Prisma {
     invoiceId: number
     label: number
     amount: number
-    isTaxable: number
-    chargeType: number
     _all: number
   }
 
@@ -35018,8 +35382,6 @@ export namespace Prisma {
     invoiceId?: true
     label?: true
     amount?: true
-    isTaxable?: true
-    chargeType?: true
   }
 
   export type InvoiceItemMaxAggregateInputType = {
@@ -35028,8 +35390,6 @@ export namespace Prisma {
     invoiceId?: true
     label?: true
     amount?: true
-    isTaxable?: true
-    chargeType?: true
   }
 
   export type InvoiceItemCountAggregateInputType = {
@@ -35038,8 +35398,6 @@ export namespace Prisma {
     invoiceId?: true
     label?: true
     amount?: true
-    isTaxable?: true
-    chargeType?: true
     _all?: true
   }
 
@@ -35135,8 +35493,6 @@ export namespace Prisma {
     invoiceId: number
     label: string
     amount: Decimal
-    isTaxable: boolean
-    chargeType: $Enums.ChargeType
     _count: InvoiceItemCountAggregateOutputType | null
     _avg: InvoiceItemAvgAggregateOutputType | null
     _sum: InvoiceItemSumAggregateOutputType | null
@@ -35164,8 +35520,6 @@ export namespace Prisma {
     invoiceId?: boolean
     label?: boolean
     amount?: boolean
-    isTaxable?: boolean
-    chargeType?: boolean
     invoice?: boolean | InvoiceDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["invoiceItem"]>
 
@@ -35175,8 +35529,6 @@ export namespace Prisma {
     invoiceId?: boolean
     label?: boolean
     amount?: boolean
-    isTaxable?: boolean
-    chargeType?: boolean
     invoice?: boolean | InvoiceDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["invoiceItem"]>
 
@@ -35186,8 +35538,6 @@ export namespace Prisma {
     invoiceId?: boolean
     label?: boolean
     amount?: boolean
-    isTaxable?: boolean
-    chargeType?: boolean
   }
 
   export type InvoiceItemInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -35208,8 +35558,6 @@ export namespace Prisma {
       invoiceId: number
       label: string
       amount: Prisma.Decimal
-      isTaxable: boolean
-      chargeType: $Enums.ChargeType
     }, ExtArgs["result"]["invoiceItem"]>
     composites: {}
   }
@@ -35609,8 +35957,6 @@ export namespace Prisma {
     readonly invoiceId: FieldRef<"InvoiceItem", 'Int'>
     readonly label: FieldRef<"InvoiceItem", 'String'>
     readonly amount: FieldRef<"InvoiceItem", 'Decimal'>
-    readonly isTaxable: FieldRef<"InvoiceItem", 'Boolean'>
-    readonly chargeType: FieldRef<"InvoiceItem", 'ChargeType'>
   }
     
 
@@ -41006,6 +41352,3097 @@ export namespace Prisma {
 
 
   /**
+   * Model FeatureFlag
+   */
+
+  export type AggregateFeatureFlag = {
+    _count: FeatureFlagCountAggregateOutputType | null
+    _avg: FeatureFlagAvgAggregateOutputType | null
+    _sum: FeatureFlagSumAggregateOutputType | null
+    _min: FeatureFlagMinAggregateOutputType | null
+    _max: FeatureFlagMaxAggregateOutputType | null
+  }
+
+  export type FeatureFlagAvgAggregateOutputType = {
+    id: number | null
+  }
+
+  export type FeatureFlagSumAggregateOutputType = {
+    id: number | null
+  }
+
+  export type FeatureFlagMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    key: string | null
+    name: string | null
+    description: string | null
+    scope: $Enums.FeatureFlagScope | null
+    enabled: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type FeatureFlagMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    key: string | null
+    name: string | null
+    description: string | null
+    scope: $Enums.FeatureFlagScope | null
+    enabled: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type FeatureFlagCountAggregateOutputType = {
+    id: number
+    publicId: number
+    key: number
+    name: number
+    description: number
+    scope: number
+    enabled: number
+    config: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type FeatureFlagAvgAggregateInputType = {
+    id?: true
+  }
+
+  export type FeatureFlagSumAggregateInputType = {
+    id?: true
+  }
+
+  export type FeatureFlagMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    key?: true
+    name?: true
+    description?: true
+    scope?: true
+    enabled?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type FeatureFlagMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    key?: true
+    name?: true
+    description?: true
+    scope?: true
+    enabled?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type FeatureFlagCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    key?: true
+    name?: true
+    description?: true
+    scope?: true
+    enabled?: true
+    config?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type FeatureFlagAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which FeatureFlag to aggregate.
+     */
+    where?: FeatureFlagWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of FeatureFlags to fetch.
+     */
+    orderBy?: FeatureFlagOrderByWithRelationInput | FeatureFlagOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: FeatureFlagWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` FeatureFlags from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` FeatureFlags.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned FeatureFlags
+    **/
+    _count?: true | FeatureFlagCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: FeatureFlagAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: FeatureFlagSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: FeatureFlagMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: FeatureFlagMaxAggregateInputType
+  }
+
+  export type GetFeatureFlagAggregateType<T extends FeatureFlagAggregateArgs> = {
+        [P in keyof T & keyof AggregateFeatureFlag]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateFeatureFlag[P]>
+      : GetScalarType<T[P], AggregateFeatureFlag[P]>
+  }
+
+
+
+
+  export type FeatureFlagGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: FeatureFlagWhereInput
+    orderBy?: FeatureFlagOrderByWithAggregationInput | FeatureFlagOrderByWithAggregationInput[]
+    by: FeatureFlagScalarFieldEnum[] | FeatureFlagScalarFieldEnum
+    having?: FeatureFlagScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: FeatureFlagCountAggregateInputType | true
+    _avg?: FeatureFlagAvgAggregateInputType
+    _sum?: FeatureFlagSumAggregateInputType
+    _min?: FeatureFlagMinAggregateInputType
+    _max?: FeatureFlagMaxAggregateInputType
+  }
+
+  export type FeatureFlagGroupByOutputType = {
+    id: number
+    publicId: string
+    key: string
+    name: string
+    description: string | null
+    scope: $Enums.FeatureFlagScope
+    enabled: boolean
+    config: JsonValue | null
+    createdAt: Date
+    updatedAt: Date
+    _count: FeatureFlagCountAggregateOutputType | null
+    _avg: FeatureFlagAvgAggregateOutputType | null
+    _sum: FeatureFlagSumAggregateOutputType | null
+    _min: FeatureFlagMinAggregateOutputType | null
+    _max: FeatureFlagMaxAggregateOutputType | null
+  }
+
+  type GetFeatureFlagGroupByPayload<T extends FeatureFlagGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<FeatureFlagGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof FeatureFlagGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], FeatureFlagGroupByOutputType[P]>
+            : GetScalarType<T[P], FeatureFlagGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type FeatureFlagSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    key?: boolean
+    name?: boolean
+    description?: boolean
+    scope?: boolean
+    enabled?: boolean
+    config?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    branchFlags?: boolean | FeatureFlag$branchFlagsArgs<ExtArgs>
+    vehicleFlags?: boolean | FeatureFlag$vehicleFlagsArgs<ExtArgs>
+    _count?: boolean | FeatureFlagCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["featureFlag"]>
+
+  export type FeatureFlagSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    key?: boolean
+    name?: boolean
+    description?: boolean
+    scope?: boolean
+    enabled?: boolean
+    config?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["featureFlag"]>
+
+  export type FeatureFlagSelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    key?: boolean
+    name?: boolean
+    description?: boolean
+    scope?: boolean
+    enabled?: boolean
+    config?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type FeatureFlagInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branchFlags?: boolean | FeatureFlag$branchFlagsArgs<ExtArgs>
+    vehicleFlags?: boolean | FeatureFlag$vehicleFlagsArgs<ExtArgs>
+    _count?: boolean | FeatureFlagCountOutputTypeDefaultArgs<ExtArgs>
+  }
+  export type FeatureFlagIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
+
+  export type $FeatureFlagPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "FeatureFlag"
+    objects: {
+      branchFlags: Prisma.$BranchFeatureFlagPayload<ExtArgs>[]
+      vehicleFlags: Prisma.$VehicleFeatureFlagPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      key: string
+      name: string
+      description: string | null
+      scope: $Enums.FeatureFlagScope
+      enabled: boolean
+      config: Prisma.JsonValue | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["featureFlag"]>
+    composites: {}
+  }
+
+  type FeatureFlagGetPayload<S extends boolean | null | undefined | FeatureFlagDefaultArgs> = $Result.GetResult<Prisma.$FeatureFlagPayload, S>
+
+  type FeatureFlagCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<FeatureFlagFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: FeatureFlagCountAggregateInputType | true
+    }
+
+  export interface FeatureFlagDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['FeatureFlag'], meta: { name: 'FeatureFlag' } }
+    /**
+     * Find zero or one FeatureFlag that matches the filter.
+     * @param {FeatureFlagFindUniqueArgs} args - Arguments to find a FeatureFlag
+     * @example
+     * // Get one FeatureFlag
+     * const featureFlag = await prisma.featureFlag.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends FeatureFlagFindUniqueArgs>(args: SelectSubset<T, FeatureFlagFindUniqueArgs<ExtArgs>>): Prisma__FeatureFlagClient<$Result.GetResult<Prisma.$FeatureFlagPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one FeatureFlag that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {FeatureFlagFindUniqueOrThrowArgs} args - Arguments to find a FeatureFlag
+     * @example
+     * // Get one FeatureFlag
+     * const featureFlag = await prisma.featureFlag.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends FeatureFlagFindUniqueOrThrowArgs>(args: SelectSubset<T, FeatureFlagFindUniqueOrThrowArgs<ExtArgs>>): Prisma__FeatureFlagClient<$Result.GetResult<Prisma.$FeatureFlagPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first FeatureFlag that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {FeatureFlagFindFirstArgs} args - Arguments to find a FeatureFlag
+     * @example
+     * // Get one FeatureFlag
+     * const featureFlag = await prisma.featureFlag.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends FeatureFlagFindFirstArgs>(args?: SelectSubset<T, FeatureFlagFindFirstArgs<ExtArgs>>): Prisma__FeatureFlagClient<$Result.GetResult<Prisma.$FeatureFlagPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first FeatureFlag that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {FeatureFlagFindFirstOrThrowArgs} args - Arguments to find a FeatureFlag
+     * @example
+     * // Get one FeatureFlag
+     * const featureFlag = await prisma.featureFlag.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends FeatureFlagFindFirstOrThrowArgs>(args?: SelectSubset<T, FeatureFlagFindFirstOrThrowArgs<ExtArgs>>): Prisma__FeatureFlagClient<$Result.GetResult<Prisma.$FeatureFlagPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more FeatureFlags that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {FeatureFlagFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all FeatureFlags
+     * const featureFlags = await prisma.featureFlag.findMany()
+     * 
+     * // Get first 10 FeatureFlags
+     * const featureFlags = await prisma.featureFlag.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const featureFlagWithIdOnly = await prisma.featureFlag.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends FeatureFlagFindManyArgs>(args?: SelectSubset<T, FeatureFlagFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$FeatureFlagPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a FeatureFlag.
+     * @param {FeatureFlagCreateArgs} args - Arguments to create a FeatureFlag.
+     * @example
+     * // Create one FeatureFlag
+     * const FeatureFlag = await prisma.featureFlag.create({
+     *   data: {
+     *     // ... data to create a FeatureFlag
+     *   }
+     * })
+     * 
+     */
+    create<T extends FeatureFlagCreateArgs>(args: SelectSubset<T, FeatureFlagCreateArgs<ExtArgs>>): Prisma__FeatureFlagClient<$Result.GetResult<Prisma.$FeatureFlagPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many FeatureFlags.
+     * @param {FeatureFlagCreateManyArgs} args - Arguments to create many FeatureFlags.
+     * @example
+     * // Create many FeatureFlags
+     * const featureFlag = await prisma.featureFlag.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends FeatureFlagCreateManyArgs>(args?: SelectSubset<T, FeatureFlagCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many FeatureFlags and returns the data saved in the database.
+     * @param {FeatureFlagCreateManyAndReturnArgs} args - Arguments to create many FeatureFlags.
+     * @example
+     * // Create many FeatureFlags
+     * const featureFlag = await prisma.featureFlag.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many FeatureFlags and only return the `id`
+     * const featureFlagWithIdOnly = await prisma.featureFlag.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends FeatureFlagCreateManyAndReturnArgs>(args?: SelectSubset<T, FeatureFlagCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$FeatureFlagPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a FeatureFlag.
+     * @param {FeatureFlagDeleteArgs} args - Arguments to delete one FeatureFlag.
+     * @example
+     * // Delete one FeatureFlag
+     * const FeatureFlag = await prisma.featureFlag.delete({
+     *   where: {
+     *     // ... filter to delete one FeatureFlag
+     *   }
+     * })
+     * 
+     */
+    delete<T extends FeatureFlagDeleteArgs>(args: SelectSubset<T, FeatureFlagDeleteArgs<ExtArgs>>): Prisma__FeatureFlagClient<$Result.GetResult<Prisma.$FeatureFlagPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one FeatureFlag.
+     * @param {FeatureFlagUpdateArgs} args - Arguments to update one FeatureFlag.
+     * @example
+     * // Update one FeatureFlag
+     * const featureFlag = await prisma.featureFlag.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends FeatureFlagUpdateArgs>(args: SelectSubset<T, FeatureFlagUpdateArgs<ExtArgs>>): Prisma__FeatureFlagClient<$Result.GetResult<Prisma.$FeatureFlagPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more FeatureFlags.
+     * @param {FeatureFlagDeleteManyArgs} args - Arguments to filter FeatureFlags to delete.
+     * @example
+     * // Delete a few FeatureFlags
+     * const { count } = await prisma.featureFlag.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends FeatureFlagDeleteManyArgs>(args?: SelectSubset<T, FeatureFlagDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more FeatureFlags.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {FeatureFlagUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many FeatureFlags
+     * const featureFlag = await prisma.featureFlag.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends FeatureFlagUpdateManyArgs>(args: SelectSubset<T, FeatureFlagUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one FeatureFlag.
+     * @param {FeatureFlagUpsertArgs} args - Arguments to update or create a FeatureFlag.
+     * @example
+     * // Update or create a FeatureFlag
+     * const featureFlag = await prisma.featureFlag.upsert({
+     *   create: {
+     *     // ... data to create a FeatureFlag
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the FeatureFlag we want to update
+     *   }
+     * })
+     */
+    upsert<T extends FeatureFlagUpsertArgs>(args: SelectSubset<T, FeatureFlagUpsertArgs<ExtArgs>>): Prisma__FeatureFlagClient<$Result.GetResult<Prisma.$FeatureFlagPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of FeatureFlags.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {FeatureFlagCountArgs} args - Arguments to filter FeatureFlags to count.
+     * @example
+     * // Count the number of FeatureFlags
+     * const count = await prisma.featureFlag.count({
+     *   where: {
+     *     // ... the filter for the FeatureFlags we want to count
+     *   }
+     * })
+    **/
+    count<T extends FeatureFlagCountArgs>(
+      args?: Subset<T, FeatureFlagCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], FeatureFlagCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a FeatureFlag.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {FeatureFlagAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends FeatureFlagAggregateArgs>(args: Subset<T, FeatureFlagAggregateArgs>): Prisma.PrismaPromise<GetFeatureFlagAggregateType<T>>
+
+    /**
+     * Group by FeatureFlag.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {FeatureFlagGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends FeatureFlagGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: FeatureFlagGroupByArgs['orderBy'] }
+        : { orderBy?: FeatureFlagGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, FeatureFlagGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetFeatureFlagGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the FeatureFlag model
+   */
+  readonly fields: FeatureFlagFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for FeatureFlag.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__FeatureFlagClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    branchFlags<T extends FeatureFlag$branchFlagsArgs<ExtArgs> = {}>(args?: Subset<T, FeatureFlag$branchFlagsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BranchFeatureFlagPayload<ExtArgs>, T, "findMany"> | Null>
+    vehicleFlags<T extends FeatureFlag$vehicleFlagsArgs<ExtArgs> = {}>(args?: Subset<T, FeatureFlag$vehicleFlagsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleFeatureFlagPayload<ExtArgs>, T, "findMany"> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the FeatureFlag model
+   */ 
+  interface FeatureFlagFieldRefs {
+    readonly id: FieldRef<"FeatureFlag", 'Int'>
+    readonly publicId: FieldRef<"FeatureFlag", 'String'>
+    readonly key: FieldRef<"FeatureFlag", 'String'>
+    readonly name: FieldRef<"FeatureFlag", 'String'>
+    readonly description: FieldRef<"FeatureFlag", 'String'>
+    readonly scope: FieldRef<"FeatureFlag", 'FeatureFlagScope'>
+    readonly enabled: FieldRef<"FeatureFlag", 'Boolean'>
+    readonly config: FieldRef<"FeatureFlag", 'Json'>
+    readonly createdAt: FieldRef<"FeatureFlag", 'DateTime'>
+    readonly updatedAt: FieldRef<"FeatureFlag", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * FeatureFlag findUnique
+   */
+  export type FeatureFlagFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FeatureFlag
+     */
+    select?: FeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FeatureFlagInclude<ExtArgs> | null
+    /**
+     * Filter, which FeatureFlag to fetch.
+     */
+    where: FeatureFlagWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * FeatureFlag findUniqueOrThrow
+   */
+  export type FeatureFlagFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FeatureFlag
+     */
+    select?: FeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FeatureFlagInclude<ExtArgs> | null
+    /**
+     * Filter, which FeatureFlag to fetch.
+     */
+    where: FeatureFlagWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * FeatureFlag findFirst
+   */
+  export type FeatureFlagFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FeatureFlag
+     */
+    select?: FeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FeatureFlagInclude<ExtArgs> | null
+    /**
+     * Filter, which FeatureFlag to fetch.
+     */
+    where?: FeatureFlagWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of FeatureFlags to fetch.
+     */
+    orderBy?: FeatureFlagOrderByWithRelationInput | FeatureFlagOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for FeatureFlags.
+     */
+    cursor?: FeatureFlagWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` FeatureFlags from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` FeatureFlags.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of FeatureFlags.
+     */
+    distinct?: FeatureFlagScalarFieldEnum | FeatureFlagScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * FeatureFlag findFirstOrThrow
+   */
+  export type FeatureFlagFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FeatureFlag
+     */
+    select?: FeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FeatureFlagInclude<ExtArgs> | null
+    /**
+     * Filter, which FeatureFlag to fetch.
+     */
+    where?: FeatureFlagWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of FeatureFlags to fetch.
+     */
+    orderBy?: FeatureFlagOrderByWithRelationInput | FeatureFlagOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for FeatureFlags.
+     */
+    cursor?: FeatureFlagWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` FeatureFlags from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` FeatureFlags.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of FeatureFlags.
+     */
+    distinct?: FeatureFlagScalarFieldEnum | FeatureFlagScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * FeatureFlag findMany
+   */
+  export type FeatureFlagFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FeatureFlag
+     */
+    select?: FeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FeatureFlagInclude<ExtArgs> | null
+    /**
+     * Filter, which FeatureFlags to fetch.
+     */
+    where?: FeatureFlagWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of FeatureFlags to fetch.
+     */
+    orderBy?: FeatureFlagOrderByWithRelationInput | FeatureFlagOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing FeatureFlags.
+     */
+    cursor?: FeatureFlagWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` FeatureFlags from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` FeatureFlags.
+     */
+    skip?: number
+    distinct?: FeatureFlagScalarFieldEnum | FeatureFlagScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * FeatureFlag create
+   */
+  export type FeatureFlagCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FeatureFlag
+     */
+    select?: FeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FeatureFlagInclude<ExtArgs> | null
+    /**
+     * The data needed to create a FeatureFlag.
+     */
+    data: XOR<FeatureFlagCreateInput, FeatureFlagUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * FeatureFlag createMany
+   */
+  export type FeatureFlagCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many FeatureFlags.
+     */
+    data: FeatureFlagCreateManyInput | FeatureFlagCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * FeatureFlag createManyAndReturn
+   */
+  export type FeatureFlagCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FeatureFlag
+     */
+    select?: FeatureFlagSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many FeatureFlags.
+     */
+    data: FeatureFlagCreateManyInput | FeatureFlagCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * FeatureFlag update
+   */
+  export type FeatureFlagUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FeatureFlag
+     */
+    select?: FeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FeatureFlagInclude<ExtArgs> | null
+    /**
+     * The data needed to update a FeatureFlag.
+     */
+    data: XOR<FeatureFlagUpdateInput, FeatureFlagUncheckedUpdateInput>
+    /**
+     * Choose, which FeatureFlag to update.
+     */
+    where: FeatureFlagWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * FeatureFlag updateMany
+   */
+  export type FeatureFlagUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update FeatureFlags.
+     */
+    data: XOR<FeatureFlagUpdateManyMutationInput, FeatureFlagUncheckedUpdateManyInput>
+    /**
+     * Filter which FeatureFlags to update
+     */
+    where?: FeatureFlagWhereInput
+  }
+
+  /**
+   * FeatureFlag upsert
+   */
+  export type FeatureFlagUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FeatureFlag
+     */
+    select?: FeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FeatureFlagInclude<ExtArgs> | null
+    /**
+     * The filter to search for the FeatureFlag to update in case it exists.
+     */
+    where: FeatureFlagWhereUniqueInput
+    /**
+     * In case the FeatureFlag found by the `where` argument doesn't exist, create a new FeatureFlag with this data.
+     */
+    create: XOR<FeatureFlagCreateInput, FeatureFlagUncheckedCreateInput>
+    /**
+     * In case the FeatureFlag was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<FeatureFlagUpdateInput, FeatureFlagUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * FeatureFlag delete
+   */
+  export type FeatureFlagDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FeatureFlag
+     */
+    select?: FeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FeatureFlagInclude<ExtArgs> | null
+    /**
+     * Filter which FeatureFlag to delete.
+     */
+    where: FeatureFlagWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * FeatureFlag deleteMany
+   */
+  export type FeatureFlagDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which FeatureFlags to delete
+     */
+    where?: FeatureFlagWhereInput
+  }
+
+  /**
+   * FeatureFlag.branchFlags
+   */
+  export type FeatureFlag$branchFlagsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchFeatureFlag
+     */
+    select?: BranchFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchFeatureFlagInclude<ExtArgs> | null
+    where?: BranchFeatureFlagWhereInput
+    orderBy?: BranchFeatureFlagOrderByWithRelationInput | BranchFeatureFlagOrderByWithRelationInput[]
+    cursor?: BranchFeatureFlagWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: BranchFeatureFlagScalarFieldEnum | BranchFeatureFlagScalarFieldEnum[]
+  }
+
+  /**
+   * FeatureFlag.vehicleFlags
+   */
+  export type FeatureFlag$vehicleFlagsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleFeatureFlag
+     */
+    select?: VehicleFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleFeatureFlagInclude<ExtArgs> | null
+    where?: VehicleFeatureFlagWhereInput
+    orderBy?: VehicleFeatureFlagOrderByWithRelationInput | VehicleFeatureFlagOrderByWithRelationInput[]
+    cursor?: VehicleFeatureFlagWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: VehicleFeatureFlagScalarFieldEnum | VehicleFeatureFlagScalarFieldEnum[]
+  }
+
+  /**
+   * FeatureFlag without action
+   */
+  export type FeatureFlagDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FeatureFlag
+     */
+    select?: FeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FeatureFlagInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model BranchFeatureFlag
+   */
+
+  export type AggregateBranchFeatureFlag = {
+    _count: BranchFeatureFlagCountAggregateOutputType | null
+    _avg: BranchFeatureFlagAvgAggregateOutputType | null
+    _sum: BranchFeatureFlagSumAggregateOutputType | null
+    _min: BranchFeatureFlagMinAggregateOutputType | null
+    _max: BranchFeatureFlagMaxAggregateOutputType | null
+  }
+
+  export type BranchFeatureFlagAvgAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    flagId: number | null
+  }
+
+  export type BranchFeatureFlagSumAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    flagId: number | null
+  }
+
+  export type BranchFeatureFlagMinAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    flagId: number | null
+    enabled: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type BranchFeatureFlagMaxAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    flagId: number | null
+    enabled: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type BranchFeatureFlagCountAggregateOutputType = {
+    id: number
+    branchId: number
+    flagId: number
+    enabled: number
+    config: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type BranchFeatureFlagAvgAggregateInputType = {
+    id?: true
+    branchId?: true
+    flagId?: true
+  }
+
+  export type BranchFeatureFlagSumAggregateInputType = {
+    id?: true
+    branchId?: true
+    flagId?: true
+  }
+
+  export type BranchFeatureFlagMinAggregateInputType = {
+    id?: true
+    branchId?: true
+    flagId?: true
+    enabled?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type BranchFeatureFlagMaxAggregateInputType = {
+    id?: true
+    branchId?: true
+    flagId?: true
+    enabled?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type BranchFeatureFlagCountAggregateInputType = {
+    id?: true
+    branchId?: true
+    flagId?: true
+    enabled?: true
+    config?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type BranchFeatureFlagAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which BranchFeatureFlag to aggregate.
+     */
+    where?: BranchFeatureFlagWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchFeatureFlags to fetch.
+     */
+    orderBy?: BranchFeatureFlagOrderByWithRelationInput | BranchFeatureFlagOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: BranchFeatureFlagWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchFeatureFlags from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchFeatureFlags.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned BranchFeatureFlags
+    **/
+    _count?: true | BranchFeatureFlagCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: BranchFeatureFlagAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: BranchFeatureFlagSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: BranchFeatureFlagMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: BranchFeatureFlagMaxAggregateInputType
+  }
+
+  export type GetBranchFeatureFlagAggregateType<T extends BranchFeatureFlagAggregateArgs> = {
+        [P in keyof T & keyof AggregateBranchFeatureFlag]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateBranchFeatureFlag[P]>
+      : GetScalarType<T[P], AggregateBranchFeatureFlag[P]>
+  }
+
+
+
+
+  export type BranchFeatureFlagGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BranchFeatureFlagWhereInput
+    orderBy?: BranchFeatureFlagOrderByWithAggregationInput | BranchFeatureFlagOrderByWithAggregationInput[]
+    by: BranchFeatureFlagScalarFieldEnum[] | BranchFeatureFlagScalarFieldEnum
+    having?: BranchFeatureFlagScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: BranchFeatureFlagCountAggregateInputType | true
+    _avg?: BranchFeatureFlagAvgAggregateInputType
+    _sum?: BranchFeatureFlagSumAggregateInputType
+    _min?: BranchFeatureFlagMinAggregateInputType
+    _max?: BranchFeatureFlagMaxAggregateInputType
+  }
+
+  export type BranchFeatureFlagGroupByOutputType = {
+    id: number
+    branchId: number
+    flagId: number
+    enabled: boolean
+    config: JsonValue | null
+    createdAt: Date
+    updatedAt: Date
+    _count: BranchFeatureFlagCountAggregateOutputType | null
+    _avg: BranchFeatureFlagAvgAggregateOutputType | null
+    _sum: BranchFeatureFlagSumAggregateOutputType | null
+    _min: BranchFeatureFlagMinAggregateOutputType | null
+    _max: BranchFeatureFlagMaxAggregateOutputType | null
+  }
+
+  type GetBranchFeatureFlagGroupByPayload<T extends BranchFeatureFlagGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<BranchFeatureFlagGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof BranchFeatureFlagGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], BranchFeatureFlagGroupByOutputType[P]>
+            : GetScalarType<T[P], BranchFeatureFlagGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type BranchFeatureFlagSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    branchId?: boolean
+    flagId?: boolean
+    enabled?: boolean
+    config?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    flag?: boolean | FeatureFlagDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["branchFeatureFlag"]>
+
+  export type BranchFeatureFlagSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    branchId?: boolean
+    flagId?: boolean
+    enabled?: boolean
+    config?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    flag?: boolean | FeatureFlagDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["branchFeatureFlag"]>
+
+  export type BranchFeatureFlagSelectScalar = {
+    id?: boolean
+    branchId?: boolean
+    flagId?: boolean
+    enabled?: boolean
+    config?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type BranchFeatureFlagInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    flag?: boolean | FeatureFlagDefaultArgs<ExtArgs>
+  }
+  export type BranchFeatureFlagIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    flag?: boolean | FeatureFlagDefaultArgs<ExtArgs>
+  }
+
+  export type $BranchFeatureFlagPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "BranchFeatureFlag"
+    objects: {
+      branch: Prisma.$BranchPayload<ExtArgs>
+      flag: Prisma.$FeatureFlagPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      branchId: number
+      flagId: number
+      enabled: boolean
+      config: Prisma.JsonValue | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["branchFeatureFlag"]>
+    composites: {}
+  }
+
+  type BranchFeatureFlagGetPayload<S extends boolean | null | undefined | BranchFeatureFlagDefaultArgs> = $Result.GetResult<Prisma.$BranchFeatureFlagPayload, S>
+
+  type BranchFeatureFlagCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<BranchFeatureFlagFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: BranchFeatureFlagCountAggregateInputType | true
+    }
+
+  export interface BranchFeatureFlagDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['BranchFeatureFlag'], meta: { name: 'BranchFeatureFlag' } }
+    /**
+     * Find zero or one BranchFeatureFlag that matches the filter.
+     * @param {BranchFeatureFlagFindUniqueArgs} args - Arguments to find a BranchFeatureFlag
+     * @example
+     * // Get one BranchFeatureFlag
+     * const branchFeatureFlag = await prisma.branchFeatureFlag.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends BranchFeatureFlagFindUniqueArgs>(args: SelectSubset<T, BranchFeatureFlagFindUniqueArgs<ExtArgs>>): Prisma__BranchFeatureFlagClient<$Result.GetResult<Prisma.$BranchFeatureFlagPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one BranchFeatureFlag that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {BranchFeatureFlagFindUniqueOrThrowArgs} args - Arguments to find a BranchFeatureFlag
+     * @example
+     * // Get one BranchFeatureFlag
+     * const branchFeatureFlag = await prisma.branchFeatureFlag.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends BranchFeatureFlagFindUniqueOrThrowArgs>(args: SelectSubset<T, BranchFeatureFlagFindUniqueOrThrowArgs<ExtArgs>>): Prisma__BranchFeatureFlagClient<$Result.GetResult<Prisma.$BranchFeatureFlagPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first BranchFeatureFlag that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchFeatureFlagFindFirstArgs} args - Arguments to find a BranchFeatureFlag
+     * @example
+     * // Get one BranchFeatureFlag
+     * const branchFeatureFlag = await prisma.branchFeatureFlag.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends BranchFeatureFlagFindFirstArgs>(args?: SelectSubset<T, BranchFeatureFlagFindFirstArgs<ExtArgs>>): Prisma__BranchFeatureFlagClient<$Result.GetResult<Prisma.$BranchFeatureFlagPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first BranchFeatureFlag that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchFeatureFlagFindFirstOrThrowArgs} args - Arguments to find a BranchFeatureFlag
+     * @example
+     * // Get one BranchFeatureFlag
+     * const branchFeatureFlag = await prisma.branchFeatureFlag.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends BranchFeatureFlagFindFirstOrThrowArgs>(args?: SelectSubset<T, BranchFeatureFlagFindFirstOrThrowArgs<ExtArgs>>): Prisma__BranchFeatureFlagClient<$Result.GetResult<Prisma.$BranchFeatureFlagPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more BranchFeatureFlags that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchFeatureFlagFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all BranchFeatureFlags
+     * const branchFeatureFlags = await prisma.branchFeatureFlag.findMany()
+     * 
+     * // Get first 10 BranchFeatureFlags
+     * const branchFeatureFlags = await prisma.branchFeatureFlag.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const branchFeatureFlagWithIdOnly = await prisma.branchFeatureFlag.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends BranchFeatureFlagFindManyArgs>(args?: SelectSubset<T, BranchFeatureFlagFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BranchFeatureFlagPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a BranchFeatureFlag.
+     * @param {BranchFeatureFlagCreateArgs} args - Arguments to create a BranchFeatureFlag.
+     * @example
+     * // Create one BranchFeatureFlag
+     * const BranchFeatureFlag = await prisma.branchFeatureFlag.create({
+     *   data: {
+     *     // ... data to create a BranchFeatureFlag
+     *   }
+     * })
+     * 
+     */
+    create<T extends BranchFeatureFlagCreateArgs>(args: SelectSubset<T, BranchFeatureFlagCreateArgs<ExtArgs>>): Prisma__BranchFeatureFlagClient<$Result.GetResult<Prisma.$BranchFeatureFlagPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many BranchFeatureFlags.
+     * @param {BranchFeatureFlagCreateManyArgs} args - Arguments to create many BranchFeatureFlags.
+     * @example
+     * // Create many BranchFeatureFlags
+     * const branchFeatureFlag = await prisma.branchFeatureFlag.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends BranchFeatureFlagCreateManyArgs>(args?: SelectSubset<T, BranchFeatureFlagCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many BranchFeatureFlags and returns the data saved in the database.
+     * @param {BranchFeatureFlagCreateManyAndReturnArgs} args - Arguments to create many BranchFeatureFlags.
+     * @example
+     * // Create many BranchFeatureFlags
+     * const branchFeatureFlag = await prisma.branchFeatureFlag.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many BranchFeatureFlags and only return the `id`
+     * const branchFeatureFlagWithIdOnly = await prisma.branchFeatureFlag.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends BranchFeatureFlagCreateManyAndReturnArgs>(args?: SelectSubset<T, BranchFeatureFlagCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BranchFeatureFlagPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a BranchFeatureFlag.
+     * @param {BranchFeatureFlagDeleteArgs} args - Arguments to delete one BranchFeatureFlag.
+     * @example
+     * // Delete one BranchFeatureFlag
+     * const BranchFeatureFlag = await prisma.branchFeatureFlag.delete({
+     *   where: {
+     *     // ... filter to delete one BranchFeatureFlag
+     *   }
+     * })
+     * 
+     */
+    delete<T extends BranchFeatureFlagDeleteArgs>(args: SelectSubset<T, BranchFeatureFlagDeleteArgs<ExtArgs>>): Prisma__BranchFeatureFlagClient<$Result.GetResult<Prisma.$BranchFeatureFlagPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one BranchFeatureFlag.
+     * @param {BranchFeatureFlagUpdateArgs} args - Arguments to update one BranchFeatureFlag.
+     * @example
+     * // Update one BranchFeatureFlag
+     * const branchFeatureFlag = await prisma.branchFeatureFlag.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends BranchFeatureFlagUpdateArgs>(args: SelectSubset<T, BranchFeatureFlagUpdateArgs<ExtArgs>>): Prisma__BranchFeatureFlagClient<$Result.GetResult<Prisma.$BranchFeatureFlagPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more BranchFeatureFlags.
+     * @param {BranchFeatureFlagDeleteManyArgs} args - Arguments to filter BranchFeatureFlags to delete.
+     * @example
+     * // Delete a few BranchFeatureFlags
+     * const { count } = await prisma.branchFeatureFlag.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends BranchFeatureFlagDeleteManyArgs>(args?: SelectSubset<T, BranchFeatureFlagDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more BranchFeatureFlags.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchFeatureFlagUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many BranchFeatureFlags
+     * const branchFeatureFlag = await prisma.branchFeatureFlag.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends BranchFeatureFlagUpdateManyArgs>(args: SelectSubset<T, BranchFeatureFlagUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one BranchFeatureFlag.
+     * @param {BranchFeatureFlagUpsertArgs} args - Arguments to update or create a BranchFeatureFlag.
+     * @example
+     * // Update or create a BranchFeatureFlag
+     * const branchFeatureFlag = await prisma.branchFeatureFlag.upsert({
+     *   create: {
+     *     // ... data to create a BranchFeatureFlag
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the BranchFeatureFlag we want to update
+     *   }
+     * })
+     */
+    upsert<T extends BranchFeatureFlagUpsertArgs>(args: SelectSubset<T, BranchFeatureFlagUpsertArgs<ExtArgs>>): Prisma__BranchFeatureFlagClient<$Result.GetResult<Prisma.$BranchFeatureFlagPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of BranchFeatureFlags.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchFeatureFlagCountArgs} args - Arguments to filter BranchFeatureFlags to count.
+     * @example
+     * // Count the number of BranchFeatureFlags
+     * const count = await prisma.branchFeatureFlag.count({
+     *   where: {
+     *     // ... the filter for the BranchFeatureFlags we want to count
+     *   }
+     * })
+    **/
+    count<T extends BranchFeatureFlagCountArgs>(
+      args?: Subset<T, BranchFeatureFlagCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], BranchFeatureFlagCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a BranchFeatureFlag.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchFeatureFlagAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends BranchFeatureFlagAggregateArgs>(args: Subset<T, BranchFeatureFlagAggregateArgs>): Prisma.PrismaPromise<GetBranchFeatureFlagAggregateType<T>>
+
+    /**
+     * Group by BranchFeatureFlag.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchFeatureFlagGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends BranchFeatureFlagGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: BranchFeatureFlagGroupByArgs['orderBy'] }
+        : { orderBy?: BranchFeatureFlagGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, BranchFeatureFlagGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetBranchFeatureFlagGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the BranchFeatureFlag model
+   */
+  readonly fields: BranchFeatureFlagFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for BranchFeatureFlag.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__BranchFeatureFlagClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    branch<T extends BranchDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BranchDefaultArgs<ExtArgs>>): Prisma__BranchClient<$Result.GetResult<Prisma.$BranchPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    flag<T extends FeatureFlagDefaultArgs<ExtArgs> = {}>(args?: Subset<T, FeatureFlagDefaultArgs<ExtArgs>>): Prisma__FeatureFlagClient<$Result.GetResult<Prisma.$FeatureFlagPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the BranchFeatureFlag model
+   */ 
+  interface BranchFeatureFlagFieldRefs {
+    readonly id: FieldRef<"BranchFeatureFlag", 'Int'>
+    readonly branchId: FieldRef<"BranchFeatureFlag", 'Int'>
+    readonly flagId: FieldRef<"BranchFeatureFlag", 'Int'>
+    readonly enabled: FieldRef<"BranchFeatureFlag", 'Boolean'>
+    readonly config: FieldRef<"BranchFeatureFlag", 'Json'>
+    readonly createdAt: FieldRef<"BranchFeatureFlag", 'DateTime'>
+    readonly updatedAt: FieldRef<"BranchFeatureFlag", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * BranchFeatureFlag findUnique
+   */
+  export type BranchFeatureFlagFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchFeatureFlag
+     */
+    select?: BranchFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchFeatureFlagInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchFeatureFlag to fetch.
+     */
+    where: BranchFeatureFlagWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchFeatureFlag findUniqueOrThrow
+   */
+  export type BranchFeatureFlagFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchFeatureFlag
+     */
+    select?: BranchFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchFeatureFlagInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchFeatureFlag to fetch.
+     */
+    where: BranchFeatureFlagWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchFeatureFlag findFirst
+   */
+  export type BranchFeatureFlagFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchFeatureFlag
+     */
+    select?: BranchFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchFeatureFlagInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchFeatureFlag to fetch.
+     */
+    where?: BranchFeatureFlagWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchFeatureFlags to fetch.
+     */
+    orderBy?: BranchFeatureFlagOrderByWithRelationInput | BranchFeatureFlagOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for BranchFeatureFlags.
+     */
+    cursor?: BranchFeatureFlagWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchFeatureFlags from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchFeatureFlags.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of BranchFeatureFlags.
+     */
+    distinct?: BranchFeatureFlagScalarFieldEnum | BranchFeatureFlagScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchFeatureFlag findFirstOrThrow
+   */
+  export type BranchFeatureFlagFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchFeatureFlag
+     */
+    select?: BranchFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchFeatureFlagInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchFeatureFlag to fetch.
+     */
+    where?: BranchFeatureFlagWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchFeatureFlags to fetch.
+     */
+    orderBy?: BranchFeatureFlagOrderByWithRelationInput | BranchFeatureFlagOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for BranchFeatureFlags.
+     */
+    cursor?: BranchFeatureFlagWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchFeatureFlags from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchFeatureFlags.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of BranchFeatureFlags.
+     */
+    distinct?: BranchFeatureFlagScalarFieldEnum | BranchFeatureFlagScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchFeatureFlag findMany
+   */
+  export type BranchFeatureFlagFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchFeatureFlag
+     */
+    select?: BranchFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchFeatureFlagInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchFeatureFlags to fetch.
+     */
+    where?: BranchFeatureFlagWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchFeatureFlags to fetch.
+     */
+    orderBy?: BranchFeatureFlagOrderByWithRelationInput | BranchFeatureFlagOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing BranchFeatureFlags.
+     */
+    cursor?: BranchFeatureFlagWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchFeatureFlags from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchFeatureFlags.
+     */
+    skip?: number
+    distinct?: BranchFeatureFlagScalarFieldEnum | BranchFeatureFlagScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchFeatureFlag create
+   */
+  export type BranchFeatureFlagCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchFeatureFlag
+     */
+    select?: BranchFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchFeatureFlagInclude<ExtArgs> | null
+    /**
+     * The data needed to create a BranchFeatureFlag.
+     */
+    data: XOR<BranchFeatureFlagCreateInput, BranchFeatureFlagUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchFeatureFlag createMany
+   */
+  export type BranchFeatureFlagCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many BranchFeatureFlags.
+     */
+    data: BranchFeatureFlagCreateManyInput | BranchFeatureFlagCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * BranchFeatureFlag createManyAndReturn
+   */
+  export type BranchFeatureFlagCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchFeatureFlag
+     */
+    select?: BranchFeatureFlagSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many BranchFeatureFlags.
+     */
+    data: BranchFeatureFlagCreateManyInput | BranchFeatureFlagCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchFeatureFlagIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * BranchFeatureFlag update
+   */
+  export type BranchFeatureFlagUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchFeatureFlag
+     */
+    select?: BranchFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchFeatureFlagInclude<ExtArgs> | null
+    /**
+     * The data needed to update a BranchFeatureFlag.
+     */
+    data: XOR<BranchFeatureFlagUpdateInput, BranchFeatureFlagUncheckedUpdateInput>
+    /**
+     * Choose, which BranchFeatureFlag to update.
+     */
+    where: BranchFeatureFlagWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchFeatureFlag updateMany
+   */
+  export type BranchFeatureFlagUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update BranchFeatureFlags.
+     */
+    data: XOR<BranchFeatureFlagUpdateManyMutationInput, BranchFeatureFlagUncheckedUpdateManyInput>
+    /**
+     * Filter which BranchFeatureFlags to update
+     */
+    where?: BranchFeatureFlagWhereInput
+  }
+
+  /**
+   * BranchFeatureFlag upsert
+   */
+  export type BranchFeatureFlagUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchFeatureFlag
+     */
+    select?: BranchFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchFeatureFlagInclude<ExtArgs> | null
+    /**
+     * The filter to search for the BranchFeatureFlag to update in case it exists.
+     */
+    where: BranchFeatureFlagWhereUniqueInput
+    /**
+     * In case the BranchFeatureFlag found by the `where` argument doesn't exist, create a new BranchFeatureFlag with this data.
+     */
+    create: XOR<BranchFeatureFlagCreateInput, BranchFeatureFlagUncheckedCreateInput>
+    /**
+     * In case the BranchFeatureFlag was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<BranchFeatureFlagUpdateInput, BranchFeatureFlagUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchFeatureFlag delete
+   */
+  export type BranchFeatureFlagDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchFeatureFlag
+     */
+    select?: BranchFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchFeatureFlagInclude<ExtArgs> | null
+    /**
+     * Filter which BranchFeatureFlag to delete.
+     */
+    where: BranchFeatureFlagWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchFeatureFlag deleteMany
+   */
+  export type BranchFeatureFlagDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which BranchFeatureFlags to delete
+     */
+    where?: BranchFeatureFlagWhereInput
+  }
+
+  /**
+   * BranchFeatureFlag without action
+   */
+  export type BranchFeatureFlagDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchFeatureFlag
+     */
+    select?: BranchFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchFeatureFlagInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model VehicleFeatureFlag
+   */
+
+  export type AggregateVehicleFeatureFlag = {
+    _count: VehicleFeatureFlagCountAggregateOutputType | null
+    _avg: VehicleFeatureFlagAvgAggregateOutputType | null
+    _sum: VehicleFeatureFlagSumAggregateOutputType | null
+    _min: VehicleFeatureFlagMinAggregateOutputType | null
+    _max: VehicleFeatureFlagMaxAggregateOutputType | null
+  }
+
+  export type VehicleFeatureFlagAvgAggregateOutputType = {
+    id: number | null
+    vehicleId: number | null
+    flagId: number | null
+  }
+
+  export type VehicleFeatureFlagSumAggregateOutputType = {
+    id: number | null
+    vehicleId: number | null
+    flagId: number | null
+  }
+
+  export type VehicleFeatureFlagMinAggregateOutputType = {
+    id: number | null
+    vehicleId: number | null
+    flagId: number | null
+    enabled: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type VehicleFeatureFlagMaxAggregateOutputType = {
+    id: number | null
+    vehicleId: number | null
+    flagId: number | null
+    enabled: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type VehicleFeatureFlagCountAggregateOutputType = {
+    id: number
+    vehicleId: number
+    flagId: number
+    enabled: number
+    config: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type VehicleFeatureFlagAvgAggregateInputType = {
+    id?: true
+    vehicleId?: true
+    flagId?: true
+  }
+
+  export type VehicleFeatureFlagSumAggregateInputType = {
+    id?: true
+    vehicleId?: true
+    flagId?: true
+  }
+
+  export type VehicleFeatureFlagMinAggregateInputType = {
+    id?: true
+    vehicleId?: true
+    flagId?: true
+    enabled?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type VehicleFeatureFlagMaxAggregateInputType = {
+    id?: true
+    vehicleId?: true
+    flagId?: true
+    enabled?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type VehicleFeatureFlagCountAggregateInputType = {
+    id?: true
+    vehicleId?: true
+    flagId?: true
+    enabled?: true
+    config?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type VehicleFeatureFlagAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which VehicleFeatureFlag to aggregate.
+     */
+    where?: VehicleFeatureFlagWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehicleFeatureFlags to fetch.
+     */
+    orderBy?: VehicleFeatureFlagOrderByWithRelationInput | VehicleFeatureFlagOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: VehicleFeatureFlagWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehicleFeatureFlags from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehicleFeatureFlags.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned VehicleFeatureFlags
+    **/
+    _count?: true | VehicleFeatureFlagCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: VehicleFeatureFlagAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: VehicleFeatureFlagSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: VehicleFeatureFlagMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: VehicleFeatureFlagMaxAggregateInputType
+  }
+
+  export type GetVehicleFeatureFlagAggregateType<T extends VehicleFeatureFlagAggregateArgs> = {
+        [P in keyof T & keyof AggregateVehicleFeatureFlag]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateVehicleFeatureFlag[P]>
+      : GetScalarType<T[P], AggregateVehicleFeatureFlag[P]>
+  }
+
+
+
+
+  export type VehicleFeatureFlagGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VehicleFeatureFlagWhereInput
+    orderBy?: VehicleFeatureFlagOrderByWithAggregationInput | VehicleFeatureFlagOrderByWithAggregationInput[]
+    by: VehicleFeatureFlagScalarFieldEnum[] | VehicleFeatureFlagScalarFieldEnum
+    having?: VehicleFeatureFlagScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: VehicleFeatureFlagCountAggregateInputType | true
+    _avg?: VehicleFeatureFlagAvgAggregateInputType
+    _sum?: VehicleFeatureFlagSumAggregateInputType
+    _min?: VehicleFeatureFlagMinAggregateInputType
+    _max?: VehicleFeatureFlagMaxAggregateInputType
+  }
+
+  export type VehicleFeatureFlagGroupByOutputType = {
+    id: number
+    vehicleId: number
+    flagId: number
+    enabled: boolean
+    config: JsonValue | null
+    createdAt: Date
+    updatedAt: Date
+    _count: VehicleFeatureFlagCountAggregateOutputType | null
+    _avg: VehicleFeatureFlagAvgAggregateOutputType | null
+    _sum: VehicleFeatureFlagSumAggregateOutputType | null
+    _min: VehicleFeatureFlagMinAggregateOutputType | null
+    _max: VehicleFeatureFlagMaxAggregateOutputType | null
+  }
+
+  type GetVehicleFeatureFlagGroupByPayload<T extends VehicleFeatureFlagGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<VehicleFeatureFlagGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof VehicleFeatureFlagGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], VehicleFeatureFlagGroupByOutputType[P]>
+            : GetScalarType<T[P], VehicleFeatureFlagGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type VehicleFeatureFlagSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    vehicleId?: boolean
+    flagId?: boolean
+    enabled?: boolean
+    config?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+    flag?: boolean | FeatureFlagDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["vehicleFeatureFlag"]>
+
+  export type VehicleFeatureFlagSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    vehicleId?: boolean
+    flagId?: boolean
+    enabled?: boolean
+    config?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+    flag?: boolean | FeatureFlagDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["vehicleFeatureFlag"]>
+
+  export type VehicleFeatureFlagSelectScalar = {
+    id?: boolean
+    vehicleId?: boolean
+    flagId?: boolean
+    enabled?: boolean
+    config?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type VehicleFeatureFlagInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+    flag?: boolean | FeatureFlagDefaultArgs<ExtArgs>
+  }
+  export type VehicleFeatureFlagIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    vehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+    flag?: boolean | FeatureFlagDefaultArgs<ExtArgs>
+  }
+
+  export type $VehicleFeatureFlagPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "VehicleFeatureFlag"
+    objects: {
+      vehicle: Prisma.$VehiclePayload<ExtArgs>
+      flag: Prisma.$FeatureFlagPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      vehicleId: number
+      flagId: number
+      enabled: boolean
+      config: Prisma.JsonValue | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["vehicleFeatureFlag"]>
+    composites: {}
+  }
+
+  type VehicleFeatureFlagGetPayload<S extends boolean | null | undefined | VehicleFeatureFlagDefaultArgs> = $Result.GetResult<Prisma.$VehicleFeatureFlagPayload, S>
+
+  type VehicleFeatureFlagCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<VehicleFeatureFlagFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: VehicleFeatureFlagCountAggregateInputType | true
+    }
+
+  export interface VehicleFeatureFlagDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['VehicleFeatureFlag'], meta: { name: 'VehicleFeatureFlag' } }
+    /**
+     * Find zero or one VehicleFeatureFlag that matches the filter.
+     * @param {VehicleFeatureFlagFindUniqueArgs} args - Arguments to find a VehicleFeatureFlag
+     * @example
+     * // Get one VehicleFeatureFlag
+     * const vehicleFeatureFlag = await prisma.vehicleFeatureFlag.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends VehicleFeatureFlagFindUniqueArgs>(args: SelectSubset<T, VehicleFeatureFlagFindUniqueArgs<ExtArgs>>): Prisma__VehicleFeatureFlagClient<$Result.GetResult<Prisma.$VehicleFeatureFlagPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one VehicleFeatureFlag that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {VehicleFeatureFlagFindUniqueOrThrowArgs} args - Arguments to find a VehicleFeatureFlag
+     * @example
+     * // Get one VehicleFeatureFlag
+     * const vehicleFeatureFlag = await prisma.vehicleFeatureFlag.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends VehicleFeatureFlagFindUniqueOrThrowArgs>(args: SelectSubset<T, VehicleFeatureFlagFindUniqueOrThrowArgs<ExtArgs>>): Prisma__VehicleFeatureFlagClient<$Result.GetResult<Prisma.$VehicleFeatureFlagPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first VehicleFeatureFlag that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleFeatureFlagFindFirstArgs} args - Arguments to find a VehicleFeatureFlag
+     * @example
+     * // Get one VehicleFeatureFlag
+     * const vehicleFeatureFlag = await prisma.vehicleFeatureFlag.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends VehicleFeatureFlagFindFirstArgs>(args?: SelectSubset<T, VehicleFeatureFlagFindFirstArgs<ExtArgs>>): Prisma__VehicleFeatureFlagClient<$Result.GetResult<Prisma.$VehicleFeatureFlagPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first VehicleFeatureFlag that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleFeatureFlagFindFirstOrThrowArgs} args - Arguments to find a VehicleFeatureFlag
+     * @example
+     * // Get one VehicleFeatureFlag
+     * const vehicleFeatureFlag = await prisma.vehicleFeatureFlag.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends VehicleFeatureFlagFindFirstOrThrowArgs>(args?: SelectSubset<T, VehicleFeatureFlagFindFirstOrThrowArgs<ExtArgs>>): Prisma__VehicleFeatureFlagClient<$Result.GetResult<Prisma.$VehicleFeatureFlagPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more VehicleFeatureFlags that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleFeatureFlagFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all VehicleFeatureFlags
+     * const vehicleFeatureFlags = await prisma.vehicleFeatureFlag.findMany()
+     * 
+     * // Get first 10 VehicleFeatureFlags
+     * const vehicleFeatureFlags = await prisma.vehicleFeatureFlag.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const vehicleFeatureFlagWithIdOnly = await prisma.vehicleFeatureFlag.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends VehicleFeatureFlagFindManyArgs>(args?: SelectSubset<T, VehicleFeatureFlagFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleFeatureFlagPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a VehicleFeatureFlag.
+     * @param {VehicleFeatureFlagCreateArgs} args - Arguments to create a VehicleFeatureFlag.
+     * @example
+     * // Create one VehicleFeatureFlag
+     * const VehicleFeatureFlag = await prisma.vehicleFeatureFlag.create({
+     *   data: {
+     *     // ... data to create a VehicleFeatureFlag
+     *   }
+     * })
+     * 
+     */
+    create<T extends VehicleFeatureFlagCreateArgs>(args: SelectSubset<T, VehicleFeatureFlagCreateArgs<ExtArgs>>): Prisma__VehicleFeatureFlagClient<$Result.GetResult<Prisma.$VehicleFeatureFlagPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many VehicleFeatureFlags.
+     * @param {VehicleFeatureFlagCreateManyArgs} args - Arguments to create many VehicleFeatureFlags.
+     * @example
+     * // Create many VehicleFeatureFlags
+     * const vehicleFeatureFlag = await prisma.vehicleFeatureFlag.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends VehicleFeatureFlagCreateManyArgs>(args?: SelectSubset<T, VehicleFeatureFlagCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many VehicleFeatureFlags and returns the data saved in the database.
+     * @param {VehicleFeatureFlagCreateManyAndReturnArgs} args - Arguments to create many VehicleFeatureFlags.
+     * @example
+     * // Create many VehicleFeatureFlags
+     * const vehicleFeatureFlag = await prisma.vehicleFeatureFlag.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many VehicleFeatureFlags and only return the `id`
+     * const vehicleFeatureFlagWithIdOnly = await prisma.vehicleFeatureFlag.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends VehicleFeatureFlagCreateManyAndReturnArgs>(args?: SelectSubset<T, VehicleFeatureFlagCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleFeatureFlagPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a VehicleFeatureFlag.
+     * @param {VehicleFeatureFlagDeleteArgs} args - Arguments to delete one VehicleFeatureFlag.
+     * @example
+     * // Delete one VehicleFeatureFlag
+     * const VehicleFeatureFlag = await prisma.vehicleFeatureFlag.delete({
+     *   where: {
+     *     // ... filter to delete one VehicleFeatureFlag
+     *   }
+     * })
+     * 
+     */
+    delete<T extends VehicleFeatureFlagDeleteArgs>(args: SelectSubset<T, VehicleFeatureFlagDeleteArgs<ExtArgs>>): Prisma__VehicleFeatureFlagClient<$Result.GetResult<Prisma.$VehicleFeatureFlagPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one VehicleFeatureFlag.
+     * @param {VehicleFeatureFlagUpdateArgs} args - Arguments to update one VehicleFeatureFlag.
+     * @example
+     * // Update one VehicleFeatureFlag
+     * const vehicleFeatureFlag = await prisma.vehicleFeatureFlag.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends VehicleFeatureFlagUpdateArgs>(args: SelectSubset<T, VehicleFeatureFlagUpdateArgs<ExtArgs>>): Prisma__VehicleFeatureFlagClient<$Result.GetResult<Prisma.$VehicleFeatureFlagPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more VehicleFeatureFlags.
+     * @param {VehicleFeatureFlagDeleteManyArgs} args - Arguments to filter VehicleFeatureFlags to delete.
+     * @example
+     * // Delete a few VehicleFeatureFlags
+     * const { count } = await prisma.vehicleFeatureFlag.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends VehicleFeatureFlagDeleteManyArgs>(args?: SelectSubset<T, VehicleFeatureFlagDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more VehicleFeatureFlags.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleFeatureFlagUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many VehicleFeatureFlags
+     * const vehicleFeatureFlag = await prisma.vehicleFeatureFlag.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends VehicleFeatureFlagUpdateManyArgs>(args: SelectSubset<T, VehicleFeatureFlagUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one VehicleFeatureFlag.
+     * @param {VehicleFeatureFlagUpsertArgs} args - Arguments to update or create a VehicleFeatureFlag.
+     * @example
+     * // Update or create a VehicleFeatureFlag
+     * const vehicleFeatureFlag = await prisma.vehicleFeatureFlag.upsert({
+     *   create: {
+     *     // ... data to create a VehicleFeatureFlag
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the VehicleFeatureFlag we want to update
+     *   }
+     * })
+     */
+    upsert<T extends VehicleFeatureFlagUpsertArgs>(args: SelectSubset<T, VehicleFeatureFlagUpsertArgs<ExtArgs>>): Prisma__VehicleFeatureFlagClient<$Result.GetResult<Prisma.$VehicleFeatureFlagPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of VehicleFeatureFlags.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleFeatureFlagCountArgs} args - Arguments to filter VehicleFeatureFlags to count.
+     * @example
+     * // Count the number of VehicleFeatureFlags
+     * const count = await prisma.vehicleFeatureFlag.count({
+     *   where: {
+     *     // ... the filter for the VehicleFeatureFlags we want to count
+     *   }
+     * })
+    **/
+    count<T extends VehicleFeatureFlagCountArgs>(
+      args?: Subset<T, VehicleFeatureFlagCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], VehicleFeatureFlagCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a VehicleFeatureFlag.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleFeatureFlagAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends VehicleFeatureFlagAggregateArgs>(args: Subset<T, VehicleFeatureFlagAggregateArgs>): Prisma.PrismaPromise<GetVehicleFeatureFlagAggregateType<T>>
+
+    /**
+     * Group by VehicleFeatureFlag.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleFeatureFlagGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends VehicleFeatureFlagGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: VehicleFeatureFlagGroupByArgs['orderBy'] }
+        : { orderBy?: VehicleFeatureFlagGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, VehicleFeatureFlagGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetVehicleFeatureFlagGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the VehicleFeatureFlag model
+   */
+  readonly fields: VehicleFeatureFlagFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for VehicleFeatureFlag.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__VehicleFeatureFlagClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    vehicle<T extends VehicleDefaultArgs<ExtArgs> = {}>(args?: Subset<T, VehicleDefaultArgs<ExtArgs>>): Prisma__VehicleClient<$Result.GetResult<Prisma.$VehiclePayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    flag<T extends FeatureFlagDefaultArgs<ExtArgs> = {}>(args?: Subset<T, FeatureFlagDefaultArgs<ExtArgs>>): Prisma__FeatureFlagClient<$Result.GetResult<Prisma.$FeatureFlagPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the VehicleFeatureFlag model
+   */ 
+  interface VehicleFeatureFlagFieldRefs {
+    readonly id: FieldRef<"VehicleFeatureFlag", 'Int'>
+    readonly vehicleId: FieldRef<"VehicleFeatureFlag", 'Int'>
+    readonly flagId: FieldRef<"VehicleFeatureFlag", 'Int'>
+    readonly enabled: FieldRef<"VehicleFeatureFlag", 'Boolean'>
+    readonly config: FieldRef<"VehicleFeatureFlag", 'Json'>
+    readonly createdAt: FieldRef<"VehicleFeatureFlag", 'DateTime'>
+    readonly updatedAt: FieldRef<"VehicleFeatureFlag", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * VehicleFeatureFlag findUnique
+   */
+  export type VehicleFeatureFlagFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleFeatureFlag
+     */
+    select?: VehicleFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleFeatureFlagInclude<ExtArgs> | null
+    /**
+     * Filter, which VehicleFeatureFlag to fetch.
+     */
+    where: VehicleFeatureFlagWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleFeatureFlag findUniqueOrThrow
+   */
+  export type VehicleFeatureFlagFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleFeatureFlag
+     */
+    select?: VehicleFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleFeatureFlagInclude<ExtArgs> | null
+    /**
+     * Filter, which VehicleFeatureFlag to fetch.
+     */
+    where: VehicleFeatureFlagWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleFeatureFlag findFirst
+   */
+  export type VehicleFeatureFlagFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleFeatureFlag
+     */
+    select?: VehicleFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleFeatureFlagInclude<ExtArgs> | null
+    /**
+     * Filter, which VehicleFeatureFlag to fetch.
+     */
+    where?: VehicleFeatureFlagWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehicleFeatureFlags to fetch.
+     */
+    orderBy?: VehicleFeatureFlagOrderByWithRelationInput | VehicleFeatureFlagOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for VehicleFeatureFlags.
+     */
+    cursor?: VehicleFeatureFlagWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehicleFeatureFlags from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehicleFeatureFlags.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of VehicleFeatureFlags.
+     */
+    distinct?: VehicleFeatureFlagScalarFieldEnum | VehicleFeatureFlagScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleFeatureFlag findFirstOrThrow
+   */
+  export type VehicleFeatureFlagFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleFeatureFlag
+     */
+    select?: VehicleFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleFeatureFlagInclude<ExtArgs> | null
+    /**
+     * Filter, which VehicleFeatureFlag to fetch.
+     */
+    where?: VehicleFeatureFlagWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehicleFeatureFlags to fetch.
+     */
+    orderBy?: VehicleFeatureFlagOrderByWithRelationInput | VehicleFeatureFlagOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for VehicleFeatureFlags.
+     */
+    cursor?: VehicleFeatureFlagWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehicleFeatureFlags from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehicleFeatureFlags.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of VehicleFeatureFlags.
+     */
+    distinct?: VehicleFeatureFlagScalarFieldEnum | VehicleFeatureFlagScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleFeatureFlag findMany
+   */
+  export type VehicleFeatureFlagFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleFeatureFlag
+     */
+    select?: VehicleFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleFeatureFlagInclude<ExtArgs> | null
+    /**
+     * Filter, which VehicleFeatureFlags to fetch.
+     */
+    where?: VehicleFeatureFlagWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehicleFeatureFlags to fetch.
+     */
+    orderBy?: VehicleFeatureFlagOrderByWithRelationInput | VehicleFeatureFlagOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing VehicleFeatureFlags.
+     */
+    cursor?: VehicleFeatureFlagWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehicleFeatureFlags from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehicleFeatureFlags.
+     */
+    skip?: number
+    distinct?: VehicleFeatureFlagScalarFieldEnum | VehicleFeatureFlagScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleFeatureFlag create
+   */
+  export type VehicleFeatureFlagCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleFeatureFlag
+     */
+    select?: VehicleFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleFeatureFlagInclude<ExtArgs> | null
+    /**
+     * The data needed to create a VehicleFeatureFlag.
+     */
+    data: XOR<VehicleFeatureFlagCreateInput, VehicleFeatureFlagUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleFeatureFlag createMany
+   */
+  export type VehicleFeatureFlagCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many VehicleFeatureFlags.
+     */
+    data: VehicleFeatureFlagCreateManyInput | VehicleFeatureFlagCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * VehicleFeatureFlag createManyAndReturn
+   */
+  export type VehicleFeatureFlagCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleFeatureFlag
+     */
+    select?: VehicleFeatureFlagSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many VehicleFeatureFlags.
+     */
+    data: VehicleFeatureFlagCreateManyInput | VehicleFeatureFlagCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleFeatureFlagIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * VehicleFeatureFlag update
+   */
+  export type VehicleFeatureFlagUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleFeatureFlag
+     */
+    select?: VehicleFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleFeatureFlagInclude<ExtArgs> | null
+    /**
+     * The data needed to update a VehicleFeatureFlag.
+     */
+    data: XOR<VehicleFeatureFlagUpdateInput, VehicleFeatureFlagUncheckedUpdateInput>
+    /**
+     * Choose, which VehicleFeatureFlag to update.
+     */
+    where: VehicleFeatureFlagWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleFeatureFlag updateMany
+   */
+  export type VehicleFeatureFlagUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update VehicleFeatureFlags.
+     */
+    data: XOR<VehicleFeatureFlagUpdateManyMutationInput, VehicleFeatureFlagUncheckedUpdateManyInput>
+    /**
+     * Filter which VehicleFeatureFlags to update
+     */
+    where?: VehicleFeatureFlagWhereInput
+  }
+
+  /**
+   * VehicleFeatureFlag upsert
+   */
+  export type VehicleFeatureFlagUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleFeatureFlag
+     */
+    select?: VehicleFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleFeatureFlagInclude<ExtArgs> | null
+    /**
+     * The filter to search for the VehicleFeatureFlag to update in case it exists.
+     */
+    where: VehicleFeatureFlagWhereUniqueInput
+    /**
+     * In case the VehicleFeatureFlag found by the `where` argument doesn't exist, create a new VehicleFeatureFlag with this data.
+     */
+    create: XOR<VehicleFeatureFlagCreateInput, VehicleFeatureFlagUncheckedCreateInput>
+    /**
+     * In case the VehicleFeatureFlag was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<VehicleFeatureFlagUpdateInput, VehicleFeatureFlagUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleFeatureFlag delete
+   */
+  export type VehicleFeatureFlagDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleFeatureFlag
+     */
+    select?: VehicleFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleFeatureFlagInclude<ExtArgs> | null
+    /**
+     * Filter which VehicleFeatureFlag to delete.
+     */
+    where: VehicleFeatureFlagWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleFeatureFlag deleteMany
+   */
+  export type VehicleFeatureFlagDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which VehicleFeatureFlags to delete
+     */
+    where?: VehicleFeatureFlagWhereInput
+  }
+
+  /**
+   * VehicleFeatureFlag without action
+   */
+  export type VehicleFeatureFlagDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleFeatureFlag
+     */
+    select?: VehicleFeatureFlagSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleFeatureFlagInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -41355,6 +44792,7 @@ export namespace Prisma {
     safetyDepositSetOff: 'safetyDepositSetOff',
     cancelledAt: 'cancelledAt',
     cancellationReason: 'cancellationReason',
+    requiresManagerConfirmation: 'requiresManagerConfirmation',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
     deletedAt: 'deletedAt'
@@ -41405,9 +44843,9 @@ export namespace Prisma {
     finalCost: 'finalCost',
     notes: 'notes',
     approvedById: 'approvedById',
+    chargeType: 'chargeType',
     status: 'status',
     disposition: 'disposition',
-    chargeType: 'chargeType',
     createdAt: 'createdAt'
   };
 
@@ -41480,9 +44918,7 @@ export namespace Prisma {
     publicId: 'publicId',
     invoiceId: 'invoiceId',
     label: 'label',
-    amount: 'amount',
-    isTaxable: 'isTaxable',
-    chargeType: 'chargeType'
+    amount: 'amount'
   };
 
   export type InvoiceItemScalarFieldEnum = (typeof InvoiceItemScalarFieldEnum)[keyof typeof InvoiceItemScalarFieldEnum]
@@ -41560,6 +44996,48 @@ export namespace Prisma {
   };
 
   export type CancellationInvoiceScalarFieldEnum = (typeof CancellationInvoiceScalarFieldEnum)[keyof typeof CancellationInvoiceScalarFieldEnum]
+
+
+  export const FeatureFlagScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    key: 'key',
+    name: 'name',
+    description: 'description',
+    scope: 'scope',
+    enabled: 'enabled',
+    config: 'config',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type FeatureFlagScalarFieldEnum = (typeof FeatureFlagScalarFieldEnum)[keyof typeof FeatureFlagScalarFieldEnum]
+
+
+  export const BranchFeatureFlagScalarFieldEnum: {
+    id: 'id',
+    branchId: 'branchId',
+    flagId: 'flagId',
+    enabled: 'enabled',
+    config: 'config',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type BranchFeatureFlagScalarFieldEnum = (typeof BranchFeatureFlagScalarFieldEnum)[keyof typeof BranchFeatureFlagScalarFieldEnum]
+
+
+  export const VehicleFeatureFlagScalarFieldEnum: {
+    id: 'id',
+    vehicleId: 'vehicleId',
+    flagId: 'flagId',
+    enabled: 'enabled',
+    config: 'config',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type VehicleFeatureFlagScalarFieldEnum = (typeof VehicleFeatureFlagScalarFieldEnum)[keyof typeof VehicleFeatureFlagScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -41840,6 +45318,20 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'DamageChargeType'
+   */
+  export type EnumDamageChargeTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DamageChargeType'>
+    
+
+
+  /**
+   * Reference to a field of type 'DamageChargeType[]'
+   */
+  export type ListEnumDamageChargeTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DamageChargeType[]'>
+    
+
+
+  /**
    * Reference to a field of type 'DamageReportStatus'
    */
   export type EnumDamageReportStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DamageReportStatus'>
@@ -41868,20 +45360,6 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'DamageChargeType'
-   */
-  export type EnumDamageChargeTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DamageChargeType'>
-    
-
-
-  /**
-   * Reference to a field of type 'DamageChargeType[]'
-   */
-  export type ListEnumDamageChargeTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DamageChargeType[]'>
-    
-
-
-  /**
    * Reference to a field of type 'InvoiceStatus'
    */
   export type EnumInvoiceStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'InvoiceStatus'>
@@ -41896,16 +45374,16 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'ChargeType'
+   * Reference to a field of type 'FeatureFlagScope'
    */
-  export type EnumChargeTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ChargeType'>
+  export type EnumFeatureFlagScopeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FeatureFlagScope'>
     
 
 
   /**
-   * Reference to a field of type 'ChargeType[]'
+   * Reference to a field of type 'FeatureFlagScope[]'
    */
-  export type ListEnumChargeTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ChargeType[]'>
+  export type ListEnumFeatureFlagScopeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FeatureFlagScope[]'>
     
 
 
@@ -42469,6 +45947,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingListRelationFilter
     branchPricingDefaults?: BranchPricingDefaultsListRelationFilter
     gstRule?: XOR<GSTRuleNullableRelationFilter, GSTRuleWhereInput> | null
+    featureFlags?: BranchFeatureFlagListRelationFilter
   }
 
   export type BranchOrderByWithRelationInput = {
@@ -42487,6 +45966,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingOrderByRelationAggregateInput
     branchPricingDefaults?: BranchPricingDefaultsOrderByRelationAggregateInput
     gstRule?: GSTRuleOrderByWithRelationInput
+    featureFlags?: BranchFeatureFlagOrderByRelationAggregateInput
   }
 
   export type BranchWhereUniqueInput = Prisma.AtLeast<{
@@ -42508,6 +45988,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingListRelationFilter
     branchPricingDefaults?: BranchPricingDefaultsListRelationFilter
     gstRule?: XOR<GSTRuleNullableRelationFilter, GSTRuleWhereInput> | null
+    featureFlags?: BranchFeatureFlagListRelationFilter
   }, "id" | "publicId">
 
   export type BranchOrderByWithAggregationInput = {
@@ -42775,6 +46256,7 @@ export namespace Prisma {
     customPricing?: XOR<VehicleCustomPricingNullableRelationFilter, VehicleCustomPricingWhereInput> | null
     images?: VehicleImageListRelationFilter
     bookingItems?: BookingItemListRelationFilter
+    featureFlags?: VehicleFeatureFlagListRelationFilter
   }
 
   export type VehicleOrderByWithRelationInput = {
@@ -42801,6 +46283,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingOrderByWithRelationInput
     images?: VehicleImageOrderByRelationAggregateInput
     bookingItems?: BookingItemOrderByRelationAggregateInput
+    featureFlags?: VehicleFeatureFlagOrderByRelationAggregateInput
   }
 
   export type VehicleWhereUniqueInput = Prisma.AtLeast<{
@@ -42830,6 +46313,7 @@ export namespace Prisma {
     customPricing?: XOR<VehicleCustomPricingNullableRelationFilter, VehicleCustomPricingWhereInput> | null
     images?: VehicleImageListRelationFilter
     bookingItems?: BookingItemListRelationFilter
+    featureFlags?: VehicleFeatureFlagListRelationFilter
   }, "id" | "publicId" | "regNo">
 
   export type VehicleOrderByWithAggregationInput = {
@@ -43560,6 +47044,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFilter<"Booking"> | boolean
     cancelledAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     cancellationReason?: StringNullableFilter<"Booking"> | string | null
+    requiresManagerConfirmation?: BoolFilter<"Booking"> | boolean
     createdAt?: DateTimeFilter<"Booking"> | Date | string
     updatedAt?: DateTimeFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
@@ -43616,6 +47101,7 @@ export namespace Prisma {
     safetyDepositSetOff?: SortOrder
     cancelledAt?: SortOrderInput | SortOrder
     cancellationReason?: SortOrderInput | SortOrder
+    requiresManagerConfirmation?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrderInput | SortOrder
@@ -43675,6 +47161,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFilter<"Booking"> | boolean
     cancelledAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     cancellationReason?: StringNullableFilter<"Booking"> | string | null
+    requiresManagerConfirmation?: BoolFilter<"Booking"> | boolean
     createdAt?: DateTimeFilter<"Booking"> | Date | string
     updatedAt?: DateTimeFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
@@ -43731,6 +47218,7 @@ export namespace Prisma {
     safetyDepositSetOff?: SortOrder
     cancelledAt?: SortOrderInput | SortOrder
     cancellationReason?: SortOrderInput | SortOrder
+    requiresManagerConfirmation?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrderInput | SortOrder
@@ -43785,6 +47273,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolWithAggregatesFilter<"Booking"> | boolean
     cancelledAt?: DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
     cancellationReason?: StringNullableWithAggregatesFilter<"Booking"> | string | null
+    requiresManagerConfirmation?: BoolWithAggregatesFilter<"Booking"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"Booking"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
@@ -43976,9 +47465,9 @@ export namespace Prisma {
     finalCost?: DecimalNullableFilter<"DamageReport"> | Decimal | DecimalJsLike | number | string | null
     notes?: JsonFilter<"DamageReport">
     approvedById?: IntNullableFilter<"DamageReport"> | number | null
+    chargeType?: EnumDamageChargeTypeFilter<"DamageReport"> | $Enums.DamageChargeType
     status?: EnumDamageReportStatusFilter<"DamageReport"> | $Enums.DamageReportStatus
     disposition?: EnumVehicleReturnDispositionNullableFilter<"DamageReport"> | $Enums.VehicleReturnDisposition | null
-    chargeType?: EnumDamageChargeTypeFilter<"DamageReport"> | $Enums.DamageChargeType
     createdAt?: DateTimeFilter<"DamageReport"> | Date | string
     booking?: XOR<BookingRelationFilter, BookingWhereInput>
     vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
@@ -43996,9 +47485,9 @@ export namespace Prisma {
     finalCost?: SortOrderInput | SortOrder
     notes?: SortOrder
     approvedById?: SortOrderInput | SortOrder
+    chargeType?: SortOrder
     status?: SortOrder
     disposition?: SortOrderInput | SortOrder
-    chargeType?: SortOrder
     createdAt?: SortOrder
     booking?: BookingOrderByWithRelationInput
     vehicle?: VehicleOrderByWithRelationInput
@@ -44019,9 +47508,9 @@ export namespace Prisma {
     finalCost?: DecimalNullableFilter<"DamageReport"> | Decimal | DecimalJsLike | number | string | null
     notes?: JsonFilter<"DamageReport">
     approvedById?: IntNullableFilter<"DamageReport"> | number | null
+    chargeType?: EnumDamageChargeTypeFilter<"DamageReport"> | $Enums.DamageChargeType
     status?: EnumDamageReportStatusFilter<"DamageReport"> | $Enums.DamageReportStatus
     disposition?: EnumVehicleReturnDispositionNullableFilter<"DamageReport"> | $Enums.VehicleReturnDisposition | null
-    chargeType?: EnumDamageChargeTypeFilter<"DamageReport"> | $Enums.DamageChargeType
     createdAt?: DateTimeFilter<"DamageReport"> | Date | string
     booking?: XOR<BookingRelationFilter, BookingWhereInput>
     vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
@@ -44039,9 +47528,9 @@ export namespace Prisma {
     finalCost?: SortOrderInput | SortOrder
     notes?: SortOrder
     approvedById?: SortOrderInput | SortOrder
+    chargeType?: SortOrder
     status?: SortOrder
     disposition?: SortOrderInput | SortOrder
-    chargeType?: SortOrder
     createdAt?: SortOrder
     _count?: DamageReportCountOrderByAggregateInput
     _avg?: DamageReportAvgOrderByAggregateInput
@@ -44063,9 +47552,9 @@ export namespace Prisma {
     finalCost?: DecimalNullableWithAggregatesFilter<"DamageReport"> | Decimal | DecimalJsLike | number | string | null
     notes?: JsonWithAggregatesFilter<"DamageReport">
     approvedById?: IntNullableWithAggregatesFilter<"DamageReport"> | number | null
+    chargeType?: EnumDamageChargeTypeWithAggregatesFilter<"DamageReport"> | $Enums.DamageChargeType
     status?: EnumDamageReportStatusWithAggregatesFilter<"DamageReport"> | $Enums.DamageReportStatus
     disposition?: EnumVehicleReturnDispositionNullableWithAggregatesFilter<"DamageReport"> | $Enums.VehicleReturnDisposition | null
-    chargeType?: EnumDamageChargeTypeWithAggregatesFilter<"DamageReport"> | $Enums.DamageChargeType
     createdAt?: DateTimeWithAggregatesFilter<"DamageReport"> | Date | string
   }
 
@@ -44397,8 +47886,6 @@ export namespace Prisma {
     invoiceId?: IntFilter<"InvoiceItem"> | number
     label?: StringFilter<"InvoiceItem"> | string
     amount?: DecimalFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
-    isTaxable?: BoolFilter<"InvoiceItem"> | boolean
-    chargeType?: EnumChargeTypeFilter<"InvoiceItem"> | $Enums.ChargeType
     invoice?: XOR<InvoiceRelationFilter, InvoiceWhereInput>
   }
 
@@ -44408,8 +47895,6 @@ export namespace Prisma {
     invoiceId?: SortOrder
     label?: SortOrder
     amount?: SortOrder
-    isTaxable?: SortOrder
-    chargeType?: SortOrder
     invoice?: InvoiceOrderByWithRelationInput
   }
 
@@ -44422,8 +47907,6 @@ export namespace Prisma {
     invoiceId?: IntFilter<"InvoiceItem"> | number
     label?: StringFilter<"InvoiceItem"> | string
     amount?: DecimalFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
-    isTaxable?: BoolFilter<"InvoiceItem"> | boolean
-    chargeType?: EnumChargeTypeFilter<"InvoiceItem"> | $Enums.ChargeType
     invoice?: XOR<InvoiceRelationFilter, InvoiceWhereInput>
   }, "id" | "publicId">
 
@@ -44433,8 +47916,6 @@ export namespace Prisma {
     invoiceId?: SortOrder
     label?: SortOrder
     amount?: SortOrder
-    isTaxable?: SortOrder
-    chargeType?: SortOrder
     _count?: InvoiceItemCountOrderByAggregateInput
     _avg?: InvoiceItemAvgOrderByAggregateInput
     _max?: InvoiceItemMaxOrderByAggregateInput
@@ -44451,8 +47932,6 @@ export namespace Prisma {
     invoiceId?: IntWithAggregatesFilter<"InvoiceItem"> | number
     label?: StringWithAggregatesFilter<"InvoiceItem"> | string
     amount?: DecimalWithAggregatesFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
-    isTaxable?: BoolWithAggregatesFilter<"InvoiceItem"> | boolean
-    chargeType?: EnumChargeTypeWithAggregatesFilter<"InvoiceItem"> | $Enums.ChargeType
   }
 
   export type AuditLogWhereInput = {
@@ -44833,6 +48312,233 @@ export namespace Prisma {
     sentAt?: DateTimeNullableWithAggregatesFilter<"CancellationInvoice"> | Date | string | null
     createdAt?: DateTimeWithAggregatesFilter<"CancellationInvoice"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"CancellationInvoice"> | Date | string
+  }
+
+  export type FeatureFlagWhereInput = {
+    AND?: FeatureFlagWhereInput | FeatureFlagWhereInput[]
+    OR?: FeatureFlagWhereInput[]
+    NOT?: FeatureFlagWhereInput | FeatureFlagWhereInput[]
+    id?: IntFilter<"FeatureFlag"> | number
+    publicId?: StringFilter<"FeatureFlag"> | string
+    key?: StringFilter<"FeatureFlag"> | string
+    name?: StringFilter<"FeatureFlag"> | string
+    description?: StringNullableFilter<"FeatureFlag"> | string | null
+    scope?: EnumFeatureFlagScopeFilter<"FeatureFlag"> | $Enums.FeatureFlagScope
+    enabled?: BoolFilter<"FeatureFlag"> | boolean
+    config?: JsonNullableFilter<"FeatureFlag">
+    createdAt?: DateTimeFilter<"FeatureFlag"> | Date | string
+    updatedAt?: DateTimeFilter<"FeatureFlag"> | Date | string
+    branchFlags?: BranchFeatureFlagListRelationFilter
+    vehicleFlags?: VehicleFeatureFlagListRelationFilter
+  }
+
+  export type FeatureFlagOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    key?: SortOrder
+    name?: SortOrder
+    description?: SortOrderInput | SortOrder
+    scope?: SortOrder
+    enabled?: SortOrder
+    config?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    branchFlags?: BranchFeatureFlagOrderByRelationAggregateInput
+    vehicleFlags?: VehicleFeatureFlagOrderByRelationAggregateInput
+  }
+
+  export type FeatureFlagWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    key?: string
+    AND?: FeatureFlagWhereInput | FeatureFlagWhereInput[]
+    OR?: FeatureFlagWhereInput[]
+    NOT?: FeatureFlagWhereInput | FeatureFlagWhereInput[]
+    name?: StringFilter<"FeatureFlag"> | string
+    description?: StringNullableFilter<"FeatureFlag"> | string | null
+    scope?: EnumFeatureFlagScopeFilter<"FeatureFlag"> | $Enums.FeatureFlagScope
+    enabled?: BoolFilter<"FeatureFlag"> | boolean
+    config?: JsonNullableFilter<"FeatureFlag">
+    createdAt?: DateTimeFilter<"FeatureFlag"> | Date | string
+    updatedAt?: DateTimeFilter<"FeatureFlag"> | Date | string
+    branchFlags?: BranchFeatureFlagListRelationFilter
+    vehicleFlags?: VehicleFeatureFlagListRelationFilter
+  }, "id" | "publicId" | "key">
+
+  export type FeatureFlagOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    key?: SortOrder
+    name?: SortOrder
+    description?: SortOrderInput | SortOrder
+    scope?: SortOrder
+    enabled?: SortOrder
+    config?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: FeatureFlagCountOrderByAggregateInput
+    _avg?: FeatureFlagAvgOrderByAggregateInput
+    _max?: FeatureFlagMaxOrderByAggregateInput
+    _min?: FeatureFlagMinOrderByAggregateInput
+    _sum?: FeatureFlagSumOrderByAggregateInput
+  }
+
+  export type FeatureFlagScalarWhereWithAggregatesInput = {
+    AND?: FeatureFlagScalarWhereWithAggregatesInput | FeatureFlagScalarWhereWithAggregatesInput[]
+    OR?: FeatureFlagScalarWhereWithAggregatesInput[]
+    NOT?: FeatureFlagScalarWhereWithAggregatesInput | FeatureFlagScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"FeatureFlag"> | number
+    publicId?: StringWithAggregatesFilter<"FeatureFlag"> | string
+    key?: StringWithAggregatesFilter<"FeatureFlag"> | string
+    name?: StringWithAggregatesFilter<"FeatureFlag"> | string
+    description?: StringNullableWithAggregatesFilter<"FeatureFlag"> | string | null
+    scope?: EnumFeatureFlagScopeWithAggregatesFilter<"FeatureFlag"> | $Enums.FeatureFlagScope
+    enabled?: BoolWithAggregatesFilter<"FeatureFlag"> | boolean
+    config?: JsonNullableWithAggregatesFilter<"FeatureFlag">
+    createdAt?: DateTimeWithAggregatesFilter<"FeatureFlag"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"FeatureFlag"> | Date | string
+  }
+
+  export type BranchFeatureFlagWhereInput = {
+    AND?: BranchFeatureFlagWhereInput | BranchFeatureFlagWhereInput[]
+    OR?: BranchFeatureFlagWhereInput[]
+    NOT?: BranchFeatureFlagWhereInput | BranchFeatureFlagWhereInput[]
+    id?: IntFilter<"BranchFeatureFlag"> | number
+    branchId?: IntFilter<"BranchFeatureFlag"> | number
+    flagId?: IntFilter<"BranchFeatureFlag"> | number
+    enabled?: BoolFilter<"BranchFeatureFlag"> | boolean
+    config?: JsonNullableFilter<"BranchFeatureFlag">
+    createdAt?: DateTimeFilter<"BranchFeatureFlag"> | Date | string
+    updatedAt?: DateTimeFilter<"BranchFeatureFlag"> | Date | string
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+    flag?: XOR<FeatureFlagRelationFilter, FeatureFlagWhereInput>
+  }
+
+  export type BranchFeatureFlagOrderByWithRelationInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    flagId?: SortOrder
+    enabled?: SortOrder
+    config?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    branch?: BranchOrderByWithRelationInput
+    flag?: FeatureFlagOrderByWithRelationInput
+  }
+
+  export type BranchFeatureFlagWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    branchId_flagId?: BranchFeatureFlagBranchIdFlagIdCompoundUniqueInput
+    AND?: BranchFeatureFlagWhereInput | BranchFeatureFlagWhereInput[]
+    OR?: BranchFeatureFlagWhereInput[]
+    NOT?: BranchFeatureFlagWhereInput | BranchFeatureFlagWhereInput[]
+    branchId?: IntFilter<"BranchFeatureFlag"> | number
+    flagId?: IntFilter<"BranchFeatureFlag"> | number
+    enabled?: BoolFilter<"BranchFeatureFlag"> | boolean
+    config?: JsonNullableFilter<"BranchFeatureFlag">
+    createdAt?: DateTimeFilter<"BranchFeatureFlag"> | Date | string
+    updatedAt?: DateTimeFilter<"BranchFeatureFlag"> | Date | string
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+    flag?: XOR<FeatureFlagRelationFilter, FeatureFlagWhereInput>
+  }, "id" | "branchId_flagId">
+
+  export type BranchFeatureFlagOrderByWithAggregationInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    flagId?: SortOrder
+    enabled?: SortOrder
+    config?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: BranchFeatureFlagCountOrderByAggregateInput
+    _avg?: BranchFeatureFlagAvgOrderByAggregateInput
+    _max?: BranchFeatureFlagMaxOrderByAggregateInput
+    _min?: BranchFeatureFlagMinOrderByAggregateInput
+    _sum?: BranchFeatureFlagSumOrderByAggregateInput
+  }
+
+  export type BranchFeatureFlagScalarWhereWithAggregatesInput = {
+    AND?: BranchFeatureFlagScalarWhereWithAggregatesInput | BranchFeatureFlagScalarWhereWithAggregatesInput[]
+    OR?: BranchFeatureFlagScalarWhereWithAggregatesInput[]
+    NOT?: BranchFeatureFlagScalarWhereWithAggregatesInput | BranchFeatureFlagScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"BranchFeatureFlag"> | number
+    branchId?: IntWithAggregatesFilter<"BranchFeatureFlag"> | number
+    flagId?: IntWithAggregatesFilter<"BranchFeatureFlag"> | number
+    enabled?: BoolWithAggregatesFilter<"BranchFeatureFlag"> | boolean
+    config?: JsonNullableWithAggregatesFilter<"BranchFeatureFlag">
+    createdAt?: DateTimeWithAggregatesFilter<"BranchFeatureFlag"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"BranchFeatureFlag"> | Date | string
+  }
+
+  export type VehicleFeatureFlagWhereInput = {
+    AND?: VehicleFeatureFlagWhereInput | VehicleFeatureFlagWhereInput[]
+    OR?: VehicleFeatureFlagWhereInput[]
+    NOT?: VehicleFeatureFlagWhereInput | VehicleFeatureFlagWhereInput[]
+    id?: IntFilter<"VehicleFeatureFlag"> | number
+    vehicleId?: IntFilter<"VehicleFeatureFlag"> | number
+    flagId?: IntFilter<"VehicleFeatureFlag"> | number
+    enabled?: BoolFilter<"VehicleFeatureFlag"> | boolean
+    config?: JsonNullableFilter<"VehicleFeatureFlag">
+    createdAt?: DateTimeFilter<"VehicleFeatureFlag"> | Date | string
+    updatedAt?: DateTimeFilter<"VehicleFeatureFlag"> | Date | string
+    vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
+    flag?: XOR<FeatureFlagRelationFilter, FeatureFlagWhereInput>
+  }
+
+  export type VehicleFeatureFlagOrderByWithRelationInput = {
+    id?: SortOrder
+    vehicleId?: SortOrder
+    flagId?: SortOrder
+    enabled?: SortOrder
+    config?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    vehicle?: VehicleOrderByWithRelationInput
+    flag?: FeatureFlagOrderByWithRelationInput
+  }
+
+  export type VehicleFeatureFlagWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    vehicleId_flagId?: VehicleFeatureFlagVehicleIdFlagIdCompoundUniqueInput
+    AND?: VehicleFeatureFlagWhereInput | VehicleFeatureFlagWhereInput[]
+    OR?: VehicleFeatureFlagWhereInput[]
+    NOT?: VehicleFeatureFlagWhereInput | VehicleFeatureFlagWhereInput[]
+    vehicleId?: IntFilter<"VehicleFeatureFlag"> | number
+    flagId?: IntFilter<"VehicleFeatureFlag"> | number
+    enabled?: BoolFilter<"VehicleFeatureFlag"> | boolean
+    config?: JsonNullableFilter<"VehicleFeatureFlag">
+    createdAt?: DateTimeFilter<"VehicleFeatureFlag"> | Date | string
+    updatedAt?: DateTimeFilter<"VehicleFeatureFlag"> | Date | string
+    vehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
+    flag?: XOR<FeatureFlagRelationFilter, FeatureFlagWhereInput>
+  }, "id" | "vehicleId_flagId">
+
+  export type VehicleFeatureFlagOrderByWithAggregationInput = {
+    id?: SortOrder
+    vehicleId?: SortOrder
+    flagId?: SortOrder
+    enabled?: SortOrder
+    config?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: VehicleFeatureFlagCountOrderByAggregateInput
+    _avg?: VehicleFeatureFlagAvgOrderByAggregateInput
+    _max?: VehicleFeatureFlagMaxOrderByAggregateInput
+    _min?: VehicleFeatureFlagMinOrderByAggregateInput
+    _sum?: VehicleFeatureFlagSumOrderByAggregateInput
+  }
+
+  export type VehicleFeatureFlagScalarWhereWithAggregatesInput = {
+    AND?: VehicleFeatureFlagScalarWhereWithAggregatesInput | VehicleFeatureFlagScalarWhereWithAggregatesInput[]
+    OR?: VehicleFeatureFlagScalarWhereWithAggregatesInput[]
+    NOT?: VehicleFeatureFlagScalarWhereWithAggregatesInput | VehicleFeatureFlagScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"VehicleFeatureFlag"> | number
+    vehicleId?: IntWithAggregatesFilter<"VehicleFeatureFlag"> | number
+    flagId?: IntWithAggregatesFilter<"VehicleFeatureFlag"> | number
+    enabled?: BoolWithAggregatesFilter<"VehicleFeatureFlag"> | boolean
+    config?: JsonNullableWithAggregatesFilter<"VehicleFeatureFlag">
+    createdAt?: DateTimeWithAggregatesFilter<"VehicleFeatureFlag"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"VehicleFeatureFlag"> | Date | string
   }
 
   export type UserCreateInput = {
@@ -45411,6 +49117,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
     branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateInput = {
@@ -45429,6 +49136,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUpdateInput = {
@@ -45446,6 +49154,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateInput = {
@@ -45464,6 +49173,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchCreateManyInput = {
@@ -45736,6 +49446,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateInput = {
@@ -45760,6 +49471,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUpdateInput = {
@@ -45783,6 +49495,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateInput = {
@@ -45807,6 +49520,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleCreateManyInput = {
@@ -46518,6 +50232,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -46574,6 +50289,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -46621,6 +50337,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -46677,6 +50394,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -46729,6 +50447,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -46770,6 +50489,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -46816,6 +50536,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -46998,9 +50719,9 @@ export namespace Prisma {
     estimatedCost: Decimal | DecimalJsLike | number | string
     finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
+    chargeType?: $Enums.DamageChargeType
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
-    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
     booking: BookingCreateNestedOneWithoutDamagesInput
     vehicle: VehicleCreateNestedOneWithoutDamageReportsInput
@@ -47018,9 +50739,9 @@ export namespace Prisma {
     finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
     approvedById?: number | null
+    chargeType?: $Enums.DamageChargeType
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
-    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
     photos?: BookingPhotoUncheckedCreateNestedManyWithoutDamageReportInput
   }
@@ -47031,9 +50752,9 @@ export namespace Prisma {
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
-    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     booking?: BookingUpdateOneRequiredWithoutDamagesNestedInput
     vehicle?: VehicleUpdateOneRequiredWithoutDamageReportsNestedInput
@@ -47051,9 +50772,9 @@ export namespace Prisma {
     finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
-    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     photos?: BookingPhotoUncheckedUpdateManyWithoutDamageReportNestedInput
   }
@@ -47068,9 +50789,9 @@ export namespace Prisma {
     finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
     approvedById?: number | null
+    chargeType?: $Enums.DamageChargeType
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
-    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
   }
 
@@ -47080,9 +50801,9 @@ export namespace Prisma {
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
-    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -47096,9 +50817,9 @@ export namespace Prisma {
     finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
-    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -47441,8 +51162,6 @@ export namespace Prisma {
     publicId: string
     label: string
     amount: Decimal | DecimalJsLike | number | string
-    isTaxable?: boolean
-    chargeType?: $Enums.ChargeType
     invoice: InvoiceCreateNestedOneWithoutItemsInput
   }
 
@@ -47452,16 +51171,12 @@ export namespace Prisma {
     invoiceId: number
     label: string
     amount: Decimal | DecimalJsLike | number | string
-    isTaxable?: boolean
-    chargeType?: $Enums.ChargeType
   }
 
   export type InvoiceItemUpdateInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     label?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxable?: BoolFieldUpdateOperationsInput | boolean
-    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
     invoice?: InvoiceUpdateOneRequiredWithoutItemsNestedInput
   }
 
@@ -47471,8 +51186,6 @@ export namespace Prisma {
     invoiceId?: IntFieldUpdateOperationsInput | number
     label?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxable?: BoolFieldUpdateOperationsInput | boolean
-    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
   }
 
   export type InvoiceItemCreateManyInput = {
@@ -47481,16 +51194,12 @@ export namespace Prisma {
     invoiceId: number
     label: string
     amount: Decimal | DecimalJsLike | number | string
-    isTaxable?: boolean
-    chargeType?: $Enums.ChargeType
   }
 
   export type InvoiceItemUpdateManyMutationInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     label?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxable?: BoolFieldUpdateOperationsInput | boolean
-    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
   }
 
   export type InvoiceItemUncheckedUpdateManyInput = {
@@ -47499,8 +51208,6 @@ export namespace Prisma {
     invoiceId?: IntFieldUpdateOperationsInput | number
     label?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxable?: BoolFieldUpdateOperationsInput | boolean
-    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
   }
 
   export type AuditLogCreateInput = {
@@ -47892,6 +51599,232 @@ export namespace Prisma {
     generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     sentToCustomer?: BoolFieldUpdateOperationsInput | boolean
     sentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type FeatureFlagCreateInput = {
+    publicId: string
+    key: string
+    name: string
+    description?: string | null
+    scope: $Enums.FeatureFlagScope
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    branchFlags?: BranchFeatureFlagCreateNestedManyWithoutFlagInput
+    vehicleFlags?: VehicleFeatureFlagCreateNestedManyWithoutFlagInput
+  }
+
+  export type FeatureFlagUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    key: string
+    name: string
+    description?: string | null
+    scope: $Enums.FeatureFlagScope
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    branchFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutFlagInput
+    vehicleFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutFlagInput
+  }
+
+  export type FeatureFlagUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: EnumFeatureFlagScopeFieldUpdateOperationsInput | $Enums.FeatureFlagScope
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    branchFlags?: BranchFeatureFlagUpdateManyWithoutFlagNestedInput
+    vehicleFlags?: VehicleFeatureFlagUpdateManyWithoutFlagNestedInput
+  }
+
+  export type FeatureFlagUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: EnumFeatureFlagScopeFieldUpdateOperationsInput | $Enums.FeatureFlagScope
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    branchFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutFlagNestedInput
+    vehicleFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutFlagNestedInput
+  }
+
+  export type FeatureFlagCreateManyInput = {
+    id?: number
+    publicId: string
+    key: string
+    name: string
+    description?: string | null
+    scope: $Enums.FeatureFlagScope
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type FeatureFlagUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: EnumFeatureFlagScopeFieldUpdateOperationsInput | $Enums.FeatureFlagScope
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type FeatureFlagUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: EnumFeatureFlagScopeFieldUpdateOperationsInput | $Enums.FeatureFlagScope
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchFeatureFlagCreateInput = {
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    branch: BranchCreateNestedOneWithoutFeatureFlagsInput
+    flag: FeatureFlagCreateNestedOneWithoutBranchFlagsInput
+  }
+
+  export type BranchFeatureFlagUncheckedCreateInput = {
+    id?: number
+    branchId: number
+    flagId: number
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchFeatureFlagUpdateInput = {
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    branch?: BranchUpdateOneRequiredWithoutFeatureFlagsNestedInput
+    flag?: FeatureFlagUpdateOneRequiredWithoutBranchFlagsNestedInput
+  }
+
+  export type BranchFeatureFlagUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    flagId?: IntFieldUpdateOperationsInput | number
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchFeatureFlagCreateManyInput = {
+    id?: number
+    branchId: number
+    flagId: number
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchFeatureFlagUpdateManyMutationInput = {
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchFeatureFlagUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    flagId?: IntFieldUpdateOperationsInput | number
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleFeatureFlagCreateInput = {
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    vehicle: VehicleCreateNestedOneWithoutFeatureFlagsInput
+    flag: FeatureFlagCreateNestedOneWithoutVehicleFlagsInput
+  }
+
+  export type VehicleFeatureFlagUncheckedCreateInput = {
+    id?: number
+    vehicleId: number
+    flagId: number
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehicleFeatureFlagUpdateInput = {
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    vehicle?: VehicleUpdateOneRequiredWithoutFeatureFlagsNestedInput
+    flag?: FeatureFlagUpdateOneRequiredWithoutVehicleFlagsNestedInput
+  }
+
+  export type VehicleFeatureFlagUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    vehicleId?: IntFieldUpdateOperationsInput | number
+    flagId?: IntFieldUpdateOperationsInput | number
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleFeatureFlagCreateManyInput = {
+    id?: number
+    vehicleId: number
+    flagId: number
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehicleFeatureFlagUpdateManyMutationInput = {
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleFeatureFlagUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    vehicleId?: IntFieldUpdateOperationsInput | number
+    flagId?: IntFieldUpdateOperationsInput | number
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -48614,6 +52547,12 @@ export namespace Prisma {
     isNot?: GSTRuleWhereInput | null
   }
 
+  export type BranchFeatureFlagListRelationFilter = {
+    every?: BranchFeatureFlagWhereInput
+    some?: BranchFeatureFlagWhereInput
+    none?: BranchFeatureFlagWhereInput
+  }
+
   export type UserOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -48631,6 +52570,10 @@ export namespace Prisma {
   }
 
   export type BranchPricingDefaultsOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type BranchFeatureFlagOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -48878,6 +52821,12 @@ export namespace Prisma {
     none?: BookingItemWhereInput
   }
 
+  export type VehicleFeatureFlagListRelationFilter = {
+    every?: VehicleFeatureFlagWhereInput
+    some?: VehicleFeatureFlagWhereInput
+    none?: VehicleFeatureFlagWhereInput
+  }
+
   export type VehicleInsuranceOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -48887,6 +52836,10 @@ export namespace Prisma {
   }
 
   export type BookingItemOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type VehicleFeatureFlagOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -49575,6 +53528,7 @@ export namespace Prisma {
     safetyDepositSetOff?: SortOrder
     cancelledAt?: SortOrder
     cancellationReason?: SortOrder
+    requiresManagerConfirmation?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -49643,6 +53597,7 @@ export namespace Prisma {
     safetyDepositSetOff?: SortOrder
     cancelledAt?: SortOrder
     cancellationReason?: SortOrder
+    requiresManagerConfirmation?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -49688,6 +53643,7 @@ export namespace Prisma {
     safetyDepositSetOff?: SortOrder
     cancelledAt?: SortOrder
     cancellationReason?: SortOrder
+    requiresManagerConfirmation?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -49932,6 +53888,13 @@ export namespace Prisma {
     _max?: NestedEnumBookingPhotoTypeFilter<$PrismaModel>
   }
 
+  export type EnumDamageChargeTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.DamageChargeType | EnumDamageChargeTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.DamageChargeType[] | ListEnumDamageChargeTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DamageChargeType[] | ListEnumDamageChargeTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumDamageChargeTypeFilter<$PrismaModel> | $Enums.DamageChargeType
+  }
+
   export type EnumDamageReportStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.DamageReportStatus | EnumDamageReportStatusFieldRefInput<$PrismaModel>
     in?: $Enums.DamageReportStatus[] | ListEnumDamageReportStatusFieldRefInput<$PrismaModel>
@@ -49944,13 +53907,6 @@ export namespace Prisma {
     in?: $Enums.VehicleReturnDisposition[] | ListEnumVehicleReturnDispositionFieldRefInput<$PrismaModel> | null
     notIn?: $Enums.VehicleReturnDisposition[] | ListEnumVehicleReturnDispositionFieldRefInput<$PrismaModel> | null
     not?: NestedEnumVehicleReturnDispositionNullableFilter<$PrismaModel> | $Enums.VehicleReturnDisposition | null
-  }
-
-  export type EnumDamageChargeTypeFilter<$PrismaModel = never> = {
-    equals?: $Enums.DamageChargeType | EnumDamageChargeTypeFieldRefInput<$PrismaModel>
-    in?: $Enums.DamageChargeType[] | ListEnumDamageChargeTypeFieldRefInput<$PrismaModel>
-    notIn?: $Enums.DamageChargeType[] | ListEnumDamageChargeTypeFieldRefInput<$PrismaModel>
-    not?: NestedEnumDamageChargeTypeFilter<$PrismaModel> | $Enums.DamageChargeType
   }
 
   export type UserNullableRelationFilter = {
@@ -49968,9 +53924,9 @@ export namespace Prisma {
     finalCost?: SortOrder
     notes?: SortOrder
     approvedById?: SortOrder
+    chargeType?: SortOrder
     status?: SortOrder
     disposition?: SortOrder
-    chargeType?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -49992,9 +53948,9 @@ export namespace Prisma {
     estimatedCost?: SortOrder
     finalCost?: SortOrder
     approvedById?: SortOrder
+    chargeType?: SortOrder
     status?: SortOrder
     disposition?: SortOrder
-    chargeType?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -50007,9 +53963,9 @@ export namespace Prisma {
     estimatedCost?: SortOrder
     finalCost?: SortOrder
     approvedById?: SortOrder
+    chargeType?: SortOrder
     status?: SortOrder
     disposition?: SortOrder
-    chargeType?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -50020,6 +53976,16 @@ export namespace Prisma {
     estimatedCost?: SortOrder
     finalCost?: SortOrder
     approvedById?: SortOrder
+  }
+
+  export type EnumDamageChargeTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.DamageChargeType | EnumDamageChargeTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.DamageChargeType[] | ListEnumDamageChargeTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DamageChargeType[] | ListEnumDamageChargeTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumDamageChargeTypeWithAggregatesFilter<$PrismaModel> | $Enums.DamageChargeType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumDamageChargeTypeFilter<$PrismaModel>
+    _max?: NestedEnumDamageChargeTypeFilter<$PrismaModel>
   }
 
   export type EnumDamageReportStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -50040,16 +54006,6 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedEnumVehicleReturnDispositionNullableFilter<$PrismaModel>
     _max?: NestedEnumVehicleReturnDispositionNullableFilter<$PrismaModel>
-  }
-
-  export type EnumDamageChargeTypeWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.DamageChargeType | EnumDamageChargeTypeFieldRefInput<$PrismaModel>
-    in?: $Enums.DamageChargeType[] | ListEnumDamageChargeTypeFieldRefInput<$PrismaModel>
-    notIn?: $Enums.DamageChargeType[] | ListEnumDamageChargeTypeFieldRefInput<$PrismaModel>
-    not?: NestedEnumDamageChargeTypeWithAggregatesFilter<$PrismaModel> | $Enums.DamageChargeType
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumDamageChargeTypeFilter<$PrismaModel>
-    _max?: NestedEnumDamageChargeTypeFilter<$PrismaModel>
   }
 
   export type EnumDepositMethodFilter<$PrismaModel = never> = {
@@ -50310,21 +54266,12 @@ export namespace Prisma {
     _max?: NestedEnumInvoiceStatusFilter<$PrismaModel>
   }
 
-  export type EnumChargeTypeFilter<$PrismaModel = never> = {
-    equals?: $Enums.ChargeType | EnumChargeTypeFieldRefInput<$PrismaModel>
-    in?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
-    notIn?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
-    not?: NestedEnumChargeTypeFilter<$PrismaModel> | $Enums.ChargeType
-  }
-
   export type InvoiceItemCountOrderByAggregateInput = {
     id?: SortOrder
     publicId?: SortOrder
     invoiceId?: SortOrder
     label?: SortOrder
     amount?: SortOrder
-    isTaxable?: SortOrder
-    chargeType?: SortOrder
   }
 
   export type InvoiceItemAvgOrderByAggregateInput = {
@@ -50339,8 +54286,6 @@ export namespace Prisma {
     invoiceId?: SortOrder
     label?: SortOrder
     amount?: SortOrder
-    isTaxable?: SortOrder
-    chargeType?: SortOrder
   }
 
   export type InvoiceItemMinOrderByAggregateInput = {
@@ -50349,24 +54294,12 @@ export namespace Prisma {
     invoiceId?: SortOrder
     label?: SortOrder
     amount?: SortOrder
-    isTaxable?: SortOrder
-    chargeType?: SortOrder
   }
 
   export type InvoiceItemSumOrderByAggregateInput = {
     id?: SortOrder
     invoiceId?: SortOrder
     amount?: SortOrder
-  }
-
-  export type EnumChargeTypeWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.ChargeType | EnumChargeTypeFieldRefInput<$PrismaModel>
-    in?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
-    notIn?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
-    not?: NestedEnumChargeTypeWithAggregatesFilter<$PrismaModel> | $Enums.ChargeType
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumChargeTypeFilter<$PrismaModel>
-    _max?: NestedEnumChargeTypeFilter<$PrismaModel>
   }
   export type JsonNullableFilter<$PrismaModel = never> = 
     | PatchUndefined<
@@ -50645,6 +54578,163 @@ export namespace Prisma {
     advanceAmount?: SortOrder
     cancellationFee?: SortOrder
     invoicePdfFileId?: SortOrder
+  }
+
+  export type EnumFeatureFlagScopeFilter<$PrismaModel = never> = {
+    equals?: $Enums.FeatureFlagScope | EnumFeatureFlagScopeFieldRefInput<$PrismaModel>
+    in?: $Enums.FeatureFlagScope[] | ListEnumFeatureFlagScopeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.FeatureFlagScope[] | ListEnumFeatureFlagScopeFieldRefInput<$PrismaModel>
+    not?: NestedEnumFeatureFlagScopeFilter<$PrismaModel> | $Enums.FeatureFlagScope
+  }
+
+  export type FeatureFlagCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    key?: SortOrder
+    name?: SortOrder
+    description?: SortOrder
+    scope?: SortOrder
+    enabled?: SortOrder
+    config?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type FeatureFlagAvgOrderByAggregateInput = {
+    id?: SortOrder
+  }
+
+  export type FeatureFlagMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    key?: SortOrder
+    name?: SortOrder
+    description?: SortOrder
+    scope?: SortOrder
+    enabled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type FeatureFlagMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    key?: SortOrder
+    name?: SortOrder
+    description?: SortOrder
+    scope?: SortOrder
+    enabled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type FeatureFlagSumOrderByAggregateInput = {
+    id?: SortOrder
+  }
+
+  export type EnumFeatureFlagScopeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.FeatureFlagScope | EnumFeatureFlagScopeFieldRefInput<$PrismaModel>
+    in?: $Enums.FeatureFlagScope[] | ListEnumFeatureFlagScopeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.FeatureFlagScope[] | ListEnumFeatureFlagScopeFieldRefInput<$PrismaModel>
+    not?: NestedEnumFeatureFlagScopeWithAggregatesFilter<$PrismaModel> | $Enums.FeatureFlagScope
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumFeatureFlagScopeFilter<$PrismaModel>
+    _max?: NestedEnumFeatureFlagScopeFilter<$PrismaModel>
+  }
+
+  export type FeatureFlagRelationFilter = {
+    is?: FeatureFlagWhereInput
+    isNot?: FeatureFlagWhereInput
+  }
+
+  export type BranchFeatureFlagBranchIdFlagIdCompoundUniqueInput = {
+    branchId: number
+    flagId: number
+  }
+
+  export type BranchFeatureFlagCountOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    flagId?: SortOrder
+    enabled?: SortOrder
+    config?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BranchFeatureFlagAvgOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    flagId?: SortOrder
+  }
+
+  export type BranchFeatureFlagMaxOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    flagId?: SortOrder
+    enabled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BranchFeatureFlagMinOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    flagId?: SortOrder
+    enabled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BranchFeatureFlagSumOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    flagId?: SortOrder
+  }
+
+  export type VehicleFeatureFlagVehicleIdFlagIdCompoundUniqueInput = {
+    vehicleId: number
+    flagId: number
+  }
+
+  export type VehicleFeatureFlagCountOrderByAggregateInput = {
+    id?: SortOrder
+    vehicleId?: SortOrder
+    flagId?: SortOrder
+    enabled?: SortOrder
+    config?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type VehicleFeatureFlagAvgOrderByAggregateInput = {
+    id?: SortOrder
+    vehicleId?: SortOrder
+    flagId?: SortOrder
+  }
+
+  export type VehicleFeatureFlagMaxOrderByAggregateInput = {
+    id?: SortOrder
+    vehicleId?: SortOrder
+    flagId?: SortOrder
+    enabled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type VehicleFeatureFlagMinOrderByAggregateInput = {
+    id?: SortOrder
+    vehicleId?: SortOrder
+    flagId?: SortOrder
+    enabled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type VehicleFeatureFlagSumOrderByAggregateInput = {
+    id?: SortOrder
+    vehicleId?: SortOrder
+    flagId?: SortOrder
   }
 
   export type BranchCreateNestedOneWithoutUsersInput = {
@@ -51459,6 +55549,13 @@ export namespace Prisma {
     connect?: GSTRuleWhereUniqueInput
   }
 
+  export type BranchFeatureFlagCreateNestedManyWithoutBranchInput = {
+    create?: XOR<BranchFeatureFlagCreateWithoutBranchInput, BranchFeatureFlagUncheckedCreateWithoutBranchInput> | BranchFeatureFlagCreateWithoutBranchInput[] | BranchFeatureFlagUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: BranchFeatureFlagCreateOrConnectWithoutBranchInput | BranchFeatureFlagCreateOrConnectWithoutBranchInput[]
+    createMany?: BranchFeatureFlagCreateManyBranchInputEnvelope
+    connect?: BranchFeatureFlagWhereUniqueInput | BranchFeatureFlagWhereUniqueInput[]
+  }
+
   export type UserUncheckedCreateNestedManyWithoutBranchInput = {
     create?: XOR<UserCreateWithoutBranchInput, UserUncheckedCreateWithoutBranchInput> | UserCreateWithoutBranchInput[] | UserUncheckedCreateWithoutBranchInput[]
     connectOrCreate?: UserCreateOrConnectWithoutBranchInput | UserCreateOrConnectWithoutBranchInput[]
@@ -51511,6 +55608,13 @@ export namespace Prisma {
     create?: XOR<GSTRuleCreateWithoutBranchInput, GSTRuleUncheckedCreateWithoutBranchInput>
     connectOrCreate?: GSTRuleCreateOrConnectWithoutBranchInput
     connect?: GSTRuleWhereUniqueInput
+  }
+
+  export type BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput = {
+    create?: XOR<BranchFeatureFlagCreateWithoutBranchInput, BranchFeatureFlagUncheckedCreateWithoutBranchInput> | BranchFeatureFlagCreateWithoutBranchInput[] | BranchFeatureFlagUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: BranchFeatureFlagCreateOrConnectWithoutBranchInput | BranchFeatureFlagCreateOrConnectWithoutBranchInput[]
+    createMany?: BranchFeatureFlagCreateManyBranchInputEnvelope
+    connect?: BranchFeatureFlagWhereUniqueInput | BranchFeatureFlagWhereUniqueInput[]
   }
 
   export type UserUpdateManyWithoutBranchNestedInput = {
@@ -51617,6 +55721,20 @@ export namespace Prisma {
     update?: XOR<XOR<GSTRuleUpdateToOneWithWhereWithoutBranchInput, GSTRuleUpdateWithoutBranchInput>, GSTRuleUncheckedUpdateWithoutBranchInput>
   }
 
+  export type BranchFeatureFlagUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<BranchFeatureFlagCreateWithoutBranchInput, BranchFeatureFlagUncheckedCreateWithoutBranchInput> | BranchFeatureFlagCreateWithoutBranchInput[] | BranchFeatureFlagUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: BranchFeatureFlagCreateOrConnectWithoutBranchInput | BranchFeatureFlagCreateOrConnectWithoutBranchInput[]
+    upsert?: BranchFeatureFlagUpsertWithWhereUniqueWithoutBranchInput | BranchFeatureFlagUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: BranchFeatureFlagCreateManyBranchInputEnvelope
+    set?: BranchFeatureFlagWhereUniqueInput | BranchFeatureFlagWhereUniqueInput[]
+    disconnect?: BranchFeatureFlagWhereUniqueInput | BranchFeatureFlagWhereUniqueInput[]
+    delete?: BranchFeatureFlagWhereUniqueInput | BranchFeatureFlagWhereUniqueInput[]
+    connect?: BranchFeatureFlagWhereUniqueInput | BranchFeatureFlagWhereUniqueInput[]
+    update?: BranchFeatureFlagUpdateWithWhereUniqueWithoutBranchInput | BranchFeatureFlagUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: BranchFeatureFlagUpdateManyWithWhereWithoutBranchInput | BranchFeatureFlagUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: BranchFeatureFlagScalarWhereInput | BranchFeatureFlagScalarWhereInput[]
+  }
+
   export type UserUncheckedUpdateManyWithoutBranchNestedInput = {
     create?: XOR<UserCreateWithoutBranchInput, UserUncheckedCreateWithoutBranchInput> | UserCreateWithoutBranchInput[] | UserUncheckedCreateWithoutBranchInput[]
     connectOrCreate?: UserCreateOrConnectWithoutBranchInput | UserCreateOrConnectWithoutBranchInput[]
@@ -51719,6 +55837,20 @@ export namespace Prisma {
     delete?: GSTRuleWhereInput | boolean
     connect?: GSTRuleWhereUniqueInput
     update?: XOR<XOR<GSTRuleUpdateToOneWithWhereWithoutBranchInput, GSTRuleUpdateWithoutBranchInput>, GSTRuleUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<BranchFeatureFlagCreateWithoutBranchInput, BranchFeatureFlagUncheckedCreateWithoutBranchInput> | BranchFeatureFlagCreateWithoutBranchInput[] | BranchFeatureFlagUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: BranchFeatureFlagCreateOrConnectWithoutBranchInput | BranchFeatureFlagCreateOrConnectWithoutBranchInput[]
+    upsert?: BranchFeatureFlagUpsertWithWhereUniqueWithoutBranchInput | BranchFeatureFlagUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: BranchFeatureFlagCreateManyBranchInputEnvelope
+    set?: BranchFeatureFlagWhereUniqueInput | BranchFeatureFlagWhereUniqueInput[]
+    disconnect?: BranchFeatureFlagWhereUniqueInput | BranchFeatureFlagWhereUniqueInput[]
+    delete?: BranchFeatureFlagWhereUniqueInput | BranchFeatureFlagWhereUniqueInput[]
+    connect?: BranchFeatureFlagWhereUniqueInput | BranchFeatureFlagWhereUniqueInput[]
+    update?: BranchFeatureFlagUpdateWithWhereUniqueWithoutBranchInput | BranchFeatureFlagUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: BranchFeatureFlagUpdateManyWithWhereWithoutBranchInput | BranchFeatureFlagUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: BranchFeatureFlagScalarWhereInput | BranchFeatureFlagScalarWhereInput[]
   }
 
   export type BranchCreateNestedOneWithoutPricingSettingInput = {
@@ -52012,6 +56144,13 @@ export namespace Prisma {
     connect?: BookingItemWhereUniqueInput | BookingItemWhereUniqueInput[]
   }
 
+  export type VehicleFeatureFlagCreateNestedManyWithoutVehicleInput = {
+    create?: XOR<VehicleFeatureFlagCreateWithoutVehicleInput, VehicleFeatureFlagUncheckedCreateWithoutVehicleInput> | VehicleFeatureFlagCreateWithoutVehicleInput[] | VehicleFeatureFlagUncheckedCreateWithoutVehicleInput[]
+    connectOrCreate?: VehicleFeatureFlagCreateOrConnectWithoutVehicleInput | VehicleFeatureFlagCreateOrConnectWithoutVehicleInput[]
+    createMany?: VehicleFeatureFlagCreateManyVehicleInputEnvelope
+    connect?: VehicleFeatureFlagWhereUniqueInput | VehicleFeatureFlagWhereUniqueInput[]
+  }
+
   export type VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput = {
     create?: XOR<VehicleInsuranceCreateWithoutVehicleInput, VehicleInsuranceUncheckedCreateWithoutVehicleInput> | VehicleInsuranceCreateWithoutVehicleInput[] | VehicleInsuranceUncheckedCreateWithoutVehicleInput[]
     connectOrCreate?: VehicleInsuranceCreateOrConnectWithoutVehicleInput | VehicleInsuranceCreateOrConnectWithoutVehicleInput[]
@@ -52057,6 +56196,13 @@ export namespace Prisma {
     connectOrCreate?: BookingItemCreateOrConnectWithoutVehicleInput | BookingItemCreateOrConnectWithoutVehicleInput[]
     createMany?: BookingItemCreateManyVehicleInputEnvelope
     connect?: BookingItemWhereUniqueInput | BookingItemWhereUniqueInput[]
+  }
+
+  export type VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput = {
+    create?: XOR<VehicleFeatureFlagCreateWithoutVehicleInput, VehicleFeatureFlagUncheckedCreateWithoutVehicleInput> | VehicleFeatureFlagCreateWithoutVehicleInput[] | VehicleFeatureFlagUncheckedCreateWithoutVehicleInput[]
+    connectOrCreate?: VehicleFeatureFlagCreateOrConnectWithoutVehicleInput | VehicleFeatureFlagCreateOrConnectWithoutVehicleInput[]
+    createMany?: VehicleFeatureFlagCreateManyVehicleInputEnvelope
+    connect?: VehicleFeatureFlagWhereUniqueInput | VehicleFeatureFlagWhereUniqueInput[]
   }
 
   export type EnumVehicleStatusFieldUpdateOperationsInput = {
@@ -52169,6 +56315,20 @@ export namespace Prisma {
     deleteMany?: BookingItemScalarWhereInput | BookingItemScalarWhereInput[]
   }
 
+  export type VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput = {
+    create?: XOR<VehicleFeatureFlagCreateWithoutVehicleInput, VehicleFeatureFlagUncheckedCreateWithoutVehicleInput> | VehicleFeatureFlagCreateWithoutVehicleInput[] | VehicleFeatureFlagUncheckedCreateWithoutVehicleInput[]
+    connectOrCreate?: VehicleFeatureFlagCreateOrConnectWithoutVehicleInput | VehicleFeatureFlagCreateOrConnectWithoutVehicleInput[]
+    upsert?: VehicleFeatureFlagUpsertWithWhereUniqueWithoutVehicleInput | VehicleFeatureFlagUpsertWithWhereUniqueWithoutVehicleInput[]
+    createMany?: VehicleFeatureFlagCreateManyVehicleInputEnvelope
+    set?: VehicleFeatureFlagWhereUniqueInput | VehicleFeatureFlagWhereUniqueInput[]
+    disconnect?: VehicleFeatureFlagWhereUniqueInput | VehicleFeatureFlagWhereUniqueInput[]
+    delete?: VehicleFeatureFlagWhereUniqueInput | VehicleFeatureFlagWhereUniqueInput[]
+    connect?: VehicleFeatureFlagWhereUniqueInput | VehicleFeatureFlagWhereUniqueInput[]
+    update?: VehicleFeatureFlagUpdateWithWhereUniqueWithoutVehicleInput | VehicleFeatureFlagUpdateWithWhereUniqueWithoutVehicleInput[]
+    updateMany?: VehicleFeatureFlagUpdateManyWithWhereWithoutVehicleInput | VehicleFeatureFlagUpdateManyWithWhereWithoutVehicleInput[]
+    deleteMany?: VehicleFeatureFlagScalarWhereInput | VehicleFeatureFlagScalarWhereInput[]
+  }
+
   export type VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput = {
     create?: XOR<VehicleInsuranceCreateWithoutVehicleInput, VehicleInsuranceUncheckedCreateWithoutVehicleInput> | VehicleInsuranceCreateWithoutVehicleInput[] | VehicleInsuranceUncheckedCreateWithoutVehicleInput[]
     connectOrCreate?: VehicleInsuranceCreateOrConnectWithoutVehicleInput | VehicleInsuranceCreateOrConnectWithoutVehicleInput[]
@@ -52257,6 +56417,20 @@ export namespace Prisma {
     update?: BookingItemUpdateWithWhereUniqueWithoutVehicleInput | BookingItemUpdateWithWhereUniqueWithoutVehicleInput[]
     updateMany?: BookingItemUpdateManyWithWhereWithoutVehicleInput | BookingItemUpdateManyWithWhereWithoutVehicleInput[]
     deleteMany?: BookingItemScalarWhereInput | BookingItemScalarWhereInput[]
+  }
+
+  export type VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput = {
+    create?: XOR<VehicleFeatureFlagCreateWithoutVehicleInput, VehicleFeatureFlagUncheckedCreateWithoutVehicleInput> | VehicleFeatureFlagCreateWithoutVehicleInput[] | VehicleFeatureFlagUncheckedCreateWithoutVehicleInput[]
+    connectOrCreate?: VehicleFeatureFlagCreateOrConnectWithoutVehicleInput | VehicleFeatureFlagCreateOrConnectWithoutVehicleInput[]
+    upsert?: VehicleFeatureFlagUpsertWithWhereUniqueWithoutVehicleInput | VehicleFeatureFlagUpsertWithWhereUniqueWithoutVehicleInput[]
+    createMany?: VehicleFeatureFlagCreateManyVehicleInputEnvelope
+    set?: VehicleFeatureFlagWhereUniqueInput | VehicleFeatureFlagWhereUniqueInput[]
+    disconnect?: VehicleFeatureFlagWhereUniqueInput | VehicleFeatureFlagWhereUniqueInput[]
+    delete?: VehicleFeatureFlagWhereUniqueInput | VehicleFeatureFlagWhereUniqueInput[]
+    connect?: VehicleFeatureFlagWhereUniqueInput | VehicleFeatureFlagWhereUniqueInput[]
+    update?: VehicleFeatureFlagUpdateWithWhereUniqueWithoutVehicleInput | VehicleFeatureFlagUpdateWithWhereUniqueWithoutVehicleInput[]
+    updateMany?: VehicleFeatureFlagUpdateManyWithWhereWithoutVehicleInput | VehicleFeatureFlagUpdateManyWithWhereWithoutVehicleInput[]
+    deleteMany?: VehicleFeatureFlagScalarWhereInput | VehicleFeatureFlagScalarWhereInput[]
   }
 
   export type VehicleCreateNestedOneWithoutPricingOverrideInput = {
@@ -52863,16 +57037,16 @@ export namespace Prisma {
     connect?: BookingPhotoWhereUniqueInput | BookingPhotoWhereUniqueInput[]
   }
 
+  export type EnumDamageChargeTypeFieldUpdateOperationsInput = {
+    set?: $Enums.DamageChargeType
+  }
+
   export type EnumDamageReportStatusFieldUpdateOperationsInput = {
     set?: $Enums.DamageReportStatus
   }
 
   export type NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput = {
     set?: $Enums.VehicleReturnDisposition | null
-  }
-
-  export type EnumDamageChargeTypeFieldUpdateOperationsInput = {
-    set?: $Enums.DamageChargeType
   }
 
   export type BookingUpdateOneRequiredWithoutDamagesNestedInput = {
@@ -53085,10 +57259,6 @@ export namespace Prisma {
     connect?: InvoiceWhereUniqueInput
   }
 
-  export type EnumChargeTypeFieldUpdateOperationsInput = {
-    set?: $Enums.ChargeType
-  }
-
   export type InvoiceUpdateOneRequiredWithoutItemsNestedInput = {
     create?: XOR<InvoiceCreateWithoutItemsInput, InvoiceUncheckedCreateWithoutItemsInput>
     connectOrCreate?: InvoiceCreateOrConnectWithoutItemsInput
@@ -53167,6 +57337,150 @@ export namespace Prisma {
     delete?: FileObjectWhereInput | boolean
     connect?: FileObjectWhereUniqueInput
     update?: XOR<XOR<FileObjectUpdateToOneWithWhereWithoutCancellationInvoicesInput, FileObjectUpdateWithoutCancellationInvoicesInput>, FileObjectUncheckedUpdateWithoutCancellationInvoicesInput>
+  }
+
+  export type BranchFeatureFlagCreateNestedManyWithoutFlagInput = {
+    create?: XOR<BranchFeatureFlagCreateWithoutFlagInput, BranchFeatureFlagUncheckedCreateWithoutFlagInput> | BranchFeatureFlagCreateWithoutFlagInput[] | BranchFeatureFlagUncheckedCreateWithoutFlagInput[]
+    connectOrCreate?: BranchFeatureFlagCreateOrConnectWithoutFlagInput | BranchFeatureFlagCreateOrConnectWithoutFlagInput[]
+    createMany?: BranchFeatureFlagCreateManyFlagInputEnvelope
+    connect?: BranchFeatureFlagWhereUniqueInput | BranchFeatureFlagWhereUniqueInput[]
+  }
+
+  export type VehicleFeatureFlagCreateNestedManyWithoutFlagInput = {
+    create?: XOR<VehicleFeatureFlagCreateWithoutFlagInput, VehicleFeatureFlagUncheckedCreateWithoutFlagInput> | VehicleFeatureFlagCreateWithoutFlagInput[] | VehicleFeatureFlagUncheckedCreateWithoutFlagInput[]
+    connectOrCreate?: VehicleFeatureFlagCreateOrConnectWithoutFlagInput | VehicleFeatureFlagCreateOrConnectWithoutFlagInput[]
+    createMany?: VehicleFeatureFlagCreateManyFlagInputEnvelope
+    connect?: VehicleFeatureFlagWhereUniqueInput | VehicleFeatureFlagWhereUniqueInput[]
+  }
+
+  export type BranchFeatureFlagUncheckedCreateNestedManyWithoutFlagInput = {
+    create?: XOR<BranchFeatureFlagCreateWithoutFlagInput, BranchFeatureFlagUncheckedCreateWithoutFlagInput> | BranchFeatureFlagCreateWithoutFlagInput[] | BranchFeatureFlagUncheckedCreateWithoutFlagInput[]
+    connectOrCreate?: BranchFeatureFlagCreateOrConnectWithoutFlagInput | BranchFeatureFlagCreateOrConnectWithoutFlagInput[]
+    createMany?: BranchFeatureFlagCreateManyFlagInputEnvelope
+    connect?: BranchFeatureFlagWhereUniqueInput | BranchFeatureFlagWhereUniqueInput[]
+  }
+
+  export type VehicleFeatureFlagUncheckedCreateNestedManyWithoutFlagInput = {
+    create?: XOR<VehicleFeatureFlagCreateWithoutFlagInput, VehicleFeatureFlagUncheckedCreateWithoutFlagInput> | VehicleFeatureFlagCreateWithoutFlagInput[] | VehicleFeatureFlagUncheckedCreateWithoutFlagInput[]
+    connectOrCreate?: VehicleFeatureFlagCreateOrConnectWithoutFlagInput | VehicleFeatureFlagCreateOrConnectWithoutFlagInput[]
+    createMany?: VehicleFeatureFlagCreateManyFlagInputEnvelope
+    connect?: VehicleFeatureFlagWhereUniqueInput | VehicleFeatureFlagWhereUniqueInput[]
+  }
+
+  export type EnumFeatureFlagScopeFieldUpdateOperationsInput = {
+    set?: $Enums.FeatureFlagScope
+  }
+
+  export type BranchFeatureFlagUpdateManyWithoutFlagNestedInput = {
+    create?: XOR<BranchFeatureFlagCreateWithoutFlagInput, BranchFeatureFlagUncheckedCreateWithoutFlagInput> | BranchFeatureFlagCreateWithoutFlagInput[] | BranchFeatureFlagUncheckedCreateWithoutFlagInput[]
+    connectOrCreate?: BranchFeatureFlagCreateOrConnectWithoutFlagInput | BranchFeatureFlagCreateOrConnectWithoutFlagInput[]
+    upsert?: BranchFeatureFlagUpsertWithWhereUniqueWithoutFlagInput | BranchFeatureFlagUpsertWithWhereUniqueWithoutFlagInput[]
+    createMany?: BranchFeatureFlagCreateManyFlagInputEnvelope
+    set?: BranchFeatureFlagWhereUniqueInput | BranchFeatureFlagWhereUniqueInput[]
+    disconnect?: BranchFeatureFlagWhereUniqueInput | BranchFeatureFlagWhereUniqueInput[]
+    delete?: BranchFeatureFlagWhereUniqueInput | BranchFeatureFlagWhereUniqueInput[]
+    connect?: BranchFeatureFlagWhereUniqueInput | BranchFeatureFlagWhereUniqueInput[]
+    update?: BranchFeatureFlagUpdateWithWhereUniqueWithoutFlagInput | BranchFeatureFlagUpdateWithWhereUniqueWithoutFlagInput[]
+    updateMany?: BranchFeatureFlagUpdateManyWithWhereWithoutFlagInput | BranchFeatureFlagUpdateManyWithWhereWithoutFlagInput[]
+    deleteMany?: BranchFeatureFlagScalarWhereInput | BranchFeatureFlagScalarWhereInput[]
+  }
+
+  export type VehicleFeatureFlagUpdateManyWithoutFlagNestedInput = {
+    create?: XOR<VehicleFeatureFlagCreateWithoutFlagInput, VehicleFeatureFlagUncheckedCreateWithoutFlagInput> | VehicleFeatureFlagCreateWithoutFlagInput[] | VehicleFeatureFlagUncheckedCreateWithoutFlagInput[]
+    connectOrCreate?: VehicleFeatureFlagCreateOrConnectWithoutFlagInput | VehicleFeatureFlagCreateOrConnectWithoutFlagInput[]
+    upsert?: VehicleFeatureFlagUpsertWithWhereUniqueWithoutFlagInput | VehicleFeatureFlagUpsertWithWhereUniqueWithoutFlagInput[]
+    createMany?: VehicleFeatureFlagCreateManyFlagInputEnvelope
+    set?: VehicleFeatureFlagWhereUniqueInput | VehicleFeatureFlagWhereUniqueInput[]
+    disconnect?: VehicleFeatureFlagWhereUniqueInput | VehicleFeatureFlagWhereUniqueInput[]
+    delete?: VehicleFeatureFlagWhereUniqueInput | VehicleFeatureFlagWhereUniqueInput[]
+    connect?: VehicleFeatureFlagWhereUniqueInput | VehicleFeatureFlagWhereUniqueInput[]
+    update?: VehicleFeatureFlagUpdateWithWhereUniqueWithoutFlagInput | VehicleFeatureFlagUpdateWithWhereUniqueWithoutFlagInput[]
+    updateMany?: VehicleFeatureFlagUpdateManyWithWhereWithoutFlagInput | VehicleFeatureFlagUpdateManyWithWhereWithoutFlagInput[]
+    deleteMany?: VehicleFeatureFlagScalarWhereInput | VehicleFeatureFlagScalarWhereInput[]
+  }
+
+  export type BranchFeatureFlagUncheckedUpdateManyWithoutFlagNestedInput = {
+    create?: XOR<BranchFeatureFlagCreateWithoutFlagInput, BranchFeatureFlagUncheckedCreateWithoutFlagInput> | BranchFeatureFlagCreateWithoutFlagInput[] | BranchFeatureFlagUncheckedCreateWithoutFlagInput[]
+    connectOrCreate?: BranchFeatureFlagCreateOrConnectWithoutFlagInput | BranchFeatureFlagCreateOrConnectWithoutFlagInput[]
+    upsert?: BranchFeatureFlagUpsertWithWhereUniqueWithoutFlagInput | BranchFeatureFlagUpsertWithWhereUniqueWithoutFlagInput[]
+    createMany?: BranchFeatureFlagCreateManyFlagInputEnvelope
+    set?: BranchFeatureFlagWhereUniqueInput | BranchFeatureFlagWhereUniqueInput[]
+    disconnect?: BranchFeatureFlagWhereUniqueInput | BranchFeatureFlagWhereUniqueInput[]
+    delete?: BranchFeatureFlagWhereUniqueInput | BranchFeatureFlagWhereUniqueInput[]
+    connect?: BranchFeatureFlagWhereUniqueInput | BranchFeatureFlagWhereUniqueInput[]
+    update?: BranchFeatureFlagUpdateWithWhereUniqueWithoutFlagInput | BranchFeatureFlagUpdateWithWhereUniqueWithoutFlagInput[]
+    updateMany?: BranchFeatureFlagUpdateManyWithWhereWithoutFlagInput | BranchFeatureFlagUpdateManyWithWhereWithoutFlagInput[]
+    deleteMany?: BranchFeatureFlagScalarWhereInput | BranchFeatureFlagScalarWhereInput[]
+  }
+
+  export type VehicleFeatureFlagUncheckedUpdateManyWithoutFlagNestedInput = {
+    create?: XOR<VehicleFeatureFlagCreateWithoutFlagInput, VehicleFeatureFlagUncheckedCreateWithoutFlagInput> | VehicleFeatureFlagCreateWithoutFlagInput[] | VehicleFeatureFlagUncheckedCreateWithoutFlagInput[]
+    connectOrCreate?: VehicleFeatureFlagCreateOrConnectWithoutFlagInput | VehicleFeatureFlagCreateOrConnectWithoutFlagInput[]
+    upsert?: VehicleFeatureFlagUpsertWithWhereUniqueWithoutFlagInput | VehicleFeatureFlagUpsertWithWhereUniqueWithoutFlagInput[]
+    createMany?: VehicleFeatureFlagCreateManyFlagInputEnvelope
+    set?: VehicleFeatureFlagWhereUniqueInput | VehicleFeatureFlagWhereUniqueInput[]
+    disconnect?: VehicleFeatureFlagWhereUniqueInput | VehicleFeatureFlagWhereUniqueInput[]
+    delete?: VehicleFeatureFlagWhereUniqueInput | VehicleFeatureFlagWhereUniqueInput[]
+    connect?: VehicleFeatureFlagWhereUniqueInput | VehicleFeatureFlagWhereUniqueInput[]
+    update?: VehicleFeatureFlagUpdateWithWhereUniqueWithoutFlagInput | VehicleFeatureFlagUpdateWithWhereUniqueWithoutFlagInput[]
+    updateMany?: VehicleFeatureFlagUpdateManyWithWhereWithoutFlagInput | VehicleFeatureFlagUpdateManyWithWhereWithoutFlagInput[]
+    deleteMany?: VehicleFeatureFlagScalarWhereInput | VehicleFeatureFlagScalarWhereInput[]
+  }
+
+  export type BranchCreateNestedOneWithoutFeatureFlagsInput = {
+    create?: XOR<BranchCreateWithoutFeatureFlagsInput, BranchUncheckedCreateWithoutFeatureFlagsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutFeatureFlagsInput
+    connect?: BranchWhereUniqueInput
+  }
+
+  export type FeatureFlagCreateNestedOneWithoutBranchFlagsInput = {
+    create?: XOR<FeatureFlagCreateWithoutBranchFlagsInput, FeatureFlagUncheckedCreateWithoutBranchFlagsInput>
+    connectOrCreate?: FeatureFlagCreateOrConnectWithoutBranchFlagsInput
+    connect?: FeatureFlagWhereUniqueInput
+  }
+
+  export type BranchUpdateOneRequiredWithoutFeatureFlagsNestedInput = {
+    create?: XOR<BranchCreateWithoutFeatureFlagsInput, BranchUncheckedCreateWithoutFeatureFlagsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutFeatureFlagsInput
+    upsert?: BranchUpsertWithoutFeatureFlagsInput
+    connect?: BranchWhereUniqueInput
+    update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutFeatureFlagsInput, BranchUpdateWithoutFeatureFlagsInput>, BranchUncheckedUpdateWithoutFeatureFlagsInput>
+  }
+
+  export type FeatureFlagUpdateOneRequiredWithoutBranchFlagsNestedInput = {
+    create?: XOR<FeatureFlagCreateWithoutBranchFlagsInput, FeatureFlagUncheckedCreateWithoutBranchFlagsInput>
+    connectOrCreate?: FeatureFlagCreateOrConnectWithoutBranchFlagsInput
+    upsert?: FeatureFlagUpsertWithoutBranchFlagsInput
+    connect?: FeatureFlagWhereUniqueInput
+    update?: XOR<XOR<FeatureFlagUpdateToOneWithWhereWithoutBranchFlagsInput, FeatureFlagUpdateWithoutBranchFlagsInput>, FeatureFlagUncheckedUpdateWithoutBranchFlagsInput>
+  }
+
+  export type VehicleCreateNestedOneWithoutFeatureFlagsInput = {
+    create?: XOR<VehicleCreateWithoutFeatureFlagsInput, VehicleUncheckedCreateWithoutFeatureFlagsInput>
+    connectOrCreate?: VehicleCreateOrConnectWithoutFeatureFlagsInput
+    connect?: VehicleWhereUniqueInput
+  }
+
+  export type FeatureFlagCreateNestedOneWithoutVehicleFlagsInput = {
+    create?: XOR<FeatureFlagCreateWithoutVehicleFlagsInput, FeatureFlagUncheckedCreateWithoutVehicleFlagsInput>
+    connectOrCreate?: FeatureFlagCreateOrConnectWithoutVehicleFlagsInput
+    connect?: FeatureFlagWhereUniqueInput
+  }
+
+  export type VehicleUpdateOneRequiredWithoutFeatureFlagsNestedInput = {
+    create?: XOR<VehicleCreateWithoutFeatureFlagsInput, VehicleUncheckedCreateWithoutFeatureFlagsInput>
+    connectOrCreate?: VehicleCreateOrConnectWithoutFeatureFlagsInput
+    upsert?: VehicleUpsertWithoutFeatureFlagsInput
+    connect?: VehicleWhereUniqueInput
+    update?: XOR<XOR<VehicleUpdateToOneWithWhereWithoutFeatureFlagsInput, VehicleUpdateWithoutFeatureFlagsInput>, VehicleUncheckedUpdateWithoutFeatureFlagsInput>
+  }
+
+  export type FeatureFlagUpdateOneRequiredWithoutVehicleFlagsNestedInput = {
+    create?: XOR<FeatureFlagCreateWithoutVehicleFlagsInput, FeatureFlagUncheckedCreateWithoutVehicleFlagsInput>
+    connectOrCreate?: FeatureFlagCreateOrConnectWithoutVehicleFlagsInput
+    upsert?: FeatureFlagUpsertWithoutVehicleFlagsInput
+    connect?: FeatureFlagWhereUniqueInput
+    update?: XOR<XOR<FeatureFlagUpdateToOneWithWhereWithoutVehicleFlagsInput, FeatureFlagUpdateWithoutVehicleFlagsInput>, FeatureFlagUncheckedUpdateWithoutVehicleFlagsInput>
   }
 
   export type NestedIntFilter<$PrismaModel = never> = {
@@ -53633,6 +57947,13 @@ export namespace Prisma {
     _max?: NestedEnumBookingPhotoTypeFilter<$PrismaModel>
   }
 
+  export type NestedEnumDamageChargeTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.DamageChargeType | EnumDamageChargeTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.DamageChargeType[] | ListEnumDamageChargeTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DamageChargeType[] | ListEnumDamageChargeTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumDamageChargeTypeFilter<$PrismaModel> | $Enums.DamageChargeType
+  }
+
   export type NestedEnumDamageReportStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.DamageReportStatus | EnumDamageReportStatusFieldRefInput<$PrismaModel>
     in?: $Enums.DamageReportStatus[] | ListEnumDamageReportStatusFieldRefInput<$PrismaModel>
@@ -53647,11 +57968,14 @@ export namespace Prisma {
     not?: NestedEnumVehicleReturnDispositionNullableFilter<$PrismaModel> | $Enums.VehicleReturnDisposition | null
   }
 
-  export type NestedEnumDamageChargeTypeFilter<$PrismaModel = never> = {
+  export type NestedEnumDamageChargeTypeWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.DamageChargeType | EnumDamageChargeTypeFieldRefInput<$PrismaModel>
     in?: $Enums.DamageChargeType[] | ListEnumDamageChargeTypeFieldRefInput<$PrismaModel>
     notIn?: $Enums.DamageChargeType[] | ListEnumDamageChargeTypeFieldRefInput<$PrismaModel>
-    not?: NestedEnumDamageChargeTypeFilter<$PrismaModel> | $Enums.DamageChargeType
+    not?: NestedEnumDamageChargeTypeWithAggregatesFilter<$PrismaModel> | $Enums.DamageChargeType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumDamageChargeTypeFilter<$PrismaModel>
+    _max?: NestedEnumDamageChargeTypeFilter<$PrismaModel>
   }
 
   export type NestedEnumDamageReportStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -53672,16 +57996,6 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedEnumVehicleReturnDispositionNullableFilter<$PrismaModel>
     _max?: NestedEnumVehicleReturnDispositionNullableFilter<$PrismaModel>
-  }
-
-  export type NestedEnumDamageChargeTypeWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.DamageChargeType | EnumDamageChargeTypeFieldRefInput<$PrismaModel>
-    in?: $Enums.DamageChargeType[] | ListEnumDamageChargeTypeFieldRefInput<$PrismaModel>
-    notIn?: $Enums.DamageChargeType[] | ListEnumDamageChargeTypeFieldRefInput<$PrismaModel>
-    not?: NestedEnumDamageChargeTypeWithAggregatesFilter<$PrismaModel> | $Enums.DamageChargeType
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumDamageChargeTypeFilter<$PrismaModel>
-    _max?: NestedEnumDamageChargeTypeFilter<$PrismaModel>
   }
 
   export type NestedEnumDepositMethodFilter<$PrismaModel = never> = {
@@ -53717,23 +58031,6 @@ export namespace Prisma {
     _min?: NestedEnumInvoiceStatusFilter<$PrismaModel>
     _max?: NestedEnumInvoiceStatusFilter<$PrismaModel>
   }
-
-  export type NestedEnumChargeTypeFilter<$PrismaModel = never> = {
-    equals?: $Enums.ChargeType | EnumChargeTypeFieldRefInput<$PrismaModel>
-    in?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
-    notIn?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
-    not?: NestedEnumChargeTypeFilter<$PrismaModel> | $Enums.ChargeType
-  }
-
-  export type NestedEnumChargeTypeWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.ChargeType | EnumChargeTypeFieldRefInput<$PrismaModel>
-    in?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
-    notIn?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
-    not?: NestedEnumChargeTypeWithAggregatesFilter<$PrismaModel> | $Enums.ChargeType
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumChargeTypeFilter<$PrismaModel>
-    _max?: NestedEnumChargeTypeFilter<$PrismaModel>
-  }
   export type NestedJsonNullableFilter<$PrismaModel = never> = 
     | PatchUndefined<
         Either<Required<NestedJsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>,
@@ -53757,6 +58054,23 @@ export namespace Prisma {
     not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
   }
 
+  export type NestedEnumFeatureFlagScopeFilter<$PrismaModel = never> = {
+    equals?: $Enums.FeatureFlagScope | EnumFeatureFlagScopeFieldRefInput<$PrismaModel>
+    in?: $Enums.FeatureFlagScope[] | ListEnumFeatureFlagScopeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.FeatureFlagScope[] | ListEnumFeatureFlagScopeFieldRefInput<$PrismaModel>
+    not?: NestedEnumFeatureFlagScopeFilter<$PrismaModel> | $Enums.FeatureFlagScope
+  }
+
+  export type NestedEnumFeatureFlagScopeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.FeatureFlagScope | EnumFeatureFlagScopeFieldRefInput<$PrismaModel>
+    in?: $Enums.FeatureFlagScope[] | ListEnumFeatureFlagScopeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.FeatureFlagScope[] | ListEnumFeatureFlagScopeFieldRefInput<$PrismaModel>
+    not?: NestedEnumFeatureFlagScopeWithAggregatesFilter<$PrismaModel> | $Enums.FeatureFlagScope
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumFeatureFlagScopeFilter<$PrismaModel>
+    _max?: NestedEnumFeatureFlagScopeFilter<$PrismaModel>
+  }
+
   export type BranchCreateWithoutUsersInput = {
     publicId: string
     name: string
@@ -53771,6 +58085,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
     branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutUsersInput = {
@@ -53788,6 +58103,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutUsersInput = {
@@ -53962,6 +58278,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -54016,6 +58333,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -54043,9 +58361,9 @@ export namespace Prisma {
     estimatedCost: Decimal | DecimalJsLike | number | string
     finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
+    chargeType?: $Enums.DamageChargeType
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
-    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
     booking: BookingCreateNestedOneWithoutDamagesInput
     vehicle: VehicleCreateNestedOneWithoutDamageReportsInput
@@ -54061,9 +58379,9 @@ export namespace Prisma {
     estimatedCost: Decimal | DecimalJsLike | number | string
     finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
+    chargeType?: $Enums.DamageChargeType
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
-    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
     photos?: BookingPhotoUncheckedCreateNestedManyWithoutDamageReportInput
   }
@@ -54103,6 +58421,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutUsersInput = {
@@ -54120,6 +58439,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type EmailVerificationOtpUpsertWithWhereUniqueWithoutUserInput = {
@@ -54321,6 +58641,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFilter<"Booking"> | boolean
     cancelledAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     cancellationReason?: StringNullableFilter<"Booking"> | string | null
+    requiresManagerConfirmation?: BoolFilter<"Booking"> | boolean
     createdAt?: DateTimeFilter<"Booking"> | Date | string
     updatedAt?: DateTimeFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
@@ -54355,9 +58676,9 @@ export namespace Prisma {
     finalCost?: DecimalNullableFilter<"DamageReport"> | Decimal | DecimalJsLike | number | string | null
     notes?: JsonFilter<"DamageReport">
     approvedById?: IntNullableFilter<"DamageReport"> | number | null
+    chargeType?: EnumDamageChargeTypeFilter<"DamageReport"> | $Enums.DamageChargeType
     status?: EnumDamageReportStatusFilter<"DamageReport"> | $Enums.DamageReportStatus
     disposition?: EnumVehicleReturnDispositionNullableFilter<"DamageReport"> | $Enums.VehicleReturnDisposition | null
-    chargeType?: EnumDamageChargeTypeFilter<"DamageReport"> | $Enums.DamageChargeType
     createdAt?: DateTimeFilter<"DamageReport"> | Date | string
   }
 
@@ -54666,6 +58987,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -54720,6 +59042,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -55172,6 +59495,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -55226,6 +59550,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -55569,6 +59894,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutBranchInput = {
@@ -55592,6 +59918,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutBranchInput = {
@@ -55640,6 +59967,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -55694,6 +60022,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -55854,6 +60183,33 @@ export namespace Prisma {
   export type GSTRuleCreateOrConnectWithoutBranchInput = {
     where: GSTRuleWhereUniqueInput
     create: XOR<GSTRuleCreateWithoutBranchInput, GSTRuleUncheckedCreateWithoutBranchInput>
+  }
+
+  export type BranchFeatureFlagCreateWithoutBranchInput = {
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    flag: FeatureFlagCreateNestedOneWithoutBranchFlagsInput
+  }
+
+  export type BranchFeatureFlagUncheckedCreateWithoutBranchInput = {
+    id?: number
+    flagId: number
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchFeatureFlagCreateOrConnectWithoutBranchInput = {
+    where: BranchFeatureFlagWhereUniqueInput
+    create: XOR<BranchFeatureFlagCreateWithoutBranchInput, BranchFeatureFlagUncheckedCreateWithoutBranchInput>
+  }
+
+  export type BranchFeatureFlagCreateManyBranchInputEnvelope = {
+    data: BranchFeatureFlagCreateManyBranchInput | BranchFeatureFlagCreateManyBranchInput[]
+    skipDuplicates?: boolean
   }
 
   export type UserUpsertWithWhereUniqueWithoutBranchInput = {
@@ -56099,6 +60455,35 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type BranchFeatureFlagUpsertWithWhereUniqueWithoutBranchInput = {
+    where: BranchFeatureFlagWhereUniqueInput
+    update: XOR<BranchFeatureFlagUpdateWithoutBranchInput, BranchFeatureFlagUncheckedUpdateWithoutBranchInput>
+    create: XOR<BranchFeatureFlagCreateWithoutBranchInput, BranchFeatureFlagUncheckedCreateWithoutBranchInput>
+  }
+
+  export type BranchFeatureFlagUpdateWithWhereUniqueWithoutBranchInput = {
+    where: BranchFeatureFlagWhereUniqueInput
+    data: XOR<BranchFeatureFlagUpdateWithoutBranchInput, BranchFeatureFlagUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type BranchFeatureFlagUpdateManyWithWhereWithoutBranchInput = {
+    where: BranchFeatureFlagScalarWhereInput
+    data: XOR<BranchFeatureFlagUpdateManyMutationInput, BranchFeatureFlagUncheckedUpdateManyWithoutBranchInput>
+  }
+
+  export type BranchFeatureFlagScalarWhereInput = {
+    AND?: BranchFeatureFlagScalarWhereInput | BranchFeatureFlagScalarWhereInput[]
+    OR?: BranchFeatureFlagScalarWhereInput[]
+    NOT?: BranchFeatureFlagScalarWhereInput | BranchFeatureFlagScalarWhereInput[]
+    id?: IntFilter<"BranchFeatureFlag"> | number
+    branchId?: IntFilter<"BranchFeatureFlag"> | number
+    flagId?: IntFilter<"BranchFeatureFlag"> | number
+    enabled?: BoolFilter<"BranchFeatureFlag"> | boolean
+    config?: JsonNullableFilter<"BranchFeatureFlag">
+    createdAt?: DateTimeFilter<"BranchFeatureFlag"> | Date | string
+    updatedAt?: DateTimeFilter<"BranchFeatureFlag"> | Date | string
+  }
+
   export type BranchCreateWithoutPricingSettingInput = {
     publicId: string
     name: string
@@ -56113,6 +60498,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
     branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPricingSettingInput = {
@@ -56130,6 +60516,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPricingSettingInput = {
@@ -56162,6 +60549,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPricingSettingInput = {
@@ -56179,6 +60567,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type PricingDiscountSlabCreateWithoutCategoryInput = {
@@ -56245,6 +60634,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutCategoryInput = {
@@ -56268,6 +60658,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutCategoryInput = {
@@ -56454,6 +60845,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
     branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutVehiclesInput = {
@@ -56471,6 +60863,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutVehiclesInput = {
@@ -56560,9 +60953,9 @@ export namespace Prisma {
     estimatedCost: Decimal | DecimalJsLike | number | string
     finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
+    chargeType?: $Enums.DamageChargeType
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
-    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
     booking: BookingCreateNestedOneWithoutDamagesInput
     approvedBy?: UserCreateNestedOneWithoutApprovedDamageReportsInput
@@ -56578,9 +60971,9 @@ export namespace Prisma {
     finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
     approvedById?: number | null
+    chargeType?: $Enums.DamageChargeType
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
-    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
     photos?: BookingPhotoUncheckedCreateNestedManyWithoutDamageReportInput
   }
@@ -56715,6 +61108,33 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type VehicleFeatureFlagCreateWithoutVehicleInput = {
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    flag: FeatureFlagCreateNestedOneWithoutVehicleFlagsInput
+  }
+
+  export type VehicleFeatureFlagUncheckedCreateWithoutVehicleInput = {
+    id?: number
+    flagId: number
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehicleFeatureFlagCreateOrConnectWithoutVehicleInput = {
+    where: VehicleFeatureFlagWhereUniqueInput
+    create: XOR<VehicleFeatureFlagCreateWithoutVehicleInput, VehicleFeatureFlagUncheckedCreateWithoutVehicleInput>
+  }
+
+  export type VehicleFeatureFlagCreateManyVehicleInputEnvelope = {
+    data: VehicleFeatureFlagCreateManyVehicleInput | VehicleFeatureFlagCreateManyVehicleInput[]
+    skipDuplicates?: boolean
+  }
+
   export type BranchUpsertWithoutVehiclesInput = {
     update: XOR<BranchUpdateWithoutVehiclesInput, BranchUncheckedUpdateWithoutVehiclesInput>
     create: XOR<BranchCreateWithoutVehiclesInput, BranchUncheckedCreateWithoutVehiclesInput>
@@ -56740,6 +61160,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutVehiclesInput = {
@@ -56757,6 +61178,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutVehiclesInput = {
@@ -56982,6 +61404,35 @@ export namespace Prisma {
     finalTotal?: DecimalFilter<"BookingItem"> | Decimal | DecimalJsLike | number | string
   }
 
+  export type VehicleFeatureFlagUpsertWithWhereUniqueWithoutVehicleInput = {
+    where: VehicleFeatureFlagWhereUniqueInput
+    update: XOR<VehicleFeatureFlagUpdateWithoutVehicleInput, VehicleFeatureFlagUncheckedUpdateWithoutVehicleInput>
+    create: XOR<VehicleFeatureFlagCreateWithoutVehicleInput, VehicleFeatureFlagUncheckedCreateWithoutVehicleInput>
+  }
+
+  export type VehicleFeatureFlagUpdateWithWhereUniqueWithoutVehicleInput = {
+    where: VehicleFeatureFlagWhereUniqueInput
+    data: XOR<VehicleFeatureFlagUpdateWithoutVehicleInput, VehicleFeatureFlagUncheckedUpdateWithoutVehicleInput>
+  }
+
+  export type VehicleFeatureFlagUpdateManyWithWhereWithoutVehicleInput = {
+    where: VehicleFeatureFlagScalarWhereInput
+    data: XOR<VehicleFeatureFlagUpdateManyMutationInput, VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleInput>
+  }
+
+  export type VehicleFeatureFlagScalarWhereInput = {
+    AND?: VehicleFeatureFlagScalarWhereInput | VehicleFeatureFlagScalarWhereInput[]
+    OR?: VehicleFeatureFlagScalarWhereInput[]
+    NOT?: VehicleFeatureFlagScalarWhereInput | VehicleFeatureFlagScalarWhereInput[]
+    id?: IntFilter<"VehicleFeatureFlag"> | number
+    vehicleId?: IntFilter<"VehicleFeatureFlag"> | number
+    flagId?: IntFilter<"VehicleFeatureFlag"> | number
+    enabled?: BoolFilter<"VehicleFeatureFlag"> | boolean
+    config?: JsonNullableFilter<"VehicleFeatureFlag">
+    createdAt?: DateTimeFilter<"VehicleFeatureFlag"> | Date | string
+    updatedAt?: DateTimeFilter<"VehicleFeatureFlag"> | Date | string
+  }
+
   export type VehicleCreateWithoutPricingOverrideInput = {
     publicId: string
     make: string
@@ -57002,6 +61453,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutPricingOverrideInput = {
@@ -57025,6 +61477,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutPricingOverrideInput = {
@@ -57063,6 +61516,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutPricingOverrideInput = {
@@ -57086,6 +61540,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleCreateWithoutCustomPricingInput = {
@@ -57108,6 +61563,7 @@ export namespace Prisma {
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutCustomPricingInput = {
@@ -57131,6 +61587,7 @@ export namespace Prisma {
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutCustomPricingInput = {
@@ -57169,6 +61626,7 @@ export namespace Prisma {
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutCustomPricingInput = {
@@ -57192,6 +61650,7 @@ export namespace Prisma {
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type BranchCreateWithoutBranchPricingDefaultsInput = {
@@ -57208,6 +61667,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutBranchPricingDefaultsInput = {
@@ -57225,6 +61685,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutBranchPricingDefaultsInput = {
@@ -57283,6 +61744,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutBranchPricingDefaultsInput = {
@@ -57300,6 +61762,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutBranchPricingDefaultsInput = {
@@ -57354,6 +61817,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutInsuranceRecordsInput = {
@@ -57377,6 +61841,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutInsuranceRecordsInput = {
@@ -57415,6 +61880,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutInsuranceRecordsInput = {
@@ -57438,6 +61904,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleCreateWithoutMaintenanceInput = {
@@ -57460,6 +61927,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutMaintenanceInput = {
@@ -57483,6 +61951,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutMaintenanceInput = {
@@ -57521,6 +61990,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutMaintenanceInput = {
@@ -57544,6 +62014,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleCreateWithoutImagesInput = {
@@ -57566,6 +62037,7 @@ export namespace Prisma {
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
     customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutImagesInput = {
@@ -57589,6 +62061,7 @@ export namespace Prisma {
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
     customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutImagesInput = {
@@ -57661,6 +62134,7 @@ export namespace Prisma {
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
     customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutImagesInput = {
@@ -57684,6 +62158,7 @@ export namespace Prisma {
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
     customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type FileObjectUpsertWithoutVehicleImagesInput = {
@@ -57798,6 +62273,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
     branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPricingDiscountSlabsInput = {
@@ -57815,6 +62291,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPricingDiscountSlabsInput = {
@@ -57873,6 +62350,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPricingDiscountSlabsInput = {
@@ -57890,6 +62368,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutPricingDiscountSlabsInput = {
@@ -57938,6 +62417,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
     branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutCategoryDepositSettingsInput = {
@@ -57955,6 +62435,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutCategoryDepositSettingsInput = {
@@ -58013,6 +62494,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutCategoryDepositSettingsInput = {
@@ -58030,6 +62512,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutCategoryDepositSettingsInput = {
@@ -58154,6 +62637,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
     branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutBookingsInput = {
@@ -58171,6 +62655,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutBookingsInput = {
@@ -58257,9 +62742,9 @@ export namespace Prisma {
     estimatedCost: Decimal | DecimalJsLike | number | string
     finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
+    chargeType?: $Enums.DamageChargeType
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
-    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
     vehicle: VehicleCreateNestedOneWithoutDamageReportsInput
     approvedBy?: UserCreateNestedOneWithoutApprovedDamageReportsInput
@@ -58275,9 +62760,9 @@ export namespace Prisma {
     finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
     approvedById?: number | null
+    chargeType?: $Enums.DamageChargeType
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
-    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
     photos?: BookingPhotoUncheckedCreateNestedManyWithoutDamageReportInput
   }
@@ -58546,6 +63031,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutBookingsInput = {
@@ -58563,6 +63049,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type UserUpsertWithoutBookingsCreatedInput = {
@@ -58805,6 +63292,7 @@ export namespace Prisma {
     pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
     customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutBookingItemsInput = {
@@ -58828,6 +63316,7 @@ export namespace Prisma {
     pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
     customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutBookingItemsInput = {
@@ -58871,6 +63360,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -58926,6 +63416,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -58972,6 +63463,7 @@ export namespace Prisma {
     pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
     customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutBookingItemsInput = {
@@ -58995,6 +63487,7 @@ export namespace Prisma {
     pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
     customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type BookingUpsertWithoutItemsInput = {
@@ -59044,6 +63537,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -59099,6 +63593,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -59145,6 +63640,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -59200,6 +63696,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -59255,9 +63752,9 @@ export namespace Prisma {
     estimatedCost: Decimal | DecimalJsLike | number | string
     finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
+    chargeType?: $Enums.DamageChargeType
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
-    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
     booking: BookingCreateNestedOneWithoutDamagesInput
     vehicle: VehicleCreateNestedOneWithoutDamageReportsInput
@@ -59274,9 +63771,9 @@ export namespace Prisma {
     finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
     approvedById?: number | null
+    chargeType?: $Enums.DamageChargeType
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
-    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
   }
 
@@ -59332,6 +63829,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -59387,6 +63885,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -59454,9 +63953,9 @@ export namespace Prisma {
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
-    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     booking?: BookingUpdateOneRequiredWithoutDamagesNestedInput
     vehicle?: VehicleUpdateOneRequiredWithoutDamageReportsNestedInput
@@ -59473,9 +63972,9 @@ export namespace Prisma {
     finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
-    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -59515,6 +64014,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -59570,6 +64070,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -59605,6 +64106,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutDamageReportsInput = {
@@ -59628,6 +64130,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutDamageReportsInput = {
@@ -59755,6 +64258,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -59810,6 +64314,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -59851,6 +64356,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutDamageReportsInput = {
@@ -59874,6 +64380,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type UserUpsertWithoutApprovedDamageReportsInput = {
@@ -59980,6 +64487,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -60035,6 +64543,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -60097,6 +64606,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -60152,6 +64662,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -60314,6 +64825,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -60369,6 +64881,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -60388,8 +64901,6 @@ export namespace Prisma {
     publicId: string
     label: string
     amount: Decimal | DecimalJsLike | number | string
-    isTaxable?: boolean
-    chargeType?: $Enums.ChargeType
   }
 
   export type InvoiceItemUncheckedCreateWithoutInvoiceInput = {
@@ -60397,8 +64908,6 @@ export namespace Prisma {
     publicId: string
     label: string
     amount: Decimal | DecimalJsLike | number | string
-    isTaxable?: boolean
-    chargeType?: $Enums.ChargeType
   }
 
   export type InvoiceItemCreateOrConnectWithoutInvoiceInput = {
@@ -60529,6 +65038,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -60584,6 +65094,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -60619,8 +65130,6 @@ export namespace Prisma {
     invoiceId?: IntFilter<"InvoiceItem"> | number
     label?: StringFilter<"InvoiceItem"> | string
     amount?: DecimalFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
-    isTaxable?: BoolFilter<"InvoiceItem"> | boolean
-    chargeType?: EnumChargeTypeFilter<"InvoiceItem"> | $Enums.ChargeType
   }
 
   export type PaymentUpsertWithWhereUniqueWithoutInvoiceInput = {
@@ -60848,6 +65357,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
     branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
+    featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutGstRuleInput = {
@@ -60865,6 +65375,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
+    featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutGstRuleInput = {
@@ -60897,6 +65408,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutGstRuleInput = {
@@ -60914,6 +65426,7 @@ export namespace Prisma {
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BookingCreateWithoutCancellationInvoiceInput = {
@@ -60952,6 +65465,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -61007,6 +65521,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -61145,6 +65660,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -61200,6 +65716,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -61298,6 +65815,428 @@ export namespace Prisma {
     invoicePdfs?: InvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
   }
 
+  export type BranchFeatureFlagCreateWithoutFlagInput = {
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    branch: BranchCreateNestedOneWithoutFeatureFlagsInput
+  }
+
+  export type BranchFeatureFlagUncheckedCreateWithoutFlagInput = {
+    id?: number
+    branchId: number
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchFeatureFlagCreateOrConnectWithoutFlagInput = {
+    where: BranchFeatureFlagWhereUniqueInput
+    create: XOR<BranchFeatureFlagCreateWithoutFlagInput, BranchFeatureFlagUncheckedCreateWithoutFlagInput>
+  }
+
+  export type BranchFeatureFlagCreateManyFlagInputEnvelope = {
+    data: BranchFeatureFlagCreateManyFlagInput | BranchFeatureFlagCreateManyFlagInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type VehicleFeatureFlagCreateWithoutFlagInput = {
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    vehicle: VehicleCreateNestedOneWithoutFeatureFlagsInput
+  }
+
+  export type VehicleFeatureFlagUncheckedCreateWithoutFlagInput = {
+    id?: number
+    vehicleId: number
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehicleFeatureFlagCreateOrConnectWithoutFlagInput = {
+    where: VehicleFeatureFlagWhereUniqueInput
+    create: XOR<VehicleFeatureFlagCreateWithoutFlagInput, VehicleFeatureFlagUncheckedCreateWithoutFlagInput>
+  }
+
+  export type VehicleFeatureFlagCreateManyFlagInputEnvelope = {
+    data: VehicleFeatureFlagCreateManyFlagInput | VehicleFeatureFlagCreateManyFlagInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type BranchFeatureFlagUpsertWithWhereUniqueWithoutFlagInput = {
+    where: BranchFeatureFlagWhereUniqueInput
+    update: XOR<BranchFeatureFlagUpdateWithoutFlagInput, BranchFeatureFlagUncheckedUpdateWithoutFlagInput>
+    create: XOR<BranchFeatureFlagCreateWithoutFlagInput, BranchFeatureFlagUncheckedCreateWithoutFlagInput>
+  }
+
+  export type BranchFeatureFlagUpdateWithWhereUniqueWithoutFlagInput = {
+    where: BranchFeatureFlagWhereUniqueInput
+    data: XOR<BranchFeatureFlagUpdateWithoutFlagInput, BranchFeatureFlagUncheckedUpdateWithoutFlagInput>
+  }
+
+  export type BranchFeatureFlagUpdateManyWithWhereWithoutFlagInput = {
+    where: BranchFeatureFlagScalarWhereInput
+    data: XOR<BranchFeatureFlagUpdateManyMutationInput, BranchFeatureFlagUncheckedUpdateManyWithoutFlagInput>
+  }
+
+  export type VehicleFeatureFlagUpsertWithWhereUniqueWithoutFlagInput = {
+    where: VehicleFeatureFlagWhereUniqueInput
+    update: XOR<VehicleFeatureFlagUpdateWithoutFlagInput, VehicleFeatureFlagUncheckedUpdateWithoutFlagInput>
+    create: XOR<VehicleFeatureFlagCreateWithoutFlagInput, VehicleFeatureFlagUncheckedCreateWithoutFlagInput>
+  }
+
+  export type VehicleFeatureFlagUpdateWithWhereUniqueWithoutFlagInput = {
+    where: VehicleFeatureFlagWhereUniqueInput
+    data: XOR<VehicleFeatureFlagUpdateWithoutFlagInput, VehicleFeatureFlagUncheckedUpdateWithoutFlagInput>
+  }
+
+  export type VehicleFeatureFlagUpdateManyWithWhereWithoutFlagInput = {
+    where: VehicleFeatureFlagScalarWhereInput
+    data: XOR<VehicleFeatureFlagUpdateManyMutationInput, VehicleFeatureFlagUncheckedUpdateManyWithoutFlagInput>
+  }
+
+  export type BranchCreateWithoutFeatureFlagsInput = {
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleCreateNestedManyWithoutBranchInput
+    bookings?: BookingCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
+  }
+
+  export type BranchUncheckedCreateWithoutFeatureFlagsInput = {
+    id?: number
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserUncheckedCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
+  }
+
+  export type BranchCreateOrConnectWithoutFeatureFlagsInput = {
+    where: BranchWhereUniqueInput
+    create: XOR<BranchCreateWithoutFeatureFlagsInput, BranchUncheckedCreateWithoutFeatureFlagsInput>
+  }
+
+  export type FeatureFlagCreateWithoutBranchFlagsInput = {
+    publicId: string
+    key: string
+    name: string
+    description?: string | null
+    scope: $Enums.FeatureFlagScope
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    vehicleFlags?: VehicleFeatureFlagCreateNestedManyWithoutFlagInput
+  }
+
+  export type FeatureFlagUncheckedCreateWithoutBranchFlagsInput = {
+    id?: number
+    publicId: string
+    key: string
+    name: string
+    description?: string | null
+    scope: $Enums.FeatureFlagScope
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    vehicleFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutFlagInput
+  }
+
+  export type FeatureFlagCreateOrConnectWithoutBranchFlagsInput = {
+    where: FeatureFlagWhereUniqueInput
+    create: XOR<FeatureFlagCreateWithoutBranchFlagsInput, FeatureFlagUncheckedCreateWithoutBranchFlagsInput>
+  }
+
+  export type BranchUpsertWithoutFeatureFlagsInput = {
+    update: XOR<BranchUpdateWithoutFeatureFlagsInput, BranchUncheckedUpdateWithoutFeatureFlagsInput>
+    create: XOR<BranchCreateWithoutFeatureFlagsInput, BranchUncheckedCreateWithoutFeatureFlagsInput>
+    where?: BranchWhereInput
+  }
+
+  export type BranchUpdateToOneWithWhereWithoutFeatureFlagsInput = {
+    where?: BranchWhereInput
+    data: XOR<BranchUpdateWithoutFeatureFlagsInput, BranchUncheckedUpdateWithoutFeatureFlagsInput>
+  }
+
+  export type BranchUpdateWithoutFeatureFlagsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
+  }
+
+  export type BranchUncheckedUpdateWithoutFeatureFlagsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUncheckedUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
+  }
+
+  export type FeatureFlagUpsertWithoutBranchFlagsInput = {
+    update: XOR<FeatureFlagUpdateWithoutBranchFlagsInput, FeatureFlagUncheckedUpdateWithoutBranchFlagsInput>
+    create: XOR<FeatureFlagCreateWithoutBranchFlagsInput, FeatureFlagUncheckedCreateWithoutBranchFlagsInput>
+    where?: FeatureFlagWhereInput
+  }
+
+  export type FeatureFlagUpdateToOneWithWhereWithoutBranchFlagsInput = {
+    where?: FeatureFlagWhereInput
+    data: XOR<FeatureFlagUpdateWithoutBranchFlagsInput, FeatureFlagUncheckedUpdateWithoutBranchFlagsInput>
+  }
+
+  export type FeatureFlagUpdateWithoutBranchFlagsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: EnumFeatureFlagScopeFieldUpdateOperationsInput | $Enums.FeatureFlagScope
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    vehicleFlags?: VehicleFeatureFlagUpdateManyWithoutFlagNestedInput
+  }
+
+  export type FeatureFlagUncheckedUpdateWithoutBranchFlagsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: EnumFeatureFlagScopeFieldUpdateOperationsInput | $Enums.FeatureFlagScope
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    vehicleFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutFlagNestedInput
+  }
+
+  export type VehicleCreateWithoutFeatureFlagsInput = {
+    publicId: string
+    make: string
+    model: string
+    regNo: string
+    odo: number
+    fuelLevel?: number
+    insuranceExpiry: Date | string
+    status?: $Enums.VehicleStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch: BranchCreateNestedOneWithoutVehiclesInput
+    category: VehicleCategoryCreateNestedOneWithoutVehiclesInput
+    insuranceRecords?: VehicleInsuranceCreateNestedManyWithoutVehicleInput
+    maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
+    damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
+  }
+
+  export type VehicleUncheckedCreateWithoutFeatureFlagsInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    categoryId: number
+    make: string
+    model: string
+    regNo: string
+    odo: number
+    fuelLevel?: number
+    insuranceExpiry: Date | string
+    status?: $Enums.VehicleStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    insuranceRecords?: VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput
+    maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
+    damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
+  }
+
+  export type VehicleCreateOrConnectWithoutFeatureFlagsInput = {
+    where: VehicleWhereUniqueInput
+    create: XOR<VehicleCreateWithoutFeatureFlagsInput, VehicleUncheckedCreateWithoutFeatureFlagsInput>
+  }
+
+  export type FeatureFlagCreateWithoutVehicleFlagsInput = {
+    publicId: string
+    key: string
+    name: string
+    description?: string | null
+    scope: $Enums.FeatureFlagScope
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    branchFlags?: BranchFeatureFlagCreateNestedManyWithoutFlagInput
+  }
+
+  export type FeatureFlagUncheckedCreateWithoutVehicleFlagsInput = {
+    id?: number
+    publicId: string
+    key: string
+    name: string
+    description?: string | null
+    scope: $Enums.FeatureFlagScope
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    branchFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutFlagInput
+  }
+
+  export type FeatureFlagCreateOrConnectWithoutVehicleFlagsInput = {
+    where: FeatureFlagWhereUniqueInput
+    create: XOR<FeatureFlagCreateWithoutVehicleFlagsInput, FeatureFlagUncheckedCreateWithoutVehicleFlagsInput>
+  }
+
+  export type VehicleUpsertWithoutFeatureFlagsInput = {
+    update: XOR<VehicleUpdateWithoutFeatureFlagsInput, VehicleUncheckedUpdateWithoutFeatureFlagsInput>
+    create: XOR<VehicleCreateWithoutFeatureFlagsInput, VehicleUncheckedCreateWithoutFeatureFlagsInput>
+    where?: VehicleWhereInput
+  }
+
+  export type VehicleUpdateToOneWithWhereWithoutFeatureFlagsInput = {
+    where?: VehicleWhereInput
+    data: XOR<VehicleUpdateWithoutFeatureFlagsInput, VehicleUncheckedUpdateWithoutFeatureFlagsInput>
+  }
+
+  export type VehicleUpdateWithoutFeatureFlagsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    make?: StringFieldUpdateOperationsInput | string
+    model?: StringFieldUpdateOperationsInput | string
+    regNo?: StringFieldUpdateOperationsInput | string
+    odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
+    insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneRequiredWithoutVehiclesNestedInput
+    category?: VehicleCategoryUpdateOneRequiredWithoutVehiclesNestedInput
+    insuranceRecords?: VehicleInsuranceUpdateManyWithoutVehicleNestedInput
+    maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
+    damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
+  }
+
+  export type VehicleUncheckedUpdateWithoutFeatureFlagsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    categoryId?: IntFieldUpdateOperationsInput | number
+    make?: StringFieldUpdateOperationsInput | string
+    model?: StringFieldUpdateOperationsInput | string
+    regNo?: StringFieldUpdateOperationsInput | string
+    odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
+    insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    insuranceRecords?: VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput
+    maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
+    damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
+  }
+
+  export type FeatureFlagUpsertWithoutVehicleFlagsInput = {
+    update: XOR<FeatureFlagUpdateWithoutVehicleFlagsInput, FeatureFlagUncheckedUpdateWithoutVehicleFlagsInput>
+    create: XOR<FeatureFlagCreateWithoutVehicleFlagsInput, FeatureFlagUncheckedCreateWithoutVehicleFlagsInput>
+    where?: FeatureFlagWhereInput
+  }
+
+  export type FeatureFlagUpdateToOneWithWhereWithoutVehicleFlagsInput = {
+    where?: FeatureFlagWhereInput
+    data: XOR<FeatureFlagUpdateWithoutVehicleFlagsInput, FeatureFlagUncheckedUpdateWithoutVehicleFlagsInput>
+  }
+
+  export type FeatureFlagUpdateWithoutVehicleFlagsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: EnumFeatureFlagScopeFieldUpdateOperationsInput | $Enums.FeatureFlagScope
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    branchFlags?: BranchFeatureFlagUpdateManyWithoutFlagNestedInput
+  }
+
+  export type FeatureFlagUncheckedUpdateWithoutVehicleFlagsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: EnumFeatureFlagScopeFieldUpdateOperationsInput | $Enums.FeatureFlagScope
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    branchFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutFlagNestedInput
+  }
+
   export type EmailVerificationOtpCreateManyUserInput = {
     id?: number
     phone: string
@@ -61369,6 +66308,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -61383,9 +66323,9 @@ export namespace Prisma {
     estimatedCost: Decimal | DecimalJsLike | number | string
     finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
+    chargeType?: $Enums.DamageChargeType
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
-    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
   }
 
@@ -61515,6 +66455,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -61569,6 +66510,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -61620,6 +66562,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -61631,9 +66574,9 @@ export namespace Prisma {
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
-    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     booking?: BookingUpdateOneRequiredWithoutDamagesNestedInput
     vehicle?: VehicleUpdateOneRequiredWithoutDamageReportsNestedInput
@@ -61649,9 +66592,9 @@ export namespace Prisma {
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
-    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     photos?: BookingPhotoUncheckedUpdateManyWithoutDamageReportNestedInput
   }
@@ -61665,9 +66608,9 @@ export namespace Prisma {
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
-    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -61720,6 +66663,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -61804,6 +66748,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -61858,6 +66803,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -61909,6 +66855,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -62022,6 +66969,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -62155,6 +67103,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -62209,6 +67158,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -62260,6 +67210,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -62457,6 +67408,7 @@ export namespace Prisma {
     safetyDepositSetOff?: boolean
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -62488,6 +67440,15 @@ export namespace Prisma {
     freeKmMonthly?: number
     extraKmRate?: Decimal | DecimalJsLike | number | string
     extraHourRate?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchFeatureFlagCreateManyBranchInput = {
+    id?: number
+    flagId: number
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -62568,6 +67529,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutBranchInput = {
@@ -62591,6 +67553,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateManyWithoutBranchInput = {
@@ -62645,6 +67608,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -62699,6 +67663,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -62750,6 +67715,7 @@ export namespace Prisma {
     safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -62838,6 +67804,32 @@ export namespace Prisma {
     freeKmMonthly?: IntFieldUpdateOperationsInput | number
     extraKmRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     extraHourRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchFeatureFlagUpdateWithoutBranchInput = {
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    flag?: FeatureFlagUpdateOneRequiredWithoutBranchFlagsNestedInput
+  }
+
+  export type BranchFeatureFlagUncheckedUpdateWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    flagId?: IntFieldUpdateOperationsInput | number
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchFeatureFlagUncheckedUpdateManyWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    flagId?: IntFieldUpdateOperationsInput | number
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -62953,6 +67945,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutCategoryInput = {
@@ -62976,6 +67969,7 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateManyWithoutCategoryInput = {
@@ -63092,9 +68086,9 @@ export namespace Prisma {
     finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
     approvedById?: number | null
+    chargeType?: $Enums.DamageChargeType
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
-    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
   }
 
@@ -63119,6 +68113,15 @@ export namespace Prisma {
     sgstAmount?: Decimal | DecimalJsLike | number | string
     taxRate?: Decimal | DecimalJsLike | number | string
     finalTotal: Decimal | DecimalJsLike | number | string
+  }
+
+  export type VehicleFeatureFlagCreateManyVehicleInput = {
+    id?: number
+    flagId: number
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type VehicleInsuranceUpdateWithoutVehicleInput = {
@@ -63173,9 +68176,9 @@ export namespace Prisma {
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
-    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     booking?: BookingUpdateOneRequiredWithoutDamagesNestedInput
     approvedBy?: UserUpdateOneWithoutApprovedDamageReportsNestedInput
@@ -63191,9 +68194,9 @@ export namespace Prisma {
     finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
-    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     photos?: BookingPhotoUncheckedUpdateManyWithoutDamageReportNestedInput
   }
@@ -63207,9 +68210,9 @@ export namespace Prisma {
     finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
-    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -63280,6 +68283,32 @@ export namespace Prisma {
     finalTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
+  export type VehicleFeatureFlagUpdateWithoutVehicleInput = {
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    flag?: FeatureFlagUpdateOneRequiredWithoutVehicleFlagsNestedInput
+  }
+
+  export type VehicleFeatureFlagUncheckedUpdateWithoutVehicleInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    flagId?: IntFieldUpdateOperationsInput | number
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    flagId?: IntFieldUpdateOperationsInput | number
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type BookingPhotoCreateManyBookingInput = {
     id?: number
     publicId: string
@@ -63298,9 +68327,9 @@ export namespace Prisma {
     finalCost?: Decimal | DecimalJsLike | number | string | null
     notes: JsonNullValueInput | InputJsonValue
     approvedById?: number | null
+    chargeType?: $Enums.DamageChargeType
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
-    chargeType?: $Enums.DamageChargeType
     createdAt?: Date | string
   }
 
@@ -63351,9 +68380,9 @@ export namespace Prisma {
     estimatedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
-    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     vehicle?: VehicleUpdateOneRequiredWithoutDamageReportsNestedInput
     approvedBy?: UserUpdateOneWithoutApprovedDamageReportsNestedInput
@@ -63369,9 +68398,9 @@ export namespace Prisma {
     finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
-    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     photos?: BookingPhotoUncheckedUpdateManyWithoutDamageReportNestedInput
   }
@@ -63385,9 +68414,9 @@ export namespace Prisma {
     finalCost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     notes?: JsonNullValueInput | InputJsonValue
     approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
-    chargeType?: EnumDamageChargeTypeFieldUpdateOperationsInput | $Enums.DamageChargeType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -63475,8 +68504,6 @@ export namespace Prisma {
     publicId: string
     label: string
     amount: Decimal | DecimalJsLike | number | string
-    isTaxable?: boolean
-    chargeType?: $Enums.ChargeType
   }
 
   export type PaymentCreateManyInvoiceInput = {
@@ -63494,8 +68521,6 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     label?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxable?: BoolFieldUpdateOperationsInput | boolean
-    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
   }
 
   export type InvoiceItemUncheckedUpdateWithoutInvoiceInput = {
@@ -63503,8 +68528,6 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     label?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxable?: BoolFieldUpdateOperationsInput | boolean
-    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
   }
 
   export type InvoiceItemUncheckedUpdateManyWithoutInvoiceInput = {
@@ -63512,8 +68535,6 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     label?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxable?: BoolFieldUpdateOperationsInput | boolean
-    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
   }
 
   export type PaymentUpdateWithoutInvoiceInput = {
@@ -63546,6 +68567,76 @@ export namespace Prisma {
     status?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchFeatureFlagCreateManyFlagInput = {
+    id?: number
+    branchId: number
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehicleFeatureFlagCreateManyFlagInput = {
+    id?: number
+    vehicleId: number
+    enabled?: boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchFeatureFlagUpdateWithoutFlagInput = {
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    branch?: BranchUpdateOneRequiredWithoutFeatureFlagsNestedInput
+  }
+
+  export type BranchFeatureFlagUncheckedUpdateWithoutFlagInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchFeatureFlagUncheckedUpdateManyWithoutFlagInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleFeatureFlagUpdateWithoutFlagInput = {
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    vehicle?: VehicleUpdateOneRequiredWithoutFeatureFlagsNestedInput
+  }
+
+  export type VehicleFeatureFlagUncheckedUpdateWithoutFlagInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    vehicleId?: IntFieldUpdateOperationsInput | number
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleFeatureFlagUncheckedUpdateManyWithoutFlagInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    vehicleId?: IntFieldUpdateOperationsInput | number
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+    config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
 
@@ -63589,6 +68680,10 @@ export namespace Prisma {
      * @deprecated Use InvoiceCountOutputTypeDefaultArgs instead
      */
     export type InvoiceCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = InvoiceCountOutputTypeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use FeatureFlagCountOutputTypeDefaultArgs instead
+     */
+    export type FeatureFlagCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = FeatureFlagCountOutputTypeDefaultArgs<ExtArgs>
     /**
      * @deprecated Use UserDefaultArgs instead
      */
@@ -63725,6 +68820,18 @@ export namespace Prisma {
      * @deprecated Use CancellationInvoiceDefaultArgs instead
      */
     export type CancellationInvoiceArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CancellationInvoiceDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use FeatureFlagDefaultArgs instead
+     */
+    export type FeatureFlagArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = FeatureFlagDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use BranchFeatureFlagDefaultArgs instead
+     */
+    export type BranchFeatureFlagArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = BranchFeatureFlagDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use VehicleFeatureFlagDefaultArgs instead
+     */
+    export type VehicleFeatureFlagArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = VehicleFeatureFlagDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

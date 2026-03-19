@@ -30,6 +30,7 @@ import { Footer } from "@/components/landing/Footer";
 
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
 import { bookingService } from "@/services/booking.service";
+import { useSearchStore } from "@/store/search.store";
 import { format } from "date-fns";
 
 // Response types from API
@@ -46,6 +47,9 @@ interface BookingResponse {
   taxRate?: number;
   grandDeposit: number;
   grandFinalTotal: number;
+  startDate: string;
+  endDate: string;
+  rentalDays?: number;
 }
 
 export const BookingConfirmationPage = () => {
@@ -64,6 +68,8 @@ export const BookingConfirmationPage = () => {
     branch,
     startDate,
     endDate,
+    startTime,
+    endTime,
     rentalDays,
     selectedKycFilePublicId,
     paymentType,
@@ -87,10 +93,30 @@ export const BookingConfirmationPage = () => {
       }
 
       try {
+        const { pickupDate, returnDate, pickupTime, returnTime } = useSearchStore.getState();
+
+        const startDateTime = pickupDate
+          ? (() => {
+              const year = pickupDate.getFullYear();
+              const month = String(pickupDate.getMonth() + 1).padStart(2, "0");
+              const day = String(pickupDate.getDate()).padStart(2, "0");
+              return `${year}-${month}-${day}T${pickupTime || startTime}:00.000Z`;
+            })()
+          : `${startDate}T${startTime}:00.000Z`;
+
+        const endDateTime = returnDate
+          ? (() => {
+              const year = returnDate.getFullYear();
+              const month = String(returnDate.getMonth() + 1).padStart(2, "0");
+              const day = String(returnDate.getDate()).padStart(2, "0");
+              return `${year}-${month}-${day}T${returnTime || endTime}:00.000Z`;
+            })()
+          : `${endDate}T${endTime}:00.000Z`;
+
         const response = await bookingService.createBookingSummary({
           vehicles: [selectedVehicleId],
-          start: startDate,
-          end: endDate,
+          start: startDateTime,
+          end: endDateTime,
           file_public_id: selectedKycFilePublicId,
           payment_type: paymentType,
         });
@@ -110,6 +136,9 @@ export const BookingConfirmationPage = () => {
           taxRate: response.data.totals.taxRate,
           grandDeposit: response.data.totals.grandDeposit,
           grandFinalTotal: response.data.totals.grandFinalTotal,
+          startDate: response.data.startDate,
+          endDate: response.data.endDate,
+          rentalDays: response.data.items[0]?.days,
         });
       } catch (err: any) {
         const message =
@@ -146,12 +175,21 @@ export const BookingConfirmationPage = () => {
     }).format(price);
   };
 
-  const formattedStartDate = startDate
-    ? format(new Date(startDate), "EEE, MMM d, yyyy")
-    : "-";
-  const formattedEndDate = endDate
-    ? format(new Date(endDate), "EEE, MMM d, yyyy")
-    : "-";
+  const formattedStartDate = bookingData?.startDate
+    ? format(new Date(bookingData.startDate), "EEE, MMM d, yyyy, h:mm a")
+    : startDate && startTime
+      ? format(new Date(`${startDate}T${startTime}:00`), "EEE, MMM d, yyyy, h:mm a")
+      : startDate
+        ? format(new Date(startDate), "EEE, MMM d, yyyy")
+        : "-";
+
+  const formattedEndDate = bookingData?.endDate
+    ? format(new Date(bookingData.endDate), "EEE, MMM d, yyyy, h:mm a")
+    : endDate && endTime
+      ? format(new Date(`${endDate}T${endTime}:00`), "EEE, MMM d, yyyy, h:mm a")
+      : endDate
+        ? format(new Date(endDate), "EEE, MMM d, yyyy")
+        : "-";
 
   // Handle Online Payment
   const handleOnlinePayment = () => {
@@ -406,7 +444,7 @@ export const BookingConfirmationPage = () => {
                   Rental Days
                 </span>
                 <span className="text-sm font-medium text-foreground">
-                  {rentalDays} {rentalDays === 1 ? "day" : "days"}
+                  {bookingData?.rentalDays ?? rentalDays} {(bookingData?.rentalDays ?? rentalDays) === 1 ? "day" : "days"}
                 </span>
               </div>
 

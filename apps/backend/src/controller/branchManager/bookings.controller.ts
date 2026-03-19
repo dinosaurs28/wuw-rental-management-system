@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
-import { prisma, BookingStatus } from "@repo/database/client";
+import { prisma, BookingStatus, VehicleStatus } from "@repo/database/client";
+import { managerConfirmPickupSchema } from "@repo/schemas";
+import { createID } from "../../utils/nanoID.js";
 import { redis } from "../../lib/redisconfig.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { AdvanceDepositService } from "../../services/booking/advance-deposit.service.js";
@@ -264,11 +266,20 @@ export const GetPendingApprovals = async (req: Request, res: Response) => {
 export const CollectSafetyDeposit = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
   const { amount, method } = req.body;
-  const userId = (req as any).user_Id;
+  const userId = req.public_Id;
+  const branchId = req.branch_Id;
   
   try {
+    const booking = await prisma.booking.findFirst({
+      where: { publicId: bookingId, branchId: branchId }
+    });
+
+    if (!booking) {
+      return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
+    }
+
     const result = await advanceDepositService.recordSafetyDeposit(
-      Number(bookingId),
+      booking.id,
       Number(amount),
       method,
       userId
@@ -289,12 +300,18 @@ export const CollectSafetyDeposit = async (req: Request, res: Response) => {
 export const CancelNoShow = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
   const { reason = "No Show" } = req.body;
-  const userId = (req as any).user_Id;
+  const userId = req.public_Id as string;
+  const branchId = req.branch_Id;
 
   try {
+    const booking = await prisma.booking.findFirst({
+      where: { publicId: bookingId, branchId: branchId }
+    });
+    if (!booking) return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
+
     const result = await advanceDepositService.handleNoShowCancellation(
-      Number(bookingId),
-      userId,
+      booking.id,
+      userId as any,
       reason
     );
     return res.status(StatusCode.OK).json({
@@ -313,10 +330,16 @@ export const CancelNoShow = async (req: Request, res: Response) => {
 export const CalculateFinalBilling = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
   const { totalBillAmount, setOffDeposit } = req.body;
+  const branchId = req.branch_Id;
 
   try {
+    const booking = await prisma.booking.findFirst({
+      where: { publicId: bookingId, branchId: branchId }
+    });
+    if (!booking) return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
+
     const result = await advanceDepositService.processFinalBilling(
-      Number(bookingId),
+      booking.id,
       Number(totalBillAmount),
       Boolean(setOffDeposit)
     );
@@ -336,14 +359,20 @@ export const CalculateFinalBilling = async (req: Request, res: Response) => {
 export const RefundDeposit = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
   const { amount, method } = req.body;
-  const userId = (req as any).user_Id;
+  const userId = req.public_Id as string;
+  const branchId = req.branch_Id;
 
   try {
+    const booking = await prisma.booking.findFirst({
+      where: { publicId: bookingId, branchId: branchId }
+    });
+    if (!booking) return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
+
     const result = await advanceDepositService.refundSafetyDeposit(
-      Number(bookingId),
+      booking.id,
       Number(amount),
       method,
-      userId
+      userId as any
     );
     return res.status(StatusCode.OK).json({
       success: true,
@@ -354,6 +383,304 @@ export const RefundDeposit = async (req: Request, res: Response) => {
     console.error("Refund Deposit Error:", error);
     if (error.message.includes("not found")) return res.status(StatusCode.NOT_FOUND).json({ message: error.message });
     if (error.message.includes("already refunded")) return res.status(StatusCode.BAD_REQUEST).json({ message: error.message });
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
+  }
+};
+
+export const ConfirmPickupWithDeposit = async (req: Request, res: Response) => {
+  const { bookingId } = req.params;
+  const branchId = req.branch_Id;
+  const userId = req.public_Id as string;
+
+  try {
+    const { requireManagerConfirmation } = req.body;
+
+    const booking = await prisma.booking.findFirst({
+      where: {
+        publicId: bookingId,
+        branchId: branchId,
+      },
+      include: {
+        items: {
+          select: {
+            vehicleId: true,
+          },
+        },
+      },
+    });
+
+    if (!booking) {
+      return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
+    }
+
+    if (booking.status !== BookingStatus.CONFIRMED || !booking.requiresManagerConfirmation) {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Booking does not require manager confirmation or is not in CONFIRMED state" });
+    }
+
+    if (requireManagerConfirmation !== false) {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Payload must have requireManagerConfirmation: false" });
+    }
+
+    const vehicleIds = booking.items.map(item => item.vehicleId);
+
+    const actingUser = await prisma.user.findUnique({
+      where: { publicId: userId },
+    });
+
+    if (!actingUser) {
+      return res.status(StatusCode.UNAUTHORIZED).json({ message: "User not found" });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.booking.update({
+        where: { id: booking.id },
+        data: {
+          status: BookingStatus.PICKED_UP,
+          requiresManagerConfirmation: false,
+        },
+      });
+
+      await tx.vehicle.updateMany({
+        where: { id: { in: vehicleIds } },
+        data: {
+          status: VehicleStatus.OUT_FOR_RENTAL,
+        },
+      });
+
+      await tx.staffActivityLog.create({
+        data: {
+          publicId: createID(),
+          staffId: actingUser.id,
+          action: "MANAGER_CONFIRMED_PICKUP",
+          entity: "Booking",
+          entityId: booking.publicId,
+        },
+      });
+    });
+
+    return res.status(StatusCode.OK).json({
+      success: true,
+      message: "Pickup confirmed successfully. Vehicle is now OUT_FOR_RENTAL.",
+    });
+
+  } catch (error: any) {
+    console.error("Manager Confirm Pickup Error:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
+  }
+};
+
+export const ConfirmReturnByManager = async (req: Request, res: Response) => {
+  const { bookingId } = req.params;
+  const branchId = req.branch_Id;
+  const userId = req.public_Id as string;
+
+  try {
+    const booking = await prisma.booking.findFirst({
+      where: {
+        publicId: bookingId,
+        branchId: branchId,
+      },
+      include: {
+        items: {
+          select: {
+            vehicleId: true,
+          },
+        },
+      },
+    });
+
+    if (!booking) {
+      return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
+    }
+
+    if (booking.status !== BookingStatus.PICKED_UP || !booking.requiresManagerConfirmation) {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Booking does not require manager confirmation or is not in PICKED_UP state" });
+    }
+
+    const vehicleIds = booking.items.map(item => item.vehicleId);
+
+    const actingUser = await prisma.user.findUnique({
+      where: { publicId: userId },
+    });
+
+    if (!actingUser) {
+      return res.status(StatusCode.UNAUTHORIZED).json({ message: "User not found" });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.booking.update({
+        where: { id: booking.id },
+        data: {
+          status: BookingStatus.RETURNED,
+          requiresManagerConfirmation: false,
+        },
+      });
+
+      await tx.vehicle.updateMany({
+        where: { id: { in: vehicleIds } },
+        data: {
+          status: VehicleStatus.AVAILABLE,
+        },
+      });
+
+      await tx.staffActivityLog.create({
+        data: {
+          publicId: createID(),
+          staffId: actingUser.id,
+          action: "MANAGER_CONFIRMED_RETURN",
+          entity: "Booking",
+          entityId: booking.publicId,
+        },
+      });
+    });
+
+    // Invalidate public vehicle cache
+    let cursor = "0";
+    do {
+      const reply = await redis.scan(
+        cursor,
+        "MATCH",
+        "public:vehicles:*",
+        "COUNT",
+        100,
+      );
+      cursor = reply[0];
+      const keys = reply[1];
+      if (keys.length > 0) {
+        await redis.del(keys);
+      }
+    } while (cursor !== "0");
+
+    return res.status(StatusCode.OK).json({
+      success: true,
+      message: "Return confirmed successfully. Vehicle is now AVAILABLE.",
+    });
+
+  } catch (error: any) {
+    console.error("Manager Confirm Return Error:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
+  }
+};
+
+export const GetManagerConfirmations = async (req: Request, res: Response) => {
+  const branchId = req.branch_Id;
+
+  try {
+    const bookings = await prisma.booking.findMany({
+      where: {
+        branchId: branchId,
+        requiresManagerConfirmation: true,
+      },
+      select: {
+        id: true,
+        publicId: true,
+        startAt: true,
+        endAt: true,
+        status: true,
+        totalFinal: true,
+        requiresManagerConfirmation: true,
+        safetyDeposit: true,
+        customer: {
+          select: {
+            user: {
+              select: {
+                name: true,
+                email: true,
+                phone: true,
+              },
+            },
+          },
+        },
+        items: {
+          select: {
+            vehicle: {
+              select: {
+                make: true,
+                model: true,
+                regNo: true,
+                odo: true,
+                fuelLevel: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { updatedAt: "desc" },
+    });
+
+    return res.status(StatusCode.OK).json({
+      success: true,
+      data: bookings,
+    });
+  } catch (error: any) {
+    console.error("Manager Confirmations fetch error:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+      message: "Internal Server Error fetching confirmations",
+    });
+  }
+};
+
+export const GetConfirmationDetails = async (req: Request, res: Response) => {
+  const { bookingId } = req.params;
+  const branchId = req.branch_Id;
+
+  try {
+    const booking = await prisma.booking.findFirst({
+      where: {
+        publicId: bookingId,
+        branchId: branchId,
+      },
+      select: {
+        status: true,
+        safetyDeposit: true,
+        safetyDepositMethod: true,
+        customer: {
+          select: {
+            user: {
+              select: {
+                name: true,
+                phone: true,
+              },
+            },
+          },
+        },
+        items: {
+          select: {
+            vehicle: {
+              select: {
+                make: true,
+                model: true,
+                regNo: true,
+                odo: true,
+                fuelLevel: true,
+              },
+            },
+          },
+        },
+        photos: {
+          select: {
+            id: true,
+            file: {
+              select: {
+                url: true,
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
+
+    if (!booking) {
+      return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
+    }
+
+    return res.status(StatusCode.OK).json({
+      success: true,
+      data: booking,
+    });
+  } catch (error: any) {
+    console.error("Manager Confirmation details error:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
   }
 };

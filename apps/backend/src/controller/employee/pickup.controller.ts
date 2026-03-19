@@ -75,23 +75,38 @@ export const PickupController = async (req: Request, res: Response) => {
     }
 
     await prisma.$transaction(async (tx) => {
-      await tx.booking.update({
-        where: { id: booking.id },
-        data: {
-          status: BookingStatus.PICKED_UP,
-        },
-      });
+      if (parsedVehicleDetails.requireManagerConfirmation) {
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: {
+            requiresManagerConfirmation: true,
+          },
+        });
 
-      await tx.vehicle.updateMany({
-        where: {
-          id: { in: vehicleIds },
-        },
-        data: {
-          status: VehicleStatus.OUT_FOR_RENTAL,
-          odo: parsedVehicleDetails.odo,
-          fuelLevel: parsedVehicleDetails.fuelLevel,
-        },
-      });
+        await tx.vehicle.updateMany({
+          where: { id: { in: vehicleIds } },
+          data: {
+            odo: parsedVehicleDetails.odo,
+            fuelLevel: parsedVehicleDetails.fuelLevel,
+          },
+        });
+      } else {
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: {
+            status: BookingStatus.PICKED_UP,
+          },
+        });
+
+        await tx.vehicle.updateMany({
+          where: { id: { in: vehicleIds } },
+          data: {
+            status: VehicleStatus.OUT_FOR_RENTAL,
+            odo: parsedVehicleDetails.odo,
+            fuelLevel: parsedVehicleDetails.fuelLevel,
+          },
+        });
+      }
 
       if (
         parsedVehicleDetails.pickupImageIds &&
@@ -119,7 +134,7 @@ export const PickupController = async (req: Request, res: Response) => {
         data: {
           publicId: createID(),
           staffId: actingUser.id,
-          action: "VEHICLE_PICKUP",
+          action: parsedVehicleDetails.requireManagerConfirmation ? "REQUESTED_MANAGER_CONFIRMATION" : "VEHICLE_PICKUP",
           entity: "Booking",
           entityId: booking.publicId,
         },
@@ -127,7 +142,7 @@ export const PickupController = async (req: Request, res: Response) => {
     });
 
     return res.status(StatusCode.OK).json({
-      message: "Vehicle Pickup Successful. Status updated to OUT_FOR_RENTAL.",
+      message: parsedVehicleDetails.requireManagerConfirmation ? "Pickup sent to manager for confirmation." : "Vehicle Pickup Successful. Status updated to OUT_FOR_RENTAL.",
     });
   } catch (error) {
     console.error("Pickup Error:", error);

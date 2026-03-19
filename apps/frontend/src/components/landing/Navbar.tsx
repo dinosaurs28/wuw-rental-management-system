@@ -6,18 +6,17 @@ import { useAuthStore } from "@/store/auth.store";
 
 export const Navbar = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, logout, checkAuth } = useAuthStore();
+  const { isAuthenticated, logout } = useAuthStore();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    checkAuth();
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [checkAuth]);
+  }, []);
 
   const handleLogout = () => {
     logout();
