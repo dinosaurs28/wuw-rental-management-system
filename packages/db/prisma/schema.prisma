@@ -178,6 +178,8 @@ model Customer {
   kycs               CustomerKyc[]
   bookings           Booking[]
 
+  cancellationInvoices  CancellationInvoice[]
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -216,6 +218,7 @@ model FileObject {
   bookingKycs   Booking[]      @relation("BookingKyc")
   vehicleImages VehicleImage[]
   invoicePdfs   Invoice[]      @relation("InvoicePdf")
+  cancellationInvoices  CancellationInvoice[] @relation("CancellationInvoicePdf")
 
   @@index([publicId])
 }
@@ -493,6 +496,25 @@ model Booking {
   items   BookingItem[]
   deposit Deposit?
   invoice Invoice?
+  cancellationInvoice CancellationInvoice?
+
+  // Advance Payment Tracking
+  advanceAmount         Decimal   @default(0)
+  advancePaidAt         DateTime?
+  advancePaymentId      String?
+  advancePaymentMode    DepositMethod?
+  
+  // Safety Deposit Tracking
+  safetyDeposit         Decimal   @default(0)
+  safetyDepositPaidAt   DateTime?
+  safetyDepositMethod   DepositMethod?
+  safetyDepositRefunded Boolean   @default(false)
+  safetyDepositRefundedAt DateTime?
+  safetyDepositSetOff   Boolean   @default(false)
+  
+  // Cancellation Tracking
+  cancelledAt        DateTime?
+  cancellationReason String?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -503,6 +525,8 @@ model Booking {
   @@index([createdById])
   @@index([status])
   @@index([startAt, endAt])
+  @@index([advancePaymentId])
+  @@index([cancelledAt])
   // Performance index
   @@index([status, startAt, endAt])
   @@index([rentalPeriodType])
@@ -699,4 +723,33 @@ model TimezoneSetting {
   updatedAt DateTime @updatedAt
   
   @@index([timezone])
+}
+
+model CancellationInvoice {
+  id                Int      @id @default(autoincrement())
+  publicId          String   @unique
+  bookingId         Int      @unique
+  customerId        Int
+  
+  advanceAmount     Decimal
+  cancellationFee   Decimal
+  reason            String?
+  notes             String?
+  
+  invoiceNumber     String?  @unique
+  invoicePdfFileId  Int?
+  generatedAt       DateTime?
+  sentToCustomer    Boolean  @default(false)
+  sentAt            DateTime?
+  
+  booking           Booking     @relation(fields: [bookingId], references: [id])
+  customer          Customer    @relation(fields: [customerId], references: [id])
+  invoicePdfFile    FileObject? @relation("CancellationInvoicePdf", fields: [invoicePdfFileId], references: [id])
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([bookingId])
+  @@index([customerId])
+  @@index([invoiceNumber])
 }

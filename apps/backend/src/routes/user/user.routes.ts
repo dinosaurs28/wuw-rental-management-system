@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authCheckJwt } from "../../middlewares/authCheck.middlewares.js";
 import { getUserBookings } from "../../controller/booking/getBookUserInfo.controller.js";
-import { getUserBookingHistory } from "../../controller/user/getUserBookingHistory.controller.js";
+import { getUserBookingHistory, GetCancellationHistory } from "../../controller/user/getUserBookingHistory.controller.js";
 import {
   getUserProfile,
   updateUserProfile,
@@ -17,6 +17,7 @@ const router: Router = Router();
 
 router.get("/booking", authCheckJwt, getUserBookings);
 router.get("/booking/history", authCheckJwt, getUserBookingHistory);
+router.get("/cancellation-history", authCheckJwt, GetCancellationHistory);
 router
   .route("/profile")
   .all(authCheckJwt)

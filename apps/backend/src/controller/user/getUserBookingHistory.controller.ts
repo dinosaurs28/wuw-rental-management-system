@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import { prisma } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
+import { AdvanceDepositService } from "../../services/booking/advance-deposit.service.js";
+
+const advanceDepositService = new AdvanceDepositService();
 
 export const getUserBookingHistory = async (req: Request, res: Response) => {
   try {
@@ -121,6 +124,50 @@ export const getUserBookingHistory = async (req: Request, res: Response) => {
     console.error("Error fetching user booking history:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
       message: "Internal server error while fetching booking history",
+    });
+  }
+};
+
+export const GetCancellationHistory = async (req: Request, res: Response) => {
+  try {
+    const userPublicId = req.public_Id;
+    if (!userPublicId) {
+      return res.status(StatusCode.UNAUTHORIZED).json({ message: "Unauthorized" });
+    }
+    const user = await prisma.user.findUnique({
+      where: { publicId: userPublicId as string },
+      select: { customerProfile: { select: { id: true } } },
+    });
+
+    if (!user?.customerProfile) {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Customer profile not found" });
+    }
+
+    const customerId = user.customerProfile.id;
+
+    const history = await advanceDepositService.getCustomerCancellationHistory(customerId);
+    const totalOutstanding = await advanceDepositService.getOutstandingCancellationFees(customerId);
+
+    return res.status(StatusCode.OK).json({
+      message: "Cancellation history fetched successfully",
+      data: {
+        customerId,
+        cancellations: history.map((inv) => ({
+          invoiceNumber: inv.invoiceNumber,
+          bookingId: inv.booking.publicId,
+          cancellationFee: Number(inv.cancellationFee).toFixed(2),
+          reason: inv.reason,
+          date: inv.generatedAt
+        })),
+        totalCancellations: history.length,
+        totalOutstanding: Number(totalOutstanding).toFixed(2),
+      }
+    });
+
+  } catch (error) {
+    console.error("Error fetching cancellation history:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+      message: "Internal server error while fetching cancellation history",
     });
   }
 };

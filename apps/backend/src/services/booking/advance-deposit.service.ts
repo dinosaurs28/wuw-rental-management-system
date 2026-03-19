@@ -1,0 +1,290 @@
+import { prisma, BookingStatus, DepositMethod, Booking, CancellationInvoice } from "@repo/database/client";
+import { createID } from "../../utils/nanoID.js";
+
+// Helper type for billing breakdown
+export interface FinalBillingBreakdown {
+  totalBill: string;
+  advance: { paid: string; deducted: string };
+  deposit: { collected: string; setOff: string; toRefund: string };
+  balance: { toPay: string; credit: string };
+}
+
+export class AdvanceDepositService {
+  
+  // ========================================
+  // ADVANCE PAYMENT METHODS
+  // ========================================
+  
+  /**
+   * Record advance payment after verification
+   */
+  async recordAdvancePayment(bookingId: number, amount: number, transactionId: string, userId: number): Promise<Booking> {
+    const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
+    if (!booking) throw new Error("Booking not found");
+    if (booking.status !== BookingStatus.HOLD) throw new Error("Booking is not in HOLD status");
+
+    const updatedBooking = await prisma.booking.update({
+      where: { id: bookingId },
+      data: {
+        advanceAmount: amount,
+        advancePaidAt: new Date(),
+        advancePaymentId: transactionId,
+        advancePaymentMode: DepositMethod.ONLINE_RAZORPAY, // Mapping PhonePe to existing ONLINE enum
+        status: BookingStatus.CONFIRMED,
+        paymentStatus: "SUCCESS",
+      }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        publicId: createID(),
+        userId: userId,
+        action: "RECORD_ADVANCE_PAYMENT",
+        entity: "Booking",
+        entityId: bookingId.toString(),
+      }
+    });
+
+    return updatedBooking;
+  }
+  
+  // ========================================
+  // SAFETY DEPOSIT METHODS
+  // ========================================
+  
+  /**
+   * Record safety deposit during vehicle pickup (BM only)
+   */
+  async recordSafetyDeposit(bookingId: number, amount: number, method: DepositMethod, collectedBy: number): Promise<Booking> {
+    const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
+    if (!booking) throw new Error("Booking not found");
+    if (booking.status !== BookingStatus.CONFIRMED && booking.status !== BookingStatus.PICKED_UP) {
+      throw new Error("Booking must be CONFIRMED or PICKED_UP");
+    }
+
+    const updatedBooking = await prisma.booking.update({
+      where: { id: bookingId },
+      data: {
+        safetyDeposit: amount,
+        safetyDepositMethod: method,
+        safetyDepositPaidAt: new Date(),
+      }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        publicId: createID(),
+        userId: collectedBy,
+        action: "RECORD_SAFETY_DEPOSIT",
+        entity: "Booking",
+        entityId: bookingId.toString(),
+      }
+    });
+
+    return updatedBooking;
+  }
+  
+  // ========================================
+  // NO-SHOW CANCELLATION
+  // ========================================
+  
+  /**
+   * Handle no-show cancellation with invoice generation
+   */
+  async handleNoShowCancellation(bookingId: number, cancelledBy: number, reason: string = "No Show"): Promise<{ booking: Booking; cancellationInvoice: CancellationInvoice }> {
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { customer: true }
+    });
+    
+    if (!booking) throw new Error("Booking not found");
+    if (booking.status === BookingStatus.CANCELLED || booking.status === BookingStatus.RETURNED) {
+      throw new Error("Booking cannot be cancelled from current state");
+    }
+
+    return await prisma.$transaction(async (tx) => {
+      const updatedBooking = await tx.booking.update({
+        where: { id: bookingId },
+        data: {
+          status: BookingStatus.CANCELLED,
+          cancelledAt: new Date(),
+          cancellationReason: reason,
+        }
+      });
+
+      const invoiceNumber = await this.generateInvoiceNumber();
+      const advanceAmount = Number(booking.advanceAmount || 0);
+
+      const cancellationInvoice = await tx.cancellationInvoice.create({
+        data: {
+          publicId: createID(),
+          bookingId: bookingId,
+          customerId: booking.customerId,
+          advanceAmount: advanceAmount,
+          cancellationFee: advanceAmount, // Forfeit 100% of advance
+          reason: reason,
+          invoiceNumber: invoiceNumber,
+          generatedAt: new Date(),
+        }
+      });
+
+      await tx.auditLog.create({
+        data: {
+          publicId: createID(),
+          userId: cancelledBy,
+          action: "CANCEL_BOOKING_NO_SHOW",
+          entity: "Booking",
+          entityId: bookingId.toString(),
+        }
+      });
+
+      return { booking: updatedBooking, cancellationInvoice };
+    });
+  }
+  
+  // ========================================
+  // FINAL BILLING
+  // ========================================
+  
+  /**
+   * Process final billing with advance and deposit settlement
+   */
+  async processFinalBilling(bookingId: number, totalBillAmount: number, customerChoiceSetOff: boolean) {
+    const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
+    if (!booking) throw new Error("Booking not found");
+    // Ensure it's in a state ready for final billing, usually RETURNED
+    if (booking.status !== BookingStatus.RETURNED) {
+      throw new Error("Booking must be RETURNED to process final billing");
+    }
+
+    let amountToPay = Number(totalBillAmount);
+    const advanceAmount = Number(booking.advanceAmount || 0);
+    const safetyDeposit = Number(booking.safetyDeposit || 0);
+
+    // STEP 1: Deduct Advance (ALWAYS)
+    amountToPay = amountToPay - advanceAmount;
+
+    let depositUsed = 0;
+    let depositToRefund = 0;
+
+    // STEP 2: Handle Deposit (Customer Choice)
+    if (customerChoiceSetOff && safetyDeposit > 0) {
+      if (amountToPay > 0) {
+        depositUsed = Math.min(safetyDeposit, amountToPay);
+        amountToPay = amountToPay - depositUsed;
+        depositToRefund = safetyDeposit - depositUsed;
+      } else {
+        depositToRefund = safetyDeposit;
+      }
+    } else {
+      depositToRefund = safetyDeposit;
+    }
+
+    // STEP 3: Calculate Final
+    let finalAmountToPay = 0;
+    let creditToCustomer = 0;
+
+    if (amountToPay > 0) {
+      finalAmountToPay = amountToPay;
+      creditToCustomer = 0;
+    } else {
+      finalAmountToPay = 0;
+      creditToCustomer = Math.abs(amountToPay);
+    }
+
+    if (customerChoiceSetOff && depositUsed > 0) {
+      await prisma.booking.update({
+        where: { id: bookingId },
+        data: { safetyDepositSetOff: true }
+      });
+    }
+
+    return {
+      totalBill: totalBillAmount.toFixed(2),
+      advance: {
+        paid: advanceAmount.toFixed(2),
+        deducted: advanceAmount.toFixed(2),
+      },
+      deposit: {
+        collected: safetyDeposit.toFixed(2),
+        setOff: depositUsed.toFixed(2),
+        toRefund: depositToRefund.toFixed(2),
+      },
+      balance: {
+        toPay: finalAmountToPay.toFixed(2),
+        credit: creditToCustomer.toFixed(2),
+      }
+    } as FinalBillingBreakdown;
+  }
+  
+  // ========================================
+  // REFUND PROCESSING
+  // ========================================
+  
+  /**
+   * Refund safety deposit to customer
+   */
+  async refundSafetyDeposit(bookingId: number, amount: number, method: DepositMethod, refundedBy: number): Promise<{ refundId: string; status: string; updatedBooking: Booking }> {
+    const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
+    if (!booking) throw new Error("Booking not found");
+    if (booking.safetyDepositRefunded) throw new Error("Safety deposit already refunded");
+
+    // In a real scenario, initiate actual refund if online:
+    // if (method === DepositMethod.ONLINE_RAZORPAY) await phonePeService.initiateRefund(...)
+
+    const updatedBooking = await prisma.booking.update({
+      where: { id: bookingId },
+      data: {
+        safetyDepositRefunded: true,
+        safetyDepositRefundedAt: new Date(),
+      }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        publicId: createID(),
+        userId: refundedBy,
+        action: "REFUND_SAFETY_DEPOSIT",
+        entity: "Booking",
+        entityId: bookingId.toString(),
+      }
+    });
+
+    return { refundId: createID(), status: "SUCCESS", updatedBooking };
+  }
+  
+  // ========================================
+  // HELPER METHODS
+  // ========================================
+  
+  /**
+   * Get customer cancellation history
+   */
+  async getCustomerCancellationHistory(customerId: number): Promise<(CancellationInvoice & { booking: Booking })[]> {
+    return await prisma.cancellationInvoice.findMany({
+      where: { customerId: customerId },
+      orderBy: { generatedAt: 'desc' },
+      include: { booking: true }
+    });
+  }
+  
+  /**
+   * Calculate outstanding cancellation fees
+   */
+  async getOutstandingCancellationFees(customerId: number) {
+    const invoices = await prisma.cancellationInvoice.findMany({
+      where: { customerId: customerId },
+    });
+    return invoices.reduce((sum, inv) => sum + Number(inv.cancellationFee), 0);
+  }
+  
+  /**
+   * Generate unique cancellation invoice number
+   */
+  private async generateInvoiceNumber() {
+    const date = new Date();
+    const yyyymm = `${date.getFullYear()}${(date.getMonth()+1).toString().padStart(2, '0')}`;
+    const rand = Math.floor(1000 + Math.random() * 9000);
+    return `CINV-${yyyymm}-${rand}`;
+  }
+}

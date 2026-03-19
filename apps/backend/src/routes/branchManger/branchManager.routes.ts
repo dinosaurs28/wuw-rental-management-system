@@ -6,6 +6,10 @@ import { GetDashboardStats } from "../../controller/branchManager/dashboard.cont
 import {
   GetActiveBookings,
   GetPendingApprovals,
+  CollectSafetyDeposit,
+  CancelNoShow,
+  CalculateFinalBilling,
+  RefundDeposit,
 } from "../../controller/branchManager/bookings.controller.js";
 
 import {
@@ -57,6 +61,10 @@ router.get("/dashboard/stats", ManagerCheck, GetDashboardStats);
 router.get("/dashboard/revenue", ManagerCheck, GetRevenueStats);
 router.get("/dashboard/bookings/active", ManagerCheck, GetActiveBookings);
 router.get("/dashboard/bookings/pending", ManagerCheck, GetPendingApprovals);
+router.post("/dashboard/bookings/:bookingId/safety-deposit", ManagerCheck, CollectSafetyDeposit);
+router.post("/dashboard/bookings/:bookingId/cancel-no-show", ManagerCheck, CancelNoShow);
+router.post("/dashboard/bookings/:bookingId/final-billing", ManagerCheck, CalculateFinalBilling);
+router.post("/dashboard/bookings/:bookingId/refund-deposit", ManagerCheck, RefundDeposit);
 router.get("/dashboard/damage-reports", ManagerCheck, GetDamageReports);
 router.get("/damage-reports", ManagerCheck, GetDamageReportList);
 router.get(

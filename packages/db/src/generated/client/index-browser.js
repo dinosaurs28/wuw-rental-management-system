@@ -383,6 +383,18 @@ exports.Prisma.BookingScalarFieldEnum = {
   createdById: 'createdById',
   depositMethod: 'depositMethod',
   kycFileId: 'kycFileId',
+  advanceAmount: 'advanceAmount',
+  advancePaidAt: 'advancePaidAt',
+  advancePaymentId: 'advancePaymentId',
+  advancePaymentMode: 'advancePaymentMode',
+  safetyDeposit: 'safetyDeposit',
+  safetyDepositPaidAt: 'safetyDepositPaidAt',
+  safetyDepositMethod: 'safetyDepositMethod',
+  safetyDepositRefunded: 'safetyDepositRefunded',
+  safetyDepositRefundedAt: 'safetyDepositRefundedAt',
+  safetyDepositSetOff: 'safetyDepositSetOff',
+  cancelledAt: 'cancelledAt',
+  cancellationReason: 'cancellationReason',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   deletedAt: 'deletedAt'
@@ -523,6 +535,24 @@ exports.Prisma.TimezoneSettingScalarFieldEnum = {
   publicId: 'publicId',
   timezone: 'timezone',
   enabled: 'enabled',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CancellationInvoiceScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  bookingId: 'bookingId',
+  customerId: 'customerId',
+  advanceAmount: 'advanceAmount',
+  cancellationFee: 'cancellationFee',
+  reason: 'reason',
+  notes: 'notes',
+  invoiceNumber: 'invoiceNumber',
+  invoicePdfFileId: 'invoicePdfFileId',
+  generatedAt: 'generatedAt',
+  sentToCustomer: 'sentToCustomer',
+  sentAt: 'sentAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -684,7 +714,8 @@ exports.Prisma.ModelName = {
   AuditLog: 'AuditLog',
   SystemSetting: 'SystemSetting',
   GSTRule: 'GSTRule',
-  TimezoneSetting: 'TimezoneSetting'
+  TimezoneSetting: 'TimezoneSetting',
+  CancellationInvoice: 'CancellationInvoice'
 };
 
 /**
