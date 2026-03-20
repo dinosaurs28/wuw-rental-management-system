@@ -21,7 +21,7 @@ export const createVehicleSchema = z.object({
   categoryId: z.coerce.number().int().positive(),
   policyNumber: z.string().min(1, "Policy Number is required"),
   provider: z.string().min(1, "Provider is required"),
-  
+
   // Custom Pricing Fields
   hourlyRate: z.coerce.number().min(0).optional(),
   price12Hour: z.coerce.number().min(0).optional(),
@@ -32,7 +32,10 @@ export const createVehicleSchema = z.object({
   freeKmMonthly: z.coerce.number().min(0).optional(),
   extraKmRate: z.coerce.number().min(0).optional(),
   extraHourRate: z.coerce.number().min(0).optional(),
-  isCustomPricingEnabled: z.boolean().or(z.string().transform(v => v === 'true')).optional(),
+  isCustomPricingEnabled: z
+    .boolean()
+    .or(z.string().transform((v) => v === "true"))
+    .optional(),
 });
 
 export const editVehicleSchema = createVehicleSchema.partial().extend({
@@ -87,3 +90,72 @@ export const pricingDiscountSlabSchema = z.object({
   multiplier: z.number().min(0).max(1), // Assuming 0.1to 1.0 (e.g. 0.9 = 10% off) or 0-100? The prisma model says Decimal. Usually multipliers are like 0.9 for 10% off. Let's assume user inputs Multiplier factor.
   // User said "multiplier Decimal".
 });
+
+export const vehicleSwapSchema = z
+  .object({
+    newVehicleId: z.coerce
+      .number()
+      .int()
+      .positive("New vehicle ID is required"),
+    reason: z.enum(
+      [
+        "CUSTOMER_REQUEST",
+        "MAINTENANCE",
+        "UPGRADE",
+        "DOWNGRADE",
+        "DAMAGE",
+        "OTHER",
+      ],
+      {
+        errorMap: () => ({ message: "Valid swap reason is required" }),
+      },
+    ),
+    reasonNotes: z.string().max(500).optional(),
+    markOriginalForMaintenance: z.boolean().optional().default(false),
+    originalVehicleNotes: z.string().max(1000).optional(),
+  })
+  .refine(
+    (data) => {
+      // If marking for maintenance, notes should be provided
+      if (data.markOriginalForMaintenance && !data.originalVehicleNotes) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message:
+        "Original vehicle notes are required when marking for maintenance",
+      path: ["originalVehicleNotes"],
+    },
+  );
+
+export const swapHistoryQuerySchema = z
+  .object({
+    bookingId: z.coerce.number().int().positive().optional(),
+    startDate: z.string().datetime().optional(),
+    endDate: z.string().datetime().optional(),
+    vehicleId: z.coerce.number().int().positive().optional(),
+    reason: z
+      .enum([
+        "CUSTOMER_REQUEST",
+        "MAINTENANCE",
+        "UPGRADE",
+        "DOWNGRADE",
+        "DAMAGE",
+        "OTHER",
+      ])
+      .optional(),
+  })
+  .refine(
+    (data) => {
+      // If bookingId is not provided, startDate and endDate are required
+      if (!data.bookingId && (!data.startDate || !data.endDate)) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message:
+        "Start date and end date are required when bookingId is not provided",
+    },
+  );

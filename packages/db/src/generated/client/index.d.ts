@@ -198,6 +198,11 @@ export type BranchFeatureFlag = $Result.DefaultSelection<Prisma.$BranchFeatureFl
  * 
  */
 export type VehicleFeatureFlag = $Result.DefaultSelection<Prisma.$VehicleFeatureFlagPayload>
+/**
+ * Model VehicleSwap
+ * 
+ */
+export type VehicleSwap = $Result.DefaultSelection<Prisma.$VehicleSwapPayload>
 
 /**
  * Enums
@@ -356,6 +361,18 @@ export const FeatureFlagScope: {
 
 export type FeatureFlagScope = (typeof FeatureFlagScope)[keyof typeof FeatureFlagScope]
 
+
+export const SwapReason: {
+  CUSTOMER_REQUEST: 'CUSTOMER_REQUEST',
+  MAINTENANCE: 'MAINTENANCE',
+  UPGRADE: 'UPGRADE',
+  DOWNGRADE: 'DOWNGRADE',
+  DAMAGE: 'DAMAGE',
+  OTHER: 'OTHER'
+};
+
+export type SwapReason = (typeof SwapReason)[keyof typeof SwapReason]
+
 }
 
 export type AuthProvider = $Enums.AuthProvider
@@ -421,6 +438,10 @@ export const InvoiceStatus: typeof $Enums.InvoiceStatus
 export type FeatureFlagScope = $Enums.FeatureFlagScope
 
 export const FeatureFlagScope: typeof $Enums.FeatureFlagScope
+
+export type SwapReason = $Enums.SwapReason
+
+export const SwapReason: typeof $Enums.SwapReason
 
 /**
  * ##  Prisma Client ʲˢ
@@ -914,6 +935,16 @@ export class PrismaClient<
     * ```
     */
   get vehicleFeatureFlag(): Prisma.VehicleFeatureFlagDelegate<ExtArgs>;
+
+  /**
+   * `prisma.vehicleSwap`: Exposes CRUD operations for the **VehicleSwap** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more VehicleSwaps
+    * const vehicleSwaps = await prisma.vehicleSwap.findMany()
+    * ```
+    */
+  get vehicleSwap(): Prisma.VehicleSwapDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -1391,7 +1422,8 @@ export namespace Prisma {
     CancellationInvoice: 'CancellationInvoice',
     FeatureFlag: 'FeatureFlag',
     BranchFeatureFlag: 'BranchFeatureFlag',
-    VehicleFeatureFlag: 'VehicleFeatureFlag'
+    VehicleFeatureFlag: 'VehicleFeatureFlag',
+    VehicleSwap: 'VehicleSwap'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1407,7 +1439,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehicle" | "vehiclePricingOverride" | "vehicleCustomPricing" | "branchPricingDefaults" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "gSTRule" | "timezoneSetting" | "cancellationInvoice" | "featureFlag" | "branchFeatureFlag" | "vehicleFeatureFlag"
+      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehicle" | "vehiclePricingOverride" | "vehicleCustomPricing" | "branchPricingDefaults" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "gSTRule" | "timezoneSetting" | "cancellationInvoice" | "featureFlag" | "branchFeatureFlag" | "vehicleFeatureFlag" | "vehicleSwap"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -4001,6 +4033,76 @@ export namespace Prisma {
           }
         }
       }
+      VehicleSwap: {
+        payload: Prisma.$VehicleSwapPayload<ExtArgs>
+        fields: Prisma.VehicleSwapFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.VehicleSwapFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleSwapPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.VehicleSwapFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleSwapPayload>
+          }
+          findFirst: {
+            args: Prisma.VehicleSwapFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleSwapPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.VehicleSwapFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleSwapPayload>
+          }
+          findMany: {
+            args: Prisma.VehicleSwapFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleSwapPayload>[]
+          }
+          create: {
+            args: Prisma.VehicleSwapCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleSwapPayload>
+          }
+          createMany: {
+            args: Prisma.VehicleSwapCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.VehicleSwapCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleSwapPayload>[]
+          }
+          delete: {
+            args: Prisma.VehicleSwapDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleSwapPayload>
+          }
+          update: {
+            args: Prisma.VehicleSwapUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleSwapPayload>
+          }
+          deleteMany: {
+            args: Prisma.VehicleSwapDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.VehicleSwapUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.VehicleSwapUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehicleSwapPayload>
+          }
+          aggregate: {
+            args: Prisma.VehicleSwapAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateVehicleSwap>
+          }
+          groupBy: {
+            args: Prisma.VehicleSwapGroupByArgs<ExtArgs>
+            result: $Utils.Optional<VehicleSwapGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.VehicleSwapCountArgs<ExtArgs>
+            result: $Utils.Optional<VehicleSwapCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -4167,6 +4269,7 @@ export namespace Prisma {
     auditLogs: number
     bookingsCreated: number
     approvedDamageReports: number
+    vehicleSwaps: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -4175,6 +4278,7 @@ export namespace Prisma {
     auditLogs?: boolean | UserCountOutputTypeCountAuditLogsArgs
     bookingsCreated?: boolean | UserCountOutputTypeCountBookingsCreatedArgs
     approvedDamageReports?: boolean | UserCountOutputTypeCountApprovedDamageReportsArgs
+    vehicleSwaps?: boolean | UserCountOutputTypeCountVehicleSwapsArgs
   }
 
   // Custom InputTypes
@@ -4221,6 +4325,13 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountApprovedDamageReportsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: DamageReportWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountVehicleSwapsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VehicleSwapWhereInput
   }
 
 
@@ -4512,6 +4623,8 @@ export namespace Prisma {
     images: number
     bookingItems: number
     featureFlags: number
+    swapsAsOriginal: number
+    swapsAsNew: number
   }
 
   export type VehicleCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -4521,6 +4634,8 @@ export namespace Prisma {
     images?: boolean | VehicleCountOutputTypeCountImagesArgs
     bookingItems?: boolean | VehicleCountOutputTypeCountBookingItemsArgs
     featureFlags?: boolean | VehicleCountOutputTypeCountFeatureFlagsArgs
+    swapsAsOriginal?: boolean | VehicleCountOutputTypeCountSwapsAsOriginalArgs
+    swapsAsNew?: boolean | VehicleCountOutputTypeCountSwapsAsNewArgs
   }
 
   // Custom InputTypes
@@ -4576,6 +4691,20 @@ export namespace Prisma {
     where?: VehicleFeatureFlagWhereInput
   }
 
+  /**
+   * VehicleCountOutputType without action
+   */
+  export type VehicleCountOutputTypeCountSwapsAsOriginalArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VehicleSwapWhereInput
+  }
+
+  /**
+   * VehicleCountOutputType without action
+   */
+  export type VehicleCountOutputTypeCountSwapsAsNewArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VehicleSwapWhereInput
+  }
+
 
   /**
    * Count Type BookingCountOutputType
@@ -4585,12 +4714,14 @@ export namespace Prisma {
     photos: number
     damages: number
     items: number
+    vehicleSwaps: number
   }
 
   export type BookingCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     photos?: boolean | BookingCountOutputTypeCountPhotosArgs
     damages?: boolean | BookingCountOutputTypeCountDamagesArgs
     items?: boolean | BookingCountOutputTypeCountItemsArgs
+    vehicleSwaps?: boolean | BookingCountOutputTypeCountVehicleSwapsArgs
   }
 
   // Custom InputTypes
@@ -4623,6 +4754,13 @@ export namespace Prisma {
    */
   export type BookingCountOutputTypeCountItemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: BookingItemWhereInput
+  }
+
+  /**
+   * BookingCountOutputType without action
+   */
+  export type BookingCountOutputTypeCountVehicleSwapsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VehicleSwapWhereInput
   }
 
 
@@ -5014,6 +5152,7 @@ export namespace Prisma {
     auditLogs?: boolean | User$auditLogsArgs<ExtArgs>
     bookingsCreated?: boolean | User$bookingsCreatedArgs<ExtArgs>
     approvedDamageReports?: boolean | User$approvedDamageReportsArgs<ExtArgs>
+    vehicleSwaps?: boolean | User$vehicleSwapsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -5058,6 +5197,7 @@ export namespace Prisma {
     auditLogs?: boolean | User$auditLogsArgs<ExtArgs>
     bookingsCreated?: boolean | User$bookingsCreatedArgs<ExtArgs>
     approvedDamageReports?: boolean | User$approvedDamageReportsArgs<ExtArgs>
+    vehicleSwaps?: boolean | User$vehicleSwapsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type UserIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -5074,6 +5214,7 @@ export namespace Prisma {
       auditLogs: Prisma.$AuditLogPayload<ExtArgs>[]
       bookingsCreated: Prisma.$BookingPayload<ExtArgs>[]
       approvedDamageReports: Prisma.$DamageReportPayload<ExtArgs>[]
+      vehicleSwaps: Prisma.$VehicleSwapPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -5460,6 +5601,7 @@ export namespace Prisma {
     auditLogs<T extends User$auditLogsArgs<ExtArgs> = {}>(args?: Subset<T, User$auditLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AuditLogPayload<ExtArgs>, T, "findMany"> | Null>
     bookingsCreated<T extends User$bookingsCreatedArgs<ExtArgs> = {}>(args?: Subset<T, User$bookingsCreatedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findMany"> | Null>
     approvedDamageReports<T extends User$approvedDamageReportsArgs<ExtArgs> = {}>(args?: Subset<T, User$approvedDamageReportsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DamageReportPayload<ExtArgs>, T, "findMany"> | Null>
+    vehicleSwaps<T extends User$vehicleSwapsArgs<ExtArgs> = {}>(args?: Subset<T, User$vehicleSwapsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleSwapPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -5956,6 +6098,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: DamageReportScalarFieldEnum | DamageReportScalarFieldEnum[]
+  }
+
+  /**
+   * User.vehicleSwaps
+   */
+  export type User$vehicleSwapsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleSwap
+     */
+    select?: VehicleSwapSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleSwapInclude<ExtArgs> | null
+    where?: VehicleSwapWhereInput
+    orderBy?: VehicleSwapOrderByWithRelationInput | VehicleSwapOrderByWithRelationInput[]
+    cursor?: VehicleSwapWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: VehicleSwapScalarFieldEnum | VehicleSwapScalarFieldEnum[]
   }
 
   /**
@@ -14532,10 +14694,12 @@ export namespace Prisma {
 
   export type VehicleCategoryAvgAggregateOutputType = {
     id: number | null
+    rank: number | null
   }
 
   export type VehicleCategorySumAggregateOutputType = {
     id: number | null
+    rank: number | null
   }
 
   export type VehicleCategoryMinAggregateOutputType = {
@@ -14543,6 +14707,7 @@ export namespace Prisma {
     publicId: string | null
     name: string | null
     description: string | null
+    rank: number | null
   }
 
   export type VehicleCategoryMaxAggregateOutputType = {
@@ -14550,6 +14715,7 @@ export namespace Prisma {
     publicId: string | null
     name: string | null
     description: string | null
+    rank: number | null
   }
 
   export type VehicleCategoryCountAggregateOutputType = {
@@ -14557,16 +14723,19 @@ export namespace Prisma {
     publicId: number
     name: number
     description: number
+    rank: number
     _all: number
   }
 
 
   export type VehicleCategoryAvgAggregateInputType = {
     id?: true
+    rank?: true
   }
 
   export type VehicleCategorySumAggregateInputType = {
     id?: true
+    rank?: true
   }
 
   export type VehicleCategoryMinAggregateInputType = {
@@ -14574,6 +14743,7 @@ export namespace Prisma {
     publicId?: true
     name?: true
     description?: true
+    rank?: true
   }
 
   export type VehicleCategoryMaxAggregateInputType = {
@@ -14581,6 +14751,7 @@ export namespace Prisma {
     publicId?: true
     name?: true
     description?: true
+    rank?: true
   }
 
   export type VehicleCategoryCountAggregateInputType = {
@@ -14588,6 +14759,7 @@ export namespace Prisma {
     publicId?: true
     name?: true
     description?: true
+    rank?: true
     _all?: true
   }
 
@@ -14682,6 +14854,7 @@ export namespace Prisma {
     publicId: string
     name: string
     description: string | null
+    rank: number
     _count: VehicleCategoryCountAggregateOutputType | null
     _avg: VehicleCategoryAvgAggregateOutputType | null
     _sum: VehicleCategorySumAggregateOutputType | null
@@ -14708,6 +14881,7 @@ export namespace Prisma {
     publicId?: boolean
     name?: boolean
     description?: boolean
+    rank?: boolean
     pricingDiscountSlabs?: boolean | VehicleCategory$pricingDiscountSlabsArgs<ExtArgs>
     categoryDepositSettings?: boolean | VehicleCategory$categoryDepositSettingsArgs<ExtArgs>
     vehicles?: boolean | VehicleCategory$vehiclesArgs<ExtArgs>
@@ -14721,6 +14895,7 @@ export namespace Prisma {
     publicId?: boolean
     name?: boolean
     description?: boolean
+    rank?: boolean
   }, ExtArgs["result"]["vehicleCategory"]>
 
   export type VehicleCategorySelectScalar = {
@@ -14728,6 +14903,7 @@ export namespace Prisma {
     publicId?: boolean
     name?: boolean
     description?: boolean
+    rank?: boolean
   }
 
   export type VehicleCategoryInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -14754,6 +14930,7 @@ export namespace Prisma {
       publicId: string
       name: string
       description: string | null
+      rank: number
     }, ExtArgs["result"]["vehicleCategory"]>
     composites: {}
   }
@@ -15156,6 +15333,7 @@ export namespace Prisma {
     readonly publicId: FieldRef<"VehicleCategory", 'String'>
     readonly name: FieldRef<"VehicleCategory", 'String'>
     readonly description: FieldRef<"VehicleCategory", 'String'>
+    readonly rank: FieldRef<"VehicleCategory", 'Int'>
   }
     
 
@@ -15889,6 +16067,8 @@ export namespace Prisma {
     images?: boolean | Vehicle$imagesArgs<ExtArgs>
     bookingItems?: boolean | Vehicle$bookingItemsArgs<ExtArgs>
     featureFlags?: boolean | Vehicle$featureFlagsArgs<ExtArgs>
+    swapsAsOriginal?: boolean | Vehicle$swapsAsOriginalArgs<ExtArgs>
+    swapsAsNew?: boolean | Vehicle$swapsAsNewArgs<ExtArgs>
     _count?: boolean | VehicleCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["vehicle"]>
 
@@ -15939,6 +16119,8 @@ export namespace Prisma {
     images?: boolean | Vehicle$imagesArgs<ExtArgs>
     bookingItems?: boolean | Vehicle$bookingItemsArgs<ExtArgs>
     featureFlags?: boolean | Vehicle$featureFlagsArgs<ExtArgs>
+    swapsAsOriginal?: boolean | Vehicle$swapsAsOriginalArgs<ExtArgs>
+    swapsAsNew?: boolean | Vehicle$swapsAsNewArgs<ExtArgs>
     _count?: boolean | VehicleCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type VehicleIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -15959,6 +16141,8 @@ export namespace Prisma {
       images: Prisma.$VehicleImagePayload<ExtArgs>[]
       bookingItems: Prisma.$BookingItemPayload<ExtArgs>[]
       featureFlags: Prisma.$VehicleFeatureFlagPayload<ExtArgs>[]
+      swapsAsOriginal: Prisma.$VehicleSwapPayload<ExtArgs>[]
+      swapsAsNew: Prisma.$VehicleSwapPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -16349,6 +16533,8 @@ export namespace Prisma {
     images<T extends Vehicle$imagesArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$imagesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleImagePayload<ExtArgs>, T, "findMany"> | Null>
     bookingItems<T extends Vehicle$bookingItemsArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$bookingItemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingItemPayload<ExtArgs>, T, "findMany"> | Null>
     featureFlags<T extends Vehicle$featureFlagsArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$featureFlagsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleFeatureFlagPayload<ExtArgs>, T, "findMany"> | Null>
+    swapsAsOriginal<T extends Vehicle$swapsAsOriginalArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$swapsAsOriginalArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleSwapPayload<ExtArgs>, T, "findMany"> | Null>
+    swapsAsNew<T extends Vehicle$swapsAsNewArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$swapsAsNewArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleSwapPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -16866,6 +17052,46 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: VehicleFeatureFlagScalarFieldEnum | VehicleFeatureFlagScalarFieldEnum[]
+  }
+
+  /**
+   * Vehicle.swapsAsOriginal
+   */
+  export type Vehicle$swapsAsOriginalArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleSwap
+     */
+    select?: VehicleSwapSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleSwapInclude<ExtArgs> | null
+    where?: VehicleSwapWhereInput
+    orderBy?: VehicleSwapOrderByWithRelationInput | VehicleSwapOrderByWithRelationInput[]
+    cursor?: VehicleSwapWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: VehicleSwapScalarFieldEnum | VehicleSwapScalarFieldEnum[]
+  }
+
+  /**
+   * Vehicle.swapsAsNew
+   */
+  export type Vehicle$swapsAsNewArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleSwap
+     */
+    select?: VehicleSwapSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleSwapInclude<ExtArgs> | null
+    where?: VehicleSwapWhereInput
+    orderBy?: VehicleSwapOrderByWithRelationInput | VehicleSwapOrderByWithRelationInput[]
+    cursor?: VehicleSwapWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: VehicleSwapScalarFieldEnum | VehicleSwapScalarFieldEnum[]
   }
 
   /**
@@ -26756,6 +26982,7 @@ export namespace Prisma {
     deposit?: boolean | Booking$depositArgs<ExtArgs>
     invoice?: boolean | Booking$invoiceArgs<ExtArgs>
     cancellationInvoice?: boolean | Booking$cancellationInvoiceArgs<ExtArgs>
+    vehicleSwaps?: boolean | Booking$vehicleSwapsArgs<ExtArgs>
     _count?: boolean | BookingCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["booking"]>
 
@@ -26868,6 +27095,7 @@ export namespace Prisma {
     deposit?: boolean | Booking$depositArgs<ExtArgs>
     invoice?: boolean | Booking$invoiceArgs<ExtArgs>
     cancellationInvoice?: boolean | Booking$cancellationInvoiceArgs<ExtArgs>
+    vehicleSwaps?: boolean | Booking$vehicleSwapsArgs<ExtArgs>
     _count?: boolean | BookingCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type BookingIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -26890,6 +27118,7 @@ export namespace Prisma {
       deposit: Prisma.$DepositPayload<ExtArgs> | null
       invoice: Prisma.$InvoicePayload<ExtArgs> | null
       cancellationInvoice: Prisma.$CancellationInvoicePayload<ExtArgs> | null
+      vehicleSwaps: Prisma.$VehicleSwapPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -27310,6 +27539,7 @@ export namespace Prisma {
     deposit<T extends Booking$depositArgs<ExtArgs> = {}>(args?: Subset<T, Booking$depositArgs<ExtArgs>>): Prisma__DepositClient<$Result.GetResult<Prisma.$DepositPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     invoice<T extends Booking$invoiceArgs<ExtArgs> = {}>(args?: Subset<T, Booking$invoiceArgs<ExtArgs>>): Prisma__InvoiceClient<$Result.GetResult<Prisma.$InvoicePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     cancellationInvoice<T extends Booking$cancellationInvoiceArgs<ExtArgs> = {}>(args?: Subset<T, Booking$cancellationInvoiceArgs<ExtArgs>>): Prisma__CancellationInvoiceClient<$Result.GetResult<Prisma.$CancellationInvoicePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    vehicleSwaps<T extends Booking$vehicleSwapsArgs<ExtArgs> = {}>(args?: Subset<T, Booking$vehicleSwapsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleSwapPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -27827,6 +28057,26 @@ export namespace Prisma {
      */
     include?: CancellationInvoiceInclude<ExtArgs> | null
     where?: CancellationInvoiceWhereInput
+  }
+
+  /**
+   * Booking.vehicleSwaps
+   */
+  export type Booking$vehicleSwapsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleSwap
+     */
+    select?: VehicleSwapSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleSwapInclude<ExtArgs> | null
+    where?: VehicleSwapWhereInput
+    orderBy?: VehicleSwapOrderByWithRelationInput | VehicleSwapOrderByWithRelationInput[]
+    cursor?: VehicleSwapWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: VehicleSwapScalarFieldEnum | VehicleSwapScalarFieldEnum[]
   }
 
   /**
@@ -36349,6 +36599,7 @@ export namespace Prisma {
     entityId: number
     before: number
     after: number
+    metadata: number
     createdAt: number
     _all: number
   }
@@ -36393,6 +36644,7 @@ export namespace Prisma {
     entityId?: true
     before?: true
     after?: true
+    metadata?: true
     createdAt?: true
     _all?: true
   }
@@ -36492,6 +36744,7 @@ export namespace Prisma {
     entityId: string
     before: JsonValue | null
     after: JsonValue | null
+    metadata: JsonValue | null
     createdAt: Date
     _count: AuditLogCountAggregateOutputType | null
     _avg: AuditLogAvgAggregateOutputType | null
@@ -36523,6 +36776,7 @@ export namespace Prisma {
     entityId?: boolean
     before?: boolean
     after?: boolean
+    metadata?: boolean
     createdAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["auditLog"]>
@@ -36536,6 +36790,7 @@ export namespace Prisma {
     entityId?: boolean
     before?: boolean
     after?: boolean
+    metadata?: boolean
     createdAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["auditLog"]>
@@ -36549,6 +36804,7 @@ export namespace Prisma {
     entityId?: boolean
     before?: boolean
     after?: boolean
+    metadata?: boolean
     createdAt?: boolean
   }
 
@@ -36573,6 +36829,7 @@ export namespace Prisma {
       entityId: string
       before: Prisma.JsonValue | null
       after: Prisma.JsonValue | null
+      metadata: Prisma.JsonValue | null
       createdAt: Date
     }, ExtArgs["result"]["auditLog"]>
     composites: {}
@@ -36976,6 +37233,7 @@ export namespace Prisma {
     readonly entityId: FieldRef<"AuditLog", 'String'>
     readonly before: FieldRef<"AuditLog", 'Json'>
     readonly after: FieldRef<"AuditLog", 'Json'>
+    readonly metadata: FieldRef<"AuditLog", 'Json'>
     readonly createdAt: FieldRef<"AuditLog", 'DateTime'>
   }
     
@@ -44443,6 +44701,1112 @@ export namespace Prisma {
 
 
   /**
+   * Model VehicleSwap
+   */
+
+  export type AggregateVehicleSwap = {
+    _count: VehicleSwapCountAggregateOutputType | null
+    _avg: VehicleSwapAvgAggregateOutputType | null
+    _sum: VehicleSwapSumAggregateOutputType | null
+    _min: VehicleSwapMinAggregateOutputType | null
+    _max: VehicleSwapMaxAggregateOutputType | null
+  }
+
+  export type VehicleSwapAvgAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    originalVehicleId: number | null
+    newVehicleId: number | null
+    swappedById: number | null
+  }
+
+  export type VehicleSwapSumAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    originalVehicleId: number | null
+    newVehicleId: number | null
+    swappedById: number | null
+  }
+
+  export type VehicleSwapMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    bookingId: number | null
+    originalVehicleId: number | null
+    newVehicleId: number | null
+    swappedById: number | null
+    reason: $Enums.SwapReason | null
+    reasonNotes: string | null
+    originalVehicleStatus: $Enums.VehicleStatus | null
+    originalVehicleNotes: string | null
+    swappedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type VehicleSwapMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    bookingId: number | null
+    originalVehicleId: number | null
+    newVehicleId: number | null
+    swappedById: number | null
+    reason: $Enums.SwapReason | null
+    reasonNotes: string | null
+    originalVehicleStatus: $Enums.VehicleStatus | null
+    originalVehicleNotes: string | null
+    swappedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type VehicleSwapCountAggregateOutputType = {
+    id: number
+    publicId: number
+    bookingId: number
+    originalVehicleId: number
+    newVehicleId: number
+    swappedById: number
+    reason: number
+    reasonNotes: number
+    originalVehicleStatus: number
+    originalVehicleNotes: number
+    swappedAt: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type VehicleSwapAvgAggregateInputType = {
+    id?: true
+    bookingId?: true
+    originalVehicleId?: true
+    newVehicleId?: true
+    swappedById?: true
+  }
+
+  export type VehicleSwapSumAggregateInputType = {
+    id?: true
+    bookingId?: true
+    originalVehicleId?: true
+    newVehicleId?: true
+    swappedById?: true
+  }
+
+  export type VehicleSwapMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    originalVehicleId?: true
+    newVehicleId?: true
+    swappedById?: true
+    reason?: true
+    reasonNotes?: true
+    originalVehicleStatus?: true
+    originalVehicleNotes?: true
+    swappedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type VehicleSwapMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    originalVehicleId?: true
+    newVehicleId?: true
+    swappedById?: true
+    reason?: true
+    reasonNotes?: true
+    originalVehicleStatus?: true
+    originalVehicleNotes?: true
+    swappedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type VehicleSwapCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    originalVehicleId?: true
+    newVehicleId?: true
+    swappedById?: true
+    reason?: true
+    reasonNotes?: true
+    originalVehicleStatus?: true
+    originalVehicleNotes?: true
+    swappedAt?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type VehicleSwapAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which VehicleSwap to aggregate.
+     */
+    where?: VehicleSwapWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehicleSwaps to fetch.
+     */
+    orderBy?: VehicleSwapOrderByWithRelationInput | VehicleSwapOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: VehicleSwapWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehicleSwaps from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehicleSwaps.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned VehicleSwaps
+    **/
+    _count?: true | VehicleSwapCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: VehicleSwapAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: VehicleSwapSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: VehicleSwapMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: VehicleSwapMaxAggregateInputType
+  }
+
+  export type GetVehicleSwapAggregateType<T extends VehicleSwapAggregateArgs> = {
+        [P in keyof T & keyof AggregateVehicleSwap]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateVehicleSwap[P]>
+      : GetScalarType<T[P], AggregateVehicleSwap[P]>
+  }
+
+
+
+
+  export type VehicleSwapGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VehicleSwapWhereInput
+    orderBy?: VehicleSwapOrderByWithAggregationInput | VehicleSwapOrderByWithAggregationInput[]
+    by: VehicleSwapScalarFieldEnum[] | VehicleSwapScalarFieldEnum
+    having?: VehicleSwapScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: VehicleSwapCountAggregateInputType | true
+    _avg?: VehicleSwapAvgAggregateInputType
+    _sum?: VehicleSwapSumAggregateInputType
+    _min?: VehicleSwapMinAggregateInputType
+    _max?: VehicleSwapMaxAggregateInputType
+  }
+
+  export type VehicleSwapGroupByOutputType = {
+    id: number
+    publicId: string
+    bookingId: number
+    originalVehicleId: number
+    newVehicleId: number
+    swappedById: number
+    reason: $Enums.SwapReason
+    reasonNotes: string | null
+    originalVehicleStatus: $Enums.VehicleStatus | null
+    originalVehicleNotes: string | null
+    swappedAt: Date
+    createdAt: Date
+    updatedAt: Date
+    _count: VehicleSwapCountAggregateOutputType | null
+    _avg: VehicleSwapAvgAggregateOutputType | null
+    _sum: VehicleSwapSumAggregateOutputType | null
+    _min: VehicleSwapMinAggregateOutputType | null
+    _max: VehicleSwapMaxAggregateOutputType | null
+  }
+
+  type GetVehicleSwapGroupByPayload<T extends VehicleSwapGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<VehicleSwapGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof VehicleSwapGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], VehicleSwapGroupByOutputType[P]>
+            : GetScalarType<T[P], VehicleSwapGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type VehicleSwapSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    originalVehicleId?: boolean
+    newVehicleId?: boolean
+    swappedById?: boolean
+    reason?: boolean
+    reasonNotes?: boolean
+    originalVehicleStatus?: boolean
+    originalVehicleNotes?: boolean
+    swappedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    originalVehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+    newVehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+    swappedBy?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["vehicleSwap"]>
+
+  export type VehicleSwapSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    originalVehicleId?: boolean
+    newVehicleId?: boolean
+    swappedById?: boolean
+    reason?: boolean
+    reasonNotes?: boolean
+    originalVehicleStatus?: boolean
+    originalVehicleNotes?: boolean
+    swappedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    originalVehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+    newVehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+    swappedBy?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["vehicleSwap"]>
+
+  export type VehicleSwapSelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    originalVehicleId?: boolean
+    newVehicleId?: boolean
+    swappedById?: boolean
+    reason?: boolean
+    reasonNotes?: boolean
+    originalVehicleStatus?: boolean
+    originalVehicleNotes?: boolean
+    swappedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type VehicleSwapInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    originalVehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+    newVehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+    swappedBy?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type VehicleSwapIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    originalVehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+    newVehicle?: boolean | VehicleDefaultArgs<ExtArgs>
+    swappedBy?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $VehicleSwapPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "VehicleSwap"
+    objects: {
+      booking: Prisma.$BookingPayload<ExtArgs>
+      originalVehicle: Prisma.$VehiclePayload<ExtArgs>
+      newVehicle: Prisma.$VehiclePayload<ExtArgs>
+      swappedBy: Prisma.$UserPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      bookingId: number
+      originalVehicleId: number
+      newVehicleId: number
+      swappedById: number
+      reason: $Enums.SwapReason
+      reasonNotes: string | null
+      originalVehicleStatus: $Enums.VehicleStatus | null
+      originalVehicleNotes: string | null
+      swappedAt: Date
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["vehicleSwap"]>
+    composites: {}
+  }
+
+  type VehicleSwapGetPayload<S extends boolean | null | undefined | VehicleSwapDefaultArgs> = $Result.GetResult<Prisma.$VehicleSwapPayload, S>
+
+  type VehicleSwapCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<VehicleSwapFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: VehicleSwapCountAggregateInputType | true
+    }
+
+  export interface VehicleSwapDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['VehicleSwap'], meta: { name: 'VehicleSwap' } }
+    /**
+     * Find zero or one VehicleSwap that matches the filter.
+     * @param {VehicleSwapFindUniqueArgs} args - Arguments to find a VehicleSwap
+     * @example
+     * // Get one VehicleSwap
+     * const vehicleSwap = await prisma.vehicleSwap.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends VehicleSwapFindUniqueArgs>(args: SelectSubset<T, VehicleSwapFindUniqueArgs<ExtArgs>>): Prisma__VehicleSwapClient<$Result.GetResult<Prisma.$VehicleSwapPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one VehicleSwap that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {VehicleSwapFindUniqueOrThrowArgs} args - Arguments to find a VehicleSwap
+     * @example
+     * // Get one VehicleSwap
+     * const vehicleSwap = await prisma.vehicleSwap.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends VehicleSwapFindUniqueOrThrowArgs>(args: SelectSubset<T, VehicleSwapFindUniqueOrThrowArgs<ExtArgs>>): Prisma__VehicleSwapClient<$Result.GetResult<Prisma.$VehicleSwapPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first VehicleSwap that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleSwapFindFirstArgs} args - Arguments to find a VehicleSwap
+     * @example
+     * // Get one VehicleSwap
+     * const vehicleSwap = await prisma.vehicleSwap.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends VehicleSwapFindFirstArgs>(args?: SelectSubset<T, VehicleSwapFindFirstArgs<ExtArgs>>): Prisma__VehicleSwapClient<$Result.GetResult<Prisma.$VehicleSwapPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first VehicleSwap that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleSwapFindFirstOrThrowArgs} args - Arguments to find a VehicleSwap
+     * @example
+     * // Get one VehicleSwap
+     * const vehicleSwap = await prisma.vehicleSwap.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends VehicleSwapFindFirstOrThrowArgs>(args?: SelectSubset<T, VehicleSwapFindFirstOrThrowArgs<ExtArgs>>): Prisma__VehicleSwapClient<$Result.GetResult<Prisma.$VehicleSwapPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more VehicleSwaps that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleSwapFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all VehicleSwaps
+     * const vehicleSwaps = await prisma.vehicleSwap.findMany()
+     * 
+     * // Get first 10 VehicleSwaps
+     * const vehicleSwaps = await prisma.vehicleSwap.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const vehicleSwapWithIdOnly = await prisma.vehicleSwap.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends VehicleSwapFindManyArgs>(args?: SelectSubset<T, VehicleSwapFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleSwapPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a VehicleSwap.
+     * @param {VehicleSwapCreateArgs} args - Arguments to create a VehicleSwap.
+     * @example
+     * // Create one VehicleSwap
+     * const VehicleSwap = await prisma.vehicleSwap.create({
+     *   data: {
+     *     // ... data to create a VehicleSwap
+     *   }
+     * })
+     * 
+     */
+    create<T extends VehicleSwapCreateArgs>(args: SelectSubset<T, VehicleSwapCreateArgs<ExtArgs>>): Prisma__VehicleSwapClient<$Result.GetResult<Prisma.$VehicleSwapPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many VehicleSwaps.
+     * @param {VehicleSwapCreateManyArgs} args - Arguments to create many VehicleSwaps.
+     * @example
+     * // Create many VehicleSwaps
+     * const vehicleSwap = await prisma.vehicleSwap.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends VehicleSwapCreateManyArgs>(args?: SelectSubset<T, VehicleSwapCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many VehicleSwaps and returns the data saved in the database.
+     * @param {VehicleSwapCreateManyAndReturnArgs} args - Arguments to create many VehicleSwaps.
+     * @example
+     * // Create many VehicleSwaps
+     * const vehicleSwap = await prisma.vehicleSwap.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many VehicleSwaps and only return the `id`
+     * const vehicleSwapWithIdOnly = await prisma.vehicleSwap.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends VehicleSwapCreateManyAndReturnArgs>(args?: SelectSubset<T, VehicleSwapCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleSwapPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a VehicleSwap.
+     * @param {VehicleSwapDeleteArgs} args - Arguments to delete one VehicleSwap.
+     * @example
+     * // Delete one VehicleSwap
+     * const VehicleSwap = await prisma.vehicleSwap.delete({
+     *   where: {
+     *     // ... filter to delete one VehicleSwap
+     *   }
+     * })
+     * 
+     */
+    delete<T extends VehicleSwapDeleteArgs>(args: SelectSubset<T, VehicleSwapDeleteArgs<ExtArgs>>): Prisma__VehicleSwapClient<$Result.GetResult<Prisma.$VehicleSwapPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one VehicleSwap.
+     * @param {VehicleSwapUpdateArgs} args - Arguments to update one VehicleSwap.
+     * @example
+     * // Update one VehicleSwap
+     * const vehicleSwap = await prisma.vehicleSwap.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends VehicleSwapUpdateArgs>(args: SelectSubset<T, VehicleSwapUpdateArgs<ExtArgs>>): Prisma__VehicleSwapClient<$Result.GetResult<Prisma.$VehicleSwapPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more VehicleSwaps.
+     * @param {VehicleSwapDeleteManyArgs} args - Arguments to filter VehicleSwaps to delete.
+     * @example
+     * // Delete a few VehicleSwaps
+     * const { count } = await prisma.vehicleSwap.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends VehicleSwapDeleteManyArgs>(args?: SelectSubset<T, VehicleSwapDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more VehicleSwaps.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleSwapUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many VehicleSwaps
+     * const vehicleSwap = await prisma.vehicleSwap.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends VehicleSwapUpdateManyArgs>(args: SelectSubset<T, VehicleSwapUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one VehicleSwap.
+     * @param {VehicleSwapUpsertArgs} args - Arguments to update or create a VehicleSwap.
+     * @example
+     * // Update or create a VehicleSwap
+     * const vehicleSwap = await prisma.vehicleSwap.upsert({
+     *   create: {
+     *     // ... data to create a VehicleSwap
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the VehicleSwap we want to update
+     *   }
+     * })
+     */
+    upsert<T extends VehicleSwapUpsertArgs>(args: SelectSubset<T, VehicleSwapUpsertArgs<ExtArgs>>): Prisma__VehicleSwapClient<$Result.GetResult<Prisma.$VehicleSwapPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of VehicleSwaps.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleSwapCountArgs} args - Arguments to filter VehicleSwaps to count.
+     * @example
+     * // Count the number of VehicleSwaps
+     * const count = await prisma.vehicleSwap.count({
+     *   where: {
+     *     // ... the filter for the VehicleSwaps we want to count
+     *   }
+     * })
+    **/
+    count<T extends VehicleSwapCountArgs>(
+      args?: Subset<T, VehicleSwapCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], VehicleSwapCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a VehicleSwap.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleSwapAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends VehicleSwapAggregateArgs>(args: Subset<T, VehicleSwapAggregateArgs>): Prisma.PrismaPromise<GetVehicleSwapAggregateType<T>>
+
+    /**
+     * Group by VehicleSwap.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehicleSwapGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends VehicleSwapGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: VehicleSwapGroupByArgs['orderBy'] }
+        : { orderBy?: VehicleSwapGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, VehicleSwapGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetVehicleSwapGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the VehicleSwap model
+   */
+  readonly fields: VehicleSwapFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for VehicleSwap.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__VehicleSwapClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    booking<T extends BookingDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BookingDefaultArgs<ExtArgs>>): Prisma__BookingClient<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    originalVehicle<T extends VehicleDefaultArgs<ExtArgs> = {}>(args?: Subset<T, VehicleDefaultArgs<ExtArgs>>): Prisma__VehicleClient<$Result.GetResult<Prisma.$VehiclePayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    newVehicle<T extends VehicleDefaultArgs<ExtArgs> = {}>(args?: Subset<T, VehicleDefaultArgs<ExtArgs>>): Prisma__VehicleClient<$Result.GetResult<Prisma.$VehiclePayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    swappedBy<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the VehicleSwap model
+   */ 
+  interface VehicleSwapFieldRefs {
+    readonly id: FieldRef<"VehicleSwap", 'Int'>
+    readonly publicId: FieldRef<"VehicleSwap", 'String'>
+    readonly bookingId: FieldRef<"VehicleSwap", 'Int'>
+    readonly originalVehicleId: FieldRef<"VehicleSwap", 'Int'>
+    readonly newVehicleId: FieldRef<"VehicleSwap", 'Int'>
+    readonly swappedById: FieldRef<"VehicleSwap", 'Int'>
+    readonly reason: FieldRef<"VehicleSwap", 'SwapReason'>
+    readonly reasonNotes: FieldRef<"VehicleSwap", 'String'>
+    readonly originalVehicleStatus: FieldRef<"VehicleSwap", 'VehicleStatus'>
+    readonly originalVehicleNotes: FieldRef<"VehicleSwap", 'String'>
+    readonly swappedAt: FieldRef<"VehicleSwap", 'DateTime'>
+    readonly createdAt: FieldRef<"VehicleSwap", 'DateTime'>
+    readonly updatedAt: FieldRef<"VehicleSwap", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * VehicleSwap findUnique
+   */
+  export type VehicleSwapFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleSwap
+     */
+    select?: VehicleSwapSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleSwapInclude<ExtArgs> | null
+    /**
+     * Filter, which VehicleSwap to fetch.
+     */
+    where: VehicleSwapWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleSwap findUniqueOrThrow
+   */
+  export type VehicleSwapFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleSwap
+     */
+    select?: VehicleSwapSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleSwapInclude<ExtArgs> | null
+    /**
+     * Filter, which VehicleSwap to fetch.
+     */
+    where: VehicleSwapWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleSwap findFirst
+   */
+  export type VehicleSwapFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleSwap
+     */
+    select?: VehicleSwapSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleSwapInclude<ExtArgs> | null
+    /**
+     * Filter, which VehicleSwap to fetch.
+     */
+    where?: VehicleSwapWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehicleSwaps to fetch.
+     */
+    orderBy?: VehicleSwapOrderByWithRelationInput | VehicleSwapOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for VehicleSwaps.
+     */
+    cursor?: VehicleSwapWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehicleSwaps from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehicleSwaps.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of VehicleSwaps.
+     */
+    distinct?: VehicleSwapScalarFieldEnum | VehicleSwapScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleSwap findFirstOrThrow
+   */
+  export type VehicleSwapFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleSwap
+     */
+    select?: VehicleSwapSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleSwapInclude<ExtArgs> | null
+    /**
+     * Filter, which VehicleSwap to fetch.
+     */
+    where?: VehicleSwapWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehicleSwaps to fetch.
+     */
+    orderBy?: VehicleSwapOrderByWithRelationInput | VehicleSwapOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for VehicleSwaps.
+     */
+    cursor?: VehicleSwapWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehicleSwaps from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehicleSwaps.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of VehicleSwaps.
+     */
+    distinct?: VehicleSwapScalarFieldEnum | VehicleSwapScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleSwap findMany
+   */
+  export type VehicleSwapFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleSwap
+     */
+    select?: VehicleSwapSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleSwapInclude<ExtArgs> | null
+    /**
+     * Filter, which VehicleSwaps to fetch.
+     */
+    where?: VehicleSwapWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehicleSwaps to fetch.
+     */
+    orderBy?: VehicleSwapOrderByWithRelationInput | VehicleSwapOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing VehicleSwaps.
+     */
+    cursor?: VehicleSwapWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehicleSwaps from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehicleSwaps.
+     */
+    skip?: number
+    distinct?: VehicleSwapScalarFieldEnum | VehicleSwapScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleSwap create
+   */
+  export type VehicleSwapCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleSwap
+     */
+    select?: VehicleSwapSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleSwapInclude<ExtArgs> | null
+    /**
+     * The data needed to create a VehicleSwap.
+     */
+    data: XOR<VehicleSwapCreateInput, VehicleSwapUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleSwap createMany
+   */
+  export type VehicleSwapCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many VehicleSwaps.
+     */
+    data: VehicleSwapCreateManyInput | VehicleSwapCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * VehicleSwap createManyAndReturn
+   */
+  export type VehicleSwapCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleSwap
+     */
+    select?: VehicleSwapSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many VehicleSwaps.
+     */
+    data: VehicleSwapCreateManyInput | VehicleSwapCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleSwapIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * VehicleSwap update
+   */
+  export type VehicleSwapUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleSwap
+     */
+    select?: VehicleSwapSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleSwapInclude<ExtArgs> | null
+    /**
+     * The data needed to update a VehicleSwap.
+     */
+    data: XOR<VehicleSwapUpdateInput, VehicleSwapUncheckedUpdateInput>
+    /**
+     * Choose, which VehicleSwap to update.
+     */
+    where: VehicleSwapWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleSwap updateMany
+   */
+  export type VehicleSwapUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update VehicleSwaps.
+     */
+    data: XOR<VehicleSwapUpdateManyMutationInput, VehicleSwapUncheckedUpdateManyInput>
+    /**
+     * Filter which VehicleSwaps to update
+     */
+    where?: VehicleSwapWhereInput
+  }
+
+  /**
+   * VehicleSwap upsert
+   */
+  export type VehicleSwapUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleSwap
+     */
+    select?: VehicleSwapSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleSwapInclude<ExtArgs> | null
+    /**
+     * The filter to search for the VehicleSwap to update in case it exists.
+     */
+    where: VehicleSwapWhereUniqueInput
+    /**
+     * In case the VehicleSwap found by the `where` argument doesn't exist, create a new VehicleSwap with this data.
+     */
+    create: XOR<VehicleSwapCreateInput, VehicleSwapUncheckedCreateInput>
+    /**
+     * In case the VehicleSwap was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<VehicleSwapUpdateInput, VehicleSwapUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleSwap delete
+   */
+  export type VehicleSwapDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleSwap
+     */
+    select?: VehicleSwapSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleSwapInclude<ExtArgs> | null
+    /**
+     * Filter which VehicleSwap to delete.
+     */
+    where: VehicleSwapWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehicleSwap deleteMany
+   */
+  export type VehicleSwapDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which VehicleSwaps to delete
+     */
+    where?: VehicleSwapWhereInput
+  }
+
+  /**
+   * VehicleSwap without action
+   */
+  export type VehicleSwapDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleSwap
+     */
+    select?: VehicleSwapSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleSwapInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -44603,7 +45967,8 @@ export namespace Prisma {
     id: 'id',
     publicId: 'publicId',
     name: 'name',
-    description: 'description'
+    description: 'description',
+    rank: 'rank'
   };
 
   export type VehicleCategoryScalarFieldEnum = (typeof VehicleCategoryScalarFieldEnum)[keyof typeof VehicleCategoryScalarFieldEnum]
@@ -44933,6 +46298,7 @@ export namespace Prisma {
     entityId: 'entityId',
     before: 'before',
     after: 'after',
+    metadata: 'metadata',
     createdAt: 'createdAt'
   };
 
@@ -45038,6 +46404,25 @@ export namespace Prisma {
   };
 
   export type VehicleFeatureFlagScalarFieldEnum = (typeof VehicleFeatureFlagScalarFieldEnum)[keyof typeof VehicleFeatureFlagScalarFieldEnum]
+
+
+  export const VehicleSwapScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    bookingId: 'bookingId',
+    originalVehicleId: 'originalVehicleId',
+    newVehicleId: 'newVehicleId',
+    swappedById: 'swappedById',
+    reason: 'reason',
+    reasonNotes: 'reasonNotes',
+    originalVehicleStatus: 'originalVehicleStatus',
+    originalVehicleNotes: 'originalVehicleNotes',
+    swappedAt: 'swappedAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type VehicleSwapScalarFieldEnum = (typeof VehicleSwapScalarFieldEnum)[keyof typeof VehicleSwapScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -45388,6 +46773,20 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'SwapReason'
+   */
+  export type EnumSwapReasonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SwapReason'>
+    
+
+
+  /**
+   * Reference to a field of type 'SwapReason[]'
+   */
+  export type ListEnumSwapReasonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SwapReason[]'>
+    
+
+
+  /**
    * Reference to a field of type 'Float'
    */
   export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -45428,6 +46827,7 @@ export namespace Prisma {
     auditLogs?: AuditLogListRelationFilter
     bookingsCreated?: BookingListRelationFilter
     approvedDamageReports?: DamageReportListRelationFilter
+    vehicleSwaps?: VehicleSwapListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -45451,6 +46851,7 @@ export namespace Prisma {
     auditLogs?: AuditLogOrderByRelationAggregateInput
     bookingsCreated?: BookingOrderByRelationAggregateInput
     approvedDamageReports?: DamageReportOrderByRelationAggregateInput
+    vehicleSwaps?: VehicleSwapOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -45477,6 +46878,7 @@ export namespace Prisma {
     auditLogs?: AuditLogListRelationFilter
     bookingsCreated?: BookingListRelationFilter
     approvedDamageReports?: DamageReportListRelationFilter
+    vehicleSwaps?: VehicleSwapListRelationFilter
   }, "id" | "publicId" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -46173,6 +47575,7 @@ export namespace Prisma {
     publicId?: StringFilter<"VehicleCategory"> | string
     name?: StringFilter<"VehicleCategory"> | string
     description?: StringNullableFilter<"VehicleCategory"> | string | null
+    rank?: IntFilter<"VehicleCategory"> | number
     pricingDiscountSlabs?: PricingDiscountSlabListRelationFilter
     categoryDepositSettings?: CategoryDepositSettingListRelationFilter
     vehicles?: VehicleListRelationFilter
@@ -46185,6 +47588,7 @@ export namespace Prisma {
     publicId?: SortOrder
     name?: SortOrder
     description?: SortOrderInput | SortOrder
+    rank?: SortOrder
     pricingDiscountSlabs?: PricingDiscountSlabOrderByRelationAggregateInput
     categoryDepositSettings?: CategoryDepositSettingOrderByRelationAggregateInput
     vehicles?: VehicleOrderByRelationAggregateInput
@@ -46200,6 +47604,7 @@ export namespace Prisma {
     NOT?: VehicleCategoryWhereInput | VehicleCategoryWhereInput[]
     name?: StringFilter<"VehicleCategory"> | string
     description?: StringNullableFilter<"VehicleCategory"> | string | null
+    rank?: IntFilter<"VehicleCategory"> | number
     pricingDiscountSlabs?: PricingDiscountSlabListRelationFilter
     categoryDepositSettings?: CategoryDepositSettingListRelationFilter
     vehicles?: VehicleListRelationFilter
@@ -46212,6 +47617,7 @@ export namespace Prisma {
     publicId?: SortOrder
     name?: SortOrder
     description?: SortOrderInput | SortOrder
+    rank?: SortOrder
     _count?: VehicleCategoryCountOrderByAggregateInput
     _avg?: VehicleCategoryAvgOrderByAggregateInput
     _max?: VehicleCategoryMaxOrderByAggregateInput
@@ -46227,6 +47633,7 @@ export namespace Prisma {
     publicId?: StringWithAggregatesFilter<"VehicleCategory"> | string
     name?: StringWithAggregatesFilter<"VehicleCategory"> | string
     description?: StringNullableWithAggregatesFilter<"VehicleCategory"> | string | null
+    rank?: IntWithAggregatesFilter<"VehicleCategory"> | number
   }
 
   export type VehicleWhereInput = {
@@ -46257,6 +47664,8 @@ export namespace Prisma {
     images?: VehicleImageListRelationFilter
     bookingItems?: BookingItemListRelationFilter
     featureFlags?: VehicleFeatureFlagListRelationFilter
+    swapsAsOriginal?: VehicleSwapListRelationFilter
+    swapsAsNew?: VehicleSwapListRelationFilter
   }
 
   export type VehicleOrderByWithRelationInput = {
@@ -46284,6 +47693,8 @@ export namespace Prisma {
     images?: VehicleImageOrderByRelationAggregateInput
     bookingItems?: BookingItemOrderByRelationAggregateInput
     featureFlags?: VehicleFeatureFlagOrderByRelationAggregateInput
+    swapsAsOriginal?: VehicleSwapOrderByRelationAggregateInput
+    swapsAsNew?: VehicleSwapOrderByRelationAggregateInput
   }
 
   export type VehicleWhereUniqueInput = Prisma.AtLeast<{
@@ -46314,6 +47725,8 @@ export namespace Prisma {
     images?: VehicleImageListRelationFilter
     bookingItems?: BookingItemListRelationFilter
     featureFlags?: VehicleFeatureFlagListRelationFilter
+    swapsAsOriginal?: VehicleSwapListRelationFilter
+    swapsAsNew?: VehicleSwapListRelationFilter
   }, "id" | "publicId" | "regNo">
 
   export type VehicleOrderByWithAggregationInput = {
@@ -47058,6 +48471,7 @@ export namespace Prisma {
     deposit?: XOR<DepositNullableRelationFilter, DepositWhereInput> | null
     invoice?: XOR<InvoiceNullableRelationFilter, InvoiceWhereInput> | null
     cancellationInvoice?: XOR<CancellationInvoiceNullableRelationFilter, CancellationInvoiceWhereInput> | null
+    vehicleSwaps?: VehicleSwapListRelationFilter
   }
 
   export type BookingOrderByWithRelationInput = {
@@ -47115,6 +48529,7 @@ export namespace Prisma {
     deposit?: DepositOrderByWithRelationInput
     invoice?: InvoiceOrderByWithRelationInput
     cancellationInvoice?: CancellationInvoiceOrderByWithRelationInput
+    vehicleSwaps?: VehicleSwapOrderByRelationAggregateInput
   }
 
   export type BookingWhereUniqueInput = Prisma.AtLeast<{
@@ -47175,6 +48590,7 @@ export namespace Prisma {
     deposit?: XOR<DepositNullableRelationFilter, DepositWhereInput> | null
     invoice?: XOR<InvoiceNullableRelationFilter, InvoiceWhereInput> | null
     cancellationInvoice?: XOR<CancellationInvoiceNullableRelationFilter, CancellationInvoiceWhereInput> | null
+    vehicleSwaps?: VehicleSwapListRelationFilter
   }, "id" | "publicId" | "transactionId">
 
   export type BookingOrderByWithAggregationInput = {
@@ -47946,6 +49362,7 @@ export namespace Prisma {
     entityId?: StringFilter<"AuditLog"> | string
     before?: JsonNullableFilter<"AuditLog">
     after?: JsonNullableFilter<"AuditLog">
+    metadata?: JsonNullableFilter<"AuditLog">
     createdAt?: DateTimeFilter<"AuditLog"> | Date | string
     user?: XOR<UserRelationFilter, UserWhereInput>
   }
@@ -47959,6 +49376,7 @@ export namespace Prisma {
     entityId?: SortOrder
     before?: SortOrderInput | SortOrder
     after?: SortOrderInput | SortOrder
+    metadata?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     user?: UserOrderByWithRelationInput
   }
@@ -47975,6 +49393,7 @@ export namespace Prisma {
     entityId?: StringFilter<"AuditLog"> | string
     before?: JsonNullableFilter<"AuditLog">
     after?: JsonNullableFilter<"AuditLog">
+    metadata?: JsonNullableFilter<"AuditLog">
     createdAt?: DateTimeFilter<"AuditLog"> | Date | string
     user?: XOR<UserRelationFilter, UserWhereInput>
   }, "id" | "publicId">
@@ -47988,6 +49407,7 @@ export namespace Prisma {
     entityId?: SortOrder
     before?: SortOrderInput | SortOrder
     after?: SortOrderInput | SortOrder
+    metadata?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: AuditLogCountOrderByAggregateInput
     _avg?: AuditLogAvgOrderByAggregateInput
@@ -48008,6 +49428,7 @@ export namespace Prisma {
     entityId?: StringWithAggregatesFilter<"AuditLog"> | string
     before?: JsonNullableWithAggregatesFilter<"AuditLog">
     after?: JsonNullableWithAggregatesFilter<"AuditLog">
+    metadata?: JsonNullableWithAggregatesFilter<"AuditLog">
     createdAt?: DateTimeWithAggregatesFilter<"AuditLog"> | Date | string
   }
 
@@ -48541,6 +49962,112 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"VehicleFeatureFlag"> | Date | string
   }
 
+  export type VehicleSwapWhereInput = {
+    AND?: VehicleSwapWhereInput | VehicleSwapWhereInput[]
+    OR?: VehicleSwapWhereInput[]
+    NOT?: VehicleSwapWhereInput | VehicleSwapWhereInput[]
+    id?: IntFilter<"VehicleSwap"> | number
+    publicId?: StringFilter<"VehicleSwap"> | string
+    bookingId?: IntFilter<"VehicleSwap"> | number
+    originalVehicleId?: IntFilter<"VehicleSwap"> | number
+    newVehicleId?: IntFilter<"VehicleSwap"> | number
+    swappedById?: IntFilter<"VehicleSwap"> | number
+    reason?: EnumSwapReasonFilter<"VehicleSwap"> | $Enums.SwapReason
+    reasonNotes?: StringNullableFilter<"VehicleSwap"> | string | null
+    originalVehicleStatus?: EnumVehicleStatusNullableFilter<"VehicleSwap"> | $Enums.VehicleStatus | null
+    originalVehicleNotes?: StringNullableFilter<"VehicleSwap"> | string | null
+    swappedAt?: DateTimeFilter<"VehicleSwap"> | Date | string
+    createdAt?: DateTimeFilter<"VehicleSwap"> | Date | string
+    updatedAt?: DateTimeFilter<"VehicleSwap"> | Date | string
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    originalVehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
+    newVehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
+    swappedBy?: XOR<UserRelationFilter, UserWhereInput>
+  }
+
+  export type VehicleSwapOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    originalVehicleId?: SortOrder
+    newVehicleId?: SortOrder
+    swappedById?: SortOrder
+    reason?: SortOrder
+    reasonNotes?: SortOrderInput | SortOrder
+    originalVehicleStatus?: SortOrderInput | SortOrder
+    originalVehicleNotes?: SortOrderInput | SortOrder
+    swappedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    booking?: BookingOrderByWithRelationInput
+    originalVehicle?: VehicleOrderByWithRelationInput
+    newVehicle?: VehicleOrderByWithRelationInput
+    swappedBy?: UserOrderByWithRelationInput
+  }
+
+  export type VehicleSwapWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    AND?: VehicleSwapWhereInput | VehicleSwapWhereInput[]
+    OR?: VehicleSwapWhereInput[]
+    NOT?: VehicleSwapWhereInput | VehicleSwapWhereInput[]
+    bookingId?: IntFilter<"VehicleSwap"> | number
+    originalVehicleId?: IntFilter<"VehicleSwap"> | number
+    newVehicleId?: IntFilter<"VehicleSwap"> | number
+    swappedById?: IntFilter<"VehicleSwap"> | number
+    reason?: EnumSwapReasonFilter<"VehicleSwap"> | $Enums.SwapReason
+    reasonNotes?: StringNullableFilter<"VehicleSwap"> | string | null
+    originalVehicleStatus?: EnumVehicleStatusNullableFilter<"VehicleSwap"> | $Enums.VehicleStatus | null
+    originalVehicleNotes?: StringNullableFilter<"VehicleSwap"> | string | null
+    swappedAt?: DateTimeFilter<"VehicleSwap"> | Date | string
+    createdAt?: DateTimeFilter<"VehicleSwap"> | Date | string
+    updatedAt?: DateTimeFilter<"VehicleSwap"> | Date | string
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    originalVehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
+    newVehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
+    swappedBy?: XOR<UserRelationFilter, UserWhereInput>
+  }, "id" | "publicId">
+
+  export type VehicleSwapOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    originalVehicleId?: SortOrder
+    newVehicleId?: SortOrder
+    swappedById?: SortOrder
+    reason?: SortOrder
+    reasonNotes?: SortOrderInput | SortOrder
+    originalVehicleStatus?: SortOrderInput | SortOrder
+    originalVehicleNotes?: SortOrderInput | SortOrder
+    swappedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: VehicleSwapCountOrderByAggregateInput
+    _avg?: VehicleSwapAvgOrderByAggregateInput
+    _max?: VehicleSwapMaxOrderByAggregateInput
+    _min?: VehicleSwapMinOrderByAggregateInput
+    _sum?: VehicleSwapSumOrderByAggregateInput
+  }
+
+  export type VehicleSwapScalarWhereWithAggregatesInput = {
+    AND?: VehicleSwapScalarWhereWithAggregatesInput | VehicleSwapScalarWhereWithAggregatesInput[]
+    OR?: VehicleSwapScalarWhereWithAggregatesInput[]
+    NOT?: VehicleSwapScalarWhereWithAggregatesInput | VehicleSwapScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"VehicleSwap"> | number
+    publicId?: StringWithAggregatesFilter<"VehicleSwap"> | string
+    bookingId?: IntWithAggregatesFilter<"VehicleSwap"> | number
+    originalVehicleId?: IntWithAggregatesFilter<"VehicleSwap"> | number
+    newVehicleId?: IntWithAggregatesFilter<"VehicleSwap"> | number
+    swappedById?: IntWithAggregatesFilter<"VehicleSwap"> | number
+    reason?: EnumSwapReasonWithAggregatesFilter<"VehicleSwap"> | $Enums.SwapReason
+    reasonNotes?: StringNullableWithAggregatesFilter<"VehicleSwap"> | string | null
+    originalVehicleStatus?: EnumVehicleStatusNullableWithAggregatesFilter<"VehicleSwap"> | $Enums.VehicleStatus | null
+    originalVehicleNotes?: StringNullableWithAggregatesFilter<"VehicleSwap"> | string | null
+    swappedAt?: DateTimeWithAggregatesFilter<"VehicleSwap"> | Date | string
+    createdAt?: DateTimeWithAggregatesFilter<"VehicleSwap"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"VehicleSwap"> | Date | string
+  }
+
   export type UserCreateInput = {
     publicId: string
     name: string
@@ -48560,6 +50087,7 @@ export namespace Prisma {
     auditLogs?: AuditLogCreateNestedManyWithoutUserInput
     bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -48582,6 +50110,7 @@ export namespace Prisma {
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
     bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
   }
 
   export type UserUpdateInput = {
@@ -48603,6 +50132,7 @@ export namespace Prisma {
     auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
     bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -48625,6 +50155,7 @@ export namespace Prisma {
     auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
     bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -49363,6 +50894,7 @@ export namespace Prisma {
     publicId: string
     name: string
     description?: string | null
+    rank?: number
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutCategoryInput
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleCreateNestedManyWithoutCategoryInput
@@ -49375,6 +50907,7 @@ export namespace Prisma {
     publicId: string
     name: string
     description?: string | null
+    rank?: number
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutCategoryInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleUncheckedCreateNestedManyWithoutCategoryInput
@@ -49386,6 +50919,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    rank?: IntFieldUpdateOperationsInput | number
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutCategoryNestedInput
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUpdateManyWithoutCategoryNestedInput
@@ -49398,6 +50932,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    rank?: IntFieldUpdateOperationsInput | number
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutCategoryNestedInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUncheckedUpdateManyWithoutCategoryNestedInput
@@ -49410,12 +50945,14 @@ export namespace Prisma {
     publicId: string
     name: string
     description?: string | null
+    rank?: number
   }
 
   export type VehicleCategoryUpdateManyMutationInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    rank?: IntFieldUpdateOperationsInput | number
   }
 
   export type VehicleCategoryUncheckedUpdateManyInput = {
@@ -49423,6 +50960,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    rank?: IntFieldUpdateOperationsInput | number
   }
 
   export type VehicleCreateInput = {
@@ -49447,6 +50985,8 @@ export namespace Prisma {
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
   }
 
   export type VehicleUncheckedCreateInput = {
@@ -49472,6 +51012,8 @@ export namespace Prisma {
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
   }
 
   export type VehicleUpdateInput = {
@@ -49496,6 +51038,8 @@ export namespace Prisma {
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateInput = {
@@ -49521,6 +51065,8 @@ export namespace Prisma {
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
   }
 
   export type VehicleCreateManyInput = {
@@ -50246,6 +51792,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateInput = {
@@ -50299,6 +51846,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUpdateInput = {
@@ -50351,6 +51899,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateInput = {
@@ -50404,6 +51953,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingCreateManyInput = {
@@ -51217,6 +52767,7 @@ export namespace Prisma {
     entityId: string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     user: UserCreateNestedOneWithoutAuditLogsInput
   }
@@ -51230,6 +52781,7 @@ export namespace Prisma {
     entityId: string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -51240,6 +52792,7 @@ export namespace Prisma {
     entityId?: StringFieldUpdateOperationsInput | string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutAuditLogsNestedInput
   }
@@ -51253,6 +52806,7 @@ export namespace Prisma {
     entityId?: StringFieldUpdateOperationsInput | string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -51265,6 +52819,7 @@ export namespace Prisma {
     entityId: string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -51275,6 +52830,7 @@ export namespace Prisma {
     entityId?: StringFieldUpdateOperationsInput | string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -51287,6 +52843,7 @@ export namespace Prisma {
     entityId?: StringFieldUpdateOperationsInput | string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -51829,6 +53386,111 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type VehicleSwapCreateInput = {
+    publicId: string
+    reason: $Enums.SwapReason
+    reasonNotes?: string | null
+    originalVehicleStatus?: $Enums.VehicleStatus | null
+    originalVehicleNotes?: string | null
+    swappedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutVehicleSwapsInput
+    originalVehicle: VehicleCreateNestedOneWithoutSwapsAsOriginalInput
+    newVehicle: VehicleCreateNestedOneWithoutSwapsAsNewInput
+    swappedBy: UserCreateNestedOneWithoutVehicleSwapsInput
+  }
+
+  export type VehicleSwapUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    originalVehicleId: number
+    newVehicleId: number
+    swappedById: number
+    reason: $Enums.SwapReason
+    reasonNotes?: string | null
+    originalVehicleStatus?: $Enums.VehicleStatus | null
+    originalVehicleNotes?: string | null
+    swappedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehicleSwapUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    reason?: EnumSwapReasonFieldUpdateOperationsInput | $Enums.SwapReason
+    reasonNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    originalVehicleStatus?: NullableEnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus | null
+    originalVehicleNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutVehicleSwapsNestedInput
+    originalVehicle?: VehicleUpdateOneRequiredWithoutSwapsAsOriginalNestedInput
+    newVehicle?: VehicleUpdateOneRequiredWithoutSwapsAsNewNestedInput
+    swappedBy?: UserUpdateOneRequiredWithoutVehicleSwapsNestedInput
+  }
+
+  export type VehicleSwapUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    originalVehicleId?: IntFieldUpdateOperationsInput | number
+    newVehicleId?: IntFieldUpdateOperationsInput | number
+    swappedById?: IntFieldUpdateOperationsInput | number
+    reason?: EnumSwapReasonFieldUpdateOperationsInput | $Enums.SwapReason
+    reasonNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    originalVehicleStatus?: NullableEnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus | null
+    originalVehicleNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleSwapCreateManyInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    originalVehicleId: number
+    newVehicleId: number
+    swappedById: number
+    reason: $Enums.SwapReason
+    reasonNotes?: string | null
+    originalVehicleStatus?: $Enums.VehicleStatus | null
+    originalVehicleNotes?: string | null
+    swappedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehicleSwapUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    reason?: EnumSwapReasonFieldUpdateOperationsInput | $Enums.SwapReason
+    reasonNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    originalVehicleStatus?: NullableEnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus | null
+    originalVehicleNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleSwapUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    originalVehicleId?: IntFieldUpdateOperationsInput | number
+    newVehicleId?: IntFieldUpdateOperationsInput | number
+    swappedById?: IntFieldUpdateOperationsInput | number
+    reason?: EnumSwapReasonFieldUpdateOperationsInput | $Enums.SwapReason
+    reasonNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    originalVehicleStatus?: NullableEnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus | null
+    originalVehicleNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type IntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -51957,6 +53619,12 @@ export namespace Prisma {
     none?: DamageReportWhereInput
   }
 
+  export type VehicleSwapListRelationFilter = {
+    every?: VehicleSwapWhereInput
+    some?: VehicleSwapWhereInput
+    none?: VehicleSwapWhereInput
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -51979,6 +53647,10 @@ export namespace Prisma {
   }
 
   export type DamageReportOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type VehicleSwapOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -52757,10 +54429,12 @@ export namespace Prisma {
     publicId?: SortOrder
     name?: SortOrder
     description?: SortOrder
+    rank?: SortOrder
   }
 
   export type VehicleCategoryAvgOrderByAggregateInput = {
     id?: SortOrder
+    rank?: SortOrder
   }
 
   export type VehicleCategoryMaxOrderByAggregateInput = {
@@ -52768,6 +54442,7 @@ export namespace Prisma {
     publicId?: SortOrder
     name?: SortOrder
     description?: SortOrder
+    rank?: SortOrder
   }
 
   export type VehicleCategoryMinOrderByAggregateInput = {
@@ -52775,10 +54450,12 @@ export namespace Prisma {
     publicId?: SortOrder
     name?: SortOrder
     description?: SortOrder
+    rank?: SortOrder
   }
 
   export type VehicleCategorySumOrderByAggregateInput = {
     id?: SortOrder
+    rank?: SortOrder
   }
 
   export type EnumVehicleStatusFilter<$PrismaModel = never> = {
@@ -54333,6 +56010,7 @@ export namespace Prisma {
     entityId?: SortOrder
     before?: SortOrder
     after?: SortOrder
+    metadata?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -54737,6 +56415,104 @@ export namespace Prisma {
     flagId?: SortOrder
   }
 
+  export type EnumSwapReasonFilter<$PrismaModel = never> = {
+    equals?: $Enums.SwapReason | EnumSwapReasonFieldRefInput<$PrismaModel>
+    in?: $Enums.SwapReason[] | ListEnumSwapReasonFieldRefInput<$PrismaModel>
+    notIn?: $Enums.SwapReason[] | ListEnumSwapReasonFieldRefInput<$PrismaModel>
+    not?: NestedEnumSwapReasonFilter<$PrismaModel> | $Enums.SwapReason
+  }
+
+  export type EnumVehicleStatusNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.VehicleStatus | EnumVehicleStatusFieldRefInput<$PrismaModel> | null
+    in?: $Enums.VehicleStatus[] | ListEnumVehicleStatusFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.VehicleStatus[] | ListEnumVehicleStatusFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumVehicleStatusNullableFilter<$PrismaModel> | $Enums.VehicleStatus | null
+  }
+
+  export type VehicleSwapCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    originalVehicleId?: SortOrder
+    newVehicleId?: SortOrder
+    swappedById?: SortOrder
+    reason?: SortOrder
+    reasonNotes?: SortOrder
+    originalVehicleStatus?: SortOrder
+    originalVehicleNotes?: SortOrder
+    swappedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type VehicleSwapAvgOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    originalVehicleId?: SortOrder
+    newVehicleId?: SortOrder
+    swappedById?: SortOrder
+  }
+
+  export type VehicleSwapMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    originalVehicleId?: SortOrder
+    newVehicleId?: SortOrder
+    swappedById?: SortOrder
+    reason?: SortOrder
+    reasonNotes?: SortOrder
+    originalVehicleStatus?: SortOrder
+    originalVehicleNotes?: SortOrder
+    swappedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type VehicleSwapMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    originalVehicleId?: SortOrder
+    newVehicleId?: SortOrder
+    swappedById?: SortOrder
+    reason?: SortOrder
+    reasonNotes?: SortOrder
+    originalVehicleStatus?: SortOrder
+    originalVehicleNotes?: SortOrder
+    swappedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type VehicleSwapSumOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    originalVehicleId?: SortOrder
+    newVehicleId?: SortOrder
+    swappedById?: SortOrder
+  }
+
+  export type EnumSwapReasonWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.SwapReason | EnumSwapReasonFieldRefInput<$PrismaModel>
+    in?: $Enums.SwapReason[] | ListEnumSwapReasonFieldRefInput<$PrismaModel>
+    notIn?: $Enums.SwapReason[] | ListEnumSwapReasonFieldRefInput<$PrismaModel>
+    not?: NestedEnumSwapReasonWithAggregatesFilter<$PrismaModel> | $Enums.SwapReason
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumSwapReasonFilter<$PrismaModel>
+    _max?: NestedEnumSwapReasonFilter<$PrismaModel>
+  }
+
+  export type EnumVehicleStatusNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.VehicleStatus | EnumVehicleStatusFieldRefInput<$PrismaModel> | null
+    in?: $Enums.VehicleStatus[] | ListEnumVehicleStatusFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.VehicleStatus[] | ListEnumVehicleStatusFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumVehicleStatusNullableWithAggregatesFilter<$PrismaModel> | $Enums.VehicleStatus | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumVehicleStatusNullableFilter<$PrismaModel>
+    _max?: NestedEnumVehicleStatusNullableFilter<$PrismaModel>
+  }
+
   export type BranchCreateNestedOneWithoutUsersInput = {
     create?: XOR<BranchCreateWithoutUsersInput, BranchUncheckedCreateWithoutUsersInput>
     connectOrCreate?: BranchCreateOrConnectWithoutUsersInput
@@ -54784,6 +56560,13 @@ export namespace Prisma {
     connect?: DamageReportWhereUniqueInput | DamageReportWhereUniqueInput[]
   }
 
+  export type VehicleSwapCreateNestedManyWithoutSwappedByInput = {
+    create?: XOR<VehicleSwapCreateWithoutSwappedByInput, VehicleSwapUncheckedCreateWithoutSwappedByInput> | VehicleSwapCreateWithoutSwappedByInput[] | VehicleSwapUncheckedCreateWithoutSwappedByInput[]
+    connectOrCreate?: VehicleSwapCreateOrConnectWithoutSwappedByInput | VehicleSwapCreateOrConnectWithoutSwappedByInput[]
+    createMany?: VehicleSwapCreateManySwappedByInputEnvelope
+    connect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+  }
+
   export type EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput = {
     create?: XOR<EmailVerificationOtpCreateWithoutUserInput, EmailVerificationOtpUncheckedCreateWithoutUserInput> | EmailVerificationOtpCreateWithoutUserInput[] | EmailVerificationOtpUncheckedCreateWithoutUserInput[]
     connectOrCreate?: EmailVerificationOtpCreateOrConnectWithoutUserInput | EmailVerificationOtpCreateOrConnectWithoutUserInput[]
@@ -54823,6 +56606,13 @@ export namespace Prisma {
     connectOrCreate?: DamageReportCreateOrConnectWithoutApprovedByInput | DamageReportCreateOrConnectWithoutApprovedByInput[]
     createMany?: DamageReportCreateManyApprovedByInputEnvelope
     connect?: DamageReportWhereUniqueInput | DamageReportWhereUniqueInput[]
+  }
+
+  export type VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput = {
+    create?: XOR<VehicleSwapCreateWithoutSwappedByInput, VehicleSwapUncheckedCreateWithoutSwappedByInput> | VehicleSwapCreateWithoutSwappedByInput[] | VehicleSwapUncheckedCreateWithoutSwappedByInput[]
+    connectOrCreate?: VehicleSwapCreateOrConnectWithoutSwappedByInput | VehicleSwapCreateOrConnectWithoutSwappedByInput[]
+    createMany?: VehicleSwapCreateManySwappedByInputEnvelope
+    connect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -54939,6 +56729,20 @@ export namespace Prisma {
     deleteMany?: DamageReportScalarWhereInput | DamageReportScalarWhereInput[]
   }
 
+  export type VehicleSwapUpdateManyWithoutSwappedByNestedInput = {
+    create?: XOR<VehicleSwapCreateWithoutSwappedByInput, VehicleSwapUncheckedCreateWithoutSwappedByInput> | VehicleSwapCreateWithoutSwappedByInput[] | VehicleSwapUncheckedCreateWithoutSwappedByInput[]
+    connectOrCreate?: VehicleSwapCreateOrConnectWithoutSwappedByInput | VehicleSwapCreateOrConnectWithoutSwappedByInput[]
+    upsert?: VehicleSwapUpsertWithWhereUniqueWithoutSwappedByInput | VehicleSwapUpsertWithWhereUniqueWithoutSwappedByInput[]
+    createMany?: VehicleSwapCreateManySwappedByInputEnvelope
+    set?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    disconnect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    delete?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    connect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    update?: VehicleSwapUpdateWithWhereUniqueWithoutSwappedByInput | VehicleSwapUpdateWithWhereUniqueWithoutSwappedByInput[]
+    updateMany?: VehicleSwapUpdateManyWithWhereWithoutSwappedByInput | VehicleSwapUpdateManyWithWhereWithoutSwappedByInput[]
+    deleteMany?: VehicleSwapScalarWhereInput | VehicleSwapScalarWhereInput[]
+  }
+
   export type IntFieldUpdateOperationsInput = {
     set?: number
     increment?: number
@@ -55033,6 +56837,20 @@ export namespace Prisma {
     update?: DamageReportUpdateWithWhereUniqueWithoutApprovedByInput | DamageReportUpdateWithWhereUniqueWithoutApprovedByInput[]
     updateMany?: DamageReportUpdateManyWithWhereWithoutApprovedByInput | DamageReportUpdateManyWithWhereWithoutApprovedByInput[]
     deleteMany?: DamageReportScalarWhereInput | DamageReportScalarWhereInput[]
+  }
+
+  export type VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput = {
+    create?: XOR<VehicleSwapCreateWithoutSwappedByInput, VehicleSwapUncheckedCreateWithoutSwappedByInput> | VehicleSwapCreateWithoutSwappedByInput[] | VehicleSwapUncheckedCreateWithoutSwappedByInput[]
+    connectOrCreate?: VehicleSwapCreateOrConnectWithoutSwappedByInput | VehicleSwapCreateOrConnectWithoutSwappedByInput[]
+    upsert?: VehicleSwapUpsertWithWhereUniqueWithoutSwappedByInput | VehicleSwapUpsertWithWhereUniqueWithoutSwappedByInput[]
+    createMany?: VehicleSwapCreateManySwappedByInputEnvelope
+    set?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    disconnect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    delete?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    connect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    update?: VehicleSwapUpdateWithWhereUniqueWithoutSwappedByInput | VehicleSwapUpdateWithWhereUniqueWithoutSwappedByInput[]
+    updateMany?: VehicleSwapUpdateManyWithWhereWithoutSwappedByInput | VehicleSwapUpdateManyWithWhereWithoutSwappedByInput[]
+    deleteMany?: VehicleSwapScalarWhereInput | VehicleSwapScalarWhereInput[]
   }
 
   export type UserCreateNestedOneWithoutProvidersInput = {
@@ -56151,6 +57969,20 @@ export namespace Prisma {
     connect?: VehicleFeatureFlagWhereUniqueInput | VehicleFeatureFlagWhereUniqueInput[]
   }
 
+  export type VehicleSwapCreateNestedManyWithoutOriginalVehicleInput = {
+    create?: XOR<VehicleSwapCreateWithoutOriginalVehicleInput, VehicleSwapUncheckedCreateWithoutOriginalVehicleInput> | VehicleSwapCreateWithoutOriginalVehicleInput[] | VehicleSwapUncheckedCreateWithoutOriginalVehicleInput[]
+    connectOrCreate?: VehicleSwapCreateOrConnectWithoutOriginalVehicleInput | VehicleSwapCreateOrConnectWithoutOriginalVehicleInput[]
+    createMany?: VehicleSwapCreateManyOriginalVehicleInputEnvelope
+    connect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+  }
+
+  export type VehicleSwapCreateNestedManyWithoutNewVehicleInput = {
+    create?: XOR<VehicleSwapCreateWithoutNewVehicleInput, VehicleSwapUncheckedCreateWithoutNewVehicleInput> | VehicleSwapCreateWithoutNewVehicleInput[] | VehicleSwapUncheckedCreateWithoutNewVehicleInput[]
+    connectOrCreate?: VehicleSwapCreateOrConnectWithoutNewVehicleInput | VehicleSwapCreateOrConnectWithoutNewVehicleInput[]
+    createMany?: VehicleSwapCreateManyNewVehicleInputEnvelope
+    connect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+  }
+
   export type VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput = {
     create?: XOR<VehicleInsuranceCreateWithoutVehicleInput, VehicleInsuranceUncheckedCreateWithoutVehicleInput> | VehicleInsuranceCreateWithoutVehicleInput[] | VehicleInsuranceUncheckedCreateWithoutVehicleInput[]
     connectOrCreate?: VehicleInsuranceCreateOrConnectWithoutVehicleInput | VehicleInsuranceCreateOrConnectWithoutVehicleInput[]
@@ -56203,6 +58035,20 @@ export namespace Prisma {
     connectOrCreate?: VehicleFeatureFlagCreateOrConnectWithoutVehicleInput | VehicleFeatureFlagCreateOrConnectWithoutVehicleInput[]
     createMany?: VehicleFeatureFlagCreateManyVehicleInputEnvelope
     connect?: VehicleFeatureFlagWhereUniqueInput | VehicleFeatureFlagWhereUniqueInput[]
+  }
+
+  export type VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput = {
+    create?: XOR<VehicleSwapCreateWithoutOriginalVehicleInput, VehicleSwapUncheckedCreateWithoutOriginalVehicleInput> | VehicleSwapCreateWithoutOriginalVehicleInput[] | VehicleSwapUncheckedCreateWithoutOriginalVehicleInput[]
+    connectOrCreate?: VehicleSwapCreateOrConnectWithoutOriginalVehicleInput | VehicleSwapCreateOrConnectWithoutOriginalVehicleInput[]
+    createMany?: VehicleSwapCreateManyOriginalVehicleInputEnvelope
+    connect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+  }
+
+  export type VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput = {
+    create?: XOR<VehicleSwapCreateWithoutNewVehicleInput, VehicleSwapUncheckedCreateWithoutNewVehicleInput> | VehicleSwapCreateWithoutNewVehicleInput[] | VehicleSwapUncheckedCreateWithoutNewVehicleInput[]
+    connectOrCreate?: VehicleSwapCreateOrConnectWithoutNewVehicleInput | VehicleSwapCreateOrConnectWithoutNewVehicleInput[]
+    createMany?: VehicleSwapCreateManyNewVehicleInputEnvelope
+    connect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
   }
 
   export type EnumVehicleStatusFieldUpdateOperationsInput = {
@@ -56329,6 +58175,34 @@ export namespace Prisma {
     deleteMany?: VehicleFeatureFlagScalarWhereInput | VehicleFeatureFlagScalarWhereInput[]
   }
 
+  export type VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput = {
+    create?: XOR<VehicleSwapCreateWithoutOriginalVehicleInput, VehicleSwapUncheckedCreateWithoutOriginalVehicleInput> | VehicleSwapCreateWithoutOriginalVehicleInput[] | VehicleSwapUncheckedCreateWithoutOriginalVehicleInput[]
+    connectOrCreate?: VehicleSwapCreateOrConnectWithoutOriginalVehicleInput | VehicleSwapCreateOrConnectWithoutOriginalVehicleInput[]
+    upsert?: VehicleSwapUpsertWithWhereUniqueWithoutOriginalVehicleInput | VehicleSwapUpsertWithWhereUniqueWithoutOriginalVehicleInput[]
+    createMany?: VehicleSwapCreateManyOriginalVehicleInputEnvelope
+    set?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    disconnect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    delete?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    connect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    update?: VehicleSwapUpdateWithWhereUniqueWithoutOriginalVehicleInput | VehicleSwapUpdateWithWhereUniqueWithoutOriginalVehicleInput[]
+    updateMany?: VehicleSwapUpdateManyWithWhereWithoutOriginalVehicleInput | VehicleSwapUpdateManyWithWhereWithoutOriginalVehicleInput[]
+    deleteMany?: VehicleSwapScalarWhereInput | VehicleSwapScalarWhereInput[]
+  }
+
+  export type VehicleSwapUpdateManyWithoutNewVehicleNestedInput = {
+    create?: XOR<VehicleSwapCreateWithoutNewVehicleInput, VehicleSwapUncheckedCreateWithoutNewVehicleInput> | VehicleSwapCreateWithoutNewVehicleInput[] | VehicleSwapUncheckedCreateWithoutNewVehicleInput[]
+    connectOrCreate?: VehicleSwapCreateOrConnectWithoutNewVehicleInput | VehicleSwapCreateOrConnectWithoutNewVehicleInput[]
+    upsert?: VehicleSwapUpsertWithWhereUniqueWithoutNewVehicleInput | VehicleSwapUpsertWithWhereUniqueWithoutNewVehicleInput[]
+    createMany?: VehicleSwapCreateManyNewVehicleInputEnvelope
+    set?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    disconnect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    delete?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    connect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    update?: VehicleSwapUpdateWithWhereUniqueWithoutNewVehicleInput | VehicleSwapUpdateWithWhereUniqueWithoutNewVehicleInput[]
+    updateMany?: VehicleSwapUpdateManyWithWhereWithoutNewVehicleInput | VehicleSwapUpdateManyWithWhereWithoutNewVehicleInput[]
+    deleteMany?: VehicleSwapScalarWhereInput | VehicleSwapScalarWhereInput[]
+  }
+
   export type VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput = {
     create?: XOR<VehicleInsuranceCreateWithoutVehicleInput, VehicleInsuranceUncheckedCreateWithoutVehicleInput> | VehicleInsuranceCreateWithoutVehicleInput[] | VehicleInsuranceUncheckedCreateWithoutVehicleInput[]
     connectOrCreate?: VehicleInsuranceCreateOrConnectWithoutVehicleInput | VehicleInsuranceCreateOrConnectWithoutVehicleInput[]
@@ -56431,6 +58305,34 @@ export namespace Prisma {
     update?: VehicleFeatureFlagUpdateWithWhereUniqueWithoutVehicleInput | VehicleFeatureFlagUpdateWithWhereUniqueWithoutVehicleInput[]
     updateMany?: VehicleFeatureFlagUpdateManyWithWhereWithoutVehicleInput | VehicleFeatureFlagUpdateManyWithWhereWithoutVehicleInput[]
     deleteMany?: VehicleFeatureFlagScalarWhereInput | VehicleFeatureFlagScalarWhereInput[]
+  }
+
+  export type VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput = {
+    create?: XOR<VehicleSwapCreateWithoutOriginalVehicleInput, VehicleSwapUncheckedCreateWithoutOriginalVehicleInput> | VehicleSwapCreateWithoutOriginalVehicleInput[] | VehicleSwapUncheckedCreateWithoutOriginalVehicleInput[]
+    connectOrCreate?: VehicleSwapCreateOrConnectWithoutOriginalVehicleInput | VehicleSwapCreateOrConnectWithoutOriginalVehicleInput[]
+    upsert?: VehicleSwapUpsertWithWhereUniqueWithoutOriginalVehicleInput | VehicleSwapUpsertWithWhereUniqueWithoutOriginalVehicleInput[]
+    createMany?: VehicleSwapCreateManyOriginalVehicleInputEnvelope
+    set?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    disconnect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    delete?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    connect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    update?: VehicleSwapUpdateWithWhereUniqueWithoutOriginalVehicleInput | VehicleSwapUpdateWithWhereUniqueWithoutOriginalVehicleInput[]
+    updateMany?: VehicleSwapUpdateManyWithWhereWithoutOriginalVehicleInput | VehicleSwapUpdateManyWithWhereWithoutOriginalVehicleInput[]
+    deleteMany?: VehicleSwapScalarWhereInput | VehicleSwapScalarWhereInput[]
+  }
+
+  export type VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput = {
+    create?: XOR<VehicleSwapCreateWithoutNewVehicleInput, VehicleSwapUncheckedCreateWithoutNewVehicleInput> | VehicleSwapCreateWithoutNewVehicleInput[] | VehicleSwapUncheckedCreateWithoutNewVehicleInput[]
+    connectOrCreate?: VehicleSwapCreateOrConnectWithoutNewVehicleInput | VehicleSwapCreateOrConnectWithoutNewVehicleInput[]
+    upsert?: VehicleSwapUpsertWithWhereUniqueWithoutNewVehicleInput | VehicleSwapUpsertWithWhereUniqueWithoutNewVehicleInput[]
+    createMany?: VehicleSwapCreateManyNewVehicleInputEnvelope
+    set?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    disconnect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    delete?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    connect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    update?: VehicleSwapUpdateWithWhereUniqueWithoutNewVehicleInput | VehicleSwapUpdateWithWhereUniqueWithoutNewVehicleInput[]
+    updateMany?: VehicleSwapUpdateManyWithWhereWithoutNewVehicleInput | VehicleSwapUpdateManyWithWhereWithoutNewVehicleInput[]
+    deleteMany?: VehicleSwapScalarWhereInput | VehicleSwapScalarWhereInput[]
   }
 
   export type VehicleCreateNestedOneWithoutPricingOverrideInput = {
@@ -56696,6 +58598,13 @@ export namespace Prisma {
     connect?: CancellationInvoiceWhereUniqueInput
   }
 
+  export type VehicleSwapCreateNestedManyWithoutBookingInput = {
+    create?: XOR<VehicleSwapCreateWithoutBookingInput, VehicleSwapUncheckedCreateWithoutBookingInput> | VehicleSwapCreateWithoutBookingInput[] | VehicleSwapUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: VehicleSwapCreateOrConnectWithoutBookingInput | VehicleSwapCreateOrConnectWithoutBookingInput[]
+    createMany?: VehicleSwapCreateManyBookingInputEnvelope
+    connect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+  }
+
   export type BookingPhotoUncheckedCreateNestedManyWithoutBookingInput = {
     create?: XOR<BookingPhotoCreateWithoutBookingInput, BookingPhotoUncheckedCreateWithoutBookingInput> | BookingPhotoCreateWithoutBookingInput[] | BookingPhotoUncheckedCreateWithoutBookingInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutBookingInput | BookingPhotoCreateOrConnectWithoutBookingInput[]
@@ -56733,6 +58642,13 @@ export namespace Prisma {
     create?: XOR<CancellationInvoiceCreateWithoutBookingInput, CancellationInvoiceUncheckedCreateWithoutBookingInput>
     connectOrCreate?: CancellationInvoiceCreateOrConnectWithoutBookingInput
     connect?: CancellationInvoiceWhereUniqueInput
+  }
+
+  export type VehicleSwapUncheckedCreateNestedManyWithoutBookingInput = {
+    create?: XOR<VehicleSwapCreateWithoutBookingInput, VehicleSwapUncheckedCreateWithoutBookingInput> | VehicleSwapCreateWithoutBookingInput[] | VehicleSwapUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: VehicleSwapCreateOrConnectWithoutBookingInput | VehicleSwapCreateOrConnectWithoutBookingInput[]
+    createMany?: VehicleSwapCreateManyBookingInputEnvelope
+    connect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
   }
 
   export type NullableEnumRentalPeriodTypeFieldUpdateOperationsInput = {
@@ -56857,6 +58773,20 @@ export namespace Prisma {
     update?: XOR<XOR<CancellationInvoiceUpdateToOneWithWhereWithoutBookingInput, CancellationInvoiceUpdateWithoutBookingInput>, CancellationInvoiceUncheckedUpdateWithoutBookingInput>
   }
 
+  export type VehicleSwapUpdateManyWithoutBookingNestedInput = {
+    create?: XOR<VehicleSwapCreateWithoutBookingInput, VehicleSwapUncheckedCreateWithoutBookingInput> | VehicleSwapCreateWithoutBookingInput[] | VehicleSwapUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: VehicleSwapCreateOrConnectWithoutBookingInput | VehicleSwapCreateOrConnectWithoutBookingInput[]
+    upsert?: VehicleSwapUpsertWithWhereUniqueWithoutBookingInput | VehicleSwapUpsertWithWhereUniqueWithoutBookingInput[]
+    createMany?: VehicleSwapCreateManyBookingInputEnvelope
+    set?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    disconnect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    delete?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    connect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    update?: VehicleSwapUpdateWithWhereUniqueWithoutBookingInput | VehicleSwapUpdateWithWhereUniqueWithoutBookingInput[]
+    updateMany?: VehicleSwapUpdateManyWithWhereWithoutBookingInput | VehicleSwapUpdateManyWithWhereWithoutBookingInput[]
+    deleteMany?: VehicleSwapScalarWhereInput | VehicleSwapScalarWhereInput[]
+  }
+
   export type BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput = {
     create?: XOR<BookingPhotoCreateWithoutBookingInput, BookingPhotoUncheckedCreateWithoutBookingInput> | BookingPhotoCreateWithoutBookingInput[] | BookingPhotoUncheckedCreateWithoutBookingInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutBookingInput | BookingPhotoCreateOrConnectWithoutBookingInput[]
@@ -56927,6 +58857,20 @@ export namespace Prisma {
     delete?: CancellationInvoiceWhereInput | boolean
     connect?: CancellationInvoiceWhereUniqueInput
     update?: XOR<XOR<CancellationInvoiceUpdateToOneWithWhereWithoutBookingInput, CancellationInvoiceUpdateWithoutBookingInput>, CancellationInvoiceUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput = {
+    create?: XOR<VehicleSwapCreateWithoutBookingInput, VehicleSwapUncheckedCreateWithoutBookingInput> | VehicleSwapCreateWithoutBookingInput[] | VehicleSwapUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: VehicleSwapCreateOrConnectWithoutBookingInput | VehicleSwapCreateOrConnectWithoutBookingInput[]
+    upsert?: VehicleSwapUpsertWithWhereUniqueWithoutBookingInput | VehicleSwapUpsertWithWhereUniqueWithoutBookingInput[]
+    createMany?: VehicleSwapCreateManyBookingInputEnvelope
+    set?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    disconnect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    delete?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    connect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+    update?: VehicleSwapUpdateWithWhereUniqueWithoutBookingInput | VehicleSwapUpdateWithWhereUniqueWithoutBookingInput[]
+    updateMany?: VehicleSwapUpdateManyWithWhereWithoutBookingInput | VehicleSwapUpdateManyWithWhereWithoutBookingInput[]
+    deleteMany?: VehicleSwapScalarWhereInput | VehicleSwapScalarWhereInput[]
   }
 
   export type VehicleCreateNestedOneWithoutBookingItemsInput = {
@@ -57481,6 +59425,70 @@ export namespace Prisma {
     upsert?: FeatureFlagUpsertWithoutVehicleFlagsInput
     connect?: FeatureFlagWhereUniqueInput
     update?: XOR<XOR<FeatureFlagUpdateToOneWithWhereWithoutVehicleFlagsInput, FeatureFlagUpdateWithoutVehicleFlagsInput>, FeatureFlagUncheckedUpdateWithoutVehicleFlagsInput>
+  }
+
+  export type BookingCreateNestedOneWithoutVehicleSwapsInput = {
+    create?: XOR<BookingCreateWithoutVehicleSwapsInput, BookingUncheckedCreateWithoutVehicleSwapsInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutVehicleSwapsInput
+    connect?: BookingWhereUniqueInput
+  }
+
+  export type VehicleCreateNestedOneWithoutSwapsAsOriginalInput = {
+    create?: XOR<VehicleCreateWithoutSwapsAsOriginalInput, VehicleUncheckedCreateWithoutSwapsAsOriginalInput>
+    connectOrCreate?: VehicleCreateOrConnectWithoutSwapsAsOriginalInput
+    connect?: VehicleWhereUniqueInput
+  }
+
+  export type VehicleCreateNestedOneWithoutSwapsAsNewInput = {
+    create?: XOR<VehicleCreateWithoutSwapsAsNewInput, VehicleUncheckedCreateWithoutSwapsAsNewInput>
+    connectOrCreate?: VehicleCreateOrConnectWithoutSwapsAsNewInput
+    connect?: VehicleWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutVehicleSwapsInput = {
+    create?: XOR<UserCreateWithoutVehicleSwapsInput, UserUncheckedCreateWithoutVehicleSwapsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutVehicleSwapsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type EnumSwapReasonFieldUpdateOperationsInput = {
+    set?: $Enums.SwapReason
+  }
+
+  export type NullableEnumVehicleStatusFieldUpdateOperationsInput = {
+    set?: $Enums.VehicleStatus | null
+  }
+
+  export type BookingUpdateOneRequiredWithoutVehicleSwapsNestedInput = {
+    create?: XOR<BookingCreateWithoutVehicleSwapsInput, BookingUncheckedCreateWithoutVehicleSwapsInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutVehicleSwapsInput
+    upsert?: BookingUpsertWithoutVehicleSwapsInput
+    connect?: BookingWhereUniqueInput
+    update?: XOR<XOR<BookingUpdateToOneWithWhereWithoutVehicleSwapsInput, BookingUpdateWithoutVehicleSwapsInput>, BookingUncheckedUpdateWithoutVehicleSwapsInput>
+  }
+
+  export type VehicleUpdateOneRequiredWithoutSwapsAsOriginalNestedInput = {
+    create?: XOR<VehicleCreateWithoutSwapsAsOriginalInput, VehicleUncheckedCreateWithoutSwapsAsOriginalInput>
+    connectOrCreate?: VehicleCreateOrConnectWithoutSwapsAsOriginalInput
+    upsert?: VehicleUpsertWithoutSwapsAsOriginalInput
+    connect?: VehicleWhereUniqueInput
+    update?: XOR<XOR<VehicleUpdateToOneWithWhereWithoutSwapsAsOriginalInput, VehicleUpdateWithoutSwapsAsOriginalInput>, VehicleUncheckedUpdateWithoutSwapsAsOriginalInput>
+  }
+
+  export type VehicleUpdateOneRequiredWithoutSwapsAsNewNestedInput = {
+    create?: XOR<VehicleCreateWithoutSwapsAsNewInput, VehicleUncheckedCreateWithoutSwapsAsNewInput>
+    connectOrCreate?: VehicleCreateOrConnectWithoutSwapsAsNewInput
+    upsert?: VehicleUpsertWithoutSwapsAsNewInput
+    connect?: VehicleWhereUniqueInput
+    update?: XOR<XOR<VehicleUpdateToOneWithWhereWithoutSwapsAsNewInput, VehicleUpdateWithoutSwapsAsNewInput>, VehicleUncheckedUpdateWithoutSwapsAsNewInput>
+  }
+
+  export type UserUpdateOneRequiredWithoutVehicleSwapsNestedInput = {
+    create?: XOR<UserCreateWithoutVehicleSwapsInput, UserUncheckedCreateWithoutVehicleSwapsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutVehicleSwapsInput
+    upsert?: UserUpsertWithoutVehicleSwapsInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutVehicleSwapsInput, UserUpdateWithoutVehicleSwapsInput>, UserUncheckedUpdateWithoutVehicleSwapsInput>
   }
 
   export type NestedIntFilter<$PrismaModel = never> = {
@@ -58071,6 +60079,40 @@ export namespace Prisma {
     _max?: NestedEnumFeatureFlagScopeFilter<$PrismaModel>
   }
 
+  export type NestedEnumSwapReasonFilter<$PrismaModel = never> = {
+    equals?: $Enums.SwapReason | EnumSwapReasonFieldRefInput<$PrismaModel>
+    in?: $Enums.SwapReason[] | ListEnumSwapReasonFieldRefInput<$PrismaModel>
+    notIn?: $Enums.SwapReason[] | ListEnumSwapReasonFieldRefInput<$PrismaModel>
+    not?: NestedEnumSwapReasonFilter<$PrismaModel> | $Enums.SwapReason
+  }
+
+  export type NestedEnumVehicleStatusNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.VehicleStatus | EnumVehicleStatusFieldRefInput<$PrismaModel> | null
+    in?: $Enums.VehicleStatus[] | ListEnumVehicleStatusFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.VehicleStatus[] | ListEnumVehicleStatusFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumVehicleStatusNullableFilter<$PrismaModel> | $Enums.VehicleStatus | null
+  }
+
+  export type NestedEnumSwapReasonWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.SwapReason | EnumSwapReasonFieldRefInput<$PrismaModel>
+    in?: $Enums.SwapReason[] | ListEnumSwapReasonFieldRefInput<$PrismaModel>
+    notIn?: $Enums.SwapReason[] | ListEnumSwapReasonFieldRefInput<$PrismaModel>
+    not?: NestedEnumSwapReasonWithAggregatesFilter<$PrismaModel> | $Enums.SwapReason
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumSwapReasonFilter<$PrismaModel>
+    _max?: NestedEnumSwapReasonFilter<$PrismaModel>
+  }
+
+  export type NestedEnumVehicleStatusNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.VehicleStatus | EnumVehicleStatusFieldRefInput<$PrismaModel> | null
+    in?: $Enums.VehicleStatus[] | ListEnumVehicleStatusFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.VehicleStatus[] | ListEnumVehicleStatusFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumVehicleStatusNullableWithAggregatesFilter<$PrismaModel> | $Enums.VehicleStatus | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumVehicleStatusNullableFilter<$PrismaModel>
+    _max?: NestedEnumVehicleStatusNullableFilter<$PrismaModel>
+  }
+
   export type BranchCreateWithoutUsersInput = {
     publicId: string
     name: string
@@ -58218,6 +60260,7 @@ export namespace Prisma {
     entityId: string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -58229,6 +60272,7 @@ export namespace Prisma {
     entityId: string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -58291,6 +60335,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCreatedByInput = {
@@ -58343,6 +60388,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCreatedByInput = {
@@ -58393,6 +60439,45 @@ export namespace Prisma {
 
   export type DamageReportCreateManyApprovedByInputEnvelope = {
     data: DamageReportCreateManyApprovedByInput | DamageReportCreateManyApprovedByInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type VehicleSwapCreateWithoutSwappedByInput = {
+    publicId: string
+    reason: $Enums.SwapReason
+    reasonNotes?: string | null
+    originalVehicleStatus?: $Enums.VehicleStatus | null
+    originalVehicleNotes?: string | null
+    swappedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutVehicleSwapsInput
+    originalVehicle: VehicleCreateNestedOneWithoutSwapsAsOriginalInput
+    newVehicle: VehicleCreateNestedOneWithoutSwapsAsNewInput
+  }
+
+  export type VehicleSwapUncheckedCreateWithoutSwappedByInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    originalVehicleId: number
+    newVehicleId: number
+    reason: $Enums.SwapReason
+    reasonNotes?: string | null
+    originalVehicleStatus?: $Enums.VehicleStatus | null
+    originalVehicleNotes?: string | null
+    swappedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehicleSwapCreateOrConnectWithoutSwappedByInput = {
+    where: VehicleSwapWhereUniqueInput
+    create: XOR<VehicleSwapCreateWithoutSwappedByInput, VehicleSwapUncheckedCreateWithoutSwappedByInput>
+  }
+
+  export type VehicleSwapCreateManySwappedByInputEnvelope = {
+    data: VehicleSwapCreateManySwappedByInput | VehicleSwapCreateManySwappedByInput[]
     skipDuplicates?: boolean
   }
 
@@ -58578,6 +60663,7 @@ export namespace Prisma {
     entityId?: StringFilter<"AuditLog"> | string
     before?: JsonNullableFilter<"AuditLog">
     after?: JsonNullableFilter<"AuditLog">
+    metadata?: JsonNullableFilter<"AuditLog">
     createdAt?: DateTimeFilter<"AuditLog"> | Date | string
   }
 
@@ -58682,6 +60768,41 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"DamageReport"> | Date | string
   }
 
+  export type VehicleSwapUpsertWithWhereUniqueWithoutSwappedByInput = {
+    where: VehicleSwapWhereUniqueInput
+    update: XOR<VehicleSwapUpdateWithoutSwappedByInput, VehicleSwapUncheckedUpdateWithoutSwappedByInput>
+    create: XOR<VehicleSwapCreateWithoutSwappedByInput, VehicleSwapUncheckedCreateWithoutSwappedByInput>
+  }
+
+  export type VehicleSwapUpdateWithWhereUniqueWithoutSwappedByInput = {
+    where: VehicleSwapWhereUniqueInput
+    data: XOR<VehicleSwapUpdateWithoutSwappedByInput, VehicleSwapUncheckedUpdateWithoutSwappedByInput>
+  }
+
+  export type VehicleSwapUpdateManyWithWhereWithoutSwappedByInput = {
+    where: VehicleSwapScalarWhereInput
+    data: XOR<VehicleSwapUpdateManyMutationInput, VehicleSwapUncheckedUpdateManyWithoutSwappedByInput>
+  }
+
+  export type VehicleSwapScalarWhereInput = {
+    AND?: VehicleSwapScalarWhereInput | VehicleSwapScalarWhereInput[]
+    OR?: VehicleSwapScalarWhereInput[]
+    NOT?: VehicleSwapScalarWhereInput | VehicleSwapScalarWhereInput[]
+    id?: IntFilter<"VehicleSwap"> | number
+    publicId?: StringFilter<"VehicleSwap"> | string
+    bookingId?: IntFilter<"VehicleSwap"> | number
+    originalVehicleId?: IntFilter<"VehicleSwap"> | number
+    newVehicleId?: IntFilter<"VehicleSwap"> | number
+    swappedById?: IntFilter<"VehicleSwap"> | number
+    reason?: EnumSwapReasonFilter<"VehicleSwap"> | $Enums.SwapReason
+    reasonNotes?: StringNullableFilter<"VehicleSwap"> | string | null
+    originalVehicleStatus?: EnumVehicleStatusNullableFilter<"VehicleSwap"> | $Enums.VehicleStatus | null
+    originalVehicleNotes?: StringNullableFilter<"VehicleSwap"> | string | null
+    swappedAt?: DateTimeFilter<"VehicleSwap"> | Date | string
+    createdAt?: DateTimeFilter<"VehicleSwap"> | Date | string
+    updatedAt?: DateTimeFilter<"VehicleSwap"> | Date | string
+  }
+
   export type UserCreateWithoutProvidersInput = {
     publicId: string
     name: string
@@ -58700,6 +60821,7 @@ export namespace Prisma {
     auditLogs?: AuditLogCreateNestedManyWithoutUserInput
     bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
   }
 
   export type UserUncheckedCreateWithoutProvidersInput = {
@@ -58721,6 +60843,7 @@ export namespace Prisma {
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
     bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
   }
 
   export type UserCreateOrConnectWithoutProvidersInput = {
@@ -58757,6 +60880,7 @@ export namespace Prisma {
     auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
     bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutProvidersInput = {
@@ -58778,6 +60902,7 @@ export namespace Prisma {
     auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
     bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
   }
 
   export type UserCreateWithoutEmailOtpsInput = {
@@ -58798,6 +60923,7 @@ export namespace Prisma {
     auditLogs?: AuditLogCreateNestedManyWithoutUserInput
     bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
   }
 
   export type UserUncheckedCreateWithoutEmailOtpsInput = {
@@ -58819,6 +60945,7 @@ export namespace Prisma {
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
     bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
   }
 
   export type UserCreateOrConnectWithoutEmailOtpsInput = {
@@ -58855,6 +60982,7 @@ export namespace Prisma {
     auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
     bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutEmailOtpsInput = {
@@ -58876,6 +61004,7 @@ export namespace Prisma {
     auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
     bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
   }
 
   export type UserCreateWithoutCustomerProfileInput = {
@@ -58896,6 +61025,7 @@ export namespace Prisma {
     auditLogs?: AuditLogCreateNestedManyWithoutUserInput
     bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
   }
 
   export type UserUncheckedCreateWithoutCustomerProfileInput = {
@@ -58917,6 +61047,7 @@ export namespace Prisma {
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
     bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
   }
 
   export type UserCreateOrConnectWithoutCustomerProfileInput = {
@@ -59000,6 +61131,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCustomerInput = {
@@ -59052,6 +61184,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCustomerInput = {
@@ -59136,6 +61269,7 @@ export namespace Prisma {
     auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
     bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutCustomerProfileInput = {
@@ -59157,6 +61291,7 @@ export namespace Prisma {
     auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
     bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
   }
 
   export type CustomerKycUpsertWithWhereUniqueWithoutCustomerInput = {
@@ -59508,6 +61643,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutKycFileInput = {
@@ -59560,6 +61696,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutKycFileInput = {
@@ -59841,6 +61978,7 @@ export namespace Prisma {
     auditLogs?: AuditLogCreateNestedManyWithoutUserInput
     bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
   }
 
   export type UserUncheckedCreateWithoutBranchInput = {
@@ -59862,6 +62000,7 @@ export namespace Prisma {
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
     bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
   }
 
   export type UserCreateOrConnectWithoutBranchInput = {
@@ -59895,6 +62034,8 @@ export namespace Prisma {
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutBranchInput = {
@@ -59919,6 +62060,8 @@ export namespace Prisma {
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutBranchInput = {
@@ -59980,6 +62123,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutBranchInput = {
@@ -60032,6 +62176,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutBranchInput = {
@@ -60635,6 +62780,8 @@ export namespace Prisma {
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutCategoryInput = {
@@ -60659,6 +62806,8 @@ export namespace Prisma {
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutCategoryInput = {
@@ -60875,6 +63024,7 @@ export namespace Prisma {
     publicId: string
     name: string
     description?: string | null
+    rank?: number
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutCategoryInput
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleCreateNestedManyWithoutCategoryInput
@@ -60886,6 +63036,7 @@ export namespace Prisma {
     publicId: string
     name: string
     description?: string | null
+    rank?: number
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutCategoryInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleUncheckedCreateNestedManyWithoutCategoryInput
@@ -61135,6 +63286,84 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type VehicleSwapCreateWithoutOriginalVehicleInput = {
+    publicId: string
+    reason: $Enums.SwapReason
+    reasonNotes?: string | null
+    originalVehicleStatus?: $Enums.VehicleStatus | null
+    originalVehicleNotes?: string | null
+    swappedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutVehicleSwapsInput
+    newVehicle: VehicleCreateNestedOneWithoutSwapsAsNewInput
+    swappedBy: UserCreateNestedOneWithoutVehicleSwapsInput
+  }
+
+  export type VehicleSwapUncheckedCreateWithoutOriginalVehicleInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    newVehicleId: number
+    swappedById: number
+    reason: $Enums.SwapReason
+    reasonNotes?: string | null
+    originalVehicleStatus?: $Enums.VehicleStatus | null
+    originalVehicleNotes?: string | null
+    swappedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehicleSwapCreateOrConnectWithoutOriginalVehicleInput = {
+    where: VehicleSwapWhereUniqueInput
+    create: XOR<VehicleSwapCreateWithoutOriginalVehicleInput, VehicleSwapUncheckedCreateWithoutOriginalVehicleInput>
+  }
+
+  export type VehicleSwapCreateManyOriginalVehicleInputEnvelope = {
+    data: VehicleSwapCreateManyOriginalVehicleInput | VehicleSwapCreateManyOriginalVehicleInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type VehicleSwapCreateWithoutNewVehicleInput = {
+    publicId: string
+    reason: $Enums.SwapReason
+    reasonNotes?: string | null
+    originalVehicleStatus?: $Enums.VehicleStatus | null
+    originalVehicleNotes?: string | null
+    swappedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutVehicleSwapsInput
+    originalVehicle: VehicleCreateNestedOneWithoutSwapsAsOriginalInput
+    swappedBy: UserCreateNestedOneWithoutVehicleSwapsInput
+  }
+
+  export type VehicleSwapUncheckedCreateWithoutNewVehicleInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    originalVehicleId: number
+    swappedById: number
+    reason: $Enums.SwapReason
+    reasonNotes?: string | null
+    originalVehicleStatus?: $Enums.VehicleStatus | null
+    originalVehicleNotes?: string | null
+    swappedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehicleSwapCreateOrConnectWithoutNewVehicleInput = {
+    where: VehicleSwapWhereUniqueInput
+    create: XOR<VehicleSwapCreateWithoutNewVehicleInput, VehicleSwapUncheckedCreateWithoutNewVehicleInput>
+  }
+
+  export type VehicleSwapCreateManyNewVehicleInputEnvelope = {
+    data: VehicleSwapCreateManyNewVehicleInput | VehicleSwapCreateManyNewVehicleInput[]
+    skipDuplicates?: boolean
+  }
+
   export type BranchUpsertWithoutVehiclesInput = {
     update: XOR<BranchUpdateWithoutVehiclesInput, BranchUncheckedUpdateWithoutVehiclesInput>
     create: XOR<BranchCreateWithoutVehiclesInput, BranchUncheckedCreateWithoutVehiclesInput>
@@ -61196,6 +63425,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    rank?: IntFieldUpdateOperationsInput | number
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutCategoryNestedInput
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUpdateManyWithoutCategoryNestedInput
@@ -61207,6 +63437,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    rank?: IntFieldUpdateOperationsInput | number
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutCategoryNestedInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUncheckedUpdateManyWithoutCategoryNestedInput
@@ -61433,6 +63664,38 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"VehicleFeatureFlag"> | Date | string
   }
 
+  export type VehicleSwapUpsertWithWhereUniqueWithoutOriginalVehicleInput = {
+    where: VehicleSwapWhereUniqueInput
+    update: XOR<VehicleSwapUpdateWithoutOriginalVehicleInput, VehicleSwapUncheckedUpdateWithoutOriginalVehicleInput>
+    create: XOR<VehicleSwapCreateWithoutOriginalVehicleInput, VehicleSwapUncheckedCreateWithoutOriginalVehicleInput>
+  }
+
+  export type VehicleSwapUpdateWithWhereUniqueWithoutOriginalVehicleInput = {
+    where: VehicleSwapWhereUniqueInput
+    data: XOR<VehicleSwapUpdateWithoutOriginalVehicleInput, VehicleSwapUncheckedUpdateWithoutOriginalVehicleInput>
+  }
+
+  export type VehicleSwapUpdateManyWithWhereWithoutOriginalVehicleInput = {
+    where: VehicleSwapScalarWhereInput
+    data: XOR<VehicleSwapUpdateManyMutationInput, VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleInput>
+  }
+
+  export type VehicleSwapUpsertWithWhereUniqueWithoutNewVehicleInput = {
+    where: VehicleSwapWhereUniqueInput
+    update: XOR<VehicleSwapUpdateWithoutNewVehicleInput, VehicleSwapUncheckedUpdateWithoutNewVehicleInput>
+    create: XOR<VehicleSwapCreateWithoutNewVehicleInput, VehicleSwapUncheckedCreateWithoutNewVehicleInput>
+  }
+
+  export type VehicleSwapUpdateWithWhereUniqueWithoutNewVehicleInput = {
+    where: VehicleSwapWhereUniqueInput
+    data: XOR<VehicleSwapUpdateWithoutNewVehicleInput, VehicleSwapUncheckedUpdateWithoutNewVehicleInput>
+  }
+
+  export type VehicleSwapUpdateManyWithWhereWithoutNewVehicleInput = {
+    where: VehicleSwapScalarWhereInput
+    data: XOR<VehicleSwapUpdateManyMutationInput, VehicleSwapUncheckedUpdateManyWithoutNewVehicleInput>
+  }
+
   export type VehicleCreateWithoutPricingOverrideInput = {
     publicId: string
     make: string
@@ -61454,6 +63717,8 @@ export namespace Prisma {
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutPricingOverrideInput = {
@@ -61478,6 +63743,8 @@ export namespace Prisma {
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutPricingOverrideInput = {
@@ -61517,6 +63784,8 @@ export namespace Prisma {
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutPricingOverrideInput = {
@@ -61541,6 +63810,8 @@ export namespace Prisma {
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
   }
 
   export type VehicleCreateWithoutCustomPricingInput = {
@@ -61564,6 +63835,8 @@ export namespace Prisma {
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutCustomPricingInput = {
@@ -61588,6 +63861,8 @@ export namespace Prisma {
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutCustomPricingInput = {
@@ -61627,6 +63902,8 @@ export namespace Prisma {
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutCustomPricingInput = {
@@ -61651,6 +63928,8 @@ export namespace Prisma {
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
   }
 
   export type BranchCreateWithoutBranchPricingDefaultsInput = {
@@ -61697,6 +63976,7 @@ export namespace Prisma {
     publicId: string
     name: string
     description?: string | null
+    rank?: number
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutCategoryInput
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleCreateNestedManyWithoutCategoryInput
@@ -61708,6 +63988,7 @@ export namespace Prisma {
     publicId: string
     name: string
     description?: string | null
+    rank?: number
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutCategoryInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleUncheckedCreateNestedManyWithoutCategoryInput
@@ -61780,6 +64061,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    rank?: IntFieldUpdateOperationsInput | number
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutCategoryNestedInput
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUpdateManyWithoutCategoryNestedInput
@@ -61791,6 +64073,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    rank?: IntFieldUpdateOperationsInput | number
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutCategoryNestedInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUncheckedUpdateManyWithoutCategoryNestedInput
@@ -61818,6 +64101,8 @@ export namespace Prisma {
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutInsuranceRecordsInput = {
@@ -61842,6 +64127,8 @@ export namespace Prisma {
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutInsuranceRecordsInput = {
@@ -61881,6 +64168,8 @@ export namespace Prisma {
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutInsuranceRecordsInput = {
@@ -61905,6 +64194,8 @@ export namespace Prisma {
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
   }
 
   export type VehicleCreateWithoutMaintenanceInput = {
@@ -61928,6 +64219,8 @@ export namespace Prisma {
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutMaintenanceInput = {
@@ -61952,6 +64245,8 @@ export namespace Prisma {
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutMaintenanceInput = {
@@ -61991,6 +64286,8 @@ export namespace Prisma {
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutMaintenanceInput = {
@@ -62015,6 +64312,8 @@ export namespace Prisma {
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
   }
 
   export type VehicleCreateWithoutImagesInput = {
@@ -62038,6 +64337,8 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutImagesInput = {
@@ -62062,6 +64363,8 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutImagesInput = {
@@ -62135,6 +64438,8 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutImagesInput = {
@@ -62159,6 +64464,8 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
   }
 
   export type FileObjectUpsertWithoutVehicleImagesInput = {
@@ -62205,6 +64512,7 @@ export namespace Prisma {
     publicId: string
     name: string
     description?: string | null
+    rank?: number
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutCategoryInput
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleCreateNestedManyWithoutCategoryInput
@@ -62216,6 +64524,7 @@ export namespace Prisma {
     publicId: string
     name: string
     description?: string | null
+    rank?: number
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutCategoryInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleUncheckedCreateNestedManyWithoutCategoryInput
@@ -62242,6 +64551,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    rank?: IntFieldUpdateOperationsInput | number
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutCategoryNestedInput
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUpdateManyWithoutCategoryNestedInput
@@ -62253,6 +64563,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    rank?: IntFieldUpdateOperationsInput | number
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutCategoryNestedInput
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUncheckedUpdateManyWithoutCategoryNestedInput
@@ -62303,6 +64614,7 @@ export namespace Prisma {
     publicId: string
     name: string
     description?: string | null
+    rank?: number
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleCreateNestedManyWithoutCategoryInput
@@ -62314,6 +64626,7 @@ export namespace Prisma {
     publicId: string
     name: string
     description?: string | null
+    rank?: number
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleUncheckedCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleUncheckedCreateNestedManyWithoutCategoryInput
@@ -62386,6 +64699,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    rank?: IntFieldUpdateOperationsInput | number
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUpdateManyWithoutCategoryNestedInput
@@ -62397,6 +64711,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    rank?: IntFieldUpdateOperationsInput | number
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUncheckedUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUncheckedUpdateManyWithoutCategoryNestedInput
@@ -62447,6 +64762,7 @@ export namespace Prisma {
     publicId: string
     name: string
     description?: string | null
+    rank?: number
     pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleCreateNestedManyWithoutCategoryInput
@@ -62458,6 +64774,7 @@ export namespace Prisma {
     publicId: string
     name: string
     description?: string | null
+    rank?: number
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleUncheckedCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleUncheckedCreateNestedManyWithoutCategoryInput
@@ -62530,6 +64847,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    rank?: IntFieldUpdateOperationsInput | number
     pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUpdateManyWithoutCategoryNestedInput
@@ -62541,6 +64859,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    rank?: IntFieldUpdateOperationsInput | number
     pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUncheckedUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUncheckedUpdateManyWithoutCategoryNestedInput
@@ -62681,6 +65000,7 @@ export namespace Prisma {
     customerProfile?: CustomerCreateNestedOneWithoutUserInput
     auditLogs?: AuditLogCreateNestedManyWithoutUserInput
     approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
   }
 
   export type UserUncheckedCreateWithoutBookingsCreatedInput = {
@@ -62702,6 +65022,7 @@ export namespace Prisma {
     customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
     approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
   }
 
   export type UserCreateOrConnectWithoutBookingsCreatedInput = {
@@ -62918,6 +65239,45 @@ export namespace Prisma {
     create: XOR<CancellationInvoiceCreateWithoutBookingInput, CancellationInvoiceUncheckedCreateWithoutBookingInput>
   }
 
+  export type VehicleSwapCreateWithoutBookingInput = {
+    publicId: string
+    reason: $Enums.SwapReason
+    reasonNotes?: string | null
+    originalVehicleStatus?: $Enums.VehicleStatus | null
+    originalVehicleNotes?: string | null
+    swappedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    originalVehicle: VehicleCreateNestedOneWithoutSwapsAsOriginalInput
+    newVehicle: VehicleCreateNestedOneWithoutSwapsAsNewInput
+    swappedBy: UserCreateNestedOneWithoutVehicleSwapsInput
+  }
+
+  export type VehicleSwapUncheckedCreateWithoutBookingInput = {
+    id?: number
+    publicId: string
+    originalVehicleId: number
+    newVehicleId: number
+    swappedById: number
+    reason: $Enums.SwapReason
+    reasonNotes?: string | null
+    originalVehicleStatus?: $Enums.VehicleStatus | null
+    originalVehicleNotes?: string | null
+    swappedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehicleSwapCreateOrConnectWithoutBookingInput = {
+    where: VehicleSwapWhereUniqueInput
+    create: XOR<VehicleSwapCreateWithoutBookingInput, VehicleSwapUncheckedCreateWithoutBookingInput>
+  }
+
+  export type VehicleSwapCreateManyBookingInputEnvelope = {
+    data: VehicleSwapCreateManyBookingInput | VehicleSwapCreateManyBookingInput[]
+    skipDuplicates?: boolean
+  }
+
   export type FileObjectUpsertWithoutBookingKycsInput = {
     update: XOR<FileObjectUpdateWithoutBookingKycsInput, FileObjectUncheckedUpdateWithoutBookingKycsInput>
     create: XOR<FileObjectCreateWithoutBookingKycsInput, FileObjectUncheckedCreateWithoutBookingKycsInput>
@@ -63081,6 +65441,7 @@ export namespace Prisma {
     customerProfile?: CustomerUpdateOneWithoutUserNestedInput
     auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
     approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutBookingsCreatedInput = {
@@ -63102,6 +65463,7 @@ export namespace Prisma {
     customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
     approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
   }
 
   export type BookingPhotoUpsertWithWhereUniqueWithoutBookingInput = {
@@ -63272,6 +65634,22 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type VehicleSwapUpsertWithWhereUniqueWithoutBookingInput = {
+    where: VehicleSwapWhereUniqueInput
+    update: XOR<VehicleSwapUpdateWithoutBookingInput, VehicleSwapUncheckedUpdateWithoutBookingInput>
+    create: XOR<VehicleSwapCreateWithoutBookingInput, VehicleSwapUncheckedCreateWithoutBookingInput>
+  }
+
+  export type VehicleSwapUpdateWithWhereUniqueWithoutBookingInput = {
+    where: VehicleSwapWhereUniqueInput
+    data: XOR<VehicleSwapUpdateWithoutBookingInput, VehicleSwapUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type VehicleSwapUpdateManyWithWhereWithoutBookingInput = {
+    where: VehicleSwapScalarWhereInput
+    data: XOR<VehicleSwapUpdateManyMutationInput, VehicleSwapUncheckedUpdateManyWithoutBookingInput>
+  }
+
   export type VehicleCreateWithoutBookingItemsInput = {
     publicId: string
     make: string
@@ -63293,6 +65671,8 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutBookingItemsInput = {
@@ -63317,6 +65697,8 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutBookingItemsInput = {
@@ -63373,6 +65755,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutItemsInput = {
@@ -63425,6 +65808,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutItemsInput = {
@@ -63464,6 +65848,8 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutBookingItemsInput = {
@@ -63488,6 +65874,8 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
   }
 
   export type BookingUpsertWithoutItemsInput = {
@@ -63550,6 +65938,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutItemsInput = {
@@ -63602,6 +65991,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingCreateWithoutPhotosInput = {
@@ -63653,6 +66043,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutPhotosInput = {
@@ -63705,6 +66096,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutPhotosInput = {
@@ -63842,6 +66234,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutPhotosInput = {
@@ -63894,6 +66287,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type FileObjectUpsertWithoutBookingPhotosInput = {
@@ -64027,6 +66421,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDamagesInput = {
@@ -64079,6 +66474,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDamagesInput = {
@@ -64107,6 +66503,8 @@ export namespace Prisma {
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutDamageReportsInput = {
@@ -64131,6 +66529,8 @@ export namespace Prisma {
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutDamageReportsInput = {
@@ -64156,6 +66556,7 @@ export namespace Prisma {
     customerProfile?: CustomerCreateNestedOneWithoutUserInput
     auditLogs?: AuditLogCreateNestedManyWithoutUserInput
     bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
   }
 
   export type UserUncheckedCreateWithoutApprovedDamageReportsInput = {
@@ -64177,6 +66578,7 @@ export namespace Prisma {
     customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
     bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
   }
 
   export type UserCreateOrConnectWithoutApprovedDamageReportsInput = {
@@ -64271,6 +66673,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDamagesInput = {
@@ -64323,6 +66726,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type VehicleUpsertWithoutDamageReportsInput = {
@@ -64357,6 +66761,8 @@ export namespace Prisma {
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutDamageReportsInput = {
@@ -64381,6 +66787,8 @@ export namespace Prisma {
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
   }
 
   export type UserUpsertWithoutApprovedDamageReportsInput = {
@@ -64412,6 +66820,7 @@ export namespace Prisma {
     customerProfile?: CustomerUpdateOneWithoutUserNestedInput
     auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
     bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutApprovedDamageReportsInput = {
@@ -64433,6 +66842,7 @@ export namespace Prisma {
     customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
     bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
   }
 
   export type BookingPhotoUpsertWithWhereUniqueWithoutDamageReportInput = {
@@ -64500,6 +66910,7 @@ export namespace Prisma {
     items?: BookingItemCreateNestedManyWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDepositInput = {
@@ -64552,6 +66963,7 @@ export namespace Prisma {
     items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDepositInput = {
@@ -64619,6 +67031,7 @@ export namespace Prisma {
     items?: BookingItemUpdateManyWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDepositInput = {
@@ -64671,6 +67084,7 @@ export namespace Prisma {
     items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type InvoiceCreateWithoutPaymentsInput = {
@@ -64838,6 +67252,7 @@ export namespace Prisma {
     items?: BookingItemCreateNestedManyWithoutBookingInput
     deposit?: DepositCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutInvoiceInput = {
@@ -64890,6 +67305,7 @@ export namespace Prisma {
     items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutInvoiceInput = {
@@ -65051,6 +67467,7 @@ export namespace Prisma {
     items?: BookingItemUpdateManyWithoutBookingNestedInput
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutInvoiceInput = {
@@ -65103,6 +67520,7 @@ export namespace Prisma {
     items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type InvoiceItemUpsertWithWhereUniqueWithoutInvoiceInput = {
@@ -65263,6 +67681,7 @@ export namespace Prisma {
     customerProfile?: CustomerCreateNestedOneWithoutUserInput
     bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
   }
 
   export type UserUncheckedCreateWithoutAuditLogsInput = {
@@ -65284,6 +67703,7 @@ export namespace Prisma {
     customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
     bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
   }
 
   export type UserCreateOrConnectWithoutAuditLogsInput = {
@@ -65320,6 +67740,7 @@ export namespace Prisma {
     customerProfile?: CustomerUpdateOneWithoutUserNestedInput
     bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAuditLogsInput = {
@@ -65341,6 +67762,7 @@ export namespace Prisma {
     customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
     bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
   }
 
   export type BranchCreateWithoutGstRuleInput = {
@@ -65478,6 +67900,7 @@ export namespace Prisma {
     items?: BookingItemCreateNestedManyWithoutBookingInput
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCancellationInvoiceInput = {
@@ -65530,6 +67953,7 @@ export namespace Prisma {
     items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCancellationInvoiceInput = {
@@ -65673,6 +68097,7 @@ export namespace Prisma {
     items?: BookingItemUpdateManyWithoutBookingNestedInput
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCancellationInvoiceInput = {
@@ -65725,6 +68150,7 @@ export namespace Prisma {
     items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type CustomerUpsertWithoutCancellationInvoicesInput = {
@@ -66078,6 +68504,8 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
     images?: VehicleImageCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutFeatureFlagsInput = {
@@ -66102,6 +68530,8 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
     images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutFeatureFlagsInput = {
@@ -66173,6 +68603,8 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutFeatureFlagsInput = {
@@ -66197,6 +68629,8 @@ export namespace Prisma {
     customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
   }
 
   export type FeatureFlagUpsertWithoutVehicleFlagsInput = {
@@ -66237,6 +68671,570 @@ export namespace Prisma {
     branchFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutFlagNestedInput
   }
 
+  export type BookingCreateWithoutVehicleSwapsInput = {
+    publicId: string
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
+    customer: CustomerCreateNestedOneWithoutBookingsInput
+    branch: BranchCreateNestedOneWithoutBookingsInput
+    createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
+    photos?: BookingPhotoCreateNestedManyWithoutBookingInput
+    damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
+    deposit?: DepositCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingUncheckedCreateWithoutVehicleSwapsInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
+    damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
+    deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingCreateOrConnectWithoutVehicleSwapsInput = {
+    where: BookingWhereUniqueInput
+    create: XOR<BookingCreateWithoutVehicleSwapsInput, BookingUncheckedCreateWithoutVehicleSwapsInput>
+  }
+
+  export type VehicleCreateWithoutSwapsAsOriginalInput = {
+    publicId: string
+    make: string
+    model: string
+    regNo: string
+    odo: number
+    fuelLevel?: number
+    insuranceExpiry: Date | string
+    status?: $Enums.VehicleStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch: BranchCreateNestedOneWithoutVehiclesInput
+    category: VehicleCategoryCreateNestedOneWithoutVehiclesInput
+    insuranceRecords?: VehicleInsuranceCreateNestedManyWithoutVehicleInput
+    maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
+    damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
+    swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
+  }
+
+  export type VehicleUncheckedCreateWithoutSwapsAsOriginalInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    categoryId: number
+    make: string
+    model: string
+    regNo: string
+    odo: number
+    fuelLevel?: number
+    insuranceExpiry: Date | string
+    status?: $Enums.VehicleStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    insuranceRecords?: VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput
+    maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
+    damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
+    swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
+  }
+
+  export type VehicleCreateOrConnectWithoutSwapsAsOriginalInput = {
+    where: VehicleWhereUniqueInput
+    create: XOR<VehicleCreateWithoutSwapsAsOriginalInput, VehicleUncheckedCreateWithoutSwapsAsOriginalInput>
+  }
+
+  export type VehicleCreateWithoutSwapsAsNewInput = {
+    publicId: string
+    make: string
+    model: string
+    regNo: string
+    odo: number
+    fuelLevel?: number
+    insuranceExpiry: Date | string
+    status?: $Enums.VehicleStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch: BranchCreateNestedOneWithoutVehiclesInput
+    category: VehicleCategoryCreateNestedOneWithoutVehiclesInput
+    insuranceRecords?: VehicleInsuranceCreateNestedManyWithoutVehicleInput
+    maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
+    damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
+  }
+
+  export type VehicleUncheckedCreateWithoutSwapsAsNewInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    categoryId: number
+    make: string
+    model: string
+    regNo: string
+    odo: number
+    fuelLevel?: number
+    insuranceExpiry: Date | string
+    status?: $Enums.VehicleStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    insuranceRecords?: VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput
+    maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
+    damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
+  }
+
+  export type VehicleCreateOrConnectWithoutSwapsAsNewInput = {
+    where: VehicleWhereUniqueInput
+    create: XOR<VehicleCreateWithoutSwapsAsNewInput, VehicleUncheckedCreateWithoutSwapsAsNewInput>
+  }
+
+  export type UserCreateWithoutVehicleSwapsInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    auditLogs?: AuditLogCreateNestedManyWithoutUserInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+  }
+
+  export type UserUncheckedCreateWithoutVehicleSwapsInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+  }
+
+  export type UserCreateOrConnectWithoutVehicleSwapsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutVehicleSwapsInput, UserUncheckedCreateWithoutVehicleSwapsInput>
+  }
+
+  export type BookingUpsertWithoutVehicleSwapsInput = {
+    update: XOR<BookingUpdateWithoutVehicleSwapsInput, BookingUncheckedUpdateWithoutVehicleSwapsInput>
+    create: XOR<BookingCreateWithoutVehicleSwapsInput, BookingUncheckedCreateWithoutVehicleSwapsInput>
+    where?: BookingWhereInput
+  }
+
+  export type BookingUpdateToOneWithWhereWithoutVehicleSwapsInput = {
+    where?: BookingWhereInput
+    data: XOR<BookingUpdateWithoutVehicleSwapsInput, BookingUncheckedUpdateWithoutVehicleSwapsInput>
+  }
+
+  export type BookingUpdateWithoutVehicleSwapsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
+    customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
+    photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateWithoutVehicleSwapsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+  }
+
+  export type VehicleUpsertWithoutSwapsAsOriginalInput = {
+    update: XOR<VehicleUpdateWithoutSwapsAsOriginalInput, VehicleUncheckedUpdateWithoutSwapsAsOriginalInput>
+    create: XOR<VehicleCreateWithoutSwapsAsOriginalInput, VehicleUncheckedCreateWithoutSwapsAsOriginalInput>
+    where?: VehicleWhereInput
+  }
+
+  export type VehicleUpdateToOneWithWhereWithoutSwapsAsOriginalInput = {
+    where?: VehicleWhereInput
+    data: XOR<VehicleUpdateWithoutSwapsAsOriginalInput, VehicleUncheckedUpdateWithoutSwapsAsOriginalInput>
+  }
+
+  export type VehicleUpdateWithoutSwapsAsOriginalInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    make?: StringFieldUpdateOperationsInput | string
+    model?: StringFieldUpdateOperationsInput | string
+    regNo?: StringFieldUpdateOperationsInput | string
+    odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
+    insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneRequiredWithoutVehiclesNestedInput
+    category?: VehicleCategoryUpdateOneRequiredWithoutVehiclesNestedInput
+    insuranceRecords?: VehicleInsuranceUpdateManyWithoutVehicleNestedInput
+    maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
+    damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
+    swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
+  }
+
+  export type VehicleUncheckedUpdateWithoutSwapsAsOriginalInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    categoryId?: IntFieldUpdateOperationsInput | number
+    make?: StringFieldUpdateOperationsInput | string
+    model?: StringFieldUpdateOperationsInput | string
+    regNo?: StringFieldUpdateOperationsInput | string
+    odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
+    insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    insuranceRecords?: VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput
+    maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
+    damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
+    swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
+  }
+
+  export type VehicleUpsertWithoutSwapsAsNewInput = {
+    update: XOR<VehicleUpdateWithoutSwapsAsNewInput, VehicleUncheckedUpdateWithoutSwapsAsNewInput>
+    create: XOR<VehicleCreateWithoutSwapsAsNewInput, VehicleUncheckedCreateWithoutSwapsAsNewInput>
+    where?: VehicleWhereInput
+  }
+
+  export type VehicleUpdateToOneWithWhereWithoutSwapsAsNewInput = {
+    where?: VehicleWhereInput
+    data: XOR<VehicleUpdateWithoutSwapsAsNewInput, VehicleUncheckedUpdateWithoutSwapsAsNewInput>
+  }
+
+  export type VehicleUpdateWithoutSwapsAsNewInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    make?: StringFieldUpdateOperationsInput | string
+    model?: StringFieldUpdateOperationsInput | string
+    regNo?: StringFieldUpdateOperationsInput | string
+    odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
+    insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneRequiredWithoutVehiclesNestedInput
+    category?: VehicleCategoryUpdateOneRequiredWithoutVehiclesNestedInput
+    insuranceRecords?: VehicleInsuranceUpdateManyWithoutVehicleNestedInput
+    maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
+    damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
+  }
+
+  export type VehicleUncheckedUpdateWithoutSwapsAsNewInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    categoryId?: IntFieldUpdateOperationsInput | number
+    make?: StringFieldUpdateOperationsInput | string
+    model?: StringFieldUpdateOperationsInput | string
+    regNo?: StringFieldUpdateOperationsInput | string
+    odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
+    insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    insuranceRecords?: VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput
+    maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
+    damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
+  }
+
+  export type UserUpsertWithoutVehicleSwapsInput = {
+    update: XOR<UserUpdateWithoutVehicleSwapsInput, UserUncheckedUpdateWithoutVehicleSwapsInput>
+    create: XOR<UserCreateWithoutVehicleSwapsInput, UserUncheckedCreateWithoutVehicleSwapsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutVehicleSwapsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutVehicleSwapsInput, UserUncheckedUpdateWithoutVehicleSwapsInput>
+  }
+
+  export type UserUpdateWithoutVehicleSwapsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutVehicleSwapsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+  }
+
   export type EmailVerificationOtpCreateManyUserInput = {
     id?: number
     phone: string
@@ -66265,6 +69263,7 @@ export namespace Prisma {
     entityId: string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -66327,6 +69326,21 @@ export namespace Prisma {
     status?: $Enums.DamageReportStatus
     disposition?: $Enums.VehicleReturnDisposition | null
     createdAt?: Date | string
+  }
+
+  export type VehicleSwapCreateManySwappedByInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    originalVehicleId: number
+    newVehicleId: number
+    reason: $Enums.SwapReason
+    reasonNotes?: string | null
+    originalVehicleStatus?: $Enums.VehicleStatus | null
+    originalVehicleNotes?: string | null
+    swappedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type EmailVerificationOtpUpdateWithoutUserInput = {
@@ -66394,6 +69408,7 @@ export namespace Prisma {
     entityId?: StringFieldUpdateOperationsInput | string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -66405,6 +69420,7 @@ export namespace Prisma {
     entityId?: StringFieldUpdateOperationsInput | string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -66416,6 +69432,7 @@ export namespace Prisma {
     entityId?: StringFieldUpdateOperationsInput | string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -66468,6 +69485,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCreatedByInput = {
@@ -66520,6 +69538,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutCreatedByInput = {
@@ -66612,6 +69631,50 @@ export namespace Prisma {
     status?: EnumDamageReportStatusFieldUpdateOperationsInput | $Enums.DamageReportStatus
     disposition?: NullableEnumVehicleReturnDispositionFieldUpdateOperationsInput | $Enums.VehicleReturnDisposition | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleSwapUpdateWithoutSwappedByInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    reason?: EnumSwapReasonFieldUpdateOperationsInput | $Enums.SwapReason
+    reasonNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    originalVehicleStatus?: NullableEnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus | null
+    originalVehicleNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutVehicleSwapsNestedInput
+    originalVehicle?: VehicleUpdateOneRequiredWithoutSwapsAsOriginalNestedInput
+    newVehicle?: VehicleUpdateOneRequiredWithoutSwapsAsNewNestedInput
+  }
+
+  export type VehicleSwapUncheckedUpdateWithoutSwappedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    originalVehicleId?: IntFieldUpdateOperationsInput | number
+    newVehicleId?: IntFieldUpdateOperationsInput | number
+    reason?: EnumSwapReasonFieldUpdateOperationsInput | $Enums.SwapReason
+    reasonNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    originalVehicleStatus?: NullableEnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus | null
+    originalVehicleNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleSwapUncheckedUpdateManyWithoutSwappedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    originalVehicleId?: IntFieldUpdateOperationsInput | number
+    newVehicleId?: IntFieldUpdateOperationsInput | number
+    reason?: EnumSwapReasonFieldUpdateOperationsInput | $Enums.SwapReason
+    reasonNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    originalVehicleStatus?: NullableEnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus | null
+    originalVehicleNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type CustomerKycCreateManyCustomerInput = {
@@ -66761,6 +69824,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCustomerInput = {
@@ -66813,6 +69877,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutCustomerInput = {
@@ -67116,6 +70181,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutKycFileInput = {
@@ -67168,6 +70234,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutKycFileInput = {
@@ -67471,6 +70538,7 @@ export namespace Prisma {
     auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
     bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutBranchInput = {
@@ -67492,6 +70560,7 @@ export namespace Prisma {
     auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
     bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
   }
 
   export type UserUncheckedUpdateManyWithoutBranchInput = {
@@ -67530,6 +70599,8 @@ export namespace Prisma {
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutBranchInput = {
@@ -67554,6 +70625,8 @@ export namespace Prisma {
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateManyWithoutBranchInput = {
@@ -67621,6 +70694,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutBranchInput = {
@@ -67673,6 +70747,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutBranchInput = {
@@ -67946,6 +71021,8 @@ export namespace Prisma {
     images?: VehicleImageUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutCategoryInput = {
@@ -67970,6 +71047,8 @@ export namespace Prisma {
     images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateManyWithoutCategoryInput = {
@@ -68120,6 +71199,36 @@ export namespace Prisma {
     flagId: number
     enabled?: boolean
     config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehicleSwapCreateManyOriginalVehicleInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    newVehicleId: number
+    swappedById: number
+    reason: $Enums.SwapReason
+    reasonNotes?: string | null
+    originalVehicleStatus?: $Enums.VehicleStatus | null
+    originalVehicleNotes?: string | null
+    swappedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehicleSwapCreateManyNewVehicleInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    originalVehicleId: number
+    swappedById: number
+    reason: $Enums.SwapReason
+    reasonNotes?: string | null
+    originalVehicleStatus?: $Enums.VehicleStatus | null
+    originalVehicleNotes?: string | null
+    swappedAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -68309,6 +71418,94 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type VehicleSwapUpdateWithoutOriginalVehicleInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    reason?: EnumSwapReasonFieldUpdateOperationsInput | $Enums.SwapReason
+    reasonNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    originalVehicleStatus?: NullableEnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus | null
+    originalVehicleNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutVehicleSwapsNestedInput
+    newVehicle?: VehicleUpdateOneRequiredWithoutSwapsAsNewNestedInput
+    swappedBy?: UserUpdateOneRequiredWithoutVehicleSwapsNestedInput
+  }
+
+  export type VehicleSwapUncheckedUpdateWithoutOriginalVehicleInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    newVehicleId?: IntFieldUpdateOperationsInput | number
+    swappedById?: IntFieldUpdateOperationsInput | number
+    reason?: EnumSwapReasonFieldUpdateOperationsInput | $Enums.SwapReason
+    reasonNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    originalVehicleStatus?: NullableEnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus | null
+    originalVehicleNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    newVehicleId?: IntFieldUpdateOperationsInput | number
+    swappedById?: IntFieldUpdateOperationsInput | number
+    reason?: EnumSwapReasonFieldUpdateOperationsInput | $Enums.SwapReason
+    reasonNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    originalVehicleStatus?: NullableEnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus | null
+    originalVehicleNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleSwapUpdateWithoutNewVehicleInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    reason?: EnumSwapReasonFieldUpdateOperationsInput | $Enums.SwapReason
+    reasonNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    originalVehicleStatus?: NullableEnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus | null
+    originalVehicleNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutVehicleSwapsNestedInput
+    originalVehicle?: VehicleUpdateOneRequiredWithoutSwapsAsOriginalNestedInput
+    swappedBy?: UserUpdateOneRequiredWithoutVehicleSwapsNestedInput
+  }
+
+  export type VehicleSwapUncheckedUpdateWithoutNewVehicleInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    originalVehicleId?: IntFieldUpdateOperationsInput | number
+    swappedById?: IntFieldUpdateOperationsInput | number
+    reason?: EnumSwapReasonFieldUpdateOperationsInput | $Enums.SwapReason
+    reasonNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    originalVehicleStatus?: NullableEnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus | null
+    originalVehicleNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleSwapUncheckedUpdateManyWithoutNewVehicleInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    originalVehicleId?: IntFieldUpdateOperationsInput | number
+    swappedById?: IntFieldUpdateOperationsInput | number
+    reason?: EnumSwapReasonFieldUpdateOperationsInput | $Enums.SwapReason
+    reasonNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    originalVehicleStatus?: NullableEnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus | null
+    originalVehicleNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type BookingPhotoCreateManyBookingInput = {
     id?: number
     publicId: string
@@ -68346,6 +71543,21 @@ export namespace Prisma {
     sgstAmount?: Decimal | DecimalJsLike | number | string
     taxRate?: Decimal | DecimalJsLike | number | string
     finalTotal: Decimal | DecimalJsLike | number | string
+  }
+
+  export type VehicleSwapCreateManyBookingInput = {
+    id?: number
+    publicId: string
+    originalVehicleId: number
+    newVehicleId: number
+    swappedById: number
+    reason: $Enums.SwapReason
+    reasonNotes?: string | null
+    originalVehicleStatus?: $Enums.VehicleStatus | null
+    originalVehicleNotes?: string | null
+    swappedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type BookingPhotoUpdateWithoutBookingInput = {
@@ -68462,6 +71674,50 @@ export namespace Prisma {
     sgstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     finalTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+  }
+
+  export type VehicleSwapUpdateWithoutBookingInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    reason?: EnumSwapReasonFieldUpdateOperationsInput | $Enums.SwapReason
+    reasonNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    originalVehicleStatus?: NullableEnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus | null
+    originalVehicleNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    originalVehicle?: VehicleUpdateOneRequiredWithoutSwapsAsOriginalNestedInput
+    newVehicle?: VehicleUpdateOneRequiredWithoutSwapsAsNewNestedInput
+    swappedBy?: UserUpdateOneRequiredWithoutVehicleSwapsNestedInput
+  }
+
+  export type VehicleSwapUncheckedUpdateWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    originalVehicleId?: IntFieldUpdateOperationsInput | number
+    newVehicleId?: IntFieldUpdateOperationsInput | number
+    swappedById?: IntFieldUpdateOperationsInput | number
+    reason?: EnumSwapReasonFieldUpdateOperationsInput | $Enums.SwapReason
+    reasonNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    originalVehicleStatus?: NullableEnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus | null
+    originalVehicleNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleSwapUncheckedUpdateManyWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    originalVehicleId?: IntFieldUpdateOperationsInput | number
+    newVehicleId?: IntFieldUpdateOperationsInput | number
+    swappedById?: IntFieldUpdateOperationsInput | number
+    reason?: EnumSwapReasonFieldUpdateOperationsInput | $Enums.SwapReason
+    reasonNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    originalVehicleStatus?: NullableEnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus | null
+    originalVehicleNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type BookingPhotoCreateManyDamageReportInput = {
@@ -68832,6 +72088,10 @@ export namespace Prisma {
      * @deprecated Use VehicleFeatureFlagDefaultArgs instead
      */
     export type VehicleFeatureFlagArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = VehicleFeatureFlagDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use VehicleSwapDefaultArgs instead
+     */
+    export type VehicleSwapArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = VehicleSwapDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

@@ -65,10 +65,11 @@ export const managerDashboardService = {
     return managerDashboardService.getDashboardStats();
   },
 
-  getActiveBookings: async (): Promise<Booking[]> => {
+  getActiveBookings: async (date?: string): Promise<Booking[]> => {
+    const params = date ? { date } : {};
     const response = await apiClient.get(
       "/branchManager/dashboard/bookings/active",
-      { timeout: 10000 },
+      { params, timeout: 10000 },
     );
     const rawBookings = response.data.data.bookings || [];
 

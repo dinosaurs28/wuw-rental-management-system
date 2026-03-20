@@ -109,6 +109,15 @@ enum RentalPeriodType {
   MONTHLY
 }
 
+enum SwapReason {
+  CUSTOMER_REQUEST
+  MAINTENANCE
+  UPGRADE
+  DOWNGRADE
+  DAMAGE
+  OTHER
+}
+
 // USER & AUTH
 
 model User {
@@ -130,6 +139,7 @@ model User {
   auditLogs             AuditLog[]
   bookingsCreated       Booking[]              @relation("BookingCreator")
   approvedDamageReports DamageReport[]
+  vehicleSwaps          VehicleSwap[]
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   deletedAt             DateTime?
@@ -283,6 +293,7 @@ model VehicleCategory {
   publicId    String  @unique
   name        String
   description String?
+  rank        Int     @default(1)
 
   pricingDiscountSlabs    PricingDiscountSlab[]
   categoryDepositSettings CategoryDepositSetting[]
@@ -313,6 +324,8 @@ model Vehicle {
   images           VehicleImage[]
   bookingItems     BookingItem[]
   featureFlags     VehicleFeatureFlag[]
+  swapsAsOriginal  VehicleSwap[]              @relation("OriginalVehicle")
+  swapsAsNew       VehicleSwap[]              @relation("NewVehicle")
   createdAt        DateTime                   @default(now())
   updatedAt        DateTime                   @updatedAt
   deletedAt        DateTime?
@@ -504,13 +517,14 @@ model Booking {
   deposit Deposit?
   invoice Invoice?
   cancellationInvoice CancellationInvoice?
+  vehicleSwaps VehicleSwap[]
 
   // Advance Payment Tracking
   advanceAmount         Decimal   @default(0)
   advancePaidAt         DateTime?
   advancePaymentId      String?
   advancePaymentMode    DepositMethod?
-  
+
   // Safety Deposit Tracking
   safetyDeposit         Decimal   @default(0)
   safetyDepositPaidAt   DateTime?
@@ -518,7 +532,7 @@ model Booking {
   safetyDepositRefunded Boolean   @default(false)
   safetyDepositRefundedAt DateTime?
   safetyDepositSetOff   Boolean   @default(false)
-  
+
   // Cancellation Tracking
   cancelledAt        DateTime?
   cancellationReason String?
@@ -732,7 +746,7 @@ model TimezoneSetting {
   enabled   Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([timezone])
 }
 
@@ -741,25 +755,25 @@ model CancellationInvoice {
   publicId          String   @unique
   bookingId         Int      @unique
   customerId        Int
-  
+
   advanceAmount     Decimal
   cancellationFee   Decimal
   reason            String?
   notes             String?
-  
+
   invoiceNumber     String?  @unique
   invoicePdfFileId  Int?
   generatedAt       DateTime?
   sentToCustomer    Boolean  @default(false)
   sentAt            DateTime?
-  
+
   booking           Booking     @relation(fields: [bookingId], references: [id])
   customer          Customer    @relation(fields: [customerId], references: [id])
   invoicePdfFile    FileObject? @relation("CancellationInvoicePdf", fields: [invoicePdfFileId], references: [id])
-  
+
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
-  
+
   @@index([bookingId])
   @@index([customerId])
   @@index([invoiceNumber])
@@ -830,4 +844,33 @@ model VehicleFeatureFlag {
   @@index([vehicleId])
   @@index([flagId])
   @@index([enabled])
+}
+
+model VehicleSwap {
+  id                     Int            @id @default(autoincrement())
+  publicId               String         @unique
+  bookingId              Int
+  originalVehicleId      Int
+  newVehicleId           Int
+  swappedById            Int
+  reason                 SwapReason
+  reasonNotes            String?
+  originalVehicleStatus  VehicleStatus?
+  originalVehicleNotes   String?
+  swappedAt              DateTime       @default(now())
+
+  booking                Booking        @relation(fields: [bookingId], references: [id])
+  originalVehicle        Vehicle        @relation("OriginalVehicle", fields: [originalVehicleId], references: [id])
+  newVehicle             Vehicle        @relation("NewVehicle", fields: [newVehicleId], references: [id])
+  swappedBy              User           @relation(fields: [swappedById], references: [id])
+
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+
+  @@index([bookingId])
+  @@index([originalVehicleId])
+  @@index([newVehicleId])
+  @@index([swappedById])
+  @@index([swappedAt])
+  @@index([reason])
 }

@@ -40,6 +40,7 @@ import { ManagerGSTRulesPage } from "./pages/manager/ManagerGSTRulesPage";
 import { ManagerInsuranceExpiryPage } from "./pages/manager/ManagerInsuranceExpiryPage";
 import DamageReviewPage from "./pages/manager/DamageReviewPage";
 import FinePaymentStatusPage from "./pages/manager/FinePaymentStatusPage";
+import { VehicleSwapPage } from "./pages/manager/VehicleSwapPage";
 import AdminSignInPage from "./pages/auth/AdminSignInPage";
 import { AdminProtectedRoute } from "@/components/auth/AdminProtectedRoute";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
@@ -144,6 +145,10 @@ function App() {
           <Route
             path="/damage/:damageReportId"
             element={<DamageReviewPage />}
+          />
+          <Route
+            path="/manager/bookings/:bookingId/swap-vehicle"
+            element={<VehicleSwapPage />}
           />
         </Route>
 

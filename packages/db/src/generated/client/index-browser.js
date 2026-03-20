@@ -239,7 +239,8 @@ exports.Prisma.VehicleCategoryScalarFieldEnum = {
   id: 'id',
   publicId: 'publicId',
   name: 'name',
-  description: 'description'
+  description: 'description',
+  rank: 'rank'
 };
 
 exports.Prisma.VehicleScalarFieldEnum = {
@@ -509,6 +510,7 @@ exports.Prisma.AuditLogScalarFieldEnum = {
   entityId: 'entityId',
   before: 'before',
   after: 'after',
+  metadata: 'metadata',
   createdAt: 'createdAt'
 };
 
@@ -588,6 +590,22 @@ exports.Prisma.VehicleFeatureFlagScalarFieldEnum = {
   flagId: 'flagId',
   enabled: 'enabled',
   config: 'config',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.VehicleSwapScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  bookingId: 'bookingId',
+  originalVehicleId: 'originalVehicleId',
+  newVehicleId: 'newVehicleId',
+  swappedById: 'swappedById',
+  reason: 'reason',
+  reasonNotes: 'reasonNotes',
+  originalVehicleStatus: 'originalVehicleStatus',
+  originalVehicleNotes: 'originalVehicleNotes',
+  swappedAt: 'swappedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -727,6 +745,15 @@ exports.FeatureFlagScope = exports.$Enums.FeatureFlagScope = {
   VEHICLE: 'VEHICLE'
 };
 
+exports.SwapReason = exports.$Enums.SwapReason = {
+  CUSTOMER_REQUEST: 'CUSTOMER_REQUEST',
+  MAINTENANCE: 'MAINTENANCE',
+  UPGRADE: 'UPGRADE',
+  DOWNGRADE: 'DOWNGRADE',
+  DAMAGE: 'DAMAGE',
+  OTHER: 'OTHER'
+};
+
 exports.Prisma.ModelName = {
   User: 'User',
   UserProvider: 'UserProvider',
@@ -764,7 +791,8 @@ exports.Prisma.ModelName = {
   CancellationInvoice: 'CancellationInvoice',
   FeatureFlag: 'FeatureFlag',
   BranchFeatureFlag: 'BranchFeatureFlag',
-  VehicleFeatureFlag: 'VehicleFeatureFlag'
+  VehicleFeatureFlag: 'VehicleFeatureFlag',
+  VehicleSwap: 'VehicleSwap'
 };
 
 /**

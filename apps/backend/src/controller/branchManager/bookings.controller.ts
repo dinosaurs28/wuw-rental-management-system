@@ -268,21 +268,23 @@ export const CollectSafetyDeposit = async (req: Request, res: Response) => {
   const { amount, method } = req.body;
   const userId = req.public_Id;
   const branchId = req.branch_Id;
-  
+
   try {
     const booking = await prisma.booking.findFirst({
-      where: { publicId: bookingId, branchId: branchId }
+      where: { publicId: bookingId, branchId: branchId },
     });
 
     if (!booking) {
-      return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
+      return res
+        .status(StatusCode.NOT_FOUND)
+        .json({ message: "Booking not found" });
     }
 
     const result = await advanceDepositService.recordSafetyDeposit(
       booking.id,
       Number(amount),
       method,
-      userId
+      userId,
     );
     return res.status(StatusCode.OK).json({
       success: true,
@@ -291,9 +293,15 @@ export const CollectSafetyDeposit = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error("Collect Safety Deposit Error:", error);
-    if (error.message.includes("not found")) return res.status(StatusCode.NOT_FOUND).json({ message: error.message });
-    if (error.message.includes("must be CONFIRMED")) return res.status(StatusCode.BAD_REQUEST).json({ message: error.message });
-    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
+    if (error.message.includes("not found"))
+      return res.status(StatusCode.NOT_FOUND).json({ message: error.message });
+    if (error.message.includes("must be CONFIRMED"))
+      return res
+        .status(StatusCode.BAD_REQUEST)
+        .json({ message: error.message });
+    return res
+      .status(StatusCode.INTERNAL_SERVER_ERROR)
+      .json({ message: "Internal Server Error" });
   }
 };
 
@@ -305,14 +313,17 @@ export const CancelNoShow = async (req: Request, res: Response) => {
 
   try {
     const booking = await prisma.booking.findFirst({
-      where: { publicId: bookingId, branchId: branchId }
+      where: { publicId: bookingId, branchId: branchId },
     });
-    if (!booking) return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
+    if (!booking)
+      return res
+        .status(StatusCode.NOT_FOUND)
+        .json({ message: "Booking not found" });
 
     const result = await advanceDepositService.handleNoShowCancellation(
       booking.id,
       userId as any,
-      reason
+      reason,
     );
     return res.status(StatusCode.OK).json({
       success: true,
@@ -321,9 +332,15 @@ export const CancelNoShow = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error("Cancel No Show Error:", error);
-    if (error.message.includes("not found")) return res.status(StatusCode.NOT_FOUND).json({ message: error.message });
-    if (error.message.includes("cannot be cancelled")) return res.status(StatusCode.BAD_REQUEST).json({ message: error.message });
-    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
+    if (error.message.includes("not found"))
+      return res.status(StatusCode.NOT_FOUND).json({ message: error.message });
+    if (error.message.includes("cannot be cancelled"))
+      return res
+        .status(StatusCode.BAD_REQUEST)
+        .json({ message: error.message });
+    return res
+      .status(StatusCode.INTERNAL_SERVER_ERROR)
+      .json({ message: "Internal Server Error" });
   }
 };
 
@@ -334,14 +351,17 @@ export const CalculateFinalBilling = async (req: Request, res: Response) => {
 
   try {
     const booking = await prisma.booking.findFirst({
-      where: { publicId: bookingId, branchId: branchId }
+      where: { publicId: bookingId, branchId: branchId },
     });
-    if (!booking) return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
+    if (!booking)
+      return res
+        .status(StatusCode.NOT_FOUND)
+        .json({ message: "Booking not found" });
 
     const result = await advanceDepositService.processFinalBilling(
       booking.id,
       Number(totalBillAmount),
-      Boolean(setOffDeposit)
+      Boolean(setOffDeposit),
     );
     return res.status(StatusCode.OK).json({
       success: true,
@@ -350,9 +370,15 @@ export const CalculateFinalBilling = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error("Calculate Final Billing Error:", error);
-    if (error.message.includes("not found")) return res.status(StatusCode.NOT_FOUND).json({ message: error.message });
-    if (error.message.includes("must be RETURNED")) return res.status(StatusCode.BAD_REQUEST).json({ message: error.message });
-    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
+    if (error.message.includes("not found"))
+      return res.status(StatusCode.NOT_FOUND).json({ message: error.message });
+    if (error.message.includes("must be RETURNED"))
+      return res
+        .status(StatusCode.BAD_REQUEST)
+        .json({ message: error.message });
+    return res
+      .status(StatusCode.INTERNAL_SERVER_ERROR)
+      .json({ message: "Internal Server Error" });
   }
 };
 
@@ -364,15 +390,18 @@ export const RefundDeposit = async (req: Request, res: Response) => {
 
   try {
     const booking = await prisma.booking.findFirst({
-      where: { publicId: bookingId, branchId: branchId }
+      where: { publicId: bookingId, branchId: branchId },
     });
-    if (!booking) return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
+    if (!booking)
+      return res
+        .status(StatusCode.NOT_FOUND)
+        .json({ message: "Booking not found" });
 
     const result = await advanceDepositService.refundSafetyDeposit(
       booking.id,
       Number(amount),
       method,
-      userId as any
+      userId as any,
     );
     return res.status(StatusCode.OK).json({
       success: true,
@@ -381,9 +410,15 @@ export const RefundDeposit = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error("Refund Deposit Error:", error);
-    if (error.message.includes("not found")) return res.status(StatusCode.NOT_FOUND).json({ message: error.message });
-    if (error.message.includes("already refunded")) return res.status(StatusCode.BAD_REQUEST).json({ message: error.message });
-    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
+    if (error.message.includes("not found"))
+      return res.status(StatusCode.NOT_FOUND).json({ message: error.message });
+    if (error.message.includes("already refunded"))
+      return res
+        .status(StatusCode.BAD_REQUEST)
+        .json({ message: error.message });
+    return res
+      .status(StatusCode.INTERNAL_SERVER_ERROR)
+      .json({ message: "Internal Server Error" });
   }
 };
 
@@ -410,25 +445,41 @@ export const ConfirmPickupWithDeposit = async (req: Request, res: Response) => {
     });
 
     if (!booking) {
-      return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
+      return res
+        .status(StatusCode.NOT_FOUND)
+        .json({ message: "Booking not found" });
     }
 
-    if (booking.status !== BookingStatus.CONFIRMED || !booking.requiresManagerConfirmation) {
-      return res.status(StatusCode.BAD_REQUEST).json({ message: "Booking does not require manager confirmation or is not in CONFIRMED state" });
+    if (
+      booking.status !== BookingStatus.CONFIRMED ||
+      !booking.requiresManagerConfirmation
+    ) {
+      return res
+        .status(StatusCode.BAD_REQUEST)
+        .json({
+          message:
+            "Booking does not require manager confirmation or is not in CONFIRMED state",
+        });
     }
 
     if (requireManagerConfirmation !== false) {
-      return res.status(StatusCode.BAD_REQUEST).json({ message: "Payload must have requireManagerConfirmation: false" });
+      return res
+        .status(StatusCode.BAD_REQUEST)
+        .json({
+          message: "Payload must have requireManagerConfirmation: false",
+        });
     }
 
-    const vehicleIds = booking.items.map(item => item.vehicleId);
+    const vehicleIds = booking.items.map((item) => item.vehicleId);
 
     const actingUser = await prisma.user.findUnique({
       where: { publicId: userId },
     });
 
     if (!actingUser) {
-      return res.status(StatusCode.UNAUTHORIZED).json({ message: "User not found" });
+      return res
+        .status(StatusCode.UNAUTHORIZED)
+        .json({ message: "User not found" });
     }
 
     await prisma.$transaction(async (tx) => {
@@ -462,10 +513,11 @@ export const ConfirmPickupWithDeposit = async (req: Request, res: Response) => {
       success: true,
       message: "Pickup confirmed successfully. Vehicle is now OUT_FOR_RENTAL.",
     });
-
   } catch (error: any) {
     console.error("Manager Confirm Pickup Error:", error);
-    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
+    return res
+      .status(StatusCode.INTERNAL_SERVER_ERROR)
+      .json({ message: "Internal Server Error" });
   }
 };
 
@@ -490,21 +542,33 @@ export const ConfirmReturnByManager = async (req: Request, res: Response) => {
     });
 
     if (!booking) {
-      return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
+      return res
+        .status(StatusCode.NOT_FOUND)
+        .json({ message: "Booking not found" });
     }
 
-    if (booking.status !== BookingStatus.PICKED_UP || !booking.requiresManagerConfirmation) {
-      return res.status(StatusCode.BAD_REQUEST).json({ message: "Booking does not require manager confirmation or is not in PICKED_UP state" });
+    if (
+      booking.status !== BookingStatus.PICKED_UP ||
+      !booking.requiresManagerConfirmation
+    ) {
+      return res
+        .status(StatusCode.BAD_REQUEST)
+        .json({
+          message:
+            "Booking does not require manager confirmation or is not in PICKED_UP state",
+        });
     }
 
-    const vehicleIds = booking.items.map(item => item.vehicleId);
+    const vehicleIds = booking.items.map((item) => item.vehicleId);
 
     const actingUser = await prisma.user.findUnique({
       where: { publicId: userId },
     });
 
     if (!actingUser) {
-      return res.status(StatusCode.UNAUTHORIZED).json({ message: "User not found" });
+      return res
+        .status(StatusCode.UNAUTHORIZED)
+        .json({ message: "User not found" });
     }
 
     await prisma.$transaction(async (tx) => {
@@ -555,10 +619,11 @@ export const ConfirmReturnByManager = async (req: Request, res: Response) => {
       success: true,
       message: "Return confirmed successfully. Vehicle is now AVAILABLE.",
     });
-
   } catch (error: any) {
     console.error("Manager Confirm Return Error:", error);
-    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
+    return res
+      .status(StatusCode.INTERNAL_SERVER_ERROR)
+      .json({ message: "Internal Server Error" });
   }
 };
 
@@ -620,6 +685,60 @@ export const GetManagerConfirmations = async (req: Request, res: Response) => {
   }
 };
 
+export const GetBookingVehicleDetails = async (req: Request, res: Response) => {
+  const { bookingId } = req.params;
+  const branchId = req.branch_Id;
+
+  try {
+    const booking = await prisma.booking.findFirst({
+      where: { publicId: bookingId, branchId: branchId },
+      select: {
+        items: {
+          select: {
+            vehicle: {
+              select: {
+                make: true,
+                model: true,
+                regNo: true,
+                images: {
+                  where: { isThumbnail: true },
+                  take: 1,
+                  select: { file: { select: { url: true } } },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!booking) {
+      return res
+        .status(StatusCode.NOT_FOUND)
+        .json({ message: "Booking not found" });
+    }
+
+    const vehicle = booking.items[0]?.vehicle ?? null;
+
+    return res.status(StatusCode.OK).json({
+      success: true,
+      data: vehicle
+        ? {
+            make: vehicle.make,
+            model: vehicle.model,
+            regNo: vehicle.regNo,
+            image: vehicle.images[0]?.file?.url ?? null,
+          }
+        : null,
+    });
+  } catch (error: any) {
+    console.error("GetBookingVehicleDetails error:", error);
+    return res
+      .status(StatusCode.INTERNAL_SERVER_ERROR)
+      .json({ message: "Internal Server Error" });
+  }
+};
+
 export const GetConfirmationDetails = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
   const branchId = req.branch_Id;
@@ -672,7 +791,9 @@ export const GetConfirmationDetails = async (req: Request, res: Response) => {
     });
 
     if (!booking) {
-      return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
+      return res
+        .status(StatusCode.NOT_FOUND)
+        .json({ message: "Booking not found" });
     }
 
     return res.status(StatusCode.OK).json({
@@ -681,6 +802,8 @@ export const GetConfirmationDetails = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error("Manager Confirmation details error:", error);
-    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
+    return res
+      .status(StatusCode.INTERNAL_SERVER_ERROR)
+      .json({ message: "Internal Server Error" });
   }
 };

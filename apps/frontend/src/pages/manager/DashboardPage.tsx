@@ -15,6 +15,9 @@ import { DashboardKPIs } from "@/components/manager/dashboard/DashboardKPIs";
 import { DamageReports } from "@/components/manager/dashboard/DamageReports";
 import { ManagerConfirmations } from "@/components/manager/dashboard/ManagerConfirmations";
 import { StaffActivity } from "@/components/manager/dashboard/StaffActivity";
+import { RecentVehicleSwaps } from "@/components/manager/dashboard/RecentVehicleSwaps";
+import { QuickActions } from "@/components/manager/dashboard/QuickActions";
+import { DashboardActiveBookings } from "@/components/manager/dashboard/DashboardActiveBookings";
 import { QrScannerModal } from "@/components/employee/QrScannerModal";
 import {
   managerDashboardService,
@@ -182,6 +185,11 @@ export const DashboardPage = () => {
           <DashboardKPIs stats={stats} isLoading={isLoading} />
         </section>
 
+        {/* Quick Actions */}
+        <section className="mb-8">
+          <QuickActions />
+        </section>
+
         {/* Damage Reports & Tools Section */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           {/* Left Column (2/3 width) - Damage Reports */}
@@ -208,7 +216,11 @@ export const DashboardPage = () => {
               </Button>
             </div>
 
-            <section>
+            <section id="active-bookings-section">
+              <DashboardActiveBookings />
+            </section>
+
+            <section id="damage-reports-section">
               <DamageReports
                 reports={damageReports}
                 isLoading={
@@ -221,6 +233,10 @@ export const DashboardPage = () => {
 
             <section>
               <ManagerConfirmations />
+            </section>
+
+            <section id="recent-swaps-section">
+              <RecentVehicleSwaps limit={5} />
             </section>
           </div>
 

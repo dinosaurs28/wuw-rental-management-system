@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, RefreshCw } from "lucide-react";
 import { type Booking } from "@/services/managerDashboard.service";
 
 interface ActiveBookingsProps {
@@ -125,16 +125,31 @@ export const ActiveBookings = ({
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 text-xs bg-white"
-                        asChild
-                      >
-                        <Link to={`/manager/bookings/${booking.id}`}>
-                          Details
-                        </Link>
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs bg-white gap-1"
+                          asChild
+                        >
+                          <Link
+                            to={`/manager/bookings/${booking.id}/swap-vehicle`}
+                          >
+                            <RefreshCw className="w-3 h-3" />
+                            Swap
+                          </Link>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs bg-white"
+                          asChild
+                        >
+                          <Link to={`/manager/bookings/${booking.id}`}>
+                            Details
+                          </Link>
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
