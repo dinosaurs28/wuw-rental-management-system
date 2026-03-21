@@ -6,6 +6,7 @@ import { createID } from "../../utils/nanoID.js";
 import { redis } from "../../lib/redisconfig.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { AdvanceDepositService } from "../../services/booking/advance-deposit.service.js";
+import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 
 const advanceDepositService = new AdvanceDepositService();
 
@@ -296,6 +297,13 @@ export const CollectSafetyDeposit = async (req: Request, res: Response) => {
       method,
       userId,
     );
+    staffActivityService.logFromRequest(req, {
+      actionType: StaffActionType.CREATED,
+      entityType: StaffEntityType.DEPOSIT,
+      entityRef: booking.publicId,
+      description: `Safety deposit of ₹${amount} collected for booking ${booking.publicId}`,
+      metadata: { amount, method },
+    });
     return res.status(StatusCode.OK).json({
       success: true,
       message: "Safety deposit collected successfully",
@@ -335,6 +343,13 @@ export const CancelNoShow = async (req: Request, res: Response) => {
       userId as any,
       reason,
     );
+    staffActivityService.logFromRequest(req, {
+      actionType: StaffActionType.CANCELLED,
+      entityType: StaffEntityType.BOOKING,
+      entityRef: booking.publicId,
+      description: `Booking ${booking.publicId} cancelled due to no-show`,
+      metadata: { reason },
+    });
     return res.status(StatusCode.OK).json({
       success: true,
       message: "Booking cancelled as no-show",
@@ -373,6 +388,13 @@ export const CalculateFinalBilling = async (req: Request, res: Response) => {
       Number(totalBillAmount),
       Boolean(setOffDeposit),
     );
+    staffActivityService.logFromRequest(req, {
+      actionType: StaffActionType.ASSESSED,
+      entityType: StaffEntityType.PAYMENT,
+      entityRef: booking.publicId,
+      description: `Final billing ₹${totalBillAmount} calculated for booking ${booking.publicId}`,
+      metadata: { totalBillAmount, setOffDeposit },
+    });
     return res.status(StatusCode.OK).json({
       success: true,
       message: "Final billing calculated",
@@ -413,6 +435,13 @@ export const RefundDeposit = async (req: Request, res: Response) => {
       method,
       userId as any,
     );
+    staffActivityService.logFromRequest(req, {
+      actionType: StaffActionType.REFUNDED,
+      entityType: StaffEntityType.DEPOSIT,
+      entityRef: booking.publicId,
+      description: `Safety deposit of ₹${amount} refunded for booking ${booking.publicId}`,
+      metadata: { amount, method },
+    });
     return res.status(StatusCode.OK).json({
       success: true,
       message: "Safety deposit refunded",
@@ -508,15 +537,12 @@ export const ConfirmPickupWithDeposit = async (req: Request, res: Response) => {
         },
       });
 
-      await tx.staffActivityLog.create({
-        data: {
-          publicId: createID(),
-          staffId: actingUser.id,
-          action: "MANAGER_CONFIRMED_PICKUP",
-          entity: "Booking",
-          entityId: booking.publicId,
-        },
-      });
+      await staffActivityService.logFromRequest(req, {
+        actionType: StaffActionType.CONFIRMED,
+        entityType: StaffEntityType.BOOKING,
+        entityRef: booking.publicId,
+        description: `Manager confirmed vehicle pickup for booking ${booking.publicId}`,
+      }, tx);
     });
 
     return res.status(StatusCode.OK).json({
@@ -597,15 +623,12 @@ export const ConfirmReturnByManager = async (req: Request, res: Response) => {
         },
       });
 
-      await tx.staffActivityLog.create({
-        data: {
-          publicId: createID(),
-          staffId: actingUser.id,
-          action: "MANAGER_CONFIRMED_RETURN",
-          entity: "Booking",
-          entityId: booking.publicId,
-        },
-      });
+      await staffActivityService.logFromRequest(req, {
+        actionType: StaffActionType.CONFIRMED,
+        entityType: StaffEntityType.BOOKING,
+        entityRef: booking.publicId,
+        description: `Manager confirmed vehicle return for booking ${booking.publicId}`,
+      }, tx);
     });
 
     // Invalidate public vehicle cache

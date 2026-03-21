@@ -250,6 +250,42 @@ export const KycStatus: {
 export type KycStatus = (typeof KycStatus)[keyof typeof KycStatus]
 
 
+export const StaffActionType: {
+  CREATED: 'CREATED',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
+  CONFIRMED: 'CONFIRMED',
+  UPDATED: 'UPDATED',
+  DELETED: 'DELETED',
+  UPLOADED: 'UPLOADED',
+  SWAPPED: 'SWAPPED',
+  REFUNDED: 'REFUNDED',
+  ASSESSED: 'ASSESSED',
+  INITIATED: 'INITIATED',
+  COMPLETED: 'COMPLETED'
+};
+
+export type StaffActionType = (typeof StaffActionType)[keyof typeof StaffActionType]
+
+
+export const StaffEntityType: {
+  BOOKING: 'BOOKING',
+  INVOICE: 'INVOICE',
+  PAYMENT: 'PAYMENT',
+  CUSTOMER: 'CUSTOMER',
+  VEHICLE: 'VEHICLE',
+  KYC: 'KYC',
+  DAMAGE_REPORT: 'DAMAGE_REPORT',
+  DEPOSIT: 'DEPOSIT',
+  EMPLOYEE: 'EMPLOYEE',
+  PRICING: 'PRICING',
+  CAPTURE_CONFIG: 'CAPTURE_CONFIG'
+};
+
+export type StaffEntityType = (typeof StaffEntityType)[keyof typeof StaffEntityType]
+
+
 export const VehicleStatus: {
   AVAILABLE: 'AVAILABLE',
   OUT_FOR_RENTAL: 'OUT_FOR_RENTAL',
@@ -418,6 +454,14 @@ export const KycType: typeof $Enums.KycType
 export type KycStatus = $Enums.KycStatus
 
 export const KycStatus: typeof $Enums.KycStatus
+
+export type StaffActionType = $Enums.StaffActionType
+
+export const StaffActionType: typeof $Enums.StaffActionType
+
+export type StaffEntityType = $Enums.StaffEntityType
+
+export const StaffEntityType: typeof $Enums.StaffEntityType
 
 export type VehicleStatus = $Enums.VehicleStatus
 
@@ -4600,6 +4644,7 @@ export namespace Prisma {
     featureFlags: number
     captureConfigs: number
     auditLogs: number
+    staffActivityLogs: number
   }
 
   export type BranchCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -4612,6 +4657,7 @@ export namespace Prisma {
     featureFlags?: boolean | BranchCountOutputTypeCountFeatureFlagsArgs
     captureConfigs?: boolean | BranchCountOutputTypeCountCaptureConfigsArgs
     auditLogs?: boolean | BranchCountOutputTypeCountAuditLogsArgs
+    staffActivityLogs?: boolean | BranchCountOutputTypeCountStaffActivityLogsArgs
   }
 
   // Custom InputTypes
@@ -4686,6 +4732,13 @@ export namespace Prisma {
    */
   export type BranchCountOutputTypeCountAuditLogsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: AuditLogWhereInput
+  }
+
+  /**
+   * BranchCountOutputType without action
+   */
+  export type BranchCountOutputTypeCountStaffActivityLogsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: StaffActivityLogWhereInput
   }
 
 
@@ -11884,6 +11937,7 @@ export namespace Prisma {
     featureFlags?: boolean | Branch$featureFlagsArgs<ExtArgs>
     captureConfigs?: boolean | Branch$captureConfigsArgs<ExtArgs>
     auditLogs?: boolean | Branch$auditLogsArgs<ExtArgs>
+    staffActivityLogs?: boolean | Branch$staffActivityLogsArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["branch"]>
 
@@ -11919,6 +11973,7 @@ export namespace Prisma {
     featureFlags?: boolean | Branch$featureFlagsArgs<ExtArgs>
     captureConfigs?: boolean | Branch$captureConfigsArgs<ExtArgs>
     auditLogs?: boolean | Branch$auditLogsArgs<ExtArgs>
+    staffActivityLogs?: boolean | Branch$staffActivityLogsArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type BranchIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -11937,6 +11992,7 @@ export namespace Prisma {
       featureFlags: Prisma.$BranchFeatureFlagPayload<ExtArgs>[]
       captureConfigs: Prisma.$VehiclePhotoCaptureConfigPayload<ExtArgs>[]
       auditLogs: Prisma.$AuditLogPayload<ExtArgs>[]
+      staffActivityLogs: Prisma.$StaffActivityLogPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -12321,6 +12377,7 @@ export namespace Prisma {
     featureFlags<T extends Branch$featureFlagsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$featureFlagsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BranchFeatureFlagPayload<ExtArgs>, T, "findMany"> | Null>
     captureConfigs<T extends Branch$captureConfigsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$captureConfigsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehiclePhotoCaptureConfigPayload<ExtArgs>, T, "findMany"> | Null>
     auditLogs<T extends Branch$auditLogsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$auditLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AuditLogPayload<ExtArgs>, T, "findMany"> | Null>
+    staffActivityLogs<T extends Branch$staffActivityLogsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$staffActivityLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StaffActivityLogPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -12890,6 +12947,26 @@ export namespace Prisma {
   }
 
   /**
+   * Branch.staffActivityLogs
+   */
+  export type Branch$staffActivityLogsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffActivityLog
+     */
+    select?: StaffActivityLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StaffActivityLogInclude<ExtArgs> | null
+    where?: StaffActivityLogWhereInput
+    orderBy?: StaffActivityLogOrderByWithRelationInput | StaffActivityLogOrderByWithRelationInput[]
+    cursor?: StaffActivityLogWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: StaffActivityLogScalarFieldEnum | StaffActivityLogScalarFieldEnum[]
+  }
+
+  /**
    * Branch without action
    */
   export type BranchDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -12918,41 +12995,57 @@ export namespace Prisma {
 
   export type StaffActivityLogAvgAggregateOutputType = {
     id: number | null
-    staffId: number | null
+    branchId: number | null
   }
 
   export type StaffActivityLogSumAggregateOutputType = {
     id: number | null
-    staffId: number | null
+    branchId: number | null
   }
 
   export type StaffActivityLogMinAggregateOutputType = {
     id: number | null
     publicId: string | null
-    staffId: number | null
-    action: string | null
-    entity: string | null
-    entityId: string | null
+    actorPublicId: string | null
+    actorName: string | null
+    actorRole: $Enums.Role | null
+    branchId: number | null
+    branchName: string | null
+    actionType: $Enums.StaffActionType | null
+    entityType: $Enums.StaffEntityType | null
+    entityRef: string | null
+    description: string | null
     createdAt: Date | null
   }
 
   export type StaffActivityLogMaxAggregateOutputType = {
     id: number | null
     publicId: string | null
-    staffId: number | null
-    action: string | null
-    entity: string | null
-    entityId: string | null
+    actorPublicId: string | null
+    actorName: string | null
+    actorRole: $Enums.Role | null
+    branchId: number | null
+    branchName: string | null
+    actionType: $Enums.StaffActionType | null
+    entityType: $Enums.StaffEntityType | null
+    entityRef: string | null
+    description: string | null
     createdAt: Date | null
   }
 
   export type StaffActivityLogCountAggregateOutputType = {
     id: number
     publicId: number
-    staffId: number
-    action: number
-    entity: number
-    entityId: number
+    actorPublicId: number
+    actorName: number
+    actorRole: number
+    branchId: number
+    branchName: number
+    actionType: number
+    entityType: number
+    entityRef: number
+    description: number
+    metadata: number
     createdAt: number
     _all: number
   }
@@ -12960,41 +13053,57 @@ export namespace Prisma {
 
   export type StaffActivityLogAvgAggregateInputType = {
     id?: true
-    staffId?: true
+    branchId?: true
   }
 
   export type StaffActivityLogSumAggregateInputType = {
     id?: true
-    staffId?: true
+    branchId?: true
   }
 
   export type StaffActivityLogMinAggregateInputType = {
     id?: true
     publicId?: true
-    staffId?: true
-    action?: true
-    entity?: true
-    entityId?: true
+    actorPublicId?: true
+    actorName?: true
+    actorRole?: true
+    branchId?: true
+    branchName?: true
+    actionType?: true
+    entityType?: true
+    entityRef?: true
+    description?: true
     createdAt?: true
   }
 
   export type StaffActivityLogMaxAggregateInputType = {
     id?: true
     publicId?: true
-    staffId?: true
-    action?: true
-    entity?: true
-    entityId?: true
+    actorPublicId?: true
+    actorName?: true
+    actorRole?: true
+    branchId?: true
+    branchName?: true
+    actionType?: true
+    entityType?: true
+    entityRef?: true
+    description?: true
     createdAt?: true
   }
 
   export type StaffActivityLogCountAggregateInputType = {
     id?: true
     publicId?: true
-    staffId?: true
-    action?: true
-    entity?: true
-    entityId?: true
+    actorPublicId?: true
+    actorName?: true
+    actorRole?: true
+    branchId?: true
+    branchName?: true
+    actionType?: true
+    entityType?: true
+    entityRef?: true
+    description?: true
+    metadata?: true
     createdAt?: true
     _all?: true
   }
@@ -13088,10 +13197,16 @@ export namespace Prisma {
   export type StaffActivityLogGroupByOutputType = {
     id: number
     publicId: string
-    staffId: number
-    action: string
-    entity: string | null
-    entityId: string | null
+    actorPublicId: string
+    actorName: string
+    actorRole: $Enums.Role
+    branchId: number
+    branchName: string
+    actionType: $Enums.StaffActionType
+    entityType: $Enums.StaffEntityType
+    entityRef: string
+    description: string
+    metadata: JsonValue | null
     createdAt: Date
     _count: StaffActivityLogCountAggregateOutputType | null
     _avg: StaffActivityLogAvgAggregateOutputType | null
@@ -13117,44 +13232,78 @@ export namespace Prisma {
   export type StaffActivityLogSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     publicId?: boolean
-    staffId?: boolean
-    action?: boolean
-    entity?: boolean
-    entityId?: boolean
+    actorPublicId?: boolean
+    actorName?: boolean
+    actorRole?: boolean
+    branchId?: boolean
+    branchName?: boolean
+    actionType?: boolean
+    entityType?: boolean
+    entityRef?: boolean
+    description?: boolean
+    metadata?: boolean
     createdAt?: boolean
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["staffActivityLog"]>
 
   export type StaffActivityLogSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     publicId?: boolean
-    staffId?: boolean
-    action?: boolean
-    entity?: boolean
-    entityId?: boolean
+    actorPublicId?: boolean
+    actorName?: boolean
+    actorRole?: boolean
+    branchId?: boolean
+    branchName?: boolean
+    actionType?: boolean
+    entityType?: boolean
+    entityRef?: boolean
+    description?: boolean
+    metadata?: boolean
     createdAt?: boolean
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["staffActivityLog"]>
 
   export type StaffActivityLogSelectScalar = {
     id?: boolean
     publicId?: boolean
-    staffId?: boolean
-    action?: boolean
-    entity?: boolean
-    entityId?: boolean
+    actorPublicId?: boolean
+    actorName?: boolean
+    actorRole?: boolean
+    branchId?: boolean
+    branchName?: boolean
+    actionType?: boolean
+    entityType?: boolean
+    entityRef?: boolean
+    description?: boolean
+    metadata?: boolean
     createdAt?: boolean
   }
 
+  export type StaffActivityLogInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }
+  export type StaffActivityLogIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }
 
   export type $StaffActivityLogPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "StaffActivityLog"
-    objects: {}
+    objects: {
+      branch: Prisma.$BranchPayload<ExtArgs>
+    }
     scalars: $Extensions.GetPayloadResult<{
       id: number
       publicId: string
-      staffId: number
-      action: string
-      entity: string | null
-      entityId: string | null
+      actorPublicId: string
+      actorName: string
+      actorRole: $Enums.Role
+      branchId: number
+      branchName: string
+      actionType: $Enums.StaffActionType
+      entityType: $Enums.StaffEntityType
+      entityRef: string
+      description: string
+      metadata: Prisma.JsonValue | null
       createdAt: Date
     }, ExtArgs["result"]["staffActivityLog"]>
     composites: {}
@@ -13520,6 +13669,7 @@ export namespace Prisma {
    */
   export interface Prisma__StaffActivityLogClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    branch<T extends BranchDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BranchDefaultArgs<ExtArgs>>): Prisma__BranchClient<$Result.GetResult<Prisma.$BranchPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -13551,10 +13701,16 @@ export namespace Prisma {
   interface StaffActivityLogFieldRefs {
     readonly id: FieldRef<"StaffActivityLog", 'Int'>
     readonly publicId: FieldRef<"StaffActivityLog", 'String'>
-    readonly staffId: FieldRef<"StaffActivityLog", 'Int'>
-    readonly action: FieldRef<"StaffActivityLog", 'String'>
-    readonly entity: FieldRef<"StaffActivityLog", 'String'>
-    readonly entityId: FieldRef<"StaffActivityLog", 'String'>
+    readonly actorPublicId: FieldRef<"StaffActivityLog", 'String'>
+    readonly actorName: FieldRef<"StaffActivityLog", 'String'>
+    readonly actorRole: FieldRef<"StaffActivityLog", 'Role'>
+    readonly branchId: FieldRef<"StaffActivityLog", 'Int'>
+    readonly branchName: FieldRef<"StaffActivityLog", 'String'>
+    readonly actionType: FieldRef<"StaffActivityLog", 'StaffActionType'>
+    readonly entityType: FieldRef<"StaffActivityLog", 'StaffEntityType'>
+    readonly entityRef: FieldRef<"StaffActivityLog", 'String'>
+    readonly description: FieldRef<"StaffActivityLog", 'String'>
+    readonly metadata: FieldRef<"StaffActivityLog", 'Json'>
     readonly createdAt: FieldRef<"StaffActivityLog", 'DateTime'>
   }
     
@@ -13568,6 +13724,10 @@ export namespace Prisma {
      * Select specific fields to fetch from the StaffActivityLog
      */
     select?: StaffActivityLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StaffActivityLogInclude<ExtArgs> | null
     /**
      * Filter, which StaffActivityLog to fetch.
      */
@@ -13584,6 +13744,10 @@ export namespace Prisma {
      */
     select?: StaffActivityLogSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StaffActivityLogInclude<ExtArgs> | null
+    /**
      * Filter, which StaffActivityLog to fetch.
      */
     where: StaffActivityLogWhereUniqueInput
@@ -13598,6 +13762,10 @@ export namespace Prisma {
      * Select specific fields to fetch from the StaffActivityLog
      */
     select?: StaffActivityLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StaffActivityLogInclude<ExtArgs> | null
     /**
      * Filter, which StaffActivityLog to fetch.
      */
@@ -13644,6 +13812,10 @@ export namespace Prisma {
      */
     select?: StaffActivityLogSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StaffActivityLogInclude<ExtArgs> | null
+    /**
      * Filter, which StaffActivityLog to fetch.
      */
     where?: StaffActivityLogWhereInput
@@ -13689,6 +13861,10 @@ export namespace Prisma {
      */
     select?: StaffActivityLogSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StaffActivityLogInclude<ExtArgs> | null
+    /**
      * Filter, which StaffActivityLogs to fetch.
      */
     where?: StaffActivityLogWhereInput
@@ -13729,6 +13905,10 @@ export namespace Prisma {
      */
     select?: StaffActivityLogSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StaffActivityLogInclude<ExtArgs> | null
+    /**
      * The data needed to create a StaffActivityLog.
      */
     data: XOR<StaffActivityLogCreateInput, StaffActivityLogUncheckedCreateInput>
@@ -13759,6 +13939,10 @@ export namespace Prisma {
      */
     data: StaffActivityLogCreateManyInput | StaffActivityLogCreateManyInput[]
     skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StaffActivityLogIncludeCreateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -13769,6 +13953,10 @@ export namespace Prisma {
      * Select specific fields to fetch from the StaffActivityLog
      */
     select?: StaffActivityLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StaffActivityLogInclude<ExtArgs> | null
     /**
      * The data needed to update a StaffActivityLog.
      */
@@ -13803,6 +13991,10 @@ export namespace Prisma {
      */
     select?: StaffActivityLogSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StaffActivityLogInclude<ExtArgs> | null
+    /**
      * The filter to search for the StaffActivityLog to update in case it exists.
      */
     where: StaffActivityLogWhereUniqueInput
@@ -13825,6 +14017,10 @@ export namespace Prisma {
      * Select specific fields to fetch from the StaffActivityLog
      */
     select?: StaffActivityLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StaffActivityLogInclude<ExtArgs> | null
     /**
      * Filter which StaffActivityLog to delete.
      */
@@ -13850,6 +14046,10 @@ export namespace Prisma {
      * Select specific fields to fetch from the StaffActivityLog
      */
     select?: StaffActivityLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StaffActivityLogInclude<ExtArgs> | null
   }
 
 
@@ -47529,10 +47729,16 @@ export namespace Prisma {
   export const StaffActivityLogScalarFieldEnum: {
     id: 'id',
     publicId: 'publicId',
-    staffId: 'staffId',
-    action: 'action',
-    entity: 'entity',
-    entityId: 'entityId',
+    actorPublicId: 'actorPublicId',
+    actorName: 'actorName',
+    actorRole: 'actorRole',
+    branchId: 'branchId',
+    branchName: 'branchName',
+    actionType: 'actionType',
+    entityType: 'entityType',
+    entityRef: 'entityRef',
+    description: 'description',
+    metadata: 'metadata',
     createdAt: 'createdAt'
   };
 
@@ -48060,19 +48266,19 @@ export namespace Prisma {
   export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
-  export const JsonNullValueInput: {
-    JsonNull: typeof JsonNull
-  };
-
-  export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
-
-
   export const NullableJsonNullValueInput: {
     DbNull: typeof DbNull,
     JsonNull: typeof JsonNull
   };
 
   export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+  export const JsonNullValueInput: {
+    JsonNull: typeof JsonNull
+  };
+
+  export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
   export const QueryMode: {
@@ -48211,6 +48417,41 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'StaffActionType'
+   */
+  export type EnumStaffActionTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'StaffActionType'>
+    
+
+
+  /**
+   * Reference to a field of type 'StaffActionType[]'
+   */
+  export type ListEnumStaffActionTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'StaffActionType[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'StaffEntityType'
+   */
+  export type EnumStaffEntityTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'StaffEntityType'>
+    
+
+
+  /**
+   * Reference to a field of type 'StaffEntityType[]'
+   */
+  export type ListEnumStaffEntityTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'StaffEntityType[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'Json'
+   */
+  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+  /**
    * Reference to a field of type 'Decimal'
    */
   export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
@@ -48221,13 +48462,6 @@ export namespace Prisma {
    * Reference to a field of type 'Decimal[]'
    */
   export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal[]'>
-    
-
-
-  /**
-   * Reference to a field of type 'Json'
-   */
-  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
     
 
 
@@ -49010,6 +49244,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagListRelationFilter
     captureConfigs?: VehiclePhotoCaptureConfigListRelationFilter
     auditLogs?: AuditLogListRelationFilter
+    staffActivityLogs?: StaffActivityLogListRelationFilter
   }
 
   export type BranchOrderByWithRelationInput = {
@@ -49031,6 +49266,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagOrderByRelationAggregateInput
     captureConfigs?: VehiclePhotoCaptureConfigOrderByRelationAggregateInput
     auditLogs?: AuditLogOrderByRelationAggregateInput
+    staffActivityLogs?: StaffActivityLogOrderByRelationAggregateInput
   }
 
   export type BranchWhereUniqueInput = Prisma.AtLeast<{
@@ -49055,6 +49291,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagListRelationFilter
     captureConfigs?: VehiclePhotoCaptureConfigListRelationFilter
     auditLogs?: AuditLogListRelationFilter
+    staffActivityLogs?: StaffActivityLogListRelationFilter
   }, "id" | "publicId">
 
   export type BranchOrderByWithAggregationInput = {
@@ -49091,21 +49328,35 @@ export namespace Prisma {
     NOT?: StaffActivityLogWhereInput | StaffActivityLogWhereInput[]
     id?: IntFilter<"StaffActivityLog"> | number
     publicId?: StringFilter<"StaffActivityLog"> | string
-    staffId?: IntFilter<"StaffActivityLog"> | number
-    action?: StringFilter<"StaffActivityLog"> | string
-    entity?: StringNullableFilter<"StaffActivityLog"> | string | null
-    entityId?: StringNullableFilter<"StaffActivityLog"> | string | null
+    actorPublicId?: StringFilter<"StaffActivityLog"> | string
+    actorName?: StringFilter<"StaffActivityLog"> | string
+    actorRole?: EnumRoleFilter<"StaffActivityLog"> | $Enums.Role
+    branchId?: IntFilter<"StaffActivityLog"> | number
+    branchName?: StringFilter<"StaffActivityLog"> | string
+    actionType?: EnumStaffActionTypeFilter<"StaffActivityLog"> | $Enums.StaffActionType
+    entityType?: EnumStaffEntityTypeFilter<"StaffActivityLog"> | $Enums.StaffEntityType
+    entityRef?: StringFilter<"StaffActivityLog"> | string
+    description?: StringFilter<"StaffActivityLog"> | string
+    metadata?: JsonNullableFilter<"StaffActivityLog">
     createdAt?: DateTimeFilter<"StaffActivityLog"> | Date | string
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
   }
 
   export type StaffActivityLogOrderByWithRelationInput = {
     id?: SortOrder
     publicId?: SortOrder
-    staffId?: SortOrder
-    action?: SortOrder
-    entity?: SortOrderInput | SortOrder
-    entityId?: SortOrderInput | SortOrder
+    actorPublicId?: SortOrder
+    actorName?: SortOrder
+    actorRole?: SortOrder
+    branchId?: SortOrder
+    branchName?: SortOrder
+    actionType?: SortOrder
+    entityType?: SortOrder
+    entityRef?: SortOrder
+    description?: SortOrder
+    metadata?: SortOrderInput | SortOrder
     createdAt?: SortOrder
+    branch?: BranchOrderByWithRelationInput
   }
 
   export type StaffActivityLogWhereUniqueInput = Prisma.AtLeast<{
@@ -49114,20 +49365,33 @@ export namespace Prisma {
     AND?: StaffActivityLogWhereInput | StaffActivityLogWhereInput[]
     OR?: StaffActivityLogWhereInput[]
     NOT?: StaffActivityLogWhereInput | StaffActivityLogWhereInput[]
-    staffId?: IntFilter<"StaffActivityLog"> | number
-    action?: StringFilter<"StaffActivityLog"> | string
-    entity?: StringNullableFilter<"StaffActivityLog"> | string | null
-    entityId?: StringNullableFilter<"StaffActivityLog"> | string | null
+    actorPublicId?: StringFilter<"StaffActivityLog"> | string
+    actorName?: StringFilter<"StaffActivityLog"> | string
+    actorRole?: EnumRoleFilter<"StaffActivityLog"> | $Enums.Role
+    branchId?: IntFilter<"StaffActivityLog"> | number
+    branchName?: StringFilter<"StaffActivityLog"> | string
+    actionType?: EnumStaffActionTypeFilter<"StaffActivityLog"> | $Enums.StaffActionType
+    entityType?: EnumStaffEntityTypeFilter<"StaffActivityLog"> | $Enums.StaffEntityType
+    entityRef?: StringFilter<"StaffActivityLog"> | string
+    description?: StringFilter<"StaffActivityLog"> | string
+    metadata?: JsonNullableFilter<"StaffActivityLog">
     createdAt?: DateTimeFilter<"StaffActivityLog"> | Date | string
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
   }, "id" | "publicId">
 
   export type StaffActivityLogOrderByWithAggregationInput = {
     id?: SortOrder
     publicId?: SortOrder
-    staffId?: SortOrder
-    action?: SortOrder
-    entity?: SortOrderInput | SortOrder
-    entityId?: SortOrderInput | SortOrder
+    actorPublicId?: SortOrder
+    actorName?: SortOrder
+    actorRole?: SortOrder
+    branchId?: SortOrder
+    branchName?: SortOrder
+    actionType?: SortOrder
+    entityType?: SortOrder
+    entityRef?: SortOrder
+    description?: SortOrder
+    metadata?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: StaffActivityLogCountOrderByAggregateInput
     _avg?: StaffActivityLogAvgOrderByAggregateInput
@@ -49142,10 +49406,16 @@ export namespace Prisma {
     NOT?: StaffActivityLogScalarWhereWithAggregatesInput | StaffActivityLogScalarWhereWithAggregatesInput[]
     id?: IntWithAggregatesFilter<"StaffActivityLog"> | number
     publicId?: StringWithAggregatesFilter<"StaffActivityLog"> | string
-    staffId?: IntWithAggregatesFilter<"StaffActivityLog"> | number
-    action?: StringWithAggregatesFilter<"StaffActivityLog"> | string
-    entity?: StringNullableWithAggregatesFilter<"StaffActivityLog"> | string | null
-    entityId?: StringNullableWithAggregatesFilter<"StaffActivityLog"> | string | null
+    actorPublicId?: StringWithAggregatesFilter<"StaffActivityLog"> | string
+    actorName?: StringWithAggregatesFilter<"StaffActivityLog"> | string
+    actorRole?: EnumRoleWithAggregatesFilter<"StaffActivityLog"> | $Enums.Role
+    branchId?: IntWithAggregatesFilter<"StaffActivityLog"> | number
+    branchName?: StringWithAggregatesFilter<"StaffActivityLog"> | string
+    actionType?: EnumStaffActionTypeWithAggregatesFilter<"StaffActivityLog"> | $Enums.StaffActionType
+    entityType?: EnumStaffEntityTypeWithAggregatesFilter<"StaffActivityLog"> | $Enums.StaffEntityType
+    entityRef?: StringWithAggregatesFilter<"StaffActivityLog"> | string
+    description?: StringWithAggregatesFilter<"StaffActivityLog"> | string
+    metadata?: JsonNullableWithAggregatesFilter<"StaffActivityLog">
     createdAt?: DateTimeWithAggregatesFilter<"StaffActivityLog"> | Date | string
   }
 
@@ -52509,6 +52779,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateInput = {
@@ -52530,6 +52801,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUpdateInput = {
@@ -52550,6 +52822,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateInput = {
@@ -52571,6 +52844,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchCreateManyInput = {
@@ -52604,68 +52878,109 @@ export namespace Prisma {
 
   export type StaffActivityLogCreateInput = {
     publicId: string
-    staffId: number
-    action: string
-    entity?: string | null
-    entityId?: string | null
+    actorPublicId: string
+    actorName: string
+    actorRole: $Enums.Role
+    branchName: string
+    actionType: $Enums.StaffActionType
+    entityType: $Enums.StaffEntityType
+    entityRef: string
+    description: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
+    branch: BranchCreateNestedOneWithoutStaffActivityLogsInput
   }
 
   export type StaffActivityLogUncheckedCreateInput = {
     id?: number
     publicId: string
-    staffId: number
-    action: string
-    entity?: string | null
-    entityId?: string | null
+    actorPublicId: string
+    actorName: string
+    actorRole: $Enums.Role
+    branchId: number
+    branchName: string
+    actionType: $Enums.StaffActionType
+    entityType: $Enums.StaffEntityType
+    entityRef: string
+    description: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
   export type StaffActivityLogUpdateInput = {
     publicId?: StringFieldUpdateOperationsInput | string
-    staffId?: IntFieldUpdateOperationsInput | number
-    action?: StringFieldUpdateOperationsInput | string
-    entity?: NullableStringFieldUpdateOperationsInput | string | null
-    entityId?: NullableStringFieldUpdateOperationsInput | string | null
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorName?: StringFieldUpdateOperationsInput | string
+    actorRole?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchName?: StringFieldUpdateOperationsInput | string
+    actionType?: EnumStaffActionTypeFieldUpdateOperationsInput | $Enums.StaffActionType
+    entityType?: EnumStaffEntityTypeFieldUpdateOperationsInput | $Enums.StaffEntityType
+    entityRef?: StringFieldUpdateOperationsInput | string
+    description?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    branch?: BranchUpdateOneRequiredWithoutStaffActivityLogsNestedInput
   }
 
   export type StaffActivityLogUncheckedUpdateInput = {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
-    staffId?: IntFieldUpdateOperationsInput | number
-    action?: StringFieldUpdateOperationsInput | string
-    entity?: NullableStringFieldUpdateOperationsInput | string | null
-    entityId?: NullableStringFieldUpdateOperationsInput | string | null
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorName?: StringFieldUpdateOperationsInput | string
+    actorRole?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: IntFieldUpdateOperationsInput | number
+    branchName?: StringFieldUpdateOperationsInput | string
+    actionType?: EnumStaffActionTypeFieldUpdateOperationsInput | $Enums.StaffActionType
+    entityType?: EnumStaffEntityTypeFieldUpdateOperationsInput | $Enums.StaffEntityType
+    entityRef?: StringFieldUpdateOperationsInput | string
+    description?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type StaffActivityLogCreateManyInput = {
     id?: number
     publicId: string
-    staffId: number
-    action: string
-    entity?: string | null
-    entityId?: string | null
+    actorPublicId: string
+    actorName: string
+    actorRole: $Enums.Role
+    branchId: number
+    branchName: string
+    actionType: $Enums.StaffActionType
+    entityType: $Enums.StaffEntityType
+    entityRef: string
+    description: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
   export type StaffActivityLogUpdateManyMutationInput = {
     publicId?: StringFieldUpdateOperationsInput | string
-    staffId?: IntFieldUpdateOperationsInput | number
-    action?: StringFieldUpdateOperationsInput | string
-    entity?: NullableStringFieldUpdateOperationsInput | string | null
-    entityId?: NullableStringFieldUpdateOperationsInput | string | null
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorName?: StringFieldUpdateOperationsInput | string
+    actorRole?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchName?: StringFieldUpdateOperationsInput | string
+    actionType?: EnumStaffActionTypeFieldUpdateOperationsInput | $Enums.StaffActionType
+    entityType?: EnumStaffEntityTypeFieldUpdateOperationsInput | $Enums.StaffEntityType
+    entityRef?: StringFieldUpdateOperationsInput | string
+    description?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type StaffActivityLogUncheckedUpdateManyInput = {
     id?: IntFieldUpdateOperationsInput | number
     publicId?: StringFieldUpdateOperationsInput | string
-    staffId?: IntFieldUpdateOperationsInput | number
-    action?: StringFieldUpdateOperationsInput | string
-    entity?: NullableStringFieldUpdateOperationsInput | string | null
-    entityId?: NullableStringFieldUpdateOperationsInput | string | null
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorName?: StringFieldUpdateOperationsInput | string
+    actorRole?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: IntFieldUpdateOperationsInput | number
+    branchName?: StringFieldUpdateOperationsInput | string
+    actionType?: EnumStaffActionTypeFieldUpdateOperationsInput | $Enums.StaffActionType
+    entityType?: EnumStaffEntityTypeFieldUpdateOperationsInput | $Enums.StaffEntityType
+    entityRef?: StringFieldUpdateOperationsInput | string
+    description?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -56318,6 +56633,12 @@ export namespace Prisma {
     none?: VehiclePhotoCaptureConfigWhereInput
   }
 
+  export type StaffActivityLogListRelationFilter = {
+    every?: StaffActivityLogWhereInput
+    some?: StaffActivityLogWhereInput
+    none?: StaffActivityLogWhereInput
+  }
+
   export type UserOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -56343,6 +56664,10 @@ export namespace Prisma {
   }
 
   export type VehiclePhotoCaptureConfigOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type StaffActivityLogOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -56384,44 +56709,146 @@ export namespace Prisma {
     id?: SortOrder
   }
 
+  export type EnumStaffActionTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.StaffActionType | EnumStaffActionTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.StaffActionType[] | ListEnumStaffActionTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.StaffActionType[] | ListEnumStaffActionTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumStaffActionTypeFilter<$PrismaModel> | $Enums.StaffActionType
+  }
+
+  export type EnumStaffEntityTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.StaffEntityType | EnumStaffEntityTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.StaffEntityType[] | ListEnumStaffEntityTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.StaffEntityType[] | ListEnumStaffEntityTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumStaffEntityTypeFilter<$PrismaModel> | $Enums.StaffEntityType
+  }
+  export type JsonNullableFilter<$PrismaModel = never> = 
+    | PatchUndefined<
+        Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonNullableFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonNullableFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
+
+  export type BranchRelationFilter = {
+    is?: BranchWhereInput
+    isNot?: BranchWhereInput
+  }
+
   export type StaffActivityLogCountOrderByAggregateInput = {
     id?: SortOrder
     publicId?: SortOrder
-    staffId?: SortOrder
-    action?: SortOrder
-    entity?: SortOrder
-    entityId?: SortOrder
+    actorPublicId?: SortOrder
+    actorName?: SortOrder
+    actorRole?: SortOrder
+    branchId?: SortOrder
+    branchName?: SortOrder
+    actionType?: SortOrder
+    entityType?: SortOrder
+    entityRef?: SortOrder
+    description?: SortOrder
+    metadata?: SortOrder
     createdAt?: SortOrder
   }
 
   export type StaffActivityLogAvgOrderByAggregateInput = {
     id?: SortOrder
-    staffId?: SortOrder
+    branchId?: SortOrder
   }
 
   export type StaffActivityLogMaxOrderByAggregateInput = {
     id?: SortOrder
     publicId?: SortOrder
-    staffId?: SortOrder
-    action?: SortOrder
-    entity?: SortOrder
-    entityId?: SortOrder
+    actorPublicId?: SortOrder
+    actorName?: SortOrder
+    actorRole?: SortOrder
+    branchId?: SortOrder
+    branchName?: SortOrder
+    actionType?: SortOrder
+    entityType?: SortOrder
+    entityRef?: SortOrder
+    description?: SortOrder
     createdAt?: SortOrder
   }
 
   export type StaffActivityLogMinOrderByAggregateInput = {
     id?: SortOrder
     publicId?: SortOrder
-    staffId?: SortOrder
-    action?: SortOrder
-    entity?: SortOrder
-    entityId?: SortOrder
+    actorPublicId?: SortOrder
+    actorName?: SortOrder
+    actorRole?: SortOrder
+    branchId?: SortOrder
+    branchName?: SortOrder
+    actionType?: SortOrder
+    entityType?: SortOrder
+    entityRef?: SortOrder
+    description?: SortOrder
     createdAt?: SortOrder
   }
 
   export type StaffActivityLogSumOrderByAggregateInput = {
     id?: SortOrder
-    staffId?: SortOrder
+    branchId?: SortOrder
+  }
+
+  export type EnumStaffActionTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.StaffActionType | EnumStaffActionTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.StaffActionType[] | ListEnumStaffActionTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.StaffActionType[] | ListEnumStaffActionTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumStaffActionTypeWithAggregatesFilter<$PrismaModel> | $Enums.StaffActionType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumStaffActionTypeFilter<$PrismaModel>
+    _max?: NestedEnumStaffActionTypeFilter<$PrismaModel>
+  }
+
+  export type EnumStaffEntityTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.StaffEntityType | EnumStaffEntityTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.StaffEntityType[] | ListEnumStaffEntityTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.StaffEntityType[] | ListEnumStaffEntityTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumStaffEntityTypeWithAggregatesFilter<$PrismaModel> | $Enums.StaffEntityType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumStaffEntityTypeFilter<$PrismaModel>
+    _max?: NestedEnumStaffEntityTypeFilter<$PrismaModel>
+  }
+  export type JsonNullableWithAggregatesFilter<$PrismaModel = never> = 
+    | PatchUndefined<
+        Either<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedJsonNullableFilter<$PrismaModel>
+    _max?: NestedJsonNullableFilter<$PrismaModel>
   }
 
   export type DecimalFilter<$PrismaModel = never> = {
@@ -56433,11 +56860,6 @@ export namespace Prisma {
     gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
     gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
     not?: NestedDecimalFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
-  }
-
-  export type BranchRelationFilter = {
-    is?: BranchWhereInput
-    isNot?: BranchWhereInput
   }
 
   export type BranchPricingSettingCountOrderByAggregateInput = {
@@ -58169,28 +58591,6 @@ export namespace Prisma {
     notIn?: $Enums.AuditSeverity[] | ListEnumAuditSeverityFieldRefInput<$PrismaModel>
     not?: NestedEnumAuditSeverityFilter<$PrismaModel> | $Enums.AuditSeverity
   }
-  export type JsonNullableFilter<$PrismaModel = never> = 
-    | PatchUndefined<
-        Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
-        Required<JsonNullableFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>
-
-  export type JsonNullableFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string[]
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-  }
 
   export type StringNullableListFilter<$PrismaModel = never> = {
     equals?: string[] | ListStringFieldRefInput<$PrismaModel> | null
@@ -58315,31 +58715,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumAuditSeverityFilter<$PrismaModel>
     _max?: NestedEnumAuditSeverityFilter<$PrismaModel>
-  }
-  export type JsonNullableWithAggregatesFilter<$PrismaModel = never> = 
-    | PatchUndefined<
-        Either<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
-        Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
-
-  export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string[]
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedJsonNullableFilter<$PrismaModel>
-    _max?: NestedJsonNullableFilter<$PrismaModel>
   }
 
   export type SystemSettingCountOrderByAggregateInput = {
@@ -59703,6 +60078,13 @@ export namespace Prisma {
     connect?: AuditLogWhereUniqueInput | AuditLogWhereUniqueInput[]
   }
 
+  export type StaffActivityLogCreateNestedManyWithoutBranchInput = {
+    create?: XOR<StaffActivityLogCreateWithoutBranchInput, StaffActivityLogUncheckedCreateWithoutBranchInput> | StaffActivityLogCreateWithoutBranchInput[] | StaffActivityLogUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: StaffActivityLogCreateOrConnectWithoutBranchInput | StaffActivityLogCreateOrConnectWithoutBranchInput[]
+    createMany?: StaffActivityLogCreateManyBranchInputEnvelope
+    connect?: StaffActivityLogWhereUniqueInput | StaffActivityLogWhereUniqueInput[]
+  }
+
   export type UserUncheckedCreateNestedManyWithoutBranchInput = {
     create?: XOR<UserCreateWithoutBranchInput, UserUncheckedCreateWithoutBranchInput> | UserCreateWithoutBranchInput[] | UserUncheckedCreateWithoutBranchInput[]
     connectOrCreate?: UserCreateOrConnectWithoutBranchInput | UserCreateOrConnectWithoutBranchInput[]
@@ -59776,6 +60158,13 @@ export namespace Prisma {
     connectOrCreate?: AuditLogCreateOrConnectWithoutActorBranchInput | AuditLogCreateOrConnectWithoutActorBranchInput[]
     createMany?: AuditLogCreateManyActorBranchInputEnvelope
     connect?: AuditLogWhereUniqueInput | AuditLogWhereUniqueInput[]
+  }
+
+  export type StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput = {
+    create?: XOR<StaffActivityLogCreateWithoutBranchInput, StaffActivityLogUncheckedCreateWithoutBranchInput> | StaffActivityLogCreateWithoutBranchInput[] | StaffActivityLogUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: StaffActivityLogCreateOrConnectWithoutBranchInput | StaffActivityLogCreateOrConnectWithoutBranchInput[]
+    createMany?: StaffActivityLogCreateManyBranchInputEnvelope
+    connect?: StaffActivityLogWhereUniqueInput | StaffActivityLogWhereUniqueInput[]
   }
 
   export type UserUpdateManyWithoutBranchNestedInput = {
@@ -59924,6 +60313,20 @@ export namespace Prisma {
     deleteMany?: AuditLogScalarWhereInput | AuditLogScalarWhereInput[]
   }
 
+  export type StaffActivityLogUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<StaffActivityLogCreateWithoutBranchInput, StaffActivityLogUncheckedCreateWithoutBranchInput> | StaffActivityLogCreateWithoutBranchInput[] | StaffActivityLogUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: StaffActivityLogCreateOrConnectWithoutBranchInput | StaffActivityLogCreateOrConnectWithoutBranchInput[]
+    upsert?: StaffActivityLogUpsertWithWhereUniqueWithoutBranchInput | StaffActivityLogUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: StaffActivityLogCreateManyBranchInputEnvelope
+    set?: StaffActivityLogWhereUniqueInput | StaffActivityLogWhereUniqueInput[]
+    disconnect?: StaffActivityLogWhereUniqueInput | StaffActivityLogWhereUniqueInput[]
+    delete?: StaffActivityLogWhereUniqueInput | StaffActivityLogWhereUniqueInput[]
+    connect?: StaffActivityLogWhereUniqueInput | StaffActivityLogWhereUniqueInput[]
+    update?: StaffActivityLogUpdateWithWhereUniqueWithoutBranchInput | StaffActivityLogUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: StaffActivityLogUpdateManyWithWhereWithoutBranchInput | StaffActivityLogUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: StaffActivityLogScalarWhereInput | StaffActivityLogScalarWhereInput[]
+  }
+
   export type UserUncheckedUpdateManyWithoutBranchNestedInput = {
     create?: XOR<UserCreateWithoutBranchInput, UserUncheckedCreateWithoutBranchInput> | UserCreateWithoutBranchInput[] | UserUncheckedCreateWithoutBranchInput[]
     connectOrCreate?: UserCreateOrConnectWithoutBranchInput | UserCreateOrConnectWithoutBranchInput[]
@@ -60068,6 +60471,42 @@ export namespace Prisma {
     update?: AuditLogUpdateWithWhereUniqueWithoutActorBranchInput | AuditLogUpdateWithWhereUniqueWithoutActorBranchInput[]
     updateMany?: AuditLogUpdateManyWithWhereWithoutActorBranchInput | AuditLogUpdateManyWithWhereWithoutActorBranchInput[]
     deleteMany?: AuditLogScalarWhereInput | AuditLogScalarWhereInput[]
+  }
+
+  export type StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<StaffActivityLogCreateWithoutBranchInput, StaffActivityLogUncheckedCreateWithoutBranchInput> | StaffActivityLogCreateWithoutBranchInput[] | StaffActivityLogUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: StaffActivityLogCreateOrConnectWithoutBranchInput | StaffActivityLogCreateOrConnectWithoutBranchInput[]
+    upsert?: StaffActivityLogUpsertWithWhereUniqueWithoutBranchInput | StaffActivityLogUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: StaffActivityLogCreateManyBranchInputEnvelope
+    set?: StaffActivityLogWhereUniqueInput | StaffActivityLogWhereUniqueInput[]
+    disconnect?: StaffActivityLogWhereUniqueInput | StaffActivityLogWhereUniqueInput[]
+    delete?: StaffActivityLogWhereUniqueInput | StaffActivityLogWhereUniqueInput[]
+    connect?: StaffActivityLogWhereUniqueInput | StaffActivityLogWhereUniqueInput[]
+    update?: StaffActivityLogUpdateWithWhereUniqueWithoutBranchInput | StaffActivityLogUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: StaffActivityLogUpdateManyWithWhereWithoutBranchInput | StaffActivityLogUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: StaffActivityLogScalarWhereInput | StaffActivityLogScalarWhereInput[]
+  }
+
+  export type BranchCreateNestedOneWithoutStaffActivityLogsInput = {
+    create?: XOR<BranchCreateWithoutStaffActivityLogsInput, BranchUncheckedCreateWithoutStaffActivityLogsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutStaffActivityLogsInput
+    connect?: BranchWhereUniqueInput
+  }
+
+  export type EnumStaffActionTypeFieldUpdateOperationsInput = {
+    set?: $Enums.StaffActionType
+  }
+
+  export type EnumStaffEntityTypeFieldUpdateOperationsInput = {
+    set?: $Enums.StaffEntityType
+  }
+
+  export type BranchUpdateOneRequiredWithoutStaffActivityLogsNestedInput = {
+    create?: XOR<BranchCreateWithoutStaffActivityLogsInput, BranchUncheckedCreateWithoutStaffActivityLogsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutStaffActivityLogsInput
+    upsert?: BranchUpsertWithoutStaffActivityLogsInput
+    connect?: BranchWhereUniqueInput
+    update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutStaffActivityLogsInput, BranchUpdateWithoutStaffActivityLogsInput>, BranchUncheckedUpdateWithoutStaffActivityLogsInput>
   }
 
   export type BranchCreateNestedOneWithoutPricingSettingInput = {
@@ -62284,6 +62723,62 @@ export namespace Prisma {
     _max?: NestedEnumKycStatusFilter<$PrismaModel>
   }
 
+  export type NestedEnumStaffActionTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.StaffActionType | EnumStaffActionTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.StaffActionType[] | ListEnumStaffActionTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.StaffActionType[] | ListEnumStaffActionTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumStaffActionTypeFilter<$PrismaModel> | $Enums.StaffActionType
+  }
+
+  export type NestedEnumStaffEntityTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.StaffEntityType | EnumStaffEntityTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.StaffEntityType[] | ListEnumStaffEntityTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.StaffEntityType[] | ListEnumStaffEntityTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumStaffEntityTypeFilter<$PrismaModel> | $Enums.StaffEntityType
+  }
+
+  export type NestedEnumStaffActionTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.StaffActionType | EnumStaffActionTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.StaffActionType[] | ListEnumStaffActionTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.StaffActionType[] | ListEnumStaffActionTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumStaffActionTypeWithAggregatesFilter<$PrismaModel> | $Enums.StaffActionType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumStaffActionTypeFilter<$PrismaModel>
+    _max?: NestedEnumStaffActionTypeFilter<$PrismaModel>
+  }
+
+  export type NestedEnumStaffEntityTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.StaffEntityType | EnumStaffEntityTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.StaffEntityType[] | ListEnumStaffEntityTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.StaffEntityType[] | ListEnumStaffEntityTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumStaffEntityTypeWithAggregatesFilter<$PrismaModel> | $Enums.StaffEntityType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumStaffEntityTypeFilter<$PrismaModel>
+    _max?: NestedEnumStaffEntityTypeFilter<$PrismaModel>
+  }
+  export type NestedJsonNullableFilter<$PrismaModel = never> = 
+    | PatchUndefined<
+        Either<Required<NestedJsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>,
+        Required<NestedJsonNullableFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>
+
+  export type NestedJsonNullableFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
+
   export type NestedDecimalFilter<$PrismaModel = never> = {
     equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
     in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
@@ -62614,28 +63109,6 @@ export namespace Prisma {
     _min?: NestedEnumAuditSeverityFilter<$PrismaModel>
     _max?: NestedEnumAuditSeverityFilter<$PrismaModel>
   }
-  export type NestedJsonNullableFilter<$PrismaModel = never> = 
-    | PatchUndefined<
-        Either<Required<NestedJsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>,
-        Required<NestedJsonNullableFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>
-
-  export type NestedJsonNullableFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string[]
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-  }
 
   export type NestedEnumFeatureFlagScopeFilter<$PrismaModel = never> = {
     equals?: $Enums.FeatureFlagScope | EnumFeatureFlagScopeFieldRefInput<$PrismaModel>
@@ -62705,6 +63178,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutUsersInput = {
@@ -62725,6 +63199,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutUsersInput = {
@@ -63189,6 +63664,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutUsersInput = {
@@ -63209,6 +63685,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type EmailVerificationOtpUpsertWithWhereUniqueWithoutUserInput = {
@@ -65220,6 +65697,45 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type StaffActivityLogCreateWithoutBranchInput = {
+    publicId: string
+    actorPublicId: string
+    actorName: string
+    actorRole: $Enums.Role
+    branchName: string
+    actionType: $Enums.StaffActionType
+    entityType: $Enums.StaffEntityType
+    entityRef: string
+    description: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+  }
+
+  export type StaffActivityLogUncheckedCreateWithoutBranchInput = {
+    id?: number
+    publicId: string
+    actorPublicId: string
+    actorName: string
+    actorRole: $Enums.Role
+    branchName: string
+    actionType: $Enums.StaffActionType
+    entityType: $Enums.StaffEntityType
+    entityRef: string
+    description: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+  }
+
+  export type StaffActivityLogCreateOrConnectWithoutBranchInput = {
+    where: StaffActivityLogWhereUniqueInput
+    create: XOR<StaffActivityLogCreateWithoutBranchInput, StaffActivityLogUncheckedCreateWithoutBranchInput>
+  }
+
+  export type StaffActivityLogCreateManyBranchInputEnvelope = {
+    data: StaffActivityLogCreateManyBranchInput | StaffActivityLogCreateManyBranchInput[]
+    skipDuplicates?: boolean
+  }
+
   export type UserUpsertWithWhereUniqueWithoutBranchInput = {
     where: UserWhereUniqueInput
     update: XOR<UserUpdateWithoutBranchInput, UserUncheckedUpdateWithoutBranchInput>
@@ -65538,6 +66054,139 @@ export namespace Prisma {
     data: XOR<AuditLogUpdateManyMutationInput, AuditLogUncheckedUpdateManyWithoutActorBranchInput>
   }
 
+  export type StaffActivityLogUpsertWithWhereUniqueWithoutBranchInput = {
+    where: StaffActivityLogWhereUniqueInput
+    update: XOR<StaffActivityLogUpdateWithoutBranchInput, StaffActivityLogUncheckedUpdateWithoutBranchInput>
+    create: XOR<StaffActivityLogCreateWithoutBranchInput, StaffActivityLogUncheckedCreateWithoutBranchInput>
+  }
+
+  export type StaffActivityLogUpdateWithWhereUniqueWithoutBranchInput = {
+    where: StaffActivityLogWhereUniqueInput
+    data: XOR<StaffActivityLogUpdateWithoutBranchInput, StaffActivityLogUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type StaffActivityLogUpdateManyWithWhereWithoutBranchInput = {
+    where: StaffActivityLogScalarWhereInput
+    data: XOR<StaffActivityLogUpdateManyMutationInput, StaffActivityLogUncheckedUpdateManyWithoutBranchInput>
+  }
+
+  export type StaffActivityLogScalarWhereInput = {
+    AND?: StaffActivityLogScalarWhereInput | StaffActivityLogScalarWhereInput[]
+    OR?: StaffActivityLogScalarWhereInput[]
+    NOT?: StaffActivityLogScalarWhereInput | StaffActivityLogScalarWhereInput[]
+    id?: IntFilter<"StaffActivityLog"> | number
+    publicId?: StringFilter<"StaffActivityLog"> | string
+    actorPublicId?: StringFilter<"StaffActivityLog"> | string
+    actorName?: StringFilter<"StaffActivityLog"> | string
+    actorRole?: EnumRoleFilter<"StaffActivityLog"> | $Enums.Role
+    branchId?: IntFilter<"StaffActivityLog"> | number
+    branchName?: StringFilter<"StaffActivityLog"> | string
+    actionType?: EnumStaffActionTypeFilter<"StaffActivityLog"> | $Enums.StaffActionType
+    entityType?: EnumStaffEntityTypeFilter<"StaffActivityLog"> | $Enums.StaffEntityType
+    entityRef?: StringFilter<"StaffActivityLog"> | string
+    description?: StringFilter<"StaffActivityLog"> | string
+    metadata?: JsonNullableFilter<"StaffActivityLog">
+    createdAt?: DateTimeFilter<"StaffActivityLog"> | Date | string
+  }
+
+  export type BranchCreateWithoutStaffActivityLogsInput = {
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleCreateNestedManyWithoutBranchInput
+    bookings?: BookingCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
+    auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
+  }
+
+  export type BranchUncheckedCreateWithoutStaffActivityLogsInput = {
+    id?: number
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserUncheckedCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
+  }
+
+  export type BranchCreateOrConnectWithoutStaffActivityLogsInput = {
+    where: BranchWhereUniqueInput
+    create: XOR<BranchCreateWithoutStaffActivityLogsInput, BranchUncheckedCreateWithoutStaffActivityLogsInput>
+  }
+
+  export type BranchUpsertWithoutStaffActivityLogsInput = {
+    update: XOR<BranchUpdateWithoutStaffActivityLogsInput, BranchUncheckedUpdateWithoutStaffActivityLogsInput>
+    create: XOR<BranchCreateWithoutStaffActivityLogsInput, BranchUncheckedCreateWithoutStaffActivityLogsInput>
+    where?: BranchWhereInput
+  }
+
+  export type BranchUpdateToOneWithWhereWithoutStaffActivityLogsInput = {
+    where?: BranchWhereInput
+    data: XOR<BranchUpdateWithoutStaffActivityLogsInput, BranchUncheckedUpdateWithoutStaffActivityLogsInput>
+  }
+
+  export type BranchUpdateWithoutStaffActivityLogsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
+  }
+
+  export type BranchUncheckedUpdateWithoutStaffActivityLogsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUncheckedUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
+  }
+
   export type BranchCreateWithoutPricingSettingInput = {
     publicId: string
     name: string
@@ -65555,6 +66204,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPricingSettingInput = {
@@ -65575,6 +66225,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPricingSettingInput = {
@@ -65610,6 +66261,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPricingSettingInput = {
@@ -65630,6 +66282,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type PricingDiscountSlabCreateWithoutCategoryInput = {
@@ -65959,6 +66612,7 @@ export namespace Prisma {
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
     featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutCaptureConfigsInput = {
@@ -65979,6 +66633,7 @@ export namespace Prisma {
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
     featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutCaptureConfigsInput = {
@@ -66044,6 +66699,7 @@ export namespace Prisma {
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
     featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutCaptureConfigsInput = {
@@ -66064,6 +66720,7 @@ export namespace Prisma {
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
     featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutCaptureConfigsInput = {
@@ -66119,6 +66776,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutVehiclesInput = {
@@ -66139,6 +66797,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutVehiclesInput = {
@@ -66520,6 +67179,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutVehiclesInput = {
@@ -66540,6 +67200,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutVehiclesInput = {
@@ -67091,6 +67752,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutBranchPricingDefaultsInput = {
@@ -67111,6 +67773,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutBranchPricingDefaultsInput = {
@@ -67176,6 +67839,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutBranchPricingDefaultsInput = {
@@ -67196,6 +67860,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutBranchPricingDefaultsInput = {
@@ -67757,6 +68422,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPricingDiscountSlabsInput = {
@@ -67777,6 +68443,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPricingDiscountSlabsInput = {
@@ -67842,6 +68509,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPricingDiscountSlabsInput = {
@@ -67862,6 +68530,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutPricingDiscountSlabsInput = {
@@ -67917,6 +68586,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutCategoryDepositSettingsInput = {
@@ -67937,6 +68607,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutCategoryDepositSettingsInput = {
@@ -68002,6 +68673,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutCategoryDepositSettingsInput = {
@@ -68022,6 +68694,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutCategoryDepositSettingsInput = {
@@ -68153,6 +68826,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutBookingsInput = {
@@ -68173,6 +68847,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutBookingsInput = {
@@ -68596,6 +69271,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutBookingsInput = {
@@ -68616,6 +69292,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type UserUpsertWithoutBookingsCreatedInput = {
@@ -71122,6 +71799,7 @@ export namespace Prisma {
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
     featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
+    staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutAuditLogsInput = {
@@ -71142,6 +71820,7 @@ export namespace Prisma {
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
     featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
+    staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutAuditLogsInput = {
@@ -71289,6 +71968,7 @@ export namespace Prisma {
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
     featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutAuditLogsInput = {
@@ -71309,6 +71989,7 @@ export namespace Prisma {
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
     featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchCreateWithoutGstRuleInput = {
@@ -71328,6 +72009,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutGstRuleInput = {
@@ -71348,6 +72030,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutGstRuleInput = {
@@ -71383,6 +72066,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutGstRuleInput = {
@@ -71403,6 +72087,7 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BookingCreateWithoutCancellationInvoiceInput = {
@@ -71922,6 +72607,7 @@ export namespace Prisma {
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutFeatureFlagsInput = {
@@ -71942,6 +72628,7 @@ export namespace Prisma {
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutFeatureFlagsInput = {
@@ -72009,6 +72696,7 @@ export namespace Prisma {
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutFeatureFlagsInput = {
@@ -72029,6 +72717,7 @@ export namespace Prisma {
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type FeatureFlagUpsertWithoutBranchFlagsInput = {
@@ -74423,6 +75112,21 @@ export namespace Prisma {
     createdAt?: Date | string
   }
 
+  export type StaffActivityLogCreateManyBranchInput = {
+    id?: number
+    publicId: string
+    actorPublicId: string
+    actorName: string
+    actorRole: $Enums.Role
+    branchName: string
+    actionType: $Enums.StaffActionType
+    entityType: $Enums.StaffEntityType
+    entityRef: string
+    description: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+  }
+
   export type UserUpdateWithoutBranchInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
@@ -74934,6 +75638,50 @@ export namespace Prisma {
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
     changedFields?: AuditLogUpdatechangedFieldsInput | string[]
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type StaffActivityLogUpdateWithoutBranchInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorName?: StringFieldUpdateOperationsInput | string
+    actorRole?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchName?: StringFieldUpdateOperationsInput | string
+    actionType?: EnumStaffActionTypeFieldUpdateOperationsInput | $Enums.StaffActionType
+    entityType?: EnumStaffEntityTypeFieldUpdateOperationsInput | $Enums.StaffEntityType
+    entityRef?: StringFieldUpdateOperationsInput | string
+    description?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type StaffActivityLogUncheckedUpdateWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorName?: StringFieldUpdateOperationsInput | string
+    actorRole?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchName?: StringFieldUpdateOperationsInput | string
+    actionType?: EnumStaffActionTypeFieldUpdateOperationsInput | $Enums.StaffActionType
+    entityType?: EnumStaffEntityTypeFieldUpdateOperationsInput | $Enums.StaffEntityType
+    entityRef?: StringFieldUpdateOperationsInput | string
+    description?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type StaffActivityLogUncheckedUpdateManyWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorName?: StringFieldUpdateOperationsInput | string
+    actorRole?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchName?: StringFieldUpdateOperationsInput | string
+    actionType?: EnumStaffActionTypeFieldUpdateOperationsInput | $Enums.StaffActionType
+    entityType?: EnumStaffEntityTypeFieldUpdateOperationsInput | $Enums.StaffEntityType
+    entityRef?: StringFieldUpdateOperationsInput | string
+    description?: StringFieldUpdateOperationsInput | string
     metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma, Role, User } from "@repo/database/client";
+import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { StatusCode } from "../../types/statusCode.js";
 import { createEmployeeSchema, updateEmployeeSchema } from "@repo/schemas";
 import { hashSync } from "bcrypt";
@@ -159,6 +160,13 @@ export const CreateEmployee = async (req: Request, res: Response) => {
             }
         });
 
+        staffActivityService.logFromRequest(req, {
+            actionType: StaffActionType.CREATED,
+            entityType: StaffEntityType.EMPLOYEE,
+            entityRef: newUser.publicId,
+            description: `Employee account created for ${newUser.name}`,
+        });
+
         return res.status(StatusCode.CREATED).json({
             message: "Employee created successfully",
             data: newUser,
@@ -229,6 +237,13 @@ export const UpdateEmployee = async (req: Request, res: Response) => {
             }
         });
 
+        staffActivityService.logFromRequest(req, {
+            actionType: StaffActionType.UPDATED,
+            entityType: StaffEntityType.EMPLOYEE,
+            entityRef: updatedUser.publicId,
+            description: `Employee ${updatedUser.name} updated`,
+        });
+
         return res.status(StatusCode.OK).json({
             message: "Employee updated successfully",
             data: updatedUser
@@ -264,6 +279,13 @@ export const DeleteEmployee = async (req: Request, res: Response) => {
             data: {
                 deletedAt: new Date()
             }
+        });
+
+        staffActivityService.logFromRequest(req, {
+            actionType: StaffActionType.DELETED,
+            entityType: StaffEntityType.EMPLOYEE,
+            entityRef: user.publicId,
+            description: `Employee ${user.name} deactivated`,
         });
 
         return res.status(StatusCode.OK).json({

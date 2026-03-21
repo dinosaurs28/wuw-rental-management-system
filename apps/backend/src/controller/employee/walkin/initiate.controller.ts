@@ -3,6 +3,7 @@ import { prisma, Role, AuthProvider } from "@repo/database/client";
 import { StatusCode } from "../../../types/statusCode.js";
 import { initiateWalkinSchema } from "@repo/schemas"; // Ensure this is exported
 import { createID } from "../../../utils/nanoID.js";
+import { staffActivityService, StaffActionType, StaffEntityType } from "../../../services/staffActivity/staffActivity.service.js";
 import { hashpassword } from "../../../utils/PasswordCrypt/password.js";
 import { sendOTP } from "../../../services/otp/otpservice.js";
 import { rateLimit } from "../../../utils/rateLimiter.js";
@@ -105,6 +106,14 @@ export const InitiateWalkin = async (req: Request, res: Response) => {
     //         message: "Failed to send OTP SMS"
     //     });
     // }
+    staffActivityService.logFromRequest(req, {
+      actionType: StaffActionType.INITIATED,
+      entityType: StaffEntityType.CUSTOMER,
+      entityRef: user.publicId,
+      description: `Walk-in initiated for customer phone ${phone}`,
+      metadata: { phone },
+    });
+
     return res.status(StatusCode.OK).json({
       message: "OTP sent successfully",
       otp: otp,

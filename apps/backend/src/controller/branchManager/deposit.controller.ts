@@ -5,6 +5,7 @@ import {
   createDepositRuleSchema,
   updateDepositRuleSchema,
 } from "@repo/schemas";
+import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 
 export const GetDepositRules = async (req: Request, res: Response) => {
   const branchId = req.branch_Id;
@@ -68,6 +69,14 @@ export const CreateDepositRule = async (req: Request, res: Response) => {
       },
     });
 
+    staffActivityService.logFromRequest(req, {
+      actionType: StaffActionType.CREATED,
+      entityType: StaffEntityType.DEPOSIT,
+      entityRef: String(newRule.id),
+      description: `Deposit rule created for category ${newRule.category.name}`,
+      metadata: { categoryId, amount },
+    });
+
     return res.status(StatusCode.CREATED).json({
       message: "Deposit rule created successfully",
       data: newRule,
@@ -111,6 +120,14 @@ export const UpdateDepositRule = async (req: Request, res: Response) => {
       include: { category: true },
     });
 
+    staffActivityService.logFromRequest(req, {
+      actionType: StaffActionType.UPDATED,
+      entityType: StaffEntityType.DEPOSIT,
+      entityRef: String(id),
+      description: `Deposit rule ${id} updated`,
+      metadata: { amount },
+    });
+
     return res.status(StatusCode.OK).json({
       message: "Deposit rule updated successfully",
       data: updatedRule,
@@ -140,6 +157,13 @@ export const DeleteDepositRule = async (req: Request, res: Response) => {
 
     await prisma.categoryDepositSetting.delete({
       where: { id: Number(id) },
+    });
+
+    staffActivityService.logFromRequest(req, {
+      actionType: StaffActionType.DELETED,
+      entityType: StaffEntityType.DEPOSIT,
+      entityRef: String(id),
+      description: `Deposit rule ${id} deleted`,
     });
 
     return res.status(StatusCode.OK).json({

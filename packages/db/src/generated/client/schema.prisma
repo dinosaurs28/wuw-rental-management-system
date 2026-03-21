@@ -258,18 +258,73 @@ model Branch {
   featureFlags            BranchFeatureFlag[]
   captureConfigs          VehiclePhotoCaptureConfig[]
   auditLogs               AuditLog[]
+  staffActivityLogs       StaffActivityLog[]
   createdAt               DateTime                    @default(now())
   deletedAt               DateTime?
 }
 
+enum StaffActionType {
+  CREATED
+  APPROVED
+  REJECTED
+  CANCELLED
+  CONFIRMED
+  UPDATED
+  DELETED
+  UPLOADED
+  SWAPPED
+  REFUNDED
+  ASSESSED
+  INITIATED
+  COMPLETED
+}
+
+enum StaffEntityType {
+  BOOKING
+  INVOICE
+  PAYMENT
+  CUSTOMER
+  VEHICLE
+  KYC
+  DAMAGE_REPORT
+  DEPOSIT
+  EMPLOYEE
+  PRICING
+  CAPTURE_CONFIG
+}
+
 model StaffActivityLog {
-  id        Int      @id @default(autoincrement())
-  publicId  String   @unique
-  staffId   Int
-  action    String
-  entity    String?
-  entityId  String?
+  id       Int    @id @default(autoincrement())
+  publicId String @unique
+
+  // Actor (de-normalised — no join needed for reads)
+  actorPublicId String
+  actorName     String
+  actorRole     Role
+
+  // Branch (de-normalised)
+  branchId   Int
+  branchName String
+
+  // Action
+  actionType  StaffActionType
+  entityType  StaffEntityType
+  entityRef   String
+  description String
+
+  // Extra structured data
+  metadata Json?
+
+  // UTC
   createdAt DateTime @default(now())
+
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  @@index([branchId])
+  @@index([actorPublicId])
+  @@index([actionType])
+  @@index([entityType])
+  @@index([createdAt])
 }
 
 model BranchPricingSetting {

@@ -27,6 +27,7 @@ import { getGlobalKpiStats } from "../../controller/admin/globalKpi.controller.j
 import { GetAllVehicles } from "../../controller/admin/vehicle.controller.js";
 import featureFlagRouter from "./feature-flag.routes.js";
 import auditRouter from "./audit.routes.js";
+import staffActivityRouter from "./staffActivity.routes.js";
 
 const router: Router = Router();
 
@@ -84,5 +85,8 @@ router.use("/feature-flags", featureFlagRouter);
 
 // Audit Logs
 router.use("/audit", auditRouter);
+
+// Staff Activity Logs
+router.use("/staff-activity", staffActivityRouter);
 
 export default router;

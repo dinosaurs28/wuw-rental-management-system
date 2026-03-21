@@ -10,6 +10,7 @@ import { getDepositAmount } from "../../utils/pricing/getDepositAmount.js";
 import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
 import { createID } from "../../utils/nanoID.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
+import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 
 export const BookingController = async (req: Request, res: Response) => {
   try {
@@ -401,15 +402,12 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         })),
       });
 
-      await tx.staffActivityLog.create({
-        data: {
-          publicId: createID(),
-          staffId: staff.id,
-          action: "CREATED_BOOKING",
-          entity: "BOOKING",
-          entityId: newBooking.publicId,
-        },
-      });
+      await staffActivityService.logFromRequest(req, {
+        actionType: StaffActionType.CREATED,
+        entityType: StaffEntityType.BOOKING,
+        entityRef: newBooking.publicId,
+        description: `Booking ${newBooking.publicId} created`,
+      }, tx);
 
       return newBooking;
     });

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
 import { pricingDiscountSlabSchema } from "@repo/schemas";
+import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 // Schema for creation/update
 
 export const GetDiscounts = async (req: Request, res: Response) => {
@@ -65,6 +66,14 @@ export const CreateDiscount = async (req: Request, res: Response) => {
         days,
         multiplier,
       },
+    });
+
+    staffActivityService.logFromRequest(req, {
+      actionType: StaffActionType.CREATED,
+      entityType: StaffEntityType.PRICING,
+      entityRef: String(slab.id),
+      description: `Pricing rule created for ${days} days`,
+      metadata: { categoryId, days, multiplier },
     });
 
     return res.status(StatusCode.CREATED).json({
@@ -158,6 +167,13 @@ export const UpdateDiscount = async (req: Request, res: Response) => {
       },
     });
 
+    staffActivityService.logFromRequest(req, {
+      actionType: StaffActionType.UPDATED,
+      entityType: StaffEntityType.PRICING,
+      entityRef: String(slabId),
+      description: `Pricing rule ${slabId} updated`,
+    });
+
     return res.status(StatusCode.OK).json({
       message: "Discount updated successfully",
       data: updated,
@@ -195,6 +211,13 @@ export const DeleteDiscount = async (req: Request, res: Response) => {
 
     await prisma.pricingDiscountSlab.delete({
       where: { id: slabId },
+    });
+
+    staffActivityService.logFromRequest(req, {
+      actionType: StaffActionType.DELETED,
+      entityType: StaffEntityType.PRICING,
+      entityRef: String(slabId),
+      description: `Pricing rule ${slabId} deleted`,
     });
 
     return res.status(StatusCode.OK).json({

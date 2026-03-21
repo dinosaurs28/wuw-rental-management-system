@@ -215,10 +215,16 @@ exports.Prisma.BranchScalarFieldEnum = {
 exports.Prisma.StaffActivityLogScalarFieldEnum = {
   id: 'id',
   publicId: 'publicId',
-  staffId: 'staffId',
-  action: 'action',
-  entity: 'entity',
-  entityId: 'entityId',
+  actorPublicId: 'actorPublicId',
+  actorName: 'actorName',
+  actorRole: 'actorRole',
+  branchId: 'branchId',
+  branchName: 'branchName',
+  actionType: 'actionType',
+  entityType: 'entityType',
+  entityRef: 'entityRef',
+  description: 'description',
+  metadata: 'metadata',
   createdAt: 'createdAt'
 };
 
@@ -647,12 +653,12 @@ exports.Prisma.SortOrder = {
   desc: 'desc'
 };
 
-exports.Prisma.JsonNullValueInput = {
+exports.Prisma.NullableJsonNullValueInput = {
+  DbNull: Prisma.DbNull,
   JsonNull: Prisma.JsonNull
 };
 
-exports.Prisma.NullableJsonNullValueInput = {
-  DbNull: Prisma.DbNull,
+exports.Prisma.JsonNullValueInput = {
   JsonNull: Prisma.JsonNull
 };
 
@@ -694,6 +700,36 @@ exports.KycStatus = exports.$Enums.KycStatus = {
   PENDING: 'PENDING',
   APPROVED: 'APPROVED',
   REJECTED: 'REJECTED'
+};
+
+exports.StaffActionType = exports.$Enums.StaffActionType = {
+  CREATED: 'CREATED',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
+  CONFIRMED: 'CONFIRMED',
+  UPDATED: 'UPDATED',
+  DELETED: 'DELETED',
+  UPLOADED: 'UPLOADED',
+  SWAPPED: 'SWAPPED',
+  REFUNDED: 'REFUNDED',
+  ASSESSED: 'ASSESSED',
+  INITIATED: 'INITIATED',
+  COMPLETED: 'COMPLETED'
+};
+
+exports.StaffEntityType = exports.$Enums.StaffEntityType = {
+  BOOKING: 'BOOKING',
+  INVOICE: 'INVOICE',
+  PAYMENT: 'PAYMENT',
+  CUSTOMER: 'CUSTOMER',
+  VEHICLE: 'VEHICLE',
+  KYC: 'KYC',
+  DAMAGE_REPORT: 'DAMAGE_REPORT',
+  DEPOSIT: 'DEPOSIT',
+  EMPLOYEE: 'EMPLOYEE',
+  PRICING: 'PRICING',
+  CAPTURE_CONFIG: 'CAPTURE_CONFIG'
 };
 
 exports.VehicleStatus = exports.$Enums.VehicleStatus = {

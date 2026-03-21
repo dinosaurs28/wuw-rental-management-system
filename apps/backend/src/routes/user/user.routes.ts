@@ -26,6 +26,6 @@ router
 router.get("/kyc", authCheckJwt, GetKycDocuments);
 router.post("/kyc", authCheckJwt, upload.single("file"), UploadKycDocument);
 router.delete("/kyc", authCheckJwt, DeleteKycDocument);
-router.post("/payment/cash", authCheckJwt, checkPaymedntForCash);
+router.post("/payment/cash", authCheckJwt, checkPaymentForCash);
 
 export default router;

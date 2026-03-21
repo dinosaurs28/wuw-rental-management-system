@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
+import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 
 export const GetBookingKyc = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
@@ -132,15 +133,12 @@ export const VerifyKyc = async (req: Request, res: Response) => {
         data: { status: status },
       });
 
-      await tx.staffActivityLog.create({
-        data: {
-          publicId: createID(),
-          staffId: actingUser.id,
-          action: `KYC_${status}`,
-          entity: "CustomerKyc",
-          entityId: kyc.publicId,
-        },
-      });
+      await staffActivityService.logFromRequest(req, {
+        actionType: status === "APPROVED" ? StaffActionType.APPROVED : StaffActionType.REJECTED,
+        entityType: StaffEntityType.KYC,
+        entityRef: kyc.publicId,
+        description: `KYC document ${kyc.publicId} ${status.toLowerCase()} for booking`,
+      }, tx);
 
       return updated;
     });

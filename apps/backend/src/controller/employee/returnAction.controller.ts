@@ -8,6 +8,7 @@ import {
 } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
 import { fileCleanupQueue } from "../../lib/queue.client.js";
+import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { r2 } from "../../lib/r2.client.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs/promises";
@@ -183,15 +184,14 @@ export const CompleteReturn = async (req: Request, res: Response) => {
         });
       }
 
-      await tx.staffActivityLog.create({
-        data: {
-          publicId: createID(),
-          staffId: actingUser.id,
-          action: requireManagerConfirmation ? "REQUESTED_MANAGER_CONFIRMATION_RETURN" : "VEHICLE_RETURN",
-          entity: "Booking",
-          entityId: booking.publicId,
-        },
-      });
+      await staffActivityService.logFromRequest(req, {
+        actionType: requireManagerConfirmation ? StaffActionType.INITIATED : StaffActionType.COMPLETED,
+        entityType: StaffEntityType.BOOKING,
+        entityRef: booking.publicId,
+        description: requireManagerConfirmation
+          ? `Return approval requested for booking ${booking.publicId}`
+          : `Vehicle return completed for booking ${booking.publicId}`,
+      }, tx);
     });
 
     // Invalidate public vehicle cache only if actual return occurred

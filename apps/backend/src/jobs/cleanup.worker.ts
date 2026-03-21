@@ -162,7 +162,7 @@ export function initCleanupWorker(): void {
                 where: { actorId: { in: userIds } },
               });
               await tx.staffActivityLog.deleteMany({
-                where: { staffId: { in: userIds } },
+                where: { branchId },
               });
               await tx.user.deleteMany({ where: { branchId } });
             }

@@ -13,6 +13,7 @@ import {
 import { redis } from "../../lib/redisconfig.js";
 import { createID } from "../../utils/nanoID.js";
 import { damageChargeService } from "../../services/damage/damage-charge.service.js";
+import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { closeDamageReportSchema } from "@repo/schemas";
 import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
 import { checkPhonePeStatus } from "../../utils/payment/paymentStatus.utils.js";
@@ -567,15 +568,12 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
         });
       }
 
-      await tx.staffActivityLog.create({
-        data: {
-          publicId: createID(),
-          staffId: managerUser.id,
-          action: "BOOKING_CLOSED_WITH_DAMAGE",
-          entity: "DamageReport",
-          entityId: damageReport.publicId,
-        },
-      });
+      await staffActivityService.logFromRequest(req, {
+        actionType: StaffActionType.COMPLETED,
+        entityType: StaffEntityType.DAMAGE_REPORT,
+        entityRef: damageReport.publicId,
+        description: `Damage report ${damageReport.publicId} closed`,
+      }, tx);
     });
 
     if (isFullySettled) {
@@ -766,6 +764,14 @@ export const UpdateDamageChargeType = async (req: Request, res: Response) => {
       report.id,
       chargeType
     );
+
+    staffActivityService.logFromRequest(req, {
+      actionType: StaffActionType.UPDATED,
+      entityType: StaffEntityType.DAMAGE_REPORT,
+      entityRef: report.publicId,
+      description: `Damage report ${report.publicId} charge type updated to ${chargeType}`,
+      metadata: { chargeType },
+    });
 
     return res.status(StatusCode.OK).json({
       message: "Damage charge type updated successfully",

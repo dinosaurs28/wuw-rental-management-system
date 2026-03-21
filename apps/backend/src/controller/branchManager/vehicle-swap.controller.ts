@@ -3,6 +3,7 @@ import { StatusCode } from "../../types/statusCode.js";
 import { prisma, SwapReason } from "@repo/database/client";
 import { VehicleSwapService } from "../../services/vehicle-swap/vehicle-swap.service.js";
 import { vehicleSwapSchema, swapHistoryQuerySchema } from "@repo/schemas";
+import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 
 const vehicleSwapService = new VehicleSwapService();
 
@@ -88,6 +89,14 @@ export const SwapVehicle = async (req: Request, res: Response) => {
       markOriginalForMaintenance === true,
       originalVehicleNotes,
     );
+
+    staffActivityService.logFromRequest(req, {
+      actionType: StaffActionType.SWAPPED,
+      entityType: StaffEntityType.VEHICLE,
+      entityRef: bookingId,
+      description: `Vehicle swapped in booking ${bookingId} — reason: ${reason}`,
+      metadata: { newVehicleId, reason, reasonNotes },
+    });
 
     return res.status(StatusCode.OK).json({
       message: "Vehicle swapped successfully",

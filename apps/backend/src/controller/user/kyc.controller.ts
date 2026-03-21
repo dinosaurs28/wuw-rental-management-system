@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, KycType, KycStatus, Role } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
+import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { r2 } from "../../lib/r2.client.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { fileCleanupQueue } from "../../lib/queue.client.js";
@@ -238,20 +239,16 @@ export const DeleteKycDocument = async (req: Request, res: Response) => {
       if (kycRecord.fileId) {
         await tx.fileObject.delete({ where: { id: kycRecord.fileId } });
       }
-
-      // Audit Log if Employee
-      if (isStaff) {
-        await tx.staffActivityLog.create({
-          data: {
-            publicId: createID(),
-            staffId: actingUser.id,
-            action: "WALKIN_KYC_DELETE",
-            entity: "CustomerKyc",
-            entityId: kycRecord.publicId,
-          },
-        });
-      }
     });
+
+    if (isStaff) {
+      staffActivityService.logFromRequest(req, {
+        actionType: StaffActionType.DELETED,
+        entityType: StaffEntityType.KYC,
+        entityRef: kycRecord.publicId,
+        description: `KYC document ${kycRecord.publicId} deleted for customer`,
+      });
+    }
 
     if (kycRecord.file && kycRecord.file.key) {
       await fileCleanupQueue.add("delete-kyc-file", {

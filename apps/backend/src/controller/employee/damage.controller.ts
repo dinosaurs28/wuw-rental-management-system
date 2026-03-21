@@ -10,6 +10,7 @@ import {
 } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
 import { createDamageReportSchema } from "@repo/schemas";
+import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { r2 } from "../../lib/r2.client.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs/promises";
@@ -235,16 +236,13 @@ export const CreateDamageReport = async (req: Request, res: Response) => {
         },
       });
 
-      // Log Staff Activity
-      await tx.staffActivityLog.create({
-        data: {
-          publicId: createID(),
-          staffId: staffUser.id,
-          action: "CREATE_DAMAGE_REPORT",
-          entity: "DamageReport",
-          entityId: report.publicId,
-        },
-      });
+      await staffActivityService.logFromRequest(req, {
+        actionType: StaffActionType.CREATED,
+        entityType: StaffEntityType.DAMAGE_REPORT,
+        entityRef: report.publicId,
+        description: `Damage report ${report.publicId} created for booking ${booking.publicId}`,
+        metadata: { bookingRef: booking.publicId },
+      }, tx);
 
       return report;
     });

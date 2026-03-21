@@ -3,6 +3,7 @@ import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
 import { imageQueue } from "../../lib/queue.client.js";
+import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { redis } from "../../lib/redisconfig.js";
 import { VehicleStatus } from "@repo/database/client";
 import { createVehicleSchema, editVehicleSchema } from "@repo/schemas";
@@ -123,6 +124,14 @@ export const AddVehicle = async (req: Request, res: Response) => {
         await redis.del(publicKeys);
       }
     } while (cursor !== "0");
+
+    staffActivityService.logFromRequest(req, {
+      actionType: StaffActionType.CREATED,
+      entityType: StaffEntityType.VEHICLE,
+      entityRef: vehicle.publicId,
+      description: `Vehicle ${make} ${model} (${regNo}) added`,
+      metadata: { make, model, regNo },
+    });
 
     return res.status(StatusCode.CREATED).json({
       message:
@@ -366,6 +375,13 @@ export const EditVehicle = async (req: Request, res: Response) => {
         await redis.del(publicKeys);
       }
     } while (cursor !== "0");
+
+    staffActivityService.logFromRequest(req, {
+      actionType: StaffActionType.UPDATED,
+      entityType: StaffEntityType.VEHICLE,
+      entityRef: vehicleId as string,
+      description: `Vehicle ${vehicleId} updated`,
+    });
 
     return res.status(StatusCode.OK).json({
       message: "Vehicle updated successfully",
@@ -620,6 +636,14 @@ export const DeleteVehicle = async (req: Request, res: Response) => {
         await redis.del(publicKeys);
       }
     } while (cursor !== "0");
+
+    staffActivityService.logFromRequest(req, {
+      actionType: StaffActionType.DELETED,
+      entityType: StaffEntityType.VEHICLE,
+      entityRef: vehicle.publicId,
+      description: `Vehicle ${vehicle.make} ${vehicle.model} (${vehicle.regNo}) removed`,
+      metadata: { make: vehicle.make, model: vehicle.model, regNo: vehicle.regNo },
+    });
 
     return res.status(StatusCode.OK).json({
       message: "Vehicle deleted successfully",

@@ -3,6 +3,7 @@ import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
 import { z } from "zod";
+import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 
 const captureFieldSchema = z.object({
   name: z.string().min(1),
@@ -73,6 +74,14 @@ export const CreateCaptureConfig = async (req: Request, res: Response) => {
       include: { category: { select: { publicId: true, name: true } } },
     });
 
+    staffActivityService.logFromRequest(req, {
+      actionType: StaffActionType.CREATED,
+      entityType: StaffEntityType.CAPTURE_CONFIG,
+      entityRef: config.publicId,
+      description: `Photo capture config created for category ${config.category.name}`,
+      metadata: { categoryId, fieldCount: fields.length },
+    });
+
     return res.status(StatusCode.CREATED).json({ message: "Capture config created", config });
   } catch (error) {
     console.error("CreateCaptureConfig error:", error);
@@ -106,6 +115,14 @@ export const UpdateCaptureConfig = async (req: Request, res: Response) => {
       include: { category: { select: { publicId: true, name: true } } },
     });
 
+    staffActivityService.logFromRequest(req, {
+      actionType: StaffActionType.UPDATED,
+      entityType: StaffEntityType.CAPTURE_CONFIG,
+      entityRef: config.publicId,
+      description: `Photo capture config updated for category ${config.category.name}`,
+      metadata: { fieldCount: parsed.data.fields.length },
+    });
+
     return res.status(StatusCode.OK).json({ message: "Capture config updated", config });
   } catch (error) {
     console.error("UpdateCaptureConfig error:", error);
@@ -129,6 +146,14 @@ export const DeleteCaptureConfig = async (req: Request, res: Response) => {
     }
 
     await prisma.vehiclePhotoCaptureConfig.delete({ where: { id: existing.id } });
+
+    staffActivityService.logFromRequest(req, {
+      actionType: StaffActionType.DELETED,
+      entityType: StaffEntityType.CAPTURE_CONFIG,
+      entityRef: publicId as string,
+      description: `Photo capture config ${publicId} deleted`,
+    });
+
     return res.status(StatusCode.OK).json({ message: "Capture config deleted" });
   } catch (error) {
     console.error("DeleteCaptureConfig error:", error);

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { StatusCode } from "../../../types/statusCode.js";
 import { prisma, KycType, KycStatus } from "@repo/database/client";
 import { createID } from "../../../utils/nanoID.js";
+import { staffActivityService, StaffActionType, StaffEntityType } from "../../../services/staffActivity/staffActivity.service.js";
 import { r2 } from "../../../lib/r2.client.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs/promises";
@@ -122,14 +123,11 @@ export const UploadWalkinKyc = async (req: Request, res: Response) => {
       });
     }
 
-    await prisma.staffActivityLog.create({
-      data: {
-        publicId: createID(),
-        staffId: actingUser.id,
-        action: existingKyc ? "WALKIN_KYC_UPDATE" : "WALKIN_KYC_UPLOAD",
-        entity: "CustomerKyc",
-        entityId: kycRecord.publicId,
-      },
+    await staffActivityService.logFromRequest(req, {
+      actionType: StaffActionType.UPLOADED,
+      entityType: StaffEntityType.KYC,
+      entityRef: kycRecord.publicId,
+      description: `Walk-in KYC ${existingKyc ? "updated" : "uploaded"} for customer ${customerId}`,
     });
 
     return res.status(StatusCode.CREATED).json({
@@ -194,16 +192,12 @@ export const UpdateWalkinKycStatus = async (req: Request, res: Response) => {
         data: { status: status as KycStatus },
       });
 
-      // AUDIT LOGGING
-      await tx.staffActivityLog.create({
-        data: {
-          publicId: createID(),
-          staffId: actingUser.id,
-          action: `WALKIN_KYC_${status}`,
-          entity: "CustomerKyc",
-          entityId: kyc.publicId,
-        },
-      });
+      await staffActivityService.logFromRequest(req, {
+        actionType: status === "APPROVED" ? StaffActionType.APPROVED : StaffActionType.REJECTED,
+        entityType: StaffEntityType.KYC,
+        entityRef: kyc.publicId,
+        description: `Walk-in KYC ${kyc.publicId} ${status.toLowerCase()} for customer`,
+      }, tx);
 
       return updated;
     });

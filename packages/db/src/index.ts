@@ -35,6 +35,8 @@ export {
   VehicleReturnDisposition,
   AuditCategory,
   AuditSeverity,
+  StaffActionType,
+  StaffEntityType,
   Prisma,
 } from "./generated/client/index.js";
 

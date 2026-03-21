@@ -8,6 +8,7 @@ import {
   VehicleStatus,
   BookingPhotoType,
 } from "@repo/database/client";
+import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { createID } from "../../utils/nanoID.js";
 import { pickUpVehicleSchema } from "@repo/schemas";
 
@@ -168,15 +169,14 @@ export const PickupController = async (req: Request, res: Response) => {
         });
       }
 
-      await tx.staffActivityLog.create({
-        data: {
-          publicId: createID(),
-          staffId: actingUser.id,
-          action: parsedVehicleDetails.requireManagerConfirmation ? "REQUESTED_MANAGER_CONFIRMATION" : "VEHICLE_PICKUP",
-          entity: "Booking",
-          entityId: booking.publicId,
-        },
-      });
+      await staffActivityService.logFromRequest(req, {
+        actionType: parsedVehicleDetails.requireManagerConfirmation ? StaffActionType.INITIATED : StaffActionType.CONFIRMED,
+        entityType: StaffEntityType.BOOKING,
+        entityRef: booking.publicId,
+        description: parsedVehicleDetails.requireManagerConfirmation
+          ? `Pickup approval requested for booking ${booking.publicId}`
+          : `Vehicle pickup confirmed for booking ${booking.publicId}`,
+      }, tx);
     });
 
     return res.status(StatusCode.OK).json({
