@@ -1,5 +1,7 @@
-import { prisma, BookingStatus, VehicleStatus, SwapReason, Booking, VehicleSwap, Vehicle } from "@repo/database/client";
+import { prisma, BookingStatus, VehicleStatus, SwapReason, Booking, VehicleSwap, Vehicle, Role } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
+import { auditService } from "../audit/audit.service.js";
+import { AuditCategory } from "@repo/database/client";
 
 interface SwapEligibilityResult {
   eligible: boolean;
@@ -234,21 +236,19 @@ export class VehicleSwapService {
       });
 
       // 8. Create audit log
-      await tx.auditLog.create({
-        data: {
-          publicId: createID(),
-          userId: swappedById,
-          action: "VEHICLE_SWAP",
-          entity: "Booking",
-          entityId: bookingId.toString(),
-          metadata: {
-            originalVehicleId,
-            newVehicleId,
-            reason,
-            markOriginalForMaintenance
-          }
-        }
-      });
+      const swapActor = await tx.user.findUnique({ where: { id: swappedById }, select: { name: true, role: true, branchId: true } });
+      await auditService.log({
+        actorId: swappedById,
+        actorName: swapActor?.name ?? "Unknown",
+        actorRole: swapActor?.role ?? Role.STAFF,
+        actorBranchId: swapActor?.branchId ?? undefined,
+        action: "VEHICLE_SWAP",
+        category: AuditCategory.VEHICLE,
+        description: `Vehicle swapped from ${originalVehicleId} to ${newVehicleId} for booking ${bookingId}`,
+        entity: "Booking",
+        entityId: bookingId.toString(),
+        metadata: { originalVehicleId, newVehicleId, reason, markOriginalForMaintenance },
+      }, tx);
 
       return vehicleSwap;
     }, {

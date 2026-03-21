@@ -1,18 +1,16 @@
 {
   "name": "PrismaClientKnownRequestError",
-  "code": "P2003",
+  "code": "P2002",
   "clientVersion": "5.22.0",
   "meta": {
-    "modelName": "Vehicle",
-    "field_name": "VehiclePricingOverride_vehicleId_fkey (index)"
+    "modelName": "FeatureFlag",
+    "target": [
+      "key"
+    ]
   }
 }
 PrismaClientKnownRequestError: 
-Invalid `prisma.vehicle.deleteMany()` invocation in
-C:\Freelance\vrms\packages\db\prisma\seed.ts:18:24
+Invalid `prisma.featureFlag.create()` invocation:
 
-  15 await prisma.vehicleCustomPricing.deleteMany();
-  16 await prisma.branchPricingDefaults.deleteMany();
-  17 await prisma.vehicleImage.deleteMany();
-→ 18 await prisma.vehicle.deleteMany(
-Foreign key constraint violated: `VehiclePricingOverride_vehicleId_fkey (index)`
+
+Unique constraint failed on the fields: (`key`)

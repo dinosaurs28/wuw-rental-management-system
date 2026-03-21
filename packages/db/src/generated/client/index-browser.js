@@ -522,12 +522,27 @@ exports.Prisma.InvoiceItemScalarFieldEnum = {
 exports.Prisma.AuditLogScalarFieldEnum = {
   id: 'id',
   publicId: 'publicId',
-  userId: 'userId',
+  actorId: 'actorId',
+  actorName: 'actorName',
+  actorRole: 'actorRole',
+  actorBranchId: 'actorBranchId',
+  approverId: 'approverId',
+  approverName: 'approverName',
+  approverRole: 'approverRole',
   action: 'action',
+  category: 'category',
+  severity: 'severity',
+  description: 'description',
   entity: 'entity',
   entityId: 'entityId',
+  entityLabel: 'entityLabel',
+  ipAddress: 'ipAddress',
+  userAgent: 'userAgent',
+  requestId: 'requestId',
   before: 'before',
   after: 'after',
+  changedFields: 'changedFields',
+  metadata: 'metadata',
   createdAt: 'createdAt'
 };
 
@@ -754,6 +769,23 @@ exports.InvoiceStatus = exports.$Enums.InvoiceStatus = {
   APPROVED: 'APPROVED',
   FINALIZED: 'FINALIZED',
   PAID: 'PAID'
+};
+
+exports.AuditCategory = exports.$Enums.AuditCategory = {
+  BOOKING: 'BOOKING',
+  PAYMENT: 'PAYMENT',
+  VEHICLE: 'VEHICLE',
+  CUSTOMER: 'CUSTOMER',
+  EMPLOYEE: 'EMPLOYEE',
+  BRANCH: 'BRANCH',
+  AUTH: 'AUTH',
+  SYSTEM: 'SYSTEM'
+};
+
+exports.AuditSeverity = exports.$Enums.AuditSeverity = {
+  INFO: 'INFO',
+  WARNING: 'WARNING',
+  CRITICAL: 'CRITICAL'
 };
 
 exports.FeatureFlagScope = exports.$Enums.FeatureFlagScope = {

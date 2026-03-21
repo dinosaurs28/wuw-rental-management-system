@@ -33,6 +33,8 @@ export {
   PricingRuleType,
   DamageReportStatus,
   VehicleReturnDisposition,
+  AuditCategory,
+  AuditSeverity,
   Prisma,
 } from "./generated/client/index.js";
 

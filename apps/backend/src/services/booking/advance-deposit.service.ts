@@ -1,5 +1,7 @@
-import { prisma, BookingStatus, DepositMethod, Booking, CancellationInvoice, PaymentStatus, InvoiceStatus } from "@repo/database/client";
+import { prisma, BookingStatus, DepositMethod, Booking, CancellationInvoice, PaymentStatus, InvoiceStatus, Role } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
+import { auditService } from "../audit/audit.service.js";
+import { AuditCategory, AuditSeverity } from "@repo/database/client";
 
 // Helper type for billing breakdown
 export interface FinalBillingBreakdown {
@@ -23,26 +25,31 @@ export class AdvanceDepositService {
     if (!booking) throw new Error("Booking not found");
     if (booking.status !== BookingStatus.HOLD) throw new Error("Booking is not in HOLD status");
 
+    const actor = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, role: true, branchId: true } });
+
     const updatedBooking = await prisma.booking.update({
       where: { id: bookingId },
       data: {
         advanceAmount: amount,
         advancePaidAt: new Date(),
         advancePaymentId: transactionId,
-        advancePaymentMode: DepositMethod.ONLINE_RAZORPAY, // Mapping PhonePe to existing ONLINE enum
+        advancePaymentMode: DepositMethod.ONLINE_RAZORPAY,
         status: BookingStatus.CONFIRMED,
         paymentStatus: "SUCCESS",
       }
     });
 
-    await prisma.auditLog.create({
-      data: {
-        publicId: createID(),
-        userId: userId,
-        action: "RECORD_ADVANCE_PAYMENT",
-        entity: "Booking",
-        entityId: bookingId.toString(),
-      }
+    await auditService.log({
+      actorId: userId,
+      actorName: actor?.name ?? "Unknown",
+      actorRole: actor?.role ?? Role.CUSTOMER,
+      actorBranchId: actor?.branchId ?? undefined,
+      action: "RECORD_ADVANCE_PAYMENT",
+      category: AuditCategory.PAYMENT,
+      description: `Advance payment of ₹${amount} recorded for booking ${bookingId}`,
+      entity: "Booking",
+      entityId: bookingId.toString(),
+      after: { advanceAmount: amount, status: BookingStatus.CONFIRMED, paymentStatus: "SUCCESS" },
     });
 
     return updatedBooking;
@@ -107,20 +114,19 @@ export class AdvanceDepositService {
         });
       }
 
-      await tx.auditLog.create({
-        data: {
-          publicId: createID(),
-          userId: booking.createdById,
-          action: `REMAINING_PAYMENT_COLLECTED_AT_${paidDuring}`,
-          entity: "Booking",
-          entityId: booking.publicId,
-          after: {
-            remainingPaidDuring: paidDuring,
-            method,
-            amount: booking.remainingBalance.toString(),
-          },
-        },
-      });
+      const remainingActor = await tx.user.findUnique({ where: { id: booking.createdById }, select: { name: true, role: true, branchId: true } });
+      await auditService.log({
+        actorId: booking.createdById,
+        actorName: remainingActor?.name ?? "Unknown",
+        actorRole: remainingActor?.role ?? Role.CUSTOMER,
+        actorBranchId: remainingActor?.branchId ?? undefined,
+        action: `REMAINING_PAYMENT_COLLECTED_AT_${paidDuring}`,
+        category: AuditCategory.PAYMENT,
+        description: `Remaining payment of ₹${booking.remainingBalance} collected at ${paidDuring} for booking ${booking.publicId}`,
+        entity: "Booking",
+        entityId: booking.publicId,
+        after: { remainingPaidDuring: paidDuring, method, amount: booking.remainingBalance.toString() },
+      }, tx);
 
       return updatedBooking;
     });
@@ -149,14 +155,15 @@ export class AdvanceDepositService {
       }
     });
 
-    await prisma.auditLog.create({
-      data: {
-        publicId: createID(),
-        userId: 1,///1
-        action: "RECORD_SAFETY_DEPOSIT",
-        entity: "Booking",
-        entityId: bookingId.toString(),
-      }
+    await auditService.log({
+      actorName: collectedBy,
+      actorRole: Role.STAFF,
+      action: "RECORD_SAFETY_DEPOSIT",
+      category: AuditCategory.PAYMENT,
+      description: `Safety deposit of ₹${amount} collected for booking ${bookingId}`,
+      entity: "Booking",
+      entityId: bookingId.toString(),
+      after: { safetyDeposit: amount, safetyDepositMethod: method },
     });
 
     return updatedBooking;
@@ -206,15 +213,20 @@ export class AdvanceDepositService {
         }
       });
 
-      await tx.auditLog.create({
-        data: {
-          publicId: createID(),
-          userId: cancelledBy,
-          action: "CANCEL_BOOKING_NO_SHOW",
-          entity: "Booking",
-          entityId: bookingId.toString(),
-        }
-      });
+      const cancelActor = await tx.user.findUnique({ where: { id: cancelledBy }, select: { name: true, role: true, branchId: true } });
+      await auditService.log({
+        actorId: cancelledBy,
+        actorName: cancelActor?.name ?? "Unknown",
+        actorRole: cancelActor?.role ?? Role.STAFF,
+        actorBranchId: cancelActor?.branchId ?? undefined,
+        action: "CANCEL_BOOKING_NO_SHOW",
+        category: AuditCategory.BOOKING,
+        severity: AuditSeverity.WARNING,
+        description: `Booking ${bookingId} cancelled due to no-show`,
+        entity: "Booking",
+        entityId: bookingId.toString(),
+        metadata: { reason, cancelledBy },
+      }, tx);
 
       return { booking: updatedBooking, cancellationInvoice };
     });
@@ -318,14 +330,18 @@ export class AdvanceDepositService {
       }
     });
 
-    await prisma.auditLog.create({
-      data: {
-        publicId: createID(),
-        userId: 1,///1
-        action: "REFUND_SAFETY_DEPOSIT",
-        entity: "Booking",
-        entityId: bookingId.toString(),
-      }
+    const refundActor = await prisma.user.findUnique({ where: { id: refundedBy }, select: { name: true, role: true, branchId: true } });
+    await auditService.log({
+      actorId: refundedBy,
+      actorName: refundActor?.name ?? "Unknown",
+      actorRole: refundActor?.role ?? Role.STAFF,
+      actorBranchId: refundActor?.branchId ?? undefined,
+      action: "REFUND_SAFETY_DEPOSIT",
+      category: AuditCategory.PAYMENT,
+      description: `Safety deposit of ₹${amount} refunded for booking ${bookingId}`,
+      entity: "Booking",
+      entityId: bookingId.toString(),
+      after: { safetyDepositRefunded: true, amount, method },
     });
 
     return { refundId: createID(), status: "SUCCESS", updatedBooking };

@@ -136,7 +136,8 @@ model User {
   emailOtps             EmailVerificationOtp[]
   providers             UserProvider[]
   customerProfile       Customer?
-  auditLogs             AuditLog[]
+  actorAuditLogs        AuditLog[]     @relation("ActorAuditLogs")
+  approverAuditLogs     AuditLog[]     @relation("ApproverAuditLogs")
   bookingsCreated       Booking[]              @relation("BookingCreator")
   approvedDamageReports DamageReport[]
   vehicleSwaps          VehicleSwap[]
@@ -256,6 +257,7 @@ model Branch {
   gstRule                 GSTRule?
   featureFlags            BranchFeatureFlag[]
   captureConfigs          VehiclePhotoCaptureConfig[]
+  auditLogs               AuditLog[]
   createdAt               DateTime                 @default(now())
   deletedAt               DateTime?
 }
@@ -732,18 +734,68 @@ model InvoiceItem {
 
 // AUDIT LOG
 
-model AuditLog {
-  id        Int      @id @default(autoincrement())
-  publicId  String   @unique
-  userId    Int
-  action    String
-  entity    String
-  entityId  String
-  before    Json?
-  after     Json?
-  createdAt DateTime @default(now())
+enum AuditCategory {
+  BOOKING
+  PAYMENT
+  VEHICLE
+  CUSTOMER
+  EMPLOYEE
+  BRANCH
+  AUTH
+  SYSTEM
+}
 
-  user User @relation(fields: [userId], references: [id])
+enum AuditSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+model AuditLog {
+  id            Int           @id @default(autoincrement())
+  publicId      String        @unique
+
+  // Identity & Actor
+  actorId       Int?
+  actorName     String        @default("")
+  actorRole     Role          @default(CUSTOMER)
+  actorBranchId Int?
+
+  // Approver (staff who processed a customer-initiated action)
+  approverId    Int?
+  approverName  String?
+  approverRole  Role?
+
+  // Action Details
+  action        String
+  category      AuditCategory @default(SYSTEM)
+  severity      AuditSeverity @default(INFO)
+  description   String        @default("")
+
+  // Entity
+  entity        String
+  entityId      String
+  entityLabel   String?
+
+  // Context
+  ipAddress     String?
+  userAgent     String?
+  requestId     String?
+
+  // Data Changes
+  before        Json?
+  after         Json?
+  changedFields String[]
+
+  // Domain-specific extra data
+  metadata      Json?
+
+  // Timestamps (UTC)
+  createdAt     DateTime      @default(now())
+
+  actor       User?   @relation("ActorAuditLogs", fields: [actorId], references: [id])
+  approver    User?   @relation("ApproverAuditLogs", fields: [approverId], references: [id])
+  actorBranch Branch? @relation(fields: [actorBranchId], references: [id])
 }
 
 // SYSTEM SETTINGS

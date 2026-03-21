@@ -93,6 +93,7 @@ export interface EmployeeBooking {
   remainingBalance?: string;
   remainingPaidAt?: string | null;
   remainingPaidDuring?: string | null;
+  requiresManagerConfirmation?: boolean;
   customer: {
     user: {
       publicId: string;

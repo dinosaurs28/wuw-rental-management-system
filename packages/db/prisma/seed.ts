@@ -16,14 +16,10 @@ async function main() {
 
   // Cleanup existing data
   console.log("Cleaning up existing data...");
-  await prisma.vehicleMaintenanceRecord.deleteMany();
-  await prisma.vehicleInsurance.deleteMany();
-  await prisma.vehiclePricingOverride.deleteMany();
-  await prisma.vehicleCustomPricing.deleteMany();
-  await prisma.branchPricingDefaults.deleteMany();
-  await prisma.vehicleImage.deleteMany();
-  await prisma.vehicle.deleteMany();
-  await prisma.pricingRule.deleteMany();
+  
+  await prisma.branchFeatureFlag.deleteMany();
+  await prisma.vehicleFeatureFlag.deleteMany();
+  await prisma.featureFlag.deleteMany();
 
   // Clean up order matters for foreign keys
   await prisma.staffActivityLog.deleteMany();
@@ -31,6 +27,9 @@ async function main() {
   await prisma.emailVerificationOtp.deleteMany();
   await prisma.auditLog.deleteMany();
   await prisma.customerKyc.deleteMany();
+  // Delete bookings and items before vehicles
+  await prisma.vehicleSwap.deleteMany();
+  await prisma.cancellationInvoice.deleteMany();
   await prisma.bookingItem.deleteMany();
   await prisma.bookingPhoto.deleteMany();
   await prisma.payment.deleteMany();
@@ -41,6 +40,15 @@ async function main() {
   await prisma.booking.deleteMany();
   await prisma.customer.deleteMany();
 
+  await prisma.vehicleMaintenanceRecord.deleteMany();
+  await prisma.vehicleInsurance.deleteMany();
+  await prisma.vehiclePricingOverride.deleteMany();
+  await prisma.vehicleCustomPricing.deleteMany();
+  await prisma.branchPricingDefaults.deleteMany();
+  await prisma.vehicleImage.deleteMany();
+  await prisma.vehicle.deleteMany();
+  await prisma.pricingRule.deleteMany();
+
   // Delete users last (except for branch dependencies)
   await prisma.user.deleteMany();
 
@@ -48,6 +56,7 @@ async function main() {
   await prisma.pricingDiscountSlab.deleteMany();
   await prisma.branchPricingSetting.deleteMany();
   await prisma.gSTRule.deleteMany();
+  await prisma.vehiclePhotoCaptureConfig.deleteMany();
   await prisma.branch.deleteMany();
   // await prisma.rentalPlan.deleteMany(); // Model does not exist
   await prisma.vehicleCategory.deleteMany();

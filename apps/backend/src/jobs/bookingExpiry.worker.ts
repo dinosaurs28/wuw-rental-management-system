@@ -1,6 +1,8 @@
 import Redis from "ioredis";
-import { prisma, BookingStatus } from "@repo/database/client";
+import { prisma, BookingStatus, Role } from "@repo/database/client";
 import { createID } from "../utils/nanoID.js";
+import { auditService } from "../services/audit/audit.service.js";
+import { AuditCategory, AuditSeverity } from "@repo/database/client";
 
 // Lazy initialization - connections created when needed, after env vars are loaded
 let redis: Redis | null = null;
@@ -176,19 +178,19 @@ async function handleBookingExpiry(bookingPublicId: string): Promise<void> {
       });
 
       // Create audit log
-      await tx.auditLog.create({
-        data: {
-          publicId: createID(),
-          userId: booking.createdById,
-          action: "HOLD_EXPIRED",
-          entity: "Booking",
-          entityId: booking.publicId,
-          after: {
-            status: "HOLD_EXPIRED",
-            reason: "Hold expired",
-          },
-        },
-      });
+      await auditService.log({
+        actorId: booking.createdById,
+        actorName: "System",
+        actorRole: Role.CUSTOMER,
+        action: "HOLD_EXPIRED",
+        category: AuditCategory.SYSTEM,
+        severity: AuditSeverity.WARNING,
+        description: `Booking ${booking.publicId} hold expired automatically`,
+        entity: "Booking",
+        entityId: booking.publicId,
+        before: { status: BookingStatus.HOLD },
+        after: { status: "HOLD_EXPIRED", reason: "Hold expired" },
+      }, tx);
     });
 
     // Clean up vehicle holds in Redis

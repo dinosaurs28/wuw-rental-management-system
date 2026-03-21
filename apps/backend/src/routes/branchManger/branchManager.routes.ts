@@ -40,7 +40,12 @@ import {
   DeleteVehicle,
   GetVehicleCategories,
 } from "../../controller/branchManager/vehicle.controller.js";
-import { GetStaffAuditLogs } from "../../controller/branchManager/audit.controller.js";
+import {
+  GetStaffAuditLogs,
+  GetBranchAuditLogs,
+  GetBranchAuditLogById,
+  GetCustomerAuditLogs,
+} from "../../controller/branchManager/audit.controller.js";
 import {
   CreateEmployee,
   GetEmployee,
@@ -178,6 +183,11 @@ router.put(
 router.get("/dashboard/vehicle/:vehicleId", ManagerCheck, GetVehicleById);
 router.delete("/dashboard/vehicle/:vehicleId", ManagerCheck, DeleteVehicle);
 router.get("/dashboard/categories", ManagerCheck, GetVehicleCategories);
+// Audit log routes (new)
+router.get("/audit/logs", ManagerCheck, GetBranchAuditLogs);
+router.get("/audit/logs/customer/:customerId", ManagerCheck, GetCustomerAuditLogs);
+router.get("/audit/logs/:publicId", ManagerCheck, GetBranchAuditLogById);
+// Backward-compat
 router.get("/dashboard/staff/activity-logs", ManagerCheck, GetStaffAuditLogs);
 router.get(
   "/dashboard/reports/insurance-expiry",

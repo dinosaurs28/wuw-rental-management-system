@@ -7,10 +7,13 @@ import {
   VehicleStatus,
   DepositMethod,
   InvoiceStatus,
+  Role,
 } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
 import { createID } from "../../utils/nanoID.js";
 import jwt from "jsonwebtoken";
+import { auditService } from "../../services/audit/audit.service.js";
+import { AuditCategory } from "@repo/database/client";
 
 interface CashPaymentPayload {
   finalPrice: number;
@@ -168,23 +171,22 @@ export const checkPaymentForCash = async (req: Request, res: Response) => {
       }
       await redis.del(`hold:${booking.publicId}`);
 
-      await tx.auditLog.create({
-        data: {
-          publicId: createID(),
-          userId: booking.createdById,
-          action: booking.isAdvancePayment
-            ? "BOOKING_CONFIRMED_ADVANCE"
-            : "BOOKING_CONFIRMED",
-          entity: "Booking",
-          entityId: booking.publicId,
-          after: {
-            status: "CONFIRMED",
-            paymentStatus: "SUCCESS",
-            paymentMethod: "CASH",
-            isAdvancePayment: booking.isAdvancePayment,
-          },
-        },
-      });
+      const cashActor = await tx.user.findUnique({ where: { id: booking.createdById }, select: { name: true, role: true, branchId: true } });
+      await auditService.log({
+        actorId: booking.createdById,
+        actorName: cashActor?.name ?? "Unknown",
+        actorRole: cashActor?.role ?? Role.CUSTOMER,
+        actorBranchId: cashActor?.branchId ?? undefined,
+        action: booking.isAdvancePayment ? "BOOKING_CONFIRMED_ADVANCE" : "BOOKING_CONFIRMED",
+        category: AuditCategory.PAYMENT,
+        description: `Booking ${booking.publicId} confirmed via cash payment`,
+        entity: "Booking",
+        entityId: booking.publicId,
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"] as string | undefined,
+        before: { status: BookingStatus.HOLD },
+        after: { status: "CONFIRMED", paymentStatus: "SUCCESS", paymentMethod: "CASH", isAdvancePayment: booking.isAdvancePayment },
+      }, tx);
     });
 
     return res.status(StatusCode.OK).json({

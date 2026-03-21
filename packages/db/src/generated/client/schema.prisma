@@ -136,7 +136,8 @@ model User {
   emailOtps             EmailVerificationOtp[]
   providers             UserProvider[]
   customerProfile       Customer?
-  auditLogs             AuditLog[]
+  actorAuditLogs        AuditLog[]             @relation("ActorAuditLogs")
+  approverAuditLogs     AuditLog[]             @relation("ApproverAuditLogs")
   bookingsCreated       Booking[]              @relation("BookingCreator")
   approvedDamageReports DamageReport[]
   vehicleSwaps          VehicleSwap[]
@@ -241,8 +242,8 @@ model FileObject {
 // BRANCH & STAFF
 
 model Branch {
-  id                      Int                      @id @default(autoincrement())
-  publicId                String                   @unique
+  id                      Int                         @id @default(autoincrement())
+  publicId                String                      @unique
   name                    String
   address                 String
   phone                   String?
@@ -255,7 +256,9 @@ model Branch {
   branchPricingDefaults   BranchPricingDefaults[]
   gstRule                 GSTRule?
   featureFlags            BranchFeatureFlag[]
-  createdAt               DateTime                 @default(now())
+  captureConfigs          VehiclePhotoCaptureConfig[]
+  auditLogs               AuditLog[]
+  createdAt               DateTime                    @default(now())
   deletedAt               DateTime?
 }
 
@@ -300,6 +303,25 @@ model VehicleCategory {
   vehicles                Vehicle[]
   pricingRules            PricingRule[]
   branchPricingDefaults   BranchPricingDefaults[]
+  captureConfigs          VehiclePhotoCaptureConfig[]
+}
+
+// VEHICLE PHOTO CAPTURE CONFIG
+// Branch managers configure which sides/angles to capture per vehicle category.
+model VehiclePhotoCaptureConfig {
+  id         Int    @id @default(autoincrement())
+  publicId   String @unique
+  branchId   Int
+  categoryId Int
+  fields     Json // [{ name: string, required: boolean }]
+
+  branch    Branch          @relation(fields: [branchId], references: [id])
+  category  VehicleCategory @relation(fields: [categoryId], references: [id])
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@unique([branchId, categoryId])
+  @@index([branchId])
 }
 
 model Vehicle {
@@ -597,6 +619,7 @@ model BookingPhoto {
   bookingId      Int
   fileId         Int
   type           BookingPhotoType
+  captureLabel   String? // e.g. "Front", "Left Side" — set when uploaded via capture config
   damageReportId Int?
 
   booking      Booking       @relation(fields: [bookingId], references: [id])
@@ -711,18 +734,68 @@ model InvoiceItem {
 
 // AUDIT LOG
 
+enum AuditCategory {
+  BOOKING
+  PAYMENT
+  VEHICLE
+  CUSTOMER
+  EMPLOYEE
+  BRANCH
+  AUTH
+  SYSTEM
+}
+
+enum AuditSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
 model AuditLog {
-  id        Int      @id @default(autoincrement())
-  publicId  String   @unique
-  userId    Int
-  action    String
-  entity    String
-  entityId  String
-  before    Json?
-  after     Json?
+  id       Int    @id @default(autoincrement())
+  publicId String @unique
+
+  // Identity & Actor
+  actorId       Int?
+  actorName     String @default("")
+  actorRole     Role   @default(CUSTOMER)
+  actorBranchId Int?
+
+  // Approver (staff who processed a customer-initiated action)
+  approverId   Int?
+  approverName String?
+  approverRole Role?
+
+  // Action Details
+  action      String
+  category    AuditCategory @default(SYSTEM)
+  severity    AuditSeverity @default(INFO)
+  description String        @default("")
+
+  // Entity
+  entity      String
+  entityId    String
+  entityLabel String?
+
+  // Context
+  ipAddress String?
+  userAgent String?
+  requestId String?
+
+  // Data Changes
+  before        Json?
+  after         Json?
+  changedFields String[]
+
+  // Domain-specific extra data
+  metadata Json?
+
+  // Timestamps (UTC)
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
+  actor       User?   @relation("ActorAuditLogs", fields: [actorId], references: [id])
+  approver    User?   @relation("ApproverAuditLogs", fields: [approverId], references: [id])
+  actorBranch Branch? @relation(fields: [actorBranchId], references: [id])
 }
 
 // SYSTEM SETTINGS

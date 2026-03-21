@@ -159,7 +159,7 @@ export function initCleanupWorker(): void {
                 where: { userId: { in: userIds } },
               });
               await tx.auditLog.deleteMany({
-                where: { userId: { in: userIds } },
+                where: { actorId: { in: userIds } },
               });
               await tx.staffActivityLog.deleteMany({
                 where: { staffId: { in: userIds } },
