@@ -72,6 +72,7 @@ const vehicleSchema = z.object({
   extraKmRate: z.coerce.number().min(0, "Extra KM rate must be non-negative"),
   extraHourRate: z.coerce.number().min(0, "Extra Hour rate must be non-negative"),
   isCustomPricingEnabled: z.boolean(),
+  advancePayAmount: z.coerce.number().min(0, "Advance amount must be non-negative").optional(),
   insuranceExpiry: z.date({
     required_error: "Insurance Expiry is required",
   }),
@@ -113,6 +114,7 @@ export const ManagerVehicleFormPage = () => {
       extraKmRate: 8,
       extraHourRate: 100,
       isCustomPricingEnabled: true,
+      advancePayAmount: 0,
       policyNumber: "",
       provider: "",
       images: [],
@@ -170,6 +172,7 @@ export const ManagerVehicleFormPage = () => {
             extraKmRate: vehicle.customPricing?.extraKmRate ? Number(vehicle.customPricing.extraKmRate) : 8,
             extraHourRate: vehicle.customPricing?.extraHourRate ? Number(vehicle.customPricing.extraHourRate) : 100,
             isCustomPricingEnabled: vehicle.customPricing?.enabled ?? true,
+            advancePayAmount: vehicle.advancePayAmount ? Number(vehicle.advancePayAmount) : 0,
             insuranceExpiry: vehicle.insuranceExpiry
               ? new Date(vehicle.insuranceExpiry)
               : undefined,
@@ -216,6 +219,9 @@ export const ManagerVehicleFormPage = () => {
       formData.append("extraKmRate", data.extraKmRate.toString());
       formData.append("extraHourRate", data.extraHourRate.toString());
       formData.append("isCustomPricingEnabled", data.isCustomPricingEnabled.toString());
+      if (data.advancePayAmount !== undefined) {
+        formData.append("advancePayAmount", data.advancePayAmount.toString());
+      }
 
       // Handle Images
       data.images.forEach((img) => {
@@ -586,6 +592,30 @@ export const ManagerVehicleFormPage = () => {
                         <FormControl>
                           <Input type="number" min="0" className="h-12" {...field} />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <Separator />
+                <h3 className="font-medium text-neutral-800">Advance Payment</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="advancePayAmount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Advance Amount (₹)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="0 (disabled)"
+                            {...field}
+                          />
+                        </FormControl>
+                        <p className="text-xs text-muted-foreground">
+                          Fixed advance amount customers pay upfront. Set 0 to disable advance payment.
+                        </p>
                         <FormMessage />
                       </FormItem>
                     )}

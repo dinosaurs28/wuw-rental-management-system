@@ -1,4 +1,4 @@
-import { prisma, BookingStatus, DepositMethod, Booking, CancellationInvoice } from "@repo/database/client";
+import { prisma, BookingStatus, DepositMethod, Booking, CancellationInvoice, PaymentStatus, InvoiceStatus } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
 
 // Helper type for billing breakdown
@@ -48,6 +48,84 @@ export class AdvanceDepositService {
     return updatedBooking;
   }
   
+  // ========================================
+  // REMAINING BALANCE PAYMENT
+  // ========================================
+
+  /**
+   * Record the remaining balance payment (collected at pickup or return).
+   * Marks the invoice as PAID and creates the second payment record.
+   */
+  async recordRemainingPayment(
+    bookingPublicId: string,
+    method: DepositMethod,
+    transactionId: string,
+    paidDuring: "PICKUP" | "RETURN",
+  ): Promise<Booking> {
+    const booking = await prisma.booking.findUnique({
+      where: { publicId: bookingPublicId },
+      include: { invoice: true },
+    });
+
+    if (!booking) throw new Error("Booking not found");
+    if (!booking.isAdvancePayment) throw new Error("Booking is not an advance payment booking");
+    if (booking.remainingPaidAt) throw new Error("Remaining payment already collected");
+    if (
+      booking.status !== BookingStatus.CONFIRMED &&
+      booking.status !== BookingStatus.PICKED_UP
+    ) {
+      throw new Error("Booking must be CONFIRMED or PICKED_UP to collect remaining payment");
+    }
+
+    return await prisma.$transaction(async (tx) => {
+      const updatedBooking = await tx.booking.update({
+        where: { id: booking.id },
+        data: {
+          remainingPaidAt: new Date(),
+          remainingPaymentId: transactionId,
+          remainingPaymentMode: method,
+          remainingPaidDuring: paidDuring,
+        },
+      });
+
+      // Mark invoice as PAID now that full amount is settled
+      if (booking.invoice) {
+        await tx.invoice.update({
+          where: { id: booking.invoice.id },
+          data: { status: InvoiceStatus.PAID },
+        });
+
+        // Create the second payment record for the remaining amount
+        await tx.payment.create({
+          data: {
+            publicId: createID(),
+            invoiceId: booking.invoice.id,
+            method: method,
+            status: PaymentStatus.SUCCESS,
+            amount: booking.remainingBalance,
+          },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          publicId: createID(),
+          userId: booking.createdById,
+          action: `REMAINING_PAYMENT_COLLECTED_AT_${paidDuring}`,
+          entity: "Booking",
+          entityId: booking.publicId,
+          after: {
+            remainingPaidDuring: paidDuring,
+            method,
+            amount: booking.remainingBalance.toString(),
+          },
+        },
+      });
+
+      return updatedBooking;
+    });
+  }
+
   // ========================================
   // SAFETY DEPOSIT METHODS
   // ========================================

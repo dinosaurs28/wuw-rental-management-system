@@ -64,6 +64,12 @@ import {
   GetGSTRule,
   CreateOrUpdateGSTRule,
 } from "../../controller/branchManager/gst.controller.js";
+import {
+  GetCaptureConfigs,
+  CreateCaptureConfig,
+  UpdateCaptureConfig,
+  DeleteCaptureConfig,
+} from "../../controller/branchManager/captureConfig.controller.js";
 import { upload } from "../../middlewares/upload.middleware.js";
 
 const router: Router = Router();
@@ -195,5 +201,10 @@ router.delete("/dashboard/pricing/:id", ManagerCheck, DeleteDiscount);
 
 router.get("/gst", ManagerCheck, GetGSTRule);
 router.post("/gst", ManagerCheck, CreateOrUpdateGSTRule);
+
+router.get("/capture-configs", ManagerCheck, GetCaptureConfigs);
+router.post("/capture-configs", ManagerCheck, CreateCaptureConfig);
+router.put("/capture-configs/:publicId", ManagerCheck, UpdateCaptureConfig);
+router.delete("/capture-configs/:publicId", ManagerCheck, DeleteCaptureConfig);
 
 export default router;

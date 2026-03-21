@@ -66,6 +66,11 @@ export const BookingController = async (req: Request, res: Response) => {
         endAt: true,
         status: true,
         totalFinal: true,
+        isAdvancePayment: true,
+        advanceAmount: true,
+        remainingBalance: true,
+        remainingPaidAt: true,
+        remainingPaidDuring: true,
         customer: {
           select: {
             user: {
@@ -461,6 +466,13 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
         status: true,
         totalFinal: true,
         requiresManagerConfirmation: true,
+        isAdvancePayment: true,
+        advanceAmount: true,
+        advancePaidAt: true,
+        remainingBalance: true,
+        remainingPaidAt: true,
+        remainingPaymentMode: true,
+        remainingPaidDuring: true,
         customer: {
           select: {
             user: {

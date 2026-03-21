@@ -17,6 +17,10 @@ import {
   Eye,
   X,
   Image as ImageIcon,
+  Banknote,
+  CreditCard,
+  Wallet,
+  Clock,
 } from "lucide-react";
 
 import { cn, compressImage } from "@/lib/utils";
@@ -52,6 +56,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { DashboardNavbar } from "@/components/employee/DashboardNavbar";
 
+import apiClient from "@/lib/axios";
 import { bookingService } from "@/services/booking.service";
 import { kycService } from "@/services/kyc.service";
 import { DocumentUploadZone } from "@/components/verification/DocumentUploadZone";
@@ -59,6 +64,9 @@ import {
   PickupImageCard,
   type UploadedImage,
 } from "@/components/employee/PickupImageCard";
+
+interface CaptureField { name: string; required: boolean; }
+interface CaptureConfig { publicId: string; fields: CaptureField[]; category: { name: string }; }
 
 // --- HELPERS ---
 const getDocumentTypeName = (type: string): string => {
@@ -99,6 +107,13 @@ export default function StaffPickupsPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<"CASH" | "ONLINE" | null>(null);
+  const [payRemainingNow, setPayRemainingNow] = useState<boolean | null>(null);
+  const [onlinePaymentUrl, setOnlinePaymentUrl] = useState<string | null>(null);
+  // Labeled capture slots: { [fieldName]: UploadedImage | null }
+  const [captureSlots, setCaptureSlots] = useState<Record<string, UploadedImage | null>>({});
+  const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
 
   // --- DATA FETCHING ---
   const {
@@ -119,6 +134,15 @@ export default function StaffPickupsPage() {
     enabled: !!bookingId,
     retry: false,
   });
+
+  const { data: captureConfigData } = useQuery<{ config: CaptureConfig | null }>({
+    queryKey: ["capture-config", bookingId],
+    queryFn: () =>
+      apiClient.get(`/employee/pickup/${bookingId}/capture-config`).then((r) => r.data),
+    enabled: !!bookingId,
+    retry: false,
+  });
+  const captureConfig = captureConfigData?.config ?? null;
 
   // --- MUTATIONS ---
   const verifyKycMutation = useMutation({
@@ -189,6 +213,24 @@ export default function StaffPickupsPage() {
     },
   });
 
+  const remainingPaymentMutation = useMutation({
+    mutationFn: (method: "CASH" | "ONLINE") =>
+      bookingService.initiateRemainingPayment(bookingId!, "pickup", { method }),
+    onSuccess: (data, method) => {
+      if (method === "ONLINE" && data.paymentURL) {
+        setOnlinePaymentUrl(data.paymentURL);
+        return;
+      }
+      toast.success("Remaining payment collected!");
+      setShowPaymentDialog(false);
+      setPayRemainingNow(true);
+      queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Payment failed");
+    },
+  });
+
   // --- FORM SETUP ---
   const {
     control,
@@ -241,15 +283,71 @@ export default function StaffPickupsPage() {
     });
   };
 
+  // --- HELPERS ---
+  const formatPrice = (amount: string | number) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: 0,
+    }).format(Number(amount));
+  };
+
   // --- HANDLERS ---
   const onConfirmHandover = (data: HandoverFormValues) => {
-    const imageIds = uploadedImages.map((img) => img.fileId);
-    handoverMutation.mutate({
-      odo: data.odo,
-      fuelLevel: parseInt(data.fuelLevel),
-      pickupImageIds: imageIds.length > 0 ? imageIds : undefined,
-      requireManagerConfirmation: data.requireManagerConfirmation,
-    });
+    if (captureConfig) {
+      // Check all required fields are uploaded
+      const missing = captureConfig.fields
+        .filter((f) => f.required && !captureSlots[f.name])
+        .map((f) => f.name);
+      if (missing.length > 0) {
+        toast.error(`Missing required photos: ${missing.join(", ")}`);
+        return;
+      }
+      const captureImages = Object.entries(captureSlots)
+        .filter(([, img]) => img !== null)
+        .map(([label, img]) => ({ fileId: img!.fileId, label }));
+      handoverMutation.mutate({
+        odo: data.odo,
+        fuelLevel: parseInt(data.fuelLevel),
+        captureImages: captureImages.length > 0 ? captureImages : undefined,
+        requireManagerConfirmation: data.requireManagerConfirmation,
+        payRemainingAtPickup: payRemainingNow ?? false,
+      } as any);
+    } else {
+      const imageIds = uploadedImages.map((img) => img.fileId);
+      handoverMutation.mutate({
+        odo: data.odo,
+        fuelLevel: parseInt(data.fuelLevel),
+        pickupImageIds: imageIds.length > 0 ? imageIds : undefined,
+        requireManagerConfirmation: data.requireManagerConfirmation,
+        payRemainingAtPickup: payRemainingNow ?? false,
+      } as any);
+    }
+  };
+
+  // Upload a photo for a specific capture field slot
+  const handleCaptureSlotUpload = async (fieldName: string, file: File) => {
+    setUploadingSlot(fieldName);
+    try {
+      const compressed = await compressImage(file);
+      const formData = new FormData();
+      formData.append("file", compressed);
+      const data = await bookingService.uploadPickupImage(formData);
+      setCaptureSlots((prev) => ({ ...prev, [fieldName]: data }));
+    } catch {
+      toast.error(`Failed to upload photo for ${fieldName}`);
+    } finally {
+      setUploadingSlot(null);
+    }
+  };
+
+  const handleCaptureSlotDelete = async (fieldName: string, fileId: string) => {
+    try {
+      await bookingService.deletePickupImage(fileId);
+      setCaptureSlots((prev) => ({ ...prev, [fieldName]: null }));
+    } catch {
+      toast.error(`Failed to remove photo for ${fieldName}`);
+    }
   };
 
   if (isLoadingBooking || isLoadingKyc) {
@@ -337,6 +435,129 @@ export default function StaffPickupsPage() {
             </span>
           </div>
         )}
+
+        {/* Advance Payment Banner */}
+        {booking.isAdvancePayment && !isPickedUp && (
+          <div className={`border px-4 py-3 rounded-md ${booking.remainingPaidAt ? "bg-green-50 border-green-200 text-green-800" : "bg-amber-50 border-amber-200 text-amber-800"}`}>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-2">
+                <Wallet className="h-5 w-5 mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-semibold">
+                    {booking.remainingPaidAt ? "Remaining Payment Collected" : "Advance Booking — Remaining Balance Due"}
+                  </p>
+                  <p className="text-sm mt-0.5">
+                    {booking.remainingPaidAt
+                      ? `₹${booking.remainingBalance} collected. Ready for handover.`
+                      : `Remaining balance: ${formatPrice(booking.remainingBalance ?? "0")}. Ask customer: pay now or at return?`}
+                  </p>
+                </div>
+              </div>
+              {!booking.remainingPaidAt && payRemainingNow === null && (
+                <div className="flex gap-2 shrink-0">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-amber-400 text-amber-800 hover:bg-amber-100"
+                    onClick={() => setShowPaymentDialog(true)}
+                  >
+                    Pay Now
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-amber-400 text-amber-800 hover:bg-amber-100"
+                    onClick={() => setPayRemainingNow(false)}
+                  >
+                    Pay at Return
+                  </Button>
+                </div>
+              )}
+              {!booking.remainingPaidAt && payRemainingNow === false && (
+                <div className="flex items-center gap-1 text-sm text-amber-700 shrink-0">
+                  <Clock className="h-4 w-4" />
+                  Pay at return
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Remaining Payment Dialog */}
+        <Dialog open={showPaymentDialog} onOpenChange={(open) => {
+          setShowPaymentDialog(open);
+          if (!open) { setOnlinePaymentUrl(null); setSelectedPaymentMethod(null); }
+        }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Collect Remaining Payment</DialogTitle>
+              <DialogDescription>
+                Amount due: <strong>{formatPrice(booking.remainingBalance ?? "0")}</strong>.
+                Select payment method.
+              </DialogDescription>
+            </DialogHeader>
+
+            {onlinePaymentUrl ? (
+              <div className="py-4 space-y-4">
+                <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 p-4 text-blue-800">
+                  <CreditCard className="h-5 w-5 shrink-0" />
+                  <p className="text-sm font-medium">Payment link generated. Share with customer or open below.</p>
+                </div>
+                <a
+                  href={onlinePaymentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full rounded-lg bg-[#FF5F00] hover:bg-[#e65600] text-white font-semibold py-3 px-4 transition-colors"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  Open Payment Portal
+                </a>
+                <p className="text-xs text-muted-foreground text-center break-all">{onlinePaymentUrl}</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 py-4">
+                {(["CASH", "ONLINE"] as const).map((method) => (
+                  <button
+                    key={method}
+                    onClick={() => setSelectedPaymentMethod(method)}
+                    className={`flex flex-col items-center gap-2 p-4 rounded-lg border transition-all ${
+                      selectedPaymentMethod === method
+                        ? "border-primary bg-primary/10"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    {method === "CASH" && <Banknote className="h-6 w-6" />}
+                    {method === "ONLINE" && <CreditCard className="h-6 w-6" />}
+                    <span className="text-sm font-medium">{method}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setShowPaymentDialog(false);
+                setOnlinePaymentUrl(null);
+                setSelectedPaymentMethod(null);
+              }}>
+                {onlinePaymentUrl ? "Close" : "Cancel"}
+              </Button>
+              {!onlinePaymentUrl && (
+                <Button
+                  className="bg-[#FF5F00] hover:bg-[#e65600]"
+                  disabled={!selectedPaymentMethod || remainingPaymentMutation.isPending}
+                  onClick={() => selectedPaymentMethod && remainingPaymentMutation.mutate(selectedPaymentMethod)}
+                >
+                  {remainingPaymentMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Confirm Payment"
+                  )}
+                </Button>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <div className="grid lg:grid-cols-2 gap-8">
           {/* LEFT COLUMN */}
@@ -615,34 +836,103 @@ export default function StaffPickupsPage() {
                   <div className="space-y-3">
                     <Label className="text-sm font-medium flex items-center gap-2">
                       <ImageIcon className="h-4 w-4" />
-                      Vehicle Photos (Optional)
+                      Vehicle Photos
+                      {captureConfig && (
+                        <span className="text-xs font-normal text-muted-foreground ml-1">
+                          ({captureConfig.category.name})
+                        </span>
+                      )}
                     </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Upload photos of the vehicle before handover
-                    </p>
 
-                    {/* Upload Zone */}
-                    {!isPickedUp && (
-                      <DocumentUploadZone
-                        onFileSelect={handleFileSelect}
-                        isUploading={isUploading}
-                        disabled={isPickedUp}
-                        error={uploadError}
-                      />
-                    )}
-
-                    {/* Uploaded Images Grid */}
-                    {uploadedImages.length > 0 && (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
-                        {uploadedImages.map((image) => (
-                          <PickupImageCard
-                            key={image.fileId}
-                            image={image}
-                            onDelete={handleDeleteImage}
-                            isDeleting={deletingImageId === image.fileId}
-                          />
-                        ))}
+                    {captureConfig ? (
+                      /* ── Labeled capture slots ── */
+                      <div className="grid grid-cols-2 gap-3">
+                        {captureConfig.fields.map((field) => {
+                          const slot = captureSlots[field.name] ?? null;
+                          const isUploadingThis = uploadingSlot === field.name;
+                          return (
+                            <div
+                              key={field.name}
+                              className="border rounded-lg overflow-hidden bg-gray-50"
+                            >
+                              {slot ? (
+                                <div className="relative">
+                                  <img
+                                    src={slot.url}
+                                    alt={field.name}
+                                    className="w-full h-28 object-cover"
+                                  />
+                                  {!isPickedUp && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCaptureSlotDelete(field.name, slot.fileId)}
+                                      className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5 text-white hover:bg-black/80"
+                                    >
+                                      <X className="h-3.5 w-3.5" />
+                                    </button>
+                                  )}
+                                </div>
+                              ) : (
+                                <label
+                                  className={`flex flex-col items-center justify-center h-28 cursor-pointer gap-1 text-muted-foreground hover:bg-gray-100 transition-colors ${isPickedUp ? "cursor-default opacity-50" : ""}`}
+                                >
+                                  {isUploadingThis ? (
+                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                  ) : (
+                                    <ImageIcon className="h-5 w-5 opacity-50" />
+                                  )}
+                                  <span className="text-xs">{isUploadingThis ? "Uploading…" : "Tap to upload"}</span>
+                                  {!isPickedUp && (
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        const f = e.target.files?.[0];
+                                        if (f) handleCaptureSlotUpload(field.name, f);
+                                        e.target.value = "";
+                                      }}
+                                    />
+                                  )}
+                                </label>
+                              )}
+                              <div className="px-2 py-1.5 bg-white border-t flex items-center gap-1">
+                                <span className="text-xs font-medium truncate">{field.name}</span>
+                                {field.required && (
+                                  <span className="text-orange-500 text-xs shrink-0">*</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
+                    ) : (
+                      /* ── Fallback: simple unstructured upload ── */
+                      <>
+                        <p className="text-xs text-muted-foreground">
+                          Upload photos of the vehicle before handover
+                        </p>
+                        {!isPickedUp && (
+                          <DocumentUploadZone
+                            onFileSelect={handleFileSelect}
+                            isUploading={isUploading}
+                            disabled={isPickedUp}
+                            error={uploadError}
+                          />
+                        )}
+                        {uploadedImages.length > 0 && (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
+                            {uploadedImages.map((image) => (
+                              <PickupImageCard
+                                key={image.fileId}
+                                image={image}
+                                onDelete={handleDeleteImage}
+                                isDeleting={deletingImageId === image.fileId}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
 

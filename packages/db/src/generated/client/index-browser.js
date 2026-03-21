@@ -243,6 +243,16 @@ exports.Prisma.VehicleCategoryScalarFieldEnum = {
   rank: 'rank'
 };
 
+exports.Prisma.VehiclePhotoCaptureConfigScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  branchId: 'branchId',
+  categoryId: 'categoryId',
+  fields: 'fields',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.VehicleScalarFieldEnum = {
   id: 'id',
   publicId: 'publicId',
@@ -253,6 +263,7 @@ exports.Prisma.VehicleScalarFieldEnum = {
   regNo: 'regNo',
   odo: 'odo',
   fuelLevel: 'fuelLevel',
+  advancePayAmount: 'advancePayAmount',
   insuranceExpiry: 'insuranceExpiry',
   status: 'status',
   createdAt: 'createdAt',
@@ -384,10 +395,16 @@ exports.Prisma.BookingScalarFieldEnum = {
   createdById: 'createdById',
   depositMethod: 'depositMethod',
   kycFileId: 'kycFileId',
+  isAdvancePayment: 'isAdvancePayment',
   advanceAmount: 'advanceAmount',
   advancePaidAt: 'advancePaidAt',
   advancePaymentId: 'advancePaymentId',
   advancePaymentMode: 'advancePaymentMode',
+  remainingBalance: 'remainingBalance',
+  remainingPaidAt: 'remainingPaidAt',
+  remainingPaymentId: 'remainingPaymentId',
+  remainingPaymentMode: 'remainingPaymentMode',
+  remainingPaidDuring: 'remainingPaidDuring',
   safetyDeposit: 'safetyDeposit',
   safetyDepositPaidAt: 'safetyDepositPaidAt',
   safetyDepositMethod: 'safetyDepositMethod',
@@ -424,6 +441,7 @@ exports.Prisma.BookingPhotoScalarFieldEnum = {
   bookingId: 'bookingId',
   fileId: 'fileId',
   type: 'type',
+  captureLabel: 'captureLabel',
   damageReportId: 'damageReportId',
   createdAt: 'createdAt'
 };
@@ -510,7 +528,6 @@ exports.Prisma.AuditLogScalarFieldEnum = {
   entityId: 'entityId',
   before: 'before',
   after: 'after',
-  metadata: 'metadata',
   createdAt: 'createdAt'
 };
 
@@ -765,6 +782,7 @@ exports.Prisma.ModelName = {
   StaffActivityLog: 'StaffActivityLog',
   BranchPricingSetting: 'BranchPricingSetting',
   VehicleCategory: 'VehicleCategory',
+  VehiclePhotoCaptureConfig: 'VehiclePhotoCaptureConfig',
   Vehicle: 'Vehicle',
   VehiclePricingOverride: 'VehiclePricingOverride',
   VehicleCustomPricing: 'VehicleCustomPricing',

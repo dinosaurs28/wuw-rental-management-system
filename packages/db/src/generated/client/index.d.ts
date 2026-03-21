@@ -64,6 +64,11 @@ export type BranchPricingSetting = $Result.DefaultSelection<Prisma.$BranchPricin
  */
 export type VehicleCategory = $Result.DefaultSelection<Prisma.$VehicleCategoryPayload>
 /**
+ * Model VehiclePhotoCaptureConfig
+ * 
+ */
+export type VehiclePhotoCaptureConfig = $Result.DefaultSelection<Prisma.$VehiclePhotoCaptureConfigPayload>
+/**
  * Model Vehicle
  * 
  */
@@ -665,6 +670,16 @@ export class PrismaClient<
     * ```
     */
   get vehicleCategory(): Prisma.VehicleCategoryDelegate<ExtArgs>;
+
+  /**
+   * `prisma.vehiclePhotoCaptureConfig`: Exposes CRUD operations for the **VehiclePhotoCaptureConfig** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more VehiclePhotoCaptureConfigs
+    * const vehiclePhotoCaptureConfigs = await prisma.vehiclePhotoCaptureConfig.findMany()
+    * ```
+    */
+  get vehiclePhotoCaptureConfig(): Prisma.VehiclePhotoCaptureConfigDelegate<ExtArgs>;
 
   /**
    * `prisma.vehicle`: Exposes CRUD operations for the **Vehicle** model.
@@ -1396,6 +1411,7 @@ export namespace Prisma {
     StaffActivityLog: 'StaffActivityLog',
     BranchPricingSetting: 'BranchPricingSetting',
     VehicleCategory: 'VehicleCategory',
+    VehiclePhotoCaptureConfig: 'VehiclePhotoCaptureConfig',
     Vehicle: 'Vehicle',
     VehiclePricingOverride: 'VehiclePricingOverride',
     VehicleCustomPricing: 'VehicleCustomPricing',
@@ -1439,7 +1455,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehicle" | "vehiclePricingOverride" | "vehicleCustomPricing" | "branchPricingDefaults" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "gSTRule" | "timezoneSetting" | "cancellationInvoice" | "featureFlag" | "branchFeatureFlag" | "vehicleFeatureFlag" | "vehicleSwap"
+      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehiclePhotoCaptureConfig" | "vehicle" | "vehiclePricingOverride" | "vehicleCustomPricing" | "branchPricingDefaults" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "gSTRule" | "timezoneSetting" | "cancellationInvoice" | "featureFlag" | "branchFeatureFlag" | "vehicleFeatureFlag" | "vehicleSwap"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -2140,6 +2156,76 @@ export namespace Prisma {
           count: {
             args: Prisma.VehicleCategoryCountArgs<ExtArgs>
             result: $Utils.Optional<VehicleCategoryCountAggregateOutputType> | number
+          }
+        }
+      }
+      VehiclePhotoCaptureConfig: {
+        payload: Prisma.$VehiclePhotoCaptureConfigPayload<ExtArgs>
+        fields: Prisma.VehiclePhotoCaptureConfigFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.VehiclePhotoCaptureConfigFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehiclePhotoCaptureConfigPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.VehiclePhotoCaptureConfigFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehiclePhotoCaptureConfigPayload>
+          }
+          findFirst: {
+            args: Prisma.VehiclePhotoCaptureConfigFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehiclePhotoCaptureConfigPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.VehiclePhotoCaptureConfigFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehiclePhotoCaptureConfigPayload>
+          }
+          findMany: {
+            args: Prisma.VehiclePhotoCaptureConfigFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehiclePhotoCaptureConfigPayload>[]
+          }
+          create: {
+            args: Prisma.VehiclePhotoCaptureConfigCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehiclePhotoCaptureConfigPayload>
+          }
+          createMany: {
+            args: Prisma.VehiclePhotoCaptureConfigCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.VehiclePhotoCaptureConfigCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehiclePhotoCaptureConfigPayload>[]
+          }
+          delete: {
+            args: Prisma.VehiclePhotoCaptureConfigDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehiclePhotoCaptureConfigPayload>
+          }
+          update: {
+            args: Prisma.VehiclePhotoCaptureConfigUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehiclePhotoCaptureConfigPayload>
+          }
+          deleteMany: {
+            args: Prisma.VehiclePhotoCaptureConfigDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.VehiclePhotoCaptureConfigUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.VehiclePhotoCaptureConfigUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VehiclePhotoCaptureConfigPayload>
+          }
+          aggregate: {
+            args: Prisma.VehiclePhotoCaptureConfigAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateVehiclePhotoCaptureConfig>
+          }
+          groupBy: {
+            args: Prisma.VehiclePhotoCaptureConfigGroupByArgs<ExtArgs>
+            result: $Utils.Optional<VehiclePhotoCaptureConfigGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.VehiclePhotoCaptureConfigCountArgs<ExtArgs>
+            result: $Utils.Optional<VehiclePhotoCaptureConfigCountAggregateOutputType> | number
           }
         }
       }
@@ -4472,6 +4558,7 @@ export namespace Prisma {
     categoryDepositSettings: number
     branchPricingDefaults: number
     featureFlags: number
+    captureConfigs: number
   }
 
   export type BranchCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -4482,6 +4569,7 @@ export namespace Prisma {
     categoryDepositSettings?: boolean | BranchCountOutputTypeCountCategoryDepositSettingsArgs
     branchPricingDefaults?: boolean | BranchCountOutputTypeCountBranchPricingDefaultsArgs
     featureFlags?: boolean | BranchCountOutputTypeCountFeatureFlagsArgs
+    captureConfigs?: boolean | BranchCountOutputTypeCountCaptureConfigsArgs
   }
 
   // Custom InputTypes
@@ -4544,6 +4632,13 @@ export namespace Prisma {
     where?: BranchFeatureFlagWhereInput
   }
 
+  /**
+   * BranchCountOutputType without action
+   */
+  export type BranchCountOutputTypeCountCaptureConfigsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VehiclePhotoCaptureConfigWhereInput
+  }
+
 
   /**
    * Count Type VehicleCategoryCountOutputType
@@ -4555,6 +4650,7 @@ export namespace Prisma {
     vehicles: number
     pricingRules: number
     branchPricingDefaults: number
+    captureConfigs: number
   }
 
   export type VehicleCategoryCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -4563,6 +4659,7 @@ export namespace Prisma {
     vehicles?: boolean | VehicleCategoryCountOutputTypeCountVehiclesArgs
     pricingRules?: boolean | VehicleCategoryCountOutputTypeCountPricingRulesArgs
     branchPricingDefaults?: boolean | VehicleCategoryCountOutputTypeCountBranchPricingDefaultsArgs
+    captureConfigs?: boolean | VehicleCategoryCountOutputTypeCountCaptureConfigsArgs
   }
 
   // Custom InputTypes
@@ -4609,6 +4706,13 @@ export namespace Prisma {
    */
   export type VehicleCategoryCountOutputTypeCountBranchPricingDefaultsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: BranchPricingDefaultsWhereInput
+  }
+
+  /**
+   * VehicleCategoryCountOutputType without action
+   */
+  export type VehicleCategoryCountOutputTypeCountCaptureConfigsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VehiclePhotoCaptureConfigWhereInput
   }
 
 
@@ -11705,6 +11809,7 @@ export namespace Prisma {
     branchPricingDefaults?: boolean | Branch$branchPricingDefaultsArgs<ExtArgs>
     gstRule?: boolean | Branch$gstRuleArgs<ExtArgs>
     featureFlags?: boolean | Branch$featureFlagsArgs<ExtArgs>
+    captureConfigs?: boolean | Branch$captureConfigsArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["branch"]>
 
@@ -11738,6 +11843,7 @@ export namespace Prisma {
     branchPricingDefaults?: boolean | Branch$branchPricingDefaultsArgs<ExtArgs>
     gstRule?: boolean | Branch$gstRuleArgs<ExtArgs>
     featureFlags?: boolean | Branch$featureFlagsArgs<ExtArgs>
+    captureConfigs?: boolean | Branch$captureConfigsArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type BranchIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -11754,6 +11860,7 @@ export namespace Prisma {
       branchPricingDefaults: Prisma.$BranchPricingDefaultsPayload<ExtArgs>[]
       gstRule: Prisma.$GSTRulePayload<ExtArgs> | null
       featureFlags: Prisma.$BranchFeatureFlagPayload<ExtArgs>[]
+      captureConfigs: Prisma.$VehiclePhotoCaptureConfigPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -12136,6 +12243,7 @@ export namespace Prisma {
     branchPricingDefaults<T extends Branch$branchPricingDefaultsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$branchPricingDefaultsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BranchPricingDefaultsPayload<ExtArgs>, T, "findMany"> | Null>
     gstRule<T extends Branch$gstRuleArgs<ExtArgs> = {}>(args?: Subset<T, Branch$gstRuleArgs<ExtArgs>>): Prisma__GSTRuleClient<$Result.GetResult<Prisma.$GSTRulePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     featureFlags<T extends Branch$featureFlagsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$featureFlagsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BranchFeatureFlagPayload<ExtArgs>, T, "findMany"> | Null>
+    captureConfigs<T extends Branch$captureConfigsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$captureConfigsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehiclePhotoCaptureConfigPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -12662,6 +12770,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: BranchFeatureFlagScalarFieldEnum | BranchFeatureFlagScalarFieldEnum[]
+  }
+
+  /**
+   * Branch.captureConfigs
+   */
+  export type Branch$captureConfigsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePhotoCaptureConfig
+     */
+    select?: VehiclePhotoCaptureConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePhotoCaptureConfigInclude<ExtArgs> | null
+    where?: VehiclePhotoCaptureConfigWhereInput
+    orderBy?: VehiclePhotoCaptureConfigOrderByWithRelationInput | VehiclePhotoCaptureConfigOrderByWithRelationInput[]
+    cursor?: VehiclePhotoCaptureConfigWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: VehiclePhotoCaptureConfigScalarFieldEnum | VehiclePhotoCaptureConfigScalarFieldEnum[]
   }
 
   /**
@@ -14887,6 +15015,7 @@ export namespace Prisma {
     vehicles?: boolean | VehicleCategory$vehiclesArgs<ExtArgs>
     pricingRules?: boolean | VehicleCategory$pricingRulesArgs<ExtArgs>
     branchPricingDefaults?: boolean | VehicleCategory$branchPricingDefaultsArgs<ExtArgs>
+    captureConfigs?: boolean | VehicleCategory$captureConfigsArgs<ExtArgs>
     _count?: boolean | VehicleCategoryCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["vehicleCategory"]>
 
@@ -14912,6 +15041,7 @@ export namespace Prisma {
     vehicles?: boolean | VehicleCategory$vehiclesArgs<ExtArgs>
     pricingRules?: boolean | VehicleCategory$pricingRulesArgs<ExtArgs>
     branchPricingDefaults?: boolean | VehicleCategory$branchPricingDefaultsArgs<ExtArgs>
+    captureConfigs?: boolean | VehicleCategory$captureConfigsArgs<ExtArgs>
     _count?: boolean | VehicleCategoryCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type VehicleCategoryIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -14924,6 +15054,7 @@ export namespace Prisma {
       vehicles: Prisma.$VehiclePayload<ExtArgs>[]
       pricingRules: Prisma.$PricingRulePayload<ExtArgs>[]
       branchPricingDefaults: Prisma.$BranchPricingDefaultsPayload<ExtArgs>[]
+      captureConfigs: Prisma.$VehiclePhotoCaptureConfigPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -15300,6 +15431,7 @@ export namespace Prisma {
     vehicles<T extends VehicleCategory$vehiclesArgs<ExtArgs> = {}>(args?: Subset<T, VehicleCategory$vehiclesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehiclePayload<ExtArgs>, T, "findMany"> | Null>
     pricingRules<T extends VehicleCategory$pricingRulesArgs<ExtArgs> = {}>(args?: Subset<T, VehicleCategory$pricingRulesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PricingRulePayload<ExtArgs>, T, "findMany"> | Null>
     branchPricingDefaults<T extends VehicleCategory$branchPricingDefaultsArgs<ExtArgs> = {}>(args?: Subset<T, VehicleCategory$branchPricingDefaultsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BranchPricingDefaultsPayload<ExtArgs>, T, "findMany"> | Null>
+    captureConfigs<T extends VehicleCategory$captureConfigsArgs<ExtArgs> = {}>(args?: Subset<T, VehicleCategory$captureConfigsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehiclePhotoCaptureConfigPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -15757,6 +15889,26 @@ export namespace Prisma {
   }
 
   /**
+   * VehicleCategory.captureConfigs
+   */
+  export type VehicleCategory$captureConfigsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePhotoCaptureConfig
+     */
+    select?: VehiclePhotoCaptureConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePhotoCaptureConfigInclude<ExtArgs> | null
+    where?: VehiclePhotoCaptureConfigWhereInput
+    orderBy?: VehiclePhotoCaptureConfigOrderByWithRelationInput | VehiclePhotoCaptureConfigOrderByWithRelationInput[]
+    cursor?: VehiclePhotoCaptureConfigWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: VehiclePhotoCaptureConfigScalarFieldEnum | VehiclePhotoCaptureConfigScalarFieldEnum[]
+  }
+
+  /**
    * VehicleCategory without action
    */
   export type VehicleCategoryDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -15768,6 +15920,1016 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: VehicleCategoryInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model VehiclePhotoCaptureConfig
+   */
+
+  export type AggregateVehiclePhotoCaptureConfig = {
+    _count: VehiclePhotoCaptureConfigCountAggregateOutputType | null
+    _avg: VehiclePhotoCaptureConfigAvgAggregateOutputType | null
+    _sum: VehiclePhotoCaptureConfigSumAggregateOutputType | null
+    _min: VehiclePhotoCaptureConfigMinAggregateOutputType | null
+    _max: VehiclePhotoCaptureConfigMaxAggregateOutputType | null
+  }
+
+  export type VehiclePhotoCaptureConfigAvgAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    categoryId: number | null
+  }
+
+  export type VehiclePhotoCaptureConfigSumAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    categoryId: number | null
+  }
+
+  export type VehiclePhotoCaptureConfigMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    branchId: number | null
+    categoryId: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type VehiclePhotoCaptureConfigMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    branchId: number | null
+    categoryId: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type VehiclePhotoCaptureConfigCountAggregateOutputType = {
+    id: number
+    publicId: number
+    branchId: number
+    categoryId: number
+    fields: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type VehiclePhotoCaptureConfigAvgAggregateInputType = {
+    id?: true
+    branchId?: true
+    categoryId?: true
+  }
+
+  export type VehiclePhotoCaptureConfigSumAggregateInputType = {
+    id?: true
+    branchId?: true
+    categoryId?: true
+  }
+
+  export type VehiclePhotoCaptureConfigMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    branchId?: true
+    categoryId?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type VehiclePhotoCaptureConfigMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    branchId?: true
+    categoryId?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type VehiclePhotoCaptureConfigCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    branchId?: true
+    categoryId?: true
+    fields?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type VehiclePhotoCaptureConfigAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which VehiclePhotoCaptureConfig to aggregate.
+     */
+    where?: VehiclePhotoCaptureConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehiclePhotoCaptureConfigs to fetch.
+     */
+    orderBy?: VehiclePhotoCaptureConfigOrderByWithRelationInput | VehiclePhotoCaptureConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: VehiclePhotoCaptureConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehiclePhotoCaptureConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehiclePhotoCaptureConfigs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned VehiclePhotoCaptureConfigs
+    **/
+    _count?: true | VehiclePhotoCaptureConfigCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: VehiclePhotoCaptureConfigAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: VehiclePhotoCaptureConfigSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: VehiclePhotoCaptureConfigMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: VehiclePhotoCaptureConfigMaxAggregateInputType
+  }
+
+  export type GetVehiclePhotoCaptureConfigAggregateType<T extends VehiclePhotoCaptureConfigAggregateArgs> = {
+        [P in keyof T & keyof AggregateVehiclePhotoCaptureConfig]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateVehiclePhotoCaptureConfig[P]>
+      : GetScalarType<T[P], AggregateVehiclePhotoCaptureConfig[P]>
+  }
+
+
+
+
+  export type VehiclePhotoCaptureConfigGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VehiclePhotoCaptureConfigWhereInput
+    orderBy?: VehiclePhotoCaptureConfigOrderByWithAggregationInput | VehiclePhotoCaptureConfigOrderByWithAggregationInput[]
+    by: VehiclePhotoCaptureConfigScalarFieldEnum[] | VehiclePhotoCaptureConfigScalarFieldEnum
+    having?: VehiclePhotoCaptureConfigScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: VehiclePhotoCaptureConfigCountAggregateInputType | true
+    _avg?: VehiclePhotoCaptureConfigAvgAggregateInputType
+    _sum?: VehiclePhotoCaptureConfigSumAggregateInputType
+    _min?: VehiclePhotoCaptureConfigMinAggregateInputType
+    _max?: VehiclePhotoCaptureConfigMaxAggregateInputType
+  }
+
+  export type VehiclePhotoCaptureConfigGroupByOutputType = {
+    id: number
+    publicId: string
+    branchId: number
+    categoryId: number
+    fields: JsonValue
+    createdAt: Date
+    updatedAt: Date
+    _count: VehiclePhotoCaptureConfigCountAggregateOutputType | null
+    _avg: VehiclePhotoCaptureConfigAvgAggregateOutputType | null
+    _sum: VehiclePhotoCaptureConfigSumAggregateOutputType | null
+    _min: VehiclePhotoCaptureConfigMinAggregateOutputType | null
+    _max: VehiclePhotoCaptureConfigMaxAggregateOutputType | null
+  }
+
+  type GetVehiclePhotoCaptureConfigGroupByPayload<T extends VehiclePhotoCaptureConfigGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<VehiclePhotoCaptureConfigGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof VehiclePhotoCaptureConfigGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], VehiclePhotoCaptureConfigGroupByOutputType[P]>
+            : GetScalarType<T[P], VehiclePhotoCaptureConfigGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type VehiclePhotoCaptureConfigSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    branchId?: boolean
+    categoryId?: boolean
+    fields?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    category?: boolean | VehicleCategoryDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["vehiclePhotoCaptureConfig"]>
+
+  export type VehiclePhotoCaptureConfigSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    branchId?: boolean
+    categoryId?: boolean
+    fields?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    category?: boolean | VehicleCategoryDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["vehiclePhotoCaptureConfig"]>
+
+  export type VehiclePhotoCaptureConfigSelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    branchId?: boolean
+    categoryId?: boolean
+    fields?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type VehiclePhotoCaptureConfigInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    category?: boolean | VehicleCategoryDefaultArgs<ExtArgs>
+  }
+  export type VehiclePhotoCaptureConfigIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    category?: boolean | VehicleCategoryDefaultArgs<ExtArgs>
+  }
+
+  export type $VehiclePhotoCaptureConfigPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "VehiclePhotoCaptureConfig"
+    objects: {
+      branch: Prisma.$BranchPayload<ExtArgs>
+      category: Prisma.$VehicleCategoryPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      branchId: number
+      categoryId: number
+      fields: Prisma.JsonValue
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["vehiclePhotoCaptureConfig"]>
+    composites: {}
+  }
+
+  type VehiclePhotoCaptureConfigGetPayload<S extends boolean | null | undefined | VehiclePhotoCaptureConfigDefaultArgs> = $Result.GetResult<Prisma.$VehiclePhotoCaptureConfigPayload, S>
+
+  type VehiclePhotoCaptureConfigCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<VehiclePhotoCaptureConfigFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: VehiclePhotoCaptureConfigCountAggregateInputType | true
+    }
+
+  export interface VehiclePhotoCaptureConfigDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['VehiclePhotoCaptureConfig'], meta: { name: 'VehiclePhotoCaptureConfig' } }
+    /**
+     * Find zero or one VehiclePhotoCaptureConfig that matches the filter.
+     * @param {VehiclePhotoCaptureConfigFindUniqueArgs} args - Arguments to find a VehiclePhotoCaptureConfig
+     * @example
+     * // Get one VehiclePhotoCaptureConfig
+     * const vehiclePhotoCaptureConfig = await prisma.vehiclePhotoCaptureConfig.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends VehiclePhotoCaptureConfigFindUniqueArgs>(args: SelectSubset<T, VehiclePhotoCaptureConfigFindUniqueArgs<ExtArgs>>): Prisma__VehiclePhotoCaptureConfigClient<$Result.GetResult<Prisma.$VehiclePhotoCaptureConfigPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one VehiclePhotoCaptureConfig that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {VehiclePhotoCaptureConfigFindUniqueOrThrowArgs} args - Arguments to find a VehiclePhotoCaptureConfig
+     * @example
+     * // Get one VehiclePhotoCaptureConfig
+     * const vehiclePhotoCaptureConfig = await prisma.vehiclePhotoCaptureConfig.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends VehiclePhotoCaptureConfigFindUniqueOrThrowArgs>(args: SelectSubset<T, VehiclePhotoCaptureConfigFindUniqueOrThrowArgs<ExtArgs>>): Prisma__VehiclePhotoCaptureConfigClient<$Result.GetResult<Prisma.$VehiclePhotoCaptureConfigPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first VehiclePhotoCaptureConfig that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehiclePhotoCaptureConfigFindFirstArgs} args - Arguments to find a VehiclePhotoCaptureConfig
+     * @example
+     * // Get one VehiclePhotoCaptureConfig
+     * const vehiclePhotoCaptureConfig = await prisma.vehiclePhotoCaptureConfig.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends VehiclePhotoCaptureConfigFindFirstArgs>(args?: SelectSubset<T, VehiclePhotoCaptureConfigFindFirstArgs<ExtArgs>>): Prisma__VehiclePhotoCaptureConfigClient<$Result.GetResult<Prisma.$VehiclePhotoCaptureConfigPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first VehiclePhotoCaptureConfig that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehiclePhotoCaptureConfigFindFirstOrThrowArgs} args - Arguments to find a VehiclePhotoCaptureConfig
+     * @example
+     * // Get one VehiclePhotoCaptureConfig
+     * const vehiclePhotoCaptureConfig = await prisma.vehiclePhotoCaptureConfig.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends VehiclePhotoCaptureConfigFindFirstOrThrowArgs>(args?: SelectSubset<T, VehiclePhotoCaptureConfigFindFirstOrThrowArgs<ExtArgs>>): Prisma__VehiclePhotoCaptureConfigClient<$Result.GetResult<Prisma.$VehiclePhotoCaptureConfigPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more VehiclePhotoCaptureConfigs that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehiclePhotoCaptureConfigFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all VehiclePhotoCaptureConfigs
+     * const vehiclePhotoCaptureConfigs = await prisma.vehiclePhotoCaptureConfig.findMany()
+     * 
+     * // Get first 10 VehiclePhotoCaptureConfigs
+     * const vehiclePhotoCaptureConfigs = await prisma.vehiclePhotoCaptureConfig.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const vehiclePhotoCaptureConfigWithIdOnly = await prisma.vehiclePhotoCaptureConfig.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends VehiclePhotoCaptureConfigFindManyArgs>(args?: SelectSubset<T, VehiclePhotoCaptureConfigFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehiclePhotoCaptureConfigPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a VehiclePhotoCaptureConfig.
+     * @param {VehiclePhotoCaptureConfigCreateArgs} args - Arguments to create a VehiclePhotoCaptureConfig.
+     * @example
+     * // Create one VehiclePhotoCaptureConfig
+     * const VehiclePhotoCaptureConfig = await prisma.vehiclePhotoCaptureConfig.create({
+     *   data: {
+     *     // ... data to create a VehiclePhotoCaptureConfig
+     *   }
+     * })
+     * 
+     */
+    create<T extends VehiclePhotoCaptureConfigCreateArgs>(args: SelectSubset<T, VehiclePhotoCaptureConfigCreateArgs<ExtArgs>>): Prisma__VehiclePhotoCaptureConfigClient<$Result.GetResult<Prisma.$VehiclePhotoCaptureConfigPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many VehiclePhotoCaptureConfigs.
+     * @param {VehiclePhotoCaptureConfigCreateManyArgs} args - Arguments to create many VehiclePhotoCaptureConfigs.
+     * @example
+     * // Create many VehiclePhotoCaptureConfigs
+     * const vehiclePhotoCaptureConfig = await prisma.vehiclePhotoCaptureConfig.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends VehiclePhotoCaptureConfigCreateManyArgs>(args?: SelectSubset<T, VehiclePhotoCaptureConfigCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many VehiclePhotoCaptureConfigs and returns the data saved in the database.
+     * @param {VehiclePhotoCaptureConfigCreateManyAndReturnArgs} args - Arguments to create many VehiclePhotoCaptureConfigs.
+     * @example
+     * // Create many VehiclePhotoCaptureConfigs
+     * const vehiclePhotoCaptureConfig = await prisma.vehiclePhotoCaptureConfig.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many VehiclePhotoCaptureConfigs and only return the `id`
+     * const vehiclePhotoCaptureConfigWithIdOnly = await prisma.vehiclePhotoCaptureConfig.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends VehiclePhotoCaptureConfigCreateManyAndReturnArgs>(args?: SelectSubset<T, VehiclePhotoCaptureConfigCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehiclePhotoCaptureConfigPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a VehiclePhotoCaptureConfig.
+     * @param {VehiclePhotoCaptureConfigDeleteArgs} args - Arguments to delete one VehiclePhotoCaptureConfig.
+     * @example
+     * // Delete one VehiclePhotoCaptureConfig
+     * const VehiclePhotoCaptureConfig = await prisma.vehiclePhotoCaptureConfig.delete({
+     *   where: {
+     *     // ... filter to delete one VehiclePhotoCaptureConfig
+     *   }
+     * })
+     * 
+     */
+    delete<T extends VehiclePhotoCaptureConfigDeleteArgs>(args: SelectSubset<T, VehiclePhotoCaptureConfigDeleteArgs<ExtArgs>>): Prisma__VehiclePhotoCaptureConfigClient<$Result.GetResult<Prisma.$VehiclePhotoCaptureConfigPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one VehiclePhotoCaptureConfig.
+     * @param {VehiclePhotoCaptureConfigUpdateArgs} args - Arguments to update one VehiclePhotoCaptureConfig.
+     * @example
+     * // Update one VehiclePhotoCaptureConfig
+     * const vehiclePhotoCaptureConfig = await prisma.vehiclePhotoCaptureConfig.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends VehiclePhotoCaptureConfigUpdateArgs>(args: SelectSubset<T, VehiclePhotoCaptureConfigUpdateArgs<ExtArgs>>): Prisma__VehiclePhotoCaptureConfigClient<$Result.GetResult<Prisma.$VehiclePhotoCaptureConfigPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more VehiclePhotoCaptureConfigs.
+     * @param {VehiclePhotoCaptureConfigDeleteManyArgs} args - Arguments to filter VehiclePhotoCaptureConfigs to delete.
+     * @example
+     * // Delete a few VehiclePhotoCaptureConfigs
+     * const { count } = await prisma.vehiclePhotoCaptureConfig.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends VehiclePhotoCaptureConfigDeleteManyArgs>(args?: SelectSubset<T, VehiclePhotoCaptureConfigDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more VehiclePhotoCaptureConfigs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehiclePhotoCaptureConfigUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many VehiclePhotoCaptureConfigs
+     * const vehiclePhotoCaptureConfig = await prisma.vehiclePhotoCaptureConfig.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends VehiclePhotoCaptureConfigUpdateManyArgs>(args: SelectSubset<T, VehiclePhotoCaptureConfigUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one VehiclePhotoCaptureConfig.
+     * @param {VehiclePhotoCaptureConfigUpsertArgs} args - Arguments to update or create a VehiclePhotoCaptureConfig.
+     * @example
+     * // Update or create a VehiclePhotoCaptureConfig
+     * const vehiclePhotoCaptureConfig = await prisma.vehiclePhotoCaptureConfig.upsert({
+     *   create: {
+     *     // ... data to create a VehiclePhotoCaptureConfig
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the VehiclePhotoCaptureConfig we want to update
+     *   }
+     * })
+     */
+    upsert<T extends VehiclePhotoCaptureConfigUpsertArgs>(args: SelectSubset<T, VehiclePhotoCaptureConfigUpsertArgs<ExtArgs>>): Prisma__VehiclePhotoCaptureConfigClient<$Result.GetResult<Prisma.$VehiclePhotoCaptureConfigPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of VehiclePhotoCaptureConfigs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehiclePhotoCaptureConfigCountArgs} args - Arguments to filter VehiclePhotoCaptureConfigs to count.
+     * @example
+     * // Count the number of VehiclePhotoCaptureConfigs
+     * const count = await prisma.vehiclePhotoCaptureConfig.count({
+     *   where: {
+     *     // ... the filter for the VehiclePhotoCaptureConfigs we want to count
+     *   }
+     * })
+    **/
+    count<T extends VehiclePhotoCaptureConfigCountArgs>(
+      args?: Subset<T, VehiclePhotoCaptureConfigCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], VehiclePhotoCaptureConfigCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a VehiclePhotoCaptureConfig.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehiclePhotoCaptureConfigAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends VehiclePhotoCaptureConfigAggregateArgs>(args: Subset<T, VehiclePhotoCaptureConfigAggregateArgs>): Prisma.PrismaPromise<GetVehiclePhotoCaptureConfigAggregateType<T>>
+
+    /**
+     * Group by VehiclePhotoCaptureConfig.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VehiclePhotoCaptureConfigGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends VehiclePhotoCaptureConfigGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: VehiclePhotoCaptureConfigGroupByArgs['orderBy'] }
+        : { orderBy?: VehiclePhotoCaptureConfigGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, VehiclePhotoCaptureConfigGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetVehiclePhotoCaptureConfigGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the VehiclePhotoCaptureConfig model
+   */
+  readonly fields: VehiclePhotoCaptureConfigFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for VehiclePhotoCaptureConfig.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__VehiclePhotoCaptureConfigClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    branch<T extends BranchDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BranchDefaultArgs<ExtArgs>>): Prisma__BranchClient<$Result.GetResult<Prisma.$BranchPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    category<T extends VehicleCategoryDefaultArgs<ExtArgs> = {}>(args?: Subset<T, VehicleCategoryDefaultArgs<ExtArgs>>): Prisma__VehicleCategoryClient<$Result.GetResult<Prisma.$VehicleCategoryPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the VehiclePhotoCaptureConfig model
+   */ 
+  interface VehiclePhotoCaptureConfigFieldRefs {
+    readonly id: FieldRef<"VehiclePhotoCaptureConfig", 'Int'>
+    readonly publicId: FieldRef<"VehiclePhotoCaptureConfig", 'String'>
+    readonly branchId: FieldRef<"VehiclePhotoCaptureConfig", 'Int'>
+    readonly categoryId: FieldRef<"VehiclePhotoCaptureConfig", 'Int'>
+    readonly fields: FieldRef<"VehiclePhotoCaptureConfig", 'Json'>
+    readonly createdAt: FieldRef<"VehiclePhotoCaptureConfig", 'DateTime'>
+    readonly updatedAt: FieldRef<"VehiclePhotoCaptureConfig", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * VehiclePhotoCaptureConfig findUnique
+   */
+  export type VehiclePhotoCaptureConfigFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePhotoCaptureConfig
+     */
+    select?: VehiclePhotoCaptureConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePhotoCaptureConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which VehiclePhotoCaptureConfig to fetch.
+     */
+    where: VehiclePhotoCaptureConfigWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehiclePhotoCaptureConfig findUniqueOrThrow
+   */
+  export type VehiclePhotoCaptureConfigFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePhotoCaptureConfig
+     */
+    select?: VehiclePhotoCaptureConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePhotoCaptureConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which VehiclePhotoCaptureConfig to fetch.
+     */
+    where: VehiclePhotoCaptureConfigWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehiclePhotoCaptureConfig findFirst
+   */
+  export type VehiclePhotoCaptureConfigFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePhotoCaptureConfig
+     */
+    select?: VehiclePhotoCaptureConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePhotoCaptureConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which VehiclePhotoCaptureConfig to fetch.
+     */
+    where?: VehiclePhotoCaptureConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehiclePhotoCaptureConfigs to fetch.
+     */
+    orderBy?: VehiclePhotoCaptureConfigOrderByWithRelationInput | VehiclePhotoCaptureConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for VehiclePhotoCaptureConfigs.
+     */
+    cursor?: VehiclePhotoCaptureConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehiclePhotoCaptureConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehiclePhotoCaptureConfigs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of VehiclePhotoCaptureConfigs.
+     */
+    distinct?: VehiclePhotoCaptureConfigScalarFieldEnum | VehiclePhotoCaptureConfigScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehiclePhotoCaptureConfig findFirstOrThrow
+   */
+  export type VehiclePhotoCaptureConfigFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePhotoCaptureConfig
+     */
+    select?: VehiclePhotoCaptureConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePhotoCaptureConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which VehiclePhotoCaptureConfig to fetch.
+     */
+    where?: VehiclePhotoCaptureConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehiclePhotoCaptureConfigs to fetch.
+     */
+    orderBy?: VehiclePhotoCaptureConfigOrderByWithRelationInput | VehiclePhotoCaptureConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for VehiclePhotoCaptureConfigs.
+     */
+    cursor?: VehiclePhotoCaptureConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehiclePhotoCaptureConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehiclePhotoCaptureConfigs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of VehiclePhotoCaptureConfigs.
+     */
+    distinct?: VehiclePhotoCaptureConfigScalarFieldEnum | VehiclePhotoCaptureConfigScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehiclePhotoCaptureConfig findMany
+   */
+  export type VehiclePhotoCaptureConfigFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePhotoCaptureConfig
+     */
+    select?: VehiclePhotoCaptureConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePhotoCaptureConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which VehiclePhotoCaptureConfigs to fetch.
+     */
+    where?: VehiclePhotoCaptureConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VehiclePhotoCaptureConfigs to fetch.
+     */
+    orderBy?: VehiclePhotoCaptureConfigOrderByWithRelationInput | VehiclePhotoCaptureConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing VehiclePhotoCaptureConfigs.
+     */
+    cursor?: VehiclePhotoCaptureConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VehiclePhotoCaptureConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VehiclePhotoCaptureConfigs.
+     */
+    skip?: number
+    distinct?: VehiclePhotoCaptureConfigScalarFieldEnum | VehiclePhotoCaptureConfigScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehiclePhotoCaptureConfig create
+   */
+  export type VehiclePhotoCaptureConfigCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePhotoCaptureConfig
+     */
+    select?: VehiclePhotoCaptureConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePhotoCaptureConfigInclude<ExtArgs> | null
+    /**
+     * The data needed to create a VehiclePhotoCaptureConfig.
+     */
+    data: XOR<VehiclePhotoCaptureConfigCreateInput, VehiclePhotoCaptureConfigUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehiclePhotoCaptureConfig createMany
+   */
+  export type VehiclePhotoCaptureConfigCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many VehiclePhotoCaptureConfigs.
+     */
+    data: VehiclePhotoCaptureConfigCreateManyInput | VehiclePhotoCaptureConfigCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * VehiclePhotoCaptureConfig createManyAndReturn
+   */
+  export type VehiclePhotoCaptureConfigCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePhotoCaptureConfig
+     */
+    select?: VehiclePhotoCaptureConfigSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many VehiclePhotoCaptureConfigs.
+     */
+    data: VehiclePhotoCaptureConfigCreateManyInput | VehiclePhotoCaptureConfigCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePhotoCaptureConfigIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * VehiclePhotoCaptureConfig update
+   */
+  export type VehiclePhotoCaptureConfigUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePhotoCaptureConfig
+     */
+    select?: VehiclePhotoCaptureConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePhotoCaptureConfigInclude<ExtArgs> | null
+    /**
+     * The data needed to update a VehiclePhotoCaptureConfig.
+     */
+    data: XOR<VehiclePhotoCaptureConfigUpdateInput, VehiclePhotoCaptureConfigUncheckedUpdateInput>
+    /**
+     * Choose, which VehiclePhotoCaptureConfig to update.
+     */
+    where: VehiclePhotoCaptureConfigWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehiclePhotoCaptureConfig updateMany
+   */
+  export type VehiclePhotoCaptureConfigUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update VehiclePhotoCaptureConfigs.
+     */
+    data: XOR<VehiclePhotoCaptureConfigUpdateManyMutationInput, VehiclePhotoCaptureConfigUncheckedUpdateManyInput>
+    /**
+     * Filter which VehiclePhotoCaptureConfigs to update
+     */
+    where?: VehiclePhotoCaptureConfigWhereInput
+  }
+
+  /**
+   * VehiclePhotoCaptureConfig upsert
+   */
+  export type VehiclePhotoCaptureConfigUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePhotoCaptureConfig
+     */
+    select?: VehiclePhotoCaptureConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePhotoCaptureConfigInclude<ExtArgs> | null
+    /**
+     * The filter to search for the VehiclePhotoCaptureConfig to update in case it exists.
+     */
+    where: VehiclePhotoCaptureConfigWhereUniqueInput
+    /**
+     * In case the VehiclePhotoCaptureConfig found by the `where` argument doesn't exist, create a new VehiclePhotoCaptureConfig with this data.
+     */
+    create: XOR<VehiclePhotoCaptureConfigCreateInput, VehiclePhotoCaptureConfigUncheckedCreateInput>
+    /**
+     * In case the VehiclePhotoCaptureConfig was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<VehiclePhotoCaptureConfigUpdateInput, VehiclePhotoCaptureConfigUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehiclePhotoCaptureConfig delete
+   */
+  export type VehiclePhotoCaptureConfigDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePhotoCaptureConfig
+     */
+    select?: VehiclePhotoCaptureConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePhotoCaptureConfigInclude<ExtArgs> | null
+    /**
+     * Filter which VehiclePhotoCaptureConfig to delete.
+     */
+    where: VehiclePhotoCaptureConfigWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * VehiclePhotoCaptureConfig deleteMany
+   */
+  export type VehiclePhotoCaptureConfigDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which VehiclePhotoCaptureConfigs to delete
+     */
+    where?: VehiclePhotoCaptureConfigWhereInput
+  }
+
+  /**
+   * VehiclePhotoCaptureConfig without action
+   */
+  export type VehiclePhotoCaptureConfigDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehiclePhotoCaptureConfig
+     */
+    select?: VehiclePhotoCaptureConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehiclePhotoCaptureConfigInclude<ExtArgs> | null
   }
 
 
@@ -15789,6 +16951,7 @@ export namespace Prisma {
     categoryId: number | null
     odo: number | null
     fuelLevel: number | null
+    advancePayAmount: Decimal | null
   }
 
   export type VehicleSumAggregateOutputType = {
@@ -15797,6 +16960,7 @@ export namespace Prisma {
     categoryId: number | null
     odo: number | null
     fuelLevel: number | null
+    advancePayAmount: Decimal | null
   }
 
   export type VehicleMinAggregateOutputType = {
@@ -15809,6 +16973,7 @@ export namespace Prisma {
     regNo: string | null
     odo: number | null
     fuelLevel: number | null
+    advancePayAmount: Decimal | null
     insuranceExpiry: Date | null
     status: $Enums.VehicleStatus | null
     createdAt: Date | null
@@ -15826,6 +16991,7 @@ export namespace Prisma {
     regNo: string | null
     odo: number | null
     fuelLevel: number | null
+    advancePayAmount: Decimal | null
     insuranceExpiry: Date | null
     status: $Enums.VehicleStatus | null
     createdAt: Date | null
@@ -15843,6 +17009,7 @@ export namespace Prisma {
     regNo: number
     odo: number
     fuelLevel: number
+    advancePayAmount: number
     insuranceExpiry: number
     status: number
     createdAt: number
@@ -15858,6 +17025,7 @@ export namespace Prisma {
     categoryId?: true
     odo?: true
     fuelLevel?: true
+    advancePayAmount?: true
   }
 
   export type VehicleSumAggregateInputType = {
@@ -15866,6 +17034,7 @@ export namespace Prisma {
     categoryId?: true
     odo?: true
     fuelLevel?: true
+    advancePayAmount?: true
   }
 
   export type VehicleMinAggregateInputType = {
@@ -15878,6 +17047,7 @@ export namespace Prisma {
     regNo?: true
     odo?: true
     fuelLevel?: true
+    advancePayAmount?: true
     insuranceExpiry?: true
     status?: true
     createdAt?: true
@@ -15895,6 +17065,7 @@ export namespace Prisma {
     regNo?: true
     odo?: true
     fuelLevel?: true
+    advancePayAmount?: true
     insuranceExpiry?: true
     status?: true
     createdAt?: true
@@ -15912,6 +17083,7 @@ export namespace Prisma {
     regNo?: true
     odo?: true
     fuelLevel?: true
+    advancePayAmount?: true
     insuranceExpiry?: true
     status?: true
     createdAt?: true
@@ -16016,6 +17188,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel: number
+    advancePayAmount: Decimal
     insuranceExpiry: Date
     status: $Enums.VehicleStatus
     createdAt: Date
@@ -16052,6 +17225,7 @@ export namespace Prisma {
     regNo?: boolean
     odo?: boolean
     fuelLevel?: boolean
+    advancePayAmount?: boolean
     insuranceExpiry?: boolean
     status?: boolean
     createdAt?: boolean
@@ -16082,6 +17256,7 @@ export namespace Prisma {
     regNo?: boolean
     odo?: boolean
     fuelLevel?: boolean
+    advancePayAmount?: boolean
     insuranceExpiry?: boolean
     status?: boolean
     createdAt?: boolean
@@ -16101,6 +17276,7 @@ export namespace Prisma {
     regNo?: boolean
     odo?: boolean
     fuelLevel?: boolean
+    advancePayAmount?: boolean
     insuranceExpiry?: boolean
     status?: boolean
     createdAt?: boolean
@@ -16154,6 +17330,7 @@ export namespace Prisma {
       regNo: string
       odo: number
       fuelLevel: number
+      advancePayAmount: Prisma.Decimal
       insuranceExpiry: Date
       status: $Enums.VehicleStatus
       createdAt: Date
@@ -16573,6 +17750,7 @@ export namespace Prisma {
     readonly regNo: FieldRef<"Vehicle", 'String'>
     readonly odo: FieldRef<"Vehicle", 'Int'>
     readonly fuelLevel: FieldRef<"Vehicle", 'Int'>
+    readonly advancePayAmount: FieldRef<"Vehicle", 'Decimal'>
     readonly insuranceExpiry: FieldRef<"Vehicle", 'DateTime'>
     readonly status: FieldRef<"Vehicle", 'VehicleStatus'>
     readonly createdAt: FieldRef<"Vehicle", 'DateTime'>
@@ -26422,6 +27600,7 @@ export namespace Prisma {
     createdById: number | null
     kycFileId: number | null
     advanceAmount: Decimal | null
+    remainingBalance: Decimal | null
     safetyDeposit: Decimal | null
   }
 
@@ -26445,6 +27624,7 @@ export namespace Prisma {
     createdById: number | null
     kycFileId: number | null
     advanceAmount: Decimal | null
+    remainingBalance: Decimal | null
     safetyDeposit: Decimal | null
   }
 
@@ -26476,10 +27656,16 @@ export namespace Prisma {
     createdById: number | null
     depositMethod: $Enums.DepositMethod | null
     kycFileId: number | null
+    isAdvancePayment: boolean | null
     advanceAmount: Decimal | null
     advancePaidAt: Date | null
     advancePaymentId: string | null
     advancePaymentMode: $Enums.DepositMethod | null
+    remainingBalance: Decimal | null
+    remainingPaidAt: Date | null
+    remainingPaymentId: string | null
+    remainingPaymentMode: $Enums.DepositMethod | null
+    remainingPaidDuring: string | null
     safetyDeposit: Decimal | null
     safetyDepositPaidAt: Date | null
     safetyDepositMethod: $Enums.DepositMethod | null
@@ -26522,10 +27708,16 @@ export namespace Prisma {
     createdById: number | null
     depositMethod: $Enums.DepositMethod | null
     kycFileId: number | null
+    isAdvancePayment: boolean | null
     advanceAmount: Decimal | null
     advancePaidAt: Date | null
     advancePaymentId: string | null
     advancePaymentMode: $Enums.DepositMethod | null
+    remainingBalance: Decimal | null
+    remainingPaidAt: Date | null
+    remainingPaymentId: string | null
+    remainingPaymentMode: $Enums.DepositMethod | null
+    remainingPaidDuring: string | null
     safetyDeposit: Decimal | null
     safetyDepositPaidAt: Date | null
     safetyDepositMethod: $Enums.DepositMethod | null
@@ -26569,10 +27761,16 @@ export namespace Prisma {
     createdById: number
     depositMethod: number
     kycFileId: number
+    isAdvancePayment: number
     advanceAmount: number
     advancePaidAt: number
     advancePaymentId: number
     advancePaymentMode: number
+    remainingBalance: number
+    remainingPaidAt: number
+    remainingPaymentId: number
+    remainingPaymentMode: number
+    remainingPaidDuring: number
     safetyDeposit: number
     safetyDepositPaidAt: number
     safetyDepositMethod: number
@@ -26609,6 +27807,7 @@ export namespace Prisma {
     createdById?: true
     kycFileId?: true
     advanceAmount?: true
+    remainingBalance?: true
     safetyDeposit?: true
   }
 
@@ -26632,6 +27831,7 @@ export namespace Prisma {
     createdById?: true
     kycFileId?: true
     advanceAmount?: true
+    remainingBalance?: true
     safetyDeposit?: true
   }
 
@@ -26663,10 +27863,16 @@ export namespace Prisma {
     createdById?: true
     depositMethod?: true
     kycFileId?: true
+    isAdvancePayment?: true
     advanceAmount?: true
     advancePaidAt?: true
     advancePaymentId?: true
     advancePaymentMode?: true
+    remainingBalance?: true
+    remainingPaidAt?: true
+    remainingPaymentId?: true
+    remainingPaymentMode?: true
+    remainingPaidDuring?: true
     safetyDeposit?: true
     safetyDepositPaidAt?: true
     safetyDepositMethod?: true
@@ -26709,10 +27915,16 @@ export namespace Prisma {
     createdById?: true
     depositMethod?: true
     kycFileId?: true
+    isAdvancePayment?: true
     advanceAmount?: true
     advancePaidAt?: true
     advancePaymentId?: true
     advancePaymentMode?: true
+    remainingBalance?: true
+    remainingPaidAt?: true
+    remainingPaymentId?: true
+    remainingPaymentMode?: true
+    remainingPaidDuring?: true
     safetyDeposit?: true
     safetyDepositPaidAt?: true
     safetyDepositMethod?: true
@@ -26756,10 +27968,16 @@ export namespace Prisma {
     createdById?: true
     depositMethod?: true
     kycFileId?: true
+    isAdvancePayment?: true
     advanceAmount?: true
     advancePaidAt?: true
     advancePaymentId?: true
     advancePaymentMode?: true
+    remainingBalance?: true
+    remainingPaidAt?: true
+    remainingPaymentId?: true
+    remainingPaymentMode?: true
+    remainingPaidDuring?: true
     safetyDeposit?: true
     safetyDepositPaidAt?: true
     safetyDepositMethod?: true
@@ -26890,10 +28108,16 @@ export namespace Prisma {
     createdById: number
     depositMethod: $Enums.DepositMethod | null
     kycFileId: number | null
+    isAdvancePayment: boolean
     advanceAmount: Decimal
     advancePaidAt: Date | null
     advancePaymentId: string | null
     advancePaymentMode: $Enums.DepositMethod | null
+    remainingBalance: Decimal
+    remainingPaidAt: Date | null
+    remainingPaymentId: string | null
+    remainingPaymentMode: $Enums.DepositMethod | null
+    remainingPaidDuring: string | null
     safetyDeposit: Decimal
     safetyDepositPaidAt: Date | null
     safetyDepositMethod: $Enums.DepositMethod | null
@@ -26956,10 +28180,16 @@ export namespace Prisma {
     createdById?: boolean
     depositMethod?: boolean
     kycFileId?: boolean
+    isAdvancePayment?: boolean
     advanceAmount?: boolean
     advancePaidAt?: boolean
     advancePaymentId?: boolean
     advancePaymentMode?: boolean
+    remainingBalance?: boolean
+    remainingPaidAt?: boolean
+    remainingPaymentId?: boolean
+    remainingPaymentMode?: boolean
+    remainingPaidDuring?: boolean
     safetyDeposit?: boolean
     safetyDepositPaidAt?: boolean
     safetyDepositMethod?: boolean
@@ -27015,10 +28245,16 @@ export namespace Prisma {
     createdById?: boolean
     depositMethod?: boolean
     kycFileId?: boolean
+    isAdvancePayment?: boolean
     advanceAmount?: boolean
     advancePaidAt?: boolean
     advancePaymentId?: boolean
     advancePaymentMode?: boolean
+    remainingBalance?: boolean
+    remainingPaidAt?: boolean
+    remainingPaymentId?: boolean
+    remainingPaymentMode?: boolean
+    remainingPaidDuring?: boolean
     safetyDeposit?: boolean
     safetyDepositPaidAt?: boolean
     safetyDepositMethod?: boolean
@@ -27066,10 +28302,16 @@ export namespace Prisma {
     createdById?: boolean
     depositMethod?: boolean
     kycFileId?: boolean
+    isAdvancePayment?: boolean
     advanceAmount?: boolean
     advancePaidAt?: boolean
     advancePaymentId?: boolean
     advancePaymentMode?: boolean
+    remainingBalance?: boolean
+    remainingPaidAt?: boolean
+    remainingPaymentId?: boolean
+    remainingPaymentMode?: boolean
+    remainingPaidDuring?: boolean
     safetyDeposit?: boolean
     safetyDepositPaidAt?: boolean
     safetyDepositMethod?: boolean
@@ -27149,10 +28391,16 @@ export namespace Prisma {
       createdById: number
       depositMethod: $Enums.DepositMethod | null
       kycFileId: number | null
+      isAdvancePayment: boolean
       advanceAmount: Prisma.Decimal
       advancePaidAt: Date | null
       advancePaymentId: string | null
       advancePaymentMode: $Enums.DepositMethod | null
+      remainingBalance: Prisma.Decimal
+      remainingPaidAt: Date | null
+      remainingPaymentId: string | null
+      remainingPaymentMode: $Enums.DepositMethod | null
+      remainingPaidDuring: string | null
       safetyDeposit: Prisma.Decimal
       safetyDepositPaidAt: Date | null
       safetyDepositMethod: $Enums.DepositMethod | null
@@ -27597,10 +28845,16 @@ export namespace Prisma {
     readonly createdById: FieldRef<"Booking", 'Int'>
     readonly depositMethod: FieldRef<"Booking", 'DepositMethod'>
     readonly kycFileId: FieldRef<"Booking", 'Int'>
+    readonly isAdvancePayment: FieldRef<"Booking", 'Boolean'>
     readonly advanceAmount: FieldRef<"Booking", 'Decimal'>
     readonly advancePaidAt: FieldRef<"Booking", 'DateTime'>
     readonly advancePaymentId: FieldRef<"Booking", 'String'>
     readonly advancePaymentMode: FieldRef<"Booking", 'DepositMethod'>
+    readonly remainingBalance: FieldRef<"Booking", 'Decimal'>
+    readonly remainingPaidAt: FieldRef<"Booking", 'DateTime'>
+    readonly remainingPaymentId: FieldRef<"Booking", 'String'>
+    readonly remainingPaymentMode: FieldRef<"Booking", 'DepositMethod'>
+    readonly remainingPaidDuring: FieldRef<"Booking", 'String'>
     readonly safetyDeposit: FieldRef<"Booking", 'Decimal'>
     readonly safetyDepositPaidAt: FieldRef<"Booking", 'DateTime'>
     readonly safetyDepositMethod: FieldRef<"Booking", 'DepositMethod'>
@@ -29252,6 +30506,7 @@ export namespace Prisma {
     bookingId: number | null
     fileId: number | null
     type: $Enums.BookingPhotoType | null
+    captureLabel: string | null
     damageReportId: number | null
     createdAt: Date | null
   }
@@ -29262,6 +30517,7 @@ export namespace Prisma {
     bookingId: number | null
     fileId: number | null
     type: $Enums.BookingPhotoType | null
+    captureLabel: string | null
     damageReportId: number | null
     createdAt: Date | null
   }
@@ -29272,6 +30528,7 @@ export namespace Prisma {
     bookingId: number
     fileId: number
     type: number
+    captureLabel: number
     damageReportId: number
     createdAt: number
     _all: number
@@ -29298,6 +30555,7 @@ export namespace Prisma {
     bookingId?: true
     fileId?: true
     type?: true
+    captureLabel?: true
     damageReportId?: true
     createdAt?: true
   }
@@ -29308,6 +30566,7 @@ export namespace Prisma {
     bookingId?: true
     fileId?: true
     type?: true
+    captureLabel?: true
     damageReportId?: true
     createdAt?: true
   }
@@ -29318,6 +30577,7 @@ export namespace Prisma {
     bookingId?: true
     fileId?: true
     type?: true
+    captureLabel?: true
     damageReportId?: true
     createdAt?: true
     _all?: true
@@ -29415,6 +30675,7 @@ export namespace Prisma {
     bookingId: number
     fileId: number
     type: $Enums.BookingPhotoType
+    captureLabel: string | null
     damageReportId: number | null
     createdAt: Date
     _count: BookingPhotoCountAggregateOutputType | null
@@ -29444,6 +30705,7 @@ export namespace Prisma {
     bookingId?: boolean
     fileId?: boolean
     type?: boolean
+    captureLabel?: boolean
     damageReportId?: boolean
     createdAt?: boolean
     booking?: boolean | BookingDefaultArgs<ExtArgs>
@@ -29457,6 +30719,7 @@ export namespace Prisma {
     bookingId?: boolean
     fileId?: boolean
     type?: boolean
+    captureLabel?: boolean
     damageReportId?: boolean
     createdAt?: boolean
     booking?: boolean | BookingDefaultArgs<ExtArgs>
@@ -29470,6 +30733,7 @@ export namespace Prisma {
     bookingId?: boolean
     fileId?: boolean
     type?: boolean
+    captureLabel?: boolean
     damageReportId?: boolean
     createdAt?: boolean
   }
@@ -29498,6 +30762,7 @@ export namespace Prisma {
       bookingId: number
       fileId: number
       type: $Enums.BookingPhotoType
+      captureLabel: string | null
       damageReportId: number | null
       createdAt: Date
     }, ExtArgs["result"]["bookingPhoto"]>
@@ -29901,6 +31166,7 @@ export namespace Prisma {
     readonly bookingId: FieldRef<"BookingPhoto", 'Int'>
     readonly fileId: FieldRef<"BookingPhoto", 'Int'>
     readonly type: FieldRef<"BookingPhoto", 'BookingPhotoType'>
+    readonly captureLabel: FieldRef<"BookingPhoto", 'String'>
     readonly damageReportId: FieldRef<"BookingPhoto", 'Int'>
     readonly createdAt: FieldRef<"BookingPhoto", 'DateTime'>
   }
@@ -36599,7 +37865,6 @@ export namespace Prisma {
     entityId: number
     before: number
     after: number
-    metadata: number
     createdAt: number
     _all: number
   }
@@ -36644,7 +37909,6 @@ export namespace Prisma {
     entityId?: true
     before?: true
     after?: true
-    metadata?: true
     createdAt?: true
     _all?: true
   }
@@ -36744,7 +38008,6 @@ export namespace Prisma {
     entityId: string
     before: JsonValue | null
     after: JsonValue | null
-    metadata: JsonValue | null
     createdAt: Date
     _count: AuditLogCountAggregateOutputType | null
     _avg: AuditLogAvgAggregateOutputType | null
@@ -36776,7 +38039,6 @@ export namespace Prisma {
     entityId?: boolean
     before?: boolean
     after?: boolean
-    metadata?: boolean
     createdAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["auditLog"]>
@@ -36790,7 +38052,6 @@ export namespace Prisma {
     entityId?: boolean
     before?: boolean
     after?: boolean
-    metadata?: boolean
     createdAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["auditLog"]>
@@ -36804,7 +38065,6 @@ export namespace Prisma {
     entityId?: boolean
     before?: boolean
     after?: boolean
-    metadata?: boolean
     createdAt?: boolean
   }
 
@@ -36829,7 +38089,6 @@ export namespace Prisma {
       entityId: string
       before: Prisma.JsonValue | null
       after: Prisma.JsonValue | null
-      metadata: Prisma.JsonValue | null
       createdAt: Date
     }, ExtArgs["result"]["auditLog"]>
     composites: {}
@@ -37233,7 +38492,6 @@ export namespace Prisma {
     readonly entityId: FieldRef<"AuditLog", 'String'>
     readonly before: FieldRef<"AuditLog", 'Json'>
     readonly after: FieldRef<"AuditLog", 'Json'>
-    readonly metadata: FieldRef<"AuditLog", 'Json'>
     readonly createdAt: FieldRef<"AuditLog", 'DateTime'>
   }
     
@@ -45974,6 +47232,19 @@ export namespace Prisma {
   export type VehicleCategoryScalarFieldEnum = (typeof VehicleCategoryScalarFieldEnum)[keyof typeof VehicleCategoryScalarFieldEnum]
 
 
+  export const VehiclePhotoCaptureConfigScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    branchId: 'branchId',
+    categoryId: 'categoryId',
+    fields: 'fields',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type VehiclePhotoCaptureConfigScalarFieldEnum = (typeof VehiclePhotoCaptureConfigScalarFieldEnum)[keyof typeof VehiclePhotoCaptureConfigScalarFieldEnum]
+
+
   export const VehicleScalarFieldEnum: {
     id: 'id',
     publicId: 'publicId',
@@ -45984,6 +47255,7 @@ export namespace Prisma {
     regNo: 'regNo',
     odo: 'odo',
     fuelLevel: 'fuelLevel',
+    advancePayAmount: 'advancePayAmount',
     insuranceExpiry: 'insuranceExpiry',
     status: 'status',
     createdAt: 'createdAt',
@@ -46145,10 +47417,16 @@ export namespace Prisma {
     createdById: 'createdById',
     depositMethod: 'depositMethod',
     kycFileId: 'kycFileId',
+    isAdvancePayment: 'isAdvancePayment',
     advanceAmount: 'advanceAmount',
     advancePaidAt: 'advancePaidAt',
     advancePaymentId: 'advancePaymentId',
     advancePaymentMode: 'advancePaymentMode',
+    remainingBalance: 'remainingBalance',
+    remainingPaidAt: 'remainingPaidAt',
+    remainingPaymentId: 'remainingPaymentId',
+    remainingPaymentMode: 'remainingPaymentMode',
+    remainingPaidDuring: 'remainingPaidDuring',
     safetyDeposit: 'safetyDeposit',
     safetyDepositPaidAt: 'safetyDepositPaidAt',
     safetyDepositMethod: 'safetyDepositMethod',
@@ -46191,6 +47469,7 @@ export namespace Prisma {
     bookingId: 'bookingId',
     fileId: 'fileId',
     type: 'type',
+    captureLabel: 'captureLabel',
     damageReportId: 'damageReportId',
     createdAt: 'createdAt'
   };
@@ -46298,7 +47577,6 @@ export namespace Prisma {
     entityId: 'entityId',
     before: 'before',
     after: 'after',
-    metadata: 'metadata',
     createdAt: 'createdAt'
   };
 
@@ -46598,6 +47876,13 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'Json'
+   */
+  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+  /**
    * Reference to a field of type 'VehicleStatus'
    */
   export type EnumVehicleStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VehicleStatus'>
@@ -46664,13 +47949,6 @@ export namespace Prisma {
    * Reference to a field of type 'PaymentStatus[]'
    */
   export type ListEnumPaymentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaymentStatus[]'>
-    
-
-
-  /**
-   * Reference to a field of type 'Json'
-   */
-  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
     
 
 
@@ -47350,6 +48628,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsListRelationFilter
     gstRule?: XOR<GSTRuleNullableRelationFilter, GSTRuleWhereInput> | null
     featureFlags?: BranchFeatureFlagListRelationFilter
+    captureConfigs?: VehiclePhotoCaptureConfigListRelationFilter
   }
 
   export type BranchOrderByWithRelationInput = {
@@ -47369,6 +48648,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsOrderByRelationAggregateInput
     gstRule?: GSTRuleOrderByWithRelationInput
     featureFlags?: BranchFeatureFlagOrderByRelationAggregateInput
+    captureConfigs?: VehiclePhotoCaptureConfigOrderByRelationAggregateInput
   }
 
   export type BranchWhereUniqueInput = Prisma.AtLeast<{
@@ -47391,6 +48671,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsListRelationFilter
     gstRule?: XOR<GSTRuleNullableRelationFilter, GSTRuleWhereInput> | null
     featureFlags?: BranchFeatureFlagListRelationFilter
+    captureConfigs?: VehiclePhotoCaptureConfigListRelationFilter
   }, "id" | "publicId">
 
   export type BranchOrderByWithAggregationInput = {
@@ -47581,6 +48862,7 @@ export namespace Prisma {
     vehicles?: VehicleListRelationFilter
     pricingRules?: PricingRuleListRelationFilter
     branchPricingDefaults?: BranchPricingDefaultsListRelationFilter
+    captureConfigs?: VehiclePhotoCaptureConfigListRelationFilter
   }
 
   export type VehicleCategoryOrderByWithRelationInput = {
@@ -47594,6 +48876,7 @@ export namespace Prisma {
     vehicles?: VehicleOrderByRelationAggregateInput
     pricingRules?: PricingRuleOrderByRelationAggregateInput
     branchPricingDefaults?: BranchPricingDefaultsOrderByRelationAggregateInput
+    captureConfigs?: VehiclePhotoCaptureConfigOrderByRelationAggregateInput
   }
 
   export type VehicleCategoryWhereUniqueInput = Prisma.AtLeast<{
@@ -47610,6 +48893,7 @@ export namespace Prisma {
     vehicles?: VehicleListRelationFilter
     pricingRules?: PricingRuleListRelationFilter
     branchPricingDefaults?: BranchPricingDefaultsListRelationFilter
+    captureConfigs?: VehiclePhotoCaptureConfigListRelationFilter
   }, "id" | "publicId">
 
   export type VehicleCategoryOrderByWithAggregationInput = {
@@ -47636,6 +48920,77 @@ export namespace Prisma {
     rank?: IntWithAggregatesFilter<"VehicleCategory"> | number
   }
 
+  export type VehiclePhotoCaptureConfigWhereInput = {
+    AND?: VehiclePhotoCaptureConfigWhereInput | VehiclePhotoCaptureConfigWhereInput[]
+    OR?: VehiclePhotoCaptureConfigWhereInput[]
+    NOT?: VehiclePhotoCaptureConfigWhereInput | VehiclePhotoCaptureConfigWhereInput[]
+    id?: IntFilter<"VehiclePhotoCaptureConfig"> | number
+    publicId?: StringFilter<"VehiclePhotoCaptureConfig"> | string
+    branchId?: IntFilter<"VehiclePhotoCaptureConfig"> | number
+    categoryId?: IntFilter<"VehiclePhotoCaptureConfig"> | number
+    fields?: JsonFilter<"VehiclePhotoCaptureConfig">
+    createdAt?: DateTimeFilter<"VehiclePhotoCaptureConfig"> | Date | string
+    updatedAt?: DateTimeFilter<"VehiclePhotoCaptureConfig"> | Date | string
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+    category?: XOR<VehicleCategoryRelationFilter, VehicleCategoryWhereInput>
+  }
+
+  export type VehiclePhotoCaptureConfigOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+    fields?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    branch?: BranchOrderByWithRelationInput
+    category?: VehicleCategoryOrderByWithRelationInput
+  }
+
+  export type VehiclePhotoCaptureConfigWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    branchId_categoryId?: VehiclePhotoCaptureConfigBranchIdCategoryIdCompoundUniqueInput
+    AND?: VehiclePhotoCaptureConfigWhereInput | VehiclePhotoCaptureConfigWhereInput[]
+    OR?: VehiclePhotoCaptureConfigWhereInput[]
+    NOT?: VehiclePhotoCaptureConfigWhereInput | VehiclePhotoCaptureConfigWhereInput[]
+    branchId?: IntFilter<"VehiclePhotoCaptureConfig"> | number
+    categoryId?: IntFilter<"VehiclePhotoCaptureConfig"> | number
+    fields?: JsonFilter<"VehiclePhotoCaptureConfig">
+    createdAt?: DateTimeFilter<"VehiclePhotoCaptureConfig"> | Date | string
+    updatedAt?: DateTimeFilter<"VehiclePhotoCaptureConfig"> | Date | string
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+    category?: XOR<VehicleCategoryRelationFilter, VehicleCategoryWhereInput>
+  }, "id" | "publicId" | "branchId_categoryId">
+
+  export type VehiclePhotoCaptureConfigOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+    fields?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: VehiclePhotoCaptureConfigCountOrderByAggregateInput
+    _avg?: VehiclePhotoCaptureConfigAvgOrderByAggregateInput
+    _max?: VehiclePhotoCaptureConfigMaxOrderByAggregateInput
+    _min?: VehiclePhotoCaptureConfigMinOrderByAggregateInput
+    _sum?: VehiclePhotoCaptureConfigSumOrderByAggregateInput
+  }
+
+  export type VehiclePhotoCaptureConfigScalarWhereWithAggregatesInput = {
+    AND?: VehiclePhotoCaptureConfigScalarWhereWithAggregatesInput | VehiclePhotoCaptureConfigScalarWhereWithAggregatesInput[]
+    OR?: VehiclePhotoCaptureConfigScalarWhereWithAggregatesInput[]
+    NOT?: VehiclePhotoCaptureConfigScalarWhereWithAggregatesInput | VehiclePhotoCaptureConfigScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"VehiclePhotoCaptureConfig"> | number
+    publicId?: StringWithAggregatesFilter<"VehiclePhotoCaptureConfig"> | string
+    branchId?: IntWithAggregatesFilter<"VehiclePhotoCaptureConfig"> | number
+    categoryId?: IntWithAggregatesFilter<"VehiclePhotoCaptureConfig"> | number
+    fields?: JsonWithAggregatesFilter<"VehiclePhotoCaptureConfig">
+    createdAt?: DateTimeWithAggregatesFilter<"VehiclePhotoCaptureConfig"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"VehiclePhotoCaptureConfig"> | Date | string
+  }
+
   export type VehicleWhereInput = {
     AND?: VehicleWhereInput | VehicleWhereInput[]
     OR?: VehicleWhereInput[]
@@ -47649,6 +49004,7 @@ export namespace Prisma {
     regNo?: StringFilter<"Vehicle"> | string
     odo?: IntFilter<"Vehicle"> | number
     fuelLevel?: IntFilter<"Vehicle"> | number
+    advancePayAmount?: DecimalFilter<"Vehicle"> | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFilter<"Vehicle"> | Date | string
     status?: EnumVehicleStatusFilter<"Vehicle"> | $Enums.VehicleStatus
     createdAt?: DateTimeFilter<"Vehicle"> | Date | string
@@ -47678,6 +49034,7 @@ export namespace Prisma {
     regNo?: SortOrder
     odo?: SortOrder
     fuelLevel?: SortOrder
+    advancePayAmount?: SortOrder
     insuranceExpiry?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
@@ -47710,6 +49067,7 @@ export namespace Prisma {
     model?: StringFilter<"Vehicle"> | string
     odo?: IntFilter<"Vehicle"> | number
     fuelLevel?: IntFilter<"Vehicle"> | number
+    advancePayAmount?: DecimalFilter<"Vehicle"> | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFilter<"Vehicle"> | Date | string
     status?: EnumVehicleStatusFilter<"Vehicle"> | $Enums.VehicleStatus
     createdAt?: DateTimeFilter<"Vehicle"> | Date | string
@@ -47739,6 +49097,7 @@ export namespace Prisma {
     regNo?: SortOrder
     odo?: SortOrder
     fuelLevel?: SortOrder
+    advancePayAmount?: SortOrder
     insuranceExpiry?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
@@ -47764,6 +49123,7 @@ export namespace Prisma {
     regNo?: StringWithAggregatesFilter<"Vehicle"> | string
     odo?: IntWithAggregatesFilter<"Vehicle"> | number
     fuelLevel?: IntWithAggregatesFilter<"Vehicle"> | number
+    advancePayAmount?: DecimalWithAggregatesFilter<"Vehicle"> | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeWithAggregatesFilter<"Vehicle"> | Date | string
     status?: EnumVehicleStatusWithAggregatesFilter<"Vehicle"> | $Enums.VehicleStatus
     createdAt?: DateTimeWithAggregatesFilter<"Vehicle"> | Date | string
@@ -48445,10 +49805,16 @@ export namespace Prisma {
     createdById?: IntFilter<"Booking"> | number
     depositMethod?: EnumDepositMethodNullableFilter<"Booking"> | $Enums.DepositMethod | null
     kycFileId?: IntNullableFilter<"Booking"> | number | null
+    isAdvancePayment?: BoolFilter<"Booking"> | boolean
     advanceAmount?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     advancePaidAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     advancePaymentId?: StringNullableFilter<"Booking"> | string | null
     advancePaymentMode?: EnumDepositMethodNullableFilter<"Booking"> | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
+    remainingPaymentId?: StringNullableFilter<"Booking"> | string | null
+    remainingPaymentMode?: EnumDepositMethodNullableFilter<"Booking"> | $Enums.DepositMethod | null
+    remainingPaidDuring?: StringNullableFilter<"Booking"> | string | null
     safetyDeposit?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     safetyDepositMethod?: EnumDepositMethodNullableFilter<"Booking"> | $Enums.DepositMethod | null
@@ -48503,10 +49869,16 @@ export namespace Prisma {
     createdById?: SortOrder
     depositMethod?: SortOrderInput | SortOrder
     kycFileId?: SortOrderInput | SortOrder
+    isAdvancePayment?: SortOrder
     advanceAmount?: SortOrder
     advancePaidAt?: SortOrderInput | SortOrder
     advancePaymentId?: SortOrderInput | SortOrder
     advancePaymentMode?: SortOrderInput | SortOrder
+    remainingBalance?: SortOrder
+    remainingPaidAt?: SortOrderInput | SortOrder
+    remainingPaymentId?: SortOrderInput | SortOrder
+    remainingPaymentMode?: SortOrderInput | SortOrder
+    remainingPaidDuring?: SortOrderInput | SortOrder
     safetyDeposit?: SortOrder
     safetyDepositPaidAt?: SortOrderInput | SortOrder
     safetyDepositMethod?: SortOrderInput | SortOrder
@@ -48536,6 +49908,7 @@ export namespace Prisma {
     id?: number
     publicId?: string
     transactionId?: string
+    remainingPaymentId?: string
     AND?: BookingWhereInput | BookingWhereInput[]
     OR?: BookingWhereInput[]
     NOT?: BookingWhereInput | BookingWhereInput[]
@@ -48564,10 +49937,15 @@ export namespace Prisma {
     createdById?: IntFilter<"Booking"> | number
     depositMethod?: EnumDepositMethodNullableFilter<"Booking"> | $Enums.DepositMethod | null
     kycFileId?: IntNullableFilter<"Booking"> | number | null
+    isAdvancePayment?: BoolFilter<"Booking"> | boolean
     advanceAmount?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     advancePaidAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     advancePaymentId?: StringNullableFilter<"Booking"> | string | null
     advancePaymentMode?: EnumDepositMethodNullableFilter<"Booking"> | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
+    remainingPaymentMode?: EnumDepositMethodNullableFilter<"Booking"> | $Enums.DepositMethod | null
+    remainingPaidDuring?: StringNullableFilter<"Booking"> | string | null
     safetyDeposit?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     safetyDepositMethod?: EnumDepositMethodNullableFilter<"Booking"> | $Enums.DepositMethod | null
@@ -48591,7 +49969,7 @@ export namespace Prisma {
     invoice?: XOR<InvoiceNullableRelationFilter, InvoiceWhereInput> | null
     cancellationInvoice?: XOR<CancellationInvoiceNullableRelationFilter, CancellationInvoiceWhereInput> | null
     vehicleSwaps?: VehicleSwapListRelationFilter
-  }, "id" | "publicId" | "transactionId">
+  }, "id" | "publicId" | "transactionId" | "remainingPaymentId">
 
   export type BookingOrderByWithAggregationInput = {
     id?: SortOrder
@@ -48622,10 +50000,16 @@ export namespace Prisma {
     createdById?: SortOrder
     depositMethod?: SortOrderInput | SortOrder
     kycFileId?: SortOrderInput | SortOrder
+    isAdvancePayment?: SortOrder
     advanceAmount?: SortOrder
     advancePaidAt?: SortOrderInput | SortOrder
     advancePaymentId?: SortOrderInput | SortOrder
     advancePaymentMode?: SortOrderInput | SortOrder
+    remainingBalance?: SortOrder
+    remainingPaidAt?: SortOrderInput | SortOrder
+    remainingPaymentId?: SortOrderInput | SortOrder
+    remainingPaymentMode?: SortOrderInput | SortOrder
+    remainingPaidDuring?: SortOrderInput | SortOrder
     safetyDeposit?: SortOrder
     safetyDepositPaidAt?: SortOrderInput | SortOrder
     safetyDepositMethod?: SortOrderInput | SortOrder
@@ -48677,10 +50061,16 @@ export namespace Prisma {
     createdById?: IntWithAggregatesFilter<"Booking"> | number
     depositMethod?: EnumDepositMethodNullableWithAggregatesFilter<"Booking"> | $Enums.DepositMethod | null
     kycFileId?: IntNullableWithAggregatesFilter<"Booking"> | number | null
+    isAdvancePayment?: BoolWithAggregatesFilter<"Booking"> | boolean
     advanceAmount?: DecimalWithAggregatesFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     advancePaidAt?: DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
     advancePaymentId?: StringNullableWithAggregatesFilter<"Booking"> | string | null
     advancePaymentMode?: EnumDepositMethodNullableWithAggregatesFilter<"Booking"> | $Enums.DepositMethod | null
+    remainingBalance?: DecimalWithAggregatesFilter<"Booking"> | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
+    remainingPaymentId?: StringNullableWithAggregatesFilter<"Booking"> | string | null
+    remainingPaymentMode?: EnumDepositMethodNullableWithAggregatesFilter<"Booking"> | $Enums.DepositMethod | null
+    remainingPaidDuring?: StringNullableWithAggregatesFilter<"Booking"> | string | null
     safetyDeposit?: DecimalWithAggregatesFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
     safetyDepositMethod?: EnumDepositMethodNullableWithAggregatesFilter<"Booking"> | $Enums.DepositMethod | null
@@ -48804,6 +50194,7 @@ export namespace Prisma {
     bookingId?: IntFilter<"BookingPhoto"> | number
     fileId?: IntFilter<"BookingPhoto"> | number
     type?: EnumBookingPhotoTypeFilter<"BookingPhoto"> | $Enums.BookingPhotoType
+    captureLabel?: StringNullableFilter<"BookingPhoto"> | string | null
     damageReportId?: IntNullableFilter<"BookingPhoto"> | number | null
     createdAt?: DateTimeFilter<"BookingPhoto"> | Date | string
     booking?: XOR<BookingRelationFilter, BookingWhereInput>
@@ -48817,6 +50208,7 @@ export namespace Prisma {
     bookingId?: SortOrder
     fileId?: SortOrder
     type?: SortOrder
+    captureLabel?: SortOrderInput | SortOrder
     damageReportId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     booking?: BookingOrderByWithRelationInput
@@ -48833,6 +50225,7 @@ export namespace Prisma {
     bookingId?: IntFilter<"BookingPhoto"> | number
     fileId?: IntFilter<"BookingPhoto"> | number
     type?: EnumBookingPhotoTypeFilter<"BookingPhoto"> | $Enums.BookingPhotoType
+    captureLabel?: StringNullableFilter<"BookingPhoto"> | string | null
     damageReportId?: IntNullableFilter<"BookingPhoto"> | number | null
     createdAt?: DateTimeFilter<"BookingPhoto"> | Date | string
     booking?: XOR<BookingRelationFilter, BookingWhereInput>
@@ -48846,6 +50239,7 @@ export namespace Prisma {
     bookingId?: SortOrder
     fileId?: SortOrder
     type?: SortOrder
+    captureLabel?: SortOrderInput | SortOrder
     damageReportId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: BookingPhotoCountOrderByAggregateInput
@@ -48864,6 +50258,7 @@ export namespace Prisma {
     bookingId?: IntWithAggregatesFilter<"BookingPhoto"> | number
     fileId?: IntWithAggregatesFilter<"BookingPhoto"> | number
     type?: EnumBookingPhotoTypeWithAggregatesFilter<"BookingPhoto"> | $Enums.BookingPhotoType
+    captureLabel?: StringNullableWithAggregatesFilter<"BookingPhoto"> | string | null
     damageReportId?: IntNullableWithAggregatesFilter<"BookingPhoto"> | number | null
     createdAt?: DateTimeWithAggregatesFilter<"BookingPhoto"> | Date | string
   }
@@ -49362,7 +50757,6 @@ export namespace Prisma {
     entityId?: StringFilter<"AuditLog"> | string
     before?: JsonNullableFilter<"AuditLog">
     after?: JsonNullableFilter<"AuditLog">
-    metadata?: JsonNullableFilter<"AuditLog">
     createdAt?: DateTimeFilter<"AuditLog"> | Date | string
     user?: XOR<UserRelationFilter, UserWhereInput>
   }
@@ -49376,7 +50770,6 @@ export namespace Prisma {
     entityId?: SortOrder
     before?: SortOrderInput | SortOrder
     after?: SortOrderInput | SortOrder
-    metadata?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     user?: UserOrderByWithRelationInput
   }
@@ -49393,7 +50786,6 @@ export namespace Prisma {
     entityId?: StringFilter<"AuditLog"> | string
     before?: JsonNullableFilter<"AuditLog">
     after?: JsonNullableFilter<"AuditLog">
-    metadata?: JsonNullableFilter<"AuditLog">
     createdAt?: DateTimeFilter<"AuditLog"> | Date | string
     user?: XOR<UserRelationFilter, UserWhereInput>
   }, "id" | "publicId">
@@ -49407,7 +50799,6 @@ export namespace Prisma {
     entityId?: SortOrder
     before?: SortOrderInput | SortOrder
     after?: SortOrderInput | SortOrder
-    metadata?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: AuditLogCountOrderByAggregateInput
     _avg?: AuditLogAvgOrderByAggregateInput
@@ -49428,7 +50819,6 @@ export namespace Prisma {
     entityId?: StringWithAggregatesFilter<"AuditLog"> | string
     before?: JsonNullableWithAggregatesFilter<"AuditLog">
     after?: JsonNullableWithAggregatesFilter<"AuditLog">
-    metadata?: JsonNullableWithAggregatesFilter<"AuditLog">
     createdAt?: DateTimeWithAggregatesFilter<"AuditLog"> | Date | string
   }
 
@@ -50649,6 +52039,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
     featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateInput = {
@@ -50668,6 +52059,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
     featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUpdateInput = {
@@ -50686,6 +52078,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
     featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateInput = {
@@ -50705,6 +52098,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
     featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchCreateManyInput = {
@@ -50900,6 +52294,7 @@ export namespace Prisma {
     vehicles?: VehicleCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleCreateNestedManyWithoutCategoryInput
     branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutCategoryInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutCategoryInput
   }
 
   export type VehicleCategoryUncheckedCreateInput = {
@@ -50913,6 +52308,7 @@ export namespace Prisma {
     vehicles?: VehicleUncheckedCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleUncheckedCreateNestedManyWithoutCategoryInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutCategoryInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutCategoryInput
   }
 
   export type VehicleCategoryUpdateInput = {
@@ -50925,6 +52321,7 @@ export namespace Prisma {
     vehicles?: VehicleUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUpdateManyWithoutCategoryNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutCategoryNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutCategoryNestedInput
   }
 
   export type VehicleCategoryUncheckedUpdateInput = {
@@ -50938,6 +52335,7 @@ export namespace Prisma {
     vehicles?: VehicleUncheckedUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUncheckedUpdateManyWithoutCategoryNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutCategoryNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutCategoryNestedInput
   }
 
   export type VehicleCategoryCreateManyInput = {
@@ -50963,6 +52361,71 @@ export namespace Prisma {
     rank?: IntFieldUpdateOperationsInput | number
   }
 
+  export type VehiclePhotoCaptureConfigCreateInput = {
+    publicId: string
+    fields: JsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    branch: BranchCreateNestedOneWithoutCaptureConfigsInput
+    category: VehicleCategoryCreateNestedOneWithoutCaptureConfigsInput
+  }
+
+  export type VehiclePhotoCaptureConfigUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    categoryId: number
+    fields: JsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehiclePhotoCaptureConfigUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    fields?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    branch?: BranchUpdateOneRequiredWithoutCaptureConfigsNestedInput
+    category?: VehicleCategoryUpdateOneRequiredWithoutCaptureConfigsNestedInput
+  }
+
+  export type VehiclePhotoCaptureConfigUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    categoryId?: IntFieldUpdateOperationsInput | number
+    fields?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehiclePhotoCaptureConfigCreateManyInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    categoryId: number
+    fields: JsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehiclePhotoCaptureConfigUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    fields?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehiclePhotoCaptureConfigUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    categoryId?: IntFieldUpdateOperationsInput | number
+    fields?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type VehicleCreateInput = {
     publicId: string
     make: string
@@ -50970,6 +52433,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -50999,6 +52463,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -51023,6 +52488,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -51052,6 +52518,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -51079,6 +52546,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -51093,6 +52561,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -51110,6 +52579,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -51766,10 +53236,16 @@ export namespace Prisma {
     paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -51824,10 +53300,16 @@ export namespace Prisma {
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
     kycFileId?: number | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -51873,10 +53355,16 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -51931,10 +53419,16 @@ export namespace Prisma {
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -51985,10 +53479,16 @@ export namespace Prisma {
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
     kycFileId?: number | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -52027,10 +53527,16 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -52074,10 +53580,16 @@ export namespace Prisma {
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -52202,6 +53714,7 @@ export namespace Prisma {
   export type BookingPhotoCreateInput = {
     publicId: string
     type: $Enums.BookingPhotoType
+    captureLabel?: string | null
     createdAt?: Date | string
     booking: BookingCreateNestedOneWithoutPhotosInput
     file: FileObjectCreateNestedOneWithoutBookingPhotosInput
@@ -52214,6 +53727,7 @@ export namespace Prisma {
     bookingId: number
     fileId: number
     type: $Enums.BookingPhotoType
+    captureLabel?: string | null
     damageReportId?: number | null
     createdAt?: Date | string
   }
@@ -52221,6 +53735,7 @@ export namespace Prisma {
   export type BookingPhotoUpdateInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
+    captureLabel?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     booking?: BookingUpdateOneRequiredWithoutPhotosNestedInput
     file?: FileObjectUpdateOneRequiredWithoutBookingPhotosNestedInput
@@ -52233,6 +53748,7 @@ export namespace Prisma {
     bookingId?: IntFieldUpdateOperationsInput | number
     fileId?: IntFieldUpdateOperationsInput | number
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
+    captureLabel?: NullableStringFieldUpdateOperationsInput | string | null
     damageReportId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -52243,6 +53759,7 @@ export namespace Prisma {
     bookingId: number
     fileId: number
     type: $Enums.BookingPhotoType
+    captureLabel?: string | null
     damageReportId?: number | null
     createdAt?: Date | string
   }
@@ -52250,6 +53767,7 @@ export namespace Prisma {
   export type BookingPhotoUpdateManyMutationInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
+    captureLabel?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -52259,6 +53777,7 @@ export namespace Prisma {
     bookingId?: IntFieldUpdateOperationsInput | number
     fileId?: IntFieldUpdateOperationsInput | number
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
+    captureLabel?: NullableStringFieldUpdateOperationsInput | string | null
     damageReportId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -52767,7 +54286,6 @@ export namespace Prisma {
     entityId: string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
-    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     user: UserCreateNestedOneWithoutAuditLogsInput
   }
@@ -52781,7 +54299,6 @@ export namespace Prisma {
     entityId: string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
-    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -52792,7 +54309,6 @@ export namespace Prisma {
     entityId?: StringFieldUpdateOperationsInput | string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
-    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutAuditLogsNestedInput
   }
@@ -52806,7 +54322,6 @@ export namespace Prisma {
     entityId?: StringFieldUpdateOperationsInput | string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
-    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -52819,7 +54334,6 @@ export namespace Prisma {
     entityId: string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
-    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -52830,7 +54344,6 @@ export namespace Prisma {
     entityId?: StringFieldUpdateOperationsInput | string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
-    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -52843,7 +54356,6 @@ export namespace Prisma {
     entityId?: StringFieldUpdateOperationsInput | string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
-    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -54225,6 +55737,12 @@ export namespace Prisma {
     none?: BranchFeatureFlagWhereInput
   }
 
+  export type VehiclePhotoCaptureConfigListRelationFilter = {
+    every?: VehiclePhotoCaptureConfigWhereInput
+    some?: VehiclePhotoCaptureConfigWhereInput
+    none?: VehiclePhotoCaptureConfigWhereInput
+  }
+
   export type UserOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -54246,6 +55764,10 @@ export namespace Prisma {
   }
 
   export type BranchFeatureFlagOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type VehiclePhotoCaptureConfigOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -54457,17 +55979,109 @@ export namespace Prisma {
     id?: SortOrder
     rank?: SortOrder
   }
+  export type JsonFilter<$PrismaModel = never> = 
+    | PatchUndefined<
+        Either<Required<JsonFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
+
+  export type VehicleCategoryRelationFilter = {
+    is?: VehicleCategoryWhereInput
+    isNot?: VehicleCategoryWhereInput
+  }
+
+  export type VehiclePhotoCaptureConfigBranchIdCategoryIdCompoundUniqueInput = {
+    branchId: number
+    categoryId: number
+  }
+
+  export type VehiclePhotoCaptureConfigCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+    fields?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type VehiclePhotoCaptureConfigAvgOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+  }
+
+  export type VehiclePhotoCaptureConfigMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type VehiclePhotoCaptureConfigMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type VehiclePhotoCaptureConfigSumOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    categoryId?: SortOrder
+  }
+  export type JsonWithAggregatesFilter<$PrismaModel = never> = 
+    | PatchUndefined<
+        Either<Required<JsonWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonWithAggregatesFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonWithAggregatesFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedJsonFilter<$PrismaModel>
+    _max?: NestedJsonFilter<$PrismaModel>
+  }
 
   export type EnumVehicleStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.VehicleStatus | EnumVehicleStatusFieldRefInput<$PrismaModel>
     in?: $Enums.VehicleStatus[] | ListEnumVehicleStatusFieldRefInput<$PrismaModel>
     notIn?: $Enums.VehicleStatus[] | ListEnumVehicleStatusFieldRefInput<$PrismaModel>
     not?: NestedEnumVehicleStatusFilter<$PrismaModel> | $Enums.VehicleStatus
-  }
-
-  export type VehicleCategoryRelationFilter = {
-    is?: VehicleCategoryWhereInput
-    isNot?: VehicleCategoryWhereInput
   }
 
   export type VehicleInsuranceListRelationFilter = {
@@ -54530,6 +56144,7 @@ export namespace Prisma {
     regNo?: SortOrder
     odo?: SortOrder
     fuelLevel?: SortOrder
+    advancePayAmount?: SortOrder
     insuranceExpiry?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
@@ -54543,6 +56158,7 @@ export namespace Prisma {
     categoryId?: SortOrder
     odo?: SortOrder
     fuelLevel?: SortOrder
+    advancePayAmount?: SortOrder
   }
 
   export type VehicleMaxOrderByAggregateInput = {
@@ -54555,6 +56171,7 @@ export namespace Prisma {
     regNo?: SortOrder
     odo?: SortOrder
     fuelLevel?: SortOrder
+    advancePayAmount?: SortOrder
     insuranceExpiry?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
@@ -54572,6 +56189,7 @@ export namespace Prisma {
     regNo?: SortOrder
     odo?: SortOrder
     fuelLevel?: SortOrder
+    advancePayAmount?: SortOrder
     insuranceExpiry?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
@@ -54585,6 +56203,7 @@ export namespace Prisma {
     categoryId?: SortOrder
     odo?: SortOrder
     fuelLevel?: SortOrder
+    advancePayAmount?: SortOrder
   }
 
   export type EnumVehicleStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -55114,28 +56733,6 @@ export namespace Prisma {
     notIn?: $Enums.PaymentStatus[] | ListEnumPaymentStatusFieldRefInput<$PrismaModel>
     not?: NestedEnumPaymentStatusFilter<$PrismaModel> | $Enums.PaymentStatus
   }
-  export type JsonFilter<$PrismaModel = never> = 
-    | PatchUndefined<
-        Either<Required<JsonFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonFilterBase<$PrismaModel>>, 'path'>>,
-        Required<JsonFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<JsonFilterBase<$PrismaModel>>, 'path'>>
-
-  export type JsonFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string[]
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-  }
 
   export type EnumDepositMethodNullableFilter<$PrismaModel = never> = {
     equals?: $Enums.DepositMethod | EnumDepositMethodFieldRefInput<$PrismaModel> | null
@@ -55193,10 +56790,16 @@ export namespace Prisma {
     createdById?: SortOrder
     depositMethod?: SortOrder
     kycFileId?: SortOrder
+    isAdvancePayment?: SortOrder
     advanceAmount?: SortOrder
     advancePaidAt?: SortOrder
     advancePaymentId?: SortOrder
     advancePaymentMode?: SortOrder
+    remainingBalance?: SortOrder
+    remainingPaidAt?: SortOrder
+    remainingPaymentId?: SortOrder
+    remainingPaymentMode?: SortOrder
+    remainingPaidDuring?: SortOrder
     safetyDeposit?: SortOrder
     safetyDepositPaidAt?: SortOrder
     safetyDepositMethod?: SortOrder
@@ -55231,6 +56834,7 @@ export namespace Prisma {
     createdById?: SortOrder
     kycFileId?: SortOrder
     advanceAmount?: SortOrder
+    remainingBalance?: SortOrder
     safetyDeposit?: SortOrder
   }
 
@@ -55262,10 +56866,16 @@ export namespace Prisma {
     createdById?: SortOrder
     depositMethod?: SortOrder
     kycFileId?: SortOrder
+    isAdvancePayment?: SortOrder
     advanceAmount?: SortOrder
     advancePaidAt?: SortOrder
     advancePaymentId?: SortOrder
     advancePaymentMode?: SortOrder
+    remainingBalance?: SortOrder
+    remainingPaidAt?: SortOrder
+    remainingPaymentId?: SortOrder
+    remainingPaymentMode?: SortOrder
+    remainingPaidDuring?: SortOrder
     safetyDeposit?: SortOrder
     safetyDepositPaidAt?: SortOrder
     safetyDepositMethod?: SortOrder
@@ -55308,10 +56918,16 @@ export namespace Prisma {
     createdById?: SortOrder
     depositMethod?: SortOrder
     kycFileId?: SortOrder
+    isAdvancePayment?: SortOrder
     advanceAmount?: SortOrder
     advancePaidAt?: SortOrder
     advancePaymentId?: SortOrder
     advancePaymentMode?: SortOrder
+    remainingBalance?: SortOrder
+    remainingPaidAt?: SortOrder
+    remainingPaymentId?: SortOrder
+    remainingPaymentMode?: SortOrder
+    remainingPaidDuring?: SortOrder
     safetyDeposit?: SortOrder
     safetyDepositPaidAt?: SortOrder
     safetyDepositMethod?: SortOrder
@@ -55346,6 +56962,7 @@ export namespace Prisma {
     createdById?: SortOrder
     kycFileId?: SortOrder
     advanceAmount?: SortOrder
+    remainingBalance?: SortOrder
     safetyDeposit?: SortOrder
   }
 
@@ -55377,31 +56994,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumPaymentStatusFilter<$PrismaModel>
     _max?: NestedEnumPaymentStatusFilter<$PrismaModel>
-  }
-  export type JsonWithAggregatesFilter<$PrismaModel = never> = 
-    | PatchUndefined<
-        Either<Required<JsonWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
-        Required<JsonWithAggregatesFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<JsonWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
-
-  export type JsonWithAggregatesFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string[]
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedJsonFilter<$PrismaModel>
-    _max?: NestedJsonFilter<$PrismaModel>
   }
 
   export type EnumDepositMethodNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -55517,6 +57109,7 @@ export namespace Prisma {
     bookingId?: SortOrder
     fileId?: SortOrder
     type?: SortOrder
+    captureLabel?: SortOrder
     damageReportId?: SortOrder
     createdAt?: SortOrder
   }
@@ -55534,6 +57127,7 @@ export namespace Prisma {
     bookingId?: SortOrder
     fileId?: SortOrder
     type?: SortOrder
+    captureLabel?: SortOrder
     damageReportId?: SortOrder
     createdAt?: SortOrder
   }
@@ -55544,6 +57138,7 @@ export namespace Prisma {
     bookingId?: SortOrder
     fileId?: SortOrder
     type?: SortOrder
+    captureLabel?: SortOrder
     damageReportId?: SortOrder
     createdAt?: SortOrder
   }
@@ -56010,7 +57605,6 @@ export namespace Prisma {
     entityId?: SortOrder
     before?: SortOrder
     after?: SortOrder
-    metadata?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -57374,6 +58968,13 @@ export namespace Prisma {
     connect?: BranchFeatureFlagWhereUniqueInput | BranchFeatureFlagWhereUniqueInput[]
   }
 
+  export type VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput = {
+    create?: XOR<VehiclePhotoCaptureConfigCreateWithoutBranchInput, VehiclePhotoCaptureConfigUncheckedCreateWithoutBranchInput> | VehiclePhotoCaptureConfigCreateWithoutBranchInput[] | VehiclePhotoCaptureConfigUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: VehiclePhotoCaptureConfigCreateOrConnectWithoutBranchInput | VehiclePhotoCaptureConfigCreateOrConnectWithoutBranchInput[]
+    createMany?: VehiclePhotoCaptureConfigCreateManyBranchInputEnvelope
+    connect?: VehiclePhotoCaptureConfigWhereUniqueInput | VehiclePhotoCaptureConfigWhereUniqueInput[]
+  }
+
   export type UserUncheckedCreateNestedManyWithoutBranchInput = {
     create?: XOR<UserCreateWithoutBranchInput, UserUncheckedCreateWithoutBranchInput> | UserCreateWithoutBranchInput[] | UserUncheckedCreateWithoutBranchInput[]
     connectOrCreate?: UserCreateOrConnectWithoutBranchInput | UserCreateOrConnectWithoutBranchInput[]
@@ -57433,6 +59034,13 @@ export namespace Prisma {
     connectOrCreate?: BranchFeatureFlagCreateOrConnectWithoutBranchInput | BranchFeatureFlagCreateOrConnectWithoutBranchInput[]
     createMany?: BranchFeatureFlagCreateManyBranchInputEnvelope
     connect?: BranchFeatureFlagWhereUniqueInput | BranchFeatureFlagWhereUniqueInput[]
+  }
+
+  export type VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput = {
+    create?: XOR<VehiclePhotoCaptureConfigCreateWithoutBranchInput, VehiclePhotoCaptureConfigUncheckedCreateWithoutBranchInput> | VehiclePhotoCaptureConfigCreateWithoutBranchInput[] | VehiclePhotoCaptureConfigUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: VehiclePhotoCaptureConfigCreateOrConnectWithoutBranchInput | VehiclePhotoCaptureConfigCreateOrConnectWithoutBranchInput[]
+    createMany?: VehiclePhotoCaptureConfigCreateManyBranchInputEnvelope
+    connect?: VehiclePhotoCaptureConfigWhereUniqueInput | VehiclePhotoCaptureConfigWhereUniqueInput[]
   }
 
   export type UserUpdateManyWithoutBranchNestedInput = {
@@ -57553,6 +59161,20 @@ export namespace Prisma {
     deleteMany?: BranchFeatureFlagScalarWhereInput | BranchFeatureFlagScalarWhereInput[]
   }
 
+  export type VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<VehiclePhotoCaptureConfigCreateWithoutBranchInput, VehiclePhotoCaptureConfigUncheckedCreateWithoutBranchInput> | VehiclePhotoCaptureConfigCreateWithoutBranchInput[] | VehiclePhotoCaptureConfigUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: VehiclePhotoCaptureConfigCreateOrConnectWithoutBranchInput | VehiclePhotoCaptureConfigCreateOrConnectWithoutBranchInput[]
+    upsert?: VehiclePhotoCaptureConfigUpsertWithWhereUniqueWithoutBranchInput | VehiclePhotoCaptureConfigUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: VehiclePhotoCaptureConfigCreateManyBranchInputEnvelope
+    set?: VehiclePhotoCaptureConfigWhereUniqueInput | VehiclePhotoCaptureConfigWhereUniqueInput[]
+    disconnect?: VehiclePhotoCaptureConfigWhereUniqueInput | VehiclePhotoCaptureConfigWhereUniqueInput[]
+    delete?: VehiclePhotoCaptureConfigWhereUniqueInput | VehiclePhotoCaptureConfigWhereUniqueInput[]
+    connect?: VehiclePhotoCaptureConfigWhereUniqueInput | VehiclePhotoCaptureConfigWhereUniqueInput[]
+    update?: VehiclePhotoCaptureConfigUpdateWithWhereUniqueWithoutBranchInput | VehiclePhotoCaptureConfigUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: VehiclePhotoCaptureConfigUpdateManyWithWhereWithoutBranchInput | VehiclePhotoCaptureConfigUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: VehiclePhotoCaptureConfigScalarWhereInput | VehiclePhotoCaptureConfigScalarWhereInput[]
+  }
+
   export type UserUncheckedUpdateManyWithoutBranchNestedInput = {
     create?: XOR<UserCreateWithoutBranchInput, UserUncheckedCreateWithoutBranchInput> | UserCreateWithoutBranchInput[] | UserUncheckedCreateWithoutBranchInput[]
     connectOrCreate?: UserCreateOrConnectWithoutBranchInput | UserCreateOrConnectWithoutBranchInput[]
@@ -57671,6 +59293,20 @@ export namespace Prisma {
     deleteMany?: BranchFeatureFlagScalarWhereInput | BranchFeatureFlagScalarWhereInput[]
   }
 
+  export type VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<VehiclePhotoCaptureConfigCreateWithoutBranchInput, VehiclePhotoCaptureConfigUncheckedCreateWithoutBranchInput> | VehiclePhotoCaptureConfigCreateWithoutBranchInput[] | VehiclePhotoCaptureConfigUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: VehiclePhotoCaptureConfigCreateOrConnectWithoutBranchInput | VehiclePhotoCaptureConfigCreateOrConnectWithoutBranchInput[]
+    upsert?: VehiclePhotoCaptureConfigUpsertWithWhereUniqueWithoutBranchInput | VehiclePhotoCaptureConfigUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: VehiclePhotoCaptureConfigCreateManyBranchInputEnvelope
+    set?: VehiclePhotoCaptureConfigWhereUniqueInput | VehiclePhotoCaptureConfigWhereUniqueInput[]
+    disconnect?: VehiclePhotoCaptureConfigWhereUniqueInput | VehiclePhotoCaptureConfigWhereUniqueInput[]
+    delete?: VehiclePhotoCaptureConfigWhereUniqueInput | VehiclePhotoCaptureConfigWhereUniqueInput[]
+    connect?: VehiclePhotoCaptureConfigWhereUniqueInput | VehiclePhotoCaptureConfigWhereUniqueInput[]
+    update?: VehiclePhotoCaptureConfigUpdateWithWhereUniqueWithoutBranchInput | VehiclePhotoCaptureConfigUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: VehiclePhotoCaptureConfigUpdateManyWithWhereWithoutBranchInput | VehiclePhotoCaptureConfigUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: VehiclePhotoCaptureConfigScalarWhereInput | VehiclePhotoCaptureConfigScalarWhereInput[]
+  }
+
   export type BranchCreateNestedOneWithoutPricingSettingInput = {
     create?: XOR<BranchCreateWithoutPricingSettingInput, BranchUncheckedCreateWithoutPricingSettingInput>
     connectOrCreate?: BranchCreateOrConnectWithoutPricingSettingInput
@@ -57728,6 +59364,13 @@ export namespace Prisma {
     connect?: BranchPricingDefaultsWhereUniqueInput | BranchPricingDefaultsWhereUniqueInput[]
   }
 
+  export type VehiclePhotoCaptureConfigCreateNestedManyWithoutCategoryInput = {
+    create?: XOR<VehiclePhotoCaptureConfigCreateWithoutCategoryInput, VehiclePhotoCaptureConfigUncheckedCreateWithoutCategoryInput> | VehiclePhotoCaptureConfigCreateWithoutCategoryInput[] | VehiclePhotoCaptureConfigUncheckedCreateWithoutCategoryInput[]
+    connectOrCreate?: VehiclePhotoCaptureConfigCreateOrConnectWithoutCategoryInput | VehiclePhotoCaptureConfigCreateOrConnectWithoutCategoryInput[]
+    createMany?: VehiclePhotoCaptureConfigCreateManyCategoryInputEnvelope
+    connect?: VehiclePhotoCaptureConfigWhereUniqueInput | VehiclePhotoCaptureConfigWhereUniqueInput[]
+  }
+
   export type PricingDiscountSlabUncheckedCreateNestedManyWithoutCategoryInput = {
     create?: XOR<PricingDiscountSlabCreateWithoutCategoryInput, PricingDiscountSlabUncheckedCreateWithoutCategoryInput> | PricingDiscountSlabCreateWithoutCategoryInput[] | PricingDiscountSlabUncheckedCreateWithoutCategoryInput[]
     connectOrCreate?: PricingDiscountSlabCreateOrConnectWithoutCategoryInput | PricingDiscountSlabCreateOrConnectWithoutCategoryInput[]
@@ -57761,6 +59404,13 @@ export namespace Prisma {
     connectOrCreate?: BranchPricingDefaultsCreateOrConnectWithoutCategoryInput | BranchPricingDefaultsCreateOrConnectWithoutCategoryInput[]
     createMany?: BranchPricingDefaultsCreateManyCategoryInputEnvelope
     connect?: BranchPricingDefaultsWhereUniqueInput | BranchPricingDefaultsWhereUniqueInput[]
+  }
+
+  export type VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutCategoryInput = {
+    create?: XOR<VehiclePhotoCaptureConfigCreateWithoutCategoryInput, VehiclePhotoCaptureConfigUncheckedCreateWithoutCategoryInput> | VehiclePhotoCaptureConfigCreateWithoutCategoryInput[] | VehiclePhotoCaptureConfigUncheckedCreateWithoutCategoryInput[]
+    connectOrCreate?: VehiclePhotoCaptureConfigCreateOrConnectWithoutCategoryInput | VehiclePhotoCaptureConfigCreateOrConnectWithoutCategoryInput[]
+    createMany?: VehiclePhotoCaptureConfigCreateManyCategoryInputEnvelope
+    connect?: VehiclePhotoCaptureConfigWhereUniqueInput | VehiclePhotoCaptureConfigWhereUniqueInput[]
   }
 
   export type PricingDiscountSlabUpdateManyWithoutCategoryNestedInput = {
@@ -57833,6 +59483,20 @@ export namespace Prisma {
     deleteMany?: BranchPricingDefaultsScalarWhereInput | BranchPricingDefaultsScalarWhereInput[]
   }
 
+  export type VehiclePhotoCaptureConfigUpdateManyWithoutCategoryNestedInput = {
+    create?: XOR<VehiclePhotoCaptureConfigCreateWithoutCategoryInput, VehiclePhotoCaptureConfigUncheckedCreateWithoutCategoryInput> | VehiclePhotoCaptureConfigCreateWithoutCategoryInput[] | VehiclePhotoCaptureConfigUncheckedCreateWithoutCategoryInput[]
+    connectOrCreate?: VehiclePhotoCaptureConfigCreateOrConnectWithoutCategoryInput | VehiclePhotoCaptureConfigCreateOrConnectWithoutCategoryInput[]
+    upsert?: VehiclePhotoCaptureConfigUpsertWithWhereUniqueWithoutCategoryInput | VehiclePhotoCaptureConfigUpsertWithWhereUniqueWithoutCategoryInput[]
+    createMany?: VehiclePhotoCaptureConfigCreateManyCategoryInputEnvelope
+    set?: VehiclePhotoCaptureConfigWhereUniqueInput | VehiclePhotoCaptureConfigWhereUniqueInput[]
+    disconnect?: VehiclePhotoCaptureConfigWhereUniqueInput | VehiclePhotoCaptureConfigWhereUniqueInput[]
+    delete?: VehiclePhotoCaptureConfigWhereUniqueInput | VehiclePhotoCaptureConfigWhereUniqueInput[]
+    connect?: VehiclePhotoCaptureConfigWhereUniqueInput | VehiclePhotoCaptureConfigWhereUniqueInput[]
+    update?: VehiclePhotoCaptureConfigUpdateWithWhereUniqueWithoutCategoryInput | VehiclePhotoCaptureConfigUpdateWithWhereUniqueWithoutCategoryInput[]
+    updateMany?: VehiclePhotoCaptureConfigUpdateManyWithWhereWithoutCategoryInput | VehiclePhotoCaptureConfigUpdateManyWithWhereWithoutCategoryInput[]
+    deleteMany?: VehiclePhotoCaptureConfigScalarWhereInput | VehiclePhotoCaptureConfigScalarWhereInput[]
+  }
+
   export type PricingDiscountSlabUncheckedUpdateManyWithoutCategoryNestedInput = {
     create?: XOR<PricingDiscountSlabCreateWithoutCategoryInput, PricingDiscountSlabUncheckedCreateWithoutCategoryInput> | PricingDiscountSlabCreateWithoutCategoryInput[] | PricingDiscountSlabUncheckedCreateWithoutCategoryInput[]
     connectOrCreate?: PricingDiscountSlabCreateOrConnectWithoutCategoryInput | PricingDiscountSlabCreateOrConnectWithoutCategoryInput[]
@@ -57901,6 +59565,48 @@ export namespace Prisma {
     update?: BranchPricingDefaultsUpdateWithWhereUniqueWithoutCategoryInput | BranchPricingDefaultsUpdateWithWhereUniqueWithoutCategoryInput[]
     updateMany?: BranchPricingDefaultsUpdateManyWithWhereWithoutCategoryInput | BranchPricingDefaultsUpdateManyWithWhereWithoutCategoryInput[]
     deleteMany?: BranchPricingDefaultsScalarWhereInput | BranchPricingDefaultsScalarWhereInput[]
+  }
+
+  export type VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutCategoryNestedInput = {
+    create?: XOR<VehiclePhotoCaptureConfigCreateWithoutCategoryInput, VehiclePhotoCaptureConfigUncheckedCreateWithoutCategoryInput> | VehiclePhotoCaptureConfigCreateWithoutCategoryInput[] | VehiclePhotoCaptureConfigUncheckedCreateWithoutCategoryInput[]
+    connectOrCreate?: VehiclePhotoCaptureConfigCreateOrConnectWithoutCategoryInput | VehiclePhotoCaptureConfigCreateOrConnectWithoutCategoryInput[]
+    upsert?: VehiclePhotoCaptureConfigUpsertWithWhereUniqueWithoutCategoryInput | VehiclePhotoCaptureConfigUpsertWithWhereUniqueWithoutCategoryInput[]
+    createMany?: VehiclePhotoCaptureConfigCreateManyCategoryInputEnvelope
+    set?: VehiclePhotoCaptureConfigWhereUniqueInput | VehiclePhotoCaptureConfigWhereUniqueInput[]
+    disconnect?: VehiclePhotoCaptureConfigWhereUniqueInput | VehiclePhotoCaptureConfigWhereUniqueInput[]
+    delete?: VehiclePhotoCaptureConfigWhereUniqueInput | VehiclePhotoCaptureConfigWhereUniqueInput[]
+    connect?: VehiclePhotoCaptureConfigWhereUniqueInput | VehiclePhotoCaptureConfigWhereUniqueInput[]
+    update?: VehiclePhotoCaptureConfigUpdateWithWhereUniqueWithoutCategoryInput | VehiclePhotoCaptureConfigUpdateWithWhereUniqueWithoutCategoryInput[]
+    updateMany?: VehiclePhotoCaptureConfigUpdateManyWithWhereWithoutCategoryInput | VehiclePhotoCaptureConfigUpdateManyWithWhereWithoutCategoryInput[]
+    deleteMany?: VehiclePhotoCaptureConfigScalarWhereInput | VehiclePhotoCaptureConfigScalarWhereInput[]
+  }
+
+  export type BranchCreateNestedOneWithoutCaptureConfigsInput = {
+    create?: XOR<BranchCreateWithoutCaptureConfigsInput, BranchUncheckedCreateWithoutCaptureConfigsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutCaptureConfigsInput
+    connect?: BranchWhereUniqueInput
+  }
+
+  export type VehicleCategoryCreateNestedOneWithoutCaptureConfigsInput = {
+    create?: XOR<VehicleCategoryCreateWithoutCaptureConfigsInput, VehicleCategoryUncheckedCreateWithoutCaptureConfigsInput>
+    connectOrCreate?: VehicleCategoryCreateOrConnectWithoutCaptureConfigsInput
+    connect?: VehicleCategoryWhereUniqueInput
+  }
+
+  export type BranchUpdateOneRequiredWithoutCaptureConfigsNestedInput = {
+    create?: XOR<BranchCreateWithoutCaptureConfigsInput, BranchUncheckedCreateWithoutCaptureConfigsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutCaptureConfigsInput
+    upsert?: BranchUpsertWithoutCaptureConfigsInput
+    connect?: BranchWhereUniqueInput
+    update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutCaptureConfigsInput, BranchUpdateWithoutCaptureConfigsInput>, BranchUncheckedUpdateWithoutCaptureConfigsInput>
+  }
+
+  export type VehicleCategoryUpdateOneRequiredWithoutCaptureConfigsNestedInput = {
+    create?: XOR<VehicleCategoryCreateWithoutCaptureConfigsInput, VehicleCategoryUncheckedCreateWithoutCaptureConfigsInput>
+    connectOrCreate?: VehicleCategoryCreateOrConnectWithoutCaptureConfigsInput
+    upsert?: VehicleCategoryUpsertWithoutCaptureConfigsInput
+    connect?: VehicleCategoryWhereUniqueInput
+    update?: XOR<XOR<VehicleCategoryUpdateToOneWithWhereWithoutCaptureConfigsInput, VehicleCategoryUpdateWithoutCaptureConfigsInput>, VehicleCategoryUncheckedUpdateWithoutCaptureConfigsInput>
   }
 
   export type BranchCreateNestedOneWithoutVehiclesInput = {
@@ -59786,6 +61492,28 @@ export namespace Prisma {
     _min?: NestedDecimalFilter<$PrismaModel>
     _max?: NestedDecimalFilter<$PrismaModel>
   }
+  export type NestedJsonFilter<$PrismaModel = never> = 
+    | PatchUndefined<
+        Either<Required<NestedJsonFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>,
+        Required<NestedJsonFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>
+
+  export type NestedJsonFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
 
   export type NestedEnumVehicleStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.VehicleStatus | EnumVehicleStatusFieldRefInput<$PrismaModel>
@@ -59904,28 +61632,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumPaymentStatusFilter<$PrismaModel>
     _max?: NestedEnumPaymentStatusFilter<$PrismaModel>
-  }
-  export type NestedJsonFilter<$PrismaModel = never> = 
-    | PatchUndefined<
-        Either<Required<NestedJsonFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>,
-        Required<NestedJsonFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>
-
-  export type NestedJsonFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string[]
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
   }
 
   export type NestedEnumDepositMethodNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -60128,6 +61834,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
     featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutUsersInput = {
@@ -60146,6 +61853,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
     featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutUsersInput = {
@@ -60260,7 +61968,6 @@ export namespace Prisma {
     entityId: string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
-    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -60272,7 +61979,6 @@ export namespace Prisma {
     entityId: string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
-    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -60310,10 +62016,16 @@ export namespace Prisma {
     paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -60366,10 +62078,16 @@ export namespace Prisma {
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     depositMethod?: $Enums.DepositMethod | null
     kycFileId?: number | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -60507,6 +62225,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
     featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutUsersInput = {
@@ -60525,6 +62244,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
     featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type EmailVerificationOtpUpsertWithWhereUniqueWithoutUserInput = {
@@ -60663,7 +62383,6 @@ export namespace Prisma {
     entityId?: StringFilter<"AuditLog"> | string
     before?: JsonNullableFilter<"AuditLog">
     after?: JsonNullableFilter<"AuditLog">
-    metadata?: JsonNullableFilter<"AuditLog">
     createdAt?: DateTimeFilter<"AuditLog"> | Date | string
   }
 
@@ -60715,10 +62434,16 @@ export namespace Prisma {
     createdById?: IntFilter<"Booking"> | number
     depositMethod?: EnumDepositMethodNullableFilter<"Booking"> | $Enums.DepositMethod | null
     kycFileId?: IntNullableFilter<"Booking"> | number | null
+    isAdvancePayment?: BoolFilter<"Booking"> | boolean
     advanceAmount?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     advancePaidAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     advancePaymentId?: StringNullableFilter<"Booking"> | string | null
     advancePaymentMode?: EnumDepositMethodNullableFilter<"Booking"> | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
+    remainingPaymentId?: StringNullableFilter<"Booking"> | string | null
+    remainingPaymentMode?: EnumDepositMethodNullableFilter<"Booking"> | $Enums.DepositMethod | null
+    remainingPaidDuring?: StringNullableFilter<"Booking"> | string | null
     safetyDeposit?: DecimalFilter<"Booking"> | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     safetyDepositMethod?: EnumDepositMethodNullableFilter<"Booking"> | $Enums.DepositMethod | null
@@ -61106,10 +62831,16 @@ export namespace Prisma {
     paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -61162,10 +62893,16 @@ export namespace Prisma {
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
     kycFileId?: number | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -61543,6 +63280,7 @@ export namespace Prisma {
   export type BookingPhotoCreateWithoutFileInput = {
     publicId: string
     type: $Enums.BookingPhotoType
+    captureLabel?: string | null
     createdAt?: Date | string
     booking: BookingCreateNestedOneWithoutPhotosInput
     damageReport?: DamageReportCreateNestedOneWithoutPhotosInput
@@ -61553,6 +63291,7 @@ export namespace Prisma {
     publicId: string
     bookingId: number
     type: $Enums.BookingPhotoType
+    captureLabel?: string | null
     damageReportId?: number | null
     createdAt?: Date | string
   }
@@ -61618,10 +63357,16 @@ export namespace Prisma {
     paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -61674,10 +63419,16 @@ export namespace Prisma {
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -61845,6 +63596,7 @@ export namespace Prisma {
     bookingId?: IntFilter<"BookingPhoto"> | number
     fileId?: IntFilter<"BookingPhoto"> | number
     type?: EnumBookingPhotoTypeFilter<"BookingPhoto"> | $Enums.BookingPhotoType
+    captureLabel?: StringNullableFilter<"BookingPhoto"> | string | null
     damageReportId?: IntNullableFilter<"BookingPhoto"> | number | null
     createdAt?: DateTimeFilter<"BookingPhoto"> | Date | string
   }
@@ -62020,6 +63772,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -62047,6 +63800,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -62098,10 +63852,16 @@ export namespace Prisma {
     paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -62154,10 +63914,16 @@ export namespace Prisma {
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
     kycFileId?: number | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -62357,6 +64123,33 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type VehiclePhotoCaptureConfigCreateWithoutBranchInput = {
+    publicId: string
+    fields: JsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    category: VehicleCategoryCreateNestedOneWithoutCaptureConfigsInput
+  }
+
+  export type VehiclePhotoCaptureConfigUncheckedCreateWithoutBranchInput = {
+    id?: number
+    publicId: string
+    categoryId: number
+    fields: JsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehiclePhotoCaptureConfigCreateOrConnectWithoutBranchInput = {
+    where: VehiclePhotoCaptureConfigWhereUniqueInput
+    create: XOR<VehiclePhotoCaptureConfigCreateWithoutBranchInput, VehiclePhotoCaptureConfigUncheckedCreateWithoutBranchInput>
+  }
+
+  export type VehiclePhotoCaptureConfigCreateManyBranchInputEnvelope = {
+    data: VehiclePhotoCaptureConfigCreateManyBranchInput | VehiclePhotoCaptureConfigCreateManyBranchInput[]
+    skipDuplicates?: boolean
+  }
+
   export type UserUpsertWithWhereUniqueWithoutBranchInput = {
     where: UserWhereUniqueInput
     update: XOR<UserUpdateWithoutBranchInput, UserUncheckedUpdateWithoutBranchInput>
@@ -62421,6 +64214,7 @@ export namespace Prisma {
     regNo?: StringFilter<"Vehicle"> | string
     odo?: IntFilter<"Vehicle"> | number
     fuelLevel?: IntFilter<"Vehicle"> | number
+    advancePayAmount?: DecimalFilter<"Vehicle"> | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFilter<"Vehicle"> | Date | string
     status?: EnumVehicleStatusFilter<"Vehicle"> | $Enums.VehicleStatus
     createdAt?: DateTimeFilter<"Vehicle"> | Date | string
@@ -62629,6 +64423,35 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"BranchFeatureFlag"> | Date | string
   }
 
+  export type VehiclePhotoCaptureConfigUpsertWithWhereUniqueWithoutBranchInput = {
+    where: VehiclePhotoCaptureConfigWhereUniqueInput
+    update: XOR<VehiclePhotoCaptureConfigUpdateWithoutBranchInput, VehiclePhotoCaptureConfigUncheckedUpdateWithoutBranchInput>
+    create: XOR<VehiclePhotoCaptureConfigCreateWithoutBranchInput, VehiclePhotoCaptureConfigUncheckedCreateWithoutBranchInput>
+  }
+
+  export type VehiclePhotoCaptureConfigUpdateWithWhereUniqueWithoutBranchInput = {
+    where: VehiclePhotoCaptureConfigWhereUniqueInput
+    data: XOR<VehiclePhotoCaptureConfigUpdateWithoutBranchInput, VehiclePhotoCaptureConfigUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type VehiclePhotoCaptureConfigUpdateManyWithWhereWithoutBranchInput = {
+    where: VehiclePhotoCaptureConfigScalarWhereInput
+    data: XOR<VehiclePhotoCaptureConfigUpdateManyMutationInput, VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchInput>
+  }
+
+  export type VehiclePhotoCaptureConfigScalarWhereInput = {
+    AND?: VehiclePhotoCaptureConfigScalarWhereInput | VehiclePhotoCaptureConfigScalarWhereInput[]
+    OR?: VehiclePhotoCaptureConfigScalarWhereInput[]
+    NOT?: VehiclePhotoCaptureConfigScalarWhereInput | VehiclePhotoCaptureConfigScalarWhereInput[]
+    id?: IntFilter<"VehiclePhotoCaptureConfig"> | number
+    publicId?: StringFilter<"VehiclePhotoCaptureConfig"> | string
+    branchId?: IntFilter<"VehiclePhotoCaptureConfig"> | number
+    categoryId?: IntFilter<"VehiclePhotoCaptureConfig"> | number
+    fields?: JsonFilter<"VehiclePhotoCaptureConfig">
+    createdAt?: DateTimeFilter<"VehiclePhotoCaptureConfig"> | Date | string
+    updatedAt?: DateTimeFilter<"VehiclePhotoCaptureConfig"> | Date | string
+  }
+
   export type BranchCreateWithoutPricingSettingInput = {
     publicId: string
     name: string
@@ -62644,6 +64467,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
     featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPricingSettingInput = {
@@ -62662,6 +64486,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
     featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPricingSettingInput = {
@@ -62695,6 +64520,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
     featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPricingSettingInput = {
@@ -62713,6 +64539,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
     featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type PricingDiscountSlabCreateWithoutCategoryInput = {
@@ -62766,6 +64593,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -62793,6 +64621,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -62888,6 +64717,33 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type VehiclePhotoCaptureConfigCreateWithoutCategoryInput = {
+    publicId: string
+    fields: JsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    branch: BranchCreateNestedOneWithoutCaptureConfigsInput
+  }
+
+  export type VehiclePhotoCaptureConfigUncheckedCreateWithoutCategoryInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    fields: JsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehiclePhotoCaptureConfigCreateOrConnectWithoutCategoryInput = {
+    where: VehiclePhotoCaptureConfigWhereUniqueInput
+    create: XOR<VehiclePhotoCaptureConfigCreateWithoutCategoryInput, VehiclePhotoCaptureConfigUncheckedCreateWithoutCategoryInput>
+  }
+
+  export type VehiclePhotoCaptureConfigCreateManyCategoryInputEnvelope = {
+    data: VehiclePhotoCaptureConfigCreateManyCategoryInput | VehiclePhotoCaptureConfigCreateManyCategoryInput[]
+    skipDuplicates?: boolean
+  }
+
   export type PricingDiscountSlabUpsertWithWhereUniqueWithoutCategoryInput = {
     where: PricingDiscountSlabWhereUniqueInput
     update: XOR<PricingDiscountSlabUpdateWithoutCategoryInput, PricingDiscountSlabUncheckedUpdateWithoutCategoryInput>
@@ -62980,6 +64836,178 @@ export namespace Prisma {
     data: XOR<BranchPricingDefaultsUpdateManyMutationInput, BranchPricingDefaultsUncheckedUpdateManyWithoutCategoryInput>
   }
 
+  export type VehiclePhotoCaptureConfigUpsertWithWhereUniqueWithoutCategoryInput = {
+    where: VehiclePhotoCaptureConfigWhereUniqueInput
+    update: XOR<VehiclePhotoCaptureConfigUpdateWithoutCategoryInput, VehiclePhotoCaptureConfigUncheckedUpdateWithoutCategoryInput>
+    create: XOR<VehiclePhotoCaptureConfigCreateWithoutCategoryInput, VehiclePhotoCaptureConfigUncheckedCreateWithoutCategoryInput>
+  }
+
+  export type VehiclePhotoCaptureConfigUpdateWithWhereUniqueWithoutCategoryInput = {
+    where: VehiclePhotoCaptureConfigWhereUniqueInput
+    data: XOR<VehiclePhotoCaptureConfigUpdateWithoutCategoryInput, VehiclePhotoCaptureConfigUncheckedUpdateWithoutCategoryInput>
+  }
+
+  export type VehiclePhotoCaptureConfigUpdateManyWithWhereWithoutCategoryInput = {
+    where: VehiclePhotoCaptureConfigScalarWhereInput
+    data: XOR<VehiclePhotoCaptureConfigUpdateManyMutationInput, VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutCategoryInput>
+  }
+
+  export type BranchCreateWithoutCaptureConfigsInput = {
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleCreateNestedManyWithoutBranchInput
+    bookings?: BookingCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchUncheckedCreateWithoutCaptureConfigsInput = {
+    id?: number
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserUncheckedCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchCreateOrConnectWithoutCaptureConfigsInput = {
+    where: BranchWhereUniqueInput
+    create: XOR<BranchCreateWithoutCaptureConfigsInput, BranchUncheckedCreateWithoutCaptureConfigsInput>
+  }
+
+  export type VehicleCategoryCreateWithoutCaptureConfigsInput = {
+    publicId: string
+    name: string
+    description?: string | null
+    rank?: number
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutCategoryInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutCategoryInput
+    vehicles?: VehicleCreateNestedManyWithoutCategoryInput
+    pricingRules?: PricingRuleCreateNestedManyWithoutCategoryInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutCategoryInput
+  }
+
+  export type VehicleCategoryUncheckedCreateWithoutCaptureConfigsInput = {
+    id?: number
+    publicId: string
+    name: string
+    description?: string | null
+    rank?: number
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutCategoryInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutCategoryInput
+    vehicles?: VehicleUncheckedCreateNestedManyWithoutCategoryInput
+    pricingRules?: PricingRuleUncheckedCreateNestedManyWithoutCategoryInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutCategoryInput
+  }
+
+  export type VehicleCategoryCreateOrConnectWithoutCaptureConfigsInput = {
+    where: VehicleCategoryWhereUniqueInput
+    create: XOR<VehicleCategoryCreateWithoutCaptureConfigsInput, VehicleCategoryUncheckedCreateWithoutCaptureConfigsInput>
+  }
+
+  export type BranchUpsertWithoutCaptureConfigsInput = {
+    update: XOR<BranchUpdateWithoutCaptureConfigsInput, BranchUncheckedUpdateWithoutCaptureConfigsInput>
+    create: XOR<BranchCreateWithoutCaptureConfigsInput, BranchUncheckedCreateWithoutCaptureConfigsInput>
+    where?: BranchWhereInput
+  }
+
+  export type BranchUpdateToOneWithWhereWithoutCaptureConfigsInput = {
+    where?: BranchWhereInput
+    data: XOR<BranchUpdateWithoutCaptureConfigsInput, BranchUncheckedUpdateWithoutCaptureConfigsInput>
+  }
+
+  export type BranchUpdateWithoutCaptureConfigsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
+  }
+
+  export type BranchUncheckedUpdateWithoutCaptureConfigsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUncheckedUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
+  }
+
+  export type VehicleCategoryUpsertWithoutCaptureConfigsInput = {
+    update: XOR<VehicleCategoryUpdateWithoutCaptureConfigsInput, VehicleCategoryUncheckedUpdateWithoutCaptureConfigsInput>
+    create: XOR<VehicleCategoryCreateWithoutCaptureConfigsInput, VehicleCategoryUncheckedCreateWithoutCaptureConfigsInput>
+    where?: VehicleCategoryWhereInput
+  }
+
+  export type VehicleCategoryUpdateToOneWithWhereWithoutCaptureConfigsInput = {
+    where?: VehicleCategoryWhereInput
+    data: XOR<VehicleCategoryUpdateWithoutCaptureConfigsInput, VehicleCategoryUncheckedUpdateWithoutCaptureConfigsInput>
+  }
+
+  export type VehicleCategoryUpdateWithoutCaptureConfigsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    rank?: IntFieldUpdateOperationsInput | number
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutCategoryNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutCategoryNestedInput
+    vehicles?: VehicleUpdateManyWithoutCategoryNestedInput
+    pricingRules?: PricingRuleUpdateManyWithoutCategoryNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutCategoryNestedInput
+  }
+
+  export type VehicleCategoryUncheckedUpdateWithoutCaptureConfigsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    rank?: IntFieldUpdateOperationsInput | number
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutCategoryNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutCategoryNestedInput
+    vehicles?: VehicleUncheckedUpdateManyWithoutCategoryNestedInput
+    pricingRules?: PricingRuleUncheckedUpdateManyWithoutCategoryNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutCategoryNestedInput
+  }
+
   export type BranchCreateWithoutVehiclesInput = {
     publicId: string
     name: string
@@ -62995,6 +65023,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
     featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutVehiclesInput = {
@@ -63013,6 +65042,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
     featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutVehiclesInput = {
@@ -63029,6 +65059,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleCreateNestedManyWithoutCategoryInput
     branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutCategoryInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutCategoryInput
   }
 
   export type VehicleCategoryUncheckedCreateWithoutVehiclesInput = {
@@ -63041,6 +65072,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleUncheckedCreateNestedManyWithoutCategoryInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutCategoryInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutCategoryInput
   }
 
   export type VehicleCategoryCreateOrConnectWithoutVehiclesInput = {
@@ -63390,6 +65422,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
     featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutVehiclesInput = {
@@ -63408,6 +65441,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
     featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutVehiclesInput = {
@@ -63430,6 +65464,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUpdateManyWithoutCategoryNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutCategoryNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutCategoryNestedInput
   }
 
   export type VehicleCategoryUncheckedUpdateWithoutVehiclesInput = {
@@ -63442,6 +65477,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUncheckedUpdateManyWithoutCategoryNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutCategoryNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutCategoryNestedInput
   }
 
   export type VehicleInsuranceUpsertWithWhereUniqueWithoutVehicleInput = {
@@ -63703,6 +65739,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -63731,6 +65768,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -63770,6 +65808,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -63798,6 +65837,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -63821,6 +65861,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -63849,6 +65890,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -63888,6 +65930,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -63916,6 +65959,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -63947,6 +65991,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
     featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutBranchPricingDefaultsInput = {
@@ -63965,6 +66010,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
     featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutBranchPricingDefaultsInput = {
@@ -63981,6 +66027,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleCreateNestedManyWithoutCategoryInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutCategoryInput
   }
 
   export type VehicleCategoryUncheckedCreateWithoutBranchPricingDefaultsInput = {
@@ -63993,6 +66040,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleUncheckedCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleUncheckedCreateNestedManyWithoutCategoryInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutCategoryInput
   }
 
   export type VehicleCategoryCreateOrConnectWithoutBranchPricingDefaultsInput = {
@@ -64026,6 +66074,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
     featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutBranchPricingDefaultsInput = {
@@ -64044,6 +66093,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
     featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutBranchPricingDefaultsInput = {
@@ -64066,6 +66116,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUpdateManyWithoutCategoryNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutCategoryNestedInput
   }
 
   export type VehicleCategoryUncheckedUpdateWithoutBranchPricingDefaultsInput = {
@@ -64078,6 +66129,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUncheckedUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUncheckedUpdateManyWithoutCategoryNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutCategoryNestedInput
   }
 
   export type VehicleCreateWithoutInsuranceRecordsInput = {
@@ -64087,6 +66139,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -64115,6 +66168,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -64154,6 +66208,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -64182,6 +66237,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -64205,6 +66261,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -64233,6 +66290,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -64272,6 +66330,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -64300,6 +66359,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -64323,6 +66383,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -64351,6 +66412,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -64424,6 +66486,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -64452,6 +66515,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -64517,6 +66581,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleCreateNestedManyWithoutCategoryInput
     branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutCategoryInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutCategoryInput
   }
 
   export type VehicleCategoryUncheckedCreateWithoutPricingRulesInput = {
@@ -64529,6 +66594,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutCategoryInput
     vehicles?: VehicleUncheckedCreateNestedManyWithoutCategoryInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutCategoryInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutCategoryInput
   }
 
   export type VehicleCategoryCreateOrConnectWithoutPricingRulesInput = {
@@ -64556,6 +66622,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUpdateManyWithoutCategoryNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutCategoryNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutCategoryNestedInput
   }
 
   export type VehicleCategoryUncheckedUpdateWithoutPricingRulesInput = {
@@ -64568,6 +66635,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutCategoryNestedInput
     vehicles?: VehicleUncheckedUpdateManyWithoutCategoryNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutCategoryNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutCategoryNestedInput
   }
 
   export type BranchCreateWithoutPricingDiscountSlabsInput = {
@@ -64585,6 +66653,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
     featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPricingDiscountSlabsInput = {
@@ -64603,6 +66672,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
     featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPricingDiscountSlabsInput = {
@@ -64619,6 +66689,7 @@ export namespace Prisma {
     vehicles?: VehicleCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleCreateNestedManyWithoutCategoryInput
     branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutCategoryInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutCategoryInput
   }
 
   export type VehicleCategoryUncheckedCreateWithoutPricingDiscountSlabsInput = {
@@ -64631,6 +66702,7 @@ export namespace Prisma {
     vehicles?: VehicleUncheckedCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleUncheckedCreateNestedManyWithoutCategoryInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutCategoryInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutCategoryInput
   }
 
   export type VehicleCategoryCreateOrConnectWithoutPricingDiscountSlabsInput = {
@@ -64664,6 +66736,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
     featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPricingDiscountSlabsInput = {
@@ -64682,6 +66755,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
     featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutPricingDiscountSlabsInput = {
@@ -64704,6 +66778,7 @@ export namespace Prisma {
     vehicles?: VehicleUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUpdateManyWithoutCategoryNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutCategoryNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutCategoryNestedInput
   }
 
   export type VehicleCategoryUncheckedUpdateWithoutPricingDiscountSlabsInput = {
@@ -64716,6 +66791,7 @@ export namespace Prisma {
     vehicles?: VehicleUncheckedUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUncheckedUpdateManyWithoutCategoryNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutCategoryNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutCategoryNestedInput
   }
 
   export type BranchCreateWithoutCategoryDepositSettingsInput = {
@@ -64733,6 +66809,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
     featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutCategoryDepositSettingsInput = {
@@ -64751,6 +66828,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
     featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutCategoryDepositSettingsInput = {
@@ -64767,6 +66845,7 @@ export namespace Prisma {
     vehicles?: VehicleCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleCreateNestedManyWithoutCategoryInput
     branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutCategoryInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutCategoryInput
   }
 
   export type VehicleCategoryUncheckedCreateWithoutCategoryDepositSettingsInput = {
@@ -64779,6 +66858,7 @@ export namespace Prisma {
     vehicles?: VehicleUncheckedCreateNestedManyWithoutCategoryInput
     pricingRules?: PricingRuleUncheckedCreateNestedManyWithoutCategoryInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutCategoryInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutCategoryInput
   }
 
   export type VehicleCategoryCreateOrConnectWithoutCategoryDepositSettingsInput = {
@@ -64812,6 +66892,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
     featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutCategoryDepositSettingsInput = {
@@ -64830,6 +66911,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
     featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutCategoryDepositSettingsInput = {
@@ -64852,6 +66934,7 @@ export namespace Prisma {
     vehicles?: VehicleUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUpdateManyWithoutCategoryNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutCategoryNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutCategoryNestedInput
   }
 
   export type VehicleCategoryUncheckedUpdateWithoutCategoryDepositSettingsInput = {
@@ -64864,6 +66947,7 @@ export namespace Prisma {
     vehicles?: VehicleUncheckedUpdateManyWithoutCategoryNestedInput
     pricingRules?: PricingRuleUncheckedUpdateManyWithoutCategoryNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutCategoryNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutCategoryNestedInput
   }
 
   export type FileObjectCreateWithoutBookingKycsInput = {
@@ -64957,6 +67041,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
     featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutBookingsInput = {
@@ -64975,6 +67060,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
     featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutBookingsInput = {
@@ -65033,6 +67119,7 @@ export namespace Prisma {
   export type BookingPhotoCreateWithoutBookingInput = {
     publicId: string
     type: $Enums.BookingPhotoType
+    captureLabel?: string | null
     createdAt?: Date | string
     file: FileObjectCreateNestedOneWithoutBookingPhotosInput
     damageReport?: DamageReportCreateNestedOneWithoutPhotosInput
@@ -65043,6 +67130,7 @@ export namespace Prisma {
     publicId: string
     fileId: number
     type: $Enums.BookingPhotoType
+    captureLabel?: string | null
     damageReportId?: number | null
     createdAt?: Date | string
   }
@@ -65392,6 +67480,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
     featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutBookingsInput = {
@@ -65410,6 +67499,7 @@ export namespace Prisma {
     branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
     featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type UserUpsertWithoutBookingsCreatedInput = {
@@ -65657,6 +67747,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -65685,6 +67776,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -65730,10 +67822,16 @@ export namespace Prisma {
     paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -65787,10 +67885,16 @@ export namespace Prisma {
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
     kycFileId?: number | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -65834,6 +67938,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -65862,6 +67967,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -65913,10 +68019,16 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -65970,10 +68082,16 @@ export namespace Prisma {
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -66018,10 +68136,16 @@ export namespace Prisma {
     paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -66075,10 +68199,16 @@ export namespace Prisma {
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
     kycFileId?: number | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -66209,10 +68339,16 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -66266,10 +68402,16 @@ export namespace Prisma {
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -66396,10 +68538,16 @@ export namespace Prisma {
     paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -66453,10 +68601,16 @@ export namespace Prisma {
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
     kycFileId?: number | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -66489,6 +68643,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -66517,6 +68672,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -66589,6 +68745,7 @@ export namespace Prisma {
   export type BookingPhotoCreateWithoutDamageReportInput = {
     publicId: string
     type: $Enums.BookingPhotoType
+    captureLabel?: string | null
     createdAt?: Date | string
     booking: BookingCreateNestedOneWithoutPhotosInput
     file: FileObjectCreateNestedOneWithoutBookingPhotosInput
@@ -66600,6 +68757,7 @@ export namespace Prisma {
     bookingId: number
     fileId: number
     type: $Enums.BookingPhotoType
+    captureLabel?: string | null
     createdAt?: Date | string
   }
 
@@ -66648,10 +68806,16 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -66705,10 +68869,16 @@ export namespace Prisma {
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -66747,6 +68917,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -66775,6 +68946,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -66885,10 +69057,16 @@ export namespace Prisma {
     paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -66942,10 +69120,16 @@ export namespace Prisma {
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
     kycFileId?: number | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -67006,10 +69190,16 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -67063,10 +69253,16 @@ export namespace Prisma {
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -67227,10 +69423,16 @@ export namespace Prisma {
     paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -67284,10 +69486,16 @@ export namespace Prisma {
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
     kycFileId?: number | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -67442,10 +69650,16 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -67499,10 +69713,16 @@ export namespace Prisma {
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -67780,6 +70000,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
     branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
     featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutGstRuleInput = {
@@ -67798,6 +70019,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
     featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutGstRuleInput = {
@@ -67831,6 +70053,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
     featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutGstRuleInput = {
@@ -67849,6 +70072,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
     featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BookingCreateWithoutCancellationInvoiceInput = {
@@ -67875,10 +70099,16 @@ export namespace Prisma {
     paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -67932,10 +70162,16 @@ export namespace Prisma {
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
     kycFileId?: number | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -68072,10 +70308,16 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -68129,10 +70371,16 @@ export namespace Prisma {
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -68342,6 +70590,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
     branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutFeatureFlagsInput = {
@@ -68360,6 +70609,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
     gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutFeatureFlagsInput = {
@@ -68425,6 +70675,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutFeatureFlagsInput = {
@@ -68443,6 +70694,7 @@ export namespace Prisma {
     categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
     branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
     gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type FeatureFlagUpsertWithoutBranchFlagsInput = {
@@ -68490,6 +70742,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -68518,6 +70771,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -68589,6 +70843,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -68617,6 +70872,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -68695,10 +70951,16 @@ export namespace Prisma {
     paymentStatus?: $Enums.PaymentStatus
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -68752,10 +71014,16 @@ export namespace Prisma {
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
     kycFileId?: number | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -68788,6 +71056,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -68816,6 +71085,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -68844,6 +71114,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -68872,6 +71143,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -68976,10 +71248,16 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -69033,10 +71311,16 @@ export namespace Prisma {
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -69075,6 +71359,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -69103,6 +71388,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -69137,6 +71423,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -69165,6 +71452,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -69263,7 +71551,6 @@ export namespace Prisma {
     entityId: string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
-    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
@@ -69295,10 +71582,16 @@ export namespace Prisma {
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     depositMethod?: $Enums.DepositMethod | null
     kycFileId?: number | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -69408,7 +71701,6 @@ export namespace Prisma {
     entityId?: StringFieldUpdateOperationsInput | string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
-    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -69420,7 +71712,6 @@ export namespace Prisma {
     entityId?: StringFieldUpdateOperationsInput | string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
-    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -69432,7 +71723,6 @@ export namespace Prisma {
     entityId?: StringFieldUpdateOperationsInput | string
     before?: NullableJsonNullValueInput | InputJsonValue
     after?: NullableJsonNullValueInput | InputJsonValue
-    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -69460,10 +71750,16 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -69516,10 +71812,16 @@ export namespace Prisma {
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -69569,10 +71871,16 @@ export namespace Prisma {
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -69714,10 +72022,16 @@ export namespace Prisma {
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
     kycFileId?: number | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -69799,10 +72113,16 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -69855,10 +72175,16 @@ export namespace Prisma {
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -69908,10 +72234,16 @@ export namespace Prisma {
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -69981,6 +72313,7 @@ export namespace Prisma {
     publicId: string
     bookingId: number
     type: $Enums.BookingPhotoType
+    captureLabel?: string | null
     damageReportId?: number | null
     createdAt?: Date | string
   }
@@ -70022,10 +72355,16 @@ export namespace Prisma {
     pricingSnapshot: JsonNullValueInput | InputJsonValue
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -70083,6 +72422,7 @@ export namespace Prisma {
   export type BookingPhotoUpdateWithoutFileInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
+    captureLabel?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     booking?: BookingUpdateOneRequiredWithoutPhotosNestedInput
     damageReport?: DamageReportUpdateOneWithoutPhotosNestedInput
@@ -70093,6 +72433,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     bookingId?: IntFieldUpdateOperationsInput | number
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
+    captureLabel?: NullableStringFieldUpdateOperationsInput | string | null
     damageReportId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -70102,6 +72443,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     bookingId?: IntFieldUpdateOperationsInput | number
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
+    captureLabel?: NullableStringFieldUpdateOperationsInput | string | null
     damageReportId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -70156,10 +72498,16 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -70212,10 +72560,16 @@ export namespace Prisma {
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -70265,10 +72619,16 @@ export namespace Prisma {
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -70428,6 +72788,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -70463,10 +72824,16 @@ export namespace Prisma {
     createdById: number
     depositMethod?: $Enums.DepositMethod | null
     kycFileId?: number | null
+    isAdvancePayment?: boolean
     advanceAmount?: Decimal | DecimalJsLike | number | string
     advancePaidAt?: Date | string | null
     advancePaymentId?: string | null
     advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
     safetyDeposit?: Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: Date | string | null
     safetyDepositMethod?: $Enums.DepositMethod | null
@@ -70516,6 +72883,15 @@ export namespace Prisma {
     flagId: number
     enabled?: boolean
     config?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehiclePhotoCaptureConfigCreateManyBranchInput = {
+    id?: number
+    publicId: string
+    categoryId: number
+    fields: JsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -70585,6 +72961,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -70612,6 +72989,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -70638,6 +73016,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -70669,10 +73048,16 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     pricingSnapshot?: JsonNullValueInput | InputJsonValue
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -70725,10 +73110,16 @@ export namespace Prisma {
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -70778,10 +73169,16 @@ export namespace Prisma {
     createdById?: IntFieldUpdateOperationsInput | number
     depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
     kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
     advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
     safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
@@ -70909,6 +73306,32 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type VehiclePhotoCaptureConfigUpdateWithoutBranchInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    fields?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    category?: VehicleCategoryUpdateOneRequiredWithoutCaptureConfigsNestedInput
+  }
+
+  export type VehiclePhotoCaptureConfigUncheckedUpdateWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    categoryId?: IntFieldUpdateOperationsInput | number
+    fields?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    categoryId?: IntFieldUpdateOperationsInput | number
+    fields?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type PricingDiscountSlabCreateManyCategoryInput = {
     id?: number
     days: number
@@ -70931,6 +73354,7 @@ export namespace Prisma {
     regNo: string
     odo: number
     fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
     createdAt?: Date | string
@@ -70959,6 +73383,15 @@ export namespace Prisma {
     freeKmMonthly?: number
     extraKmRate?: Decimal | DecimalJsLike | number | string
     extraHourRate?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehiclePhotoCaptureConfigCreateManyCategoryInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    fields: JsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -71007,6 +73440,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -71034,6 +73468,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -71060,6 +73495,7 @@ export namespace Prisma {
     regNo?: StringFieldUpdateOperationsInput | string
     odo?: IntFieldUpdateOperationsInput | number
     fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -71136,6 +73572,32 @@ export namespace Prisma {
     freeKmMonthly?: IntFieldUpdateOperationsInput | number
     extraKmRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     extraHourRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehiclePhotoCaptureConfigUpdateWithoutCategoryInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    fields?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    branch?: BranchUpdateOneRequiredWithoutCaptureConfigsNestedInput
+  }
+
+  export type VehiclePhotoCaptureConfigUncheckedUpdateWithoutCategoryInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    fields?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutCategoryInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    fields?: JsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -71511,6 +73973,7 @@ export namespace Prisma {
     publicId: string
     fileId: number
     type: $Enums.BookingPhotoType
+    captureLabel?: string | null
     damageReportId?: number | null
     createdAt?: Date | string
   }
@@ -71563,6 +74026,7 @@ export namespace Prisma {
   export type BookingPhotoUpdateWithoutBookingInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
+    captureLabel?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     file?: FileObjectUpdateOneRequiredWithoutBookingPhotosNestedInput
     damageReport?: DamageReportUpdateOneWithoutPhotosNestedInput
@@ -71573,6 +74037,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     fileId?: IntFieldUpdateOperationsInput | number
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
+    captureLabel?: NullableStringFieldUpdateOperationsInput | string | null
     damageReportId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -71582,6 +74047,7 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     fileId?: IntFieldUpdateOperationsInput | number
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
+    captureLabel?: NullableStringFieldUpdateOperationsInput | string | null
     damageReportId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -71726,12 +74192,14 @@ export namespace Prisma {
     bookingId: number
     fileId: number
     type: $Enums.BookingPhotoType
+    captureLabel?: string | null
     createdAt?: Date | string
   }
 
   export type BookingPhotoUpdateWithoutDamageReportInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
+    captureLabel?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     booking?: BookingUpdateOneRequiredWithoutPhotosNestedInput
     file?: FileObjectUpdateOneRequiredWithoutBookingPhotosNestedInput
@@ -71743,6 +74211,7 @@ export namespace Prisma {
     bookingId?: IntFieldUpdateOperationsInput | number
     fileId?: IntFieldUpdateOperationsInput | number
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
+    captureLabel?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -71752,6 +74221,7 @@ export namespace Prisma {
     bookingId?: IntFieldUpdateOperationsInput | number
     fileId?: IntFieldUpdateOperationsInput | number
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
+    captureLabel?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -71980,6 +74450,10 @@ export namespace Prisma {
      * @deprecated Use VehicleCategoryDefaultArgs instead
      */
     export type VehicleCategoryArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = VehicleCategoryDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use VehiclePhotoCaptureConfigDefaultArgs instead
+     */
+    export type VehiclePhotoCaptureConfigArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = VehiclePhotoCaptureConfigDefaultArgs<ExtArgs>
     /**
      * @deprecated Use VehicleDefaultArgs instead
      */

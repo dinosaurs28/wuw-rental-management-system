@@ -52,7 +52,7 @@ export const useEmployeeAuthStore = create<EmployeeAuthState>()(
     }),
     {
       name: "employee-storage", // unique name
-      storage: createJSONStorage(() => sessionStorage), // Use sessionStorage
+      storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,

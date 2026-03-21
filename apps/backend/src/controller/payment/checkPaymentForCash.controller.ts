@@ -60,8 +60,13 @@ export const checkPaymentForCash = async (req: Request, res: Response) => {
       });
     }
 
-    // Verify the price matches the booking total
-    if (decodedPayload.finalPrice !== booking.totalFinal.toNumber()) {
+    // Verify the price matches the expected charge amount
+    // For advance payments the JWT encodes the advance amount, not the full total
+    const expectedAmount = booking.isAdvancePayment
+      ? booking.advanceAmount?.toNumber() ?? booking.totalFinal.toNumber()
+      : booking.totalFinal.toNumber();
+
+    if (decodedPayload.finalPrice !== expectedAmount) {
       return res.status(StatusCode.BAD_REQUEST).json({
         message: "Price was tampered. Please retry booking again.",
       });
@@ -77,14 +82,22 @@ export const checkPaymentForCash = async (req: Request, res: Response) => {
     }
 
     await prisma.$transaction(async (tx) => {
+      const bookingUpdateData: any = {
+        status: BookingStatus.CONFIRMED,
+        paymentStatus: PaymentStatus.SUCCESS,
+        holdExpiresAt: null,
+        depositMethod: DepositMethod.CASH,
+      };
+
+      if (booking.isAdvancePayment) {
+        bookingUpdateData.advancePaidAt = new Date();
+        bookingUpdateData.advancePaymentId = transactionId;
+        bookingUpdateData.advancePaymentMode = DepositMethod.CASH;
+      }
+
       await tx.booking.update({
         where: { id: booking.id },
-        data: {
-          status: BookingStatus.CONFIRMED,
-          paymentStatus: PaymentStatus.SUCCESS,
-          holdExpiresAt: null,
-          depositMethod: DepositMethod.CASH,
-        },
+        data: bookingUpdateData,
       });
 
       await tx.vehicle.updateMany({
@@ -107,6 +120,11 @@ export const checkPaymentForCash = async (req: Request, res: Response) => {
         });
       }
 
+      // Advance payments: invoice stays PENDING until remaining is collected
+      const invoiceStatus = booking.isAdvancePayment
+        ? InvoiceStatus.PENDING
+        : InvoiceStatus.PAID;
+
       const invoice = await tx.invoice.create({
         data: {
           publicId: createID(),
@@ -116,7 +134,7 @@ export const checkPaymentForCash = async (req: Request, res: Response) => {
           tax: 0,
           damageCharges: 0,
           total: booking.totalFinal,
-          status: InvoiceStatus.PAID,
+          status: invoiceStatus,
         },
       });
 
@@ -129,13 +147,18 @@ export const checkPaymentForCash = async (req: Request, res: Response) => {
         })),
       });
 
+      // Payment record reflects actual amount charged (advance or full)
+      const paymentAmount = booking.isAdvancePayment
+        ? booking.advanceAmount
+        : booking.totalFinal;
+
       await tx.payment.create({
         data: {
           publicId: createID(),
           invoiceId: invoice.id,
           method: DepositMethod.CASH,
           status: PaymentStatus.SUCCESS,
-          amount: booking.totalFinal,
+          amount: paymentAmount,
         },
       });
 
@@ -149,13 +172,16 @@ export const checkPaymentForCash = async (req: Request, res: Response) => {
         data: {
           publicId: createID(),
           userId: booking.createdById,
-          action: "BOOKING_CONFIRMED",
+          action: booking.isAdvancePayment
+            ? "BOOKING_CONFIRMED_ADVANCE"
+            : "BOOKING_CONFIRMED",
           entity: "Booking",
           entityId: booking.publicId,
           after: {
             status: "CONFIRMED",
             paymentStatus: "SUCCESS",
             paymentMethod: "CASH",
+            isAdvancePayment: booking.isAdvancePayment,
           },
         },
       });

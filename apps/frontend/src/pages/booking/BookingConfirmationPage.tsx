@@ -47,6 +47,9 @@ interface BookingResponse {
   taxRate?: number;
   grandDeposit: number;
   grandFinalTotal: number;
+  isAdvancePayment?: boolean;
+  advanceAmount?: number;
+  remainingBalance?: number;
   startDate: string;
   endDate: string;
   rentalDays?: number;
@@ -73,6 +76,7 @@ export const BookingConfirmationPage = () => {
     rentalDays,
     selectedKycFilePublicId,
     paymentType,
+    paymentFlow,
     clearVehicleSelection,
   } = useVehicleRentalStore();
 
@@ -119,6 +123,7 @@ export const BookingConfirmationPage = () => {
           end: endDateTime,
           file_public_id: selectedKycFilePublicId,
           payment_type: paymentType,
+          payment_flow: paymentFlow,
         });
 
         // Store the response
@@ -136,6 +141,9 @@ export const BookingConfirmationPage = () => {
           taxRate: response.data.totals.taxRate,
           grandDeposit: response.data.totals.grandDeposit,
           grandFinalTotal: response.data.totals.grandFinalTotal,
+          isAdvancePayment: response.isAdvancePayment,
+          advanceAmount: response.data.totals.advanceAmount,
+          remainingBalance: response.data.totals.remainingBalance,
           startDate: response.data.startDate,
           endDate: response.data.endDate,
           rentalDays: response.data.items[0]?.days,
@@ -549,6 +557,26 @@ export const BookingConfirmationPage = () => {
                   </span>
                 </div>
               </div>
+
+              {bookingData.isAdvancePayment && bookingData.advanceAmount !== undefined && bookingData.remainingBalance !== undefined && (
+                <div className="mt-3 p-3 rounded-lg bg-orange-50 border border-orange-200 space-y-2">
+                  <p className="text-xs font-semibold text-orange-700 uppercase tracking-wide">
+                    Advance Payment Plan
+                  </p>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-orange-600">Pay Now (Advance)</span>
+                    <span className="font-bold text-orange-700">
+                      {formatPrice(bookingData.advanceAmount)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Remaining (at pickup/return)</span>
+                    <span className="font-medium text-foreground">
+                      {formatPrice(bookingData.remainingBalance)}
+                    </span>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -572,7 +600,7 @@ export const BookingConfirmationPage = () => {
                     className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20"
                   >
                     <CreditCard className="mr-2 size-5" />
-                    Pay {formatPrice(bookingData.grandFinalTotal)} Now
+                    Pay {formatPrice(bookingData.isAdvancePayment && bookingData.advanceAmount !== undefined ? bookingData.advanceAmount : bookingData.grandFinalTotal)} Now
                   </Button>
                   <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
                     <Shield className="size-3" />
@@ -610,8 +638,19 @@ export const BookingConfirmationPage = () => {
                     )}
                   </Button>
                   <p className="text-xs text-muted-foreground mt-4">
-                    Amount to pay at pickup:{" "}
-                    <strong>{formatPrice(bookingData.grandFinalTotal)}</strong>
+                    {bookingData.isAdvancePayment && bookingData.advanceAmount !== undefined ? (
+                      <>
+                        Advance amount:{" "}
+                        <strong>{formatPrice(bookingData.advanceAmount)}</strong>
+                        {" · "}Remaining at pickup/return:{" "}
+                        <strong>{formatPrice(bookingData.remainingBalance ?? 0)}</strong>
+                      </>
+                    ) : (
+                      <>
+                        Amount to pay at pickup:{" "}
+                        <strong>{formatPrice(bookingData.grandFinalTotal)}</strong>
+                      </>
+                    )}
                   </p>
                 </div>
               )}

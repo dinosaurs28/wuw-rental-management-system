@@ -10,6 +10,7 @@ export const bookingSummarySchema = z.object({
   end: z.string().min(1),
   file_public_id: z.string().min(1),
   payment_type: z.enum(["CASH", "ONLINE"]),
+  payment_flow: z.enum(["FULL", "ADVANCE"]).default("FULL"),
 });
 
 export const createVehicleSchema = z.object({
@@ -36,6 +37,7 @@ export const createVehicleSchema = z.object({
     .boolean()
     .or(z.string().transform((v) => v === "true"))
     .optional(),
+  advancePayAmount: z.coerce.number().min(0).optional(),
 });
 
 export const editVehicleSchema = createVehicleSchema.partial().extend({
@@ -47,7 +49,11 @@ export const pickUpVehicleSchema = z.object({
   odo: z.coerce.number().min(0),
   fuelLevel: z.coerce.number().min(0),
   pickupImageIds: z.array(z.string().min(1)).optional(),
+  captureImages: z
+    .array(z.object({ fileId: z.string().min(1), label: z.string().min(1) }))
+    .optional(),
   requireManagerConfirmation: z.boolean().optional(),
+  payRemainingAtPickup: z.boolean().optional(),
 });
 
 export const managerConfirmPickupSchema = z.object({

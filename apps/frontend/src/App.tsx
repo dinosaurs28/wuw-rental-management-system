@@ -29,6 +29,8 @@ import { EmployeeVehicleDetailsPage } from "@/pages/employee/booking/EmployeeVeh
 import { EmployeeBookingSummaryPage } from "@/pages/employee/booking/EmployeeBookingSummaryPage";
 import StaffPickupsPage from "@/pages/employee/StaffPickupsPage";
 import ReturnProcessPage from "@/pages/employee/ReturnProcessPage";
+import RemainingPaymentStatusPage from "@/pages/employee/RemainingPaymentStatusPage";
+import ManagerCaptureConfigPage from "@/pages/manager/ManagerCaptureConfigPage";
 import { EmployeeBookingStatusPage } from "./pages/employee/booking/EmployeeBookingStatusPage";
 import { DashboardPage } from "./pages/manager/DashboardPage";
 import { ManagerEmployeesPage } from "./pages/manager/ManagerEmployeesPage";
@@ -138,6 +140,7 @@ function App() {
           />
           <Route path="/manager/gst-rules" element={<ManagerGSTRulesPage />} />
           <Route path="/manager/profile" element={<ManagerProfilePage />} />
+          <Route path="/manager/capture-configs" element={<ManagerCaptureConfigPage />} />
           <Route
             path="/manager/payment/fine-status/:transactionId"
             element={<FinePaymentStatusPage />}
@@ -229,6 +232,10 @@ function App() {
             element={<ReturnProcessPage />}
           />
           <Route path="/returns/:bookingId" element={<ReturnProcessPage />} />
+          <Route
+            path="/employee/payment/remaining-status/:transactionId"
+            element={<RemainingPaymentStatusPage />}
+          />
         </Route>
 
         {/* Catch all */}

@@ -312,6 +312,7 @@ model Vehicle {
   regNo            String                     @unique
   odo              Int
   fuelLevel        Int                        @default(0)
+  advancePayAmount Decimal                    @default(0)
   insuranceExpiry  DateTime
   status           VehicleStatus              @default(AVAILABLE)
   branch           Branch                     @relation(fields: [branchId], references: [id])
@@ -520,10 +521,18 @@ model Booking {
   vehicleSwaps        VehicleSwap[]
 
   // Advance Payment Tracking
+  isAdvancePayment   Boolean        @default(false)
   advanceAmount      Decimal        @default(0)
   advancePaidAt      DateTime?
   advancePaymentId   String?
   advancePaymentMode DepositMethod?
+
+  // Remaining Balance (after advance is collected)
+  remainingBalance     Decimal        @default(0)
+  remainingPaidAt      DateTime?
+  remainingPaymentId   String?        @unique
+  remainingPaymentMode DepositMethod?
+  remainingPaidDuring  String? // "PICKUP" | "RETURN"
 
   // Safety Deposit Tracking
   safetyDeposit           Decimal        @default(0)
@@ -550,6 +559,7 @@ model Booking {
   @@index([status])
   @@index([startAt, endAt])
   @@index([advancePaymentId])
+  @@index([remainingPaymentId])
   @@index([cancelledAt])
   // Performance index
   @@index([status, startAt, endAt])
@@ -710,7 +720,6 @@ model AuditLog {
   entityId  String
   before    Json?
   after     Json?
-  metadata  Json?
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])

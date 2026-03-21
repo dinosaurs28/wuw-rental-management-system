@@ -180,6 +180,7 @@ export interface VehicleDetails {
     extraHourRate?: number;
     enabled?: boolean;
   } | null;
+  advancePayAmount?: number;
   pricing: {
     daily: number;
   };

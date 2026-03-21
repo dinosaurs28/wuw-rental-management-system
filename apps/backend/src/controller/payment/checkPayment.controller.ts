@@ -65,14 +65,23 @@ export const checkPayment = async (req: Request, res: Response) => {
           ? DepositMethod.CASH
           : DepositMethod.ONLINE_RAZORPAY;
 
+        const bookingUpdateData: any = {
+          status: BookingStatus.CONFIRMED,
+          paymentStatus: PaymentStatus.SUCCESS,
+          holdExpiresAt: null,
+          depositMethod: method,
+        };
+
+        // For advance payment: record when the advance was paid
+        if (booking.isAdvancePayment) {
+          bookingUpdateData.advancePaidAt = new Date();
+          bookingUpdateData.advancePaymentId = transactionId;
+          bookingUpdateData.advancePaymentMode = method;
+        }
+
         await tx.booking.update({
           where: { id: booking.id },
-          data: {
-            status: BookingStatus.CONFIRMED,
-            paymentStatus: PaymentStatus.SUCCESS,
-            holdExpiresAt: null,
-            depositMethod: method,
-          },
+          data: bookingUpdateData,
         });
 
         await tx.vehicle.updateMany({
@@ -95,6 +104,12 @@ export const checkPayment = async (req: Request, res: Response) => {
           });
         }
 
+        // For advance payment: invoice stays PENDING until remaining is collected.
+        // For full payment: invoice is PAID immediately.
+        const invoiceStatus = booking.isAdvancePayment
+          ? InvoiceStatus.PENDING
+          : InvoiceStatus.PAID;
+
         const invoice = await tx.invoice.create({
           data: {
             publicId: createID(),
@@ -104,7 +119,7 @@ export const checkPayment = async (req: Request, res: Response) => {
             tax: 0,
             damageCharges: 0,
             total: booking.totalFinal,
-            status: InvoiceStatus.PAID,
+            status: invoiceStatus,
           },
         });
 
@@ -117,13 +132,18 @@ export const checkPayment = async (req: Request, res: Response) => {
           })),
         });
 
+        // Payment record reflects the actual amount charged (advance or full)
+        const paymentAmount = booking.isAdvancePayment
+          ? booking.advanceAmount
+          : booking.totalFinal;
+
         await tx.payment.create({
           data: {
             publicId: createID(),
             invoiceId: invoice.id,
             method: method,
             status: PaymentStatus.SUCCESS,
-            amount: booking.totalFinal,
+            amount: paymentAmount,
           },
         });
 
@@ -136,12 +156,15 @@ export const checkPayment = async (req: Request, res: Response) => {
           data: {
             publicId: createID(),
             userId: booking.createdById,
-            action: "BOOKING_CONFIRMED",
+            action: booking.isAdvancePayment
+              ? "BOOKING_CONFIRMED_ADVANCE"
+              : "BOOKING_CONFIRMED",
             entity: "Booking",
             entityId: booking.publicId,
             after: {
               status: "CONFIRMED",
               paymentStatus: "SUCCESS",
+              isAdvancePayment: booking.isAdvancePayment,
             },
           },
         });

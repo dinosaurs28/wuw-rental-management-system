@@ -35,6 +35,7 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
     { label: "Dashboard", path: "/manager/dashboard" },
     { label: "Vehicles", path: "/manager/vehicles" },
     { label: "Employees", path: "/manager/employees" },
+    { label: "Photo Capture", path: "/manager/capture-configs" },
   ];
 
   const handleLogout = () => {

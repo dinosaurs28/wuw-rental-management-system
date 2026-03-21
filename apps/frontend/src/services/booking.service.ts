@@ -9,6 +9,7 @@ export interface CreateBookingSummaryRequest {
   end: string; // ISO date string
   file_public_id: string; // KYC document file public ID
   payment_type: "CASH" | "ONLINE";
+  payment_flow?: "FULL" | "ADVANCE";
 }
 
 // Types for booking summary response
@@ -35,6 +36,9 @@ export interface BookingTotals {
   taxRate?: number;
   grandDeposit: number;
   grandFinalTotal: number;
+  isAdvancePayment?: boolean;
+  advanceAmount?: number;
+  remainingBalance?: number;
   paymentURL: string | null;
   encryptedFinalPrice: string | null;
   transactionId: string | null;
@@ -44,6 +48,8 @@ export interface CreateBookingSummaryResponse {
   message: string;
   holdId: string;
   payment_type: "CASH" | "ONLINE";
+  payment_flow: "FULL" | "ADVANCE";
+  isAdvancePayment: boolean;
   expiresIn: number;
   expiresAt: string;
   data: {
@@ -82,6 +88,11 @@ export interface EmployeeBooking {
   endAt: string;
   status: string;
   totalFinal: string;
+  isAdvancePayment?: boolean;
+  advanceAmount?: string;
+  remainingBalance?: string;
+  remainingPaidAt?: string | null;
+  remainingPaidDuring?: string | null;
   customer: {
     user: {
       publicId: string;
@@ -293,6 +304,45 @@ export const bookingService = {
     returnImageIds: string[];
   }) => {
     const response = await apiClient.post("/employee/damage/report", data);
+    return response.data;
+  },
+
+  // Initiate remaining payment (for advance bookings)
+  initiateRemainingPayment: async (
+    bookingId: string,
+    context: "pickup" | "return",
+    data: { method: "CASH" | "UPI" | "ONLINE" },
+  ) => {
+    const paidDuring = context === "pickup" ? "PICKUP" : "RETURN";
+    const method = data.method === "ONLINE" ? "ONLINE_RAZORPAY" : data.method;
+    const response = await apiClient.post<{
+      success: boolean;
+      message: string;
+      data?: {
+        paymentURL?: string;
+        transactionId?: string;
+        amountCollected?: string;
+        method?: string;
+        paidDuring?: string;
+      };
+    }>(`/employee/${context}/${bookingId}/initiate-remaining-payment`, { method, paidDuring });
+    return {
+      ...response.data,
+      paymentURL: response.data.data?.paymentURL,
+      transactionId: response.data.data?.transactionId,
+    };
+  },
+
+  // Check remaining payment status
+  checkRemainingPaymentStatus: async (
+    bookingId: string,
+    context: "pickup" | "return",
+  ) => {
+    const response = await apiClient.get<{
+      status: "SUCCESS" | "PENDING" | "FAILED";
+      message?: string;
+      redirectURL?: string;
+    }>(`/employee/${context}/${bookingId}/remaining-payment/status`);
     return response.data;
   },
 

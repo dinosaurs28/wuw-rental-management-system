@@ -255,6 +255,7 @@ model Branch {
   branchPricingDefaults   BranchPricingDefaults[]
   gstRule                 GSTRule?
   featureFlags            BranchFeatureFlag[]
+  captureConfigs          VehiclePhotoCaptureConfig[]
   createdAt               DateTime                 @default(now())
   deletedAt               DateTime?
 }
@@ -300,6 +301,25 @@ model VehicleCategory {
   vehicles                Vehicle[]
   pricingRules            PricingRule[]
   branchPricingDefaults   BranchPricingDefaults[]
+  captureConfigs          VehiclePhotoCaptureConfig[]
+}
+
+// VEHICLE PHOTO CAPTURE CONFIG
+// Branch managers configure which sides/angles to capture per vehicle category.
+model VehiclePhotoCaptureConfig {
+  id         Int             @id @default(autoincrement())
+  publicId   String          @unique
+  branchId   Int
+  categoryId Int
+  fields     Json            // [{ name: string, required: boolean }]
+
+  branch     Branch          @relation(fields: [branchId], references: [id])
+  category   VehicleCategory @relation(fields: [categoryId], references: [id])
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@unique([branchId, categoryId])
+  @@index([branchId])
 }
 
 model Vehicle {
@@ -312,6 +332,7 @@ model Vehicle {
   regNo           String        @unique
   odo             Int
   fuelLevel       Int           @default(0)
+  advancePayAmount Decimal      @default(0)
   insuranceExpiry DateTime
   status          VehicleStatus @default(AVAILABLE)
   branch           Branch                     @relation(fields: [branchId], references: [id])
@@ -520,10 +541,18 @@ model Booking {
   vehicleSwaps VehicleSwap[]
 
   // Advance Payment Tracking
-  advanceAmount         Decimal   @default(0)
+  isAdvancePayment      Boolean        @default(false)
+  advanceAmount         Decimal        @default(0)
   advancePaidAt         DateTime?
   advancePaymentId      String?
   advancePaymentMode    DepositMethod?
+
+  // Remaining Balance (after advance is collected)
+  remainingBalance      Decimal        @default(0)
+  remainingPaidAt       DateTime?
+  remainingPaymentId    String?        @unique
+  remainingPaymentMode  DepositMethod?
+  remainingPaidDuring   String?        // "PICKUP" | "RETURN"
 
   // Safety Deposit Tracking
   safetyDeposit         Decimal   @default(0)
@@ -550,6 +579,7 @@ model Booking {
   @@index([status])
   @@index([startAt, endAt])
   @@index([advancePaymentId])
+  @@index([remainingPaymentId])
   @@index([cancelledAt])
   // Performance index
   @@index([status, startAt, endAt])
@@ -587,6 +617,7 @@ model BookingPhoto {
   bookingId      Int
   fileId         Int
   type           BookingPhotoType
+  captureLabel   String?          // e.g. "Front", "Left Side" — set when uploaded via capture config
   damageReportId Int?
 
   booking      Booking       @relation(fields: [bookingId], references: [id])

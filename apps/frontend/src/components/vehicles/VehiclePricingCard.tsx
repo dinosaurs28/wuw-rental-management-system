@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, MapPin, Check, Loader2 } from "lucide-react";
+import { CalendarIcon, MapPin, Check, Loader2, Wallet } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -40,6 +40,8 @@ export const VehiclePricingCard = ({
     setEndDate,
     setStartTime,
     setEndTime,
+    paymentFlow,
+    setPaymentFlow,
   } = useVehicleRentalStore();
 
   const pickupDate = getStartDate();
@@ -296,6 +298,69 @@ export const VehiclePricingCard = ({
             </span>
           </div>
         </div>
+
+        {/* Advance Payment Option */}
+        {vehicle.advancePayAmount && vehicle.advancePayAmount > 0 && pd && (
+          <div className="px-8 py-6 border-b border-white/5 space-y-3">
+            <p className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">
+              Payment Plan
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setPaymentFlow("FULL")}
+                className={cn(
+                  "flex flex-col items-center gap-1.5 p-4 rounded-2xl border transition-all",
+                  paymentFlow === "FULL"
+                    ? "bg-white text-zinc-950 border-white"
+                    : "bg-black/20 text-zinc-400 border-white/10 hover:border-white/20",
+                )}
+              >
+                <Check className="size-4" />
+                <span className="text-xs font-black uppercase tracking-wider">
+                  Full Pay
+                </span>
+                <span className="text-xs font-medium">
+                  {formatCurrency(pd.finalTotal)}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentFlow("ADVANCE")}
+                className={cn(
+                  "flex flex-col items-center gap-1.5 p-4 rounded-2xl border transition-all",
+                  paymentFlow === "ADVANCE"
+                    ? "bg-orange-500 text-white border-orange-500"
+                    : "bg-black/20 text-zinc-400 border-white/10 hover:border-white/20",
+                )}
+              >
+                <Wallet className="size-4" />
+                <span className="text-xs font-black uppercase tracking-wider">
+                  Advance
+                </span>
+                <span className="text-xs font-medium">
+                  {formatCurrency(vehicle.advancePayAmount)} now
+                </span>
+              </button>
+            </div>
+            {paymentFlow === "ADVANCE" && (
+              <div className="text-xs text-zinc-500 space-y-1">
+                <div className="flex justify-between">
+                  <span>Pay now (advance)</span>
+                  <span className="text-orange-400 font-bold">
+                    {formatCurrency(vehicle.advancePayAmount)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Remaining (at pickup/return)</span>
+                  <span className="text-zinc-400">
+                    {formatCurrency(pd.finalTotal - vehicle.advancePayAmount)}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* CTA */}
         <div className="p-8">

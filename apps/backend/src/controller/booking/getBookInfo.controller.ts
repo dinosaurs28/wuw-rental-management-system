@@ -42,7 +42,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         message: "Customer doesnt Exists",
       });
     }
-    const { vehicles, start, end, file_public_id } = parsed.data;
+    const { vehicles, start, end, file_public_id, payment_flow } = parsed.data;
     const customerId = userData.customerProfile.id;
     const kycFile = await prisma.fileObject.findUnique({
       where: { publicId: file_public_id },
@@ -92,6 +92,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           include: { pricingSetting: true },
         },
         pricingOverride: true,
+        customPricing: true,
       },
     });
 
@@ -129,6 +130,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     let grandSGSTTotal = 0;
     let grandDeposit = 0;
     let grandFinalTotal = 0;
+    let grandAdvanceAmount = 0; // sum of per-vehicle fixed advance amounts
 
     // Calculate total duration info once for the booking overall constraints
     const bookingDuration = DurationCalculatorService.calculate(
@@ -213,6 +215,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       grandSGSTTotal += sgstAmount;
       grandDeposit += deposit;
       grandFinalTotal += finalTotal;
+      grandAdvanceAmount += Number(v.advancePayAmount ?? 0);
     }
 
     grandBaseTotal = Number(grandBaseTotal.toFixed(2));
@@ -222,6 +225,28 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     grandSGSTTotal = Number(grandSGSTTotal.toFixed(2));
     grandDeposit = Number(grandDeposit.toFixed(2));
     grandFinalTotal = Number(grandFinalTotal.toFixed(2));
+    grandAdvanceAmount = Number(grandAdvanceAmount.toFixed(2));
+
+    const isAdvancePayment = payment_flow === "ADVANCE";
+
+    // Validate advance payment eligibility
+    if (isAdvancePayment) {
+      if (grandAdvanceAmount <= 0) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+          message: "Advance payment is not configured for the selected vehicle(s). Please use full payment.",
+        });
+      }
+      if (grandAdvanceAmount >= grandFinalTotal) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+          message: "Advance amount must be less than the total amount. Please use full payment.",
+        });
+      }
+    }
+
+    const chargeAmount = isAdvancePayment ? grandAdvanceAmount : grandFinalTotal;
+    const remainingBalance = isAdvancePayment
+      ? Number((grandFinalTotal - grandAdvanceAmount).toFixed(2))
+      : 0;
 
     let transactionId: string;
     let paymentURL: string;
@@ -231,7 +256,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       const customerRedirectUrl = `${redirectUrl}/booking/status`;
       try {
         const paymentDetails = await initiatePhonePePayment(
-          grandFinalTotal,
+          chargeAmount,
           customerRedirectUrl,
         );
         if (!paymentDetails || !paymentDetails.merchantTransactionId) {
@@ -250,7 +275,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       transactionId = createID();
       paymentURL = "";
       encryptedFinalPrice = await jwt.sign(
-        { finalPrice: grandFinalTotal },
+        { finalPrice: chargeAmount },
         process.env.JWT_SECERT!,
         {
           expiresIn: "10m",
@@ -278,6 +303,9 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           totalDeposit: grandDeposit,
           totalTax: grandTaxTotal,
           totalFinal: grandFinalTotal,
+          isAdvancePayment: isAdvancePayment,
+          advanceAmount: isAdvancePayment ? grandAdvanceAmount : 0,
+          remainingBalance: remainingBalance,
           transactionId,
           pricingSnapshot: {
             items,
@@ -366,6 +394,8 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       message: "Summary created successfully",
       holdId,
       payment_type: parsed.data.payment_type,
+      payment_flow,
+      isAdvancePayment,
       expiresIn: holdExpiry,
       expiresAt: holdData.expiresAt,
       data: {
@@ -376,11 +406,13 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           grandBaseTotal,
           grandDiscountTotal,
           grandDeposit,
-          grandTaxTotal, // Added tax total
+          grandTaxTotal,
           grandCGSTTotal,
           grandSGSTTotal,
           taxRate: totalTaxRate,
           grandFinalTotal,
+          advanceAmount: isAdvancePayment ? grandAdvanceAmount : grandFinalTotal,
+          remainingBalance,
           paymentURL,
           encryptedFinalPrice,
           transactionId,

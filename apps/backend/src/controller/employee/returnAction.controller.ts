@@ -87,11 +87,15 @@ export const CompleteReturn = async (req: Request, res: Response) => {
         publicId: bookingId,
         branchId: branchId,
       },
-      include: {
+      select: {
+        id: true,
+        publicId: true,
+        status: true,
+        isAdvancePayment: true,
+        remainingBalance: true,
+        remainingPaidAt: true,
         items: {
-          select: {
-            vehicleId: true,
-          },
+          select: { vehicleId: true },
         },
       },
     });
@@ -105,6 +109,14 @@ export const CompleteReturn = async (req: Request, res: Response) => {
     if (booking.status !== BookingStatus.PICKED_UP) {
       return res.status(StatusCode.BAD_REQUEST).json({
         message: `Cannot complete return. Current status: ${booking.status}`,
+      });
+    }
+
+    // Advance payment gate: remaining balance MUST be collected before return
+    if (booking.isAdvancePayment && !booking.remainingPaidAt) {
+      return res.status(StatusCode.PAYMENT_REQUIRED).json({
+        message: `Remaining balance of ₹${booking.remainingBalance} must be collected before completing the return.`,
+        remainingBalance: booking.remainingBalance,
       });
     }
 

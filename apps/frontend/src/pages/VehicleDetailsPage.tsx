@@ -48,6 +48,8 @@ export const VehicleDetailsPage = () => {
     setVehicleId,
     setVehicleFullDetails,
     setDeposit,
+    setAdvancePayAmount,
+    paymentFlow,
   } = useVehicleRentalStore();
 
   const pickupDate = getStartDate();
@@ -119,7 +121,10 @@ export const VehicleDetailsPage = () => {
     if (vehicle?.deposit) {
       setDeposit(vehicle.deposit);
     }
-  }, [vehicle?.pricing?.daily, vehicle?.deposit, setPricePerDay, setDeposit]);
+    if (vehicle?.advancePayAmount !== undefined) {
+      setAdvancePayAmount(vehicle.advancePayAmount ?? 0);
+    }
+  }, [vehicle?.pricing?.daily, vehicle?.deposit, vehicle?.advancePayAmount, setPricePerDay, setDeposit, setAdvancePayAmount]);
 
   // Book vehicle handler - clears previous selection, saves new one, and navigates to review
   const handleBookVehicle = useCallback(() => {
@@ -131,7 +136,7 @@ export const VehicleDetailsPage = () => {
     const currentEndDate = currentState.getEndDate();
 
     // Clear previous vehicle selection from session storage
-    useVehicleRentalStore.getState().clearVehicleSelection();
+    currentState.clearVehicleSelection();
 
     // Set new vehicle selection with full details
     setVehicleId(vehicleId);
@@ -172,6 +177,7 @@ export const VehicleDetailsPage = () => {
   }, [
     vehicleId,
     vehicle,
+    paymentFlow,
     setVehicleId,
     setVehicleFullDetails,
     setStartDate,

@@ -23,9 +23,7 @@ export const PickupController = async (req: Request, res: Response) => {
       },
       include: {
         items: {
-          select: {
-            vehicleId: true,
-          },
+          select: { vehicleId: true },
         },
         customer: {
           select: {
@@ -50,6 +48,18 @@ export const PickupController = async (req: Request, res: Response) => {
     if (booking.status !== BookingStatus.CONFIRMED) {
       return res.status(StatusCode.BAD_REQUEST).json({
         message: `Cannot pick up vehicle. Current status: ${booking.status}`,
+      });
+    }
+
+    // Advance payment gate: if customer chose to pay remaining at pickup, verify it's done
+    if (
+      booking.isAdvancePayment &&
+      parsedVehicleDetails.payRemainingAtPickup === true &&
+      !booking.remainingPaidAt
+    ) {
+      return res.status(StatusCode.PAYMENT_REQUIRED).json({
+        message: `Remaining balance of ₹${booking.remainingBalance} must be collected before pickup.`,
+        remainingBalance: booking.remainingBalance,
       });
     }
 
@@ -108,6 +118,7 @@ export const PickupController = async (req: Request, res: Response) => {
         });
       }
 
+      // Unlabeled photos (legacy / fallback)
       if (
         parsedVehicleDetails.pickupImageIds &&
         parsedVehicleDetails.pickupImageIds.length > 0
@@ -126,6 +137,33 @@ export const PickupController = async (req: Request, res: Response) => {
             bookingId: booking.id,
             fileId: f.id,
             type: BookingPhotoType.PRE_DELIVERY,
+          })),
+        });
+      }
+
+      // Labeled capture images (from capture config)
+      if (
+        parsedVehicleDetails.captureImages &&
+        parsedVehicleDetails.captureImages.length > 0
+      ) {
+        const fileIds = parsedVehicleDetails.captureImages.map((c) => c.fileId);
+        const files = await tx.fileObject.findMany({
+          where: { publicId: { in: fileIds } },
+        });
+
+        if (files.length !== fileIds.length) {
+          throw new Error("Invalid capture image IDs provided");
+        }
+
+        const fileMap = new Map(files.map((f) => [f.publicId, f]));
+
+        await tx.bookingPhoto.createMany({
+          data: parsedVehicleDetails.captureImages.map((c) => ({
+            publicId: createID(),
+            bookingId: booking.id,
+            fileId: fileMap.get(c.fileId)!.id,
+            type: BookingPhotoType.PRE_DELIVERY,
+            captureLabel: c.label,
           })),
         });
       }

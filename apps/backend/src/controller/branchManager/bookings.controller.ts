@@ -68,6 +68,11 @@ export const GetActiveBookings = async (req: Request, res: Response) => {
         endAt: true,
         totalFinal: true,
         status: true,
+        isAdvancePayment: true,
+        advanceAmount: true,
+        remainingBalance: true,
+        remainingPaidAt: true,
+        remainingPaidDuring: true,
         customer: {
           select: {
             id: true,
@@ -195,6 +200,11 @@ export const GetPendingApprovals = async (req: Request, res: Response) => {
         endAt: true,
         totalFinal: true,
         status: true,
+        isAdvancePayment: true,
+        advanceAmount: true,
+        remainingBalance: true,
+        remainingPaidAt: true,
+        remainingPaidDuring: true,
         customer: {
           select: {
             id: true,
@@ -751,6 +761,14 @@ export const GetConfirmationDetails = async (req: Request, res: Response) => {
       },
       select: {
         status: true,
+        totalFinal: true,
+        isAdvancePayment: true,
+        advanceAmount: true,
+        advancePaidAt: true,
+        remainingBalance: true,
+        remainingPaidAt: true,
+        remainingPaymentMode: true,
+        remainingPaidDuring: true,
         safetyDeposit: true,
         safetyDepositMethod: true,
         customer: {

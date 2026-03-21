@@ -19,6 +19,9 @@ export interface Booking {
   endDate: string;
   status: "PENDING" | "CONFIRMED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
   reason?: string; // For pending approvals
+  isAdvancePayment?: boolean;
+  remainingBalance?: number;
+  remainingPaidAt?: string | null;
 }
 
 export interface DamageReport {
@@ -83,6 +86,9 @@ export const managerDashboardService = {
       endDate: b.endAt,
       status: b.status,
       reason: "",
+      isAdvancePayment: b.isAdvancePayment,
+      remainingBalance: b.remainingBalance ? Number(b.remainingBalance) : undefined,
+      remainingPaidAt: b.remainingPaidAt,
     }));
   },
 

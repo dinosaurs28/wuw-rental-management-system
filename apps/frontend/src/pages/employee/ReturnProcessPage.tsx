@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import apiClient from "@/lib/axios";
 import { bookingService } from "@/services/booking.service";
 import { DashboardNavbar } from "@/components/employee/DashboardNavbar";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,9 @@ import {
   AlertTriangle,
   FileCheck,
   X,
+  Wallet,
+  Banknote,
+  CreditCard,
 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { cn, compressImage } from "@/lib/utils";
@@ -96,6 +100,9 @@ export default function ReturnProcessPage() {
   // Dialog Control
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
+  const [showRemainingPaymentDialog, setShowRemainingPaymentDialog] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<"CASH" | "ONLINE" | null>(null);
+  const [onlinePaymentUrl, setOnlinePaymentUrl] = useState<string | null>(null);
 
   // Queries
   const {
@@ -107,6 +114,16 @@ export default function ReturnProcessPage() {
     queryFn: () => bookingService.getReturnDetails(bookingId!),
     enabled: !!bookingId,
   });
+
+  const { data: pickupCapturesData } = useQuery<{
+    photos: { publicId: string; captureLabel: string | null; url: string; mime: string }[];
+  }>({
+    queryKey: ["pickup-captures", bookingId],
+    queryFn: () =>
+      apiClient.get(`/employee/return/${bookingId}/pickup-captures`).then((r) => r.data),
+    enabled: !!bookingId,
+  });
+  const pickupCaptures = pickupCapturesData?.photos ?? [];
 
   // Mutations
   const uploadReturnMutation = useMutation({
@@ -189,12 +206,40 @@ export default function ReturnProcessPage() {
     onError: () => toast.error("Failed to remove damage photo"),
   });
 
+  const remainingPaymentMutation = useMutation({
+    mutationFn: (method: "CASH" | "ONLINE") =>
+      bookingService.initiateRemainingPayment(bookingId!, "return", { method }),
+    onSuccess: (data, method) => {
+      if (method === "ONLINE" && data.paymentURL) {
+        setOnlinePaymentUrl(data.paymentURL);
+        return;
+      }
+      toast.success("Remaining payment collected!");
+      setShowRemainingPaymentDialog(false);
+      queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "Payment failed");
+    },
+  });
+
+  const formatPrice = (amount: string | number) =>
+    new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: 0,
+    }).format(Number(amount));
+
   useEffect(() => {
-    if (booking && booking.items[0].vehicle) {
-      const v = booking.items[0].vehicle;
-      if (v.odo !== undefined && v.odo !== null) setOdo(v.odo);
-      if (v.fuelLevel !== undefined && v.fuelLevel !== null)
-        setFuel(v.fuelLevel);
+    if (booking) {
+      if (booking.requiresManagerConfirmation) {
+        setRequireManagerConfirmation(true);
+      }
+      const v = booking.items[0]?.vehicle;
+      if (v) {
+        if (v.odo !== undefined && v.odo !== null) setOdo(v.odo);
+        if (v.fuelLevel !== undefined && v.fuelLevel !== null) setFuel(v.fuelLevel);
+      }
     }
   }, [booking]);
 
@@ -342,18 +387,18 @@ export default function ReturnProcessPage() {
   const damageZones = isTWUWheeler
     ? ["Front", "Rear", "Left Side", "Right Side"]
     : [
-        "Front Bumper",
-        "Rear Bumper",
-        "Left Front Door",
-        "Left Rear Door",
-        "Right Front Door",
-        "Right Rear Door",
-        "Hood",
-        "Roof",
-        "Trunk",
-        "Wheels",
-        "Interior",
-      ];
+      "Front Bumper",
+      "Rear Bumper",
+      "Left Front Door",
+      "Left Rear Door",
+      "Right Front Door",
+      "Right Rear Door",
+      "Hood",
+      "Roof",
+      "Trunk",
+      "Wheels",
+      "Interior",
+    ];
 
   if (submissionResult?.success) {
     return (
@@ -464,9 +509,144 @@ export default function ReturnProcessPage() {
           </div>
         )}
 
+        {/* Advance Payment Banner */}
+        {booking.isAdvancePayment && !isCompleted && (
+          <div className={`border p-4 rounded-lg ${booking.remainingPaidAt ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <Wallet className="h-5 w-5 mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-semibold">
+                    {booking.remainingPaidAt ? "Remaining Payment Collected" : "Remaining Balance Must Be Paid Before Return"}
+                  </p>
+                  <p className="text-sm mt-0.5">
+                    {booking.remainingPaidAt
+                      ? `${formatPrice(booking.remainingBalance ?? "0")} has been collected.`
+                      : `Outstanding balance: ${formatPrice(booking.remainingBalance ?? "0")}. Collect before completing return.`}
+                  </p>
+                </div>
+              </div>
+              {!booking.remainingPaidAt && (
+                <Button
+                  size="sm"
+                  className="bg-red-600 hover:bg-red-700 text-white shrink-0"
+                  onClick={() => setShowRemainingPaymentDialog(true)}
+                >
+                  Collect Now
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Remaining Payment Dialog */}
+        <Dialog open={showRemainingPaymentDialog} onOpenChange={(open) => {
+          setShowRemainingPaymentDialog(open);
+          if (!open) { setOnlinePaymentUrl(null); setSelectedPaymentMethod(null); }
+        }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Collect Remaining Balance</DialogTitle>
+              <DialogDescription>
+                Amount due: <strong>{formatPrice(booking?.remainingBalance ?? "0")}</strong>. Select payment method.
+              </DialogDescription>
+            </DialogHeader>
+
+            {onlinePaymentUrl ? (
+              <div className="py-4 space-y-4">
+                <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 p-4 text-blue-800">
+                  <CreditCard className="h-5 w-5 shrink-0" />
+                  <p className="text-sm font-medium">Payment link generated. Share with customer or open below.</p>
+                </div>
+                <a
+                  href={onlinePaymentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full rounded-lg bg-[#FF5F00] hover:bg-[#e65600] text-white font-semibold py-3 px-4 transition-colors"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  Open Payment Portal
+                </a>
+                <p className="text-xs text-muted-foreground text-center break-all">{onlinePaymentUrl}</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 py-4">
+                {(["CASH", "ONLINE"] as const).map((method) => (
+                  <button
+                    key={method}
+                    onClick={() => setSelectedPaymentMethod(method)}
+                    className={`flex flex-col items-center gap-2 p-4 rounded-lg border transition-all ${selectedPaymentMethod === method
+                        ? "border-primary bg-primary/10"
+                        : "border-gray-200 hover:border-gray-300"
+                      }`}
+                  >
+                    {method === "CASH" && <Banknote className="h-6 w-6" />}
+                    {method === "ONLINE" && <CreditCard className="h-6 w-6" />}
+                    <span className="text-sm font-medium">{method}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setShowRemainingPaymentDialog(false);
+                setOnlinePaymentUrl(null);
+                setSelectedPaymentMethod(null);
+              }}>
+                {onlinePaymentUrl ? "Close" : "Cancel"}
+              </Button>
+              {!onlinePaymentUrl && (
+                <Button
+                  className="bg-[#FF5F00] hover:bg-[#e65600]"
+                  disabled={!selectedPaymentMethod || remainingPaymentMutation.isPending}
+                  onClick={() => selectedPaymentMethod && remainingPaymentMutation.mutate(selectedPaymentMethod)}
+                >
+                  {remainingPaymentMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Confirm Payment"
+                  )}
+                </Button>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Form Area */}
           <div className="lg:col-span-2 space-y-8">
+            {/* Pre-delivery Reference Photos */}
+            {pickupCaptures.length > 0 && (
+              <Card className="border-none shadow-sm">
+                <CardHeader className="px-6 pt-6 pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    Pre-delivery Condition
+                    <span className="text-xs font-normal text-muted-foreground">(taken at pickup)</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-6 pb-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {pickupCaptures.map((photo) => (
+                      <div key={photo.publicId} className="rounded-lg overflow-hidden border bg-gray-50">
+                        <img
+                          src={photo.url}
+                          alt={photo.captureLabel ?? "Pickup photo"}
+                          className="w-full h-28 object-cover"
+                          loading="lazy"
+                        />
+                        {photo.captureLabel && (
+                          <div className="px-2 py-1 bg-white border-t">
+                            <p className="text-xs font-medium truncate">{photo.captureLabel}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* 1. Return Media Upload */}
             <Card className="border-none shadow-sm">
               <CardHeader className="px-6 pt-6">
@@ -875,23 +1055,45 @@ export default function ReturnProcessPage() {
 
                 <Separator className="bg-gray-700" />
 
-                {!isCompleted && (
+                {!isCompleted && booking.requiresManagerConfirmation && (
                   <div className="flex items-center space-x-2 py-2">
                     <Checkbox
                       id="requireManagerConfirmation"
-                      checked={requireManagerConfirmation}
-                      onCheckedChange={(c) => setRequireManagerConfirmation(!!c)}
-                      className="border-gray-500 data-[state=checked]:bg-[#FF5F00] data-[state=checked]:text-white cursor-pointer"
+                      checked={true}
+                      disabled
+                      className="border-gray-500 data-[state=checked]:bg-[#FF5F00] data-[state=checked]:text-white disabled:cursor-not-allowed disabled:opacity-70"
                     />
-                    <Label htmlFor="requireManagerConfirmation" className="text-sm font-medium cursor-pointer text-gray-200">
+                    <Label
+                      htmlFor="requireManagerConfirmation"
+                      className="text-sm font-medium text-gray-200 cursor-not-allowed opacity-70"
+                    >
                       Confirm with Manager Before Final Return
+                      <span className="ml-2 text-xs text-amber-400">(required by manager)</span>
                     </Label>
+                  </div>
+                )}
+
+                {/* Remaining balance info in sidebar */}
+                {booking.isAdvancePayment && (
+                  <div className={`flex justify-between items-center text-sm ${booking.remainingPaidAt ? "text-green-400" : "text-red-400"}`}>
+                    <span className="text-gray-400">Remaining Balance</span>
+                    <span className="font-medium">
+                      {booking.remainingPaidAt ? "Paid" : formatPrice(booking.remainingBalance ?? "0")}
+                    </span>
                   </div>
                 )}
 
                 {isCompleted ? (
                   <Button className="w-full" variant="outline" disabled>
                     Return Completed
+                  </Button>
+                ) : booking.isAdvancePayment && !booking.remainingPaidAt ? (
+                  <Button
+                    className="w-full bg-red-600 hover:bg-red-700 text-white"
+                    onClick={() => setShowRemainingPaymentDialog(true)}
+                  >
+                    <Wallet className="mr-2 h-4 w-4" />
+                    Collect {formatPrice(booking.remainingBalance ?? "0")} First
                   </Button>
                 ) : hasDamage ? (
                   <Dialog

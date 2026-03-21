@@ -42,6 +42,15 @@ import {
 } from "../../controller/employee/damage.controller.js";
 import { GetCustomerKyc } from "../../controller/employee/walkin/getKyc.controller.js";
 import { DeleteKycDocument } from "../../controller/user/kyc.controller.js";
+import {
+  InitiateRemainingPayment,
+  CheckRemainingPaymentStatus,
+  CheckRemainingPaymentByTransaction,
+} from "../../controller/employee/remainingPayment.controller.js";
+import {
+  GetPickupCaptureConfig,
+  GetPickupCaptures,
+} from "../../controller/employee/captureConfig.controller.js";
 
 const router: Router = Router();
 
@@ -51,6 +60,8 @@ router.get("/return", EmployeeCheck, returnController);
 router.get("/kyc/:bookingId", EmployeeCheck, GetBookingKyc);
 router.patch("/kyc/:kycId/status", EmployeeCheck, VerifyKyc);
 router.get("/pickup/:bookingId", EmployeeCheck, GetBookingDetails);
+router.get("/pickup/:bookingId/capture-config", EmployeeCheck, GetPickupCaptureConfig);
+router.get("/return/:bookingId/pickup-captures", EmployeeCheck, GetPickupCaptures);
 router.post(
   "/pickup/upload",
   EmployeeCheck,
@@ -58,6 +69,9 @@ router.post(
   UploadPickupImage,
 );
 router.delete("/pickup/image/:publicId", EmployeeCheck, DeletePickupImage);
+router.get("/payment/remaining-status/:transactionId", EmployeeCheck, CheckRemainingPaymentByTransaction);
+router.post("/pickup/:bookingId/initiate-remaining-payment", EmployeeCheck, InitiateRemainingPayment);
+router.get("/pickup/:bookingId/remaining-payment/status", EmployeeCheck, CheckRemainingPaymentStatus);
 router.post("/pickup/:bookingId", EmployeeCheck, PickupController);
 router.post(
   "/return/upload",
@@ -67,6 +81,8 @@ router.post(
 );
 router.delete("/return/image/:publicId", EmployeeCheck, DeleteReturnImage);
 router.get("/return/:bookingId", EmployeeCheck, GetBookingDetails);
+router.post("/return/:bookingId/initiate-remaining-payment", EmployeeCheck, InitiateRemainingPayment);
+router.get("/return/:bookingId/remaining-payment/status", EmployeeCheck, CheckRemainingPaymentStatus);
 router.post("/return/:bookingId/complete", EmployeeCheck, CompleteReturn);
 router.post("/walkin/initiate", EmployeeCheck, InitiateWalkin);
 router.post("/walkin/verify", EmployeeCheck, VerifyWalkinOtp);

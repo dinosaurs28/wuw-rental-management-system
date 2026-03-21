@@ -276,17 +276,30 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
     }
     const vehicleData = await prisma.vehicle.findUnique({
       where: { publicId: parasedData.data.id },
-      include: {
+      select: {
+        id: true,
+        publicId: true,
+        make: true,
+        model: true,
+        regNo: true,
+        odo: true,
+        fuelLevel: true,
+        advancePayAmount: true,
+        insuranceExpiry: true,
+        status: true,
+        branchId: true,
+        categoryId: true,
+        createdAt: true,
+        updatedAt: true,
         category: true,
         branch: {
           include: { pricingSetting: true },
         },
         images: {
-          include: {
-            file: true,
-          },
+          include: { file: true },
         },
         pricingOverride: true,
+        customPricing: true,
       },
     });
     if (!vehicleData) {
@@ -359,6 +372,7 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
       status: vehicleData.status,
       category: vehicleData.category.name,
       branch: vehicleData.branch.name,
+      advancePayAmount: vehicleData.advancePayAmount,
       images: imageUrls,
       pricing: {
         daily: pricingDetails?.pricingBreakdown?.applicablePrice,

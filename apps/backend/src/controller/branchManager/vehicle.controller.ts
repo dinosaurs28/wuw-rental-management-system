@@ -38,6 +38,7 @@ export const AddVehicle = async (req: Request, res: Response) => {
       extraKmRate,
       extraHourRate,
       isCustomPricingEnabled,
+      advancePayAmount,
     } = validation.data;
 
     const existingVehicle = await prisma.vehicle.findUnique({
@@ -54,11 +55,12 @@ export const AddVehicle = async (req: Request, res: Response) => {
       data: {
         publicId: createID(),
         branchId: branchId,
-        categoryId: Number(categoryId), // Zod coerces, but prisma might want int. Zod schema has coerce.number()
+        categoryId: Number(categoryId),
         make,
         model,
         regNo,
         odo: Number(odo),
+        advancePayAmount: advancePayAmount ?? 0,
         insuranceExpiry: new Date(insuranceExpiry),
         status: VehicleStatus.AVAILABLE,
         customPricing: price24Hour !== undefined ? {
@@ -240,6 +242,7 @@ export const EditVehicle = async (req: Request, res: Response) => {
     delete updateData.extraKmRate;
     delete updateData.extraHourRate;
     delete updateData.isCustomPricingEnabled;
+    // advancePayAmount stays in updateData and is applied directly to the vehicle
 
     if (data.insuranceExpiry) {
       updateData.insuranceExpiry = new Date(data.insuranceExpiry);

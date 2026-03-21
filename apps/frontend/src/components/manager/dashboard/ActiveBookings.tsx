@@ -117,12 +117,26 @@ export const ActiveBookings = ({
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant="outline"
-                        className="bg-green-50 text-green-700 border-green-200 uppercase text-[10px] tracking-wide"
-                      >
-                        Active
-                      </Badge>
+                      <div className="flex flex-col gap-1">
+                        <Badge
+                          variant="outline"
+                          className="bg-green-50 text-green-700 border-green-200 uppercase text-[10px] tracking-wide"
+                        >
+                          Active
+                        </Badge>
+                        {booking.isAdvancePayment && (
+                          <Badge
+                            variant="outline"
+                            className={`uppercase text-[10px] tracking-wide ${
+                              booking.remainingPaidAt
+                                ? "bg-blue-50 text-blue-700 border-blue-200"
+                                : "bg-amber-50 text-amber-700 border-amber-200"
+                            }`}
+                          >
+                            {booking.remainingPaidAt ? "Settled" : "Bal. Due"}
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">

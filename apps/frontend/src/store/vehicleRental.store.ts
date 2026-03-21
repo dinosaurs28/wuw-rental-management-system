@@ -27,6 +27,8 @@ interface VehicleRentalState {
   // Booking state
   selectedKycFilePublicId: string | null;
   paymentType: "CASH" | "ONLINE" | null;
+  paymentFlow: "FULL" | "ADVANCE";
+  advancePayAmount: number;
 
   // Booking response (after API call)
   holdId: string | null;
@@ -62,6 +64,8 @@ interface VehicleRentalState {
   setDeposit: (deposit: number) => void;
   setSelectedKyc: (filePublicId: string | null) => void;
   setPaymentType: (type: "CASH" | "ONLINE" | null) => void;
+  setPaymentFlow: (flow: "FULL" | "ADVANCE") => void;
+  setAdvancePayAmount: (amount: number) => void;
   setBookingResponse: (response: {
     holdId: string;
     transactionId: string;
@@ -174,6 +178,8 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
       deposit: 0,
       selectedKycFilePublicId: null,
       paymentType: null,
+      paymentFlow: "FULL",
+      advancePayAmount: 0,
       holdId: null,
       transactionId: null,
       paymentURL: null,
@@ -273,6 +279,10 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
 
       setPaymentType: (type) => set({ paymentType: type }),
 
+      setPaymentFlow: (flow) => set({ paymentFlow: flow }),
+
+      setAdvancePayAmount: (amount) => set({ advancePayAmount: Math.max(0, amount) }),
+
       setBookingResponse: (response) =>
         set({
           holdId: response.holdId,
@@ -340,6 +350,8 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
         set({
           selectedKycFilePublicId: null,
           paymentType: null,
+          paymentFlow: "FULL",
+          advancePayAmount: 0,
           holdId: null,
           transactionId: null,
           paymentURL: null,
