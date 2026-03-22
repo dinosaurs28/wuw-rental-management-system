@@ -81,6 +81,7 @@ import {
 } from "../../controller/branchManager/captureConfig.controller.js";
 import { upload } from "../../middlewares/upload.middleware.js";
 import discountRouter from "./discount.routes.js";
+import paymentRouter from "./payment.routes.js";
 
 const router: Router = Router();
 
@@ -227,5 +228,8 @@ router.delete("/capture-configs/:publicId", ManagerCheck, DeleteCaptureConfig);
 
 // Discount System
 router.use("/discount", discountRouter);
+
+// Payment & Cash Management
+router.use("/payment", paymentRouter);
 
 export default router;

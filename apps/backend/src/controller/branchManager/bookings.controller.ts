@@ -7,6 +7,7 @@ import { redis } from "../../lib/redisconfig.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { AdvanceDepositService } from "../../services/booking/advance-deposit.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
+import { financialStateService, branchPaymentConfigService } from "../../services/payment/index.js";
 
 const advanceDepositService = new AdvanceDepositService();
 
@@ -507,6 +508,25 @@ export const ConfirmPickupWithDeposit = async (req: Request, res: Response) => {
         .json({
           message: "Payload must have requireManagerConfirmation: false",
         });
+    }
+
+    // Payment gate: verify booking is financially cleared before allowing pickup
+    const [financialState, paymentConfig] = await Promise.all([
+      financialStateService.getState(booking.id),
+      branchPaymentConfigService.getConfig(branchId),
+    ]);
+    const strictMode = paymentConfig.cashConfirmationEnabled && paymentConfig.blockProgressionUntilConfirmed;
+    const allowedStates = strictMode
+      ? ["FULLY_PAID"]
+      : ["FULLY_PAID", "PAID_PENDING_CONFIRMATION"];
+    if (!allowedStates.includes(financialState.lifecycleState)) {
+      return res.status(StatusCode.PAYMENT_REQUIRED).json({
+        message: "Payment must be collected and confirmed before vehicle pickup",
+        financialState: {
+          lifecycleState: financialState.lifecycleState,
+          amountDue: financialState.amountDue,
+        },
+      });
     }
 
     const vehicleIds = booking.items.map((item) => item.vehicleId);

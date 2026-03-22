@@ -766,6 +766,87 @@ exports.Prisma.ManualDiscountScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.BranchPaymentConfigScalarFieldEnum = {
+  id: 'id',
+  branchId: 'branchId',
+  cashConfirmationEnabled: 'cashConfirmationEnabled',
+  blockProgressionUntilConfirmed: 'blockProgressionUntilConfirmed',
+  maxCashPerEmployee: 'maxCashPerEmployee',
+  requireShiftSettlement: 'requireShiftSettlement',
+  splitPaymentEnabled: 'splitPaymentEnabled',
+  crossBranchSettlementEnabled: 'crossBranchSettlementEnabled',
+  refundApprovalRequired: 'refundApprovalRequired',
+  onlineRefundEnabled: 'onlineRefundEnabled',
+  delayedCashAlertHours: 'delayedCashAlertHours',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PaymentTransactionScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  idempotencyKey: 'idempotencyKey',
+  bookingId: 'bookingId',
+  branchId: 'branchId',
+  purpose: 'purpose',
+  method: 'method',
+  status: 'status',
+  totalAmount: 'totalAmount',
+  cashAmount: 'cashAmount',
+  onlineAmount: 'onlineAmount',
+  onlineTransactionRef: 'onlineTransactionRef',
+  onlineGateway: 'onlineGateway',
+  collectedById: 'collectedById',
+  collectedAt: 'collectedAt',
+  confirmedById: 'confirmedById',
+  confirmedAt: 'confirmedAt',
+  rejectedById: 'rejectedById',
+  rejectedAt: 'rejectedAt',
+  rejectionReason: 'rejectionReason',
+  cashShiftId: 'cashShiftId',
+  notes: 'notes',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.RefundRequestScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  bookingId: 'bookingId',
+  branchId: 'branchId',
+  amount: 'amount',
+  reason: 'reason',
+  method: 'method',
+  status: 'status',
+  requestedById: 'requestedById',
+  approvedById: 'approvedById',
+  approvedAt: 'approvedAt',
+  completedById: 'completedById',
+  completedAt: 'completedAt',
+  onlineTransactionRef: 'onlineTransactionRef',
+  rejectionReason: 'rejectionReason',
+  rejectedAt: 'rejectedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CashShiftScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  employeeId: 'employeeId',
+  branchId: 'branchId',
+  status: 'status',
+  openedAt: 'openedAt',
+  closedAt: 'closedAt',
+  expectedTotal: 'expectedTotal',
+  actualTotal: 'actualTotal',
+  discrepancy: 'discrepancy',
+  discrepancyExplanation: 'discrepancyExplanation',
+  reconciledById: 'reconciledById',
+  reconciledAt: 'reconciledAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -837,7 +918,11 @@ exports.StaffActionType = exports.$Enums.StaffActionType = {
   APPLIED: 'APPLIED',
   OVERRIDDEN: 'OVERRIDDEN',
   RECALCULATED: 'RECALCULATED',
-  FLAGGED: 'FLAGGED'
+  FLAGGED: 'FLAGGED',
+  COLLECTED: 'COLLECTED',
+  RECONCILED: 'RECONCILED',
+  SETTLED: 'SETTLED',
+  DISBURSED: 'DISBURSED'
 };
 
 exports.StaffEntityType = exports.$Enums.StaffEntityType = {
@@ -854,7 +939,10 @@ exports.StaffEntityType = exports.$Enums.StaffEntityType = {
   CAPTURE_CONFIG: 'CAPTURE_CONFIG',
   DISCOUNT_RULE: 'DISCOUNT_RULE',
   DISCOUNT_APPLICATION: 'DISCOUNT_APPLICATION',
-  MANUAL_DISCOUNT: 'MANUAL_DISCOUNT'
+  MANUAL_DISCOUNT: 'MANUAL_DISCOUNT',
+  PAYMENT_TRANSACTION: 'PAYMENT_TRANSACTION',
+  CASH_SHIFT: 'CASH_SHIFT',
+  REFUND_REQUEST: 'REFUND_REQUEST'
 };
 
 exports.VehicleStatus = exports.$Enums.VehicleStatus = {
@@ -990,6 +1078,45 @@ exports.ManualDiscountStatus = exports.$Enums.ManualDiscountStatus = {
   REJECTED: 'REJECTED'
 };
 
+exports.PaymentPurpose = exports.$Enums.PaymentPurpose = {
+  ADVANCE: 'ADVANCE',
+  REMAINING_BALANCE: 'REMAINING_BALANCE',
+  FULL_PAYMENT: 'FULL_PAYMENT',
+  EXTENSION: 'EXTENSION',
+  DAMAGE_FEE: 'DAMAGE_FEE',
+  SAFETY_DEPOSIT: 'SAFETY_DEPOSIT',
+  OVERPAYMENT_REFUND: 'OVERPAYMENT_REFUND',
+  CANCELLATION_REFUND: 'CANCELLATION_REFUND'
+};
+
+exports.PaymentMethod = exports.$Enums.PaymentMethod = {
+  CASH: 'CASH',
+  ONLINE: 'ONLINE',
+  SPLIT: 'SPLIT'
+};
+
+exports.PaymentTransactionStatus = exports.$Enums.PaymentTransactionStatus = {
+  INITIATED: 'INITIATED',
+  COLLECTED: 'COLLECTED',
+  CONFIRMED: 'CONFIRMED',
+  FAILED: 'FAILED',
+  REJECTED: 'REJECTED',
+  REFUNDED: 'REFUNDED'
+};
+
+exports.RefundStatus = exports.$Enums.RefundStatus = {
+  PENDING_APPROVAL: 'PENDING_APPROVAL',
+  APPROVED: 'APPROVED',
+  COMPLETED: 'COMPLETED',
+  REJECTED: 'REJECTED'
+};
+
+exports.CashShiftStatus = exports.$Enums.CashShiftStatus = {
+  OPEN: 'OPEN',
+  CLOSED: 'CLOSED',
+  DISCREPANCY_FLAGGED: 'DISCREPANCY_FLAGGED'
+};
+
 exports.Prisma.ModelName = {
   User: 'User',
   UserProvider: 'UserProvider',
@@ -1035,7 +1162,11 @@ exports.Prisma.ModelName = {
   BranchDiscountConfig: 'BranchDiscountConfig',
   DiscountApplication: 'DiscountApplication',
   CouponUsageLog: 'CouponUsageLog',
-  ManualDiscount: 'ManualDiscount'
+  ManualDiscount: 'ManualDiscount',
+  BranchPaymentConfig: 'BranchPaymentConfig',
+  PaymentTransaction: 'PaymentTransaction',
+  RefundRequest: 'RefundRequest',
+  CashShift: 'CashShift'
 };
 
 /**

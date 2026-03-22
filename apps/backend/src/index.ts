@@ -25,6 +25,7 @@ import { initCleanupWorker } from "./jobs/cleanup.worker.js";
 import { initFileCleanupWorker } from "./jobs/fileCleanup.worker.js";
 import { initBookingExpiryWorker } from "./jobs/bookingExpiry.worker.js";
 import { initInvoiceWorker } from "./jobs/invoice.worker.js";
+import { initDelayedCashAlertWorker } from "./jobs/delayedCashAlert.worker.js";
 
 // Initialize passport AFTER env vars are loaded
 initializePassport();
@@ -35,6 +36,7 @@ initCleanupWorker();
 initFileCleanupWorker();
 initBookingExpiryWorker();
 initInvoiceWorker();
+initDelayedCashAlertWorker();
 
 const app = express();
 

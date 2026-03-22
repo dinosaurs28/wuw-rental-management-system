@@ -144,6 +144,14 @@ model User {
   discountRulesCreated  DiscountRule[]         @relation("DiscountRuleCreator")
   manualDiscountsIssued ManualDiscount[]       @relation("ManualDiscountIssuer")
   manualDiscountsApproved ManualDiscount[]     @relation("ManualDiscountApprover")
+  collectedPayments     PaymentTransaction[]   @relation("PaymentCollector")
+  confirmedPayments     PaymentTransaction[]   @relation("PaymentConfirmer")
+  rejectedPayments      PaymentTransaction[]   @relation("PaymentRejector")
+  openShifts            CashShift[]            @relation("ShiftEmployee")
+  reconciledShifts      CashShift[]            @relation("ShiftReconciler")
+  refundRequestsMade    RefundRequest[]        @relation("RefundRequester")
+  refundRequestsApproved RefundRequest[]       @relation("RefundApprover")
+  refundRequestsCompleted RefundRequest[]      @relation("RefundCompleter")
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   deletedAt             DateTime?
@@ -264,6 +272,10 @@ model Branch {
   staffActivityLogs       StaffActivityLog[]
   durationDiscountSlabs   DurationDiscountSlab[]
   discountConfig          BranchDiscountConfig?
+  paymentConfig           BranchPaymentConfig?
+  paymentTransactions     PaymentTransaction[]
+  cashShifts              CashShift[]
+  refundRequests          RefundRequest[]
   createdAt               DateTime                 @default(now())
   deletedAt               DateTime?
 }
@@ -286,6 +298,10 @@ enum StaffActionType {
   OVERRIDDEN
   RECALCULATED
   FLAGGED
+  COLLECTED
+  RECONCILED
+  SETTLED
+  DISBURSED
 }
 
 enum StaffEntityType {
@@ -303,6 +319,50 @@ enum StaffEntityType {
   DISCOUNT_RULE
   DISCOUNT_APPLICATION
   MANUAL_DISCOUNT
+  PAYMENT_TRANSACTION
+  CASH_SHIFT
+  REFUND_REQUEST
+}
+
+// ── Payment Management Enums ──────────────────────────────────────────────────
+
+enum PaymentMethod {
+  CASH
+  ONLINE
+  SPLIT
+}
+
+enum PaymentTransactionStatus {
+  INITIATED
+  COLLECTED
+  CONFIRMED
+  FAILED
+  REJECTED
+  REFUNDED
+}
+
+enum PaymentPurpose {
+  ADVANCE
+  REMAINING_BALANCE
+  FULL_PAYMENT
+  EXTENSION
+  DAMAGE_FEE
+  SAFETY_DEPOSIT
+  OVERPAYMENT_REFUND
+  CANCELLATION_REFUND
+}
+
+enum RefundStatus {
+  PENDING_APPROVAL
+  APPROVED
+  COMPLETED
+  REJECTED
+}
+
+enum CashShiftStatus {
+  OPEN
+  CLOSED
+  DISCREPANCY_FLAGGED
 }
 
 model StaffActivityLog {
@@ -644,6 +704,10 @@ model Booking {
   discountRule          DiscountRule?          @relation(fields: [discountRuleId], references: [id])
   discountApplication   DiscountApplication?
   manualDiscount        ManualDiscount?
+
+  // Payment Tracking
+  paymentTransactions   PaymentTransaction[]
+  refundRequests        RefundRequest[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -1272,4 +1336,160 @@ model ManualDiscount {
   @@index([issuedById, createdAt])
   @@index([bookingId])
   @@index([status])
+}
+
+// ── Cash & Payment Management ────────────────────────────────────────────────
+
+// Per-branch payment system configuration. Controls whether cash confirmation,
+// shift tracking, split payments, and refund approval workflows are enabled.
+model BranchPaymentConfig {
+  id                           Int      @id @default(autoincrement())
+  branchId                     Int      @unique
+
+  // Cash control — false = simple mode (all cash auto-confirmed)
+  cashConfirmationEnabled      Boolean  @default(false)
+  // When cashConfirmationEnabled=true: block PICKED_UP until cash CONFIRMED
+  blockProgressionUntilConfirmed Boolean @default(true)
+  // Optional per-employee cash limit (INR). null = no limit
+  maxCashPerEmployee           Decimal? @db.Decimal(10, 2)
+  // Require employee to close shift before logging out
+  requireShiftSettlement       Boolean  @default(false)
+  // Allow SPLIT method (cash + online in one transaction)
+  splitPaymentEnabled          Boolean  @default(false)
+  // Allow settling bookings from other branches (future use)
+  crossBranchSettlementEnabled Boolean  @default(false)
+  // Cash refunds require manager approval before payout
+  refundApprovalRequired       Boolean  @default(true)
+  // Allow online refunds to be processed through this branch
+  onlineRefundEnabled          Boolean  @default(true)
+  // Hours after which a COLLECTED (unconfirmed) cash triggers a fraud alert
+  delayedCashAlertHours        Int      @default(2)
+
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Single financial transaction attached to a booking. Append-only — never
+// updated directly; state transitions occur via dedicated service methods.
+model PaymentTransaction {
+  id              Int                      @id @default(autoincrement())
+  publicId        String                   @unique
+  // Caller-supplied unique key to prevent duplicate submissions on retry
+  idempotencyKey  String                   @unique
+  bookingId       Int
+  branchId        Int
+  purpose         PaymentPurpose
+  method          PaymentMethod
+  status          PaymentTransactionStatus @default(INITIATED)
+
+  // Amounts (totalAmount = cashAmount + onlineAmount)
+  totalAmount     Decimal                  @db.Decimal(10, 2)
+  cashAmount      Decimal                  @default(0) @db.Decimal(10, 2)
+  onlineAmount    Decimal                  @default(0) @db.Decimal(10, 2)
+
+  // Online payment metadata
+  onlineTransactionRef String?
+  onlineGateway        String?
+
+  // Cash collection actor (employee)
+  collectedById   Int?
+  collectedAt     DateTime?
+
+  // Cash confirmation actor (manager)
+  confirmedById   Int?
+  confirmedAt     DateTime?
+
+  // Rejection
+  rejectedById    Int?
+  rejectedAt      DateTime?
+  rejectionReason String?
+
+  // Optional shift linkage
+  cashShiftId     Int?
+
+  notes           String?
+
+  booking         Booking             @relation(fields: [bookingId], references: [id])
+  branch          Branch              @relation(fields: [branchId], references: [id])
+  collectedBy     User?               @relation("PaymentCollector", fields: [collectedById], references: [id])
+  confirmedBy     User?               @relation("PaymentConfirmer", fields: [confirmedById], references: [id])
+  rejectedBy      User?               @relation("PaymentRejector", fields: [rejectedById], references: [id])
+  cashShift       CashShift?          @relation(fields: [cashShiftId], references: [id])
+
+  createdAt       DateTime            @default(now())
+
+  @@index([bookingId])
+  @@index([branchId, status])
+  @@index([collectedById, collectedAt])
+  @@index([cashShiftId])
+  @@index([purpose])
+  @@index([status, createdAt])
+}
+
+// Refund request lifecycle. Cash refunds require manager approval before payout.
+model RefundRequest {
+  id                 Int          @id @default(autoincrement())
+  publicId           String       @unique
+  bookingId          Int
+  branchId           Int
+  amount             Decimal      @db.Decimal(10, 2)
+  reason             String
+  method             PaymentMethod
+  status             RefundStatus @default(PENDING_APPROVAL)
+
+  requestedById      Int
+  approvedById       Int?
+  approvedAt         DateTime?
+  completedById      Int?
+  completedAt        DateTime?
+  onlineTransactionRef String?
+  rejectionReason    String?
+  rejectedAt         DateTime?
+
+  booking            Booking      @relation(fields: [bookingId], references: [id])
+  branch             Branch       @relation(fields: [branchId], references: [id])
+  requestedBy        User         @relation("RefundRequester", fields: [requestedById], references: [id])
+  approvedBy         User?        @relation("RefundApprover", fields: [approvedById], references: [id])
+  completedBy        User?        @relation("RefundCompleter", fields: [completedById], references: [id])
+
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@index([bookingId])
+  @@index([branchId, status])
+  @@index([requestedById])
+}
+
+// Tracks an employee's cash-handling session (shift). All cash PaymentTransactions
+// collected during a shift are linked here for reconciliation.
+model CashShift {
+  id                    Int             @id @default(autoincrement())
+  publicId              String          @unique
+  employeeId            Int
+  branchId              Int
+  status                CashShiftStatus @default(OPEN)
+  openedAt              DateTime        @default(now())
+  closedAt              DateTime?
+  // Sum of all CONFIRMED cash transactions linked to this shift
+  expectedTotal         Decimal         @default(0) @db.Decimal(10, 2)
+  // Actual cash counted by employee at shift close
+  actualTotal           Decimal         @default(0) @db.Decimal(10, 2)
+  // actualTotal - expectedTotal (negative = short, positive = over)
+  discrepancy           Decimal         @default(0) @db.Decimal(10, 2)
+  discrepancyExplanation String?
+  reconciledById        Int?
+  reconciledAt          DateTime?
+
+  employee              User            @relation("ShiftEmployee", fields: [employeeId], references: [id])
+  branch                Branch          @relation(fields: [branchId], references: [id])
+  reconciledBy          User?           @relation("ShiftReconciler", fields: [reconciledById], references: [id])
+  transactions          PaymentTransaction[]
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@index([employeeId, status])
+  @@index([branchId, status])
+  @@index([openedAt])
 }

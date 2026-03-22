@@ -238,6 +238,26 @@ export type CouponUsageLog = $Result.DefaultSelection<Prisma.$CouponUsageLogPayl
  * 
  */
 export type ManualDiscount = $Result.DefaultSelection<Prisma.$ManualDiscountPayload>
+/**
+ * Model BranchPaymentConfig
+ * 
+ */
+export type BranchPaymentConfig = $Result.DefaultSelection<Prisma.$BranchPaymentConfigPayload>
+/**
+ * Model PaymentTransaction
+ * 
+ */
+export type PaymentTransaction = $Result.DefaultSelection<Prisma.$PaymentTransactionPayload>
+/**
+ * Model RefundRequest
+ * 
+ */
+export type RefundRequest = $Result.DefaultSelection<Prisma.$RefundRequestPayload>
+/**
+ * Model CashShift
+ * 
+ */
+export type CashShift = $Result.DefaultSelection<Prisma.$CashShiftPayload>
 
 /**
  * Enums
@@ -297,7 +317,11 @@ export const StaffActionType: {
   APPLIED: 'APPLIED',
   OVERRIDDEN: 'OVERRIDDEN',
   RECALCULATED: 'RECALCULATED',
-  FLAGGED: 'FLAGGED'
+  FLAGGED: 'FLAGGED',
+  COLLECTED: 'COLLECTED',
+  RECONCILED: 'RECONCILED',
+  SETTLED: 'SETTLED',
+  DISBURSED: 'DISBURSED'
 };
 
 export type StaffActionType = (typeof StaffActionType)[keyof typeof StaffActionType]
@@ -317,7 +341,10 @@ export const StaffEntityType: {
   CAPTURE_CONFIG: 'CAPTURE_CONFIG',
   DISCOUNT_RULE: 'DISCOUNT_RULE',
   DISCOUNT_APPLICATION: 'DISCOUNT_APPLICATION',
-  MANUAL_DISCOUNT: 'MANUAL_DISCOUNT'
+  MANUAL_DISCOUNT: 'MANUAL_DISCOUNT',
+  PAYMENT_TRANSACTION: 'PAYMENT_TRANSACTION',
+  CASH_SHIFT: 'CASH_SHIFT',
+  REFUND_REQUEST: 'REFUND_REQUEST'
 };
 
 export type StaffEntityType = (typeof StaffEntityType)[keyof typeof StaffEntityType]
@@ -512,6 +539,60 @@ export const ManualDiscountStatus: {
 
 export type ManualDiscountStatus = (typeof ManualDiscountStatus)[keyof typeof ManualDiscountStatus]
 
+
+export const PaymentPurpose: {
+  ADVANCE: 'ADVANCE',
+  REMAINING_BALANCE: 'REMAINING_BALANCE',
+  FULL_PAYMENT: 'FULL_PAYMENT',
+  EXTENSION: 'EXTENSION',
+  DAMAGE_FEE: 'DAMAGE_FEE',
+  SAFETY_DEPOSIT: 'SAFETY_DEPOSIT',
+  OVERPAYMENT_REFUND: 'OVERPAYMENT_REFUND',
+  CANCELLATION_REFUND: 'CANCELLATION_REFUND'
+};
+
+export type PaymentPurpose = (typeof PaymentPurpose)[keyof typeof PaymentPurpose]
+
+
+export const PaymentMethod: {
+  CASH: 'CASH',
+  ONLINE: 'ONLINE',
+  SPLIT: 'SPLIT'
+};
+
+export type PaymentMethod = (typeof PaymentMethod)[keyof typeof PaymentMethod]
+
+
+export const PaymentTransactionStatus: {
+  INITIATED: 'INITIATED',
+  COLLECTED: 'COLLECTED',
+  CONFIRMED: 'CONFIRMED',
+  FAILED: 'FAILED',
+  REJECTED: 'REJECTED',
+  REFUNDED: 'REFUNDED'
+};
+
+export type PaymentTransactionStatus = (typeof PaymentTransactionStatus)[keyof typeof PaymentTransactionStatus]
+
+
+export const RefundStatus: {
+  PENDING_APPROVAL: 'PENDING_APPROVAL',
+  APPROVED: 'APPROVED',
+  COMPLETED: 'COMPLETED',
+  REJECTED: 'REJECTED'
+};
+
+export type RefundStatus = (typeof RefundStatus)[keyof typeof RefundStatus]
+
+
+export const CashShiftStatus: {
+  OPEN: 'OPEN',
+  CLOSED: 'CLOSED',
+  DISCREPANCY_FLAGGED: 'DISCREPANCY_FLAGGED'
+};
+
+export type CashShiftStatus = (typeof CashShiftStatus)[keyof typeof CashShiftStatus]
+
 }
 
 export type AuthProvider = $Enums.AuthProvider
@@ -613,6 +694,26 @@ export const AdjustmentType: typeof $Enums.AdjustmentType
 export type ManualDiscountStatus = $Enums.ManualDiscountStatus
 
 export const ManualDiscountStatus: typeof $Enums.ManualDiscountStatus
+
+export type PaymentPurpose = $Enums.PaymentPurpose
+
+export const PaymentPurpose: typeof $Enums.PaymentPurpose
+
+export type PaymentMethod = $Enums.PaymentMethod
+
+export const PaymentMethod: typeof $Enums.PaymentMethod
+
+export type PaymentTransactionStatus = $Enums.PaymentTransactionStatus
+
+export const PaymentTransactionStatus: typeof $Enums.PaymentTransactionStatus
+
+export type RefundStatus = $Enums.RefundStatus
+
+export const RefundStatus: typeof $Enums.RefundStatus
+
+export type CashShiftStatus = $Enums.CashShiftStatus
+
+export const CashShiftStatus: typeof $Enums.CashShiftStatus
 
 /**
  * ##  Prisma Client ʲˢ
@@ -1186,6 +1287,46 @@ export class PrismaClient<
     * ```
     */
   get manualDiscount(): Prisma.ManualDiscountDelegate<ExtArgs>;
+
+  /**
+   * `prisma.branchPaymentConfig`: Exposes CRUD operations for the **BranchPaymentConfig** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more BranchPaymentConfigs
+    * const branchPaymentConfigs = await prisma.branchPaymentConfig.findMany()
+    * ```
+    */
+  get branchPaymentConfig(): Prisma.BranchPaymentConfigDelegate<ExtArgs>;
+
+  /**
+   * `prisma.paymentTransaction`: Exposes CRUD operations for the **PaymentTransaction** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more PaymentTransactions
+    * const paymentTransactions = await prisma.paymentTransaction.findMany()
+    * ```
+    */
+  get paymentTransaction(): Prisma.PaymentTransactionDelegate<ExtArgs>;
+
+  /**
+   * `prisma.refundRequest`: Exposes CRUD operations for the **RefundRequest** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more RefundRequests
+    * const refundRequests = await prisma.refundRequest.findMany()
+    * ```
+    */
+  get refundRequest(): Prisma.RefundRequestDelegate<ExtArgs>;
+
+  /**
+   * `prisma.cashShift`: Exposes CRUD operations for the **CashShift** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more CashShifts
+    * const cashShifts = await prisma.cashShift.findMany()
+    * ```
+    */
+  get cashShift(): Prisma.CashShiftDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -1671,7 +1812,11 @@ export namespace Prisma {
     BranchDiscountConfig: 'BranchDiscountConfig',
     DiscountApplication: 'DiscountApplication',
     CouponUsageLog: 'CouponUsageLog',
-    ManualDiscount: 'ManualDiscount'
+    ManualDiscount: 'ManualDiscount',
+    BranchPaymentConfig: 'BranchPaymentConfig',
+    PaymentTransaction: 'PaymentTransaction',
+    RefundRequest: 'RefundRequest',
+    CashShift: 'CashShift'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1687,7 +1832,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehiclePhotoCaptureConfig" | "vehicle" | "vehiclePricingOverride" | "vehicleCustomPricing" | "branchPricingDefaults" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "gSTRule" | "timezoneSetting" | "cancellationInvoice" | "featureFlag" | "branchFeatureFlag" | "vehicleFeatureFlag" | "vehicleSwap" | "discountRule" | "durationDiscountSlab" | "branchDiscountConfig" | "discountApplication" | "couponUsageLog" | "manualDiscount"
+      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehiclePhotoCaptureConfig" | "vehicle" | "vehiclePricingOverride" | "vehicleCustomPricing" | "branchPricingDefaults" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "gSTRule" | "timezoneSetting" | "cancellationInvoice" | "featureFlag" | "branchFeatureFlag" | "vehicleFeatureFlag" | "vehicleSwap" | "discountRule" | "durationDiscountSlab" | "branchDiscountConfig" | "discountApplication" | "couponUsageLog" | "manualDiscount" | "branchPaymentConfig" | "paymentTransaction" | "refundRequest" | "cashShift"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -4841,6 +4986,286 @@ export namespace Prisma {
           }
         }
       }
+      BranchPaymentConfig: {
+        payload: Prisma.$BranchPaymentConfigPayload<ExtArgs>
+        fields: Prisma.BranchPaymentConfigFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.BranchPaymentConfigFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPaymentConfigPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.BranchPaymentConfigFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPaymentConfigPayload>
+          }
+          findFirst: {
+            args: Prisma.BranchPaymentConfigFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPaymentConfigPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.BranchPaymentConfigFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPaymentConfigPayload>
+          }
+          findMany: {
+            args: Prisma.BranchPaymentConfigFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPaymentConfigPayload>[]
+          }
+          create: {
+            args: Prisma.BranchPaymentConfigCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPaymentConfigPayload>
+          }
+          createMany: {
+            args: Prisma.BranchPaymentConfigCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.BranchPaymentConfigCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPaymentConfigPayload>[]
+          }
+          delete: {
+            args: Prisma.BranchPaymentConfigDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPaymentConfigPayload>
+          }
+          update: {
+            args: Prisma.BranchPaymentConfigUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPaymentConfigPayload>
+          }
+          deleteMany: {
+            args: Prisma.BranchPaymentConfigDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.BranchPaymentConfigUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.BranchPaymentConfigUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchPaymentConfigPayload>
+          }
+          aggregate: {
+            args: Prisma.BranchPaymentConfigAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateBranchPaymentConfig>
+          }
+          groupBy: {
+            args: Prisma.BranchPaymentConfigGroupByArgs<ExtArgs>
+            result: $Utils.Optional<BranchPaymentConfigGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.BranchPaymentConfigCountArgs<ExtArgs>
+            result: $Utils.Optional<BranchPaymentConfigCountAggregateOutputType> | number
+          }
+        }
+      }
+      PaymentTransaction: {
+        payload: Prisma.$PaymentTransactionPayload<ExtArgs>
+        fields: Prisma.PaymentTransactionFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.PaymentTransactionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaymentTransactionPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.PaymentTransactionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaymentTransactionPayload>
+          }
+          findFirst: {
+            args: Prisma.PaymentTransactionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaymentTransactionPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.PaymentTransactionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaymentTransactionPayload>
+          }
+          findMany: {
+            args: Prisma.PaymentTransactionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaymentTransactionPayload>[]
+          }
+          create: {
+            args: Prisma.PaymentTransactionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaymentTransactionPayload>
+          }
+          createMany: {
+            args: Prisma.PaymentTransactionCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.PaymentTransactionCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaymentTransactionPayload>[]
+          }
+          delete: {
+            args: Prisma.PaymentTransactionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaymentTransactionPayload>
+          }
+          update: {
+            args: Prisma.PaymentTransactionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaymentTransactionPayload>
+          }
+          deleteMany: {
+            args: Prisma.PaymentTransactionDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.PaymentTransactionUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.PaymentTransactionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaymentTransactionPayload>
+          }
+          aggregate: {
+            args: Prisma.PaymentTransactionAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregatePaymentTransaction>
+          }
+          groupBy: {
+            args: Prisma.PaymentTransactionGroupByArgs<ExtArgs>
+            result: $Utils.Optional<PaymentTransactionGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.PaymentTransactionCountArgs<ExtArgs>
+            result: $Utils.Optional<PaymentTransactionCountAggregateOutputType> | number
+          }
+        }
+      }
+      RefundRequest: {
+        payload: Prisma.$RefundRequestPayload<ExtArgs>
+        fields: Prisma.RefundRequestFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.RefundRequestFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RefundRequestPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.RefundRequestFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RefundRequestPayload>
+          }
+          findFirst: {
+            args: Prisma.RefundRequestFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RefundRequestPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.RefundRequestFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RefundRequestPayload>
+          }
+          findMany: {
+            args: Prisma.RefundRequestFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RefundRequestPayload>[]
+          }
+          create: {
+            args: Prisma.RefundRequestCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RefundRequestPayload>
+          }
+          createMany: {
+            args: Prisma.RefundRequestCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.RefundRequestCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RefundRequestPayload>[]
+          }
+          delete: {
+            args: Prisma.RefundRequestDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RefundRequestPayload>
+          }
+          update: {
+            args: Prisma.RefundRequestUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RefundRequestPayload>
+          }
+          deleteMany: {
+            args: Prisma.RefundRequestDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.RefundRequestUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.RefundRequestUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RefundRequestPayload>
+          }
+          aggregate: {
+            args: Prisma.RefundRequestAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateRefundRequest>
+          }
+          groupBy: {
+            args: Prisma.RefundRequestGroupByArgs<ExtArgs>
+            result: $Utils.Optional<RefundRequestGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.RefundRequestCountArgs<ExtArgs>
+            result: $Utils.Optional<RefundRequestCountAggregateOutputType> | number
+          }
+        }
+      }
+      CashShift: {
+        payload: Prisma.$CashShiftPayload<ExtArgs>
+        fields: Prisma.CashShiftFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.CashShiftFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CashShiftPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.CashShiftFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CashShiftPayload>
+          }
+          findFirst: {
+            args: Prisma.CashShiftFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CashShiftPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.CashShiftFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CashShiftPayload>
+          }
+          findMany: {
+            args: Prisma.CashShiftFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CashShiftPayload>[]
+          }
+          create: {
+            args: Prisma.CashShiftCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CashShiftPayload>
+          }
+          createMany: {
+            args: Prisma.CashShiftCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.CashShiftCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CashShiftPayload>[]
+          }
+          delete: {
+            args: Prisma.CashShiftDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CashShiftPayload>
+          }
+          update: {
+            args: Prisma.CashShiftUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CashShiftPayload>
+          }
+          deleteMany: {
+            args: Prisma.CashShiftDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.CashShiftUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.CashShiftUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CashShiftPayload>
+          }
+          aggregate: {
+            args: Prisma.CashShiftAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateCashShift>
+          }
+          groupBy: {
+            args: Prisma.CashShiftGroupByArgs<ExtArgs>
+            result: $Utils.Optional<CashShiftGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.CashShiftCountArgs<ExtArgs>
+            result: $Utils.Optional<CashShiftCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -5012,6 +5437,14 @@ export namespace Prisma {
     discountRulesCreated: number
     manualDiscountsIssued: number
     manualDiscountsApproved: number
+    collectedPayments: number
+    confirmedPayments: number
+    rejectedPayments: number
+    openShifts: number
+    reconciledShifts: number
+    refundRequestsMade: number
+    refundRequestsApproved: number
+    refundRequestsCompleted: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -5025,6 +5458,14 @@ export namespace Prisma {
     discountRulesCreated?: boolean | UserCountOutputTypeCountDiscountRulesCreatedArgs
     manualDiscountsIssued?: boolean | UserCountOutputTypeCountManualDiscountsIssuedArgs
     manualDiscountsApproved?: boolean | UserCountOutputTypeCountManualDiscountsApprovedArgs
+    collectedPayments?: boolean | UserCountOutputTypeCountCollectedPaymentsArgs
+    confirmedPayments?: boolean | UserCountOutputTypeCountConfirmedPaymentsArgs
+    rejectedPayments?: boolean | UserCountOutputTypeCountRejectedPaymentsArgs
+    openShifts?: boolean | UserCountOutputTypeCountOpenShiftsArgs
+    reconciledShifts?: boolean | UserCountOutputTypeCountReconciledShiftsArgs
+    refundRequestsMade?: boolean | UserCountOutputTypeCountRefundRequestsMadeArgs
+    refundRequestsApproved?: boolean | UserCountOutputTypeCountRefundRequestsApprovedArgs
+    refundRequestsCompleted?: boolean | UserCountOutputTypeCountRefundRequestsCompletedArgs
   }
 
   // Custom InputTypes
@@ -5106,6 +5547,62 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountManualDiscountsApprovedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ManualDiscountWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountCollectedPaymentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PaymentTransactionWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountConfirmedPaymentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PaymentTransactionWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountRejectedPaymentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PaymentTransactionWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountOpenShiftsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CashShiftWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountReconciledShiftsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CashShiftWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountRefundRequestsMadeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RefundRequestWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountRefundRequestsApprovedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RefundRequestWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountRefundRequestsCompletedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RefundRequestWhereInput
   }
 
 
@@ -5250,6 +5747,9 @@ export namespace Prisma {
     auditLogs: number
     staffActivityLogs: number
     durationDiscountSlabs: number
+    paymentTransactions: number
+    cashShifts: number
+    refundRequests: number
   }
 
   export type BranchCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -5264,6 +5764,9 @@ export namespace Prisma {
     auditLogs?: boolean | BranchCountOutputTypeCountAuditLogsArgs
     staffActivityLogs?: boolean | BranchCountOutputTypeCountStaffActivityLogsArgs
     durationDiscountSlabs?: boolean | BranchCountOutputTypeCountDurationDiscountSlabsArgs
+    paymentTransactions?: boolean | BranchCountOutputTypeCountPaymentTransactionsArgs
+    cashShifts?: boolean | BranchCountOutputTypeCountCashShiftsArgs
+    refundRequests?: boolean | BranchCountOutputTypeCountRefundRequestsArgs
   }
 
   // Custom InputTypes
@@ -5352,6 +5855,27 @@ export namespace Prisma {
    */
   export type BranchCountOutputTypeCountDurationDiscountSlabsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: DurationDiscountSlabWhereInput
+  }
+
+  /**
+   * BranchCountOutputType without action
+   */
+  export type BranchCountOutputTypeCountPaymentTransactionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PaymentTransactionWhereInput
+  }
+
+  /**
+   * BranchCountOutputType without action
+   */
+  export type BranchCountOutputTypeCountCashShiftsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CashShiftWhereInput
+  }
+
+  /**
+   * BranchCountOutputType without action
+   */
+  export type BranchCountOutputTypeCountRefundRequestsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RefundRequestWhereInput
   }
 
 
@@ -5534,6 +6058,8 @@ export namespace Prisma {
     damages: number
     items: number
     vehicleSwaps: number
+    paymentTransactions: number
+    refundRequests: number
   }
 
   export type BookingCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -5541,6 +6067,8 @@ export namespace Prisma {
     damages?: boolean | BookingCountOutputTypeCountDamagesArgs
     items?: boolean | BookingCountOutputTypeCountItemsArgs
     vehicleSwaps?: boolean | BookingCountOutputTypeCountVehicleSwapsArgs
+    paymentTransactions?: boolean | BookingCountOutputTypeCountPaymentTransactionsArgs
+    refundRequests?: boolean | BookingCountOutputTypeCountRefundRequestsArgs
   }
 
   // Custom InputTypes
@@ -5580,6 +6108,20 @@ export namespace Prisma {
    */
   export type BookingCountOutputTypeCountVehicleSwapsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: VehicleSwapWhereInput
+  }
+
+  /**
+   * BookingCountOutputType without action
+   */
+  export type BookingCountOutputTypeCountPaymentTransactionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PaymentTransactionWhereInput
+  }
+
+  /**
+   * BookingCountOutputType without action
+   */
+  export type BookingCountOutputTypeCountRefundRequestsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RefundRequestWhereInput
   }
 
 
@@ -5740,6 +6282,37 @@ export namespace Prisma {
    */
   export type DiscountRuleCountOutputTypeCountApplicationsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: DiscountApplicationWhereInput
+  }
+
+
+  /**
+   * Count Type CashShiftCountOutputType
+   */
+
+  export type CashShiftCountOutputType = {
+    transactions: number
+  }
+
+  export type CashShiftCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    transactions?: boolean | CashShiftCountOutputTypeCountTransactionsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * CashShiftCountOutputType without action
+   */
+  export type CashShiftCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashShiftCountOutputType
+     */
+    select?: CashShiftCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * CashShiftCountOutputType without action
+   */
+  export type CashShiftCountOutputTypeCountTransactionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PaymentTransactionWhereInput
   }
 
 
@@ -6025,6 +6598,14 @@ export namespace Prisma {
     discountRulesCreated?: boolean | User$discountRulesCreatedArgs<ExtArgs>
     manualDiscountsIssued?: boolean | User$manualDiscountsIssuedArgs<ExtArgs>
     manualDiscountsApproved?: boolean | User$manualDiscountsApprovedArgs<ExtArgs>
+    collectedPayments?: boolean | User$collectedPaymentsArgs<ExtArgs>
+    confirmedPayments?: boolean | User$confirmedPaymentsArgs<ExtArgs>
+    rejectedPayments?: boolean | User$rejectedPaymentsArgs<ExtArgs>
+    openShifts?: boolean | User$openShiftsArgs<ExtArgs>
+    reconciledShifts?: boolean | User$reconciledShiftsArgs<ExtArgs>
+    refundRequestsMade?: boolean | User$refundRequestsMadeArgs<ExtArgs>
+    refundRequestsApproved?: boolean | User$refundRequestsApprovedArgs<ExtArgs>
+    refundRequestsCompleted?: boolean | User$refundRequestsCompletedArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -6074,6 +6655,14 @@ export namespace Prisma {
     discountRulesCreated?: boolean | User$discountRulesCreatedArgs<ExtArgs>
     manualDiscountsIssued?: boolean | User$manualDiscountsIssuedArgs<ExtArgs>
     manualDiscountsApproved?: boolean | User$manualDiscountsApprovedArgs<ExtArgs>
+    collectedPayments?: boolean | User$collectedPaymentsArgs<ExtArgs>
+    confirmedPayments?: boolean | User$confirmedPaymentsArgs<ExtArgs>
+    rejectedPayments?: boolean | User$rejectedPaymentsArgs<ExtArgs>
+    openShifts?: boolean | User$openShiftsArgs<ExtArgs>
+    reconciledShifts?: boolean | User$reconciledShiftsArgs<ExtArgs>
+    refundRequestsMade?: boolean | User$refundRequestsMadeArgs<ExtArgs>
+    refundRequestsApproved?: boolean | User$refundRequestsApprovedArgs<ExtArgs>
+    refundRequestsCompleted?: boolean | User$refundRequestsCompletedArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type UserIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6095,6 +6684,14 @@ export namespace Prisma {
       discountRulesCreated: Prisma.$DiscountRulePayload<ExtArgs>[]
       manualDiscountsIssued: Prisma.$ManualDiscountPayload<ExtArgs>[]
       manualDiscountsApproved: Prisma.$ManualDiscountPayload<ExtArgs>[]
+      collectedPayments: Prisma.$PaymentTransactionPayload<ExtArgs>[]
+      confirmedPayments: Prisma.$PaymentTransactionPayload<ExtArgs>[]
+      rejectedPayments: Prisma.$PaymentTransactionPayload<ExtArgs>[]
+      openShifts: Prisma.$CashShiftPayload<ExtArgs>[]
+      reconciledShifts: Prisma.$CashShiftPayload<ExtArgs>[]
+      refundRequestsMade: Prisma.$RefundRequestPayload<ExtArgs>[]
+      refundRequestsApproved: Prisma.$RefundRequestPayload<ExtArgs>[]
+      refundRequestsCompleted: Prisma.$RefundRequestPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -6486,6 +7083,14 @@ export namespace Prisma {
     discountRulesCreated<T extends User$discountRulesCreatedArgs<ExtArgs> = {}>(args?: Subset<T, User$discountRulesCreatedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DiscountRulePayload<ExtArgs>, T, "findMany"> | Null>
     manualDiscountsIssued<T extends User$manualDiscountsIssuedArgs<ExtArgs> = {}>(args?: Subset<T, User$manualDiscountsIssuedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ManualDiscountPayload<ExtArgs>, T, "findMany"> | Null>
     manualDiscountsApproved<T extends User$manualDiscountsApprovedArgs<ExtArgs> = {}>(args?: Subset<T, User$manualDiscountsApprovedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ManualDiscountPayload<ExtArgs>, T, "findMany"> | Null>
+    collectedPayments<T extends User$collectedPaymentsArgs<ExtArgs> = {}>(args?: Subset<T, User$collectedPaymentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentTransactionPayload<ExtArgs>, T, "findMany"> | Null>
+    confirmedPayments<T extends User$confirmedPaymentsArgs<ExtArgs> = {}>(args?: Subset<T, User$confirmedPaymentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentTransactionPayload<ExtArgs>, T, "findMany"> | Null>
+    rejectedPayments<T extends User$rejectedPaymentsArgs<ExtArgs> = {}>(args?: Subset<T, User$rejectedPaymentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentTransactionPayload<ExtArgs>, T, "findMany"> | Null>
+    openShifts<T extends User$openShiftsArgs<ExtArgs> = {}>(args?: Subset<T, User$openShiftsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CashShiftPayload<ExtArgs>, T, "findMany"> | Null>
+    reconciledShifts<T extends User$reconciledShiftsArgs<ExtArgs> = {}>(args?: Subset<T, User$reconciledShiftsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CashShiftPayload<ExtArgs>, T, "findMany"> | Null>
+    refundRequestsMade<T extends User$refundRequestsMadeArgs<ExtArgs> = {}>(args?: Subset<T, User$refundRequestsMadeArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "findMany"> | Null>
+    refundRequestsApproved<T extends User$refundRequestsApprovedArgs<ExtArgs> = {}>(args?: Subset<T, User$refundRequestsApprovedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "findMany"> | Null>
+    refundRequestsCompleted<T extends User$refundRequestsCompletedArgs<ExtArgs> = {}>(args?: Subset<T, User$refundRequestsCompletedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -7082,6 +7687,166 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: ManualDiscountScalarFieldEnum | ManualDiscountScalarFieldEnum[]
+  }
+
+  /**
+   * User.collectedPayments
+   */
+  export type User$collectedPaymentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentTransaction
+     */
+    select?: PaymentTransactionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+    where?: PaymentTransactionWhereInput
+    orderBy?: PaymentTransactionOrderByWithRelationInput | PaymentTransactionOrderByWithRelationInput[]
+    cursor?: PaymentTransactionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PaymentTransactionScalarFieldEnum | PaymentTransactionScalarFieldEnum[]
+  }
+
+  /**
+   * User.confirmedPayments
+   */
+  export type User$confirmedPaymentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentTransaction
+     */
+    select?: PaymentTransactionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+    where?: PaymentTransactionWhereInput
+    orderBy?: PaymentTransactionOrderByWithRelationInput | PaymentTransactionOrderByWithRelationInput[]
+    cursor?: PaymentTransactionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PaymentTransactionScalarFieldEnum | PaymentTransactionScalarFieldEnum[]
+  }
+
+  /**
+   * User.rejectedPayments
+   */
+  export type User$rejectedPaymentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentTransaction
+     */
+    select?: PaymentTransactionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+    where?: PaymentTransactionWhereInput
+    orderBy?: PaymentTransactionOrderByWithRelationInput | PaymentTransactionOrderByWithRelationInput[]
+    cursor?: PaymentTransactionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PaymentTransactionScalarFieldEnum | PaymentTransactionScalarFieldEnum[]
+  }
+
+  /**
+   * User.openShifts
+   */
+  export type User$openShiftsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashShift
+     */
+    select?: CashShiftSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashShiftInclude<ExtArgs> | null
+    where?: CashShiftWhereInput
+    orderBy?: CashShiftOrderByWithRelationInput | CashShiftOrderByWithRelationInput[]
+    cursor?: CashShiftWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CashShiftScalarFieldEnum | CashShiftScalarFieldEnum[]
+  }
+
+  /**
+   * User.reconciledShifts
+   */
+  export type User$reconciledShiftsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashShift
+     */
+    select?: CashShiftSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashShiftInclude<ExtArgs> | null
+    where?: CashShiftWhereInput
+    orderBy?: CashShiftOrderByWithRelationInput | CashShiftOrderByWithRelationInput[]
+    cursor?: CashShiftWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CashShiftScalarFieldEnum | CashShiftScalarFieldEnum[]
+  }
+
+  /**
+   * User.refundRequestsMade
+   */
+  export type User$refundRequestsMadeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefundRequest
+     */
+    select?: RefundRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefundRequestInclude<ExtArgs> | null
+    where?: RefundRequestWhereInput
+    orderBy?: RefundRequestOrderByWithRelationInput | RefundRequestOrderByWithRelationInput[]
+    cursor?: RefundRequestWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: RefundRequestScalarFieldEnum | RefundRequestScalarFieldEnum[]
+  }
+
+  /**
+   * User.refundRequestsApproved
+   */
+  export type User$refundRequestsApprovedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefundRequest
+     */
+    select?: RefundRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefundRequestInclude<ExtArgs> | null
+    where?: RefundRequestWhereInput
+    orderBy?: RefundRequestOrderByWithRelationInput | RefundRequestOrderByWithRelationInput[]
+    cursor?: RefundRequestWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: RefundRequestScalarFieldEnum | RefundRequestScalarFieldEnum[]
+  }
+
+  /**
+   * User.refundRequestsCompleted
+   */
+  export type User$refundRequestsCompletedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefundRequest
+     */
+    select?: RefundRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefundRequestInclude<ExtArgs> | null
+    where?: RefundRequestWhereInput
+    orderBy?: RefundRequestOrderByWithRelationInput | RefundRequestOrderByWithRelationInput[]
+    cursor?: RefundRequestWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: RefundRequestScalarFieldEnum | RefundRequestScalarFieldEnum[]
   }
 
   /**
@@ -12674,6 +13439,10 @@ export namespace Prisma {
     staffActivityLogs?: boolean | Branch$staffActivityLogsArgs<ExtArgs>
     durationDiscountSlabs?: boolean | Branch$durationDiscountSlabsArgs<ExtArgs>
     discountConfig?: boolean | Branch$discountConfigArgs<ExtArgs>
+    paymentConfig?: boolean | Branch$paymentConfigArgs<ExtArgs>
+    paymentTransactions?: boolean | Branch$paymentTransactionsArgs<ExtArgs>
+    cashShifts?: boolean | Branch$cashShiftsArgs<ExtArgs>
+    refundRequests?: boolean | Branch$refundRequestsArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["branch"]>
 
@@ -12712,6 +13481,10 @@ export namespace Prisma {
     staffActivityLogs?: boolean | Branch$staffActivityLogsArgs<ExtArgs>
     durationDiscountSlabs?: boolean | Branch$durationDiscountSlabsArgs<ExtArgs>
     discountConfig?: boolean | Branch$discountConfigArgs<ExtArgs>
+    paymentConfig?: boolean | Branch$paymentConfigArgs<ExtArgs>
+    paymentTransactions?: boolean | Branch$paymentTransactionsArgs<ExtArgs>
+    cashShifts?: boolean | Branch$cashShiftsArgs<ExtArgs>
+    refundRequests?: boolean | Branch$refundRequestsArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type BranchIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -12733,6 +13506,10 @@ export namespace Prisma {
       staffActivityLogs: Prisma.$StaffActivityLogPayload<ExtArgs>[]
       durationDiscountSlabs: Prisma.$DurationDiscountSlabPayload<ExtArgs>[]
       discountConfig: Prisma.$BranchDiscountConfigPayload<ExtArgs> | null
+      paymentConfig: Prisma.$BranchPaymentConfigPayload<ExtArgs> | null
+      paymentTransactions: Prisma.$PaymentTransactionPayload<ExtArgs>[]
+      cashShifts: Prisma.$CashShiftPayload<ExtArgs>[]
+      refundRequests: Prisma.$RefundRequestPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -13120,6 +13897,10 @@ export namespace Prisma {
     staffActivityLogs<T extends Branch$staffActivityLogsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$staffActivityLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StaffActivityLogPayload<ExtArgs>, T, "findMany"> | Null>
     durationDiscountSlabs<T extends Branch$durationDiscountSlabsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$durationDiscountSlabsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DurationDiscountSlabPayload<ExtArgs>, T, "findMany"> | Null>
     discountConfig<T extends Branch$discountConfigArgs<ExtArgs> = {}>(args?: Subset<T, Branch$discountConfigArgs<ExtArgs>>): Prisma__BranchDiscountConfigClient<$Result.GetResult<Prisma.$BranchDiscountConfigPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    paymentConfig<T extends Branch$paymentConfigArgs<ExtArgs> = {}>(args?: Subset<T, Branch$paymentConfigArgs<ExtArgs>>): Prisma__BranchPaymentConfigClient<$Result.GetResult<Prisma.$BranchPaymentConfigPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    paymentTransactions<T extends Branch$paymentTransactionsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$paymentTransactionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentTransactionPayload<ExtArgs>, T, "findMany"> | Null>
+    cashShifts<T extends Branch$cashShiftsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$cashShiftsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CashShiftPayload<ExtArgs>, T, "findMany"> | Null>
+    refundRequests<T extends Branch$refundRequestsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$refundRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -13741,6 +14522,81 @@ export namespace Prisma {
      */
     include?: BranchDiscountConfigInclude<ExtArgs> | null
     where?: BranchDiscountConfigWhereInput
+  }
+
+  /**
+   * Branch.paymentConfig
+   */
+  export type Branch$paymentConfigArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPaymentConfig
+     */
+    select?: BranchPaymentConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPaymentConfigInclude<ExtArgs> | null
+    where?: BranchPaymentConfigWhereInput
+  }
+
+  /**
+   * Branch.paymentTransactions
+   */
+  export type Branch$paymentTransactionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentTransaction
+     */
+    select?: PaymentTransactionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+    where?: PaymentTransactionWhereInput
+    orderBy?: PaymentTransactionOrderByWithRelationInput | PaymentTransactionOrderByWithRelationInput[]
+    cursor?: PaymentTransactionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PaymentTransactionScalarFieldEnum | PaymentTransactionScalarFieldEnum[]
+  }
+
+  /**
+   * Branch.cashShifts
+   */
+  export type Branch$cashShiftsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashShift
+     */
+    select?: CashShiftSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashShiftInclude<ExtArgs> | null
+    where?: CashShiftWhereInput
+    orderBy?: CashShiftOrderByWithRelationInput | CashShiftOrderByWithRelationInput[]
+    cursor?: CashShiftWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CashShiftScalarFieldEnum | CashShiftScalarFieldEnum[]
+  }
+
+  /**
+   * Branch.refundRequests
+   */
+  export type Branch$refundRequestsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefundRequest
+     */
+    select?: RefundRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefundRequestInclude<ExtArgs> | null
+    where?: RefundRequestWhereInput
+    orderBy?: RefundRequestOrderByWithRelationInput | RefundRequestOrderByWithRelationInput[]
+    cursor?: RefundRequestWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: RefundRequestScalarFieldEnum | RefundRequestScalarFieldEnum[]
   }
 
   /**
@@ -29310,6 +30166,8 @@ export namespace Prisma {
     discountRule?: boolean | Booking$discountRuleArgs<ExtArgs>
     discountApplication?: boolean | Booking$discountApplicationArgs<ExtArgs>
     manualDiscount?: boolean | Booking$manualDiscountArgs<ExtArgs>
+    paymentTransactions?: boolean | Booking$paymentTransactionsArgs<ExtArgs>
+    refundRequests?: boolean | Booking$refundRequestsArgs<ExtArgs>
     _count?: boolean | BookingCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["booking"]>
 
@@ -29443,6 +30301,8 @@ export namespace Prisma {
     discountRule?: boolean | Booking$discountRuleArgs<ExtArgs>
     discountApplication?: boolean | Booking$discountApplicationArgs<ExtArgs>
     manualDiscount?: boolean | Booking$manualDiscountArgs<ExtArgs>
+    paymentTransactions?: boolean | Booking$paymentTransactionsArgs<ExtArgs>
+    refundRequests?: boolean | Booking$refundRequestsArgs<ExtArgs>
     _count?: boolean | BookingCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type BookingIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -29470,6 +30330,8 @@ export namespace Prisma {
       discountRule: Prisma.$DiscountRulePayload<ExtArgs> | null
       discountApplication: Prisma.$DiscountApplicationPayload<ExtArgs> | null
       manualDiscount: Prisma.$ManualDiscountPayload<ExtArgs> | null
+      paymentTransactions: Prisma.$PaymentTransactionPayload<ExtArgs>[]
+      refundRequests: Prisma.$RefundRequestPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -29902,6 +30764,8 @@ export namespace Prisma {
     discountRule<T extends Booking$discountRuleArgs<ExtArgs> = {}>(args?: Subset<T, Booking$discountRuleArgs<ExtArgs>>): Prisma__DiscountRuleClient<$Result.GetResult<Prisma.$DiscountRulePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     discountApplication<T extends Booking$discountApplicationArgs<ExtArgs> = {}>(args?: Subset<T, Booking$discountApplicationArgs<ExtArgs>>): Prisma__DiscountApplicationClient<$Result.GetResult<Prisma.$DiscountApplicationPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     manualDiscount<T extends Booking$manualDiscountArgs<ExtArgs> = {}>(args?: Subset<T, Booking$manualDiscountArgs<ExtArgs>>): Prisma__ManualDiscountClient<$Result.GetResult<Prisma.$ManualDiscountPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    paymentTransactions<T extends Booking$paymentTransactionsArgs<ExtArgs> = {}>(args?: Subset<T, Booking$paymentTransactionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentTransactionPayload<ExtArgs>, T, "findMany"> | Null>
+    refundRequests<T extends Booking$refundRequestsArgs<ExtArgs> = {}>(args?: Subset<T, Booking$refundRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -30492,6 +31356,46 @@ export namespace Prisma {
      */
     include?: ManualDiscountInclude<ExtArgs> | null
     where?: ManualDiscountWhereInput
+  }
+
+  /**
+   * Booking.paymentTransactions
+   */
+  export type Booking$paymentTransactionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentTransaction
+     */
+    select?: PaymentTransactionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+    where?: PaymentTransactionWhereInput
+    orderBy?: PaymentTransactionOrderByWithRelationInput | PaymentTransactionOrderByWithRelationInput[]
+    cursor?: PaymentTransactionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PaymentTransactionScalarFieldEnum | PaymentTransactionScalarFieldEnum[]
+  }
+
+  /**
+   * Booking.refundRequests
+   */
+  export type Booking$refundRequestsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefundRequest
+     */
+    select?: RefundRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefundRequestInclude<ExtArgs> | null
+    where?: RefundRequestWhereInput
+    orderBy?: RefundRequestOrderByWithRelationInput | RefundRequestOrderByWithRelationInput[]
+    cursor?: RefundRequestWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: RefundRequestScalarFieldEnum | RefundRequestScalarFieldEnum[]
   }
 
   /**
@@ -55489,6 +56393,4791 @@ export namespace Prisma {
 
 
   /**
+   * Model BranchPaymentConfig
+   */
+
+  export type AggregateBranchPaymentConfig = {
+    _count: BranchPaymentConfigCountAggregateOutputType | null
+    _avg: BranchPaymentConfigAvgAggregateOutputType | null
+    _sum: BranchPaymentConfigSumAggregateOutputType | null
+    _min: BranchPaymentConfigMinAggregateOutputType | null
+    _max: BranchPaymentConfigMaxAggregateOutputType | null
+  }
+
+  export type BranchPaymentConfigAvgAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    maxCashPerEmployee: Decimal | null
+    delayedCashAlertHours: number | null
+  }
+
+  export type BranchPaymentConfigSumAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    maxCashPerEmployee: Decimal | null
+    delayedCashAlertHours: number | null
+  }
+
+  export type BranchPaymentConfigMinAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    cashConfirmationEnabled: boolean | null
+    blockProgressionUntilConfirmed: boolean | null
+    maxCashPerEmployee: Decimal | null
+    requireShiftSettlement: boolean | null
+    splitPaymentEnabled: boolean | null
+    crossBranchSettlementEnabled: boolean | null
+    refundApprovalRequired: boolean | null
+    onlineRefundEnabled: boolean | null
+    delayedCashAlertHours: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type BranchPaymentConfigMaxAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    cashConfirmationEnabled: boolean | null
+    blockProgressionUntilConfirmed: boolean | null
+    maxCashPerEmployee: Decimal | null
+    requireShiftSettlement: boolean | null
+    splitPaymentEnabled: boolean | null
+    crossBranchSettlementEnabled: boolean | null
+    refundApprovalRequired: boolean | null
+    onlineRefundEnabled: boolean | null
+    delayedCashAlertHours: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type BranchPaymentConfigCountAggregateOutputType = {
+    id: number
+    branchId: number
+    cashConfirmationEnabled: number
+    blockProgressionUntilConfirmed: number
+    maxCashPerEmployee: number
+    requireShiftSettlement: number
+    splitPaymentEnabled: number
+    crossBranchSettlementEnabled: number
+    refundApprovalRequired: number
+    onlineRefundEnabled: number
+    delayedCashAlertHours: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type BranchPaymentConfigAvgAggregateInputType = {
+    id?: true
+    branchId?: true
+    maxCashPerEmployee?: true
+    delayedCashAlertHours?: true
+  }
+
+  export type BranchPaymentConfigSumAggregateInputType = {
+    id?: true
+    branchId?: true
+    maxCashPerEmployee?: true
+    delayedCashAlertHours?: true
+  }
+
+  export type BranchPaymentConfigMinAggregateInputType = {
+    id?: true
+    branchId?: true
+    cashConfirmationEnabled?: true
+    blockProgressionUntilConfirmed?: true
+    maxCashPerEmployee?: true
+    requireShiftSettlement?: true
+    splitPaymentEnabled?: true
+    crossBranchSettlementEnabled?: true
+    refundApprovalRequired?: true
+    onlineRefundEnabled?: true
+    delayedCashAlertHours?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type BranchPaymentConfigMaxAggregateInputType = {
+    id?: true
+    branchId?: true
+    cashConfirmationEnabled?: true
+    blockProgressionUntilConfirmed?: true
+    maxCashPerEmployee?: true
+    requireShiftSettlement?: true
+    splitPaymentEnabled?: true
+    crossBranchSettlementEnabled?: true
+    refundApprovalRequired?: true
+    onlineRefundEnabled?: true
+    delayedCashAlertHours?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type BranchPaymentConfigCountAggregateInputType = {
+    id?: true
+    branchId?: true
+    cashConfirmationEnabled?: true
+    blockProgressionUntilConfirmed?: true
+    maxCashPerEmployee?: true
+    requireShiftSettlement?: true
+    splitPaymentEnabled?: true
+    crossBranchSettlementEnabled?: true
+    refundApprovalRequired?: true
+    onlineRefundEnabled?: true
+    delayedCashAlertHours?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type BranchPaymentConfigAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which BranchPaymentConfig to aggregate.
+     */
+    where?: BranchPaymentConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchPaymentConfigs to fetch.
+     */
+    orderBy?: BranchPaymentConfigOrderByWithRelationInput | BranchPaymentConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: BranchPaymentConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchPaymentConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchPaymentConfigs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned BranchPaymentConfigs
+    **/
+    _count?: true | BranchPaymentConfigCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: BranchPaymentConfigAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: BranchPaymentConfigSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: BranchPaymentConfigMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: BranchPaymentConfigMaxAggregateInputType
+  }
+
+  export type GetBranchPaymentConfigAggregateType<T extends BranchPaymentConfigAggregateArgs> = {
+        [P in keyof T & keyof AggregateBranchPaymentConfig]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateBranchPaymentConfig[P]>
+      : GetScalarType<T[P], AggregateBranchPaymentConfig[P]>
+  }
+
+
+
+
+  export type BranchPaymentConfigGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BranchPaymentConfigWhereInput
+    orderBy?: BranchPaymentConfigOrderByWithAggregationInput | BranchPaymentConfigOrderByWithAggregationInput[]
+    by: BranchPaymentConfigScalarFieldEnum[] | BranchPaymentConfigScalarFieldEnum
+    having?: BranchPaymentConfigScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: BranchPaymentConfigCountAggregateInputType | true
+    _avg?: BranchPaymentConfigAvgAggregateInputType
+    _sum?: BranchPaymentConfigSumAggregateInputType
+    _min?: BranchPaymentConfigMinAggregateInputType
+    _max?: BranchPaymentConfigMaxAggregateInputType
+  }
+
+  export type BranchPaymentConfigGroupByOutputType = {
+    id: number
+    branchId: number
+    cashConfirmationEnabled: boolean
+    blockProgressionUntilConfirmed: boolean
+    maxCashPerEmployee: Decimal | null
+    requireShiftSettlement: boolean
+    splitPaymentEnabled: boolean
+    crossBranchSettlementEnabled: boolean
+    refundApprovalRequired: boolean
+    onlineRefundEnabled: boolean
+    delayedCashAlertHours: number
+    createdAt: Date
+    updatedAt: Date
+    _count: BranchPaymentConfigCountAggregateOutputType | null
+    _avg: BranchPaymentConfigAvgAggregateOutputType | null
+    _sum: BranchPaymentConfigSumAggregateOutputType | null
+    _min: BranchPaymentConfigMinAggregateOutputType | null
+    _max: BranchPaymentConfigMaxAggregateOutputType | null
+  }
+
+  type GetBranchPaymentConfigGroupByPayload<T extends BranchPaymentConfigGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<BranchPaymentConfigGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof BranchPaymentConfigGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], BranchPaymentConfigGroupByOutputType[P]>
+            : GetScalarType<T[P], BranchPaymentConfigGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type BranchPaymentConfigSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    branchId?: boolean
+    cashConfirmationEnabled?: boolean
+    blockProgressionUntilConfirmed?: boolean
+    maxCashPerEmployee?: boolean
+    requireShiftSettlement?: boolean
+    splitPaymentEnabled?: boolean
+    crossBranchSettlementEnabled?: boolean
+    refundApprovalRequired?: boolean
+    onlineRefundEnabled?: boolean
+    delayedCashAlertHours?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["branchPaymentConfig"]>
+
+  export type BranchPaymentConfigSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    branchId?: boolean
+    cashConfirmationEnabled?: boolean
+    blockProgressionUntilConfirmed?: boolean
+    maxCashPerEmployee?: boolean
+    requireShiftSettlement?: boolean
+    splitPaymentEnabled?: boolean
+    crossBranchSettlementEnabled?: boolean
+    refundApprovalRequired?: boolean
+    onlineRefundEnabled?: boolean
+    delayedCashAlertHours?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["branchPaymentConfig"]>
+
+  export type BranchPaymentConfigSelectScalar = {
+    id?: boolean
+    branchId?: boolean
+    cashConfirmationEnabled?: boolean
+    blockProgressionUntilConfirmed?: boolean
+    maxCashPerEmployee?: boolean
+    requireShiftSettlement?: boolean
+    splitPaymentEnabled?: boolean
+    crossBranchSettlementEnabled?: boolean
+    refundApprovalRequired?: boolean
+    onlineRefundEnabled?: boolean
+    delayedCashAlertHours?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type BranchPaymentConfigInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }
+  export type BranchPaymentConfigIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }
+
+  export type $BranchPaymentConfigPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "BranchPaymentConfig"
+    objects: {
+      branch: Prisma.$BranchPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      branchId: number
+      cashConfirmationEnabled: boolean
+      blockProgressionUntilConfirmed: boolean
+      maxCashPerEmployee: Prisma.Decimal | null
+      requireShiftSettlement: boolean
+      splitPaymentEnabled: boolean
+      crossBranchSettlementEnabled: boolean
+      refundApprovalRequired: boolean
+      onlineRefundEnabled: boolean
+      delayedCashAlertHours: number
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["branchPaymentConfig"]>
+    composites: {}
+  }
+
+  type BranchPaymentConfigGetPayload<S extends boolean | null | undefined | BranchPaymentConfigDefaultArgs> = $Result.GetResult<Prisma.$BranchPaymentConfigPayload, S>
+
+  type BranchPaymentConfigCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<BranchPaymentConfigFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: BranchPaymentConfigCountAggregateInputType | true
+    }
+
+  export interface BranchPaymentConfigDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['BranchPaymentConfig'], meta: { name: 'BranchPaymentConfig' } }
+    /**
+     * Find zero or one BranchPaymentConfig that matches the filter.
+     * @param {BranchPaymentConfigFindUniqueArgs} args - Arguments to find a BranchPaymentConfig
+     * @example
+     * // Get one BranchPaymentConfig
+     * const branchPaymentConfig = await prisma.branchPaymentConfig.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends BranchPaymentConfigFindUniqueArgs>(args: SelectSubset<T, BranchPaymentConfigFindUniqueArgs<ExtArgs>>): Prisma__BranchPaymentConfigClient<$Result.GetResult<Prisma.$BranchPaymentConfigPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one BranchPaymentConfig that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {BranchPaymentConfigFindUniqueOrThrowArgs} args - Arguments to find a BranchPaymentConfig
+     * @example
+     * // Get one BranchPaymentConfig
+     * const branchPaymentConfig = await prisma.branchPaymentConfig.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends BranchPaymentConfigFindUniqueOrThrowArgs>(args: SelectSubset<T, BranchPaymentConfigFindUniqueOrThrowArgs<ExtArgs>>): Prisma__BranchPaymentConfigClient<$Result.GetResult<Prisma.$BranchPaymentConfigPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first BranchPaymentConfig that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchPaymentConfigFindFirstArgs} args - Arguments to find a BranchPaymentConfig
+     * @example
+     * // Get one BranchPaymentConfig
+     * const branchPaymentConfig = await prisma.branchPaymentConfig.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends BranchPaymentConfigFindFirstArgs>(args?: SelectSubset<T, BranchPaymentConfigFindFirstArgs<ExtArgs>>): Prisma__BranchPaymentConfigClient<$Result.GetResult<Prisma.$BranchPaymentConfigPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first BranchPaymentConfig that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchPaymentConfigFindFirstOrThrowArgs} args - Arguments to find a BranchPaymentConfig
+     * @example
+     * // Get one BranchPaymentConfig
+     * const branchPaymentConfig = await prisma.branchPaymentConfig.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends BranchPaymentConfigFindFirstOrThrowArgs>(args?: SelectSubset<T, BranchPaymentConfigFindFirstOrThrowArgs<ExtArgs>>): Prisma__BranchPaymentConfigClient<$Result.GetResult<Prisma.$BranchPaymentConfigPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more BranchPaymentConfigs that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchPaymentConfigFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all BranchPaymentConfigs
+     * const branchPaymentConfigs = await prisma.branchPaymentConfig.findMany()
+     * 
+     * // Get first 10 BranchPaymentConfigs
+     * const branchPaymentConfigs = await prisma.branchPaymentConfig.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const branchPaymentConfigWithIdOnly = await prisma.branchPaymentConfig.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends BranchPaymentConfigFindManyArgs>(args?: SelectSubset<T, BranchPaymentConfigFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BranchPaymentConfigPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a BranchPaymentConfig.
+     * @param {BranchPaymentConfigCreateArgs} args - Arguments to create a BranchPaymentConfig.
+     * @example
+     * // Create one BranchPaymentConfig
+     * const BranchPaymentConfig = await prisma.branchPaymentConfig.create({
+     *   data: {
+     *     // ... data to create a BranchPaymentConfig
+     *   }
+     * })
+     * 
+     */
+    create<T extends BranchPaymentConfigCreateArgs>(args: SelectSubset<T, BranchPaymentConfigCreateArgs<ExtArgs>>): Prisma__BranchPaymentConfigClient<$Result.GetResult<Prisma.$BranchPaymentConfigPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many BranchPaymentConfigs.
+     * @param {BranchPaymentConfigCreateManyArgs} args - Arguments to create many BranchPaymentConfigs.
+     * @example
+     * // Create many BranchPaymentConfigs
+     * const branchPaymentConfig = await prisma.branchPaymentConfig.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends BranchPaymentConfigCreateManyArgs>(args?: SelectSubset<T, BranchPaymentConfigCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many BranchPaymentConfigs and returns the data saved in the database.
+     * @param {BranchPaymentConfigCreateManyAndReturnArgs} args - Arguments to create many BranchPaymentConfigs.
+     * @example
+     * // Create many BranchPaymentConfigs
+     * const branchPaymentConfig = await prisma.branchPaymentConfig.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many BranchPaymentConfigs and only return the `id`
+     * const branchPaymentConfigWithIdOnly = await prisma.branchPaymentConfig.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends BranchPaymentConfigCreateManyAndReturnArgs>(args?: SelectSubset<T, BranchPaymentConfigCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BranchPaymentConfigPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a BranchPaymentConfig.
+     * @param {BranchPaymentConfigDeleteArgs} args - Arguments to delete one BranchPaymentConfig.
+     * @example
+     * // Delete one BranchPaymentConfig
+     * const BranchPaymentConfig = await prisma.branchPaymentConfig.delete({
+     *   where: {
+     *     // ... filter to delete one BranchPaymentConfig
+     *   }
+     * })
+     * 
+     */
+    delete<T extends BranchPaymentConfigDeleteArgs>(args: SelectSubset<T, BranchPaymentConfigDeleteArgs<ExtArgs>>): Prisma__BranchPaymentConfigClient<$Result.GetResult<Prisma.$BranchPaymentConfigPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one BranchPaymentConfig.
+     * @param {BranchPaymentConfigUpdateArgs} args - Arguments to update one BranchPaymentConfig.
+     * @example
+     * // Update one BranchPaymentConfig
+     * const branchPaymentConfig = await prisma.branchPaymentConfig.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends BranchPaymentConfigUpdateArgs>(args: SelectSubset<T, BranchPaymentConfigUpdateArgs<ExtArgs>>): Prisma__BranchPaymentConfigClient<$Result.GetResult<Prisma.$BranchPaymentConfigPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more BranchPaymentConfigs.
+     * @param {BranchPaymentConfigDeleteManyArgs} args - Arguments to filter BranchPaymentConfigs to delete.
+     * @example
+     * // Delete a few BranchPaymentConfigs
+     * const { count } = await prisma.branchPaymentConfig.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends BranchPaymentConfigDeleteManyArgs>(args?: SelectSubset<T, BranchPaymentConfigDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more BranchPaymentConfigs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchPaymentConfigUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many BranchPaymentConfigs
+     * const branchPaymentConfig = await prisma.branchPaymentConfig.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends BranchPaymentConfigUpdateManyArgs>(args: SelectSubset<T, BranchPaymentConfigUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one BranchPaymentConfig.
+     * @param {BranchPaymentConfigUpsertArgs} args - Arguments to update or create a BranchPaymentConfig.
+     * @example
+     * // Update or create a BranchPaymentConfig
+     * const branchPaymentConfig = await prisma.branchPaymentConfig.upsert({
+     *   create: {
+     *     // ... data to create a BranchPaymentConfig
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the BranchPaymentConfig we want to update
+     *   }
+     * })
+     */
+    upsert<T extends BranchPaymentConfigUpsertArgs>(args: SelectSubset<T, BranchPaymentConfigUpsertArgs<ExtArgs>>): Prisma__BranchPaymentConfigClient<$Result.GetResult<Prisma.$BranchPaymentConfigPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of BranchPaymentConfigs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchPaymentConfigCountArgs} args - Arguments to filter BranchPaymentConfigs to count.
+     * @example
+     * // Count the number of BranchPaymentConfigs
+     * const count = await prisma.branchPaymentConfig.count({
+     *   where: {
+     *     // ... the filter for the BranchPaymentConfigs we want to count
+     *   }
+     * })
+    **/
+    count<T extends BranchPaymentConfigCountArgs>(
+      args?: Subset<T, BranchPaymentConfigCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], BranchPaymentConfigCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a BranchPaymentConfig.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchPaymentConfigAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends BranchPaymentConfigAggregateArgs>(args: Subset<T, BranchPaymentConfigAggregateArgs>): Prisma.PrismaPromise<GetBranchPaymentConfigAggregateType<T>>
+
+    /**
+     * Group by BranchPaymentConfig.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchPaymentConfigGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends BranchPaymentConfigGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: BranchPaymentConfigGroupByArgs['orderBy'] }
+        : { orderBy?: BranchPaymentConfigGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, BranchPaymentConfigGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetBranchPaymentConfigGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the BranchPaymentConfig model
+   */
+  readonly fields: BranchPaymentConfigFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for BranchPaymentConfig.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__BranchPaymentConfigClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    branch<T extends BranchDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BranchDefaultArgs<ExtArgs>>): Prisma__BranchClient<$Result.GetResult<Prisma.$BranchPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the BranchPaymentConfig model
+   */ 
+  interface BranchPaymentConfigFieldRefs {
+    readonly id: FieldRef<"BranchPaymentConfig", 'Int'>
+    readonly branchId: FieldRef<"BranchPaymentConfig", 'Int'>
+    readonly cashConfirmationEnabled: FieldRef<"BranchPaymentConfig", 'Boolean'>
+    readonly blockProgressionUntilConfirmed: FieldRef<"BranchPaymentConfig", 'Boolean'>
+    readonly maxCashPerEmployee: FieldRef<"BranchPaymentConfig", 'Decimal'>
+    readonly requireShiftSettlement: FieldRef<"BranchPaymentConfig", 'Boolean'>
+    readonly splitPaymentEnabled: FieldRef<"BranchPaymentConfig", 'Boolean'>
+    readonly crossBranchSettlementEnabled: FieldRef<"BranchPaymentConfig", 'Boolean'>
+    readonly refundApprovalRequired: FieldRef<"BranchPaymentConfig", 'Boolean'>
+    readonly onlineRefundEnabled: FieldRef<"BranchPaymentConfig", 'Boolean'>
+    readonly delayedCashAlertHours: FieldRef<"BranchPaymentConfig", 'Int'>
+    readonly createdAt: FieldRef<"BranchPaymentConfig", 'DateTime'>
+    readonly updatedAt: FieldRef<"BranchPaymentConfig", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * BranchPaymentConfig findUnique
+   */
+  export type BranchPaymentConfigFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPaymentConfig
+     */
+    select?: BranchPaymentConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPaymentConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchPaymentConfig to fetch.
+     */
+    where: BranchPaymentConfigWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchPaymentConfig findUniqueOrThrow
+   */
+  export type BranchPaymentConfigFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPaymentConfig
+     */
+    select?: BranchPaymentConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPaymentConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchPaymentConfig to fetch.
+     */
+    where: BranchPaymentConfigWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchPaymentConfig findFirst
+   */
+  export type BranchPaymentConfigFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPaymentConfig
+     */
+    select?: BranchPaymentConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPaymentConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchPaymentConfig to fetch.
+     */
+    where?: BranchPaymentConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchPaymentConfigs to fetch.
+     */
+    orderBy?: BranchPaymentConfigOrderByWithRelationInput | BranchPaymentConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for BranchPaymentConfigs.
+     */
+    cursor?: BranchPaymentConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchPaymentConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchPaymentConfigs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of BranchPaymentConfigs.
+     */
+    distinct?: BranchPaymentConfigScalarFieldEnum | BranchPaymentConfigScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchPaymentConfig findFirstOrThrow
+   */
+  export type BranchPaymentConfigFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPaymentConfig
+     */
+    select?: BranchPaymentConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPaymentConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchPaymentConfig to fetch.
+     */
+    where?: BranchPaymentConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchPaymentConfigs to fetch.
+     */
+    orderBy?: BranchPaymentConfigOrderByWithRelationInput | BranchPaymentConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for BranchPaymentConfigs.
+     */
+    cursor?: BranchPaymentConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchPaymentConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchPaymentConfigs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of BranchPaymentConfigs.
+     */
+    distinct?: BranchPaymentConfigScalarFieldEnum | BranchPaymentConfigScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchPaymentConfig findMany
+   */
+  export type BranchPaymentConfigFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPaymentConfig
+     */
+    select?: BranchPaymentConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPaymentConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchPaymentConfigs to fetch.
+     */
+    where?: BranchPaymentConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchPaymentConfigs to fetch.
+     */
+    orderBy?: BranchPaymentConfigOrderByWithRelationInput | BranchPaymentConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing BranchPaymentConfigs.
+     */
+    cursor?: BranchPaymentConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchPaymentConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchPaymentConfigs.
+     */
+    skip?: number
+    distinct?: BranchPaymentConfigScalarFieldEnum | BranchPaymentConfigScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchPaymentConfig create
+   */
+  export type BranchPaymentConfigCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPaymentConfig
+     */
+    select?: BranchPaymentConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPaymentConfigInclude<ExtArgs> | null
+    /**
+     * The data needed to create a BranchPaymentConfig.
+     */
+    data: XOR<BranchPaymentConfigCreateInput, BranchPaymentConfigUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchPaymentConfig createMany
+   */
+  export type BranchPaymentConfigCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many BranchPaymentConfigs.
+     */
+    data: BranchPaymentConfigCreateManyInput | BranchPaymentConfigCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * BranchPaymentConfig createManyAndReturn
+   */
+  export type BranchPaymentConfigCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPaymentConfig
+     */
+    select?: BranchPaymentConfigSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many BranchPaymentConfigs.
+     */
+    data: BranchPaymentConfigCreateManyInput | BranchPaymentConfigCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPaymentConfigIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * BranchPaymentConfig update
+   */
+  export type BranchPaymentConfigUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPaymentConfig
+     */
+    select?: BranchPaymentConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPaymentConfigInclude<ExtArgs> | null
+    /**
+     * The data needed to update a BranchPaymentConfig.
+     */
+    data: XOR<BranchPaymentConfigUpdateInput, BranchPaymentConfigUncheckedUpdateInput>
+    /**
+     * Choose, which BranchPaymentConfig to update.
+     */
+    where: BranchPaymentConfigWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchPaymentConfig updateMany
+   */
+  export type BranchPaymentConfigUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update BranchPaymentConfigs.
+     */
+    data: XOR<BranchPaymentConfigUpdateManyMutationInput, BranchPaymentConfigUncheckedUpdateManyInput>
+    /**
+     * Filter which BranchPaymentConfigs to update
+     */
+    where?: BranchPaymentConfigWhereInput
+  }
+
+  /**
+   * BranchPaymentConfig upsert
+   */
+  export type BranchPaymentConfigUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPaymentConfig
+     */
+    select?: BranchPaymentConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPaymentConfigInclude<ExtArgs> | null
+    /**
+     * The filter to search for the BranchPaymentConfig to update in case it exists.
+     */
+    where: BranchPaymentConfigWhereUniqueInput
+    /**
+     * In case the BranchPaymentConfig found by the `where` argument doesn't exist, create a new BranchPaymentConfig with this data.
+     */
+    create: XOR<BranchPaymentConfigCreateInput, BranchPaymentConfigUncheckedCreateInput>
+    /**
+     * In case the BranchPaymentConfig was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<BranchPaymentConfigUpdateInput, BranchPaymentConfigUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchPaymentConfig delete
+   */
+  export type BranchPaymentConfigDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPaymentConfig
+     */
+    select?: BranchPaymentConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPaymentConfigInclude<ExtArgs> | null
+    /**
+     * Filter which BranchPaymentConfig to delete.
+     */
+    where: BranchPaymentConfigWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchPaymentConfig deleteMany
+   */
+  export type BranchPaymentConfigDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which BranchPaymentConfigs to delete
+     */
+    where?: BranchPaymentConfigWhereInput
+  }
+
+  /**
+   * BranchPaymentConfig without action
+   */
+  export type BranchPaymentConfigDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchPaymentConfig
+     */
+    select?: BranchPaymentConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchPaymentConfigInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model PaymentTransaction
+   */
+
+  export type AggregatePaymentTransaction = {
+    _count: PaymentTransactionCountAggregateOutputType | null
+    _avg: PaymentTransactionAvgAggregateOutputType | null
+    _sum: PaymentTransactionSumAggregateOutputType | null
+    _min: PaymentTransactionMinAggregateOutputType | null
+    _max: PaymentTransactionMaxAggregateOutputType | null
+  }
+
+  export type PaymentTransactionAvgAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    branchId: number | null
+    totalAmount: Decimal | null
+    cashAmount: Decimal | null
+    onlineAmount: Decimal | null
+    collectedById: number | null
+    confirmedById: number | null
+    rejectedById: number | null
+    cashShiftId: number | null
+  }
+
+  export type PaymentTransactionSumAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    branchId: number | null
+    totalAmount: Decimal | null
+    cashAmount: Decimal | null
+    onlineAmount: Decimal | null
+    collectedById: number | null
+    confirmedById: number | null
+    rejectedById: number | null
+    cashShiftId: number | null
+  }
+
+  export type PaymentTransactionMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    idempotencyKey: string | null
+    bookingId: number | null
+    branchId: number | null
+    purpose: $Enums.PaymentPurpose | null
+    method: $Enums.PaymentMethod | null
+    status: $Enums.PaymentTransactionStatus | null
+    totalAmount: Decimal | null
+    cashAmount: Decimal | null
+    onlineAmount: Decimal | null
+    onlineTransactionRef: string | null
+    onlineGateway: string | null
+    collectedById: number | null
+    collectedAt: Date | null
+    confirmedById: number | null
+    confirmedAt: Date | null
+    rejectedById: number | null
+    rejectedAt: Date | null
+    rejectionReason: string | null
+    cashShiftId: number | null
+    notes: string | null
+    createdAt: Date | null
+  }
+
+  export type PaymentTransactionMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    idempotencyKey: string | null
+    bookingId: number | null
+    branchId: number | null
+    purpose: $Enums.PaymentPurpose | null
+    method: $Enums.PaymentMethod | null
+    status: $Enums.PaymentTransactionStatus | null
+    totalAmount: Decimal | null
+    cashAmount: Decimal | null
+    onlineAmount: Decimal | null
+    onlineTransactionRef: string | null
+    onlineGateway: string | null
+    collectedById: number | null
+    collectedAt: Date | null
+    confirmedById: number | null
+    confirmedAt: Date | null
+    rejectedById: number | null
+    rejectedAt: Date | null
+    rejectionReason: string | null
+    cashShiftId: number | null
+    notes: string | null
+    createdAt: Date | null
+  }
+
+  export type PaymentTransactionCountAggregateOutputType = {
+    id: number
+    publicId: number
+    idempotencyKey: number
+    bookingId: number
+    branchId: number
+    purpose: number
+    method: number
+    status: number
+    totalAmount: number
+    cashAmount: number
+    onlineAmount: number
+    onlineTransactionRef: number
+    onlineGateway: number
+    collectedById: number
+    collectedAt: number
+    confirmedById: number
+    confirmedAt: number
+    rejectedById: number
+    rejectedAt: number
+    rejectionReason: number
+    cashShiftId: number
+    notes: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type PaymentTransactionAvgAggregateInputType = {
+    id?: true
+    bookingId?: true
+    branchId?: true
+    totalAmount?: true
+    cashAmount?: true
+    onlineAmount?: true
+    collectedById?: true
+    confirmedById?: true
+    rejectedById?: true
+    cashShiftId?: true
+  }
+
+  export type PaymentTransactionSumAggregateInputType = {
+    id?: true
+    bookingId?: true
+    branchId?: true
+    totalAmount?: true
+    cashAmount?: true
+    onlineAmount?: true
+    collectedById?: true
+    confirmedById?: true
+    rejectedById?: true
+    cashShiftId?: true
+  }
+
+  export type PaymentTransactionMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    idempotencyKey?: true
+    bookingId?: true
+    branchId?: true
+    purpose?: true
+    method?: true
+    status?: true
+    totalAmount?: true
+    cashAmount?: true
+    onlineAmount?: true
+    onlineTransactionRef?: true
+    onlineGateway?: true
+    collectedById?: true
+    collectedAt?: true
+    confirmedById?: true
+    confirmedAt?: true
+    rejectedById?: true
+    rejectedAt?: true
+    rejectionReason?: true
+    cashShiftId?: true
+    notes?: true
+    createdAt?: true
+  }
+
+  export type PaymentTransactionMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    idempotencyKey?: true
+    bookingId?: true
+    branchId?: true
+    purpose?: true
+    method?: true
+    status?: true
+    totalAmount?: true
+    cashAmount?: true
+    onlineAmount?: true
+    onlineTransactionRef?: true
+    onlineGateway?: true
+    collectedById?: true
+    collectedAt?: true
+    confirmedById?: true
+    confirmedAt?: true
+    rejectedById?: true
+    rejectedAt?: true
+    rejectionReason?: true
+    cashShiftId?: true
+    notes?: true
+    createdAt?: true
+  }
+
+  export type PaymentTransactionCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    idempotencyKey?: true
+    bookingId?: true
+    branchId?: true
+    purpose?: true
+    method?: true
+    status?: true
+    totalAmount?: true
+    cashAmount?: true
+    onlineAmount?: true
+    onlineTransactionRef?: true
+    onlineGateway?: true
+    collectedById?: true
+    collectedAt?: true
+    confirmedById?: true
+    confirmedAt?: true
+    rejectedById?: true
+    rejectedAt?: true
+    rejectionReason?: true
+    cashShiftId?: true
+    notes?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type PaymentTransactionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PaymentTransaction to aggregate.
+     */
+    where?: PaymentTransactionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PaymentTransactions to fetch.
+     */
+    orderBy?: PaymentTransactionOrderByWithRelationInput | PaymentTransactionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: PaymentTransactionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PaymentTransactions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PaymentTransactions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned PaymentTransactions
+    **/
+    _count?: true | PaymentTransactionCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: PaymentTransactionAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: PaymentTransactionSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: PaymentTransactionMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: PaymentTransactionMaxAggregateInputType
+  }
+
+  export type GetPaymentTransactionAggregateType<T extends PaymentTransactionAggregateArgs> = {
+        [P in keyof T & keyof AggregatePaymentTransaction]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePaymentTransaction[P]>
+      : GetScalarType<T[P], AggregatePaymentTransaction[P]>
+  }
+
+
+
+
+  export type PaymentTransactionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PaymentTransactionWhereInput
+    orderBy?: PaymentTransactionOrderByWithAggregationInput | PaymentTransactionOrderByWithAggregationInput[]
+    by: PaymentTransactionScalarFieldEnum[] | PaymentTransactionScalarFieldEnum
+    having?: PaymentTransactionScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: PaymentTransactionCountAggregateInputType | true
+    _avg?: PaymentTransactionAvgAggregateInputType
+    _sum?: PaymentTransactionSumAggregateInputType
+    _min?: PaymentTransactionMinAggregateInputType
+    _max?: PaymentTransactionMaxAggregateInputType
+  }
+
+  export type PaymentTransactionGroupByOutputType = {
+    id: number
+    publicId: string
+    idempotencyKey: string
+    bookingId: number
+    branchId: number
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal
+    cashAmount: Decimal
+    onlineAmount: Decimal
+    onlineTransactionRef: string | null
+    onlineGateway: string | null
+    collectedById: number | null
+    collectedAt: Date | null
+    confirmedById: number | null
+    confirmedAt: Date | null
+    rejectedById: number | null
+    rejectedAt: Date | null
+    rejectionReason: string | null
+    cashShiftId: number | null
+    notes: string | null
+    createdAt: Date
+    _count: PaymentTransactionCountAggregateOutputType | null
+    _avg: PaymentTransactionAvgAggregateOutputType | null
+    _sum: PaymentTransactionSumAggregateOutputType | null
+    _min: PaymentTransactionMinAggregateOutputType | null
+    _max: PaymentTransactionMaxAggregateOutputType | null
+  }
+
+  type GetPaymentTransactionGroupByPayload<T extends PaymentTransactionGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<PaymentTransactionGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof PaymentTransactionGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], PaymentTransactionGroupByOutputType[P]>
+            : GetScalarType<T[P], PaymentTransactionGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type PaymentTransactionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    idempotencyKey?: boolean
+    bookingId?: boolean
+    branchId?: boolean
+    purpose?: boolean
+    method?: boolean
+    status?: boolean
+    totalAmount?: boolean
+    cashAmount?: boolean
+    onlineAmount?: boolean
+    onlineTransactionRef?: boolean
+    onlineGateway?: boolean
+    collectedById?: boolean
+    collectedAt?: boolean
+    confirmedById?: boolean
+    confirmedAt?: boolean
+    rejectedById?: boolean
+    rejectedAt?: boolean
+    rejectionReason?: boolean
+    cashShiftId?: boolean
+    notes?: boolean
+    createdAt?: boolean
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    collectedBy?: boolean | PaymentTransaction$collectedByArgs<ExtArgs>
+    confirmedBy?: boolean | PaymentTransaction$confirmedByArgs<ExtArgs>
+    rejectedBy?: boolean | PaymentTransaction$rejectedByArgs<ExtArgs>
+    cashShift?: boolean | PaymentTransaction$cashShiftArgs<ExtArgs>
+  }, ExtArgs["result"]["paymentTransaction"]>
+
+  export type PaymentTransactionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    idempotencyKey?: boolean
+    bookingId?: boolean
+    branchId?: boolean
+    purpose?: boolean
+    method?: boolean
+    status?: boolean
+    totalAmount?: boolean
+    cashAmount?: boolean
+    onlineAmount?: boolean
+    onlineTransactionRef?: boolean
+    onlineGateway?: boolean
+    collectedById?: boolean
+    collectedAt?: boolean
+    confirmedById?: boolean
+    confirmedAt?: boolean
+    rejectedById?: boolean
+    rejectedAt?: boolean
+    rejectionReason?: boolean
+    cashShiftId?: boolean
+    notes?: boolean
+    createdAt?: boolean
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    collectedBy?: boolean | PaymentTransaction$collectedByArgs<ExtArgs>
+    confirmedBy?: boolean | PaymentTransaction$confirmedByArgs<ExtArgs>
+    rejectedBy?: boolean | PaymentTransaction$rejectedByArgs<ExtArgs>
+    cashShift?: boolean | PaymentTransaction$cashShiftArgs<ExtArgs>
+  }, ExtArgs["result"]["paymentTransaction"]>
+
+  export type PaymentTransactionSelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    idempotencyKey?: boolean
+    bookingId?: boolean
+    branchId?: boolean
+    purpose?: boolean
+    method?: boolean
+    status?: boolean
+    totalAmount?: boolean
+    cashAmount?: boolean
+    onlineAmount?: boolean
+    onlineTransactionRef?: boolean
+    onlineGateway?: boolean
+    collectedById?: boolean
+    collectedAt?: boolean
+    confirmedById?: boolean
+    confirmedAt?: boolean
+    rejectedById?: boolean
+    rejectedAt?: boolean
+    rejectionReason?: boolean
+    cashShiftId?: boolean
+    notes?: boolean
+    createdAt?: boolean
+  }
+
+  export type PaymentTransactionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    collectedBy?: boolean | PaymentTransaction$collectedByArgs<ExtArgs>
+    confirmedBy?: boolean | PaymentTransaction$confirmedByArgs<ExtArgs>
+    rejectedBy?: boolean | PaymentTransaction$rejectedByArgs<ExtArgs>
+    cashShift?: boolean | PaymentTransaction$cashShiftArgs<ExtArgs>
+  }
+  export type PaymentTransactionIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    collectedBy?: boolean | PaymentTransaction$collectedByArgs<ExtArgs>
+    confirmedBy?: boolean | PaymentTransaction$confirmedByArgs<ExtArgs>
+    rejectedBy?: boolean | PaymentTransaction$rejectedByArgs<ExtArgs>
+    cashShift?: boolean | PaymentTransaction$cashShiftArgs<ExtArgs>
+  }
+
+  export type $PaymentTransactionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "PaymentTransaction"
+    objects: {
+      booking: Prisma.$BookingPayload<ExtArgs>
+      branch: Prisma.$BranchPayload<ExtArgs>
+      collectedBy: Prisma.$UserPayload<ExtArgs> | null
+      confirmedBy: Prisma.$UserPayload<ExtArgs> | null
+      rejectedBy: Prisma.$UserPayload<ExtArgs> | null
+      cashShift: Prisma.$CashShiftPayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      idempotencyKey: string
+      bookingId: number
+      branchId: number
+      purpose: $Enums.PaymentPurpose
+      method: $Enums.PaymentMethod
+      status: $Enums.PaymentTransactionStatus
+      totalAmount: Prisma.Decimal
+      cashAmount: Prisma.Decimal
+      onlineAmount: Prisma.Decimal
+      onlineTransactionRef: string | null
+      onlineGateway: string | null
+      collectedById: number | null
+      collectedAt: Date | null
+      confirmedById: number | null
+      confirmedAt: Date | null
+      rejectedById: number | null
+      rejectedAt: Date | null
+      rejectionReason: string | null
+      cashShiftId: number | null
+      notes: string | null
+      createdAt: Date
+    }, ExtArgs["result"]["paymentTransaction"]>
+    composites: {}
+  }
+
+  type PaymentTransactionGetPayload<S extends boolean | null | undefined | PaymentTransactionDefaultArgs> = $Result.GetResult<Prisma.$PaymentTransactionPayload, S>
+
+  type PaymentTransactionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<PaymentTransactionFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: PaymentTransactionCountAggregateInputType | true
+    }
+
+  export interface PaymentTransactionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['PaymentTransaction'], meta: { name: 'PaymentTransaction' } }
+    /**
+     * Find zero or one PaymentTransaction that matches the filter.
+     * @param {PaymentTransactionFindUniqueArgs} args - Arguments to find a PaymentTransaction
+     * @example
+     * // Get one PaymentTransaction
+     * const paymentTransaction = await prisma.paymentTransaction.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends PaymentTransactionFindUniqueArgs>(args: SelectSubset<T, PaymentTransactionFindUniqueArgs<ExtArgs>>): Prisma__PaymentTransactionClient<$Result.GetResult<Prisma.$PaymentTransactionPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one PaymentTransaction that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {PaymentTransactionFindUniqueOrThrowArgs} args - Arguments to find a PaymentTransaction
+     * @example
+     * // Get one PaymentTransaction
+     * const paymentTransaction = await prisma.paymentTransaction.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends PaymentTransactionFindUniqueOrThrowArgs>(args: SelectSubset<T, PaymentTransactionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__PaymentTransactionClient<$Result.GetResult<Prisma.$PaymentTransactionPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first PaymentTransaction that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaymentTransactionFindFirstArgs} args - Arguments to find a PaymentTransaction
+     * @example
+     * // Get one PaymentTransaction
+     * const paymentTransaction = await prisma.paymentTransaction.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends PaymentTransactionFindFirstArgs>(args?: SelectSubset<T, PaymentTransactionFindFirstArgs<ExtArgs>>): Prisma__PaymentTransactionClient<$Result.GetResult<Prisma.$PaymentTransactionPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first PaymentTransaction that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaymentTransactionFindFirstOrThrowArgs} args - Arguments to find a PaymentTransaction
+     * @example
+     * // Get one PaymentTransaction
+     * const paymentTransaction = await prisma.paymentTransaction.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends PaymentTransactionFindFirstOrThrowArgs>(args?: SelectSubset<T, PaymentTransactionFindFirstOrThrowArgs<ExtArgs>>): Prisma__PaymentTransactionClient<$Result.GetResult<Prisma.$PaymentTransactionPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more PaymentTransactions that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaymentTransactionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all PaymentTransactions
+     * const paymentTransactions = await prisma.paymentTransaction.findMany()
+     * 
+     * // Get first 10 PaymentTransactions
+     * const paymentTransactions = await prisma.paymentTransaction.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const paymentTransactionWithIdOnly = await prisma.paymentTransaction.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends PaymentTransactionFindManyArgs>(args?: SelectSubset<T, PaymentTransactionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentTransactionPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a PaymentTransaction.
+     * @param {PaymentTransactionCreateArgs} args - Arguments to create a PaymentTransaction.
+     * @example
+     * // Create one PaymentTransaction
+     * const PaymentTransaction = await prisma.paymentTransaction.create({
+     *   data: {
+     *     // ... data to create a PaymentTransaction
+     *   }
+     * })
+     * 
+     */
+    create<T extends PaymentTransactionCreateArgs>(args: SelectSubset<T, PaymentTransactionCreateArgs<ExtArgs>>): Prisma__PaymentTransactionClient<$Result.GetResult<Prisma.$PaymentTransactionPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many PaymentTransactions.
+     * @param {PaymentTransactionCreateManyArgs} args - Arguments to create many PaymentTransactions.
+     * @example
+     * // Create many PaymentTransactions
+     * const paymentTransaction = await prisma.paymentTransaction.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends PaymentTransactionCreateManyArgs>(args?: SelectSubset<T, PaymentTransactionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many PaymentTransactions and returns the data saved in the database.
+     * @param {PaymentTransactionCreateManyAndReturnArgs} args - Arguments to create many PaymentTransactions.
+     * @example
+     * // Create many PaymentTransactions
+     * const paymentTransaction = await prisma.paymentTransaction.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many PaymentTransactions and only return the `id`
+     * const paymentTransactionWithIdOnly = await prisma.paymentTransaction.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends PaymentTransactionCreateManyAndReturnArgs>(args?: SelectSubset<T, PaymentTransactionCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentTransactionPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a PaymentTransaction.
+     * @param {PaymentTransactionDeleteArgs} args - Arguments to delete one PaymentTransaction.
+     * @example
+     * // Delete one PaymentTransaction
+     * const PaymentTransaction = await prisma.paymentTransaction.delete({
+     *   where: {
+     *     // ... filter to delete one PaymentTransaction
+     *   }
+     * })
+     * 
+     */
+    delete<T extends PaymentTransactionDeleteArgs>(args: SelectSubset<T, PaymentTransactionDeleteArgs<ExtArgs>>): Prisma__PaymentTransactionClient<$Result.GetResult<Prisma.$PaymentTransactionPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one PaymentTransaction.
+     * @param {PaymentTransactionUpdateArgs} args - Arguments to update one PaymentTransaction.
+     * @example
+     * // Update one PaymentTransaction
+     * const paymentTransaction = await prisma.paymentTransaction.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends PaymentTransactionUpdateArgs>(args: SelectSubset<T, PaymentTransactionUpdateArgs<ExtArgs>>): Prisma__PaymentTransactionClient<$Result.GetResult<Prisma.$PaymentTransactionPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more PaymentTransactions.
+     * @param {PaymentTransactionDeleteManyArgs} args - Arguments to filter PaymentTransactions to delete.
+     * @example
+     * // Delete a few PaymentTransactions
+     * const { count } = await prisma.paymentTransaction.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends PaymentTransactionDeleteManyArgs>(args?: SelectSubset<T, PaymentTransactionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PaymentTransactions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaymentTransactionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many PaymentTransactions
+     * const paymentTransaction = await prisma.paymentTransaction.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends PaymentTransactionUpdateManyArgs>(args: SelectSubset<T, PaymentTransactionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one PaymentTransaction.
+     * @param {PaymentTransactionUpsertArgs} args - Arguments to update or create a PaymentTransaction.
+     * @example
+     * // Update or create a PaymentTransaction
+     * const paymentTransaction = await prisma.paymentTransaction.upsert({
+     *   create: {
+     *     // ... data to create a PaymentTransaction
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the PaymentTransaction we want to update
+     *   }
+     * })
+     */
+    upsert<T extends PaymentTransactionUpsertArgs>(args: SelectSubset<T, PaymentTransactionUpsertArgs<ExtArgs>>): Prisma__PaymentTransactionClient<$Result.GetResult<Prisma.$PaymentTransactionPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of PaymentTransactions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaymentTransactionCountArgs} args - Arguments to filter PaymentTransactions to count.
+     * @example
+     * // Count the number of PaymentTransactions
+     * const count = await prisma.paymentTransaction.count({
+     *   where: {
+     *     // ... the filter for the PaymentTransactions we want to count
+     *   }
+     * })
+    **/
+    count<T extends PaymentTransactionCountArgs>(
+      args?: Subset<T, PaymentTransactionCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], PaymentTransactionCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a PaymentTransaction.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaymentTransactionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends PaymentTransactionAggregateArgs>(args: Subset<T, PaymentTransactionAggregateArgs>): Prisma.PrismaPromise<GetPaymentTransactionAggregateType<T>>
+
+    /**
+     * Group by PaymentTransaction.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaymentTransactionGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends PaymentTransactionGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: PaymentTransactionGroupByArgs['orderBy'] }
+        : { orderBy?: PaymentTransactionGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, PaymentTransactionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPaymentTransactionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the PaymentTransaction model
+   */
+  readonly fields: PaymentTransactionFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for PaymentTransaction.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__PaymentTransactionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    booking<T extends BookingDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BookingDefaultArgs<ExtArgs>>): Prisma__BookingClient<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    branch<T extends BranchDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BranchDefaultArgs<ExtArgs>>): Prisma__BranchClient<$Result.GetResult<Prisma.$BranchPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    collectedBy<T extends PaymentTransaction$collectedByArgs<ExtArgs> = {}>(args?: Subset<T, PaymentTransaction$collectedByArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    confirmedBy<T extends PaymentTransaction$confirmedByArgs<ExtArgs> = {}>(args?: Subset<T, PaymentTransaction$confirmedByArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    rejectedBy<T extends PaymentTransaction$rejectedByArgs<ExtArgs> = {}>(args?: Subset<T, PaymentTransaction$rejectedByArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    cashShift<T extends PaymentTransaction$cashShiftArgs<ExtArgs> = {}>(args?: Subset<T, PaymentTransaction$cashShiftArgs<ExtArgs>>): Prisma__CashShiftClient<$Result.GetResult<Prisma.$CashShiftPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the PaymentTransaction model
+   */ 
+  interface PaymentTransactionFieldRefs {
+    readonly id: FieldRef<"PaymentTransaction", 'Int'>
+    readonly publicId: FieldRef<"PaymentTransaction", 'String'>
+    readonly idempotencyKey: FieldRef<"PaymentTransaction", 'String'>
+    readonly bookingId: FieldRef<"PaymentTransaction", 'Int'>
+    readonly branchId: FieldRef<"PaymentTransaction", 'Int'>
+    readonly purpose: FieldRef<"PaymentTransaction", 'PaymentPurpose'>
+    readonly method: FieldRef<"PaymentTransaction", 'PaymentMethod'>
+    readonly status: FieldRef<"PaymentTransaction", 'PaymentTransactionStatus'>
+    readonly totalAmount: FieldRef<"PaymentTransaction", 'Decimal'>
+    readonly cashAmount: FieldRef<"PaymentTransaction", 'Decimal'>
+    readonly onlineAmount: FieldRef<"PaymentTransaction", 'Decimal'>
+    readonly onlineTransactionRef: FieldRef<"PaymentTransaction", 'String'>
+    readonly onlineGateway: FieldRef<"PaymentTransaction", 'String'>
+    readonly collectedById: FieldRef<"PaymentTransaction", 'Int'>
+    readonly collectedAt: FieldRef<"PaymentTransaction", 'DateTime'>
+    readonly confirmedById: FieldRef<"PaymentTransaction", 'Int'>
+    readonly confirmedAt: FieldRef<"PaymentTransaction", 'DateTime'>
+    readonly rejectedById: FieldRef<"PaymentTransaction", 'Int'>
+    readonly rejectedAt: FieldRef<"PaymentTransaction", 'DateTime'>
+    readonly rejectionReason: FieldRef<"PaymentTransaction", 'String'>
+    readonly cashShiftId: FieldRef<"PaymentTransaction", 'Int'>
+    readonly notes: FieldRef<"PaymentTransaction", 'String'>
+    readonly createdAt: FieldRef<"PaymentTransaction", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * PaymentTransaction findUnique
+   */
+  export type PaymentTransactionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentTransaction
+     */
+    select?: PaymentTransactionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+    /**
+     * Filter, which PaymentTransaction to fetch.
+     */
+    where: PaymentTransactionWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * PaymentTransaction findUniqueOrThrow
+   */
+  export type PaymentTransactionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentTransaction
+     */
+    select?: PaymentTransactionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+    /**
+     * Filter, which PaymentTransaction to fetch.
+     */
+    where: PaymentTransactionWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * PaymentTransaction findFirst
+   */
+  export type PaymentTransactionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentTransaction
+     */
+    select?: PaymentTransactionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+    /**
+     * Filter, which PaymentTransaction to fetch.
+     */
+    where?: PaymentTransactionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PaymentTransactions to fetch.
+     */
+    orderBy?: PaymentTransactionOrderByWithRelationInput | PaymentTransactionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PaymentTransactions.
+     */
+    cursor?: PaymentTransactionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PaymentTransactions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PaymentTransactions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PaymentTransactions.
+     */
+    distinct?: PaymentTransactionScalarFieldEnum | PaymentTransactionScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * PaymentTransaction findFirstOrThrow
+   */
+  export type PaymentTransactionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentTransaction
+     */
+    select?: PaymentTransactionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+    /**
+     * Filter, which PaymentTransaction to fetch.
+     */
+    where?: PaymentTransactionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PaymentTransactions to fetch.
+     */
+    orderBy?: PaymentTransactionOrderByWithRelationInput | PaymentTransactionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PaymentTransactions.
+     */
+    cursor?: PaymentTransactionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PaymentTransactions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PaymentTransactions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PaymentTransactions.
+     */
+    distinct?: PaymentTransactionScalarFieldEnum | PaymentTransactionScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * PaymentTransaction findMany
+   */
+  export type PaymentTransactionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentTransaction
+     */
+    select?: PaymentTransactionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+    /**
+     * Filter, which PaymentTransactions to fetch.
+     */
+    where?: PaymentTransactionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PaymentTransactions to fetch.
+     */
+    orderBy?: PaymentTransactionOrderByWithRelationInput | PaymentTransactionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing PaymentTransactions.
+     */
+    cursor?: PaymentTransactionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PaymentTransactions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PaymentTransactions.
+     */
+    skip?: number
+    distinct?: PaymentTransactionScalarFieldEnum | PaymentTransactionScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * PaymentTransaction create
+   */
+  export type PaymentTransactionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentTransaction
+     */
+    select?: PaymentTransactionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+    /**
+     * The data needed to create a PaymentTransaction.
+     */
+    data: XOR<PaymentTransactionCreateInput, PaymentTransactionUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * PaymentTransaction createMany
+   */
+  export type PaymentTransactionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many PaymentTransactions.
+     */
+    data: PaymentTransactionCreateManyInput | PaymentTransactionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PaymentTransaction createManyAndReturn
+   */
+  export type PaymentTransactionCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentTransaction
+     */
+    select?: PaymentTransactionSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many PaymentTransactions.
+     */
+    data: PaymentTransactionCreateManyInput | PaymentTransactionCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * PaymentTransaction update
+   */
+  export type PaymentTransactionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentTransaction
+     */
+    select?: PaymentTransactionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+    /**
+     * The data needed to update a PaymentTransaction.
+     */
+    data: XOR<PaymentTransactionUpdateInput, PaymentTransactionUncheckedUpdateInput>
+    /**
+     * Choose, which PaymentTransaction to update.
+     */
+    where: PaymentTransactionWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * PaymentTransaction updateMany
+   */
+  export type PaymentTransactionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update PaymentTransactions.
+     */
+    data: XOR<PaymentTransactionUpdateManyMutationInput, PaymentTransactionUncheckedUpdateManyInput>
+    /**
+     * Filter which PaymentTransactions to update
+     */
+    where?: PaymentTransactionWhereInput
+  }
+
+  /**
+   * PaymentTransaction upsert
+   */
+  export type PaymentTransactionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentTransaction
+     */
+    select?: PaymentTransactionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+    /**
+     * The filter to search for the PaymentTransaction to update in case it exists.
+     */
+    where: PaymentTransactionWhereUniqueInput
+    /**
+     * In case the PaymentTransaction found by the `where` argument doesn't exist, create a new PaymentTransaction with this data.
+     */
+    create: XOR<PaymentTransactionCreateInput, PaymentTransactionUncheckedCreateInput>
+    /**
+     * In case the PaymentTransaction was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<PaymentTransactionUpdateInput, PaymentTransactionUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * PaymentTransaction delete
+   */
+  export type PaymentTransactionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentTransaction
+     */
+    select?: PaymentTransactionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+    /**
+     * Filter which PaymentTransaction to delete.
+     */
+    where: PaymentTransactionWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * PaymentTransaction deleteMany
+   */
+  export type PaymentTransactionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PaymentTransactions to delete
+     */
+    where?: PaymentTransactionWhereInput
+  }
+
+  /**
+   * PaymentTransaction.collectedBy
+   */
+  export type PaymentTransaction$collectedByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the User
+     */
+    select?: UserSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    where?: UserWhereInput
+  }
+
+  /**
+   * PaymentTransaction.confirmedBy
+   */
+  export type PaymentTransaction$confirmedByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the User
+     */
+    select?: UserSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    where?: UserWhereInput
+  }
+
+  /**
+   * PaymentTransaction.rejectedBy
+   */
+  export type PaymentTransaction$rejectedByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the User
+     */
+    select?: UserSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    where?: UserWhereInput
+  }
+
+  /**
+   * PaymentTransaction.cashShift
+   */
+  export type PaymentTransaction$cashShiftArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashShift
+     */
+    select?: CashShiftSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashShiftInclude<ExtArgs> | null
+    where?: CashShiftWhereInput
+  }
+
+  /**
+   * PaymentTransaction without action
+   */
+  export type PaymentTransactionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentTransaction
+     */
+    select?: PaymentTransactionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model RefundRequest
+   */
+
+  export type AggregateRefundRequest = {
+    _count: RefundRequestCountAggregateOutputType | null
+    _avg: RefundRequestAvgAggregateOutputType | null
+    _sum: RefundRequestSumAggregateOutputType | null
+    _min: RefundRequestMinAggregateOutputType | null
+    _max: RefundRequestMaxAggregateOutputType | null
+  }
+
+  export type RefundRequestAvgAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    branchId: number | null
+    amount: Decimal | null
+    requestedById: number | null
+    approvedById: number | null
+    completedById: number | null
+  }
+
+  export type RefundRequestSumAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    branchId: number | null
+    amount: Decimal | null
+    requestedById: number | null
+    approvedById: number | null
+    completedById: number | null
+  }
+
+  export type RefundRequestMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    bookingId: number | null
+    branchId: number | null
+    amount: Decimal | null
+    reason: string | null
+    method: $Enums.PaymentMethod | null
+    status: $Enums.RefundStatus | null
+    requestedById: number | null
+    approvedById: number | null
+    approvedAt: Date | null
+    completedById: number | null
+    completedAt: Date | null
+    onlineTransactionRef: string | null
+    rejectionReason: string | null
+    rejectedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type RefundRequestMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    bookingId: number | null
+    branchId: number | null
+    amount: Decimal | null
+    reason: string | null
+    method: $Enums.PaymentMethod | null
+    status: $Enums.RefundStatus | null
+    requestedById: number | null
+    approvedById: number | null
+    approvedAt: Date | null
+    completedById: number | null
+    completedAt: Date | null
+    onlineTransactionRef: string | null
+    rejectionReason: string | null
+    rejectedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type RefundRequestCountAggregateOutputType = {
+    id: number
+    publicId: number
+    bookingId: number
+    branchId: number
+    amount: number
+    reason: number
+    method: number
+    status: number
+    requestedById: number
+    approvedById: number
+    approvedAt: number
+    completedById: number
+    completedAt: number
+    onlineTransactionRef: number
+    rejectionReason: number
+    rejectedAt: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type RefundRequestAvgAggregateInputType = {
+    id?: true
+    bookingId?: true
+    branchId?: true
+    amount?: true
+    requestedById?: true
+    approvedById?: true
+    completedById?: true
+  }
+
+  export type RefundRequestSumAggregateInputType = {
+    id?: true
+    bookingId?: true
+    branchId?: true
+    amount?: true
+    requestedById?: true
+    approvedById?: true
+    completedById?: true
+  }
+
+  export type RefundRequestMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    branchId?: true
+    amount?: true
+    reason?: true
+    method?: true
+    status?: true
+    requestedById?: true
+    approvedById?: true
+    approvedAt?: true
+    completedById?: true
+    completedAt?: true
+    onlineTransactionRef?: true
+    rejectionReason?: true
+    rejectedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type RefundRequestMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    branchId?: true
+    amount?: true
+    reason?: true
+    method?: true
+    status?: true
+    requestedById?: true
+    approvedById?: true
+    approvedAt?: true
+    completedById?: true
+    completedAt?: true
+    onlineTransactionRef?: true
+    rejectionReason?: true
+    rejectedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type RefundRequestCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    branchId?: true
+    amount?: true
+    reason?: true
+    method?: true
+    status?: true
+    requestedById?: true
+    approvedById?: true
+    approvedAt?: true
+    completedById?: true
+    completedAt?: true
+    onlineTransactionRef?: true
+    rejectionReason?: true
+    rejectedAt?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type RefundRequestAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RefundRequest to aggregate.
+     */
+    where?: RefundRequestWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RefundRequests to fetch.
+     */
+    orderBy?: RefundRequestOrderByWithRelationInput | RefundRequestOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: RefundRequestWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RefundRequests from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RefundRequests.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned RefundRequests
+    **/
+    _count?: true | RefundRequestCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: RefundRequestAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: RefundRequestSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: RefundRequestMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: RefundRequestMaxAggregateInputType
+  }
+
+  export type GetRefundRequestAggregateType<T extends RefundRequestAggregateArgs> = {
+        [P in keyof T & keyof AggregateRefundRequest]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateRefundRequest[P]>
+      : GetScalarType<T[P], AggregateRefundRequest[P]>
+  }
+
+
+
+
+  export type RefundRequestGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RefundRequestWhereInput
+    orderBy?: RefundRequestOrderByWithAggregationInput | RefundRequestOrderByWithAggregationInput[]
+    by: RefundRequestScalarFieldEnum[] | RefundRequestScalarFieldEnum
+    having?: RefundRequestScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: RefundRequestCountAggregateInputType | true
+    _avg?: RefundRequestAvgAggregateInputType
+    _sum?: RefundRequestSumAggregateInputType
+    _min?: RefundRequestMinAggregateInputType
+    _max?: RefundRequestMaxAggregateInputType
+  }
+
+  export type RefundRequestGroupByOutputType = {
+    id: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    amount: Decimal
+    reason: string
+    method: $Enums.PaymentMethod
+    status: $Enums.RefundStatus
+    requestedById: number
+    approvedById: number | null
+    approvedAt: Date | null
+    completedById: number | null
+    completedAt: Date | null
+    onlineTransactionRef: string | null
+    rejectionReason: string | null
+    rejectedAt: Date | null
+    createdAt: Date
+    updatedAt: Date
+    _count: RefundRequestCountAggregateOutputType | null
+    _avg: RefundRequestAvgAggregateOutputType | null
+    _sum: RefundRequestSumAggregateOutputType | null
+    _min: RefundRequestMinAggregateOutputType | null
+    _max: RefundRequestMaxAggregateOutputType | null
+  }
+
+  type GetRefundRequestGroupByPayload<T extends RefundRequestGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<RefundRequestGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof RefundRequestGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], RefundRequestGroupByOutputType[P]>
+            : GetScalarType<T[P], RefundRequestGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type RefundRequestSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    branchId?: boolean
+    amount?: boolean
+    reason?: boolean
+    method?: boolean
+    status?: boolean
+    requestedById?: boolean
+    approvedById?: boolean
+    approvedAt?: boolean
+    completedById?: boolean
+    completedAt?: boolean
+    onlineTransactionRef?: boolean
+    rejectionReason?: boolean
+    rejectedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    requestedBy?: boolean | UserDefaultArgs<ExtArgs>
+    approvedBy?: boolean | RefundRequest$approvedByArgs<ExtArgs>
+    completedBy?: boolean | RefundRequest$completedByArgs<ExtArgs>
+  }, ExtArgs["result"]["refundRequest"]>
+
+  export type RefundRequestSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    branchId?: boolean
+    amount?: boolean
+    reason?: boolean
+    method?: boolean
+    status?: boolean
+    requestedById?: boolean
+    approvedById?: boolean
+    approvedAt?: boolean
+    completedById?: boolean
+    completedAt?: boolean
+    onlineTransactionRef?: boolean
+    rejectionReason?: boolean
+    rejectedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    requestedBy?: boolean | UserDefaultArgs<ExtArgs>
+    approvedBy?: boolean | RefundRequest$approvedByArgs<ExtArgs>
+    completedBy?: boolean | RefundRequest$completedByArgs<ExtArgs>
+  }, ExtArgs["result"]["refundRequest"]>
+
+  export type RefundRequestSelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    branchId?: boolean
+    amount?: boolean
+    reason?: boolean
+    method?: boolean
+    status?: boolean
+    requestedById?: boolean
+    approvedById?: boolean
+    approvedAt?: boolean
+    completedById?: boolean
+    completedAt?: boolean
+    onlineTransactionRef?: boolean
+    rejectionReason?: boolean
+    rejectedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type RefundRequestInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    requestedBy?: boolean | UserDefaultArgs<ExtArgs>
+    approvedBy?: boolean | RefundRequest$approvedByArgs<ExtArgs>
+    completedBy?: boolean | RefundRequest$completedByArgs<ExtArgs>
+  }
+  export type RefundRequestIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    requestedBy?: boolean | UserDefaultArgs<ExtArgs>
+    approvedBy?: boolean | RefundRequest$approvedByArgs<ExtArgs>
+    completedBy?: boolean | RefundRequest$completedByArgs<ExtArgs>
+  }
+
+  export type $RefundRequestPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "RefundRequest"
+    objects: {
+      booking: Prisma.$BookingPayload<ExtArgs>
+      branch: Prisma.$BranchPayload<ExtArgs>
+      requestedBy: Prisma.$UserPayload<ExtArgs>
+      approvedBy: Prisma.$UserPayload<ExtArgs> | null
+      completedBy: Prisma.$UserPayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      bookingId: number
+      branchId: number
+      amount: Prisma.Decimal
+      reason: string
+      method: $Enums.PaymentMethod
+      status: $Enums.RefundStatus
+      requestedById: number
+      approvedById: number | null
+      approvedAt: Date | null
+      completedById: number | null
+      completedAt: Date | null
+      onlineTransactionRef: string | null
+      rejectionReason: string | null
+      rejectedAt: Date | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["refundRequest"]>
+    composites: {}
+  }
+
+  type RefundRequestGetPayload<S extends boolean | null | undefined | RefundRequestDefaultArgs> = $Result.GetResult<Prisma.$RefundRequestPayload, S>
+
+  type RefundRequestCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<RefundRequestFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: RefundRequestCountAggregateInputType | true
+    }
+
+  export interface RefundRequestDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['RefundRequest'], meta: { name: 'RefundRequest' } }
+    /**
+     * Find zero or one RefundRequest that matches the filter.
+     * @param {RefundRequestFindUniqueArgs} args - Arguments to find a RefundRequest
+     * @example
+     * // Get one RefundRequest
+     * const refundRequest = await prisma.refundRequest.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends RefundRequestFindUniqueArgs>(args: SelectSubset<T, RefundRequestFindUniqueArgs<ExtArgs>>): Prisma__RefundRequestClient<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one RefundRequest that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {RefundRequestFindUniqueOrThrowArgs} args - Arguments to find a RefundRequest
+     * @example
+     * // Get one RefundRequest
+     * const refundRequest = await prisma.refundRequest.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends RefundRequestFindUniqueOrThrowArgs>(args: SelectSubset<T, RefundRequestFindUniqueOrThrowArgs<ExtArgs>>): Prisma__RefundRequestClient<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first RefundRequest that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RefundRequestFindFirstArgs} args - Arguments to find a RefundRequest
+     * @example
+     * // Get one RefundRequest
+     * const refundRequest = await prisma.refundRequest.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends RefundRequestFindFirstArgs>(args?: SelectSubset<T, RefundRequestFindFirstArgs<ExtArgs>>): Prisma__RefundRequestClient<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first RefundRequest that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RefundRequestFindFirstOrThrowArgs} args - Arguments to find a RefundRequest
+     * @example
+     * // Get one RefundRequest
+     * const refundRequest = await prisma.refundRequest.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends RefundRequestFindFirstOrThrowArgs>(args?: SelectSubset<T, RefundRequestFindFirstOrThrowArgs<ExtArgs>>): Prisma__RefundRequestClient<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more RefundRequests that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RefundRequestFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all RefundRequests
+     * const refundRequests = await prisma.refundRequest.findMany()
+     * 
+     * // Get first 10 RefundRequests
+     * const refundRequests = await prisma.refundRequest.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const refundRequestWithIdOnly = await prisma.refundRequest.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends RefundRequestFindManyArgs>(args?: SelectSubset<T, RefundRequestFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a RefundRequest.
+     * @param {RefundRequestCreateArgs} args - Arguments to create a RefundRequest.
+     * @example
+     * // Create one RefundRequest
+     * const RefundRequest = await prisma.refundRequest.create({
+     *   data: {
+     *     // ... data to create a RefundRequest
+     *   }
+     * })
+     * 
+     */
+    create<T extends RefundRequestCreateArgs>(args: SelectSubset<T, RefundRequestCreateArgs<ExtArgs>>): Prisma__RefundRequestClient<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many RefundRequests.
+     * @param {RefundRequestCreateManyArgs} args - Arguments to create many RefundRequests.
+     * @example
+     * // Create many RefundRequests
+     * const refundRequest = await prisma.refundRequest.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends RefundRequestCreateManyArgs>(args?: SelectSubset<T, RefundRequestCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many RefundRequests and returns the data saved in the database.
+     * @param {RefundRequestCreateManyAndReturnArgs} args - Arguments to create many RefundRequests.
+     * @example
+     * // Create many RefundRequests
+     * const refundRequest = await prisma.refundRequest.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many RefundRequests and only return the `id`
+     * const refundRequestWithIdOnly = await prisma.refundRequest.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends RefundRequestCreateManyAndReturnArgs>(args?: SelectSubset<T, RefundRequestCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a RefundRequest.
+     * @param {RefundRequestDeleteArgs} args - Arguments to delete one RefundRequest.
+     * @example
+     * // Delete one RefundRequest
+     * const RefundRequest = await prisma.refundRequest.delete({
+     *   where: {
+     *     // ... filter to delete one RefundRequest
+     *   }
+     * })
+     * 
+     */
+    delete<T extends RefundRequestDeleteArgs>(args: SelectSubset<T, RefundRequestDeleteArgs<ExtArgs>>): Prisma__RefundRequestClient<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one RefundRequest.
+     * @param {RefundRequestUpdateArgs} args - Arguments to update one RefundRequest.
+     * @example
+     * // Update one RefundRequest
+     * const refundRequest = await prisma.refundRequest.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends RefundRequestUpdateArgs>(args: SelectSubset<T, RefundRequestUpdateArgs<ExtArgs>>): Prisma__RefundRequestClient<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more RefundRequests.
+     * @param {RefundRequestDeleteManyArgs} args - Arguments to filter RefundRequests to delete.
+     * @example
+     * // Delete a few RefundRequests
+     * const { count } = await prisma.refundRequest.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends RefundRequestDeleteManyArgs>(args?: SelectSubset<T, RefundRequestDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more RefundRequests.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RefundRequestUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many RefundRequests
+     * const refundRequest = await prisma.refundRequest.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends RefundRequestUpdateManyArgs>(args: SelectSubset<T, RefundRequestUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one RefundRequest.
+     * @param {RefundRequestUpsertArgs} args - Arguments to update or create a RefundRequest.
+     * @example
+     * // Update or create a RefundRequest
+     * const refundRequest = await prisma.refundRequest.upsert({
+     *   create: {
+     *     // ... data to create a RefundRequest
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the RefundRequest we want to update
+     *   }
+     * })
+     */
+    upsert<T extends RefundRequestUpsertArgs>(args: SelectSubset<T, RefundRequestUpsertArgs<ExtArgs>>): Prisma__RefundRequestClient<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of RefundRequests.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RefundRequestCountArgs} args - Arguments to filter RefundRequests to count.
+     * @example
+     * // Count the number of RefundRequests
+     * const count = await prisma.refundRequest.count({
+     *   where: {
+     *     // ... the filter for the RefundRequests we want to count
+     *   }
+     * })
+    **/
+    count<T extends RefundRequestCountArgs>(
+      args?: Subset<T, RefundRequestCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], RefundRequestCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a RefundRequest.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RefundRequestAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends RefundRequestAggregateArgs>(args: Subset<T, RefundRequestAggregateArgs>): Prisma.PrismaPromise<GetRefundRequestAggregateType<T>>
+
+    /**
+     * Group by RefundRequest.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RefundRequestGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends RefundRequestGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: RefundRequestGroupByArgs['orderBy'] }
+        : { orderBy?: RefundRequestGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, RefundRequestGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetRefundRequestGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the RefundRequest model
+   */
+  readonly fields: RefundRequestFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for RefundRequest.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__RefundRequestClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    booking<T extends BookingDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BookingDefaultArgs<ExtArgs>>): Prisma__BookingClient<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    branch<T extends BranchDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BranchDefaultArgs<ExtArgs>>): Prisma__BranchClient<$Result.GetResult<Prisma.$BranchPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    requestedBy<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    approvedBy<T extends RefundRequest$approvedByArgs<ExtArgs> = {}>(args?: Subset<T, RefundRequest$approvedByArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    completedBy<T extends RefundRequest$completedByArgs<ExtArgs> = {}>(args?: Subset<T, RefundRequest$completedByArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the RefundRequest model
+   */ 
+  interface RefundRequestFieldRefs {
+    readonly id: FieldRef<"RefundRequest", 'Int'>
+    readonly publicId: FieldRef<"RefundRequest", 'String'>
+    readonly bookingId: FieldRef<"RefundRequest", 'Int'>
+    readonly branchId: FieldRef<"RefundRequest", 'Int'>
+    readonly amount: FieldRef<"RefundRequest", 'Decimal'>
+    readonly reason: FieldRef<"RefundRequest", 'String'>
+    readonly method: FieldRef<"RefundRequest", 'PaymentMethod'>
+    readonly status: FieldRef<"RefundRequest", 'RefundStatus'>
+    readonly requestedById: FieldRef<"RefundRequest", 'Int'>
+    readonly approvedById: FieldRef<"RefundRequest", 'Int'>
+    readonly approvedAt: FieldRef<"RefundRequest", 'DateTime'>
+    readonly completedById: FieldRef<"RefundRequest", 'Int'>
+    readonly completedAt: FieldRef<"RefundRequest", 'DateTime'>
+    readonly onlineTransactionRef: FieldRef<"RefundRequest", 'String'>
+    readonly rejectionReason: FieldRef<"RefundRequest", 'String'>
+    readonly rejectedAt: FieldRef<"RefundRequest", 'DateTime'>
+    readonly createdAt: FieldRef<"RefundRequest", 'DateTime'>
+    readonly updatedAt: FieldRef<"RefundRequest", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * RefundRequest findUnique
+   */
+  export type RefundRequestFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefundRequest
+     */
+    select?: RefundRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefundRequestInclude<ExtArgs> | null
+    /**
+     * Filter, which RefundRequest to fetch.
+     */
+    where: RefundRequestWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * RefundRequest findUniqueOrThrow
+   */
+  export type RefundRequestFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefundRequest
+     */
+    select?: RefundRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefundRequestInclude<ExtArgs> | null
+    /**
+     * Filter, which RefundRequest to fetch.
+     */
+    where: RefundRequestWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * RefundRequest findFirst
+   */
+  export type RefundRequestFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefundRequest
+     */
+    select?: RefundRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefundRequestInclude<ExtArgs> | null
+    /**
+     * Filter, which RefundRequest to fetch.
+     */
+    where?: RefundRequestWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RefundRequests to fetch.
+     */
+    orderBy?: RefundRequestOrderByWithRelationInput | RefundRequestOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RefundRequests.
+     */
+    cursor?: RefundRequestWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RefundRequests from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RefundRequests.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RefundRequests.
+     */
+    distinct?: RefundRequestScalarFieldEnum | RefundRequestScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * RefundRequest findFirstOrThrow
+   */
+  export type RefundRequestFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefundRequest
+     */
+    select?: RefundRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefundRequestInclude<ExtArgs> | null
+    /**
+     * Filter, which RefundRequest to fetch.
+     */
+    where?: RefundRequestWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RefundRequests to fetch.
+     */
+    orderBy?: RefundRequestOrderByWithRelationInput | RefundRequestOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RefundRequests.
+     */
+    cursor?: RefundRequestWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RefundRequests from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RefundRequests.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RefundRequests.
+     */
+    distinct?: RefundRequestScalarFieldEnum | RefundRequestScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * RefundRequest findMany
+   */
+  export type RefundRequestFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefundRequest
+     */
+    select?: RefundRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefundRequestInclude<ExtArgs> | null
+    /**
+     * Filter, which RefundRequests to fetch.
+     */
+    where?: RefundRequestWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RefundRequests to fetch.
+     */
+    orderBy?: RefundRequestOrderByWithRelationInput | RefundRequestOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing RefundRequests.
+     */
+    cursor?: RefundRequestWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RefundRequests from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RefundRequests.
+     */
+    skip?: number
+    distinct?: RefundRequestScalarFieldEnum | RefundRequestScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * RefundRequest create
+   */
+  export type RefundRequestCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefundRequest
+     */
+    select?: RefundRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefundRequestInclude<ExtArgs> | null
+    /**
+     * The data needed to create a RefundRequest.
+     */
+    data: XOR<RefundRequestCreateInput, RefundRequestUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * RefundRequest createMany
+   */
+  export type RefundRequestCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many RefundRequests.
+     */
+    data: RefundRequestCreateManyInput | RefundRequestCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * RefundRequest createManyAndReturn
+   */
+  export type RefundRequestCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefundRequest
+     */
+    select?: RefundRequestSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many RefundRequests.
+     */
+    data: RefundRequestCreateManyInput | RefundRequestCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefundRequestIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * RefundRequest update
+   */
+  export type RefundRequestUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefundRequest
+     */
+    select?: RefundRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefundRequestInclude<ExtArgs> | null
+    /**
+     * The data needed to update a RefundRequest.
+     */
+    data: XOR<RefundRequestUpdateInput, RefundRequestUncheckedUpdateInput>
+    /**
+     * Choose, which RefundRequest to update.
+     */
+    where: RefundRequestWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * RefundRequest updateMany
+   */
+  export type RefundRequestUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update RefundRequests.
+     */
+    data: XOR<RefundRequestUpdateManyMutationInput, RefundRequestUncheckedUpdateManyInput>
+    /**
+     * Filter which RefundRequests to update
+     */
+    where?: RefundRequestWhereInput
+  }
+
+  /**
+   * RefundRequest upsert
+   */
+  export type RefundRequestUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefundRequest
+     */
+    select?: RefundRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefundRequestInclude<ExtArgs> | null
+    /**
+     * The filter to search for the RefundRequest to update in case it exists.
+     */
+    where: RefundRequestWhereUniqueInput
+    /**
+     * In case the RefundRequest found by the `where` argument doesn't exist, create a new RefundRequest with this data.
+     */
+    create: XOR<RefundRequestCreateInput, RefundRequestUncheckedCreateInput>
+    /**
+     * In case the RefundRequest was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<RefundRequestUpdateInput, RefundRequestUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * RefundRequest delete
+   */
+  export type RefundRequestDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefundRequest
+     */
+    select?: RefundRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefundRequestInclude<ExtArgs> | null
+    /**
+     * Filter which RefundRequest to delete.
+     */
+    where: RefundRequestWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * RefundRequest deleteMany
+   */
+  export type RefundRequestDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RefundRequests to delete
+     */
+    where?: RefundRequestWhereInput
+  }
+
+  /**
+   * RefundRequest.approvedBy
+   */
+  export type RefundRequest$approvedByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the User
+     */
+    select?: UserSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    where?: UserWhereInput
+  }
+
+  /**
+   * RefundRequest.completedBy
+   */
+  export type RefundRequest$completedByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the User
+     */
+    select?: UserSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    where?: UserWhereInput
+  }
+
+  /**
+   * RefundRequest without action
+   */
+  export type RefundRequestDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefundRequest
+     */
+    select?: RefundRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefundRequestInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model CashShift
+   */
+
+  export type AggregateCashShift = {
+    _count: CashShiftCountAggregateOutputType | null
+    _avg: CashShiftAvgAggregateOutputType | null
+    _sum: CashShiftSumAggregateOutputType | null
+    _min: CashShiftMinAggregateOutputType | null
+    _max: CashShiftMaxAggregateOutputType | null
+  }
+
+  export type CashShiftAvgAggregateOutputType = {
+    id: number | null
+    employeeId: number | null
+    branchId: number | null
+    expectedTotal: Decimal | null
+    actualTotal: Decimal | null
+    discrepancy: Decimal | null
+    reconciledById: number | null
+  }
+
+  export type CashShiftSumAggregateOutputType = {
+    id: number | null
+    employeeId: number | null
+    branchId: number | null
+    expectedTotal: Decimal | null
+    actualTotal: Decimal | null
+    discrepancy: Decimal | null
+    reconciledById: number | null
+  }
+
+  export type CashShiftMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    employeeId: number | null
+    branchId: number | null
+    status: $Enums.CashShiftStatus | null
+    openedAt: Date | null
+    closedAt: Date | null
+    expectedTotal: Decimal | null
+    actualTotal: Decimal | null
+    discrepancy: Decimal | null
+    discrepancyExplanation: string | null
+    reconciledById: number | null
+    reconciledAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type CashShiftMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    employeeId: number | null
+    branchId: number | null
+    status: $Enums.CashShiftStatus | null
+    openedAt: Date | null
+    closedAt: Date | null
+    expectedTotal: Decimal | null
+    actualTotal: Decimal | null
+    discrepancy: Decimal | null
+    discrepancyExplanation: string | null
+    reconciledById: number | null
+    reconciledAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type CashShiftCountAggregateOutputType = {
+    id: number
+    publicId: number
+    employeeId: number
+    branchId: number
+    status: number
+    openedAt: number
+    closedAt: number
+    expectedTotal: number
+    actualTotal: number
+    discrepancy: number
+    discrepancyExplanation: number
+    reconciledById: number
+    reconciledAt: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type CashShiftAvgAggregateInputType = {
+    id?: true
+    employeeId?: true
+    branchId?: true
+    expectedTotal?: true
+    actualTotal?: true
+    discrepancy?: true
+    reconciledById?: true
+  }
+
+  export type CashShiftSumAggregateInputType = {
+    id?: true
+    employeeId?: true
+    branchId?: true
+    expectedTotal?: true
+    actualTotal?: true
+    discrepancy?: true
+    reconciledById?: true
+  }
+
+  export type CashShiftMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    employeeId?: true
+    branchId?: true
+    status?: true
+    openedAt?: true
+    closedAt?: true
+    expectedTotal?: true
+    actualTotal?: true
+    discrepancy?: true
+    discrepancyExplanation?: true
+    reconciledById?: true
+    reconciledAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type CashShiftMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    employeeId?: true
+    branchId?: true
+    status?: true
+    openedAt?: true
+    closedAt?: true
+    expectedTotal?: true
+    actualTotal?: true
+    discrepancy?: true
+    discrepancyExplanation?: true
+    reconciledById?: true
+    reconciledAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type CashShiftCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    employeeId?: true
+    branchId?: true
+    status?: true
+    openedAt?: true
+    closedAt?: true
+    expectedTotal?: true
+    actualTotal?: true
+    discrepancy?: true
+    discrepancyExplanation?: true
+    reconciledById?: true
+    reconciledAt?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type CashShiftAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CashShift to aggregate.
+     */
+    where?: CashShiftWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CashShifts to fetch.
+     */
+    orderBy?: CashShiftOrderByWithRelationInput | CashShiftOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: CashShiftWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CashShifts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CashShifts.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned CashShifts
+    **/
+    _count?: true | CashShiftCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: CashShiftAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: CashShiftSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: CashShiftMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: CashShiftMaxAggregateInputType
+  }
+
+  export type GetCashShiftAggregateType<T extends CashShiftAggregateArgs> = {
+        [P in keyof T & keyof AggregateCashShift]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateCashShift[P]>
+      : GetScalarType<T[P], AggregateCashShift[P]>
+  }
+
+
+
+
+  export type CashShiftGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CashShiftWhereInput
+    orderBy?: CashShiftOrderByWithAggregationInput | CashShiftOrderByWithAggregationInput[]
+    by: CashShiftScalarFieldEnum[] | CashShiftScalarFieldEnum
+    having?: CashShiftScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: CashShiftCountAggregateInputType | true
+    _avg?: CashShiftAvgAggregateInputType
+    _sum?: CashShiftSumAggregateInputType
+    _min?: CashShiftMinAggregateInputType
+    _max?: CashShiftMaxAggregateInputType
+  }
+
+  export type CashShiftGroupByOutputType = {
+    id: number
+    publicId: string
+    employeeId: number
+    branchId: number
+    status: $Enums.CashShiftStatus
+    openedAt: Date
+    closedAt: Date | null
+    expectedTotal: Decimal
+    actualTotal: Decimal
+    discrepancy: Decimal
+    discrepancyExplanation: string | null
+    reconciledById: number | null
+    reconciledAt: Date | null
+    createdAt: Date
+    updatedAt: Date
+    _count: CashShiftCountAggregateOutputType | null
+    _avg: CashShiftAvgAggregateOutputType | null
+    _sum: CashShiftSumAggregateOutputType | null
+    _min: CashShiftMinAggregateOutputType | null
+    _max: CashShiftMaxAggregateOutputType | null
+  }
+
+  type GetCashShiftGroupByPayload<T extends CashShiftGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<CashShiftGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof CashShiftGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], CashShiftGroupByOutputType[P]>
+            : GetScalarType<T[P], CashShiftGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type CashShiftSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    employeeId?: boolean
+    branchId?: boolean
+    status?: boolean
+    openedAt?: boolean
+    closedAt?: boolean
+    expectedTotal?: boolean
+    actualTotal?: boolean
+    discrepancy?: boolean
+    discrepancyExplanation?: boolean
+    reconciledById?: boolean
+    reconciledAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    employee?: boolean | UserDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    reconciledBy?: boolean | CashShift$reconciledByArgs<ExtArgs>
+    transactions?: boolean | CashShift$transactionsArgs<ExtArgs>
+    _count?: boolean | CashShiftCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["cashShift"]>
+
+  export type CashShiftSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    employeeId?: boolean
+    branchId?: boolean
+    status?: boolean
+    openedAt?: boolean
+    closedAt?: boolean
+    expectedTotal?: boolean
+    actualTotal?: boolean
+    discrepancy?: boolean
+    discrepancyExplanation?: boolean
+    reconciledById?: boolean
+    reconciledAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    employee?: boolean | UserDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    reconciledBy?: boolean | CashShift$reconciledByArgs<ExtArgs>
+  }, ExtArgs["result"]["cashShift"]>
+
+  export type CashShiftSelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    employeeId?: boolean
+    branchId?: boolean
+    status?: boolean
+    openedAt?: boolean
+    closedAt?: boolean
+    expectedTotal?: boolean
+    actualTotal?: boolean
+    discrepancy?: boolean
+    discrepancyExplanation?: boolean
+    reconciledById?: boolean
+    reconciledAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type CashShiftInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    employee?: boolean | UserDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    reconciledBy?: boolean | CashShift$reconciledByArgs<ExtArgs>
+    transactions?: boolean | CashShift$transactionsArgs<ExtArgs>
+    _count?: boolean | CashShiftCountOutputTypeDefaultArgs<ExtArgs>
+  }
+  export type CashShiftIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    employee?: boolean | UserDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    reconciledBy?: boolean | CashShift$reconciledByArgs<ExtArgs>
+  }
+
+  export type $CashShiftPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "CashShift"
+    objects: {
+      employee: Prisma.$UserPayload<ExtArgs>
+      branch: Prisma.$BranchPayload<ExtArgs>
+      reconciledBy: Prisma.$UserPayload<ExtArgs> | null
+      transactions: Prisma.$PaymentTransactionPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      employeeId: number
+      branchId: number
+      status: $Enums.CashShiftStatus
+      openedAt: Date
+      closedAt: Date | null
+      expectedTotal: Prisma.Decimal
+      actualTotal: Prisma.Decimal
+      discrepancy: Prisma.Decimal
+      discrepancyExplanation: string | null
+      reconciledById: number | null
+      reconciledAt: Date | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["cashShift"]>
+    composites: {}
+  }
+
+  type CashShiftGetPayload<S extends boolean | null | undefined | CashShiftDefaultArgs> = $Result.GetResult<Prisma.$CashShiftPayload, S>
+
+  type CashShiftCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<CashShiftFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: CashShiftCountAggregateInputType | true
+    }
+
+  export interface CashShiftDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['CashShift'], meta: { name: 'CashShift' } }
+    /**
+     * Find zero or one CashShift that matches the filter.
+     * @param {CashShiftFindUniqueArgs} args - Arguments to find a CashShift
+     * @example
+     * // Get one CashShift
+     * const cashShift = await prisma.cashShift.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends CashShiftFindUniqueArgs>(args: SelectSubset<T, CashShiftFindUniqueArgs<ExtArgs>>): Prisma__CashShiftClient<$Result.GetResult<Prisma.$CashShiftPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one CashShift that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {CashShiftFindUniqueOrThrowArgs} args - Arguments to find a CashShift
+     * @example
+     * // Get one CashShift
+     * const cashShift = await prisma.cashShift.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends CashShiftFindUniqueOrThrowArgs>(args: SelectSubset<T, CashShiftFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CashShiftClient<$Result.GetResult<Prisma.$CashShiftPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first CashShift that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CashShiftFindFirstArgs} args - Arguments to find a CashShift
+     * @example
+     * // Get one CashShift
+     * const cashShift = await prisma.cashShift.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends CashShiftFindFirstArgs>(args?: SelectSubset<T, CashShiftFindFirstArgs<ExtArgs>>): Prisma__CashShiftClient<$Result.GetResult<Prisma.$CashShiftPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first CashShift that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CashShiftFindFirstOrThrowArgs} args - Arguments to find a CashShift
+     * @example
+     * // Get one CashShift
+     * const cashShift = await prisma.cashShift.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends CashShiftFindFirstOrThrowArgs>(args?: SelectSubset<T, CashShiftFindFirstOrThrowArgs<ExtArgs>>): Prisma__CashShiftClient<$Result.GetResult<Prisma.$CashShiftPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more CashShifts that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CashShiftFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all CashShifts
+     * const cashShifts = await prisma.cashShift.findMany()
+     * 
+     * // Get first 10 CashShifts
+     * const cashShifts = await prisma.cashShift.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const cashShiftWithIdOnly = await prisma.cashShift.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends CashShiftFindManyArgs>(args?: SelectSubset<T, CashShiftFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CashShiftPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a CashShift.
+     * @param {CashShiftCreateArgs} args - Arguments to create a CashShift.
+     * @example
+     * // Create one CashShift
+     * const CashShift = await prisma.cashShift.create({
+     *   data: {
+     *     // ... data to create a CashShift
+     *   }
+     * })
+     * 
+     */
+    create<T extends CashShiftCreateArgs>(args: SelectSubset<T, CashShiftCreateArgs<ExtArgs>>): Prisma__CashShiftClient<$Result.GetResult<Prisma.$CashShiftPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many CashShifts.
+     * @param {CashShiftCreateManyArgs} args - Arguments to create many CashShifts.
+     * @example
+     * // Create many CashShifts
+     * const cashShift = await prisma.cashShift.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends CashShiftCreateManyArgs>(args?: SelectSubset<T, CashShiftCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many CashShifts and returns the data saved in the database.
+     * @param {CashShiftCreateManyAndReturnArgs} args - Arguments to create many CashShifts.
+     * @example
+     * // Create many CashShifts
+     * const cashShift = await prisma.cashShift.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many CashShifts and only return the `id`
+     * const cashShiftWithIdOnly = await prisma.cashShift.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends CashShiftCreateManyAndReturnArgs>(args?: SelectSubset<T, CashShiftCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CashShiftPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a CashShift.
+     * @param {CashShiftDeleteArgs} args - Arguments to delete one CashShift.
+     * @example
+     * // Delete one CashShift
+     * const CashShift = await prisma.cashShift.delete({
+     *   where: {
+     *     // ... filter to delete one CashShift
+     *   }
+     * })
+     * 
+     */
+    delete<T extends CashShiftDeleteArgs>(args: SelectSubset<T, CashShiftDeleteArgs<ExtArgs>>): Prisma__CashShiftClient<$Result.GetResult<Prisma.$CashShiftPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one CashShift.
+     * @param {CashShiftUpdateArgs} args - Arguments to update one CashShift.
+     * @example
+     * // Update one CashShift
+     * const cashShift = await prisma.cashShift.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends CashShiftUpdateArgs>(args: SelectSubset<T, CashShiftUpdateArgs<ExtArgs>>): Prisma__CashShiftClient<$Result.GetResult<Prisma.$CashShiftPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more CashShifts.
+     * @param {CashShiftDeleteManyArgs} args - Arguments to filter CashShifts to delete.
+     * @example
+     * // Delete a few CashShifts
+     * const { count } = await prisma.cashShift.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends CashShiftDeleteManyArgs>(args?: SelectSubset<T, CashShiftDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more CashShifts.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CashShiftUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many CashShifts
+     * const cashShift = await prisma.cashShift.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends CashShiftUpdateManyArgs>(args: SelectSubset<T, CashShiftUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one CashShift.
+     * @param {CashShiftUpsertArgs} args - Arguments to update or create a CashShift.
+     * @example
+     * // Update or create a CashShift
+     * const cashShift = await prisma.cashShift.upsert({
+     *   create: {
+     *     // ... data to create a CashShift
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the CashShift we want to update
+     *   }
+     * })
+     */
+    upsert<T extends CashShiftUpsertArgs>(args: SelectSubset<T, CashShiftUpsertArgs<ExtArgs>>): Prisma__CashShiftClient<$Result.GetResult<Prisma.$CashShiftPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of CashShifts.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CashShiftCountArgs} args - Arguments to filter CashShifts to count.
+     * @example
+     * // Count the number of CashShifts
+     * const count = await prisma.cashShift.count({
+     *   where: {
+     *     // ... the filter for the CashShifts we want to count
+     *   }
+     * })
+    **/
+    count<T extends CashShiftCountArgs>(
+      args?: Subset<T, CashShiftCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], CashShiftCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a CashShift.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CashShiftAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends CashShiftAggregateArgs>(args: Subset<T, CashShiftAggregateArgs>): Prisma.PrismaPromise<GetCashShiftAggregateType<T>>
+
+    /**
+     * Group by CashShift.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CashShiftGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends CashShiftGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: CashShiftGroupByArgs['orderBy'] }
+        : { orderBy?: CashShiftGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, CashShiftGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCashShiftGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the CashShift model
+   */
+  readonly fields: CashShiftFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for CashShift.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__CashShiftClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    employee<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    branch<T extends BranchDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BranchDefaultArgs<ExtArgs>>): Prisma__BranchClient<$Result.GetResult<Prisma.$BranchPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    reconciledBy<T extends CashShift$reconciledByArgs<ExtArgs> = {}>(args?: Subset<T, CashShift$reconciledByArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    transactions<T extends CashShift$transactionsArgs<ExtArgs> = {}>(args?: Subset<T, CashShift$transactionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentTransactionPayload<ExtArgs>, T, "findMany"> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the CashShift model
+   */ 
+  interface CashShiftFieldRefs {
+    readonly id: FieldRef<"CashShift", 'Int'>
+    readonly publicId: FieldRef<"CashShift", 'String'>
+    readonly employeeId: FieldRef<"CashShift", 'Int'>
+    readonly branchId: FieldRef<"CashShift", 'Int'>
+    readonly status: FieldRef<"CashShift", 'CashShiftStatus'>
+    readonly openedAt: FieldRef<"CashShift", 'DateTime'>
+    readonly closedAt: FieldRef<"CashShift", 'DateTime'>
+    readonly expectedTotal: FieldRef<"CashShift", 'Decimal'>
+    readonly actualTotal: FieldRef<"CashShift", 'Decimal'>
+    readonly discrepancy: FieldRef<"CashShift", 'Decimal'>
+    readonly discrepancyExplanation: FieldRef<"CashShift", 'String'>
+    readonly reconciledById: FieldRef<"CashShift", 'Int'>
+    readonly reconciledAt: FieldRef<"CashShift", 'DateTime'>
+    readonly createdAt: FieldRef<"CashShift", 'DateTime'>
+    readonly updatedAt: FieldRef<"CashShift", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * CashShift findUnique
+   */
+  export type CashShiftFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashShift
+     */
+    select?: CashShiftSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashShiftInclude<ExtArgs> | null
+    /**
+     * Filter, which CashShift to fetch.
+     */
+    where: CashShiftWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CashShift findUniqueOrThrow
+   */
+  export type CashShiftFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashShift
+     */
+    select?: CashShiftSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashShiftInclude<ExtArgs> | null
+    /**
+     * Filter, which CashShift to fetch.
+     */
+    where: CashShiftWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CashShift findFirst
+   */
+  export type CashShiftFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashShift
+     */
+    select?: CashShiftSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashShiftInclude<ExtArgs> | null
+    /**
+     * Filter, which CashShift to fetch.
+     */
+    where?: CashShiftWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CashShifts to fetch.
+     */
+    orderBy?: CashShiftOrderByWithRelationInput | CashShiftOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CashShifts.
+     */
+    cursor?: CashShiftWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CashShifts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CashShifts.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CashShifts.
+     */
+    distinct?: CashShiftScalarFieldEnum | CashShiftScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CashShift findFirstOrThrow
+   */
+  export type CashShiftFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashShift
+     */
+    select?: CashShiftSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashShiftInclude<ExtArgs> | null
+    /**
+     * Filter, which CashShift to fetch.
+     */
+    where?: CashShiftWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CashShifts to fetch.
+     */
+    orderBy?: CashShiftOrderByWithRelationInput | CashShiftOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CashShifts.
+     */
+    cursor?: CashShiftWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CashShifts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CashShifts.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CashShifts.
+     */
+    distinct?: CashShiftScalarFieldEnum | CashShiftScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CashShift findMany
+   */
+  export type CashShiftFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashShift
+     */
+    select?: CashShiftSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashShiftInclude<ExtArgs> | null
+    /**
+     * Filter, which CashShifts to fetch.
+     */
+    where?: CashShiftWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CashShifts to fetch.
+     */
+    orderBy?: CashShiftOrderByWithRelationInput | CashShiftOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing CashShifts.
+     */
+    cursor?: CashShiftWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CashShifts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CashShifts.
+     */
+    skip?: number
+    distinct?: CashShiftScalarFieldEnum | CashShiftScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CashShift create
+   */
+  export type CashShiftCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashShift
+     */
+    select?: CashShiftSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashShiftInclude<ExtArgs> | null
+    /**
+     * The data needed to create a CashShift.
+     */
+    data: XOR<CashShiftCreateInput, CashShiftUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CashShift createMany
+   */
+  export type CashShiftCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many CashShifts.
+     */
+    data: CashShiftCreateManyInput | CashShiftCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * CashShift createManyAndReturn
+   */
+  export type CashShiftCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashShift
+     */
+    select?: CashShiftSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many CashShifts.
+     */
+    data: CashShiftCreateManyInput | CashShiftCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashShiftIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * CashShift update
+   */
+  export type CashShiftUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashShift
+     */
+    select?: CashShiftSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashShiftInclude<ExtArgs> | null
+    /**
+     * The data needed to update a CashShift.
+     */
+    data: XOR<CashShiftUpdateInput, CashShiftUncheckedUpdateInput>
+    /**
+     * Choose, which CashShift to update.
+     */
+    where: CashShiftWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CashShift updateMany
+   */
+  export type CashShiftUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update CashShifts.
+     */
+    data: XOR<CashShiftUpdateManyMutationInput, CashShiftUncheckedUpdateManyInput>
+    /**
+     * Filter which CashShifts to update
+     */
+    where?: CashShiftWhereInput
+  }
+
+  /**
+   * CashShift upsert
+   */
+  export type CashShiftUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashShift
+     */
+    select?: CashShiftSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashShiftInclude<ExtArgs> | null
+    /**
+     * The filter to search for the CashShift to update in case it exists.
+     */
+    where: CashShiftWhereUniqueInput
+    /**
+     * In case the CashShift found by the `where` argument doesn't exist, create a new CashShift with this data.
+     */
+    create: XOR<CashShiftCreateInput, CashShiftUncheckedCreateInput>
+    /**
+     * In case the CashShift was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<CashShiftUpdateInput, CashShiftUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CashShift delete
+   */
+  export type CashShiftDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashShift
+     */
+    select?: CashShiftSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashShiftInclude<ExtArgs> | null
+    /**
+     * Filter which CashShift to delete.
+     */
+    where: CashShiftWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CashShift deleteMany
+   */
+  export type CashShiftDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CashShifts to delete
+     */
+    where?: CashShiftWhereInput
+  }
+
+  /**
+   * CashShift.reconciledBy
+   */
+  export type CashShift$reconciledByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the User
+     */
+    select?: UserSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    where?: UserWhereInput
+  }
+
+  /**
+   * CashShift.transactions
+   */
+  export type CashShift$transactionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentTransaction
+     */
+    select?: PaymentTransactionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+    where?: PaymentTransactionWhereInput
+    orderBy?: PaymentTransactionOrderByWithRelationInput | PaymentTransactionOrderByWithRelationInput[]
+    cursor?: PaymentTransactionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PaymentTransactionScalarFieldEnum | PaymentTransactionScalarFieldEnum[]
+  }
+
+  /**
+   * CashShift without action
+   */
+  export type CashShiftDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashShift
+     */
+    select?: CashShiftSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashShiftInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -56284,6 +61973,99 @@ export namespace Prisma {
   export type ManualDiscountScalarFieldEnum = (typeof ManualDiscountScalarFieldEnum)[keyof typeof ManualDiscountScalarFieldEnum]
 
 
+  export const BranchPaymentConfigScalarFieldEnum: {
+    id: 'id',
+    branchId: 'branchId',
+    cashConfirmationEnabled: 'cashConfirmationEnabled',
+    blockProgressionUntilConfirmed: 'blockProgressionUntilConfirmed',
+    maxCashPerEmployee: 'maxCashPerEmployee',
+    requireShiftSettlement: 'requireShiftSettlement',
+    splitPaymentEnabled: 'splitPaymentEnabled',
+    crossBranchSettlementEnabled: 'crossBranchSettlementEnabled',
+    refundApprovalRequired: 'refundApprovalRequired',
+    onlineRefundEnabled: 'onlineRefundEnabled',
+    delayedCashAlertHours: 'delayedCashAlertHours',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type BranchPaymentConfigScalarFieldEnum = (typeof BranchPaymentConfigScalarFieldEnum)[keyof typeof BranchPaymentConfigScalarFieldEnum]
+
+
+  export const PaymentTransactionScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    idempotencyKey: 'idempotencyKey',
+    bookingId: 'bookingId',
+    branchId: 'branchId',
+    purpose: 'purpose',
+    method: 'method',
+    status: 'status',
+    totalAmount: 'totalAmount',
+    cashAmount: 'cashAmount',
+    onlineAmount: 'onlineAmount',
+    onlineTransactionRef: 'onlineTransactionRef',
+    onlineGateway: 'onlineGateway',
+    collectedById: 'collectedById',
+    collectedAt: 'collectedAt',
+    confirmedById: 'confirmedById',
+    confirmedAt: 'confirmedAt',
+    rejectedById: 'rejectedById',
+    rejectedAt: 'rejectedAt',
+    rejectionReason: 'rejectionReason',
+    cashShiftId: 'cashShiftId',
+    notes: 'notes',
+    createdAt: 'createdAt'
+  };
+
+  export type PaymentTransactionScalarFieldEnum = (typeof PaymentTransactionScalarFieldEnum)[keyof typeof PaymentTransactionScalarFieldEnum]
+
+
+  export const RefundRequestScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    bookingId: 'bookingId',
+    branchId: 'branchId',
+    amount: 'amount',
+    reason: 'reason',
+    method: 'method',
+    status: 'status',
+    requestedById: 'requestedById',
+    approvedById: 'approvedById',
+    approvedAt: 'approvedAt',
+    completedById: 'completedById',
+    completedAt: 'completedAt',
+    onlineTransactionRef: 'onlineTransactionRef',
+    rejectionReason: 'rejectionReason',
+    rejectedAt: 'rejectedAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type RefundRequestScalarFieldEnum = (typeof RefundRequestScalarFieldEnum)[keyof typeof RefundRequestScalarFieldEnum]
+
+
+  export const CashShiftScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    employeeId: 'employeeId',
+    branchId: 'branchId',
+    status: 'status',
+    openedAt: 'openedAt',
+    closedAt: 'closedAt',
+    expectedTotal: 'expectedTotal',
+    actualTotal: 'actualTotal',
+    discrepancy: 'discrepancy',
+    discrepancyExplanation: 'discrepancyExplanation',
+    reconciledById: 'reconciledById',
+    reconciledAt: 'reconciledAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type CashShiftScalarFieldEnum = (typeof CashShiftScalarFieldEnum)[keyof typeof CashShiftScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -56758,6 +62540,76 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'PaymentPurpose'
+   */
+  export type EnumPaymentPurposeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaymentPurpose'>
+    
+
+
+  /**
+   * Reference to a field of type 'PaymentPurpose[]'
+   */
+  export type ListEnumPaymentPurposeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaymentPurpose[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'PaymentMethod'
+   */
+  export type EnumPaymentMethodFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaymentMethod'>
+    
+
+
+  /**
+   * Reference to a field of type 'PaymentMethod[]'
+   */
+  export type ListEnumPaymentMethodFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaymentMethod[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'PaymentTransactionStatus'
+   */
+  export type EnumPaymentTransactionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaymentTransactionStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'PaymentTransactionStatus[]'
+   */
+  export type ListEnumPaymentTransactionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaymentTransactionStatus[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'RefundStatus'
+   */
+  export type EnumRefundStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RefundStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'RefundStatus[]'
+   */
+  export type ListEnumRefundStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RefundStatus[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'CashShiftStatus'
+   */
+  export type EnumCashShiftStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CashShiftStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'CashShiftStatus[]'
+   */
+  export type ListEnumCashShiftStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CashShiftStatus[]'>
+    
+
+
+  /**
    * Reference to a field of type 'Float'
    */
   export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -56803,6 +62655,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleListRelationFilter
     manualDiscountsIssued?: ManualDiscountListRelationFilter
     manualDiscountsApproved?: ManualDiscountListRelationFilter
+    collectedPayments?: PaymentTransactionListRelationFilter
+    confirmedPayments?: PaymentTransactionListRelationFilter
+    rejectedPayments?: PaymentTransactionListRelationFilter
+    openShifts?: CashShiftListRelationFilter
+    reconciledShifts?: CashShiftListRelationFilter
+    refundRequestsMade?: RefundRequestListRelationFilter
+    refundRequestsApproved?: RefundRequestListRelationFilter
+    refundRequestsCompleted?: RefundRequestListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -56831,6 +62691,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleOrderByRelationAggregateInput
     manualDiscountsIssued?: ManualDiscountOrderByRelationAggregateInput
     manualDiscountsApproved?: ManualDiscountOrderByRelationAggregateInput
+    collectedPayments?: PaymentTransactionOrderByRelationAggregateInput
+    confirmedPayments?: PaymentTransactionOrderByRelationAggregateInput
+    rejectedPayments?: PaymentTransactionOrderByRelationAggregateInput
+    openShifts?: CashShiftOrderByRelationAggregateInput
+    reconciledShifts?: CashShiftOrderByRelationAggregateInput
+    refundRequestsMade?: RefundRequestOrderByRelationAggregateInput
+    refundRequestsApproved?: RefundRequestOrderByRelationAggregateInput
+    refundRequestsCompleted?: RefundRequestOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -56862,6 +62730,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleListRelationFilter
     manualDiscountsIssued?: ManualDiscountListRelationFilter
     manualDiscountsApproved?: ManualDiscountListRelationFilter
+    collectedPayments?: PaymentTransactionListRelationFilter
+    confirmedPayments?: PaymentTransactionListRelationFilter
+    rejectedPayments?: PaymentTransactionListRelationFilter
+    openShifts?: CashShiftListRelationFilter
+    reconciledShifts?: CashShiftListRelationFilter
+    refundRequestsMade?: RefundRequestListRelationFilter
+    refundRequestsApproved?: RefundRequestListRelationFilter
+    refundRequestsCompleted?: RefundRequestListRelationFilter
   }, "id" | "publicId" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -57338,6 +63214,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogListRelationFilter
     durationDiscountSlabs?: DurationDiscountSlabListRelationFilter
     discountConfig?: XOR<BranchDiscountConfigNullableRelationFilter, BranchDiscountConfigWhereInput> | null
+    paymentConfig?: XOR<BranchPaymentConfigNullableRelationFilter, BranchPaymentConfigWhereInput> | null
+    paymentTransactions?: PaymentTransactionListRelationFilter
+    cashShifts?: CashShiftListRelationFilter
+    refundRequests?: RefundRequestListRelationFilter
   }
 
   export type BranchOrderByWithRelationInput = {
@@ -57362,6 +63242,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogOrderByRelationAggregateInput
     durationDiscountSlabs?: DurationDiscountSlabOrderByRelationAggregateInput
     discountConfig?: BranchDiscountConfigOrderByWithRelationInput
+    paymentConfig?: BranchPaymentConfigOrderByWithRelationInput
+    paymentTransactions?: PaymentTransactionOrderByRelationAggregateInput
+    cashShifts?: CashShiftOrderByRelationAggregateInput
+    refundRequests?: RefundRequestOrderByRelationAggregateInput
   }
 
   export type BranchWhereUniqueInput = Prisma.AtLeast<{
@@ -57389,6 +63273,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogListRelationFilter
     durationDiscountSlabs?: DurationDiscountSlabListRelationFilter
     discountConfig?: XOR<BranchDiscountConfigNullableRelationFilter, BranchDiscountConfigWhereInput> | null
+    paymentConfig?: XOR<BranchPaymentConfigNullableRelationFilter, BranchPaymentConfigWhereInput> | null
+    paymentTransactions?: PaymentTransactionListRelationFilter
+    cashShifts?: CashShiftListRelationFilter
+    refundRequests?: RefundRequestListRelationFilter
   }, "id" | "publicId">
 
   export type BranchOrderByWithAggregationInput = {
@@ -58593,6 +64481,8 @@ export namespace Prisma {
     discountRule?: XOR<DiscountRuleNullableRelationFilter, DiscountRuleWhereInput> | null
     discountApplication?: XOR<DiscountApplicationNullableRelationFilter, DiscountApplicationWhereInput> | null
     manualDiscount?: XOR<ManualDiscountNullableRelationFilter, ManualDiscountWhereInput> | null
+    paymentTransactions?: PaymentTransactionListRelationFilter
+    refundRequests?: RefundRequestListRelationFilter
   }
 
   export type BookingOrderByWithRelationInput = {
@@ -58662,6 +64552,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleOrderByWithRelationInput
     discountApplication?: DiscountApplicationOrderByWithRelationInput
     manualDiscount?: ManualDiscountOrderByWithRelationInput
+    paymentTransactions?: PaymentTransactionOrderByRelationAggregateInput
+    refundRequests?: RefundRequestOrderByRelationAggregateInput
   }
 
   export type BookingWhereUniqueInput = Prisma.AtLeast<{
@@ -58734,6 +64626,8 @@ export namespace Prisma {
     discountRule?: XOR<DiscountRuleNullableRelationFilter, DiscountRuleWhereInput> | null
     discountApplication?: XOR<DiscountApplicationNullableRelationFilter, DiscountApplicationWhereInput> | null
     manualDiscount?: XOR<ManualDiscountNullableRelationFilter, ManualDiscountWhereInput> | null
+    paymentTransactions?: PaymentTransactionListRelationFilter
+    refundRequests?: RefundRequestListRelationFilter
   }, "id" | "publicId" | "transactionId" | "remainingPaymentId">
 
   export type BookingOrderByWithAggregationInput = {
@@ -61014,6 +66908,515 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"ManualDiscount"> | Date | string
   }
 
+  export type BranchPaymentConfigWhereInput = {
+    AND?: BranchPaymentConfigWhereInput | BranchPaymentConfigWhereInput[]
+    OR?: BranchPaymentConfigWhereInput[]
+    NOT?: BranchPaymentConfigWhereInput | BranchPaymentConfigWhereInput[]
+    id?: IntFilter<"BranchPaymentConfig"> | number
+    branchId?: IntFilter<"BranchPaymentConfig"> | number
+    cashConfirmationEnabled?: BoolFilter<"BranchPaymentConfig"> | boolean
+    blockProgressionUntilConfirmed?: BoolFilter<"BranchPaymentConfig"> | boolean
+    maxCashPerEmployee?: DecimalNullableFilter<"BranchPaymentConfig"> | Decimal | DecimalJsLike | number | string | null
+    requireShiftSettlement?: BoolFilter<"BranchPaymentConfig"> | boolean
+    splitPaymentEnabled?: BoolFilter<"BranchPaymentConfig"> | boolean
+    crossBranchSettlementEnabled?: BoolFilter<"BranchPaymentConfig"> | boolean
+    refundApprovalRequired?: BoolFilter<"BranchPaymentConfig"> | boolean
+    onlineRefundEnabled?: BoolFilter<"BranchPaymentConfig"> | boolean
+    delayedCashAlertHours?: IntFilter<"BranchPaymentConfig"> | number
+    createdAt?: DateTimeFilter<"BranchPaymentConfig"> | Date | string
+    updatedAt?: DateTimeFilter<"BranchPaymentConfig"> | Date | string
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+  }
+
+  export type BranchPaymentConfigOrderByWithRelationInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    cashConfirmationEnabled?: SortOrder
+    blockProgressionUntilConfirmed?: SortOrder
+    maxCashPerEmployee?: SortOrderInput | SortOrder
+    requireShiftSettlement?: SortOrder
+    splitPaymentEnabled?: SortOrder
+    crossBranchSettlementEnabled?: SortOrder
+    refundApprovalRequired?: SortOrder
+    onlineRefundEnabled?: SortOrder
+    delayedCashAlertHours?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    branch?: BranchOrderByWithRelationInput
+  }
+
+  export type BranchPaymentConfigWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    branchId?: number
+    AND?: BranchPaymentConfigWhereInput | BranchPaymentConfigWhereInput[]
+    OR?: BranchPaymentConfigWhereInput[]
+    NOT?: BranchPaymentConfigWhereInput | BranchPaymentConfigWhereInput[]
+    cashConfirmationEnabled?: BoolFilter<"BranchPaymentConfig"> | boolean
+    blockProgressionUntilConfirmed?: BoolFilter<"BranchPaymentConfig"> | boolean
+    maxCashPerEmployee?: DecimalNullableFilter<"BranchPaymentConfig"> | Decimal | DecimalJsLike | number | string | null
+    requireShiftSettlement?: BoolFilter<"BranchPaymentConfig"> | boolean
+    splitPaymentEnabled?: BoolFilter<"BranchPaymentConfig"> | boolean
+    crossBranchSettlementEnabled?: BoolFilter<"BranchPaymentConfig"> | boolean
+    refundApprovalRequired?: BoolFilter<"BranchPaymentConfig"> | boolean
+    onlineRefundEnabled?: BoolFilter<"BranchPaymentConfig"> | boolean
+    delayedCashAlertHours?: IntFilter<"BranchPaymentConfig"> | number
+    createdAt?: DateTimeFilter<"BranchPaymentConfig"> | Date | string
+    updatedAt?: DateTimeFilter<"BranchPaymentConfig"> | Date | string
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+  }, "id" | "branchId">
+
+  export type BranchPaymentConfigOrderByWithAggregationInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    cashConfirmationEnabled?: SortOrder
+    blockProgressionUntilConfirmed?: SortOrder
+    maxCashPerEmployee?: SortOrderInput | SortOrder
+    requireShiftSettlement?: SortOrder
+    splitPaymentEnabled?: SortOrder
+    crossBranchSettlementEnabled?: SortOrder
+    refundApprovalRequired?: SortOrder
+    onlineRefundEnabled?: SortOrder
+    delayedCashAlertHours?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: BranchPaymentConfigCountOrderByAggregateInput
+    _avg?: BranchPaymentConfigAvgOrderByAggregateInput
+    _max?: BranchPaymentConfigMaxOrderByAggregateInput
+    _min?: BranchPaymentConfigMinOrderByAggregateInput
+    _sum?: BranchPaymentConfigSumOrderByAggregateInput
+  }
+
+  export type BranchPaymentConfigScalarWhereWithAggregatesInput = {
+    AND?: BranchPaymentConfigScalarWhereWithAggregatesInput | BranchPaymentConfigScalarWhereWithAggregatesInput[]
+    OR?: BranchPaymentConfigScalarWhereWithAggregatesInput[]
+    NOT?: BranchPaymentConfigScalarWhereWithAggregatesInput | BranchPaymentConfigScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"BranchPaymentConfig"> | number
+    branchId?: IntWithAggregatesFilter<"BranchPaymentConfig"> | number
+    cashConfirmationEnabled?: BoolWithAggregatesFilter<"BranchPaymentConfig"> | boolean
+    blockProgressionUntilConfirmed?: BoolWithAggregatesFilter<"BranchPaymentConfig"> | boolean
+    maxCashPerEmployee?: DecimalNullableWithAggregatesFilter<"BranchPaymentConfig"> | Decimal | DecimalJsLike | number | string | null
+    requireShiftSettlement?: BoolWithAggregatesFilter<"BranchPaymentConfig"> | boolean
+    splitPaymentEnabled?: BoolWithAggregatesFilter<"BranchPaymentConfig"> | boolean
+    crossBranchSettlementEnabled?: BoolWithAggregatesFilter<"BranchPaymentConfig"> | boolean
+    refundApprovalRequired?: BoolWithAggregatesFilter<"BranchPaymentConfig"> | boolean
+    onlineRefundEnabled?: BoolWithAggregatesFilter<"BranchPaymentConfig"> | boolean
+    delayedCashAlertHours?: IntWithAggregatesFilter<"BranchPaymentConfig"> | number
+    createdAt?: DateTimeWithAggregatesFilter<"BranchPaymentConfig"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"BranchPaymentConfig"> | Date | string
+  }
+
+  export type PaymentTransactionWhereInput = {
+    AND?: PaymentTransactionWhereInput | PaymentTransactionWhereInput[]
+    OR?: PaymentTransactionWhereInput[]
+    NOT?: PaymentTransactionWhereInput | PaymentTransactionWhereInput[]
+    id?: IntFilter<"PaymentTransaction"> | number
+    publicId?: StringFilter<"PaymentTransaction"> | string
+    idempotencyKey?: StringFilter<"PaymentTransaction"> | string
+    bookingId?: IntFilter<"PaymentTransaction"> | number
+    branchId?: IntFilter<"PaymentTransaction"> | number
+    purpose?: EnumPaymentPurposeFilter<"PaymentTransaction"> | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFilter<"PaymentTransaction"> | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFilter<"PaymentTransaction"> | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFilter<"PaymentTransaction"> | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFilter<"PaymentTransaction"> | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFilter<"PaymentTransaction"> | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: StringNullableFilter<"PaymentTransaction"> | string | null
+    onlineGateway?: StringNullableFilter<"PaymentTransaction"> | string | null
+    collectedById?: IntNullableFilter<"PaymentTransaction"> | number | null
+    collectedAt?: DateTimeNullableFilter<"PaymentTransaction"> | Date | string | null
+    confirmedById?: IntNullableFilter<"PaymentTransaction"> | number | null
+    confirmedAt?: DateTimeNullableFilter<"PaymentTransaction"> | Date | string | null
+    rejectedById?: IntNullableFilter<"PaymentTransaction"> | number | null
+    rejectedAt?: DateTimeNullableFilter<"PaymentTransaction"> | Date | string | null
+    rejectionReason?: StringNullableFilter<"PaymentTransaction"> | string | null
+    cashShiftId?: IntNullableFilter<"PaymentTransaction"> | number | null
+    notes?: StringNullableFilter<"PaymentTransaction"> | string | null
+    createdAt?: DateTimeFilter<"PaymentTransaction"> | Date | string
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+    collectedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+    confirmedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+    rejectedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+    cashShift?: XOR<CashShiftNullableRelationFilter, CashShiftWhereInput> | null
+  }
+
+  export type PaymentTransactionOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    idempotencyKey?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    purpose?: SortOrder
+    method?: SortOrder
+    status?: SortOrder
+    totalAmount?: SortOrder
+    cashAmount?: SortOrder
+    onlineAmount?: SortOrder
+    onlineTransactionRef?: SortOrderInput | SortOrder
+    onlineGateway?: SortOrderInput | SortOrder
+    collectedById?: SortOrderInput | SortOrder
+    collectedAt?: SortOrderInput | SortOrder
+    confirmedById?: SortOrderInput | SortOrder
+    confirmedAt?: SortOrderInput | SortOrder
+    rejectedById?: SortOrderInput | SortOrder
+    rejectedAt?: SortOrderInput | SortOrder
+    rejectionReason?: SortOrderInput | SortOrder
+    cashShiftId?: SortOrderInput | SortOrder
+    notes?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    booking?: BookingOrderByWithRelationInput
+    branch?: BranchOrderByWithRelationInput
+    collectedBy?: UserOrderByWithRelationInput
+    confirmedBy?: UserOrderByWithRelationInput
+    rejectedBy?: UserOrderByWithRelationInput
+    cashShift?: CashShiftOrderByWithRelationInput
+  }
+
+  export type PaymentTransactionWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    idempotencyKey?: string
+    AND?: PaymentTransactionWhereInput | PaymentTransactionWhereInput[]
+    OR?: PaymentTransactionWhereInput[]
+    NOT?: PaymentTransactionWhereInput | PaymentTransactionWhereInput[]
+    bookingId?: IntFilter<"PaymentTransaction"> | number
+    branchId?: IntFilter<"PaymentTransaction"> | number
+    purpose?: EnumPaymentPurposeFilter<"PaymentTransaction"> | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFilter<"PaymentTransaction"> | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFilter<"PaymentTransaction"> | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFilter<"PaymentTransaction"> | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFilter<"PaymentTransaction"> | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFilter<"PaymentTransaction"> | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: StringNullableFilter<"PaymentTransaction"> | string | null
+    onlineGateway?: StringNullableFilter<"PaymentTransaction"> | string | null
+    collectedById?: IntNullableFilter<"PaymentTransaction"> | number | null
+    collectedAt?: DateTimeNullableFilter<"PaymentTransaction"> | Date | string | null
+    confirmedById?: IntNullableFilter<"PaymentTransaction"> | number | null
+    confirmedAt?: DateTimeNullableFilter<"PaymentTransaction"> | Date | string | null
+    rejectedById?: IntNullableFilter<"PaymentTransaction"> | number | null
+    rejectedAt?: DateTimeNullableFilter<"PaymentTransaction"> | Date | string | null
+    rejectionReason?: StringNullableFilter<"PaymentTransaction"> | string | null
+    cashShiftId?: IntNullableFilter<"PaymentTransaction"> | number | null
+    notes?: StringNullableFilter<"PaymentTransaction"> | string | null
+    createdAt?: DateTimeFilter<"PaymentTransaction"> | Date | string
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+    collectedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+    confirmedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+    rejectedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+    cashShift?: XOR<CashShiftNullableRelationFilter, CashShiftWhereInput> | null
+  }, "id" | "publicId" | "idempotencyKey">
+
+  export type PaymentTransactionOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    idempotencyKey?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    purpose?: SortOrder
+    method?: SortOrder
+    status?: SortOrder
+    totalAmount?: SortOrder
+    cashAmount?: SortOrder
+    onlineAmount?: SortOrder
+    onlineTransactionRef?: SortOrderInput | SortOrder
+    onlineGateway?: SortOrderInput | SortOrder
+    collectedById?: SortOrderInput | SortOrder
+    collectedAt?: SortOrderInput | SortOrder
+    confirmedById?: SortOrderInput | SortOrder
+    confirmedAt?: SortOrderInput | SortOrder
+    rejectedById?: SortOrderInput | SortOrder
+    rejectedAt?: SortOrderInput | SortOrder
+    rejectionReason?: SortOrderInput | SortOrder
+    cashShiftId?: SortOrderInput | SortOrder
+    notes?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    _count?: PaymentTransactionCountOrderByAggregateInput
+    _avg?: PaymentTransactionAvgOrderByAggregateInput
+    _max?: PaymentTransactionMaxOrderByAggregateInput
+    _min?: PaymentTransactionMinOrderByAggregateInput
+    _sum?: PaymentTransactionSumOrderByAggregateInput
+  }
+
+  export type PaymentTransactionScalarWhereWithAggregatesInput = {
+    AND?: PaymentTransactionScalarWhereWithAggregatesInput | PaymentTransactionScalarWhereWithAggregatesInput[]
+    OR?: PaymentTransactionScalarWhereWithAggregatesInput[]
+    NOT?: PaymentTransactionScalarWhereWithAggregatesInput | PaymentTransactionScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"PaymentTransaction"> | number
+    publicId?: StringWithAggregatesFilter<"PaymentTransaction"> | string
+    idempotencyKey?: StringWithAggregatesFilter<"PaymentTransaction"> | string
+    bookingId?: IntWithAggregatesFilter<"PaymentTransaction"> | number
+    branchId?: IntWithAggregatesFilter<"PaymentTransaction"> | number
+    purpose?: EnumPaymentPurposeWithAggregatesFilter<"PaymentTransaction"> | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodWithAggregatesFilter<"PaymentTransaction"> | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusWithAggregatesFilter<"PaymentTransaction"> | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalWithAggregatesFilter<"PaymentTransaction"> | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalWithAggregatesFilter<"PaymentTransaction"> | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalWithAggregatesFilter<"PaymentTransaction"> | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: StringNullableWithAggregatesFilter<"PaymentTransaction"> | string | null
+    onlineGateway?: StringNullableWithAggregatesFilter<"PaymentTransaction"> | string | null
+    collectedById?: IntNullableWithAggregatesFilter<"PaymentTransaction"> | number | null
+    collectedAt?: DateTimeNullableWithAggregatesFilter<"PaymentTransaction"> | Date | string | null
+    confirmedById?: IntNullableWithAggregatesFilter<"PaymentTransaction"> | number | null
+    confirmedAt?: DateTimeNullableWithAggregatesFilter<"PaymentTransaction"> | Date | string | null
+    rejectedById?: IntNullableWithAggregatesFilter<"PaymentTransaction"> | number | null
+    rejectedAt?: DateTimeNullableWithAggregatesFilter<"PaymentTransaction"> | Date | string | null
+    rejectionReason?: StringNullableWithAggregatesFilter<"PaymentTransaction"> | string | null
+    cashShiftId?: IntNullableWithAggregatesFilter<"PaymentTransaction"> | number | null
+    notes?: StringNullableWithAggregatesFilter<"PaymentTransaction"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"PaymentTransaction"> | Date | string
+  }
+
+  export type RefundRequestWhereInput = {
+    AND?: RefundRequestWhereInput | RefundRequestWhereInput[]
+    OR?: RefundRequestWhereInput[]
+    NOT?: RefundRequestWhereInput | RefundRequestWhereInput[]
+    id?: IntFilter<"RefundRequest"> | number
+    publicId?: StringFilter<"RefundRequest"> | string
+    bookingId?: IntFilter<"RefundRequest"> | number
+    branchId?: IntFilter<"RefundRequest"> | number
+    amount?: DecimalFilter<"RefundRequest"> | Decimal | DecimalJsLike | number | string
+    reason?: StringFilter<"RefundRequest"> | string
+    method?: EnumPaymentMethodFilter<"RefundRequest"> | $Enums.PaymentMethod
+    status?: EnumRefundStatusFilter<"RefundRequest"> | $Enums.RefundStatus
+    requestedById?: IntFilter<"RefundRequest"> | number
+    approvedById?: IntNullableFilter<"RefundRequest"> | number | null
+    approvedAt?: DateTimeNullableFilter<"RefundRequest"> | Date | string | null
+    completedById?: IntNullableFilter<"RefundRequest"> | number | null
+    completedAt?: DateTimeNullableFilter<"RefundRequest"> | Date | string | null
+    onlineTransactionRef?: StringNullableFilter<"RefundRequest"> | string | null
+    rejectionReason?: StringNullableFilter<"RefundRequest"> | string | null
+    rejectedAt?: DateTimeNullableFilter<"RefundRequest"> | Date | string | null
+    createdAt?: DateTimeFilter<"RefundRequest"> | Date | string
+    updatedAt?: DateTimeFilter<"RefundRequest"> | Date | string
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+    requestedBy?: XOR<UserRelationFilter, UserWhereInput>
+    approvedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+    completedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+  }
+
+  export type RefundRequestOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    amount?: SortOrder
+    reason?: SortOrder
+    method?: SortOrder
+    status?: SortOrder
+    requestedById?: SortOrder
+    approvedById?: SortOrderInput | SortOrder
+    approvedAt?: SortOrderInput | SortOrder
+    completedById?: SortOrderInput | SortOrder
+    completedAt?: SortOrderInput | SortOrder
+    onlineTransactionRef?: SortOrderInput | SortOrder
+    rejectionReason?: SortOrderInput | SortOrder
+    rejectedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    booking?: BookingOrderByWithRelationInput
+    branch?: BranchOrderByWithRelationInput
+    requestedBy?: UserOrderByWithRelationInput
+    approvedBy?: UserOrderByWithRelationInput
+    completedBy?: UserOrderByWithRelationInput
+  }
+
+  export type RefundRequestWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    AND?: RefundRequestWhereInput | RefundRequestWhereInput[]
+    OR?: RefundRequestWhereInput[]
+    NOT?: RefundRequestWhereInput | RefundRequestWhereInput[]
+    bookingId?: IntFilter<"RefundRequest"> | number
+    branchId?: IntFilter<"RefundRequest"> | number
+    amount?: DecimalFilter<"RefundRequest"> | Decimal | DecimalJsLike | number | string
+    reason?: StringFilter<"RefundRequest"> | string
+    method?: EnumPaymentMethodFilter<"RefundRequest"> | $Enums.PaymentMethod
+    status?: EnumRefundStatusFilter<"RefundRequest"> | $Enums.RefundStatus
+    requestedById?: IntFilter<"RefundRequest"> | number
+    approvedById?: IntNullableFilter<"RefundRequest"> | number | null
+    approvedAt?: DateTimeNullableFilter<"RefundRequest"> | Date | string | null
+    completedById?: IntNullableFilter<"RefundRequest"> | number | null
+    completedAt?: DateTimeNullableFilter<"RefundRequest"> | Date | string | null
+    onlineTransactionRef?: StringNullableFilter<"RefundRequest"> | string | null
+    rejectionReason?: StringNullableFilter<"RefundRequest"> | string | null
+    rejectedAt?: DateTimeNullableFilter<"RefundRequest"> | Date | string | null
+    createdAt?: DateTimeFilter<"RefundRequest"> | Date | string
+    updatedAt?: DateTimeFilter<"RefundRequest"> | Date | string
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+    requestedBy?: XOR<UserRelationFilter, UserWhereInput>
+    approvedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+    completedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+  }, "id" | "publicId">
+
+  export type RefundRequestOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    amount?: SortOrder
+    reason?: SortOrder
+    method?: SortOrder
+    status?: SortOrder
+    requestedById?: SortOrder
+    approvedById?: SortOrderInput | SortOrder
+    approvedAt?: SortOrderInput | SortOrder
+    completedById?: SortOrderInput | SortOrder
+    completedAt?: SortOrderInput | SortOrder
+    onlineTransactionRef?: SortOrderInput | SortOrder
+    rejectionReason?: SortOrderInput | SortOrder
+    rejectedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: RefundRequestCountOrderByAggregateInput
+    _avg?: RefundRequestAvgOrderByAggregateInput
+    _max?: RefundRequestMaxOrderByAggregateInput
+    _min?: RefundRequestMinOrderByAggregateInput
+    _sum?: RefundRequestSumOrderByAggregateInput
+  }
+
+  export type RefundRequestScalarWhereWithAggregatesInput = {
+    AND?: RefundRequestScalarWhereWithAggregatesInput | RefundRequestScalarWhereWithAggregatesInput[]
+    OR?: RefundRequestScalarWhereWithAggregatesInput[]
+    NOT?: RefundRequestScalarWhereWithAggregatesInput | RefundRequestScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"RefundRequest"> | number
+    publicId?: StringWithAggregatesFilter<"RefundRequest"> | string
+    bookingId?: IntWithAggregatesFilter<"RefundRequest"> | number
+    branchId?: IntWithAggregatesFilter<"RefundRequest"> | number
+    amount?: DecimalWithAggregatesFilter<"RefundRequest"> | Decimal | DecimalJsLike | number | string
+    reason?: StringWithAggregatesFilter<"RefundRequest"> | string
+    method?: EnumPaymentMethodWithAggregatesFilter<"RefundRequest"> | $Enums.PaymentMethod
+    status?: EnumRefundStatusWithAggregatesFilter<"RefundRequest"> | $Enums.RefundStatus
+    requestedById?: IntWithAggregatesFilter<"RefundRequest"> | number
+    approvedById?: IntNullableWithAggregatesFilter<"RefundRequest"> | number | null
+    approvedAt?: DateTimeNullableWithAggregatesFilter<"RefundRequest"> | Date | string | null
+    completedById?: IntNullableWithAggregatesFilter<"RefundRequest"> | number | null
+    completedAt?: DateTimeNullableWithAggregatesFilter<"RefundRequest"> | Date | string | null
+    onlineTransactionRef?: StringNullableWithAggregatesFilter<"RefundRequest"> | string | null
+    rejectionReason?: StringNullableWithAggregatesFilter<"RefundRequest"> | string | null
+    rejectedAt?: DateTimeNullableWithAggregatesFilter<"RefundRequest"> | Date | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"RefundRequest"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"RefundRequest"> | Date | string
+  }
+
+  export type CashShiftWhereInput = {
+    AND?: CashShiftWhereInput | CashShiftWhereInput[]
+    OR?: CashShiftWhereInput[]
+    NOT?: CashShiftWhereInput | CashShiftWhereInput[]
+    id?: IntFilter<"CashShift"> | number
+    publicId?: StringFilter<"CashShift"> | string
+    employeeId?: IntFilter<"CashShift"> | number
+    branchId?: IntFilter<"CashShift"> | number
+    status?: EnumCashShiftStatusFilter<"CashShift"> | $Enums.CashShiftStatus
+    openedAt?: DateTimeFilter<"CashShift"> | Date | string
+    closedAt?: DateTimeNullableFilter<"CashShift"> | Date | string | null
+    expectedTotal?: DecimalFilter<"CashShift"> | Decimal | DecimalJsLike | number | string
+    actualTotal?: DecimalFilter<"CashShift"> | Decimal | DecimalJsLike | number | string
+    discrepancy?: DecimalFilter<"CashShift"> | Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: StringNullableFilter<"CashShift"> | string | null
+    reconciledById?: IntNullableFilter<"CashShift"> | number | null
+    reconciledAt?: DateTimeNullableFilter<"CashShift"> | Date | string | null
+    createdAt?: DateTimeFilter<"CashShift"> | Date | string
+    updatedAt?: DateTimeFilter<"CashShift"> | Date | string
+    employee?: XOR<UserRelationFilter, UserWhereInput>
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+    reconciledBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+    transactions?: PaymentTransactionListRelationFilter
+  }
+
+  export type CashShiftOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    employeeId?: SortOrder
+    branchId?: SortOrder
+    status?: SortOrder
+    openedAt?: SortOrder
+    closedAt?: SortOrderInput | SortOrder
+    expectedTotal?: SortOrder
+    actualTotal?: SortOrder
+    discrepancy?: SortOrder
+    discrepancyExplanation?: SortOrderInput | SortOrder
+    reconciledById?: SortOrderInput | SortOrder
+    reconciledAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    employee?: UserOrderByWithRelationInput
+    branch?: BranchOrderByWithRelationInput
+    reconciledBy?: UserOrderByWithRelationInput
+    transactions?: PaymentTransactionOrderByRelationAggregateInput
+  }
+
+  export type CashShiftWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    AND?: CashShiftWhereInput | CashShiftWhereInput[]
+    OR?: CashShiftWhereInput[]
+    NOT?: CashShiftWhereInput | CashShiftWhereInput[]
+    employeeId?: IntFilter<"CashShift"> | number
+    branchId?: IntFilter<"CashShift"> | number
+    status?: EnumCashShiftStatusFilter<"CashShift"> | $Enums.CashShiftStatus
+    openedAt?: DateTimeFilter<"CashShift"> | Date | string
+    closedAt?: DateTimeNullableFilter<"CashShift"> | Date | string | null
+    expectedTotal?: DecimalFilter<"CashShift"> | Decimal | DecimalJsLike | number | string
+    actualTotal?: DecimalFilter<"CashShift"> | Decimal | DecimalJsLike | number | string
+    discrepancy?: DecimalFilter<"CashShift"> | Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: StringNullableFilter<"CashShift"> | string | null
+    reconciledById?: IntNullableFilter<"CashShift"> | number | null
+    reconciledAt?: DateTimeNullableFilter<"CashShift"> | Date | string | null
+    createdAt?: DateTimeFilter<"CashShift"> | Date | string
+    updatedAt?: DateTimeFilter<"CashShift"> | Date | string
+    employee?: XOR<UserRelationFilter, UserWhereInput>
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+    reconciledBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+    transactions?: PaymentTransactionListRelationFilter
+  }, "id" | "publicId">
+
+  export type CashShiftOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    employeeId?: SortOrder
+    branchId?: SortOrder
+    status?: SortOrder
+    openedAt?: SortOrder
+    closedAt?: SortOrderInput | SortOrder
+    expectedTotal?: SortOrder
+    actualTotal?: SortOrder
+    discrepancy?: SortOrder
+    discrepancyExplanation?: SortOrderInput | SortOrder
+    reconciledById?: SortOrderInput | SortOrder
+    reconciledAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: CashShiftCountOrderByAggregateInput
+    _avg?: CashShiftAvgOrderByAggregateInput
+    _max?: CashShiftMaxOrderByAggregateInput
+    _min?: CashShiftMinOrderByAggregateInput
+    _sum?: CashShiftSumOrderByAggregateInput
+  }
+
+  export type CashShiftScalarWhereWithAggregatesInput = {
+    AND?: CashShiftScalarWhereWithAggregatesInput | CashShiftScalarWhereWithAggregatesInput[]
+    OR?: CashShiftScalarWhereWithAggregatesInput[]
+    NOT?: CashShiftScalarWhereWithAggregatesInput | CashShiftScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"CashShift"> | number
+    publicId?: StringWithAggregatesFilter<"CashShift"> | string
+    employeeId?: IntWithAggregatesFilter<"CashShift"> | number
+    branchId?: IntWithAggregatesFilter<"CashShift"> | number
+    status?: EnumCashShiftStatusWithAggregatesFilter<"CashShift"> | $Enums.CashShiftStatus
+    openedAt?: DateTimeWithAggregatesFilter<"CashShift"> | Date | string
+    closedAt?: DateTimeNullableWithAggregatesFilter<"CashShift"> | Date | string | null
+    expectedTotal?: DecimalWithAggregatesFilter<"CashShift"> | Decimal | DecimalJsLike | number | string
+    actualTotal?: DecimalWithAggregatesFilter<"CashShift"> | Decimal | DecimalJsLike | number | string
+    discrepancy?: DecimalWithAggregatesFilter<"CashShift"> | Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: StringNullableWithAggregatesFilter<"CashShift"> | string | null
+    reconciledById?: IntNullableWithAggregatesFilter<"CashShift"> | number | null
+    reconciledAt?: DateTimeNullableWithAggregatesFilter<"CashShift"> | Date | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"CashShift"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"CashShift"> | Date | string
+  }
+
   export type UserCreateInput = {
     publicId: string
     name: string
@@ -61038,6 +67441,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
     manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
     manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -61065,6 +67476,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
     manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
     manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserUpdateInput = {
@@ -61091,6 +67510,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
     manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
     manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -61118,6 +67545,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
     manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
     manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -61616,6 +68051,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateInput = {
@@ -61640,6 +68079,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUpdateInput = {
@@ -61663,6 +68106,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateInput = {
@@ -61687,6 +68134,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchCreateManyInput = {
@@ -62902,6 +69353,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateInput = {
@@ -62966,6 +69419,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUpdateInput = {
@@ -63029,6 +69484,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateInput = {
@@ -63093,6 +69550,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingCreateManyInput = {
@@ -65556,6 +72015,550 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type BranchPaymentConfigCreateInput = {
+    cashConfirmationEnabled?: boolean
+    blockProgressionUntilConfirmed?: boolean
+    maxCashPerEmployee?: Decimal | DecimalJsLike | number | string | null
+    requireShiftSettlement?: boolean
+    splitPaymentEnabled?: boolean
+    crossBranchSettlementEnabled?: boolean
+    refundApprovalRequired?: boolean
+    onlineRefundEnabled?: boolean
+    delayedCashAlertHours?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    branch: BranchCreateNestedOneWithoutPaymentConfigInput
+  }
+
+  export type BranchPaymentConfigUncheckedCreateInput = {
+    id?: number
+    branchId: number
+    cashConfirmationEnabled?: boolean
+    blockProgressionUntilConfirmed?: boolean
+    maxCashPerEmployee?: Decimal | DecimalJsLike | number | string | null
+    requireShiftSettlement?: boolean
+    splitPaymentEnabled?: boolean
+    crossBranchSettlementEnabled?: boolean
+    refundApprovalRequired?: boolean
+    onlineRefundEnabled?: boolean
+    delayedCashAlertHours?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchPaymentConfigUpdateInput = {
+    cashConfirmationEnabled?: BoolFieldUpdateOperationsInput | boolean
+    blockProgressionUntilConfirmed?: BoolFieldUpdateOperationsInput | boolean
+    maxCashPerEmployee?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    requireShiftSettlement?: BoolFieldUpdateOperationsInput | boolean
+    splitPaymentEnabled?: BoolFieldUpdateOperationsInput | boolean
+    crossBranchSettlementEnabled?: BoolFieldUpdateOperationsInput | boolean
+    refundApprovalRequired?: BoolFieldUpdateOperationsInput | boolean
+    onlineRefundEnabled?: BoolFieldUpdateOperationsInput | boolean
+    delayedCashAlertHours?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    branch?: BranchUpdateOneRequiredWithoutPaymentConfigNestedInput
+  }
+
+  export type BranchPaymentConfigUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    cashConfirmationEnabled?: BoolFieldUpdateOperationsInput | boolean
+    blockProgressionUntilConfirmed?: BoolFieldUpdateOperationsInput | boolean
+    maxCashPerEmployee?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    requireShiftSettlement?: BoolFieldUpdateOperationsInput | boolean
+    splitPaymentEnabled?: BoolFieldUpdateOperationsInput | boolean
+    crossBranchSettlementEnabled?: BoolFieldUpdateOperationsInput | boolean
+    refundApprovalRequired?: BoolFieldUpdateOperationsInput | boolean
+    onlineRefundEnabled?: BoolFieldUpdateOperationsInput | boolean
+    delayedCashAlertHours?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchPaymentConfigCreateManyInput = {
+    id?: number
+    branchId: number
+    cashConfirmationEnabled?: boolean
+    blockProgressionUntilConfirmed?: boolean
+    maxCashPerEmployee?: Decimal | DecimalJsLike | number | string | null
+    requireShiftSettlement?: boolean
+    splitPaymentEnabled?: boolean
+    crossBranchSettlementEnabled?: boolean
+    refundApprovalRequired?: boolean
+    onlineRefundEnabled?: boolean
+    delayedCashAlertHours?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchPaymentConfigUpdateManyMutationInput = {
+    cashConfirmationEnabled?: BoolFieldUpdateOperationsInput | boolean
+    blockProgressionUntilConfirmed?: BoolFieldUpdateOperationsInput | boolean
+    maxCashPerEmployee?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    requireShiftSettlement?: BoolFieldUpdateOperationsInput | boolean
+    splitPaymentEnabled?: BoolFieldUpdateOperationsInput | boolean
+    crossBranchSettlementEnabled?: BoolFieldUpdateOperationsInput | boolean
+    refundApprovalRequired?: BoolFieldUpdateOperationsInput | boolean
+    onlineRefundEnabled?: BoolFieldUpdateOperationsInput | boolean
+    delayedCashAlertHours?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchPaymentConfigUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    cashConfirmationEnabled?: BoolFieldUpdateOperationsInput | boolean
+    blockProgressionUntilConfirmed?: BoolFieldUpdateOperationsInput | boolean
+    maxCashPerEmployee?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    requireShiftSettlement?: BoolFieldUpdateOperationsInput | boolean
+    splitPaymentEnabled?: BoolFieldUpdateOperationsInput | boolean
+    crossBranchSettlementEnabled?: BoolFieldUpdateOperationsInput | boolean
+    refundApprovalRequired?: BoolFieldUpdateOperationsInput | boolean
+    onlineRefundEnabled?: BoolFieldUpdateOperationsInput | boolean
+    delayedCashAlertHours?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaymentTransactionCreateInput = {
+    publicId: string
+    idempotencyKey: string
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status?: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal | DecimalJsLike | number | string
+    cashAmount?: Decimal | DecimalJsLike | number | string
+    onlineAmount?: Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: string | null
+    onlineGateway?: string | null
+    collectedAt?: Date | string | null
+    confirmedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    booking: BookingCreateNestedOneWithoutPaymentTransactionsInput
+    branch: BranchCreateNestedOneWithoutPaymentTransactionsInput
+    collectedBy?: UserCreateNestedOneWithoutCollectedPaymentsInput
+    confirmedBy?: UserCreateNestedOneWithoutConfirmedPaymentsInput
+    rejectedBy?: UserCreateNestedOneWithoutRejectedPaymentsInput
+    cashShift?: CashShiftCreateNestedOneWithoutTransactionsInput
+  }
+
+  export type PaymentTransactionUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    idempotencyKey: string
+    bookingId: number
+    branchId: number
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status?: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal | DecimalJsLike | number | string
+    cashAmount?: Decimal | DecimalJsLike | number | string
+    onlineAmount?: Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: string | null
+    onlineGateway?: string | null
+    collectedById?: number | null
+    collectedAt?: Date | string | null
+    confirmedById?: number | null
+    confirmedAt?: Date | string | null
+    rejectedById?: number | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    cashShiftId?: number | null
+    notes?: string | null
+    createdAt?: Date | string
+  }
+
+  export type PaymentTransactionUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutPaymentTransactionsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutPaymentTransactionsNestedInput
+    collectedBy?: UserUpdateOneWithoutCollectedPaymentsNestedInput
+    confirmedBy?: UserUpdateOneWithoutConfirmedPaymentsNestedInput
+    rejectedBy?: UserUpdateOneWithoutRejectedPaymentsNestedInput
+    cashShift?: CashShiftUpdateOneWithoutTransactionsNestedInput
+  }
+
+  export type PaymentTransactionUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedById?: NullableIntFieldUpdateOperationsInput | number | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cashShiftId?: NullableIntFieldUpdateOperationsInput | number | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaymentTransactionCreateManyInput = {
+    id?: number
+    publicId: string
+    idempotencyKey: string
+    bookingId: number
+    branchId: number
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status?: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal | DecimalJsLike | number | string
+    cashAmount?: Decimal | DecimalJsLike | number | string
+    onlineAmount?: Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: string | null
+    onlineGateway?: string | null
+    collectedById?: number | null
+    collectedAt?: Date | string | null
+    confirmedById?: number | null
+    confirmedAt?: Date | string | null
+    rejectedById?: number | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    cashShiftId?: number | null
+    notes?: string | null
+    createdAt?: Date | string
+  }
+
+  export type PaymentTransactionUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaymentTransactionUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedById?: NullableIntFieldUpdateOperationsInput | number | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cashShiftId?: NullableIntFieldUpdateOperationsInput | number | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RefundRequestCreateInput = {
+    publicId: string
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    method: $Enums.PaymentMethod
+    status?: $Enums.RefundStatus
+    approvedAt?: Date | string | null
+    completedAt?: Date | string | null
+    onlineTransactionRef?: string | null
+    rejectionReason?: string | null
+    rejectedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutRefundRequestsInput
+    branch: BranchCreateNestedOneWithoutRefundRequestsInput
+    requestedBy: UserCreateNestedOneWithoutRefundRequestsMadeInput
+    approvedBy?: UserCreateNestedOneWithoutRefundRequestsApprovedInput
+    completedBy?: UserCreateNestedOneWithoutRefundRequestsCompletedInput
+  }
+
+  export type RefundRequestUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    method: $Enums.PaymentMethod
+    status?: $Enums.RefundStatus
+    requestedById: number
+    approvedById?: number | null
+    approvedAt?: Date | string | null
+    completedById?: number | null
+    completedAt?: Date | string | null
+    onlineTransactionRef?: string | null
+    rejectionReason?: string | null
+    rejectedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RefundRequestUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutRefundRequestsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutRefundRequestsNestedInput
+    requestedBy?: UserUpdateOneRequiredWithoutRefundRequestsMadeNestedInput
+    approvedBy?: UserUpdateOneWithoutRefundRequestsApprovedNestedInput
+    completedBy?: UserUpdateOneWithoutRefundRequestsCompletedNestedInput
+  }
+
+  export type RefundRequestUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    requestedById?: IntFieldUpdateOperationsInput | number
+    approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedById?: NullableIntFieldUpdateOperationsInput | number | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RefundRequestCreateManyInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    method: $Enums.PaymentMethod
+    status?: $Enums.RefundStatus
+    requestedById: number
+    approvedById?: number | null
+    approvedAt?: Date | string | null
+    completedById?: number | null
+    completedAt?: Date | string | null
+    onlineTransactionRef?: string | null
+    rejectionReason?: string | null
+    rejectedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RefundRequestUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RefundRequestUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    requestedById?: IntFieldUpdateOperationsInput | number
+    approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedById?: NullableIntFieldUpdateOperationsInput | number | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CashShiftCreateInput = {
+    publicId: string
+    status?: $Enums.CashShiftStatus
+    openedAt?: Date | string
+    closedAt?: Date | string | null
+    expectedTotal?: Decimal | DecimalJsLike | number | string
+    actualTotal?: Decimal | DecimalJsLike | number | string
+    discrepancy?: Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: string | null
+    reconciledAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    employee: UserCreateNestedOneWithoutOpenShiftsInput
+    branch: BranchCreateNestedOneWithoutCashShiftsInput
+    reconciledBy?: UserCreateNestedOneWithoutReconciledShiftsInput
+    transactions?: PaymentTransactionCreateNestedManyWithoutCashShiftInput
+  }
+
+  export type CashShiftUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    employeeId: number
+    branchId: number
+    status?: $Enums.CashShiftStatus
+    openedAt?: Date | string
+    closedAt?: Date | string | null
+    expectedTotal?: Decimal | DecimalJsLike | number | string
+    actualTotal?: Decimal | DecimalJsLike | number | string
+    discrepancy?: Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: string | null
+    reconciledById?: number | null
+    reconciledAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    transactions?: PaymentTransactionUncheckedCreateNestedManyWithoutCashShiftInput
+  }
+
+  export type CashShiftUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    status?: EnumCashShiftStatusFieldUpdateOperationsInput | $Enums.CashShiftStatus
+    openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    expectedTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancy?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: NullableStringFieldUpdateOperationsInput | string | null
+    reconciledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    employee?: UserUpdateOneRequiredWithoutOpenShiftsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutCashShiftsNestedInput
+    reconciledBy?: UserUpdateOneWithoutReconciledShiftsNestedInput
+    transactions?: PaymentTransactionUpdateManyWithoutCashShiftNestedInput
+  }
+
+  export type CashShiftUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    employeeId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    status?: EnumCashShiftStatusFieldUpdateOperationsInput | $Enums.CashShiftStatus
+    openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    expectedTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancy?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: NullableStringFieldUpdateOperationsInput | string | null
+    reconciledById?: NullableIntFieldUpdateOperationsInput | number | null
+    reconciledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    transactions?: PaymentTransactionUncheckedUpdateManyWithoutCashShiftNestedInput
+  }
+
+  export type CashShiftCreateManyInput = {
+    id?: number
+    publicId: string
+    employeeId: number
+    branchId: number
+    status?: $Enums.CashShiftStatus
+    openedAt?: Date | string
+    closedAt?: Date | string | null
+    expectedTotal?: Decimal | DecimalJsLike | number | string
+    actualTotal?: Decimal | DecimalJsLike | number | string
+    discrepancy?: Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: string | null
+    reconciledById?: number | null
+    reconciledAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type CashShiftUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    status?: EnumCashShiftStatusFieldUpdateOperationsInput | $Enums.CashShiftStatus
+    openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    expectedTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancy?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: NullableStringFieldUpdateOperationsInput | string | null
+    reconciledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CashShiftUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    employeeId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    status?: EnumCashShiftStatusFieldUpdateOperationsInput | $Enums.CashShiftStatus
+    openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    expectedTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancy?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: NullableStringFieldUpdateOperationsInput | string | null
+    reconciledById?: NullableIntFieldUpdateOperationsInput | number | null
+    reconciledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type IntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -65702,6 +72705,24 @@ export namespace Prisma {
     none?: ManualDiscountWhereInput
   }
 
+  export type PaymentTransactionListRelationFilter = {
+    every?: PaymentTransactionWhereInput
+    some?: PaymentTransactionWhereInput
+    none?: PaymentTransactionWhereInput
+  }
+
+  export type CashShiftListRelationFilter = {
+    every?: CashShiftWhereInput
+    some?: CashShiftWhereInput
+    none?: CashShiftWhereInput
+  }
+
+  export type RefundRequestListRelationFilter = {
+    every?: RefundRequestWhereInput
+    some?: RefundRequestWhereInput
+    none?: RefundRequestWhereInput
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -65736,6 +72757,18 @@ export namespace Prisma {
   }
 
   export type ManualDiscountOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type PaymentTransactionOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type CashShiftOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type RefundRequestOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -66331,6 +73364,11 @@ export namespace Prisma {
   export type BranchDiscountConfigNullableRelationFilter = {
     is?: BranchDiscountConfigWhereInput | null
     isNot?: BranchDiscountConfigWhereInput | null
+  }
+
+  export type BranchPaymentConfigNullableRelationFilter = {
+    is?: BranchPaymentConfigWhereInput | null
+    isNot?: BranchPaymentConfigWhereInput | null
   }
 
   export type UserOrderByRelationAggregateInput = {
@@ -69475,6 +76513,419 @@ export namespace Prisma {
     _max?: NestedEnumManualDiscountStatusFilter<$PrismaModel>
   }
 
+  export type BranchPaymentConfigCountOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    cashConfirmationEnabled?: SortOrder
+    blockProgressionUntilConfirmed?: SortOrder
+    maxCashPerEmployee?: SortOrder
+    requireShiftSettlement?: SortOrder
+    splitPaymentEnabled?: SortOrder
+    crossBranchSettlementEnabled?: SortOrder
+    refundApprovalRequired?: SortOrder
+    onlineRefundEnabled?: SortOrder
+    delayedCashAlertHours?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BranchPaymentConfigAvgOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    maxCashPerEmployee?: SortOrder
+    delayedCashAlertHours?: SortOrder
+  }
+
+  export type BranchPaymentConfigMaxOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    cashConfirmationEnabled?: SortOrder
+    blockProgressionUntilConfirmed?: SortOrder
+    maxCashPerEmployee?: SortOrder
+    requireShiftSettlement?: SortOrder
+    splitPaymentEnabled?: SortOrder
+    crossBranchSettlementEnabled?: SortOrder
+    refundApprovalRequired?: SortOrder
+    onlineRefundEnabled?: SortOrder
+    delayedCashAlertHours?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BranchPaymentConfigMinOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    cashConfirmationEnabled?: SortOrder
+    blockProgressionUntilConfirmed?: SortOrder
+    maxCashPerEmployee?: SortOrder
+    requireShiftSettlement?: SortOrder
+    splitPaymentEnabled?: SortOrder
+    crossBranchSettlementEnabled?: SortOrder
+    refundApprovalRequired?: SortOrder
+    onlineRefundEnabled?: SortOrder
+    delayedCashAlertHours?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BranchPaymentConfigSumOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    maxCashPerEmployee?: SortOrder
+    delayedCashAlertHours?: SortOrder
+  }
+
+  export type EnumPaymentPurposeFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentPurpose | EnumPaymentPurposeFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentPurpose[] | ListEnumPaymentPurposeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentPurpose[] | ListEnumPaymentPurposeFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentPurposeFilter<$PrismaModel> | $Enums.PaymentPurpose
+  }
+
+  export type EnumPaymentMethodFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentMethod | EnumPaymentMethodFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentMethodFilter<$PrismaModel> | $Enums.PaymentMethod
+  }
+
+  export type EnumPaymentTransactionStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentTransactionStatus | EnumPaymentTransactionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentTransactionStatus[] | ListEnumPaymentTransactionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentTransactionStatus[] | ListEnumPaymentTransactionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentTransactionStatusFilter<$PrismaModel> | $Enums.PaymentTransactionStatus
+  }
+
+  export type CashShiftNullableRelationFilter = {
+    is?: CashShiftWhereInput | null
+    isNot?: CashShiftWhereInput | null
+  }
+
+  export type PaymentTransactionCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    idempotencyKey?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    purpose?: SortOrder
+    method?: SortOrder
+    status?: SortOrder
+    totalAmount?: SortOrder
+    cashAmount?: SortOrder
+    onlineAmount?: SortOrder
+    onlineTransactionRef?: SortOrder
+    onlineGateway?: SortOrder
+    collectedById?: SortOrder
+    collectedAt?: SortOrder
+    confirmedById?: SortOrder
+    confirmedAt?: SortOrder
+    rejectedById?: SortOrder
+    rejectedAt?: SortOrder
+    rejectionReason?: SortOrder
+    cashShiftId?: SortOrder
+    notes?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type PaymentTransactionAvgOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    totalAmount?: SortOrder
+    cashAmount?: SortOrder
+    onlineAmount?: SortOrder
+    collectedById?: SortOrder
+    confirmedById?: SortOrder
+    rejectedById?: SortOrder
+    cashShiftId?: SortOrder
+  }
+
+  export type PaymentTransactionMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    idempotencyKey?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    purpose?: SortOrder
+    method?: SortOrder
+    status?: SortOrder
+    totalAmount?: SortOrder
+    cashAmount?: SortOrder
+    onlineAmount?: SortOrder
+    onlineTransactionRef?: SortOrder
+    onlineGateway?: SortOrder
+    collectedById?: SortOrder
+    collectedAt?: SortOrder
+    confirmedById?: SortOrder
+    confirmedAt?: SortOrder
+    rejectedById?: SortOrder
+    rejectedAt?: SortOrder
+    rejectionReason?: SortOrder
+    cashShiftId?: SortOrder
+    notes?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type PaymentTransactionMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    idempotencyKey?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    purpose?: SortOrder
+    method?: SortOrder
+    status?: SortOrder
+    totalAmount?: SortOrder
+    cashAmount?: SortOrder
+    onlineAmount?: SortOrder
+    onlineTransactionRef?: SortOrder
+    onlineGateway?: SortOrder
+    collectedById?: SortOrder
+    collectedAt?: SortOrder
+    confirmedById?: SortOrder
+    confirmedAt?: SortOrder
+    rejectedById?: SortOrder
+    rejectedAt?: SortOrder
+    rejectionReason?: SortOrder
+    cashShiftId?: SortOrder
+    notes?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type PaymentTransactionSumOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    totalAmount?: SortOrder
+    cashAmount?: SortOrder
+    onlineAmount?: SortOrder
+    collectedById?: SortOrder
+    confirmedById?: SortOrder
+    rejectedById?: SortOrder
+    cashShiftId?: SortOrder
+  }
+
+  export type EnumPaymentPurposeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentPurpose | EnumPaymentPurposeFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentPurpose[] | ListEnumPaymentPurposeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentPurpose[] | ListEnumPaymentPurposeFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentPurposeWithAggregatesFilter<$PrismaModel> | $Enums.PaymentPurpose
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumPaymentPurposeFilter<$PrismaModel>
+    _max?: NestedEnumPaymentPurposeFilter<$PrismaModel>
+  }
+
+  export type EnumPaymentMethodWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentMethod | EnumPaymentMethodFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentMethodWithAggregatesFilter<$PrismaModel> | $Enums.PaymentMethod
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumPaymentMethodFilter<$PrismaModel>
+    _max?: NestedEnumPaymentMethodFilter<$PrismaModel>
+  }
+
+  export type EnumPaymentTransactionStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentTransactionStatus | EnumPaymentTransactionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentTransactionStatus[] | ListEnumPaymentTransactionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentTransactionStatus[] | ListEnumPaymentTransactionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentTransactionStatusWithAggregatesFilter<$PrismaModel> | $Enums.PaymentTransactionStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumPaymentTransactionStatusFilter<$PrismaModel>
+    _max?: NestedEnumPaymentTransactionStatusFilter<$PrismaModel>
+  }
+
+  export type EnumRefundStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.RefundStatus | EnumRefundStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.RefundStatus[] | ListEnumRefundStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.RefundStatus[] | ListEnumRefundStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumRefundStatusFilter<$PrismaModel> | $Enums.RefundStatus
+  }
+
+  export type RefundRequestCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    amount?: SortOrder
+    reason?: SortOrder
+    method?: SortOrder
+    status?: SortOrder
+    requestedById?: SortOrder
+    approvedById?: SortOrder
+    approvedAt?: SortOrder
+    completedById?: SortOrder
+    completedAt?: SortOrder
+    onlineTransactionRef?: SortOrder
+    rejectionReason?: SortOrder
+    rejectedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RefundRequestAvgOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    amount?: SortOrder
+    requestedById?: SortOrder
+    approvedById?: SortOrder
+    completedById?: SortOrder
+  }
+
+  export type RefundRequestMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    amount?: SortOrder
+    reason?: SortOrder
+    method?: SortOrder
+    status?: SortOrder
+    requestedById?: SortOrder
+    approvedById?: SortOrder
+    approvedAt?: SortOrder
+    completedById?: SortOrder
+    completedAt?: SortOrder
+    onlineTransactionRef?: SortOrder
+    rejectionReason?: SortOrder
+    rejectedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RefundRequestMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    amount?: SortOrder
+    reason?: SortOrder
+    method?: SortOrder
+    status?: SortOrder
+    requestedById?: SortOrder
+    approvedById?: SortOrder
+    approvedAt?: SortOrder
+    completedById?: SortOrder
+    completedAt?: SortOrder
+    onlineTransactionRef?: SortOrder
+    rejectionReason?: SortOrder
+    rejectedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RefundRequestSumOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    amount?: SortOrder
+    requestedById?: SortOrder
+    approvedById?: SortOrder
+    completedById?: SortOrder
+  }
+
+  export type EnumRefundStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.RefundStatus | EnumRefundStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.RefundStatus[] | ListEnumRefundStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.RefundStatus[] | ListEnumRefundStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumRefundStatusWithAggregatesFilter<$PrismaModel> | $Enums.RefundStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumRefundStatusFilter<$PrismaModel>
+    _max?: NestedEnumRefundStatusFilter<$PrismaModel>
+  }
+
+  export type EnumCashShiftStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.CashShiftStatus | EnumCashShiftStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CashShiftStatus[] | ListEnumCashShiftStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CashShiftStatus[] | ListEnumCashShiftStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumCashShiftStatusFilter<$PrismaModel> | $Enums.CashShiftStatus
+  }
+
+  export type CashShiftCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    employeeId?: SortOrder
+    branchId?: SortOrder
+    status?: SortOrder
+    openedAt?: SortOrder
+    closedAt?: SortOrder
+    expectedTotal?: SortOrder
+    actualTotal?: SortOrder
+    discrepancy?: SortOrder
+    discrepancyExplanation?: SortOrder
+    reconciledById?: SortOrder
+    reconciledAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type CashShiftAvgOrderByAggregateInput = {
+    id?: SortOrder
+    employeeId?: SortOrder
+    branchId?: SortOrder
+    expectedTotal?: SortOrder
+    actualTotal?: SortOrder
+    discrepancy?: SortOrder
+    reconciledById?: SortOrder
+  }
+
+  export type CashShiftMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    employeeId?: SortOrder
+    branchId?: SortOrder
+    status?: SortOrder
+    openedAt?: SortOrder
+    closedAt?: SortOrder
+    expectedTotal?: SortOrder
+    actualTotal?: SortOrder
+    discrepancy?: SortOrder
+    discrepancyExplanation?: SortOrder
+    reconciledById?: SortOrder
+    reconciledAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type CashShiftMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    employeeId?: SortOrder
+    branchId?: SortOrder
+    status?: SortOrder
+    openedAt?: SortOrder
+    closedAt?: SortOrder
+    expectedTotal?: SortOrder
+    actualTotal?: SortOrder
+    discrepancy?: SortOrder
+    discrepancyExplanation?: SortOrder
+    reconciledById?: SortOrder
+    reconciledAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type CashShiftSumOrderByAggregateInput = {
+    id?: SortOrder
+    employeeId?: SortOrder
+    branchId?: SortOrder
+    expectedTotal?: SortOrder
+    actualTotal?: SortOrder
+    discrepancy?: SortOrder
+    reconciledById?: SortOrder
+  }
+
+  export type EnumCashShiftStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.CashShiftStatus | EnumCashShiftStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CashShiftStatus[] | ListEnumCashShiftStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CashShiftStatus[] | ListEnumCashShiftStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumCashShiftStatusWithAggregatesFilter<$PrismaModel> | $Enums.CashShiftStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumCashShiftStatusFilter<$PrismaModel>
+    _max?: NestedEnumCashShiftStatusFilter<$PrismaModel>
+  }
+
   export type BranchCreateNestedOneWithoutUsersInput = {
     create?: XOR<BranchCreateWithoutUsersInput, BranchUncheckedCreateWithoutUsersInput>
     connectOrCreate?: BranchCreateOrConnectWithoutUsersInput
@@ -69557,6 +77008,62 @@ export namespace Prisma {
     connect?: ManualDiscountWhereUniqueInput | ManualDiscountWhereUniqueInput[]
   }
 
+  export type PaymentTransactionCreateNestedManyWithoutCollectedByInput = {
+    create?: XOR<PaymentTransactionCreateWithoutCollectedByInput, PaymentTransactionUncheckedCreateWithoutCollectedByInput> | PaymentTransactionCreateWithoutCollectedByInput[] | PaymentTransactionUncheckedCreateWithoutCollectedByInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutCollectedByInput | PaymentTransactionCreateOrConnectWithoutCollectedByInput[]
+    createMany?: PaymentTransactionCreateManyCollectedByInputEnvelope
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+  }
+
+  export type PaymentTransactionCreateNestedManyWithoutConfirmedByInput = {
+    create?: XOR<PaymentTransactionCreateWithoutConfirmedByInput, PaymentTransactionUncheckedCreateWithoutConfirmedByInput> | PaymentTransactionCreateWithoutConfirmedByInput[] | PaymentTransactionUncheckedCreateWithoutConfirmedByInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutConfirmedByInput | PaymentTransactionCreateOrConnectWithoutConfirmedByInput[]
+    createMany?: PaymentTransactionCreateManyConfirmedByInputEnvelope
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+  }
+
+  export type PaymentTransactionCreateNestedManyWithoutRejectedByInput = {
+    create?: XOR<PaymentTransactionCreateWithoutRejectedByInput, PaymentTransactionUncheckedCreateWithoutRejectedByInput> | PaymentTransactionCreateWithoutRejectedByInput[] | PaymentTransactionUncheckedCreateWithoutRejectedByInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutRejectedByInput | PaymentTransactionCreateOrConnectWithoutRejectedByInput[]
+    createMany?: PaymentTransactionCreateManyRejectedByInputEnvelope
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+  }
+
+  export type CashShiftCreateNestedManyWithoutEmployeeInput = {
+    create?: XOR<CashShiftCreateWithoutEmployeeInput, CashShiftUncheckedCreateWithoutEmployeeInput> | CashShiftCreateWithoutEmployeeInput[] | CashShiftUncheckedCreateWithoutEmployeeInput[]
+    connectOrCreate?: CashShiftCreateOrConnectWithoutEmployeeInput | CashShiftCreateOrConnectWithoutEmployeeInput[]
+    createMany?: CashShiftCreateManyEmployeeInputEnvelope
+    connect?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+  }
+
+  export type CashShiftCreateNestedManyWithoutReconciledByInput = {
+    create?: XOR<CashShiftCreateWithoutReconciledByInput, CashShiftUncheckedCreateWithoutReconciledByInput> | CashShiftCreateWithoutReconciledByInput[] | CashShiftUncheckedCreateWithoutReconciledByInput[]
+    connectOrCreate?: CashShiftCreateOrConnectWithoutReconciledByInput | CashShiftCreateOrConnectWithoutReconciledByInput[]
+    createMany?: CashShiftCreateManyReconciledByInputEnvelope
+    connect?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+  }
+
+  export type RefundRequestCreateNestedManyWithoutRequestedByInput = {
+    create?: XOR<RefundRequestCreateWithoutRequestedByInput, RefundRequestUncheckedCreateWithoutRequestedByInput> | RefundRequestCreateWithoutRequestedByInput[] | RefundRequestUncheckedCreateWithoutRequestedByInput[]
+    connectOrCreate?: RefundRequestCreateOrConnectWithoutRequestedByInput | RefundRequestCreateOrConnectWithoutRequestedByInput[]
+    createMany?: RefundRequestCreateManyRequestedByInputEnvelope
+    connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+  }
+
+  export type RefundRequestCreateNestedManyWithoutApprovedByInput = {
+    create?: XOR<RefundRequestCreateWithoutApprovedByInput, RefundRequestUncheckedCreateWithoutApprovedByInput> | RefundRequestCreateWithoutApprovedByInput[] | RefundRequestUncheckedCreateWithoutApprovedByInput[]
+    connectOrCreate?: RefundRequestCreateOrConnectWithoutApprovedByInput | RefundRequestCreateOrConnectWithoutApprovedByInput[]
+    createMany?: RefundRequestCreateManyApprovedByInputEnvelope
+    connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+  }
+
+  export type RefundRequestCreateNestedManyWithoutCompletedByInput = {
+    create?: XOR<RefundRequestCreateWithoutCompletedByInput, RefundRequestUncheckedCreateWithoutCompletedByInput> | RefundRequestCreateWithoutCompletedByInput[] | RefundRequestUncheckedCreateWithoutCompletedByInput[]
+    connectOrCreate?: RefundRequestCreateOrConnectWithoutCompletedByInput | RefundRequestCreateOrConnectWithoutCompletedByInput[]
+    createMany?: RefundRequestCreateManyCompletedByInputEnvelope
+    connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+  }
+
   export type EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput = {
     create?: XOR<EmailVerificationOtpCreateWithoutUserInput, EmailVerificationOtpUncheckedCreateWithoutUserInput> | EmailVerificationOtpCreateWithoutUserInput[] | EmailVerificationOtpUncheckedCreateWithoutUserInput[]
     connectOrCreate?: EmailVerificationOtpCreateOrConnectWithoutUserInput | EmailVerificationOtpCreateOrConnectWithoutUserInput[]
@@ -69631,6 +77138,62 @@ export namespace Prisma {
     connectOrCreate?: ManualDiscountCreateOrConnectWithoutApprovedByInput | ManualDiscountCreateOrConnectWithoutApprovedByInput[]
     createMany?: ManualDiscountCreateManyApprovedByInputEnvelope
     connect?: ManualDiscountWhereUniqueInput | ManualDiscountWhereUniqueInput[]
+  }
+
+  export type PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput = {
+    create?: XOR<PaymentTransactionCreateWithoutCollectedByInput, PaymentTransactionUncheckedCreateWithoutCollectedByInput> | PaymentTransactionCreateWithoutCollectedByInput[] | PaymentTransactionUncheckedCreateWithoutCollectedByInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutCollectedByInput | PaymentTransactionCreateOrConnectWithoutCollectedByInput[]
+    createMany?: PaymentTransactionCreateManyCollectedByInputEnvelope
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+  }
+
+  export type PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput = {
+    create?: XOR<PaymentTransactionCreateWithoutConfirmedByInput, PaymentTransactionUncheckedCreateWithoutConfirmedByInput> | PaymentTransactionCreateWithoutConfirmedByInput[] | PaymentTransactionUncheckedCreateWithoutConfirmedByInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutConfirmedByInput | PaymentTransactionCreateOrConnectWithoutConfirmedByInput[]
+    createMany?: PaymentTransactionCreateManyConfirmedByInputEnvelope
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+  }
+
+  export type PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput = {
+    create?: XOR<PaymentTransactionCreateWithoutRejectedByInput, PaymentTransactionUncheckedCreateWithoutRejectedByInput> | PaymentTransactionCreateWithoutRejectedByInput[] | PaymentTransactionUncheckedCreateWithoutRejectedByInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutRejectedByInput | PaymentTransactionCreateOrConnectWithoutRejectedByInput[]
+    createMany?: PaymentTransactionCreateManyRejectedByInputEnvelope
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+  }
+
+  export type CashShiftUncheckedCreateNestedManyWithoutEmployeeInput = {
+    create?: XOR<CashShiftCreateWithoutEmployeeInput, CashShiftUncheckedCreateWithoutEmployeeInput> | CashShiftCreateWithoutEmployeeInput[] | CashShiftUncheckedCreateWithoutEmployeeInput[]
+    connectOrCreate?: CashShiftCreateOrConnectWithoutEmployeeInput | CashShiftCreateOrConnectWithoutEmployeeInput[]
+    createMany?: CashShiftCreateManyEmployeeInputEnvelope
+    connect?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+  }
+
+  export type CashShiftUncheckedCreateNestedManyWithoutReconciledByInput = {
+    create?: XOR<CashShiftCreateWithoutReconciledByInput, CashShiftUncheckedCreateWithoutReconciledByInput> | CashShiftCreateWithoutReconciledByInput[] | CashShiftUncheckedCreateWithoutReconciledByInput[]
+    connectOrCreate?: CashShiftCreateOrConnectWithoutReconciledByInput | CashShiftCreateOrConnectWithoutReconciledByInput[]
+    createMany?: CashShiftCreateManyReconciledByInputEnvelope
+    connect?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+  }
+
+  export type RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput = {
+    create?: XOR<RefundRequestCreateWithoutRequestedByInput, RefundRequestUncheckedCreateWithoutRequestedByInput> | RefundRequestCreateWithoutRequestedByInput[] | RefundRequestUncheckedCreateWithoutRequestedByInput[]
+    connectOrCreate?: RefundRequestCreateOrConnectWithoutRequestedByInput | RefundRequestCreateOrConnectWithoutRequestedByInput[]
+    createMany?: RefundRequestCreateManyRequestedByInputEnvelope
+    connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+  }
+
+  export type RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput = {
+    create?: XOR<RefundRequestCreateWithoutApprovedByInput, RefundRequestUncheckedCreateWithoutApprovedByInput> | RefundRequestCreateWithoutApprovedByInput[] | RefundRequestUncheckedCreateWithoutApprovedByInput[]
+    connectOrCreate?: RefundRequestCreateOrConnectWithoutApprovedByInput | RefundRequestCreateOrConnectWithoutApprovedByInput[]
+    createMany?: RefundRequestCreateManyApprovedByInputEnvelope
+    connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+  }
+
+  export type RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput = {
+    create?: XOR<RefundRequestCreateWithoutCompletedByInput, RefundRequestUncheckedCreateWithoutCompletedByInput> | RefundRequestCreateWithoutCompletedByInput[] | RefundRequestUncheckedCreateWithoutCompletedByInput[]
+    connectOrCreate?: RefundRequestCreateOrConnectWithoutCompletedByInput | RefundRequestCreateOrConnectWithoutCompletedByInput[]
+    createMany?: RefundRequestCreateManyCompletedByInputEnvelope
+    connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -69817,6 +77380,118 @@ export namespace Prisma {
     deleteMany?: ManualDiscountScalarWhereInput | ManualDiscountScalarWhereInput[]
   }
 
+  export type PaymentTransactionUpdateManyWithoutCollectedByNestedInput = {
+    create?: XOR<PaymentTransactionCreateWithoutCollectedByInput, PaymentTransactionUncheckedCreateWithoutCollectedByInput> | PaymentTransactionCreateWithoutCollectedByInput[] | PaymentTransactionUncheckedCreateWithoutCollectedByInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutCollectedByInput | PaymentTransactionCreateOrConnectWithoutCollectedByInput[]
+    upsert?: PaymentTransactionUpsertWithWhereUniqueWithoutCollectedByInput | PaymentTransactionUpsertWithWhereUniqueWithoutCollectedByInput[]
+    createMany?: PaymentTransactionCreateManyCollectedByInputEnvelope
+    set?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    disconnect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    delete?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    update?: PaymentTransactionUpdateWithWhereUniqueWithoutCollectedByInput | PaymentTransactionUpdateWithWhereUniqueWithoutCollectedByInput[]
+    updateMany?: PaymentTransactionUpdateManyWithWhereWithoutCollectedByInput | PaymentTransactionUpdateManyWithWhereWithoutCollectedByInput[]
+    deleteMany?: PaymentTransactionScalarWhereInput | PaymentTransactionScalarWhereInput[]
+  }
+
+  export type PaymentTransactionUpdateManyWithoutConfirmedByNestedInput = {
+    create?: XOR<PaymentTransactionCreateWithoutConfirmedByInput, PaymentTransactionUncheckedCreateWithoutConfirmedByInput> | PaymentTransactionCreateWithoutConfirmedByInput[] | PaymentTransactionUncheckedCreateWithoutConfirmedByInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutConfirmedByInput | PaymentTransactionCreateOrConnectWithoutConfirmedByInput[]
+    upsert?: PaymentTransactionUpsertWithWhereUniqueWithoutConfirmedByInput | PaymentTransactionUpsertWithWhereUniqueWithoutConfirmedByInput[]
+    createMany?: PaymentTransactionCreateManyConfirmedByInputEnvelope
+    set?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    disconnect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    delete?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    update?: PaymentTransactionUpdateWithWhereUniqueWithoutConfirmedByInput | PaymentTransactionUpdateWithWhereUniqueWithoutConfirmedByInput[]
+    updateMany?: PaymentTransactionUpdateManyWithWhereWithoutConfirmedByInput | PaymentTransactionUpdateManyWithWhereWithoutConfirmedByInput[]
+    deleteMany?: PaymentTransactionScalarWhereInput | PaymentTransactionScalarWhereInput[]
+  }
+
+  export type PaymentTransactionUpdateManyWithoutRejectedByNestedInput = {
+    create?: XOR<PaymentTransactionCreateWithoutRejectedByInput, PaymentTransactionUncheckedCreateWithoutRejectedByInput> | PaymentTransactionCreateWithoutRejectedByInput[] | PaymentTransactionUncheckedCreateWithoutRejectedByInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutRejectedByInput | PaymentTransactionCreateOrConnectWithoutRejectedByInput[]
+    upsert?: PaymentTransactionUpsertWithWhereUniqueWithoutRejectedByInput | PaymentTransactionUpsertWithWhereUniqueWithoutRejectedByInput[]
+    createMany?: PaymentTransactionCreateManyRejectedByInputEnvelope
+    set?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    disconnect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    delete?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    update?: PaymentTransactionUpdateWithWhereUniqueWithoutRejectedByInput | PaymentTransactionUpdateWithWhereUniqueWithoutRejectedByInput[]
+    updateMany?: PaymentTransactionUpdateManyWithWhereWithoutRejectedByInput | PaymentTransactionUpdateManyWithWhereWithoutRejectedByInput[]
+    deleteMany?: PaymentTransactionScalarWhereInput | PaymentTransactionScalarWhereInput[]
+  }
+
+  export type CashShiftUpdateManyWithoutEmployeeNestedInput = {
+    create?: XOR<CashShiftCreateWithoutEmployeeInput, CashShiftUncheckedCreateWithoutEmployeeInput> | CashShiftCreateWithoutEmployeeInput[] | CashShiftUncheckedCreateWithoutEmployeeInput[]
+    connectOrCreate?: CashShiftCreateOrConnectWithoutEmployeeInput | CashShiftCreateOrConnectWithoutEmployeeInput[]
+    upsert?: CashShiftUpsertWithWhereUniqueWithoutEmployeeInput | CashShiftUpsertWithWhereUniqueWithoutEmployeeInput[]
+    createMany?: CashShiftCreateManyEmployeeInputEnvelope
+    set?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    disconnect?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    delete?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    connect?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    update?: CashShiftUpdateWithWhereUniqueWithoutEmployeeInput | CashShiftUpdateWithWhereUniqueWithoutEmployeeInput[]
+    updateMany?: CashShiftUpdateManyWithWhereWithoutEmployeeInput | CashShiftUpdateManyWithWhereWithoutEmployeeInput[]
+    deleteMany?: CashShiftScalarWhereInput | CashShiftScalarWhereInput[]
+  }
+
+  export type CashShiftUpdateManyWithoutReconciledByNestedInput = {
+    create?: XOR<CashShiftCreateWithoutReconciledByInput, CashShiftUncheckedCreateWithoutReconciledByInput> | CashShiftCreateWithoutReconciledByInput[] | CashShiftUncheckedCreateWithoutReconciledByInput[]
+    connectOrCreate?: CashShiftCreateOrConnectWithoutReconciledByInput | CashShiftCreateOrConnectWithoutReconciledByInput[]
+    upsert?: CashShiftUpsertWithWhereUniqueWithoutReconciledByInput | CashShiftUpsertWithWhereUniqueWithoutReconciledByInput[]
+    createMany?: CashShiftCreateManyReconciledByInputEnvelope
+    set?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    disconnect?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    delete?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    connect?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    update?: CashShiftUpdateWithWhereUniqueWithoutReconciledByInput | CashShiftUpdateWithWhereUniqueWithoutReconciledByInput[]
+    updateMany?: CashShiftUpdateManyWithWhereWithoutReconciledByInput | CashShiftUpdateManyWithWhereWithoutReconciledByInput[]
+    deleteMany?: CashShiftScalarWhereInput | CashShiftScalarWhereInput[]
+  }
+
+  export type RefundRequestUpdateManyWithoutRequestedByNestedInput = {
+    create?: XOR<RefundRequestCreateWithoutRequestedByInput, RefundRequestUncheckedCreateWithoutRequestedByInput> | RefundRequestCreateWithoutRequestedByInput[] | RefundRequestUncheckedCreateWithoutRequestedByInput[]
+    connectOrCreate?: RefundRequestCreateOrConnectWithoutRequestedByInput | RefundRequestCreateOrConnectWithoutRequestedByInput[]
+    upsert?: RefundRequestUpsertWithWhereUniqueWithoutRequestedByInput | RefundRequestUpsertWithWhereUniqueWithoutRequestedByInput[]
+    createMany?: RefundRequestCreateManyRequestedByInputEnvelope
+    set?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    disconnect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    delete?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    update?: RefundRequestUpdateWithWhereUniqueWithoutRequestedByInput | RefundRequestUpdateWithWhereUniqueWithoutRequestedByInput[]
+    updateMany?: RefundRequestUpdateManyWithWhereWithoutRequestedByInput | RefundRequestUpdateManyWithWhereWithoutRequestedByInput[]
+    deleteMany?: RefundRequestScalarWhereInput | RefundRequestScalarWhereInput[]
+  }
+
+  export type RefundRequestUpdateManyWithoutApprovedByNestedInput = {
+    create?: XOR<RefundRequestCreateWithoutApprovedByInput, RefundRequestUncheckedCreateWithoutApprovedByInput> | RefundRequestCreateWithoutApprovedByInput[] | RefundRequestUncheckedCreateWithoutApprovedByInput[]
+    connectOrCreate?: RefundRequestCreateOrConnectWithoutApprovedByInput | RefundRequestCreateOrConnectWithoutApprovedByInput[]
+    upsert?: RefundRequestUpsertWithWhereUniqueWithoutApprovedByInput | RefundRequestUpsertWithWhereUniqueWithoutApprovedByInput[]
+    createMany?: RefundRequestCreateManyApprovedByInputEnvelope
+    set?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    disconnect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    delete?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    update?: RefundRequestUpdateWithWhereUniqueWithoutApprovedByInput | RefundRequestUpdateWithWhereUniqueWithoutApprovedByInput[]
+    updateMany?: RefundRequestUpdateManyWithWhereWithoutApprovedByInput | RefundRequestUpdateManyWithWhereWithoutApprovedByInput[]
+    deleteMany?: RefundRequestScalarWhereInput | RefundRequestScalarWhereInput[]
+  }
+
+  export type RefundRequestUpdateManyWithoutCompletedByNestedInput = {
+    create?: XOR<RefundRequestCreateWithoutCompletedByInput, RefundRequestUncheckedCreateWithoutCompletedByInput> | RefundRequestCreateWithoutCompletedByInput[] | RefundRequestUncheckedCreateWithoutCompletedByInput[]
+    connectOrCreate?: RefundRequestCreateOrConnectWithoutCompletedByInput | RefundRequestCreateOrConnectWithoutCompletedByInput[]
+    upsert?: RefundRequestUpsertWithWhereUniqueWithoutCompletedByInput | RefundRequestUpsertWithWhereUniqueWithoutCompletedByInput[]
+    createMany?: RefundRequestCreateManyCompletedByInputEnvelope
+    set?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    disconnect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    delete?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    update?: RefundRequestUpdateWithWhereUniqueWithoutCompletedByInput | RefundRequestUpdateWithWhereUniqueWithoutCompletedByInput[]
+    updateMany?: RefundRequestUpdateManyWithWhereWithoutCompletedByInput | RefundRequestUpdateManyWithWhereWithoutCompletedByInput[]
+    deleteMany?: RefundRequestScalarWhereInput | RefundRequestScalarWhereInput[]
+  }
+
   export type IntFieldUpdateOperationsInput = {
     set?: number
     increment?: number
@@ -69981,6 +77656,118 @@ export namespace Prisma {
     update?: ManualDiscountUpdateWithWhereUniqueWithoutApprovedByInput | ManualDiscountUpdateWithWhereUniqueWithoutApprovedByInput[]
     updateMany?: ManualDiscountUpdateManyWithWhereWithoutApprovedByInput | ManualDiscountUpdateManyWithWhereWithoutApprovedByInput[]
     deleteMany?: ManualDiscountScalarWhereInput | ManualDiscountScalarWhereInput[]
+  }
+
+  export type PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput = {
+    create?: XOR<PaymentTransactionCreateWithoutCollectedByInput, PaymentTransactionUncheckedCreateWithoutCollectedByInput> | PaymentTransactionCreateWithoutCollectedByInput[] | PaymentTransactionUncheckedCreateWithoutCollectedByInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutCollectedByInput | PaymentTransactionCreateOrConnectWithoutCollectedByInput[]
+    upsert?: PaymentTransactionUpsertWithWhereUniqueWithoutCollectedByInput | PaymentTransactionUpsertWithWhereUniqueWithoutCollectedByInput[]
+    createMany?: PaymentTransactionCreateManyCollectedByInputEnvelope
+    set?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    disconnect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    delete?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    update?: PaymentTransactionUpdateWithWhereUniqueWithoutCollectedByInput | PaymentTransactionUpdateWithWhereUniqueWithoutCollectedByInput[]
+    updateMany?: PaymentTransactionUpdateManyWithWhereWithoutCollectedByInput | PaymentTransactionUpdateManyWithWhereWithoutCollectedByInput[]
+    deleteMany?: PaymentTransactionScalarWhereInput | PaymentTransactionScalarWhereInput[]
+  }
+
+  export type PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput = {
+    create?: XOR<PaymentTransactionCreateWithoutConfirmedByInput, PaymentTransactionUncheckedCreateWithoutConfirmedByInput> | PaymentTransactionCreateWithoutConfirmedByInput[] | PaymentTransactionUncheckedCreateWithoutConfirmedByInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutConfirmedByInput | PaymentTransactionCreateOrConnectWithoutConfirmedByInput[]
+    upsert?: PaymentTransactionUpsertWithWhereUniqueWithoutConfirmedByInput | PaymentTransactionUpsertWithWhereUniqueWithoutConfirmedByInput[]
+    createMany?: PaymentTransactionCreateManyConfirmedByInputEnvelope
+    set?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    disconnect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    delete?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    update?: PaymentTransactionUpdateWithWhereUniqueWithoutConfirmedByInput | PaymentTransactionUpdateWithWhereUniqueWithoutConfirmedByInput[]
+    updateMany?: PaymentTransactionUpdateManyWithWhereWithoutConfirmedByInput | PaymentTransactionUpdateManyWithWhereWithoutConfirmedByInput[]
+    deleteMany?: PaymentTransactionScalarWhereInput | PaymentTransactionScalarWhereInput[]
+  }
+
+  export type PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput = {
+    create?: XOR<PaymentTransactionCreateWithoutRejectedByInput, PaymentTransactionUncheckedCreateWithoutRejectedByInput> | PaymentTransactionCreateWithoutRejectedByInput[] | PaymentTransactionUncheckedCreateWithoutRejectedByInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutRejectedByInput | PaymentTransactionCreateOrConnectWithoutRejectedByInput[]
+    upsert?: PaymentTransactionUpsertWithWhereUniqueWithoutRejectedByInput | PaymentTransactionUpsertWithWhereUniqueWithoutRejectedByInput[]
+    createMany?: PaymentTransactionCreateManyRejectedByInputEnvelope
+    set?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    disconnect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    delete?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    update?: PaymentTransactionUpdateWithWhereUniqueWithoutRejectedByInput | PaymentTransactionUpdateWithWhereUniqueWithoutRejectedByInput[]
+    updateMany?: PaymentTransactionUpdateManyWithWhereWithoutRejectedByInput | PaymentTransactionUpdateManyWithWhereWithoutRejectedByInput[]
+    deleteMany?: PaymentTransactionScalarWhereInput | PaymentTransactionScalarWhereInput[]
+  }
+
+  export type CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput = {
+    create?: XOR<CashShiftCreateWithoutEmployeeInput, CashShiftUncheckedCreateWithoutEmployeeInput> | CashShiftCreateWithoutEmployeeInput[] | CashShiftUncheckedCreateWithoutEmployeeInput[]
+    connectOrCreate?: CashShiftCreateOrConnectWithoutEmployeeInput | CashShiftCreateOrConnectWithoutEmployeeInput[]
+    upsert?: CashShiftUpsertWithWhereUniqueWithoutEmployeeInput | CashShiftUpsertWithWhereUniqueWithoutEmployeeInput[]
+    createMany?: CashShiftCreateManyEmployeeInputEnvelope
+    set?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    disconnect?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    delete?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    connect?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    update?: CashShiftUpdateWithWhereUniqueWithoutEmployeeInput | CashShiftUpdateWithWhereUniqueWithoutEmployeeInput[]
+    updateMany?: CashShiftUpdateManyWithWhereWithoutEmployeeInput | CashShiftUpdateManyWithWhereWithoutEmployeeInput[]
+    deleteMany?: CashShiftScalarWhereInput | CashShiftScalarWhereInput[]
+  }
+
+  export type CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput = {
+    create?: XOR<CashShiftCreateWithoutReconciledByInput, CashShiftUncheckedCreateWithoutReconciledByInput> | CashShiftCreateWithoutReconciledByInput[] | CashShiftUncheckedCreateWithoutReconciledByInput[]
+    connectOrCreate?: CashShiftCreateOrConnectWithoutReconciledByInput | CashShiftCreateOrConnectWithoutReconciledByInput[]
+    upsert?: CashShiftUpsertWithWhereUniqueWithoutReconciledByInput | CashShiftUpsertWithWhereUniqueWithoutReconciledByInput[]
+    createMany?: CashShiftCreateManyReconciledByInputEnvelope
+    set?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    disconnect?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    delete?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    connect?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    update?: CashShiftUpdateWithWhereUniqueWithoutReconciledByInput | CashShiftUpdateWithWhereUniqueWithoutReconciledByInput[]
+    updateMany?: CashShiftUpdateManyWithWhereWithoutReconciledByInput | CashShiftUpdateManyWithWhereWithoutReconciledByInput[]
+    deleteMany?: CashShiftScalarWhereInput | CashShiftScalarWhereInput[]
+  }
+
+  export type RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput = {
+    create?: XOR<RefundRequestCreateWithoutRequestedByInput, RefundRequestUncheckedCreateWithoutRequestedByInput> | RefundRequestCreateWithoutRequestedByInput[] | RefundRequestUncheckedCreateWithoutRequestedByInput[]
+    connectOrCreate?: RefundRequestCreateOrConnectWithoutRequestedByInput | RefundRequestCreateOrConnectWithoutRequestedByInput[]
+    upsert?: RefundRequestUpsertWithWhereUniqueWithoutRequestedByInput | RefundRequestUpsertWithWhereUniqueWithoutRequestedByInput[]
+    createMany?: RefundRequestCreateManyRequestedByInputEnvelope
+    set?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    disconnect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    delete?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    update?: RefundRequestUpdateWithWhereUniqueWithoutRequestedByInput | RefundRequestUpdateWithWhereUniqueWithoutRequestedByInput[]
+    updateMany?: RefundRequestUpdateManyWithWhereWithoutRequestedByInput | RefundRequestUpdateManyWithWhereWithoutRequestedByInput[]
+    deleteMany?: RefundRequestScalarWhereInput | RefundRequestScalarWhereInput[]
+  }
+
+  export type RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput = {
+    create?: XOR<RefundRequestCreateWithoutApprovedByInput, RefundRequestUncheckedCreateWithoutApprovedByInput> | RefundRequestCreateWithoutApprovedByInput[] | RefundRequestUncheckedCreateWithoutApprovedByInput[]
+    connectOrCreate?: RefundRequestCreateOrConnectWithoutApprovedByInput | RefundRequestCreateOrConnectWithoutApprovedByInput[]
+    upsert?: RefundRequestUpsertWithWhereUniqueWithoutApprovedByInput | RefundRequestUpsertWithWhereUniqueWithoutApprovedByInput[]
+    createMany?: RefundRequestCreateManyApprovedByInputEnvelope
+    set?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    disconnect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    delete?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    update?: RefundRequestUpdateWithWhereUniqueWithoutApprovedByInput | RefundRequestUpdateWithWhereUniqueWithoutApprovedByInput[]
+    updateMany?: RefundRequestUpdateManyWithWhereWithoutApprovedByInput | RefundRequestUpdateManyWithWhereWithoutApprovedByInput[]
+    deleteMany?: RefundRequestScalarWhereInput | RefundRequestScalarWhereInput[]
+  }
+
+  export type RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput = {
+    create?: XOR<RefundRequestCreateWithoutCompletedByInput, RefundRequestUncheckedCreateWithoutCompletedByInput> | RefundRequestCreateWithoutCompletedByInput[] | RefundRequestUncheckedCreateWithoutCompletedByInput[]
+    connectOrCreate?: RefundRequestCreateOrConnectWithoutCompletedByInput | RefundRequestCreateOrConnectWithoutCompletedByInput[]
+    upsert?: RefundRequestUpsertWithWhereUniqueWithoutCompletedByInput | RefundRequestUpsertWithWhereUniqueWithoutCompletedByInput[]
+    createMany?: RefundRequestCreateManyCompletedByInputEnvelope
+    set?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    disconnect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    delete?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    update?: RefundRequestUpdateWithWhereUniqueWithoutCompletedByInput | RefundRequestUpdateWithWhereUniqueWithoutCompletedByInput[]
+    updateMany?: RefundRequestUpdateManyWithWhereWithoutCompletedByInput | RefundRequestUpdateManyWithWhereWithoutCompletedByInput[]
+    deleteMany?: RefundRequestScalarWhereInput | RefundRequestScalarWhereInput[]
   }
 
   export type UserCreateNestedOneWithoutProvidersInput = {
@@ -70538,6 +78325,33 @@ export namespace Prisma {
     connect?: BranchDiscountConfigWhereUniqueInput
   }
 
+  export type BranchPaymentConfigCreateNestedOneWithoutBranchInput = {
+    create?: XOR<BranchPaymentConfigCreateWithoutBranchInput, BranchPaymentConfigUncheckedCreateWithoutBranchInput>
+    connectOrCreate?: BranchPaymentConfigCreateOrConnectWithoutBranchInput
+    connect?: BranchPaymentConfigWhereUniqueInput
+  }
+
+  export type PaymentTransactionCreateNestedManyWithoutBranchInput = {
+    create?: XOR<PaymentTransactionCreateWithoutBranchInput, PaymentTransactionUncheckedCreateWithoutBranchInput> | PaymentTransactionCreateWithoutBranchInput[] | PaymentTransactionUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutBranchInput | PaymentTransactionCreateOrConnectWithoutBranchInput[]
+    createMany?: PaymentTransactionCreateManyBranchInputEnvelope
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+  }
+
+  export type CashShiftCreateNestedManyWithoutBranchInput = {
+    create?: XOR<CashShiftCreateWithoutBranchInput, CashShiftUncheckedCreateWithoutBranchInput> | CashShiftCreateWithoutBranchInput[] | CashShiftUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: CashShiftCreateOrConnectWithoutBranchInput | CashShiftCreateOrConnectWithoutBranchInput[]
+    createMany?: CashShiftCreateManyBranchInputEnvelope
+    connect?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+  }
+
+  export type RefundRequestCreateNestedManyWithoutBranchInput = {
+    create?: XOR<RefundRequestCreateWithoutBranchInput, RefundRequestUncheckedCreateWithoutBranchInput> | RefundRequestCreateWithoutBranchInput[] | RefundRequestUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: RefundRequestCreateOrConnectWithoutBranchInput | RefundRequestCreateOrConnectWithoutBranchInput[]
+    createMany?: RefundRequestCreateManyBranchInputEnvelope
+    connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+  }
+
   export type UserUncheckedCreateNestedManyWithoutBranchInput = {
     create?: XOR<UserCreateWithoutBranchInput, UserUncheckedCreateWithoutBranchInput> | UserCreateWithoutBranchInput[] | UserUncheckedCreateWithoutBranchInput[]
     connectOrCreate?: UserCreateOrConnectWithoutBranchInput | UserCreateOrConnectWithoutBranchInput[]
@@ -70631,6 +78445,33 @@ export namespace Prisma {
     create?: XOR<BranchDiscountConfigCreateWithoutBranchInput, BranchDiscountConfigUncheckedCreateWithoutBranchInput>
     connectOrCreate?: BranchDiscountConfigCreateOrConnectWithoutBranchInput
     connect?: BranchDiscountConfigWhereUniqueInput
+  }
+
+  export type BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput = {
+    create?: XOR<BranchPaymentConfigCreateWithoutBranchInput, BranchPaymentConfigUncheckedCreateWithoutBranchInput>
+    connectOrCreate?: BranchPaymentConfigCreateOrConnectWithoutBranchInput
+    connect?: BranchPaymentConfigWhereUniqueInput
+  }
+
+  export type PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput = {
+    create?: XOR<PaymentTransactionCreateWithoutBranchInput, PaymentTransactionUncheckedCreateWithoutBranchInput> | PaymentTransactionCreateWithoutBranchInput[] | PaymentTransactionUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutBranchInput | PaymentTransactionCreateOrConnectWithoutBranchInput[]
+    createMany?: PaymentTransactionCreateManyBranchInputEnvelope
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+  }
+
+  export type CashShiftUncheckedCreateNestedManyWithoutBranchInput = {
+    create?: XOR<CashShiftCreateWithoutBranchInput, CashShiftUncheckedCreateWithoutBranchInput> | CashShiftCreateWithoutBranchInput[] | CashShiftUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: CashShiftCreateOrConnectWithoutBranchInput | CashShiftCreateOrConnectWithoutBranchInput[]
+    createMany?: CashShiftCreateManyBranchInputEnvelope
+    connect?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+  }
+
+  export type RefundRequestUncheckedCreateNestedManyWithoutBranchInput = {
+    create?: XOR<RefundRequestCreateWithoutBranchInput, RefundRequestUncheckedCreateWithoutBranchInput> | RefundRequestCreateWithoutBranchInput[] | RefundRequestUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: RefundRequestCreateOrConnectWithoutBranchInput | RefundRequestCreateOrConnectWithoutBranchInput[]
+    createMany?: RefundRequestCreateManyBranchInputEnvelope
+    connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
   }
 
   export type UserUpdateManyWithoutBranchNestedInput = {
@@ -70817,6 +78658,58 @@ export namespace Prisma {
     update?: XOR<XOR<BranchDiscountConfigUpdateToOneWithWhereWithoutBranchInput, BranchDiscountConfigUpdateWithoutBranchInput>, BranchDiscountConfigUncheckedUpdateWithoutBranchInput>
   }
 
+  export type BranchPaymentConfigUpdateOneWithoutBranchNestedInput = {
+    create?: XOR<BranchPaymentConfigCreateWithoutBranchInput, BranchPaymentConfigUncheckedCreateWithoutBranchInput>
+    connectOrCreate?: BranchPaymentConfigCreateOrConnectWithoutBranchInput
+    upsert?: BranchPaymentConfigUpsertWithoutBranchInput
+    disconnect?: BranchPaymentConfigWhereInput | boolean
+    delete?: BranchPaymentConfigWhereInput | boolean
+    connect?: BranchPaymentConfigWhereUniqueInput
+    update?: XOR<XOR<BranchPaymentConfigUpdateToOneWithWhereWithoutBranchInput, BranchPaymentConfigUpdateWithoutBranchInput>, BranchPaymentConfigUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type PaymentTransactionUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<PaymentTransactionCreateWithoutBranchInput, PaymentTransactionUncheckedCreateWithoutBranchInput> | PaymentTransactionCreateWithoutBranchInput[] | PaymentTransactionUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutBranchInput | PaymentTransactionCreateOrConnectWithoutBranchInput[]
+    upsert?: PaymentTransactionUpsertWithWhereUniqueWithoutBranchInput | PaymentTransactionUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: PaymentTransactionCreateManyBranchInputEnvelope
+    set?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    disconnect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    delete?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    update?: PaymentTransactionUpdateWithWhereUniqueWithoutBranchInput | PaymentTransactionUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: PaymentTransactionUpdateManyWithWhereWithoutBranchInput | PaymentTransactionUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: PaymentTransactionScalarWhereInput | PaymentTransactionScalarWhereInput[]
+  }
+
+  export type CashShiftUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<CashShiftCreateWithoutBranchInput, CashShiftUncheckedCreateWithoutBranchInput> | CashShiftCreateWithoutBranchInput[] | CashShiftUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: CashShiftCreateOrConnectWithoutBranchInput | CashShiftCreateOrConnectWithoutBranchInput[]
+    upsert?: CashShiftUpsertWithWhereUniqueWithoutBranchInput | CashShiftUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: CashShiftCreateManyBranchInputEnvelope
+    set?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    disconnect?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    delete?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    connect?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    update?: CashShiftUpdateWithWhereUniqueWithoutBranchInput | CashShiftUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: CashShiftUpdateManyWithWhereWithoutBranchInput | CashShiftUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: CashShiftScalarWhereInput | CashShiftScalarWhereInput[]
+  }
+
+  export type RefundRequestUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<RefundRequestCreateWithoutBranchInput, RefundRequestUncheckedCreateWithoutBranchInput> | RefundRequestCreateWithoutBranchInput[] | RefundRequestUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: RefundRequestCreateOrConnectWithoutBranchInput | RefundRequestCreateOrConnectWithoutBranchInput[]
+    upsert?: RefundRequestUpsertWithWhereUniqueWithoutBranchInput | RefundRequestUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: RefundRequestCreateManyBranchInputEnvelope
+    set?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    disconnect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    delete?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    update?: RefundRequestUpdateWithWhereUniqueWithoutBranchInput | RefundRequestUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: RefundRequestUpdateManyWithWhereWithoutBranchInput | RefundRequestUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: RefundRequestScalarWhereInput | RefundRequestScalarWhereInput[]
+  }
+
   export type UserUncheckedUpdateManyWithoutBranchNestedInput = {
     create?: XOR<UserCreateWithoutBranchInput, UserUncheckedCreateWithoutBranchInput> | UserCreateWithoutBranchInput[] | UserUncheckedCreateWithoutBranchInput[]
     connectOrCreate?: UserCreateOrConnectWithoutBranchInput | UserCreateOrConnectWithoutBranchInput[]
@@ -70999,6 +78892,58 @@ export namespace Prisma {
     delete?: BranchDiscountConfigWhereInput | boolean
     connect?: BranchDiscountConfigWhereUniqueInput
     update?: XOR<XOR<BranchDiscountConfigUpdateToOneWithWhereWithoutBranchInput, BranchDiscountConfigUpdateWithoutBranchInput>, BranchDiscountConfigUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput = {
+    create?: XOR<BranchPaymentConfigCreateWithoutBranchInput, BranchPaymentConfigUncheckedCreateWithoutBranchInput>
+    connectOrCreate?: BranchPaymentConfigCreateOrConnectWithoutBranchInput
+    upsert?: BranchPaymentConfigUpsertWithoutBranchInput
+    disconnect?: BranchPaymentConfigWhereInput | boolean
+    delete?: BranchPaymentConfigWhereInput | boolean
+    connect?: BranchPaymentConfigWhereUniqueInput
+    update?: XOR<XOR<BranchPaymentConfigUpdateToOneWithWhereWithoutBranchInput, BranchPaymentConfigUpdateWithoutBranchInput>, BranchPaymentConfigUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<PaymentTransactionCreateWithoutBranchInput, PaymentTransactionUncheckedCreateWithoutBranchInput> | PaymentTransactionCreateWithoutBranchInput[] | PaymentTransactionUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutBranchInput | PaymentTransactionCreateOrConnectWithoutBranchInput[]
+    upsert?: PaymentTransactionUpsertWithWhereUniqueWithoutBranchInput | PaymentTransactionUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: PaymentTransactionCreateManyBranchInputEnvelope
+    set?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    disconnect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    delete?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    update?: PaymentTransactionUpdateWithWhereUniqueWithoutBranchInput | PaymentTransactionUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: PaymentTransactionUpdateManyWithWhereWithoutBranchInput | PaymentTransactionUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: PaymentTransactionScalarWhereInput | PaymentTransactionScalarWhereInput[]
+  }
+
+  export type CashShiftUncheckedUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<CashShiftCreateWithoutBranchInput, CashShiftUncheckedCreateWithoutBranchInput> | CashShiftCreateWithoutBranchInput[] | CashShiftUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: CashShiftCreateOrConnectWithoutBranchInput | CashShiftCreateOrConnectWithoutBranchInput[]
+    upsert?: CashShiftUpsertWithWhereUniqueWithoutBranchInput | CashShiftUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: CashShiftCreateManyBranchInputEnvelope
+    set?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    disconnect?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    delete?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    connect?: CashShiftWhereUniqueInput | CashShiftWhereUniqueInput[]
+    update?: CashShiftUpdateWithWhereUniqueWithoutBranchInput | CashShiftUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: CashShiftUpdateManyWithWhereWithoutBranchInput | CashShiftUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: CashShiftScalarWhereInput | CashShiftScalarWhereInput[]
+  }
+
+  export type RefundRequestUncheckedUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<RefundRequestCreateWithoutBranchInput, RefundRequestUncheckedCreateWithoutBranchInput> | RefundRequestCreateWithoutBranchInput[] | RefundRequestUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: RefundRequestCreateOrConnectWithoutBranchInput | RefundRequestCreateOrConnectWithoutBranchInput[]
+    upsert?: RefundRequestUpsertWithWhereUniqueWithoutBranchInput | RefundRequestUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: RefundRequestCreateManyBranchInputEnvelope
+    set?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    disconnect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    delete?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    update?: RefundRequestUpdateWithWhereUniqueWithoutBranchInput | RefundRequestUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: RefundRequestUpdateManyWithWhereWithoutBranchInput | RefundRequestUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: RefundRequestScalarWhereInput | RefundRequestScalarWhereInput[]
   }
 
   export type BranchCreateNestedOneWithoutStaffActivityLogsInput = {
@@ -72045,6 +79990,20 @@ export namespace Prisma {
     connect?: ManualDiscountWhereUniqueInput
   }
 
+  export type PaymentTransactionCreateNestedManyWithoutBookingInput = {
+    create?: XOR<PaymentTransactionCreateWithoutBookingInput, PaymentTransactionUncheckedCreateWithoutBookingInput> | PaymentTransactionCreateWithoutBookingInput[] | PaymentTransactionUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutBookingInput | PaymentTransactionCreateOrConnectWithoutBookingInput[]
+    createMany?: PaymentTransactionCreateManyBookingInputEnvelope
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+  }
+
+  export type RefundRequestCreateNestedManyWithoutBookingInput = {
+    create?: XOR<RefundRequestCreateWithoutBookingInput, RefundRequestUncheckedCreateWithoutBookingInput> | RefundRequestCreateWithoutBookingInput[] | RefundRequestUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: RefundRequestCreateOrConnectWithoutBookingInput | RefundRequestCreateOrConnectWithoutBookingInput[]
+    createMany?: RefundRequestCreateManyBookingInputEnvelope
+    connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+  }
+
   export type BookingPhotoUncheckedCreateNestedManyWithoutBookingInput = {
     create?: XOR<BookingPhotoCreateWithoutBookingInput, BookingPhotoUncheckedCreateWithoutBookingInput> | BookingPhotoCreateWithoutBookingInput[] | BookingPhotoUncheckedCreateWithoutBookingInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutBookingInput | BookingPhotoCreateOrConnectWithoutBookingInput[]
@@ -72101,6 +80060,20 @@ export namespace Prisma {
     create?: XOR<ManualDiscountCreateWithoutBookingInput, ManualDiscountUncheckedCreateWithoutBookingInput>
     connectOrCreate?: ManualDiscountCreateOrConnectWithoutBookingInput
     connect?: ManualDiscountWhereUniqueInput
+  }
+
+  export type PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput = {
+    create?: XOR<PaymentTransactionCreateWithoutBookingInput, PaymentTransactionUncheckedCreateWithoutBookingInput> | PaymentTransactionCreateWithoutBookingInput[] | PaymentTransactionUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutBookingInput | PaymentTransactionCreateOrConnectWithoutBookingInput[]
+    createMany?: PaymentTransactionCreateManyBookingInputEnvelope
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+  }
+
+  export type RefundRequestUncheckedCreateNestedManyWithoutBookingInput = {
+    create?: XOR<RefundRequestCreateWithoutBookingInput, RefundRequestUncheckedCreateWithoutBookingInput> | RefundRequestCreateWithoutBookingInput[] | RefundRequestUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: RefundRequestCreateOrConnectWithoutBookingInput | RefundRequestCreateOrConnectWithoutBookingInput[]
+    createMany?: RefundRequestCreateManyBookingInputEnvelope
+    connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
   }
 
   export type NullableEnumRentalPeriodTypeFieldUpdateOperationsInput = {
@@ -72269,6 +80242,34 @@ export namespace Prisma {
     update?: XOR<XOR<ManualDiscountUpdateToOneWithWhereWithoutBookingInput, ManualDiscountUpdateWithoutBookingInput>, ManualDiscountUncheckedUpdateWithoutBookingInput>
   }
 
+  export type PaymentTransactionUpdateManyWithoutBookingNestedInput = {
+    create?: XOR<PaymentTransactionCreateWithoutBookingInput, PaymentTransactionUncheckedCreateWithoutBookingInput> | PaymentTransactionCreateWithoutBookingInput[] | PaymentTransactionUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutBookingInput | PaymentTransactionCreateOrConnectWithoutBookingInput[]
+    upsert?: PaymentTransactionUpsertWithWhereUniqueWithoutBookingInput | PaymentTransactionUpsertWithWhereUniqueWithoutBookingInput[]
+    createMany?: PaymentTransactionCreateManyBookingInputEnvelope
+    set?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    disconnect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    delete?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    update?: PaymentTransactionUpdateWithWhereUniqueWithoutBookingInput | PaymentTransactionUpdateWithWhereUniqueWithoutBookingInput[]
+    updateMany?: PaymentTransactionUpdateManyWithWhereWithoutBookingInput | PaymentTransactionUpdateManyWithWhereWithoutBookingInput[]
+    deleteMany?: PaymentTransactionScalarWhereInput | PaymentTransactionScalarWhereInput[]
+  }
+
+  export type RefundRequestUpdateManyWithoutBookingNestedInput = {
+    create?: XOR<RefundRequestCreateWithoutBookingInput, RefundRequestUncheckedCreateWithoutBookingInput> | RefundRequestCreateWithoutBookingInput[] | RefundRequestUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: RefundRequestCreateOrConnectWithoutBookingInput | RefundRequestCreateOrConnectWithoutBookingInput[]
+    upsert?: RefundRequestUpsertWithWhereUniqueWithoutBookingInput | RefundRequestUpsertWithWhereUniqueWithoutBookingInput[]
+    createMany?: RefundRequestCreateManyBookingInputEnvelope
+    set?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    disconnect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    delete?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    update?: RefundRequestUpdateWithWhereUniqueWithoutBookingInput | RefundRequestUpdateWithWhereUniqueWithoutBookingInput[]
+    updateMany?: RefundRequestUpdateManyWithWhereWithoutBookingInput | RefundRequestUpdateManyWithWhereWithoutBookingInput[]
+    deleteMany?: RefundRequestScalarWhereInput | RefundRequestScalarWhereInput[]
+  }
+
   export type BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput = {
     create?: XOR<BookingPhotoCreateWithoutBookingInput, BookingPhotoUncheckedCreateWithoutBookingInput> | BookingPhotoCreateWithoutBookingInput[] | BookingPhotoUncheckedCreateWithoutBookingInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutBookingInput | BookingPhotoCreateOrConnectWithoutBookingInput[]
@@ -72373,6 +80374,34 @@ export namespace Prisma {
     delete?: ManualDiscountWhereInput | boolean
     connect?: ManualDiscountWhereUniqueInput
     update?: XOR<XOR<ManualDiscountUpdateToOneWithWhereWithoutBookingInput, ManualDiscountUpdateWithoutBookingInput>, ManualDiscountUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput = {
+    create?: XOR<PaymentTransactionCreateWithoutBookingInput, PaymentTransactionUncheckedCreateWithoutBookingInput> | PaymentTransactionCreateWithoutBookingInput[] | PaymentTransactionUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutBookingInput | PaymentTransactionCreateOrConnectWithoutBookingInput[]
+    upsert?: PaymentTransactionUpsertWithWhereUniqueWithoutBookingInput | PaymentTransactionUpsertWithWhereUniqueWithoutBookingInput[]
+    createMany?: PaymentTransactionCreateManyBookingInputEnvelope
+    set?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    disconnect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    delete?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    update?: PaymentTransactionUpdateWithWhereUniqueWithoutBookingInput | PaymentTransactionUpdateWithWhereUniqueWithoutBookingInput[]
+    updateMany?: PaymentTransactionUpdateManyWithWhereWithoutBookingInput | PaymentTransactionUpdateManyWithWhereWithoutBookingInput[]
+    deleteMany?: PaymentTransactionScalarWhereInput | PaymentTransactionScalarWhereInput[]
+  }
+
+  export type RefundRequestUncheckedUpdateManyWithoutBookingNestedInput = {
+    create?: XOR<RefundRequestCreateWithoutBookingInput, RefundRequestUncheckedCreateWithoutBookingInput> | RefundRequestCreateWithoutBookingInput[] | RefundRequestUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: RefundRequestCreateOrConnectWithoutBookingInput | RefundRequestCreateOrConnectWithoutBookingInput[]
+    upsert?: RefundRequestUpsertWithWhereUniqueWithoutBookingInput | RefundRequestUpsertWithWhereUniqueWithoutBookingInput[]
+    createMany?: RefundRequestCreateManyBookingInputEnvelope
+    set?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    disconnect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    delete?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+    update?: RefundRequestUpdateWithWhereUniqueWithoutBookingInput | RefundRequestUpdateWithWhereUniqueWithoutBookingInput[]
+    updateMany?: RefundRequestUpdateManyWithWhereWithoutBookingInput | RefundRequestUpdateManyWithWhereWithoutBookingInput[]
+    deleteMany?: RefundRequestScalarWhereInput | RefundRequestScalarWhereInput[]
   }
 
   export type VehicleCreateNestedOneWithoutBookingItemsInput = {
@@ -73404,6 +81433,292 @@ export namespace Prisma {
     update?: XOR<XOR<DiscountApplicationUpdateToOneWithWhereWithoutManualDiscountInput, DiscountApplicationUpdateWithoutManualDiscountInput>, DiscountApplicationUncheckedUpdateWithoutManualDiscountInput>
   }
 
+  export type BranchCreateNestedOneWithoutPaymentConfigInput = {
+    create?: XOR<BranchCreateWithoutPaymentConfigInput, BranchUncheckedCreateWithoutPaymentConfigInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutPaymentConfigInput
+    connect?: BranchWhereUniqueInput
+  }
+
+  export type BranchUpdateOneRequiredWithoutPaymentConfigNestedInput = {
+    create?: XOR<BranchCreateWithoutPaymentConfigInput, BranchUncheckedCreateWithoutPaymentConfigInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutPaymentConfigInput
+    upsert?: BranchUpsertWithoutPaymentConfigInput
+    connect?: BranchWhereUniqueInput
+    update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutPaymentConfigInput, BranchUpdateWithoutPaymentConfigInput>, BranchUncheckedUpdateWithoutPaymentConfigInput>
+  }
+
+  export type BookingCreateNestedOneWithoutPaymentTransactionsInput = {
+    create?: XOR<BookingCreateWithoutPaymentTransactionsInput, BookingUncheckedCreateWithoutPaymentTransactionsInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutPaymentTransactionsInput
+    connect?: BookingWhereUniqueInput
+  }
+
+  export type BranchCreateNestedOneWithoutPaymentTransactionsInput = {
+    create?: XOR<BranchCreateWithoutPaymentTransactionsInput, BranchUncheckedCreateWithoutPaymentTransactionsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutPaymentTransactionsInput
+    connect?: BranchWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutCollectedPaymentsInput = {
+    create?: XOR<UserCreateWithoutCollectedPaymentsInput, UserUncheckedCreateWithoutCollectedPaymentsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutCollectedPaymentsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutConfirmedPaymentsInput = {
+    create?: XOR<UserCreateWithoutConfirmedPaymentsInput, UserUncheckedCreateWithoutConfirmedPaymentsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutConfirmedPaymentsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutRejectedPaymentsInput = {
+    create?: XOR<UserCreateWithoutRejectedPaymentsInput, UserUncheckedCreateWithoutRejectedPaymentsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutRejectedPaymentsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type CashShiftCreateNestedOneWithoutTransactionsInput = {
+    create?: XOR<CashShiftCreateWithoutTransactionsInput, CashShiftUncheckedCreateWithoutTransactionsInput>
+    connectOrCreate?: CashShiftCreateOrConnectWithoutTransactionsInput
+    connect?: CashShiftWhereUniqueInput
+  }
+
+  export type EnumPaymentPurposeFieldUpdateOperationsInput = {
+    set?: $Enums.PaymentPurpose
+  }
+
+  export type EnumPaymentMethodFieldUpdateOperationsInput = {
+    set?: $Enums.PaymentMethod
+  }
+
+  export type EnumPaymentTransactionStatusFieldUpdateOperationsInput = {
+    set?: $Enums.PaymentTransactionStatus
+  }
+
+  export type BookingUpdateOneRequiredWithoutPaymentTransactionsNestedInput = {
+    create?: XOR<BookingCreateWithoutPaymentTransactionsInput, BookingUncheckedCreateWithoutPaymentTransactionsInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutPaymentTransactionsInput
+    upsert?: BookingUpsertWithoutPaymentTransactionsInput
+    connect?: BookingWhereUniqueInput
+    update?: XOR<XOR<BookingUpdateToOneWithWhereWithoutPaymentTransactionsInput, BookingUpdateWithoutPaymentTransactionsInput>, BookingUncheckedUpdateWithoutPaymentTransactionsInput>
+  }
+
+  export type BranchUpdateOneRequiredWithoutPaymentTransactionsNestedInput = {
+    create?: XOR<BranchCreateWithoutPaymentTransactionsInput, BranchUncheckedCreateWithoutPaymentTransactionsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutPaymentTransactionsInput
+    upsert?: BranchUpsertWithoutPaymentTransactionsInput
+    connect?: BranchWhereUniqueInput
+    update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutPaymentTransactionsInput, BranchUpdateWithoutPaymentTransactionsInput>, BranchUncheckedUpdateWithoutPaymentTransactionsInput>
+  }
+
+  export type UserUpdateOneWithoutCollectedPaymentsNestedInput = {
+    create?: XOR<UserCreateWithoutCollectedPaymentsInput, UserUncheckedCreateWithoutCollectedPaymentsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutCollectedPaymentsInput
+    upsert?: UserUpsertWithoutCollectedPaymentsInput
+    disconnect?: UserWhereInput | boolean
+    delete?: UserWhereInput | boolean
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutCollectedPaymentsInput, UserUpdateWithoutCollectedPaymentsInput>, UserUncheckedUpdateWithoutCollectedPaymentsInput>
+  }
+
+  export type UserUpdateOneWithoutConfirmedPaymentsNestedInput = {
+    create?: XOR<UserCreateWithoutConfirmedPaymentsInput, UserUncheckedCreateWithoutConfirmedPaymentsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutConfirmedPaymentsInput
+    upsert?: UserUpsertWithoutConfirmedPaymentsInput
+    disconnect?: UserWhereInput | boolean
+    delete?: UserWhereInput | boolean
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutConfirmedPaymentsInput, UserUpdateWithoutConfirmedPaymentsInput>, UserUncheckedUpdateWithoutConfirmedPaymentsInput>
+  }
+
+  export type UserUpdateOneWithoutRejectedPaymentsNestedInput = {
+    create?: XOR<UserCreateWithoutRejectedPaymentsInput, UserUncheckedCreateWithoutRejectedPaymentsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutRejectedPaymentsInput
+    upsert?: UserUpsertWithoutRejectedPaymentsInput
+    disconnect?: UserWhereInput | boolean
+    delete?: UserWhereInput | boolean
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutRejectedPaymentsInput, UserUpdateWithoutRejectedPaymentsInput>, UserUncheckedUpdateWithoutRejectedPaymentsInput>
+  }
+
+  export type CashShiftUpdateOneWithoutTransactionsNestedInput = {
+    create?: XOR<CashShiftCreateWithoutTransactionsInput, CashShiftUncheckedCreateWithoutTransactionsInput>
+    connectOrCreate?: CashShiftCreateOrConnectWithoutTransactionsInput
+    upsert?: CashShiftUpsertWithoutTransactionsInput
+    disconnect?: CashShiftWhereInput | boolean
+    delete?: CashShiftWhereInput | boolean
+    connect?: CashShiftWhereUniqueInput
+    update?: XOR<XOR<CashShiftUpdateToOneWithWhereWithoutTransactionsInput, CashShiftUpdateWithoutTransactionsInput>, CashShiftUncheckedUpdateWithoutTransactionsInput>
+  }
+
+  export type BookingCreateNestedOneWithoutRefundRequestsInput = {
+    create?: XOR<BookingCreateWithoutRefundRequestsInput, BookingUncheckedCreateWithoutRefundRequestsInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutRefundRequestsInput
+    connect?: BookingWhereUniqueInput
+  }
+
+  export type BranchCreateNestedOneWithoutRefundRequestsInput = {
+    create?: XOR<BranchCreateWithoutRefundRequestsInput, BranchUncheckedCreateWithoutRefundRequestsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutRefundRequestsInput
+    connect?: BranchWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutRefundRequestsMadeInput = {
+    create?: XOR<UserCreateWithoutRefundRequestsMadeInput, UserUncheckedCreateWithoutRefundRequestsMadeInput>
+    connectOrCreate?: UserCreateOrConnectWithoutRefundRequestsMadeInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutRefundRequestsApprovedInput = {
+    create?: XOR<UserCreateWithoutRefundRequestsApprovedInput, UserUncheckedCreateWithoutRefundRequestsApprovedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutRefundRequestsApprovedInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutRefundRequestsCompletedInput = {
+    create?: XOR<UserCreateWithoutRefundRequestsCompletedInput, UserUncheckedCreateWithoutRefundRequestsCompletedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutRefundRequestsCompletedInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type EnumRefundStatusFieldUpdateOperationsInput = {
+    set?: $Enums.RefundStatus
+  }
+
+  export type BookingUpdateOneRequiredWithoutRefundRequestsNestedInput = {
+    create?: XOR<BookingCreateWithoutRefundRequestsInput, BookingUncheckedCreateWithoutRefundRequestsInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutRefundRequestsInput
+    upsert?: BookingUpsertWithoutRefundRequestsInput
+    connect?: BookingWhereUniqueInput
+    update?: XOR<XOR<BookingUpdateToOneWithWhereWithoutRefundRequestsInput, BookingUpdateWithoutRefundRequestsInput>, BookingUncheckedUpdateWithoutRefundRequestsInput>
+  }
+
+  export type BranchUpdateOneRequiredWithoutRefundRequestsNestedInput = {
+    create?: XOR<BranchCreateWithoutRefundRequestsInput, BranchUncheckedCreateWithoutRefundRequestsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutRefundRequestsInput
+    upsert?: BranchUpsertWithoutRefundRequestsInput
+    connect?: BranchWhereUniqueInput
+    update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutRefundRequestsInput, BranchUpdateWithoutRefundRequestsInput>, BranchUncheckedUpdateWithoutRefundRequestsInput>
+  }
+
+  export type UserUpdateOneRequiredWithoutRefundRequestsMadeNestedInput = {
+    create?: XOR<UserCreateWithoutRefundRequestsMadeInput, UserUncheckedCreateWithoutRefundRequestsMadeInput>
+    connectOrCreate?: UserCreateOrConnectWithoutRefundRequestsMadeInput
+    upsert?: UserUpsertWithoutRefundRequestsMadeInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutRefundRequestsMadeInput, UserUpdateWithoutRefundRequestsMadeInput>, UserUncheckedUpdateWithoutRefundRequestsMadeInput>
+  }
+
+  export type UserUpdateOneWithoutRefundRequestsApprovedNestedInput = {
+    create?: XOR<UserCreateWithoutRefundRequestsApprovedInput, UserUncheckedCreateWithoutRefundRequestsApprovedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutRefundRequestsApprovedInput
+    upsert?: UserUpsertWithoutRefundRequestsApprovedInput
+    disconnect?: UserWhereInput | boolean
+    delete?: UserWhereInput | boolean
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutRefundRequestsApprovedInput, UserUpdateWithoutRefundRequestsApprovedInput>, UserUncheckedUpdateWithoutRefundRequestsApprovedInput>
+  }
+
+  export type UserUpdateOneWithoutRefundRequestsCompletedNestedInput = {
+    create?: XOR<UserCreateWithoutRefundRequestsCompletedInput, UserUncheckedCreateWithoutRefundRequestsCompletedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutRefundRequestsCompletedInput
+    upsert?: UserUpsertWithoutRefundRequestsCompletedInput
+    disconnect?: UserWhereInput | boolean
+    delete?: UserWhereInput | boolean
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutRefundRequestsCompletedInput, UserUpdateWithoutRefundRequestsCompletedInput>, UserUncheckedUpdateWithoutRefundRequestsCompletedInput>
+  }
+
+  export type UserCreateNestedOneWithoutOpenShiftsInput = {
+    create?: XOR<UserCreateWithoutOpenShiftsInput, UserUncheckedCreateWithoutOpenShiftsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutOpenShiftsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type BranchCreateNestedOneWithoutCashShiftsInput = {
+    create?: XOR<BranchCreateWithoutCashShiftsInput, BranchUncheckedCreateWithoutCashShiftsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutCashShiftsInput
+    connect?: BranchWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutReconciledShiftsInput = {
+    create?: XOR<UserCreateWithoutReconciledShiftsInput, UserUncheckedCreateWithoutReconciledShiftsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutReconciledShiftsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type PaymentTransactionCreateNestedManyWithoutCashShiftInput = {
+    create?: XOR<PaymentTransactionCreateWithoutCashShiftInput, PaymentTransactionUncheckedCreateWithoutCashShiftInput> | PaymentTransactionCreateWithoutCashShiftInput[] | PaymentTransactionUncheckedCreateWithoutCashShiftInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutCashShiftInput | PaymentTransactionCreateOrConnectWithoutCashShiftInput[]
+    createMany?: PaymentTransactionCreateManyCashShiftInputEnvelope
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+  }
+
+  export type PaymentTransactionUncheckedCreateNestedManyWithoutCashShiftInput = {
+    create?: XOR<PaymentTransactionCreateWithoutCashShiftInput, PaymentTransactionUncheckedCreateWithoutCashShiftInput> | PaymentTransactionCreateWithoutCashShiftInput[] | PaymentTransactionUncheckedCreateWithoutCashShiftInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutCashShiftInput | PaymentTransactionCreateOrConnectWithoutCashShiftInput[]
+    createMany?: PaymentTransactionCreateManyCashShiftInputEnvelope
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+  }
+
+  export type EnumCashShiftStatusFieldUpdateOperationsInput = {
+    set?: $Enums.CashShiftStatus
+  }
+
+  export type UserUpdateOneRequiredWithoutOpenShiftsNestedInput = {
+    create?: XOR<UserCreateWithoutOpenShiftsInput, UserUncheckedCreateWithoutOpenShiftsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutOpenShiftsInput
+    upsert?: UserUpsertWithoutOpenShiftsInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutOpenShiftsInput, UserUpdateWithoutOpenShiftsInput>, UserUncheckedUpdateWithoutOpenShiftsInput>
+  }
+
+  export type BranchUpdateOneRequiredWithoutCashShiftsNestedInput = {
+    create?: XOR<BranchCreateWithoutCashShiftsInput, BranchUncheckedCreateWithoutCashShiftsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutCashShiftsInput
+    upsert?: BranchUpsertWithoutCashShiftsInput
+    connect?: BranchWhereUniqueInput
+    update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutCashShiftsInput, BranchUpdateWithoutCashShiftsInput>, BranchUncheckedUpdateWithoutCashShiftsInput>
+  }
+
+  export type UserUpdateOneWithoutReconciledShiftsNestedInput = {
+    create?: XOR<UserCreateWithoutReconciledShiftsInput, UserUncheckedCreateWithoutReconciledShiftsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutReconciledShiftsInput
+    upsert?: UserUpsertWithoutReconciledShiftsInput
+    disconnect?: UserWhereInput | boolean
+    delete?: UserWhereInput | boolean
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutReconciledShiftsInput, UserUpdateWithoutReconciledShiftsInput>, UserUncheckedUpdateWithoutReconciledShiftsInput>
+  }
+
+  export type PaymentTransactionUpdateManyWithoutCashShiftNestedInput = {
+    create?: XOR<PaymentTransactionCreateWithoutCashShiftInput, PaymentTransactionUncheckedCreateWithoutCashShiftInput> | PaymentTransactionCreateWithoutCashShiftInput[] | PaymentTransactionUncheckedCreateWithoutCashShiftInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutCashShiftInput | PaymentTransactionCreateOrConnectWithoutCashShiftInput[]
+    upsert?: PaymentTransactionUpsertWithWhereUniqueWithoutCashShiftInput | PaymentTransactionUpsertWithWhereUniqueWithoutCashShiftInput[]
+    createMany?: PaymentTransactionCreateManyCashShiftInputEnvelope
+    set?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    disconnect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    delete?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    update?: PaymentTransactionUpdateWithWhereUniqueWithoutCashShiftInput | PaymentTransactionUpdateWithWhereUniqueWithoutCashShiftInput[]
+    updateMany?: PaymentTransactionUpdateManyWithWhereWithoutCashShiftInput | PaymentTransactionUpdateManyWithWhereWithoutCashShiftInput[]
+    deleteMany?: PaymentTransactionScalarWhereInput | PaymentTransactionScalarWhereInput[]
+  }
+
+  export type PaymentTransactionUncheckedUpdateManyWithoutCashShiftNestedInput = {
+    create?: XOR<PaymentTransactionCreateWithoutCashShiftInput, PaymentTransactionUncheckedCreateWithoutCashShiftInput> | PaymentTransactionCreateWithoutCashShiftInput[] | PaymentTransactionUncheckedCreateWithoutCashShiftInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutCashShiftInput | PaymentTransactionCreateOrConnectWithoutCashShiftInput[]
+    upsert?: PaymentTransactionUpsertWithWhereUniqueWithoutCashShiftInput | PaymentTransactionUpsertWithWhereUniqueWithoutCashShiftInput[]
+    createMany?: PaymentTransactionCreateManyCashShiftInputEnvelope
+    set?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    disconnect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    delete?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    update?: PaymentTransactionUpdateWithWhereUniqueWithoutCashShiftInput | PaymentTransactionUpdateWithWhereUniqueWithoutCashShiftInput[]
+    updateMany?: PaymentTransactionUpdateManyWithWhereWithoutCashShiftInput | PaymentTransactionUpdateManyWithWhereWithoutCashShiftInput[]
+    deleteMany?: PaymentTransactionScalarWhereInput | PaymentTransactionScalarWhereInput[]
+  }
+
   export type NestedIntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -74179,6 +82494,91 @@ export namespace Prisma {
     _max?: NestedEnumManualDiscountStatusFilter<$PrismaModel>
   }
 
+  export type NestedEnumPaymentPurposeFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentPurpose | EnumPaymentPurposeFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentPurpose[] | ListEnumPaymentPurposeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentPurpose[] | ListEnumPaymentPurposeFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentPurposeFilter<$PrismaModel> | $Enums.PaymentPurpose
+  }
+
+  export type NestedEnumPaymentMethodFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentMethod | EnumPaymentMethodFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentMethodFilter<$PrismaModel> | $Enums.PaymentMethod
+  }
+
+  export type NestedEnumPaymentTransactionStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentTransactionStatus | EnumPaymentTransactionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentTransactionStatus[] | ListEnumPaymentTransactionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentTransactionStatus[] | ListEnumPaymentTransactionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentTransactionStatusFilter<$PrismaModel> | $Enums.PaymentTransactionStatus
+  }
+
+  export type NestedEnumPaymentPurposeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentPurpose | EnumPaymentPurposeFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentPurpose[] | ListEnumPaymentPurposeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentPurpose[] | ListEnumPaymentPurposeFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentPurposeWithAggregatesFilter<$PrismaModel> | $Enums.PaymentPurpose
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumPaymentPurposeFilter<$PrismaModel>
+    _max?: NestedEnumPaymentPurposeFilter<$PrismaModel>
+  }
+
+  export type NestedEnumPaymentMethodWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentMethod | EnumPaymentMethodFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentMethodWithAggregatesFilter<$PrismaModel> | $Enums.PaymentMethod
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumPaymentMethodFilter<$PrismaModel>
+    _max?: NestedEnumPaymentMethodFilter<$PrismaModel>
+  }
+
+  export type NestedEnumPaymentTransactionStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentTransactionStatus | EnumPaymentTransactionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentTransactionStatus[] | ListEnumPaymentTransactionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentTransactionStatus[] | ListEnumPaymentTransactionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentTransactionStatusWithAggregatesFilter<$PrismaModel> | $Enums.PaymentTransactionStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumPaymentTransactionStatusFilter<$PrismaModel>
+    _max?: NestedEnumPaymentTransactionStatusFilter<$PrismaModel>
+  }
+
+  export type NestedEnumRefundStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.RefundStatus | EnumRefundStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.RefundStatus[] | ListEnumRefundStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.RefundStatus[] | ListEnumRefundStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumRefundStatusFilter<$PrismaModel> | $Enums.RefundStatus
+  }
+
+  export type NestedEnumRefundStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.RefundStatus | EnumRefundStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.RefundStatus[] | ListEnumRefundStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.RefundStatus[] | ListEnumRefundStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumRefundStatusWithAggregatesFilter<$PrismaModel> | $Enums.RefundStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumRefundStatusFilter<$PrismaModel>
+    _max?: NestedEnumRefundStatusFilter<$PrismaModel>
+  }
+
+  export type NestedEnumCashShiftStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.CashShiftStatus | EnumCashShiftStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CashShiftStatus[] | ListEnumCashShiftStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CashShiftStatus[] | ListEnumCashShiftStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumCashShiftStatusFilter<$PrismaModel> | $Enums.CashShiftStatus
+  }
+
+  export type NestedEnumCashShiftStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.CashShiftStatus | EnumCashShiftStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CashShiftStatus[] | ListEnumCashShiftStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CashShiftStatus[] | ListEnumCashShiftStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumCashShiftStatusWithAggregatesFilter<$PrismaModel> | $Enums.CashShiftStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumCashShiftStatusFilter<$PrismaModel>
+    _max?: NestedEnumCashShiftStatusFilter<$PrismaModel>
+  }
+
   export type BranchCreateWithoutUsersInput = {
     publicId: string
     name: string
@@ -74199,6 +82599,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutUsersInput = {
@@ -74222,6 +82626,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutUsersInput = {
@@ -74511,6 +82919,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCreatedByInput = {
@@ -74574,6 +82984,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCreatedByInput = {
@@ -74843,6 +83255,420 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type PaymentTransactionCreateWithoutCollectedByInput = {
+    publicId: string
+    idempotencyKey: string
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status?: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal | DecimalJsLike | number | string
+    cashAmount?: Decimal | DecimalJsLike | number | string
+    onlineAmount?: Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: string | null
+    onlineGateway?: string | null
+    collectedAt?: Date | string | null
+    confirmedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    booking: BookingCreateNestedOneWithoutPaymentTransactionsInput
+    branch: BranchCreateNestedOneWithoutPaymentTransactionsInput
+    confirmedBy?: UserCreateNestedOneWithoutConfirmedPaymentsInput
+    rejectedBy?: UserCreateNestedOneWithoutRejectedPaymentsInput
+    cashShift?: CashShiftCreateNestedOneWithoutTransactionsInput
+  }
+
+  export type PaymentTransactionUncheckedCreateWithoutCollectedByInput = {
+    id?: number
+    publicId: string
+    idempotencyKey: string
+    bookingId: number
+    branchId: number
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status?: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal | DecimalJsLike | number | string
+    cashAmount?: Decimal | DecimalJsLike | number | string
+    onlineAmount?: Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: string | null
+    onlineGateway?: string | null
+    collectedAt?: Date | string | null
+    confirmedById?: number | null
+    confirmedAt?: Date | string | null
+    rejectedById?: number | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    cashShiftId?: number | null
+    notes?: string | null
+    createdAt?: Date | string
+  }
+
+  export type PaymentTransactionCreateOrConnectWithoutCollectedByInput = {
+    where: PaymentTransactionWhereUniqueInput
+    create: XOR<PaymentTransactionCreateWithoutCollectedByInput, PaymentTransactionUncheckedCreateWithoutCollectedByInput>
+  }
+
+  export type PaymentTransactionCreateManyCollectedByInputEnvelope = {
+    data: PaymentTransactionCreateManyCollectedByInput | PaymentTransactionCreateManyCollectedByInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type PaymentTransactionCreateWithoutConfirmedByInput = {
+    publicId: string
+    idempotencyKey: string
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status?: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal | DecimalJsLike | number | string
+    cashAmount?: Decimal | DecimalJsLike | number | string
+    onlineAmount?: Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: string | null
+    onlineGateway?: string | null
+    collectedAt?: Date | string | null
+    confirmedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    booking: BookingCreateNestedOneWithoutPaymentTransactionsInput
+    branch: BranchCreateNestedOneWithoutPaymentTransactionsInput
+    collectedBy?: UserCreateNestedOneWithoutCollectedPaymentsInput
+    rejectedBy?: UserCreateNestedOneWithoutRejectedPaymentsInput
+    cashShift?: CashShiftCreateNestedOneWithoutTransactionsInput
+  }
+
+  export type PaymentTransactionUncheckedCreateWithoutConfirmedByInput = {
+    id?: number
+    publicId: string
+    idempotencyKey: string
+    bookingId: number
+    branchId: number
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status?: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal | DecimalJsLike | number | string
+    cashAmount?: Decimal | DecimalJsLike | number | string
+    onlineAmount?: Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: string | null
+    onlineGateway?: string | null
+    collectedById?: number | null
+    collectedAt?: Date | string | null
+    confirmedAt?: Date | string | null
+    rejectedById?: number | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    cashShiftId?: number | null
+    notes?: string | null
+    createdAt?: Date | string
+  }
+
+  export type PaymentTransactionCreateOrConnectWithoutConfirmedByInput = {
+    where: PaymentTransactionWhereUniqueInput
+    create: XOR<PaymentTransactionCreateWithoutConfirmedByInput, PaymentTransactionUncheckedCreateWithoutConfirmedByInput>
+  }
+
+  export type PaymentTransactionCreateManyConfirmedByInputEnvelope = {
+    data: PaymentTransactionCreateManyConfirmedByInput | PaymentTransactionCreateManyConfirmedByInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type PaymentTransactionCreateWithoutRejectedByInput = {
+    publicId: string
+    idempotencyKey: string
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status?: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal | DecimalJsLike | number | string
+    cashAmount?: Decimal | DecimalJsLike | number | string
+    onlineAmount?: Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: string | null
+    onlineGateway?: string | null
+    collectedAt?: Date | string | null
+    confirmedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    booking: BookingCreateNestedOneWithoutPaymentTransactionsInput
+    branch: BranchCreateNestedOneWithoutPaymentTransactionsInput
+    collectedBy?: UserCreateNestedOneWithoutCollectedPaymentsInput
+    confirmedBy?: UserCreateNestedOneWithoutConfirmedPaymentsInput
+    cashShift?: CashShiftCreateNestedOneWithoutTransactionsInput
+  }
+
+  export type PaymentTransactionUncheckedCreateWithoutRejectedByInput = {
+    id?: number
+    publicId: string
+    idempotencyKey: string
+    bookingId: number
+    branchId: number
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status?: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal | DecimalJsLike | number | string
+    cashAmount?: Decimal | DecimalJsLike | number | string
+    onlineAmount?: Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: string | null
+    onlineGateway?: string | null
+    collectedById?: number | null
+    collectedAt?: Date | string | null
+    confirmedById?: number | null
+    confirmedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    cashShiftId?: number | null
+    notes?: string | null
+    createdAt?: Date | string
+  }
+
+  export type PaymentTransactionCreateOrConnectWithoutRejectedByInput = {
+    where: PaymentTransactionWhereUniqueInput
+    create: XOR<PaymentTransactionCreateWithoutRejectedByInput, PaymentTransactionUncheckedCreateWithoutRejectedByInput>
+  }
+
+  export type PaymentTransactionCreateManyRejectedByInputEnvelope = {
+    data: PaymentTransactionCreateManyRejectedByInput | PaymentTransactionCreateManyRejectedByInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type CashShiftCreateWithoutEmployeeInput = {
+    publicId: string
+    status?: $Enums.CashShiftStatus
+    openedAt?: Date | string
+    closedAt?: Date | string | null
+    expectedTotal?: Decimal | DecimalJsLike | number | string
+    actualTotal?: Decimal | DecimalJsLike | number | string
+    discrepancy?: Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: string | null
+    reconciledAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    branch: BranchCreateNestedOneWithoutCashShiftsInput
+    reconciledBy?: UserCreateNestedOneWithoutReconciledShiftsInput
+    transactions?: PaymentTransactionCreateNestedManyWithoutCashShiftInput
+  }
+
+  export type CashShiftUncheckedCreateWithoutEmployeeInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    status?: $Enums.CashShiftStatus
+    openedAt?: Date | string
+    closedAt?: Date | string | null
+    expectedTotal?: Decimal | DecimalJsLike | number | string
+    actualTotal?: Decimal | DecimalJsLike | number | string
+    discrepancy?: Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: string | null
+    reconciledById?: number | null
+    reconciledAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    transactions?: PaymentTransactionUncheckedCreateNestedManyWithoutCashShiftInput
+  }
+
+  export type CashShiftCreateOrConnectWithoutEmployeeInput = {
+    where: CashShiftWhereUniqueInput
+    create: XOR<CashShiftCreateWithoutEmployeeInput, CashShiftUncheckedCreateWithoutEmployeeInput>
+  }
+
+  export type CashShiftCreateManyEmployeeInputEnvelope = {
+    data: CashShiftCreateManyEmployeeInput | CashShiftCreateManyEmployeeInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type CashShiftCreateWithoutReconciledByInput = {
+    publicId: string
+    status?: $Enums.CashShiftStatus
+    openedAt?: Date | string
+    closedAt?: Date | string | null
+    expectedTotal?: Decimal | DecimalJsLike | number | string
+    actualTotal?: Decimal | DecimalJsLike | number | string
+    discrepancy?: Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: string | null
+    reconciledAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    employee: UserCreateNestedOneWithoutOpenShiftsInput
+    branch: BranchCreateNestedOneWithoutCashShiftsInput
+    transactions?: PaymentTransactionCreateNestedManyWithoutCashShiftInput
+  }
+
+  export type CashShiftUncheckedCreateWithoutReconciledByInput = {
+    id?: number
+    publicId: string
+    employeeId: number
+    branchId: number
+    status?: $Enums.CashShiftStatus
+    openedAt?: Date | string
+    closedAt?: Date | string | null
+    expectedTotal?: Decimal | DecimalJsLike | number | string
+    actualTotal?: Decimal | DecimalJsLike | number | string
+    discrepancy?: Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: string | null
+    reconciledAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    transactions?: PaymentTransactionUncheckedCreateNestedManyWithoutCashShiftInput
+  }
+
+  export type CashShiftCreateOrConnectWithoutReconciledByInput = {
+    where: CashShiftWhereUniqueInput
+    create: XOR<CashShiftCreateWithoutReconciledByInput, CashShiftUncheckedCreateWithoutReconciledByInput>
+  }
+
+  export type CashShiftCreateManyReconciledByInputEnvelope = {
+    data: CashShiftCreateManyReconciledByInput | CashShiftCreateManyReconciledByInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type RefundRequestCreateWithoutRequestedByInput = {
+    publicId: string
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    method: $Enums.PaymentMethod
+    status?: $Enums.RefundStatus
+    approvedAt?: Date | string | null
+    completedAt?: Date | string | null
+    onlineTransactionRef?: string | null
+    rejectionReason?: string | null
+    rejectedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutRefundRequestsInput
+    branch: BranchCreateNestedOneWithoutRefundRequestsInput
+    approvedBy?: UserCreateNestedOneWithoutRefundRequestsApprovedInput
+    completedBy?: UserCreateNestedOneWithoutRefundRequestsCompletedInput
+  }
+
+  export type RefundRequestUncheckedCreateWithoutRequestedByInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    method: $Enums.PaymentMethod
+    status?: $Enums.RefundStatus
+    approvedById?: number | null
+    approvedAt?: Date | string | null
+    completedById?: number | null
+    completedAt?: Date | string | null
+    onlineTransactionRef?: string | null
+    rejectionReason?: string | null
+    rejectedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RefundRequestCreateOrConnectWithoutRequestedByInput = {
+    where: RefundRequestWhereUniqueInput
+    create: XOR<RefundRequestCreateWithoutRequestedByInput, RefundRequestUncheckedCreateWithoutRequestedByInput>
+  }
+
+  export type RefundRequestCreateManyRequestedByInputEnvelope = {
+    data: RefundRequestCreateManyRequestedByInput | RefundRequestCreateManyRequestedByInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type RefundRequestCreateWithoutApprovedByInput = {
+    publicId: string
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    method: $Enums.PaymentMethod
+    status?: $Enums.RefundStatus
+    approvedAt?: Date | string | null
+    completedAt?: Date | string | null
+    onlineTransactionRef?: string | null
+    rejectionReason?: string | null
+    rejectedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutRefundRequestsInput
+    branch: BranchCreateNestedOneWithoutRefundRequestsInput
+    requestedBy: UserCreateNestedOneWithoutRefundRequestsMadeInput
+    completedBy?: UserCreateNestedOneWithoutRefundRequestsCompletedInput
+  }
+
+  export type RefundRequestUncheckedCreateWithoutApprovedByInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    method: $Enums.PaymentMethod
+    status?: $Enums.RefundStatus
+    requestedById: number
+    approvedAt?: Date | string | null
+    completedById?: number | null
+    completedAt?: Date | string | null
+    onlineTransactionRef?: string | null
+    rejectionReason?: string | null
+    rejectedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RefundRequestCreateOrConnectWithoutApprovedByInput = {
+    where: RefundRequestWhereUniqueInput
+    create: XOR<RefundRequestCreateWithoutApprovedByInput, RefundRequestUncheckedCreateWithoutApprovedByInput>
+  }
+
+  export type RefundRequestCreateManyApprovedByInputEnvelope = {
+    data: RefundRequestCreateManyApprovedByInput | RefundRequestCreateManyApprovedByInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type RefundRequestCreateWithoutCompletedByInput = {
+    publicId: string
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    method: $Enums.PaymentMethod
+    status?: $Enums.RefundStatus
+    approvedAt?: Date | string | null
+    completedAt?: Date | string | null
+    onlineTransactionRef?: string | null
+    rejectionReason?: string | null
+    rejectedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutRefundRequestsInput
+    branch: BranchCreateNestedOneWithoutRefundRequestsInput
+    requestedBy: UserCreateNestedOneWithoutRefundRequestsMadeInput
+    approvedBy?: UserCreateNestedOneWithoutRefundRequestsApprovedInput
+  }
+
+  export type RefundRequestUncheckedCreateWithoutCompletedByInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    method: $Enums.PaymentMethod
+    status?: $Enums.RefundStatus
+    requestedById: number
+    approvedById?: number | null
+    approvedAt?: Date | string | null
+    completedAt?: Date | string | null
+    onlineTransactionRef?: string | null
+    rejectionReason?: string | null
+    rejectedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RefundRequestCreateOrConnectWithoutCompletedByInput = {
+    where: RefundRequestWhereUniqueInput
+    create: XOR<RefundRequestCreateWithoutCompletedByInput, RefundRequestUncheckedCreateWithoutCompletedByInput>
+  }
+
+  export type RefundRequestCreateManyCompletedByInputEnvelope = {
+    data: RefundRequestCreateManyCompletedByInput | RefundRequestCreateManyCompletedByInput[]
+    skipDuplicates?: boolean
+  }
+
   export type BranchUpsertWithoutUsersInput = {
     update: XOR<BranchUpdateWithoutUsersInput, BranchUncheckedUpdateWithoutUsersInput>
     create: XOR<BranchCreateWithoutUsersInput, BranchUncheckedCreateWithoutUsersInput>
@@ -74874,6 +83700,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutUsersInput = {
@@ -74897,6 +83727,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type EmailVerificationOtpUpsertWithWhereUniqueWithoutUserInput = {
@@ -75323,6 +84157,208 @@ export namespace Prisma {
     data: XOR<ManualDiscountUpdateManyMutationInput, ManualDiscountUncheckedUpdateManyWithoutApprovedByInput>
   }
 
+  export type PaymentTransactionUpsertWithWhereUniqueWithoutCollectedByInput = {
+    where: PaymentTransactionWhereUniqueInput
+    update: XOR<PaymentTransactionUpdateWithoutCollectedByInput, PaymentTransactionUncheckedUpdateWithoutCollectedByInput>
+    create: XOR<PaymentTransactionCreateWithoutCollectedByInput, PaymentTransactionUncheckedCreateWithoutCollectedByInput>
+  }
+
+  export type PaymentTransactionUpdateWithWhereUniqueWithoutCollectedByInput = {
+    where: PaymentTransactionWhereUniqueInput
+    data: XOR<PaymentTransactionUpdateWithoutCollectedByInput, PaymentTransactionUncheckedUpdateWithoutCollectedByInput>
+  }
+
+  export type PaymentTransactionUpdateManyWithWhereWithoutCollectedByInput = {
+    where: PaymentTransactionScalarWhereInput
+    data: XOR<PaymentTransactionUpdateManyMutationInput, PaymentTransactionUncheckedUpdateManyWithoutCollectedByInput>
+  }
+
+  export type PaymentTransactionScalarWhereInput = {
+    AND?: PaymentTransactionScalarWhereInput | PaymentTransactionScalarWhereInput[]
+    OR?: PaymentTransactionScalarWhereInput[]
+    NOT?: PaymentTransactionScalarWhereInput | PaymentTransactionScalarWhereInput[]
+    id?: IntFilter<"PaymentTransaction"> | number
+    publicId?: StringFilter<"PaymentTransaction"> | string
+    idempotencyKey?: StringFilter<"PaymentTransaction"> | string
+    bookingId?: IntFilter<"PaymentTransaction"> | number
+    branchId?: IntFilter<"PaymentTransaction"> | number
+    purpose?: EnumPaymentPurposeFilter<"PaymentTransaction"> | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFilter<"PaymentTransaction"> | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFilter<"PaymentTransaction"> | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFilter<"PaymentTransaction"> | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFilter<"PaymentTransaction"> | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFilter<"PaymentTransaction"> | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: StringNullableFilter<"PaymentTransaction"> | string | null
+    onlineGateway?: StringNullableFilter<"PaymentTransaction"> | string | null
+    collectedById?: IntNullableFilter<"PaymentTransaction"> | number | null
+    collectedAt?: DateTimeNullableFilter<"PaymentTransaction"> | Date | string | null
+    confirmedById?: IntNullableFilter<"PaymentTransaction"> | number | null
+    confirmedAt?: DateTimeNullableFilter<"PaymentTransaction"> | Date | string | null
+    rejectedById?: IntNullableFilter<"PaymentTransaction"> | number | null
+    rejectedAt?: DateTimeNullableFilter<"PaymentTransaction"> | Date | string | null
+    rejectionReason?: StringNullableFilter<"PaymentTransaction"> | string | null
+    cashShiftId?: IntNullableFilter<"PaymentTransaction"> | number | null
+    notes?: StringNullableFilter<"PaymentTransaction"> | string | null
+    createdAt?: DateTimeFilter<"PaymentTransaction"> | Date | string
+  }
+
+  export type PaymentTransactionUpsertWithWhereUniqueWithoutConfirmedByInput = {
+    where: PaymentTransactionWhereUniqueInput
+    update: XOR<PaymentTransactionUpdateWithoutConfirmedByInput, PaymentTransactionUncheckedUpdateWithoutConfirmedByInput>
+    create: XOR<PaymentTransactionCreateWithoutConfirmedByInput, PaymentTransactionUncheckedCreateWithoutConfirmedByInput>
+  }
+
+  export type PaymentTransactionUpdateWithWhereUniqueWithoutConfirmedByInput = {
+    where: PaymentTransactionWhereUniqueInput
+    data: XOR<PaymentTransactionUpdateWithoutConfirmedByInput, PaymentTransactionUncheckedUpdateWithoutConfirmedByInput>
+  }
+
+  export type PaymentTransactionUpdateManyWithWhereWithoutConfirmedByInput = {
+    where: PaymentTransactionScalarWhereInput
+    data: XOR<PaymentTransactionUpdateManyMutationInput, PaymentTransactionUncheckedUpdateManyWithoutConfirmedByInput>
+  }
+
+  export type PaymentTransactionUpsertWithWhereUniqueWithoutRejectedByInput = {
+    where: PaymentTransactionWhereUniqueInput
+    update: XOR<PaymentTransactionUpdateWithoutRejectedByInput, PaymentTransactionUncheckedUpdateWithoutRejectedByInput>
+    create: XOR<PaymentTransactionCreateWithoutRejectedByInput, PaymentTransactionUncheckedCreateWithoutRejectedByInput>
+  }
+
+  export type PaymentTransactionUpdateWithWhereUniqueWithoutRejectedByInput = {
+    where: PaymentTransactionWhereUniqueInput
+    data: XOR<PaymentTransactionUpdateWithoutRejectedByInput, PaymentTransactionUncheckedUpdateWithoutRejectedByInput>
+  }
+
+  export type PaymentTransactionUpdateManyWithWhereWithoutRejectedByInput = {
+    where: PaymentTransactionScalarWhereInput
+    data: XOR<PaymentTransactionUpdateManyMutationInput, PaymentTransactionUncheckedUpdateManyWithoutRejectedByInput>
+  }
+
+  export type CashShiftUpsertWithWhereUniqueWithoutEmployeeInput = {
+    where: CashShiftWhereUniqueInput
+    update: XOR<CashShiftUpdateWithoutEmployeeInput, CashShiftUncheckedUpdateWithoutEmployeeInput>
+    create: XOR<CashShiftCreateWithoutEmployeeInput, CashShiftUncheckedCreateWithoutEmployeeInput>
+  }
+
+  export type CashShiftUpdateWithWhereUniqueWithoutEmployeeInput = {
+    where: CashShiftWhereUniqueInput
+    data: XOR<CashShiftUpdateWithoutEmployeeInput, CashShiftUncheckedUpdateWithoutEmployeeInput>
+  }
+
+  export type CashShiftUpdateManyWithWhereWithoutEmployeeInput = {
+    where: CashShiftScalarWhereInput
+    data: XOR<CashShiftUpdateManyMutationInput, CashShiftUncheckedUpdateManyWithoutEmployeeInput>
+  }
+
+  export type CashShiftScalarWhereInput = {
+    AND?: CashShiftScalarWhereInput | CashShiftScalarWhereInput[]
+    OR?: CashShiftScalarWhereInput[]
+    NOT?: CashShiftScalarWhereInput | CashShiftScalarWhereInput[]
+    id?: IntFilter<"CashShift"> | number
+    publicId?: StringFilter<"CashShift"> | string
+    employeeId?: IntFilter<"CashShift"> | number
+    branchId?: IntFilter<"CashShift"> | number
+    status?: EnumCashShiftStatusFilter<"CashShift"> | $Enums.CashShiftStatus
+    openedAt?: DateTimeFilter<"CashShift"> | Date | string
+    closedAt?: DateTimeNullableFilter<"CashShift"> | Date | string | null
+    expectedTotal?: DecimalFilter<"CashShift"> | Decimal | DecimalJsLike | number | string
+    actualTotal?: DecimalFilter<"CashShift"> | Decimal | DecimalJsLike | number | string
+    discrepancy?: DecimalFilter<"CashShift"> | Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: StringNullableFilter<"CashShift"> | string | null
+    reconciledById?: IntNullableFilter<"CashShift"> | number | null
+    reconciledAt?: DateTimeNullableFilter<"CashShift"> | Date | string | null
+    createdAt?: DateTimeFilter<"CashShift"> | Date | string
+    updatedAt?: DateTimeFilter<"CashShift"> | Date | string
+  }
+
+  export type CashShiftUpsertWithWhereUniqueWithoutReconciledByInput = {
+    where: CashShiftWhereUniqueInput
+    update: XOR<CashShiftUpdateWithoutReconciledByInput, CashShiftUncheckedUpdateWithoutReconciledByInput>
+    create: XOR<CashShiftCreateWithoutReconciledByInput, CashShiftUncheckedCreateWithoutReconciledByInput>
+  }
+
+  export type CashShiftUpdateWithWhereUniqueWithoutReconciledByInput = {
+    where: CashShiftWhereUniqueInput
+    data: XOR<CashShiftUpdateWithoutReconciledByInput, CashShiftUncheckedUpdateWithoutReconciledByInput>
+  }
+
+  export type CashShiftUpdateManyWithWhereWithoutReconciledByInput = {
+    where: CashShiftScalarWhereInput
+    data: XOR<CashShiftUpdateManyMutationInput, CashShiftUncheckedUpdateManyWithoutReconciledByInput>
+  }
+
+  export type RefundRequestUpsertWithWhereUniqueWithoutRequestedByInput = {
+    where: RefundRequestWhereUniqueInput
+    update: XOR<RefundRequestUpdateWithoutRequestedByInput, RefundRequestUncheckedUpdateWithoutRequestedByInput>
+    create: XOR<RefundRequestCreateWithoutRequestedByInput, RefundRequestUncheckedCreateWithoutRequestedByInput>
+  }
+
+  export type RefundRequestUpdateWithWhereUniqueWithoutRequestedByInput = {
+    where: RefundRequestWhereUniqueInput
+    data: XOR<RefundRequestUpdateWithoutRequestedByInput, RefundRequestUncheckedUpdateWithoutRequestedByInput>
+  }
+
+  export type RefundRequestUpdateManyWithWhereWithoutRequestedByInput = {
+    where: RefundRequestScalarWhereInput
+    data: XOR<RefundRequestUpdateManyMutationInput, RefundRequestUncheckedUpdateManyWithoutRequestedByInput>
+  }
+
+  export type RefundRequestScalarWhereInput = {
+    AND?: RefundRequestScalarWhereInput | RefundRequestScalarWhereInput[]
+    OR?: RefundRequestScalarWhereInput[]
+    NOT?: RefundRequestScalarWhereInput | RefundRequestScalarWhereInput[]
+    id?: IntFilter<"RefundRequest"> | number
+    publicId?: StringFilter<"RefundRequest"> | string
+    bookingId?: IntFilter<"RefundRequest"> | number
+    branchId?: IntFilter<"RefundRequest"> | number
+    amount?: DecimalFilter<"RefundRequest"> | Decimal | DecimalJsLike | number | string
+    reason?: StringFilter<"RefundRequest"> | string
+    method?: EnumPaymentMethodFilter<"RefundRequest"> | $Enums.PaymentMethod
+    status?: EnumRefundStatusFilter<"RefundRequest"> | $Enums.RefundStatus
+    requestedById?: IntFilter<"RefundRequest"> | number
+    approvedById?: IntNullableFilter<"RefundRequest"> | number | null
+    approvedAt?: DateTimeNullableFilter<"RefundRequest"> | Date | string | null
+    completedById?: IntNullableFilter<"RefundRequest"> | number | null
+    completedAt?: DateTimeNullableFilter<"RefundRequest"> | Date | string | null
+    onlineTransactionRef?: StringNullableFilter<"RefundRequest"> | string | null
+    rejectionReason?: StringNullableFilter<"RefundRequest"> | string | null
+    rejectedAt?: DateTimeNullableFilter<"RefundRequest"> | Date | string | null
+    createdAt?: DateTimeFilter<"RefundRequest"> | Date | string
+    updatedAt?: DateTimeFilter<"RefundRequest"> | Date | string
+  }
+
+  export type RefundRequestUpsertWithWhereUniqueWithoutApprovedByInput = {
+    where: RefundRequestWhereUniqueInput
+    update: XOR<RefundRequestUpdateWithoutApprovedByInput, RefundRequestUncheckedUpdateWithoutApprovedByInput>
+    create: XOR<RefundRequestCreateWithoutApprovedByInput, RefundRequestUncheckedCreateWithoutApprovedByInput>
+  }
+
+  export type RefundRequestUpdateWithWhereUniqueWithoutApprovedByInput = {
+    where: RefundRequestWhereUniqueInput
+    data: XOR<RefundRequestUpdateWithoutApprovedByInput, RefundRequestUncheckedUpdateWithoutApprovedByInput>
+  }
+
+  export type RefundRequestUpdateManyWithWhereWithoutApprovedByInput = {
+    where: RefundRequestScalarWhereInput
+    data: XOR<RefundRequestUpdateManyMutationInput, RefundRequestUncheckedUpdateManyWithoutApprovedByInput>
+  }
+
+  export type RefundRequestUpsertWithWhereUniqueWithoutCompletedByInput = {
+    where: RefundRequestWhereUniqueInput
+    update: XOR<RefundRequestUpdateWithoutCompletedByInput, RefundRequestUncheckedUpdateWithoutCompletedByInput>
+    create: XOR<RefundRequestCreateWithoutCompletedByInput, RefundRequestUncheckedCreateWithoutCompletedByInput>
+  }
+
+  export type RefundRequestUpdateWithWhereUniqueWithoutCompletedByInput = {
+    where: RefundRequestWhereUniqueInput
+    data: XOR<RefundRequestUpdateWithoutCompletedByInput, RefundRequestUncheckedUpdateWithoutCompletedByInput>
+  }
+
+  export type RefundRequestUpdateManyWithWhereWithoutCompletedByInput = {
+    where: RefundRequestScalarWhereInput
+    data: XOR<RefundRequestUpdateManyMutationInput, RefundRequestUncheckedUpdateManyWithoutCompletedByInput>
+  }
+
   export type UserCreateWithoutProvidersInput = {
     publicId: string
     name: string
@@ -75346,6 +84382,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
     manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
     manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserUncheckedCreateWithoutProvidersInput = {
@@ -75372,6 +84416,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
     manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
     manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserCreateOrConnectWithoutProvidersInput = {
@@ -75413,6 +84465,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
     manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
     manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutProvidersInput = {
@@ -75439,6 +84499,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
     manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
     manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
   }
 
   export type UserCreateWithoutEmailOtpsInput = {
@@ -75464,6 +84532,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
     manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
     manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserUncheckedCreateWithoutEmailOtpsInput = {
@@ -75490,6 +84566,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
     manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
     manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserCreateOrConnectWithoutEmailOtpsInput = {
@@ -75531,6 +84615,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
     manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
     manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutEmailOtpsInput = {
@@ -75557,6 +84649,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
     manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
     manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
   }
 
   export type UserCreateWithoutCustomerProfileInput = {
@@ -75582,6 +84682,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
     manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
     manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserUncheckedCreateWithoutCustomerProfileInput = {
@@ -75608,6 +84716,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
     manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
     manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserCreateOrConnectWithoutCustomerProfileInput = {
@@ -75702,6 +84818,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCustomerInput = {
@@ -75765,6 +84883,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCustomerInput = {
@@ -75854,6 +84974,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
     manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
     manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutCustomerProfileInput = {
@@ -75880,6 +85008,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
     manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
     manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
   }
 
   export type CustomerKycUpsertWithWhereUniqueWithoutCustomerInput = {
@@ -76244,6 +85380,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutKycFileInput = {
@@ -76307,6 +85445,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutKycFileInput = {
@@ -76594,6 +85734,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
     manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
     manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserUncheckedCreateWithoutBranchInput = {
@@ -76620,6 +85768,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
     manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
     manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserCreateOrConnectWithoutBranchInput = {
@@ -76755,6 +85911,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutBranchInput = {
@@ -76818,6 +85976,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutBranchInput = {
@@ -77192,6 +86352,193 @@ export namespace Prisma {
   export type BranchDiscountConfigCreateOrConnectWithoutBranchInput = {
     where: BranchDiscountConfigWhereUniqueInput
     create: XOR<BranchDiscountConfigCreateWithoutBranchInput, BranchDiscountConfigUncheckedCreateWithoutBranchInput>
+  }
+
+  export type BranchPaymentConfigCreateWithoutBranchInput = {
+    cashConfirmationEnabled?: boolean
+    blockProgressionUntilConfirmed?: boolean
+    maxCashPerEmployee?: Decimal | DecimalJsLike | number | string | null
+    requireShiftSettlement?: boolean
+    splitPaymentEnabled?: boolean
+    crossBranchSettlementEnabled?: boolean
+    refundApprovalRequired?: boolean
+    onlineRefundEnabled?: boolean
+    delayedCashAlertHours?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchPaymentConfigUncheckedCreateWithoutBranchInput = {
+    id?: number
+    cashConfirmationEnabled?: boolean
+    blockProgressionUntilConfirmed?: boolean
+    maxCashPerEmployee?: Decimal | DecimalJsLike | number | string | null
+    requireShiftSettlement?: boolean
+    splitPaymentEnabled?: boolean
+    crossBranchSettlementEnabled?: boolean
+    refundApprovalRequired?: boolean
+    onlineRefundEnabled?: boolean
+    delayedCashAlertHours?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchPaymentConfigCreateOrConnectWithoutBranchInput = {
+    where: BranchPaymentConfigWhereUniqueInput
+    create: XOR<BranchPaymentConfigCreateWithoutBranchInput, BranchPaymentConfigUncheckedCreateWithoutBranchInput>
+  }
+
+  export type PaymentTransactionCreateWithoutBranchInput = {
+    publicId: string
+    idempotencyKey: string
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status?: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal | DecimalJsLike | number | string
+    cashAmount?: Decimal | DecimalJsLike | number | string
+    onlineAmount?: Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: string | null
+    onlineGateway?: string | null
+    collectedAt?: Date | string | null
+    confirmedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    booking: BookingCreateNestedOneWithoutPaymentTransactionsInput
+    collectedBy?: UserCreateNestedOneWithoutCollectedPaymentsInput
+    confirmedBy?: UserCreateNestedOneWithoutConfirmedPaymentsInput
+    rejectedBy?: UserCreateNestedOneWithoutRejectedPaymentsInput
+    cashShift?: CashShiftCreateNestedOneWithoutTransactionsInput
+  }
+
+  export type PaymentTransactionUncheckedCreateWithoutBranchInput = {
+    id?: number
+    publicId: string
+    idempotencyKey: string
+    bookingId: number
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status?: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal | DecimalJsLike | number | string
+    cashAmount?: Decimal | DecimalJsLike | number | string
+    onlineAmount?: Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: string | null
+    onlineGateway?: string | null
+    collectedById?: number | null
+    collectedAt?: Date | string | null
+    confirmedById?: number | null
+    confirmedAt?: Date | string | null
+    rejectedById?: number | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    cashShiftId?: number | null
+    notes?: string | null
+    createdAt?: Date | string
+  }
+
+  export type PaymentTransactionCreateOrConnectWithoutBranchInput = {
+    where: PaymentTransactionWhereUniqueInput
+    create: XOR<PaymentTransactionCreateWithoutBranchInput, PaymentTransactionUncheckedCreateWithoutBranchInput>
+  }
+
+  export type PaymentTransactionCreateManyBranchInputEnvelope = {
+    data: PaymentTransactionCreateManyBranchInput | PaymentTransactionCreateManyBranchInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type CashShiftCreateWithoutBranchInput = {
+    publicId: string
+    status?: $Enums.CashShiftStatus
+    openedAt?: Date | string
+    closedAt?: Date | string | null
+    expectedTotal?: Decimal | DecimalJsLike | number | string
+    actualTotal?: Decimal | DecimalJsLike | number | string
+    discrepancy?: Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: string | null
+    reconciledAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    employee: UserCreateNestedOneWithoutOpenShiftsInput
+    reconciledBy?: UserCreateNestedOneWithoutReconciledShiftsInput
+    transactions?: PaymentTransactionCreateNestedManyWithoutCashShiftInput
+  }
+
+  export type CashShiftUncheckedCreateWithoutBranchInput = {
+    id?: number
+    publicId: string
+    employeeId: number
+    status?: $Enums.CashShiftStatus
+    openedAt?: Date | string
+    closedAt?: Date | string | null
+    expectedTotal?: Decimal | DecimalJsLike | number | string
+    actualTotal?: Decimal | DecimalJsLike | number | string
+    discrepancy?: Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: string | null
+    reconciledById?: number | null
+    reconciledAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    transactions?: PaymentTransactionUncheckedCreateNestedManyWithoutCashShiftInput
+  }
+
+  export type CashShiftCreateOrConnectWithoutBranchInput = {
+    where: CashShiftWhereUniqueInput
+    create: XOR<CashShiftCreateWithoutBranchInput, CashShiftUncheckedCreateWithoutBranchInput>
+  }
+
+  export type CashShiftCreateManyBranchInputEnvelope = {
+    data: CashShiftCreateManyBranchInput | CashShiftCreateManyBranchInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type RefundRequestCreateWithoutBranchInput = {
+    publicId: string
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    method: $Enums.PaymentMethod
+    status?: $Enums.RefundStatus
+    approvedAt?: Date | string | null
+    completedAt?: Date | string | null
+    onlineTransactionRef?: string | null
+    rejectionReason?: string | null
+    rejectedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutRefundRequestsInput
+    requestedBy: UserCreateNestedOneWithoutRefundRequestsMadeInput
+    approvedBy?: UserCreateNestedOneWithoutRefundRequestsApprovedInput
+    completedBy?: UserCreateNestedOneWithoutRefundRequestsCompletedInput
+  }
+
+  export type RefundRequestUncheckedCreateWithoutBranchInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    method: $Enums.PaymentMethod
+    status?: $Enums.RefundStatus
+    requestedById: number
+    approvedById?: number | null
+    approvedAt?: Date | string | null
+    completedById?: number | null
+    completedAt?: Date | string | null
+    onlineTransactionRef?: string | null
+    rejectionReason?: string | null
+    rejectedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RefundRequestCreateOrConnectWithoutBranchInput = {
+    where: RefundRequestWhereUniqueInput
+    create: XOR<RefundRequestCreateWithoutBranchInput, RefundRequestUncheckedCreateWithoutBranchInput>
+  }
+
+  export type RefundRequestCreateManyBranchInputEnvelope = {
+    data: RefundRequestCreateManyBranchInput | RefundRequestCreateManyBranchInput[]
+    skipDuplicates?: boolean
   }
 
   export type UserUpsertWithWhereUniqueWithoutBranchInput = {
@@ -77622,6 +86969,94 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type BranchPaymentConfigUpsertWithoutBranchInput = {
+    update: XOR<BranchPaymentConfigUpdateWithoutBranchInput, BranchPaymentConfigUncheckedUpdateWithoutBranchInput>
+    create: XOR<BranchPaymentConfigCreateWithoutBranchInput, BranchPaymentConfigUncheckedCreateWithoutBranchInput>
+    where?: BranchPaymentConfigWhereInput
+  }
+
+  export type BranchPaymentConfigUpdateToOneWithWhereWithoutBranchInput = {
+    where?: BranchPaymentConfigWhereInput
+    data: XOR<BranchPaymentConfigUpdateWithoutBranchInput, BranchPaymentConfigUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type BranchPaymentConfigUpdateWithoutBranchInput = {
+    cashConfirmationEnabled?: BoolFieldUpdateOperationsInput | boolean
+    blockProgressionUntilConfirmed?: BoolFieldUpdateOperationsInput | boolean
+    maxCashPerEmployee?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    requireShiftSettlement?: BoolFieldUpdateOperationsInput | boolean
+    splitPaymentEnabled?: BoolFieldUpdateOperationsInput | boolean
+    crossBranchSettlementEnabled?: BoolFieldUpdateOperationsInput | boolean
+    refundApprovalRequired?: BoolFieldUpdateOperationsInput | boolean
+    onlineRefundEnabled?: BoolFieldUpdateOperationsInput | boolean
+    delayedCashAlertHours?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchPaymentConfigUncheckedUpdateWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    cashConfirmationEnabled?: BoolFieldUpdateOperationsInput | boolean
+    blockProgressionUntilConfirmed?: BoolFieldUpdateOperationsInput | boolean
+    maxCashPerEmployee?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    requireShiftSettlement?: BoolFieldUpdateOperationsInput | boolean
+    splitPaymentEnabled?: BoolFieldUpdateOperationsInput | boolean
+    crossBranchSettlementEnabled?: BoolFieldUpdateOperationsInput | boolean
+    refundApprovalRequired?: BoolFieldUpdateOperationsInput | boolean
+    onlineRefundEnabled?: BoolFieldUpdateOperationsInput | boolean
+    delayedCashAlertHours?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaymentTransactionUpsertWithWhereUniqueWithoutBranchInput = {
+    where: PaymentTransactionWhereUniqueInput
+    update: XOR<PaymentTransactionUpdateWithoutBranchInput, PaymentTransactionUncheckedUpdateWithoutBranchInput>
+    create: XOR<PaymentTransactionCreateWithoutBranchInput, PaymentTransactionUncheckedCreateWithoutBranchInput>
+  }
+
+  export type PaymentTransactionUpdateWithWhereUniqueWithoutBranchInput = {
+    where: PaymentTransactionWhereUniqueInput
+    data: XOR<PaymentTransactionUpdateWithoutBranchInput, PaymentTransactionUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type PaymentTransactionUpdateManyWithWhereWithoutBranchInput = {
+    where: PaymentTransactionScalarWhereInput
+    data: XOR<PaymentTransactionUpdateManyMutationInput, PaymentTransactionUncheckedUpdateManyWithoutBranchInput>
+  }
+
+  export type CashShiftUpsertWithWhereUniqueWithoutBranchInput = {
+    where: CashShiftWhereUniqueInput
+    update: XOR<CashShiftUpdateWithoutBranchInput, CashShiftUncheckedUpdateWithoutBranchInput>
+    create: XOR<CashShiftCreateWithoutBranchInput, CashShiftUncheckedCreateWithoutBranchInput>
+  }
+
+  export type CashShiftUpdateWithWhereUniqueWithoutBranchInput = {
+    where: CashShiftWhereUniqueInput
+    data: XOR<CashShiftUpdateWithoutBranchInput, CashShiftUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type CashShiftUpdateManyWithWhereWithoutBranchInput = {
+    where: CashShiftScalarWhereInput
+    data: XOR<CashShiftUpdateManyMutationInput, CashShiftUncheckedUpdateManyWithoutBranchInput>
+  }
+
+  export type RefundRequestUpsertWithWhereUniqueWithoutBranchInput = {
+    where: RefundRequestWhereUniqueInput
+    update: XOR<RefundRequestUpdateWithoutBranchInput, RefundRequestUncheckedUpdateWithoutBranchInput>
+    create: XOR<RefundRequestCreateWithoutBranchInput, RefundRequestUncheckedCreateWithoutBranchInput>
+  }
+
+  export type RefundRequestUpdateWithWhereUniqueWithoutBranchInput = {
+    where: RefundRequestWhereUniqueInput
+    data: XOR<RefundRequestUpdateWithoutBranchInput, RefundRequestUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type RefundRequestUpdateManyWithWhereWithoutBranchInput = {
+    where: RefundRequestScalarWhereInput
+    data: XOR<RefundRequestUpdateManyMutationInput, RefundRequestUncheckedUpdateManyWithoutBranchInput>
+  }
+
   export type BranchCreateWithoutStaffActivityLogsInput = {
     publicId: string
     name: string
@@ -77642,6 +87077,10 @@ export namespace Prisma {
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutStaffActivityLogsInput = {
@@ -77665,6 +87104,10 @@ export namespace Prisma {
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutStaffActivityLogsInput = {
@@ -77703,6 +87146,10 @@ export namespace Prisma {
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutStaffActivityLogsInput = {
@@ -77726,6 +87173,10 @@ export namespace Prisma {
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchCreateWithoutPricingSettingInput = {
@@ -77748,6 +87199,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPricingSettingInput = {
@@ -77771,6 +87226,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPricingSettingInput = {
@@ -77809,6 +87268,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPricingSettingInput = {
@@ -77832,6 +87295,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type PricingDiscountSlabCreateWithoutCategoryInput = {
@@ -78164,6 +87631,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutCaptureConfigsInput = {
@@ -78187,6 +87658,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutCaptureConfigsInput = {
@@ -78255,6 +87730,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutCaptureConfigsInput = {
@@ -78278,6 +87757,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutCaptureConfigsInput = {
@@ -78336,6 +87819,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutVehiclesInput = {
@@ -78359,6 +87846,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutVehiclesInput = {
@@ -78743,6 +88234,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutVehiclesInput = {
@@ -78766,6 +88261,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutVehiclesInput = {
@@ -79320,6 +88819,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutBranchPricingDefaultsInput = {
@@ -79343,6 +88846,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutBranchPricingDefaultsInput = {
@@ -79411,6 +88918,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutBranchPricingDefaultsInput = {
@@ -79434,6 +88945,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutBranchPricingDefaultsInput = {
@@ -79998,6 +89513,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPricingDiscountSlabsInput = {
@@ -80021,6 +89540,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPricingDiscountSlabsInput = {
@@ -80089,6 +89612,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPricingDiscountSlabsInput = {
@@ -80112,6 +89639,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutPricingDiscountSlabsInput = {
@@ -80170,6 +89701,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutCategoryDepositSettingsInput = {
@@ -80193,6 +89728,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutCategoryDepositSettingsInput = {
@@ -80261,6 +89800,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutCategoryDepositSettingsInput = {
@@ -80284,6 +89827,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutCategoryDepositSettingsInput = {
@@ -80418,6 +89965,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutBookingsInput = {
@@ -80441,6 +89992,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutBookingsInput = {
@@ -80471,6 +90026,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
     manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
     manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserUncheckedCreateWithoutBookingsCreatedInput = {
@@ -80497,6 +90060,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
     manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
     manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserCreateOrConnectWithoutBookingsCreatedInput = {
@@ -80920,6 +90491,114 @@ export namespace Prisma {
     create: XOR<ManualDiscountCreateWithoutBookingInput, ManualDiscountUncheckedCreateWithoutBookingInput>
   }
 
+  export type PaymentTransactionCreateWithoutBookingInput = {
+    publicId: string
+    idempotencyKey: string
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status?: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal | DecimalJsLike | number | string
+    cashAmount?: Decimal | DecimalJsLike | number | string
+    onlineAmount?: Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: string | null
+    onlineGateway?: string | null
+    collectedAt?: Date | string | null
+    confirmedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    branch: BranchCreateNestedOneWithoutPaymentTransactionsInput
+    collectedBy?: UserCreateNestedOneWithoutCollectedPaymentsInput
+    confirmedBy?: UserCreateNestedOneWithoutConfirmedPaymentsInput
+    rejectedBy?: UserCreateNestedOneWithoutRejectedPaymentsInput
+    cashShift?: CashShiftCreateNestedOneWithoutTransactionsInput
+  }
+
+  export type PaymentTransactionUncheckedCreateWithoutBookingInput = {
+    id?: number
+    publicId: string
+    idempotencyKey: string
+    branchId: number
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status?: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal | DecimalJsLike | number | string
+    cashAmount?: Decimal | DecimalJsLike | number | string
+    onlineAmount?: Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: string | null
+    onlineGateway?: string | null
+    collectedById?: number | null
+    collectedAt?: Date | string | null
+    confirmedById?: number | null
+    confirmedAt?: Date | string | null
+    rejectedById?: number | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    cashShiftId?: number | null
+    notes?: string | null
+    createdAt?: Date | string
+  }
+
+  export type PaymentTransactionCreateOrConnectWithoutBookingInput = {
+    where: PaymentTransactionWhereUniqueInput
+    create: XOR<PaymentTransactionCreateWithoutBookingInput, PaymentTransactionUncheckedCreateWithoutBookingInput>
+  }
+
+  export type PaymentTransactionCreateManyBookingInputEnvelope = {
+    data: PaymentTransactionCreateManyBookingInput | PaymentTransactionCreateManyBookingInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type RefundRequestCreateWithoutBookingInput = {
+    publicId: string
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    method: $Enums.PaymentMethod
+    status?: $Enums.RefundStatus
+    approvedAt?: Date | string | null
+    completedAt?: Date | string | null
+    onlineTransactionRef?: string | null
+    rejectionReason?: string | null
+    rejectedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    branch: BranchCreateNestedOneWithoutRefundRequestsInput
+    requestedBy: UserCreateNestedOneWithoutRefundRequestsMadeInput
+    approvedBy?: UserCreateNestedOneWithoutRefundRequestsApprovedInput
+    completedBy?: UserCreateNestedOneWithoutRefundRequestsCompletedInput
+  }
+
+  export type RefundRequestUncheckedCreateWithoutBookingInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    method: $Enums.PaymentMethod
+    status?: $Enums.RefundStatus
+    requestedById: number
+    approvedById?: number | null
+    approvedAt?: Date | string | null
+    completedById?: number | null
+    completedAt?: Date | string | null
+    onlineTransactionRef?: string | null
+    rejectionReason?: string | null
+    rejectedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RefundRequestCreateOrConnectWithoutBookingInput = {
+    where: RefundRequestWhereUniqueInput
+    create: XOR<RefundRequestCreateWithoutBookingInput, RefundRequestUncheckedCreateWithoutBookingInput>
+  }
+
+  export type RefundRequestCreateManyBookingInputEnvelope = {
+    data: RefundRequestCreateManyBookingInput | RefundRequestCreateManyBookingInput[]
+    skipDuplicates?: boolean
+  }
+
   export type FileObjectUpsertWithoutBookingKycsInput = {
     update: XOR<FileObjectUpdateWithoutBookingKycsInput, FileObjectUncheckedUpdateWithoutBookingKycsInput>
     create: XOR<FileObjectCreateWithoutBookingKycsInput, FileObjectUncheckedCreateWithoutBookingKycsInput>
@@ -81039,6 +90718,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutBookingsInput = {
@@ -81062,6 +90745,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type UserUpsertWithoutBookingsCreatedInput = {
@@ -81098,6 +90785,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
     manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
     manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutBookingsCreatedInput = {
@@ -81124,6 +90819,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
     manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
     manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
   }
 
   export type BookingPhotoUpsertWithWhereUniqueWithoutBookingInput = {
@@ -81494,6 +91197,38 @@ export namespace Prisma {
     application?: DiscountApplicationUncheckedUpdateOneWithoutManualDiscountNestedInput
   }
 
+  export type PaymentTransactionUpsertWithWhereUniqueWithoutBookingInput = {
+    where: PaymentTransactionWhereUniqueInput
+    update: XOR<PaymentTransactionUpdateWithoutBookingInput, PaymentTransactionUncheckedUpdateWithoutBookingInput>
+    create: XOR<PaymentTransactionCreateWithoutBookingInput, PaymentTransactionUncheckedCreateWithoutBookingInput>
+  }
+
+  export type PaymentTransactionUpdateWithWhereUniqueWithoutBookingInput = {
+    where: PaymentTransactionWhereUniqueInput
+    data: XOR<PaymentTransactionUpdateWithoutBookingInput, PaymentTransactionUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type PaymentTransactionUpdateManyWithWhereWithoutBookingInput = {
+    where: PaymentTransactionScalarWhereInput
+    data: XOR<PaymentTransactionUpdateManyMutationInput, PaymentTransactionUncheckedUpdateManyWithoutBookingInput>
+  }
+
+  export type RefundRequestUpsertWithWhereUniqueWithoutBookingInput = {
+    where: RefundRequestWhereUniqueInput
+    update: XOR<RefundRequestUpdateWithoutBookingInput, RefundRequestUncheckedUpdateWithoutBookingInput>
+    create: XOR<RefundRequestCreateWithoutBookingInput, RefundRequestUncheckedCreateWithoutBookingInput>
+  }
+
+  export type RefundRequestUpdateWithWhereUniqueWithoutBookingInput = {
+    where: RefundRequestWhereUniqueInput
+    data: XOR<RefundRequestUpdateWithoutBookingInput, RefundRequestUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type RefundRequestUpdateManyWithWhereWithoutBookingInput = {
+    where: RefundRequestScalarWhereInput
+    data: XOR<RefundRequestUpdateManyMutationInput, RefundRequestUncheckedUpdateManyWithoutBookingInput>
+  }
+
   export type VehicleCreateWithoutBookingItemsInput = {
     publicId: string
     make: string
@@ -81612,6 +91347,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutItemsInput = {
@@ -81675,6 +91412,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutItemsInput = {
@@ -81817,6 +91556,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutItemsInput = {
@@ -81880,6 +91621,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingCreateWithoutPhotosInput = {
@@ -81942,6 +91685,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutPhotosInput = {
@@ -82005,6 +91750,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutPhotosInput = {
@@ -82153,6 +91900,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutPhotosInput = {
@@ -82216,6 +91965,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type FileObjectUpsertWithoutBookingPhotosInput = {
@@ -82360,6 +92111,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDamagesInput = {
@@ -82423,6 +92176,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDamagesInput = {
@@ -82511,6 +92266,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
     manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
     manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserUncheckedCreateWithoutApprovedDamageReportsInput = {
@@ -82537,6 +92300,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
     manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
     manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserCreateOrConnectWithoutApprovedDamageReportsInput = {
@@ -82644,6 +92415,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDamagesInput = {
@@ -82707,6 +92480,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type VehicleUpsertWithoutDamageReportsInput = {
@@ -82807,6 +92582,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
     manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
     manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutApprovedDamageReportsInput = {
@@ -82833,6 +92616,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
     manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
     manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
   }
 
   export type BookingPhotoUpsertWithWhereUniqueWithoutDamageReportInput = {
@@ -82911,6 +92702,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDepositInput = {
@@ -82974,6 +92767,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDepositInput = {
@@ -83052,6 +92847,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDepositInput = {
@@ -83115,6 +92912,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type InvoiceCreateWithoutPaymentsInput = {
@@ -83293,6 +93092,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutInvoiceInput = {
@@ -83356,6 +93157,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutInvoiceInput = {
@@ -83528,6 +93331,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutInvoiceInput = {
@@ -83591,6 +93396,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type InvoiceItemUpsertWithWhereUniqueWithoutInvoiceInput = {
@@ -83756,6 +93563,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
     manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
     manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserUncheckedCreateWithoutActorAuditLogsInput = {
@@ -83782,6 +93597,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
     manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
     manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserCreateOrConnectWithoutActorAuditLogsInput = {
@@ -83812,6 +93635,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
     manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
     manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserUncheckedCreateWithoutApproverAuditLogsInput = {
@@ -83838,6 +93669,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
     manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
     manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserCreateOrConnectWithoutApproverAuditLogsInput = {
@@ -83865,6 +93704,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutAuditLogsInput = {
@@ -83888,6 +93731,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutAuditLogsInput = {
@@ -83929,6 +93776,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
     manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
     manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutActorAuditLogsInput = {
@@ -83955,6 +93810,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
     manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
     manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
   }
 
   export type UserUpsertWithoutApproverAuditLogsInput = {
@@ -83991,6 +93854,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
     manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
     manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutApproverAuditLogsInput = {
@@ -84017,6 +93888,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
     manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
     manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
   }
 
   export type BranchUpsertWithoutAuditLogsInput = {
@@ -84050,6 +93929,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutAuditLogsInput = {
@@ -84073,6 +93956,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchCreateWithoutGstRuleInput = {
@@ -84095,6 +93982,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutGstRuleInput = {
@@ -84118,6 +94009,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutGstRuleInput = {
@@ -84156,6 +94051,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutGstRuleInput = {
@@ -84179,6 +94078,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BookingCreateWithoutCancellationInvoiceInput = {
@@ -84241,6 +94144,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCancellationInvoiceInput = {
@@ -84304,6 +94209,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCancellationInvoiceInput = {
@@ -84458,6 +94365,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCancellationInvoiceInput = {
@@ -84521,6 +94430,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type CustomerUpsertWithoutCancellationInvoicesInput = {
@@ -84717,6 +94628,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutFeatureFlagsInput = {
@@ -84740,6 +94655,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutFeatureFlagsInput = {
@@ -84810,6 +94729,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutFeatureFlagsInput = {
@@ -84833,6 +94756,10 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type FeatureFlagUpsertWithoutBranchFlagsInput = {
@@ -85125,6 +95052,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutVehicleSwapsInput = {
@@ -85188,6 +95117,8 @@ export namespace Prisma {
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutVehicleSwapsInput = {
@@ -85334,6 +95265,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
     manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
     manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserUncheckedCreateWithoutVehicleSwapsInput = {
@@ -85360,6 +95299,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
     manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
     manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserCreateOrConnectWithoutVehicleSwapsInput = {
@@ -85438,6 +95385,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutVehicleSwapsInput = {
@@ -85501,6 +95450,8 @@ export namespace Prisma {
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type VehicleUpsertWithoutSwapsAsOriginalInput = {
@@ -85665,6 +95616,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
     manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
     manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutVehicleSwapsInput = {
@@ -85691,6 +95650,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
     manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
     manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
   }
 
   export type UserCreateWithoutDiscountRulesCreatedInput = {
@@ -85716,6 +95683,14 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
     manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
     manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserUncheckedCreateWithoutDiscountRulesCreatedInput = {
@@ -85742,6 +95717,14 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
     manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
     manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserCreateOrConnectWithoutDiscountRulesCreatedInput = {
@@ -85836,6 +95819,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDiscountRuleInput = {
@@ -85899,6 +95884,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDiscountRuleInput = {
@@ -85992,6 +95979,14 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
     manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
     manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutDiscountRulesCreatedInput = {
@@ -86018,6 +96013,14 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
     manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
     manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
   }
 
   export type CouponUsageLogUpsertWithWhereUniqueWithoutDiscountRuleInput = {
@@ -86124,6 +96127,10 @@ export namespace Prisma {
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutDurationDiscountSlabsInput = {
@@ -86147,6 +96154,10 @@ export namespace Prisma {
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutDurationDiscountSlabsInput = {
@@ -86185,6 +96196,10 @@ export namespace Prisma {
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutDurationDiscountSlabsInput = {
@@ -86208,6 +96223,10 @@ export namespace Prisma {
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchCreateWithoutDiscountConfigInput = {
@@ -86230,6 +96249,10 @@ export namespace Prisma {
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutDiscountConfigInput = {
@@ -86253,6 +96276,10 @@ export namespace Prisma {
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutDiscountConfigInput = {
@@ -86291,6 +96318,10 @@ export namespace Prisma {
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutDiscountConfigInput = {
@@ -86314,6 +96345,10 @@ export namespace Prisma {
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BookingCreateWithoutDiscountApplicationInput = {
@@ -86376,6 +96411,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDiscountApplicationInput = {
@@ -86439,6 +96476,8 @@ export namespace Prisma {
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDiscountApplicationInput = {
@@ -86641,6 +96680,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDiscountApplicationInput = {
@@ -86704,6 +96745,8 @@ export namespace Prisma {
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type DiscountRuleUpsertWithoutApplicationsInput = {
@@ -87043,6 +97086,14 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
     discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
     manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserUncheckedCreateWithoutManualDiscountsIssuedInput = {
@@ -87069,6 +97120,14 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
     discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
     manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserCreateOrConnectWithoutManualDiscountsIssuedInput = {
@@ -87099,6 +97158,14 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
     discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
     manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserUncheckedCreateWithoutManualDiscountsApprovedInput = {
@@ -87125,6 +97192,14 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
     discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
     manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
   }
 
   export type UserCreateOrConnectWithoutManualDiscountsApprovedInput = {
@@ -87192,6 +97267,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutManualDiscountInput = {
@@ -87255,6 +97332,8 @@ export namespace Prisma {
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutManualDiscountInput = {
@@ -87338,6 +97417,14 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
     discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
     manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutManualDiscountsIssuedInput = {
@@ -87364,6 +97451,14 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
     discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
     manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
   }
 
   export type UserUpsertWithoutManualDiscountsApprovedInput = {
@@ -87400,6 +97495,14 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
     discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
     manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutManualDiscountsApprovedInput = {
@@ -87426,6 +97529,14 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
     discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
     manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
   }
 
   export type BookingUpsertWithoutManualDiscountInput = {
@@ -87499,6 +97610,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutManualDiscountInput = {
@@ -87562,6 +97675,8 @@ export namespace Prisma {
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type DiscountApplicationUpsertWithoutManualDiscountInput = {
@@ -87610,6 +97725,2403 @@ export namespace Prisma {
     paymentPlan?: StringFieldUpdateOperationsInput | string
     adjustmentType?: EnumAdjustmentTypeFieldUpdateOperationsInput | $Enums.AdjustmentType
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchCreateWithoutPaymentConfigInput = {
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleCreateNestedManyWithoutBranchInput
+    bookings?: BookingCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
+    auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchUncheckedCreateWithoutPaymentConfigInput = {
+    id?: number
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserUncheckedCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchCreateOrConnectWithoutPaymentConfigInput = {
+    where: BranchWhereUniqueInput
+    create: XOR<BranchCreateWithoutPaymentConfigInput, BranchUncheckedCreateWithoutPaymentConfigInput>
+  }
+
+  export type BranchUpsertWithoutPaymentConfigInput = {
+    update: XOR<BranchUpdateWithoutPaymentConfigInput, BranchUncheckedUpdateWithoutPaymentConfigInput>
+    create: XOR<BranchCreateWithoutPaymentConfigInput, BranchUncheckedCreateWithoutPaymentConfigInput>
+    where?: BranchWhereInput
+  }
+
+  export type BranchUpdateToOneWithWhereWithoutPaymentConfigInput = {
+    where?: BranchWhereInput
+    data: XOR<BranchUpdateWithoutPaymentConfigInput, BranchUncheckedUpdateWithoutPaymentConfigInput>
+  }
+
+  export type BranchUpdateWithoutPaymentConfigInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+  }
+
+  export type BranchUncheckedUpdateWithoutPaymentConfigInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUncheckedUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+  }
+
+  export type BookingCreateWithoutPaymentTransactionsInput = {
+    publicId: string
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
+    customer: CustomerCreateNestedOneWithoutBookingsInput
+    branch: BranchCreateNestedOneWithoutBookingsInput
+    createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
+    photos?: BookingPhotoCreateNestedManyWithoutBookingInput
+    damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
+    deposit?: DepositCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+  }
+
+  export type BookingUncheckedCreateWithoutPaymentTransactionsInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
+    damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
+    deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+  }
+
+  export type BookingCreateOrConnectWithoutPaymentTransactionsInput = {
+    where: BookingWhereUniqueInput
+    create: XOR<BookingCreateWithoutPaymentTransactionsInput, BookingUncheckedCreateWithoutPaymentTransactionsInput>
+  }
+
+  export type BranchCreateWithoutPaymentTransactionsInput = {
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleCreateNestedManyWithoutBranchInput
+    bookings?: BookingCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
+    auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchUncheckedCreateWithoutPaymentTransactionsInput = {
+    id?: number
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserUncheckedCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchCreateOrConnectWithoutPaymentTransactionsInput = {
+    where: BranchWhereUniqueInput
+    create: XOR<BranchCreateWithoutPaymentTransactionsInput, BranchUncheckedCreateWithoutPaymentTransactionsInput>
+  }
+
+  export type UserCreateWithoutCollectedPaymentsInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+  }
+
+  export type UserUncheckedCreateWithoutCollectedPaymentsInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+  }
+
+  export type UserCreateOrConnectWithoutCollectedPaymentsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutCollectedPaymentsInput, UserUncheckedCreateWithoutCollectedPaymentsInput>
+  }
+
+  export type UserCreateWithoutConfirmedPaymentsInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+  }
+
+  export type UserUncheckedCreateWithoutConfirmedPaymentsInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+  }
+
+  export type UserCreateOrConnectWithoutConfirmedPaymentsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutConfirmedPaymentsInput, UserUncheckedCreateWithoutConfirmedPaymentsInput>
+  }
+
+  export type UserCreateWithoutRejectedPaymentsInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+  }
+
+  export type UserUncheckedCreateWithoutRejectedPaymentsInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+  }
+
+  export type UserCreateOrConnectWithoutRejectedPaymentsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutRejectedPaymentsInput, UserUncheckedCreateWithoutRejectedPaymentsInput>
+  }
+
+  export type CashShiftCreateWithoutTransactionsInput = {
+    publicId: string
+    status?: $Enums.CashShiftStatus
+    openedAt?: Date | string
+    closedAt?: Date | string | null
+    expectedTotal?: Decimal | DecimalJsLike | number | string
+    actualTotal?: Decimal | DecimalJsLike | number | string
+    discrepancy?: Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: string | null
+    reconciledAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    employee: UserCreateNestedOneWithoutOpenShiftsInput
+    branch: BranchCreateNestedOneWithoutCashShiftsInput
+    reconciledBy?: UserCreateNestedOneWithoutReconciledShiftsInput
+  }
+
+  export type CashShiftUncheckedCreateWithoutTransactionsInput = {
+    id?: number
+    publicId: string
+    employeeId: number
+    branchId: number
+    status?: $Enums.CashShiftStatus
+    openedAt?: Date | string
+    closedAt?: Date | string | null
+    expectedTotal?: Decimal | DecimalJsLike | number | string
+    actualTotal?: Decimal | DecimalJsLike | number | string
+    discrepancy?: Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: string | null
+    reconciledById?: number | null
+    reconciledAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type CashShiftCreateOrConnectWithoutTransactionsInput = {
+    where: CashShiftWhereUniqueInput
+    create: XOR<CashShiftCreateWithoutTransactionsInput, CashShiftUncheckedCreateWithoutTransactionsInput>
+  }
+
+  export type BookingUpsertWithoutPaymentTransactionsInput = {
+    update: XOR<BookingUpdateWithoutPaymentTransactionsInput, BookingUncheckedUpdateWithoutPaymentTransactionsInput>
+    create: XOR<BookingCreateWithoutPaymentTransactionsInput, BookingUncheckedCreateWithoutPaymentTransactionsInput>
+    where?: BookingWhereInput
+  }
+
+  export type BookingUpdateToOneWithWhereWithoutPaymentTransactionsInput = {
+    where?: BookingWhereInput
+    data: XOR<BookingUpdateWithoutPaymentTransactionsInput, BookingUncheckedUpdateWithoutPaymentTransactionsInput>
+  }
+
+  export type BookingUpdateWithoutPaymentTransactionsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
+    customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
+    photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateWithoutPaymentTransactionsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+  }
+
+  export type BranchUpsertWithoutPaymentTransactionsInput = {
+    update: XOR<BranchUpdateWithoutPaymentTransactionsInput, BranchUncheckedUpdateWithoutPaymentTransactionsInput>
+    create: XOR<BranchCreateWithoutPaymentTransactionsInput, BranchUncheckedCreateWithoutPaymentTransactionsInput>
+    where?: BranchWhereInput
+  }
+
+  export type BranchUpdateToOneWithWhereWithoutPaymentTransactionsInput = {
+    where?: BranchWhereInput
+    data: XOR<BranchUpdateWithoutPaymentTransactionsInput, BranchUncheckedUpdateWithoutPaymentTransactionsInput>
+  }
+
+  export type BranchUpdateWithoutPaymentTransactionsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+  }
+
+  export type BranchUncheckedUpdateWithoutPaymentTransactionsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUncheckedUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+  }
+
+  export type UserUpsertWithoutCollectedPaymentsInput = {
+    update: XOR<UserUpdateWithoutCollectedPaymentsInput, UserUncheckedUpdateWithoutCollectedPaymentsInput>
+    create: XOR<UserCreateWithoutCollectedPaymentsInput, UserUncheckedCreateWithoutCollectedPaymentsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutCollectedPaymentsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutCollectedPaymentsInput, UserUncheckedUpdateWithoutCollectedPaymentsInput>
+  }
+
+  export type UserUpdateWithoutCollectedPaymentsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutCollectedPaymentsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+  }
+
+  export type UserUpsertWithoutConfirmedPaymentsInput = {
+    update: XOR<UserUpdateWithoutConfirmedPaymentsInput, UserUncheckedUpdateWithoutConfirmedPaymentsInput>
+    create: XOR<UserCreateWithoutConfirmedPaymentsInput, UserUncheckedCreateWithoutConfirmedPaymentsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutConfirmedPaymentsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutConfirmedPaymentsInput, UserUncheckedUpdateWithoutConfirmedPaymentsInput>
+  }
+
+  export type UserUpdateWithoutConfirmedPaymentsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutConfirmedPaymentsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+  }
+
+  export type UserUpsertWithoutRejectedPaymentsInput = {
+    update: XOR<UserUpdateWithoutRejectedPaymentsInput, UserUncheckedUpdateWithoutRejectedPaymentsInput>
+    create: XOR<UserCreateWithoutRejectedPaymentsInput, UserUncheckedCreateWithoutRejectedPaymentsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutRejectedPaymentsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutRejectedPaymentsInput, UserUncheckedUpdateWithoutRejectedPaymentsInput>
+  }
+
+  export type UserUpdateWithoutRejectedPaymentsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutRejectedPaymentsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+  }
+
+  export type CashShiftUpsertWithoutTransactionsInput = {
+    update: XOR<CashShiftUpdateWithoutTransactionsInput, CashShiftUncheckedUpdateWithoutTransactionsInput>
+    create: XOR<CashShiftCreateWithoutTransactionsInput, CashShiftUncheckedCreateWithoutTransactionsInput>
+    where?: CashShiftWhereInput
+  }
+
+  export type CashShiftUpdateToOneWithWhereWithoutTransactionsInput = {
+    where?: CashShiftWhereInput
+    data: XOR<CashShiftUpdateWithoutTransactionsInput, CashShiftUncheckedUpdateWithoutTransactionsInput>
+  }
+
+  export type CashShiftUpdateWithoutTransactionsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    status?: EnumCashShiftStatusFieldUpdateOperationsInput | $Enums.CashShiftStatus
+    openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    expectedTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancy?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: NullableStringFieldUpdateOperationsInput | string | null
+    reconciledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    employee?: UserUpdateOneRequiredWithoutOpenShiftsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutCashShiftsNestedInput
+    reconciledBy?: UserUpdateOneWithoutReconciledShiftsNestedInput
+  }
+
+  export type CashShiftUncheckedUpdateWithoutTransactionsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    employeeId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    status?: EnumCashShiftStatusFieldUpdateOperationsInput | $Enums.CashShiftStatus
+    openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    expectedTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancy?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: NullableStringFieldUpdateOperationsInput | string | null
+    reconciledById?: NullableIntFieldUpdateOperationsInput | number | null
+    reconciledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BookingCreateWithoutRefundRequestsInput = {
+    publicId: string
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
+    customer: CustomerCreateNestedOneWithoutBookingsInput
+    branch: BranchCreateNestedOneWithoutBookingsInput
+    createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
+    photos?: BookingPhotoCreateNestedManyWithoutBookingInput
+    damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
+    deposit?: DepositCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+  }
+
+  export type BookingUncheckedCreateWithoutRefundRequestsInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
+    damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
+    deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+  }
+
+  export type BookingCreateOrConnectWithoutRefundRequestsInput = {
+    where: BookingWhereUniqueInput
+    create: XOR<BookingCreateWithoutRefundRequestsInput, BookingUncheckedCreateWithoutRefundRequestsInput>
+  }
+
+  export type BranchCreateWithoutRefundRequestsInput = {
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleCreateNestedManyWithoutBranchInput
+    bookings?: BookingCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
+    auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchUncheckedCreateWithoutRefundRequestsInput = {
+    id?: number
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserUncheckedCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchCreateOrConnectWithoutRefundRequestsInput = {
+    where: BranchWhereUniqueInput
+    create: XOR<BranchCreateWithoutRefundRequestsInput, BranchUncheckedCreateWithoutRefundRequestsInput>
+  }
+
+  export type UserCreateWithoutRefundRequestsMadeInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+  }
+
+  export type UserUncheckedCreateWithoutRefundRequestsMadeInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+  }
+
+  export type UserCreateOrConnectWithoutRefundRequestsMadeInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutRefundRequestsMadeInput, UserUncheckedCreateWithoutRefundRequestsMadeInput>
+  }
+
+  export type UserCreateWithoutRefundRequestsApprovedInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+  }
+
+  export type UserUncheckedCreateWithoutRefundRequestsApprovedInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+  }
+
+  export type UserCreateOrConnectWithoutRefundRequestsApprovedInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutRefundRequestsApprovedInput, UserUncheckedCreateWithoutRefundRequestsApprovedInput>
+  }
+
+  export type UserCreateWithoutRefundRequestsCompletedInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+  }
+
+  export type UserUncheckedCreateWithoutRefundRequestsCompletedInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+  }
+
+  export type UserCreateOrConnectWithoutRefundRequestsCompletedInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutRefundRequestsCompletedInput, UserUncheckedCreateWithoutRefundRequestsCompletedInput>
+  }
+
+  export type BookingUpsertWithoutRefundRequestsInput = {
+    update: XOR<BookingUpdateWithoutRefundRequestsInput, BookingUncheckedUpdateWithoutRefundRequestsInput>
+    create: XOR<BookingCreateWithoutRefundRequestsInput, BookingUncheckedCreateWithoutRefundRequestsInput>
+    where?: BookingWhereInput
+  }
+
+  export type BookingUpdateToOneWithWhereWithoutRefundRequestsInput = {
+    where?: BookingWhereInput
+    data: XOR<BookingUpdateWithoutRefundRequestsInput, BookingUncheckedUpdateWithoutRefundRequestsInput>
+  }
+
+  export type BookingUpdateWithoutRefundRequestsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
+    customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
+    photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateWithoutRefundRequestsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+  }
+
+  export type BranchUpsertWithoutRefundRequestsInput = {
+    update: XOR<BranchUpdateWithoutRefundRequestsInput, BranchUncheckedUpdateWithoutRefundRequestsInput>
+    create: XOR<BranchCreateWithoutRefundRequestsInput, BranchUncheckedCreateWithoutRefundRequestsInput>
+    where?: BranchWhereInput
+  }
+
+  export type BranchUpdateToOneWithWhereWithoutRefundRequestsInput = {
+    where?: BranchWhereInput
+    data: XOR<BranchUpdateWithoutRefundRequestsInput, BranchUncheckedUpdateWithoutRefundRequestsInput>
+  }
+
+  export type BranchUpdateWithoutRefundRequestsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
+  }
+
+  export type BranchUncheckedUpdateWithoutRefundRequestsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUncheckedUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
+  }
+
+  export type UserUpsertWithoutRefundRequestsMadeInput = {
+    update: XOR<UserUpdateWithoutRefundRequestsMadeInput, UserUncheckedUpdateWithoutRefundRequestsMadeInput>
+    create: XOR<UserCreateWithoutRefundRequestsMadeInput, UserUncheckedCreateWithoutRefundRequestsMadeInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutRefundRequestsMadeInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutRefundRequestsMadeInput, UserUncheckedUpdateWithoutRefundRequestsMadeInput>
+  }
+
+  export type UserUpdateWithoutRefundRequestsMadeInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutRefundRequestsMadeInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+  }
+
+  export type UserUpsertWithoutRefundRequestsApprovedInput = {
+    update: XOR<UserUpdateWithoutRefundRequestsApprovedInput, UserUncheckedUpdateWithoutRefundRequestsApprovedInput>
+    create: XOR<UserCreateWithoutRefundRequestsApprovedInput, UserUncheckedCreateWithoutRefundRequestsApprovedInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutRefundRequestsApprovedInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutRefundRequestsApprovedInput, UserUncheckedUpdateWithoutRefundRequestsApprovedInput>
+  }
+
+  export type UserUpdateWithoutRefundRequestsApprovedInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutRefundRequestsApprovedInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+  }
+
+  export type UserUpsertWithoutRefundRequestsCompletedInput = {
+    update: XOR<UserUpdateWithoutRefundRequestsCompletedInput, UserUncheckedUpdateWithoutRefundRequestsCompletedInput>
+    create: XOR<UserCreateWithoutRefundRequestsCompletedInput, UserUncheckedCreateWithoutRefundRequestsCompletedInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutRefundRequestsCompletedInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutRefundRequestsCompletedInput, UserUncheckedUpdateWithoutRefundRequestsCompletedInput>
+  }
+
+  export type UserUpdateWithoutRefundRequestsCompletedInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutRefundRequestsCompletedInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+  }
+
+  export type UserCreateWithoutOpenShiftsInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+  }
+
+  export type UserUncheckedCreateWithoutOpenShiftsInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+  }
+
+  export type UserCreateOrConnectWithoutOpenShiftsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutOpenShiftsInput, UserUncheckedCreateWithoutOpenShiftsInput>
+  }
+
+  export type BranchCreateWithoutCashShiftsInput = {
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleCreateNestedManyWithoutBranchInput
+    bookings?: BookingCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
+    auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchUncheckedCreateWithoutCashShiftsInput = {
+    id?: number
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserUncheckedCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchCreateOrConnectWithoutCashShiftsInput = {
+    where: BranchWhereUniqueInput
+    create: XOR<BranchCreateWithoutCashShiftsInput, BranchUncheckedCreateWithoutCashShiftsInput>
+  }
+
+  export type UserCreateWithoutReconciledShiftsInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+  }
+
+  export type UserUncheckedCreateWithoutReconciledShiftsInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+  }
+
+  export type UserCreateOrConnectWithoutReconciledShiftsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutReconciledShiftsInput, UserUncheckedCreateWithoutReconciledShiftsInput>
+  }
+
+  export type PaymentTransactionCreateWithoutCashShiftInput = {
+    publicId: string
+    idempotencyKey: string
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status?: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal | DecimalJsLike | number | string
+    cashAmount?: Decimal | DecimalJsLike | number | string
+    onlineAmount?: Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: string | null
+    onlineGateway?: string | null
+    collectedAt?: Date | string | null
+    confirmedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    booking: BookingCreateNestedOneWithoutPaymentTransactionsInput
+    branch: BranchCreateNestedOneWithoutPaymentTransactionsInput
+    collectedBy?: UserCreateNestedOneWithoutCollectedPaymentsInput
+    confirmedBy?: UserCreateNestedOneWithoutConfirmedPaymentsInput
+    rejectedBy?: UserCreateNestedOneWithoutRejectedPaymentsInput
+  }
+
+  export type PaymentTransactionUncheckedCreateWithoutCashShiftInput = {
+    id?: number
+    publicId: string
+    idempotencyKey: string
+    bookingId: number
+    branchId: number
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status?: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal | DecimalJsLike | number | string
+    cashAmount?: Decimal | DecimalJsLike | number | string
+    onlineAmount?: Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: string | null
+    onlineGateway?: string | null
+    collectedById?: number | null
+    collectedAt?: Date | string | null
+    confirmedById?: number | null
+    confirmedAt?: Date | string | null
+    rejectedById?: number | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+  }
+
+  export type PaymentTransactionCreateOrConnectWithoutCashShiftInput = {
+    where: PaymentTransactionWhereUniqueInput
+    create: XOR<PaymentTransactionCreateWithoutCashShiftInput, PaymentTransactionUncheckedCreateWithoutCashShiftInput>
+  }
+
+  export type PaymentTransactionCreateManyCashShiftInputEnvelope = {
+    data: PaymentTransactionCreateManyCashShiftInput | PaymentTransactionCreateManyCashShiftInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type UserUpsertWithoutOpenShiftsInput = {
+    update: XOR<UserUpdateWithoutOpenShiftsInput, UserUncheckedUpdateWithoutOpenShiftsInput>
+    create: XOR<UserCreateWithoutOpenShiftsInput, UserUncheckedCreateWithoutOpenShiftsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutOpenShiftsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutOpenShiftsInput, UserUncheckedUpdateWithoutOpenShiftsInput>
+  }
+
+  export type UserUpdateWithoutOpenShiftsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutOpenShiftsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+  }
+
+  export type BranchUpsertWithoutCashShiftsInput = {
+    update: XOR<BranchUpdateWithoutCashShiftsInput, BranchUncheckedUpdateWithoutCashShiftsInput>
+    create: XOR<BranchCreateWithoutCashShiftsInput, BranchUncheckedCreateWithoutCashShiftsInput>
+    where?: BranchWhereInput
+  }
+
+  export type BranchUpdateToOneWithWhereWithoutCashShiftsInput = {
+    where?: BranchWhereInput
+    data: XOR<BranchUpdateWithoutCashShiftsInput, BranchUncheckedUpdateWithoutCashShiftsInput>
+  }
+
+  export type BranchUpdateWithoutCashShiftsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+  }
+
+  export type BranchUncheckedUpdateWithoutCashShiftsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUncheckedUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+  }
+
+  export type UserUpsertWithoutReconciledShiftsInput = {
+    update: XOR<UserUpdateWithoutReconciledShiftsInput, UserUncheckedUpdateWithoutReconciledShiftsInput>
+    create: XOR<UserCreateWithoutReconciledShiftsInput, UserUncheckedCreateWithoutReconciledShiftsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutReconciledShiftsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutReconciledShiftsInput, UserUncheckedUpdateWithoutReconciledShiftsInput>
+  }
+
+  export type UserUpdateWithoutReconciledShiftsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutReconciledShiftsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+  }
+
+  export type PaymentTransactionUpsertWithWhereUniqueWithoutCashShiftInput = {
+    where: PaymentTransactionWhereUniqueInput
+    update: XOR<PaymentTransactionUpdateWithoutCashShiftInput, PaymentTransactionUncheckedUpdateWithoutCashShiftInput>
+    create: XOR<PaymentTransactionCreateWithoutCashShiftInput, PaymentTransactionUncheckedCreateWithoutCashShiftInput>
+  }
+
+  export type PaymentTransactionUpdateWithWhereUniqueWithoutCashShiftInput = {
+    where: PaymentTransactionWhereUniqueInput
+    data: XOR<PaymentTransactionUpdateWithoutCashShiftInput, PaymentTransactionUncheckedUpdateWithoutCashShiftInput>
+  }
+
+  export type PaymentTransactionUpdateManyWithWhereWithoutCashShiftInput = {
+    where: PaymentTransactionScalarWhereInput
+    data: XOR<PaymentTransactionUpdateManyMutationInput, PaymentTransactionUncheckedUpdateManyWithoutCashShiftInput>
   }
 
   export type EmailVerificationOtpCreateManyUserInput = {
@@ -87834,6 +100346,175 @@ export namespace Prisma {
     approvedAt?: Date | string | null
     rejectedAt?: Date | string | null
     rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PaymentTransactionCreateManyCollectedByInput = {
+    id?: number
+    publicId: string
+    idempotencyKey: string
+    bookingId: number
+    branchId: number
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status?: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal | DecimalJsLike | number | string
+    cashAmount?: Decimal | DecimalJsLike | number | string
+    onlineAmount?: Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: string | null
+    onlineGateway?: string | null
+    collectedAt?: Date | string | null
+    confirmedById?: number | null
+    confirmedAt?: Date | string | null
+    rejectedById?: number | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    cashShiftId?: number | null
+    notes?: string | null
+    createdAt?: Date | string
+  }
+
+  export type PaymentTransactionCreateManyConfirmedByInput = {
+    id?: number
+    publicId: string
+    idempotencyKey: string
+    bookingId: number
+    branchId: number
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status?: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal | DecimalJsLike | number | string
+    cashAmount?: Decimal | DecimalJsLike | number | string
+    onlineAmount?: Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: string | null
+    onlineGateway?: string | null
+    collectedById?: number | null
+    collectedAt?: Date | string | null
+    confirmedAt?: Date | string | null
+    rejectedById?: number | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    cashShiftId?: number | null
+    notes?: string | null
+    createdAt?: Date | string
+  }
+
+  export type PaymentTransactionCreateManyRejectedByInput = {
+    id?: number
+    publicId: string
+    idempotencyKey: string
+    bookingId: number
+    branchId: number
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status?: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal | DecimalJsLike | number | string
+    cashAmount?: Decimal | DecimalJsLike | number | string
+    onlineAmount?: Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: string | null
+    onlineGateway?: string | null
+    collectedById?: number | null
+    collectedAt?: Date | string | null
+    confirmedById?: number | null
+    confirmedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    cashShiftId?: number | null
+    notes?: string | null
+    createdAt?: Date | string
+  }
+
+  export type CashShiftCreateManyEmployeeInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    status?: $Enums.CashShiftStatus
+    openedAt?: Date | string
+    closedAt?: Date | string | null
+    expectedTotal?: Decimal | DecimalJsLike | number | string
+    actualTotal?: Decimal | DecimalJsLike | number | string
+    discrepancy?: Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: string | null
+    reconciledById?: number | null
+    reconciledAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type CashShiftCreateManyReconciledByInput = {
+    id?: number
+    publicId: string
+    employeeId: number
+    branchId: number
+    status?: $Enums.CashShiftStatus
+    openedAt?: Date | string
+    closedAt?: Date | string | null
+    expectedTotal?: Decimal | DecimalJsLike | number | string
+    actualTotal?: Decimal | DecimalJsLike | number | string
+    discrepancy?: Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: string | null
+    reconciledAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RefundRequestCreateManyRequestedByInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    method: $Enums.PaymentMethod
+    status?: $Enums.RefundStatus
+    approvedById?: number | null
+    approvedAt?: Date | string | null
+    completedById?: number | null
+    completedAt?: Date | string | null
+    onlineTransactionRef?: string | null
+    rejectionReason?: string | null
+    rejectedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RefundRequestCreateManyApprovedByInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    method: $Enums.PaymentMethod
+    status?: $Enums.RefundStatus
+    requestedById: number
+    approvedAt?: Date | string | null
+    completedById?: number | null
+    completedAt?: Date | string | null
+    onlineTransactionRef?: string | null
+    rejectionReason?: string | null
+    rejectedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RefundRequestCreateManyCompletedByInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    method: $Enums.PaymentMethod
+    status?: $Enums.RefundStatus
+    requestedById: number
+    approvedById?: number | null
+    approvedAt?: Date | string | null
+    completedAt?: Date | string | null
+    onlineTransactionRef?: string | null
+    rejectionReason?: string | null
+    rejectedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -88110,6 +100791,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCreatedByInput = {
@@ -88173,6 +100856,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutCreatedByInput = {
@@ -88536,6 +101221,509 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type PaymentTransactionUpdateWithoutCollectedByInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutPaymentTransactionsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutPaymentTransactionsNestedInput
+    confirmedBy?: UserUpdateOneWithoutConfirmedPaymentsNestedInput
+    rejectedBy?: UserUpdateOneWithoutRejectedPaymentsNestedInput
+    cashShift?: CashShiftUpdateOneWithoutTransactionsNestedInput
+  }
+
+  export type PaymentTransactionUncheckedUpdateWithoutCollectedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedById?: NullableIntFieldUpdateOperationsInput | number | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cashShiftId?: NullableIntFieldUpdateOperationsInput | number | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaymentTransactionUncheckedUpdateManyWithoutCollectedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedById?: NullableIntFieldUpdateOperationsInput | number | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cashShiftId?: NullableIntFieldUpdateOperationsInput | number | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaymentTransactionUpdateWithoutConfirmedByInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutPaymentTransactionsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutPaymentTransactionsNestedInput
+    collectedBy?: UserUpdateOneWithoutCollectedPaymentsNestedInput
+    rejectedBy?: UserUpdateOneWithoutRejectedPaymentsNestedInput
+    cashShift?: CashShiftUpdateOneWithoutTransactionsNestedInput
+  }
+
+  export type PaymentTransactionUncheckedUpdateWithoutConfirmedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cashShiftId?: NullableIntFieldUpdateOperationsInput | number | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaymentTransactionUncheckedUpdateManyWithoutConfirmedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cashShiftId?: NullableIntFieldUpdateOperationsInput | number | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaymentTransactionUpdateWithoutRejectedByInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutPaymentTransactionsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutPaymentTransactionsNestedInput
+    collectedBy?: UserUpdateOneWithoutCollectedPaymentsNestedInput
+    confirmedBy?: UserUpdateOneWithoutConfirmedPaymentsNestedInput
+    cashShift?: CashShiftUpdateOneWithoutTransactionsNestedInput
+  }
+
+  export type PaymentTransactionUncheckedUpdateWithoutRejectedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedById?: NullableIntFieldUpdateOperationsInput | number | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cashShiftId?: NullableIntFieldUpdateOperationsInput | number | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaymentTransactionUncheckedUpdateManyWithoutRejectedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedById?: NullableIntFieldUpdateOperationsInput | number | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cashShiftId?: NullableIntFieldUpdateOperationsInput | number | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CashShiftUpdateWithoutEmployeeInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    status?: EnumCashShiftStatusFieldUpdateOperationsInput | $Enums.CashShiftStatus
+    openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    expectedTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancy?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: NullableStringFieldUpdateOperationsInput | string | null
+    reconciledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    branch?: BranchUpdateOneRequiredWithoutCashShiftsNestedInput
+    reconciledBy?: UserUpdateOneWithoutReconciledShiftsNestedInput
+    transactions?: PaymentTransactionUpdateManyWithoutCashShiftNestedInput
+  }
+
+  export type CashShiftUncheckedUpdateWithoutEmployeeInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    status?: EnumCashShiftStatusFieldUpdateOperationsInput | $Enums.CashShiftStatus
+    openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    expectedTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancy?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: NullableStringFieldUpdateOperationsInput | string | null
+    reconciledById?: NullableIntFieldUpdateOperationsInput | number | null
+    reconciledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    transactions?: PaymentTransactionUncheckedUpdateManyWithoutCashShiftNestedInput
+  }
+
+  export type CashShiftUncheckedUpdateManyWithoutEmployeeInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    status?: EnumCashShiftStatusFieldUpdateOperationsInput | $Enums.CashShiftStatus
+    openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    expectedTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancy?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: NullableStringFieldUpdateOperationsInput | string | null
+    reconciledById?: NullableIntFieldUpdateOperationsInput | number | null
+    reconciledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CashShiftUpdateWithoutReconciledByInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    status?: EnumCashShiftStatusFieldUpdateOperationsInput | $Enums.CashShiftStatus
+    openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    expectedTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancy?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: NullableStringFieldUpdateOperationsInput | string | null
+    reconciledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    employee?: UserUpdateOneRequiredWithoutOpenShiftsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutCashShiftsNestedInput
+    transactions?: PaymentTransactionUpdateManyWithoutCashShiftNestedInput
+  }
+
+  export type CashShiftUncheckedUpdateWithoutReconciledByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    employeeId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    status?: EnumCashShiftStatusFieldUpdateOperationsInput | $Enums.CashShiftStatus
+    openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    expectedTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancy?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: NullableStringFieldUpdateOperationsInput | string | null
+    reconciledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    transactions?: PaymentTransactionUncheckedUpdateManyWithoutCashShiftNestedInput
+  }
+
+  export type CashShiftUncheckedUpdateManyWithoutReconciledByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    employeeId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    status?: EnumCashShiftStatusFieldUpdateOperationsInput | $Enums.CashShiftStatus
+    openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    expectedTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancy?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: NullableStringFieldUpdateOperationsInput | string | null
+    reconciledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RefundRequestUpdateWithoutRequestedByInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutRefundRequestsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutRefundRequestsNestedInput
+    approvedBy?: UserUpdateOneWithoutRefundRequestsApprovedNestedInput
+    completedBy?: UserUpdateOneWithoutRefundRequestsCompletedNestedInput
+  }
+
+  export type RefundRequestUncheckedUpdateWithoutRequestedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedById?: NullableIntFieldUpdateOperationsInput | number | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RefundRequestUncheckedUpdateManyWithoutRequestedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedById?: NullableIntFieldUpdateOperationsInput | number | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RefundRequestUpdateWithoutApprovedByInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutRefundRequestsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutRefundRequestsNestedInput
+    requestedBy?: UserUpdateOneRequiredWithoutRefundRequestsMadeNestedInput
+    completedBy?: UserUpdateOneWithoutRefundRequestsCompletedNestedInput
+  }
+
+  export type RefundRequestUncheckedUpdateWithoutApprovedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    requestedById?: IntFieldUpdateOperationsInput | number
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedById?: NullableIntFieldUpdateOperationsInput | number | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RefundRequestUncheckedUpdateManyWithoutApprovedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    requestedById?: IntFieldUpdateOperationsInput | number
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedById?: NullableIntFieldUpdateOperationsInput | number | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RefundRequestUpdateWithoutCompletedByInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutRefundRequestsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutRefundRequestsNestedInput
+    requestedBy?: UserUpdateOneRequiredWithoutRefundRequestsMadeNestedInput
+    approvedBy?: UserUpdateOneWithoutRefundRequestsApprovedNestedInput
+  }
+
+  export type RefundRequestUncheckedUpdateWithoutCompletedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    requestedById?: IntFieldUpdateOperationsInput | number
+    approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RefundRequestUncheckedUpdateManyWithoutCompletedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    requestedById?: IntFieldUpdateOperationsInput | number
+    approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type CustomerKycCreateManyCustomerInput = {
     id?: number
     publicId: string
@@ -88702,6 +101890,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCustomerInput = {
@@ -88765,6 +101955,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutCustomerInput = {
@@ -89099,6 +102291,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutKycFileInput = {
@@ -89162,6 +102356,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutKycFileInput = {
@@ -89525,6 +102721,68 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type PaymentTransactionCreateManyBranchInput = {
+    id?: number
+    publicId: string
+    idempotencyKey: string
+    bookingId: number
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status?: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal | DecimalJsLike | number | string
+    cashAmount?: Decimal | DecimalJsLike | number | string
+    onlineAmount?: Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: string | null
+    onlineGateway?: string | null
+    collectedById?: number | null
+    collectedAt?: Date | string | null
+    confirmedById?: number | null
+    confirmedAt?: Date | string | null
+    rejectedById?: number | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    cashShiftId?: number | null
+    notes?: string | null
+    createdAt?: Date | string
+  }
+
+  export type CashShiftCreateManyBranchInput = {
+    id?: number
+    publicId: string
+    employeeId: number
+    status?: $Enums.CashShiftStatus
+    openedAt?: Date | string
+    closedAt?: Date | string | null
+    expectedTotal?: Decimal | DecimalJsLike | number | string
+    actualTotal?: Decimal | DecimalJsLike | number | string
+    discrepancy?: Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: string | null
+    reconciledById?: number | null
+    reconciledAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RefundRequestCreateManyBranchInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    method: $Enums.PaymentMethod
+    status?: $Enums.RefundStatus
+    requestedById: number
+    approvedById?: number | null
+    approvedAt?: Date | string | null
+    completedById?: number | null
+    completedAt?: Date | string | null
+    onlineTransactionRef?: string | null
+    rejectionReason?: string | null
+    rejectedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type UserUpdateWithoutBranchInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
@@ -89548,6 +102806,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
     manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
     manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutBranchInput = {
@@ -89574,6 +102840,14 @@ export namespace Prisma {
     discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
     manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
     manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
   }
 
   export type UserUncheckedUpdateManyWithoutBranchInput = {
@@ -89721,6 +102995,8 @@ export namespace Prisma {
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutBranchInput = {
@@ -89784,6 +103060,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutBranchInput = {
@@ -90128,6 +103406,191 @@ export namespace Prisma {
     discountType?: EnumDiscountTypeFieldUpdateOperationsInput | $Enums.DiscountType
     value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     label?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaymentTransactionUpdateWithoutBranchInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutPaymentTransactionsNestedInput
+    collectedBy?: UserUpdateOneWithoutCollectedPaymentsNestedInput
+    confirmedBy?: UserUpdateOneWithoutConfirmedPaymentsNestedInput
+    rejectedBy?: UserUpdateOneWithoutRejectedPaymentsNestedInput
+    cashShift?: CashShiftUpdateOneWithoutTransactionsNestedInput
+  }
+
+  export type PaymentTransactionUncheckedUpdateWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedById?: NullableIntFieldUpdateOperationsInput | number | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cashShiftId?: NullableIntFieldUpdateOperationsInput | number | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaymentTransactionUncheckedUpdateManyWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedById?: NullableIntFieldUpdateOperationsInput | number | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cashShiftId?: NullableIntFieldUpdateOperationsInput | number | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CashShiftUpdateWithoutBranchInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    status?: EnumCashShiftStatusFieldUpdateOperationsInput | $Enums.CashShiftStatus
+    openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    expectedTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancy?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: NullableStringFieldUpdateOperationsInput | string | null
+    reconciledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    employee?: UserUpdateOneRequiredWithoutOpenShiftsNestedInput
+    reconciledBy?: UserUpdateOneWithoutReconciledShiftsNestedInput
+    transactions?: PaymentTransactionUpdateManyWithoutCashShiftNestedInput
+  }
+
+  export type CashShiftUncheckedUpdateWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    employeeId?: IntFieldUpdateOperationsInput | number
+    status?: EnumCashShiftStatusFieldUpdateOperationsInput | $Enums.CashShiftStatus
+    openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    expectedTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancy?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: NullableStringFieldUpdateOperationsInput | string | null
+    reconciledById?: NullableIntFieldUpdateOperationsInput | number | null
+    reconciledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    transactions?: PaymentTransactionUncheckedUpdateManyWithoutCashShiftNestedInput
+  }
+
+  export type CashShiftUncheckedUpdateManyWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    employeeId?: IntFieldUpdateOperationsInput | number
+    status?: EnumCashShiftStatusFieldUpdateOperationsInput | $Enums.CashShiftStatus
+    openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    expectedTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancy?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discrepancyExplanation?: NullableStringFieldUpdateOperationsInput | string | null
+    reconciledById?: NullableIntFieldUpdateOperationsInput | number | null
+    reconciledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RefundRequestUpdateWithoutBranchInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutRefundRequestsNestedInput
+    requestedBy?: UserUpdateOneRequiredWithoutRefundRequestsMadeNestedInput
+    approvedBy?: UserUpdateOneWithoutRefundRequestsApprovedNestedInput
+    completedBy?: UserUpdateOneWithoutRefundRequestsCompletedNestedInput
+  }
+
+  export type RefundRequestUncheckedUpdateWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    requestedById?: IntFieldUpdateOperationsInput | number
+    approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedById?: NullableIntFieldUpdateOperationsInput | number | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RefundRequestUncheckedUpdateManyWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    requestedById?: IntFieldUpdateOperationsInput | number
+    approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedById?: NullableIntFieldUpdateOperationsInput | number | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -90823,6 +104286,51 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type PaymentTransactionCreateManyBookingInput = {
+    id?: number
+    publicId: string
+    idempotencyKey: string
+    branchId: number
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status?: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal | DecimalJsLike | number | string
+    cashAmount?: Decimal | DecimalJsLike | number | string
+    onlineAmount?: Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: string | null
+    onlineGateway?: string | null
+    collectedById?: number | null
+    collectedAt?: Date | string | null
+    confirmedById?: number | null
+    confirmedAt?: Date | string | null
+    rejectedById?: number | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    cashShiftId?: number | null
+    notes?: string | null
+    createdAt?: Date | string
+  }
+
+  export type RefundRequestCreateManyBookingInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    method: $Enums.PaymentMethod
+    status?: $Enums.RefundStatus
+    requestedById: number
+    approvedById?: number | null
+    approvedAt?: Date | string | null
+    completedById?: number | null
+    completedAt?: Date | string | null
+    onlineTransactionRef?: string | null
+    rejectionReason?: string | null
+    rejectedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type BookingPhotoUpdateWithoutBookingInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
@@ -90982,6 +104490,139 @@ export namespace Prisma {
     originalVehicleStatus?: NullableEnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus | null
     originalVehicleNotes?: NullableStringFieldUpdateOperationsInput | string | null
     swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaymentTransactionUpdateWithoutBookingInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    branch?: BranchUpdateOneRequiredWithoutPaymentTransactionsNestedInput
+    collectedBy?: UserUpdateOneWithoutCollectedPaymentsNestedInput
+    confirmedBy?: UserUpdateOneWithoutConfirmedPaymentsNestedInput
+    rejectedBy?: UserUpdateOneWithoutRejectedPaymentsNestedInput
+    cashShift?: CashShiftUpdateOneWithoutTransactionsNestedInput
+  }
+
+  export type PaymentTransactionUncheckedUpdateWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedById?: NullableIntFieldUpdateOperationsInput | number | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cashShiftId?: NullableIntFieldUpdateOperationsInput | number | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaymentTransactionUncheckedUpdateManyWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedById?: NullableIntFieldUpdateOperationsInput | number | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cashShiftId?: NullableIntFieldUpdateOperationsInput | number | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RefundRequestUpdateWithoutBookingInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    branch?: BranchUpdateOneRequiredWithoutRefundRequestsNestedInput
+    requestedBy?: UserUpdateOneRequiredWithoutRefundRequestsMadeNestedInput
+    approvedBy?: UserUpdateOneWithoutRefundRequestsApprovedNestedInput
+    completedBy?: UserUpdateOneWithoutRefundRequestsCompletedNestedInput
+  }
+
+  export type RefundRequestUncheckedUpdateWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    requestedById?: IntFieldUpdateOperationsInput | number
+    approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedById?: NullableIntFieldUpdateOperationsInput | number | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RefundRequestUncheckedUpdateManyWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    requestedById?: IntFieldUpdateOperationsInput | number
+    approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedById?: NullableIntFieldUpdateOperationsInput | number | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -91333,6 +104974,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDiscountRuleInput = {
@@ -91396,6 +105039,8 @@ export namespace Prisma {
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutDiscountRuleInput = {
@@ -91508,6 +105153,105 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type PaymentTransactionCreateManyCashShiftInput = {
+    id?: number
+    publicId: string
+    idempotencyKey: string
+    bookingId: number
+    branchId: number
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status?: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal | DecimalJsLike | number | string
+    cashAmount?: Decimal | DecimalJsLike | number | string
+    onlineAmount?: Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: string | null
+    onlineGateway?: string | null
+    collectedById?: number | null
+    collectedAt?: Date | string | null
+    confirmedById?: number | null
+    confirmedAt?: Date | string | null
+    rejectedById?: number | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+  }
+
+  export type PaymentTransactionUpdateWithoutCashShiftInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutPaymentTransactionsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutPaymentTransactionsNestedInput
+    collectedBy?: UserUpdateOneWithoutCollectedPaymentsNestedInput
+    confirmedBy?: UserUpdateOneWithoutConfirmedPaymentsNestedInput
+    rejectedBy?: UserUpdateOneWithoutRejectedPaymentsNestedInput
+  }
+
+  export type PaymentTransactionUncheckedUpdateWithoutCashShiftInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedById?: NullableIntFieldUpdateOperationsInput | number | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaymentTransactionUncheckedUpdateManyWithoutCashShiftInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedById?: NullableIntFieldUpdateOperationsInput | number | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
 
 
   /**
@@ -91557,6 +105301,10 @@ export namespace Prisma {
      * @deprecated Use DiscountRuleCountOutputTypeDefaultArgs instead
      */
     export type DiscountRuleCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = DiscountRuleCountOutputTypeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use CashShiftCountOutputTypeDefaultArgs instead
+     */
+    export type CashShiftCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CashShiftCountOutputTypeDefaultArgs<ExtArgs>
     /**
      * @deprecated Use UserDefaultArgs instead
      */
@@ -91737,6 +105485,22 @@ export namespace Prisma {
      * @deprecated Use ManualDiscountDefaultArgs instead
      */
     export type ManualDiscountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ManualDiscountDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use BranchPaymentConfigDefaultArgs instead
+     */
+    export type BranchPaymentConfigArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = BranchPaymentConfigDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use PaymentTransactionDefaultArgs instead
+     */
+    export type PaymentTransactionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = PaymentTransactionDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use RefundRequestDefaultArgs instead
+     */
+    export type RefundRequestArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = RefundRequestDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use CashShiftDefaultArgs instead
+     */
+    export type CashShiftArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CashShiftDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

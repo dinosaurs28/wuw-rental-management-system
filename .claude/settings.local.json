@@ -3,7 +3,9 @@
     "allow": [
       "Bash(grep \"\\\\.ts$\")",
       "Bash(grep -E \"\\\\.\\(prisma|ts\\)$\")",
-      "Bash(grep -r \"class\\\\|interface\\\\|enum\" /c/Freelance/vrms/apps/backend/src/types/*.ts)"
+      "Bash(grep -r \"class\\\\|interface\\\\|enum\" /c/Freelance/vrms/apps/backend/src/types/*.ts)",
+      "Bash(find C:FreelancevrmsappsbackendsrcroutesbranchManger -type f -name *.ts -o -name *.js)",
+      "Bash(find C:Freelancevrmsappsbackendsrcroutesadmin -type f -name *.ts -o -name *.js)"
     ]
   }
 }
