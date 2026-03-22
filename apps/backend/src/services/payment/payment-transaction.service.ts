@@ -1,16 +1,15 @@
-import { prisma } from "@repo/database/client";
+import { prisma, PaymentPurpose, ExtensionStatus } from "@repo/database/client";
+import type {
+  PaymentTransaction,
+  PaymentMethod,
+  PaymentTransactionStatus,
+  Role,
+} from "@repo/database/client";
 import Decimal from "decimal.js";
 import { createID } from "../../utils/nanoID.js";
 import { auditService, AuditCategory } from "../audit/audit.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../staffActivity/staffActivity.service.js";
 import { fraudDetectionService } from "./fraud-detection.service.js";
-import type {
-  PaymentTransaction,
-  PaymentPurpose,
-  PaymentMethod,
-  PaymentTransactionStatus,
-  Role,
-} from "@repo/database/client";
 
 export interface RecordPaymentInput {
   bookingPublicId: string;
@@ -207,6 +206,56 @@ class PaymentTransactionService {
         where: { id: txn.cashShiftId },
         data: { expectedTotal: { increment: new Decimal(txn.cashAmount.toString()).toNumber() } },
       });
+    }
+
+    // Extension finalization hook: if this cash payment was for an extension,
+    // finalize the booking date update now that cash is confirmed.
+    if (txn.purpose === PaymentPurpose.EXTENSION) {
+      const linkedExtension = await prisma.bookingExtension.findFirst({
+        where: { paymentTransactionId: txn.id, extensionStatus: ExtensionStatus.PAYMENT_COLLECTED },
+        include: { booking: true },
+      });
+
+      if (linkedExtension) {
+        const effectiveEndAt = linkedExtension.requestedEndAt;
+        const isFirstExtension = linkedExtension.booking.extensionCount === 0;
+
+        await prisma.$transaction(async (finalizeTx) => {
+          await finalizeTx.booking.update({
+            where: { id: linkedExtension.bookingId },
+            data: {
+              endAt: effectiveEndAt,
+              extensionCount: { increment: 1 },
+              lastExtendedAt: new Date(),
+              totalFinal: linkedExtension.newTotalFinal,
+              activeExtensionId: null,
+              ...(isFirstExtension ? { originalEndAt: linkedExtension.oldEndAt } : {}),
+            },
+          });
+
+          await finalizeTx.bookingExtension.update({
+            where: { id: linkedExtension.id },
+            data: {
+              extensionStatus: ExtensionStatus.CONFIRMED,
+              actualNewEndAt: effectiveEndAt,
+            },
+          });
+        });
+
+        await auditService.log({
+          actorId: actor.actorId,
+          actorName: actor.actorName,
+          actorRole: actor.actorRole,
+          actorBranchId: txn.branchId,
+          action: "Extension finalized after cash confirmation",
+          category: AuditCategory.BOOKING,
+          description: `Extension ${linkedExtension.publicId} confirmed. Booking extended to ${effectiveEndAt.toISOString()}`,
+          entity: "BookingExtension",
+          entityId: linkedExtension.publicId,
+          before: { extensionStatus: "PAYMENT_COLLECTED" },
+          after: { extensionStatus: "CONFIRMED", actualNewEndAt: effectiveEndAt },
+        });
+      }
     }
 
     await auditService.log({

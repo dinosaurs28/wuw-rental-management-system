@@ -510,6 +510,13 @@ export const ConfirmPickupWithDeposit = async (req: Request, res: Response) => {
         });
     }
 
+    // Extension gate: block pickup if a pending extension exists
+    if (booking.activeExtensionId !== null) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        message: "A pending extension must be completed or cancelled before vehicle pickup",
+      });
+    }
+
     // Payment gate: verify booking is financially cleared before allowing pickup
     const [financialState, paymentConfig] = await Promise.all([
       financialStateService.getState(booking.id),

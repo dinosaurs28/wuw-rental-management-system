@@ -152,6 +152,7 @@ model User {
   refundRequestsMade      RefundRequest[]        @relation("RefundRequester")
   refundRequestsApproved  RefundRequest[]        @relation("RefundApprover")
   refundRequestsCompleted RefundRequest[]        @relation("RefundCompleter")
+  initiatedExtensions     BookingExtension[]     @relation("ExtensionActor")
   createdAt               DateTime               @default(now())
   updatedAt               DateTime               @updatedAt
   deletedAt               DateTime?
@@ -276,6 +277,7 @@ model Branch {
   paymentTransactions     PaymentTransaction[]
   cashShifts              CashShift[]
   refundRequests          RefundRequest[]
+  extensions              BookingExtension[]
   createdAt               DateTime                    @default(now())
   deletedAt               DateTime?
 }
@@ -302,6 +304,7 @@ enum StaffActionType {
   RECONCILED
   SETTLED
   DISBURSED
+  EXTENDED
 }
 
 enum StaffEntityType {
@@ -322,6 +325,32 @@ enum StaffEntityType {
   PAYMENT_TRANSACTION
   CASH_SHIFT
   REFUND_REQUEST
+  BOOKING_EXTENSION
+}
+
+// ── Rental Extension Enums ────────────────────────────────────────────────────
+
+enum ExtensionStatus {
+  PENDING_PAYMENT
+  PAYMENT_COLLECTED
+  CONFIRMED
+  REJECTED
+  CANCELLED
+}
+
+enum ExtensionTrigger {
+  CUSTOMER_BEFORE_PICKUP
+  CUSTOMER_AFTER_PICKUP
+  EMPLOYEE_AT_PICKUP
+  EMPLOYEE_DURING_RENTAL
+}
+
+enum ExtensionResolutionType {
+  SAME_VEHICLE
+  SWAP_CURRENT_TO_OTHER
+  SWAP_FUTURE_BOOKING
+  PARTIAL_EXTENSION
+  NO_RESOLUTION
 }
 
 // ── Payment Management Enums ──────────────────────────────────────────────────
@@ -476,6 +505,7 @@ model Vehicle {
   featureFlags     VehicleFeatureFlag[]
   swapsAsOriginal  VehicleSwap[]              @relation("OriginalVehicle")
   swapsAsNew       VehicleSwap[]              @relation("NewVehicle")
+  extensionSwaps   BookingExtension[]         @relation("ExtensionSwappedVehicle")
   createdAt        DateTime                   @default(now())
   updatedAt        DateTime                   @updatedAt
   deletedAt        DateTime?
@@ -709,6 +739,18 @@ model Booking {
   paymentTransactions PaymentTransaction[]
   refundRequests      RefundRequest[]
 
+  // Extension Tracking
+  originalEndAt     DateTime? // Set once on first extension, never changed again
+  extensionCount    Int                @default(0)
+  lastExtendedAt    DateTime?
+  activeExtensionId Int? // FK to BookingExtension — non-null while a pending extension exists
+  activeExtension   BookingExtension?  @relation("ActiveExtension", fields: [activeExtensionId], references: [id])
+  extensions        BookingExtension[] @relation("BookingExtensions")
+
+  // Displacement tracking — set when this booking's vehicle was changed due to another booking's extension
+  displacedByExtensionId Int?
+  extensionDisplacedAt   DateTime?
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -721,6 +763,8 @@ model Booking {
   @@index([advancePaymentId])
   @@index([remainingPaymentId])
   @@index([cancelledAt])
+  @@index([activeExtensionId])
+  @@index([displacedByExtensionId])
   // Performance index
   @@index([status, startAt, endAt])
   @@index([rentalPeriodType])
@@ -1088,6 +1132,8 @@ model VehicleSwap {
   newVehicle      Vehicle @relation("NewVehicle", fields: [newVehicleId], references: [id])
   swappedBy       User    @relation(fields: [swappedById], references: [id])
 
+  extension BookingExtension?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1410,12 +1456,13 @@ model PaymentTransaction {
 
   notes String?
 
-  booking     Booking    @relation(fields: [bookingId], references: [id])
-  branch      Branch     @relation(fields: [branchId], references: [id])
-  collectedBy User?      @relation("PaymentCollector", fields: [collectedById], references: [id])
-  confirmedBy User?      @relation("PaymentConfirmer", fields: [confirmedById], references: [id])
-  rejectedBy  User?      @relation("PaymentRejector", fields: [rejectedById], references: [id])
-  cashShift   CashShift? @relation(fields: [cashShiftId], references: [id])
+  booking     Booking           @relation(fields: [bookingId], references: [id])
+  branch      Branch            @relation(fields: [branchId], references: [id])
+  collectedBy User?             @relation("PaymentCollector", fields: [collectedById], references: [id])
+  confirmedBy User?             @relation("PaymentConfirmer", fields: [confirmedById], references: [id])
+  rejectedBy  User?             @relation("PaymentRejector", fields: [rejectedById], references: [id])
+  cashShift   CashShift?        @relation(fields: [cashShiftId], references: [id])
+  extension   BookingExtension?
 
   createdAt DateTime @default(now())
 
@@ -1492,4 +1539,66 @@ model CashShift {
   @@index([employeeId, status])
   @@index([branchId, status])
   @@index([openedAt])
+}
+
+// ── Rental Extension System ───────────────────────────────────────────────────
+
+// Immutable record of each extension request and its outcome.
+// Created on evaluate(), updated on commit() or cancel().
+model BookingExtension {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique
+
+  bookingId        Int
+  branchId         Int
+  extensionTrigger ExtensionTrigger
+  extensionStatus  ExtensionStatus  @default(PENDING_PAYMENT)
+
+  // Date window
+  oldEndAt       DateTime
+  requestedEndAt DateTime
+  actualNewEndAt DateTime? // Set on CONFIRMED — may differ if PARTIAL
+
+  // Pricing delta
+  additionalAmount Decimal @db.Decimal(10, 2)
+  newTotalFinal    Decimal @db.Decimal(10, 2)
+
+  // Resolution
+  resolutionType      ExtensionResolutionType?
+  vehicleSwapOccurred Boolean                  @default(false)
+  swappedVehicleId    Int? // New vehicle assigned to this booking (if SWAP_CURRENT_TO_OTHER)
+  affectedBookingIds  Int[] // Internal IDs of future bookings displaced (if SWAP_FUTURE_BOOKING)
+
+  // Payment linkage (PaymentTransaction with purpose=EXTENSION)
+  paymentTransactionId Int? @unique
+  // VehicleSwap linkage (for SWAP_CURRENT_TO_OTHER)
+  vehicleSwapId        Int? @unique
+
+  // Actor
+  actorId       Int
+  actorPublicId String
+  actorRole     String
+
+  rejectionReason String?
+  notes           String?
+
+  // Relations
+  booking            Booking             @relation("BookingExtensions", fields: [bookingId], references: [id])
+  branch             Branch              @relation(fields: [branchId], references: [id])
+  actor              User                @relation("ExtensionActor", fields: [actorId], references: [id])
+  swappedVehicle     Vehicle?            @relation("ExtensionSwappedVehicle", fields: [swappedVehicleId], references: [id])
+  paymentTransaction PaymentTransaction? @relation(fields: [paymentTransactionId], references: [id])
+  vehicleSwap        VehicleSwap?        @relation(fields: [vehicleSwapId], references: [id])
+
+  // Back-relation for Booking.activeExtension
+  activeForBookings Booking[] @relation("ActiveExtension")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bookingId])
+  @@index([branchId, extensionStatus])
+  @@index([actorId])
+  @@index([createdAt])
+  @@index([extensionTrigger])
 }

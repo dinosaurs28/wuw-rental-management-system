@@ -37,6 +37,12 @@ export {
   AuditSeverity,
   StaffActionType,
   StaffEntityType,
+  SwapReason,
+  PaymentPurpose,
+  PaymentMethod,
+  ExtensionStatus,
+  ExtensionTrigger,
+  ExtensionResolutionType,
   Prisma,
 } from "./generated/client/index.js";
 

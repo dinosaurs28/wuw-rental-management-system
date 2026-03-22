@@ -51,6 +51,7 @@ import {
   GetPickupCaptureConfig,
   GetPickupCaptures,
 } from "../../controller/employee/captureConfig.controller.js";
+import extensionRouter from "./extension.routes.js";
 
 const router: Router = Router();
 
@@ -109,5 +110,6 @@ router.post(
   UploadDamageImage,
 );
 router.post("/damage/report", EmployeeCheck, CreateDamageReport);
+router.use("/extensions", extensionRouter);
 
 export default router;

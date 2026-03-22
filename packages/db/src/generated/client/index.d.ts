@@ -258,6 +258,11 @@ export type RefundRequest = $Result.DefaultSelection<Prisma.$RefundRequestPayloa
  * 
  */
 export type CashShift = $Result.DefaultSelection<Prisma.$CashShiftPayload>
+/**
+ * Model BookingExtension
+ * 
+ */
+export type BookingExtension = $Result.DefaultSelection<Prisma.$BookingExtensionPayload>
 
 /**
  * Enums
@@ -321,7 +326,8 @@ export const StaffActionType: {
   COLLECTED: 'COLLECTED',
   RECONCILED: 'RECONCILED',
   SETTLED: 'SETTLED',
-  DISBURSED: 'DISBURSED'
+  DISBURSED: 'DISBURSED',
+  EXTENDED: 'EXTENDED'
 };
 
 export type StaffActionType = (typeof StaffActionType)[keyof typeof StaffActionType]
@@ -344,7 +350,8 @@ export const StaffEntityType: {
   MANUAL_DISCOUNT: 'MANUAL_DISCOUNT',
   PAYMENT_TRANSACTION: 'PAYMENT_TRANSACTION',
   CASH_SHIFT: 'CASH_SHIFT',
-  REFUND_REQUEST: 'REFUND_REQUEST'
+  REFUND_REQUEST: 'REFUND_REQUEST',
+  BOOKING_EXTENSION: 'BOOKING_EXTENSION'
 };
 
 export type StaffEntityType = (typeof StaffEntityType)[keyof typeof StaffEntityType]
@@ -593,6 +600,38 @@ export const CashShiftStatus: {
 
 export type CashShiftStatus = (typeof CashShiftStatus)[keyof typeof CashShiftStatus]
 
+
+export const ExtensionTrigger: {
+  CUSTOMER_BEFORE_PICKUP: 'CUSTOMER_BEFORE_PICKUP',
+  CUSTOMER_AFTER_PICKUP: 'CUSTOMER_AFTER_PICKUP',
+  EMPLOYEE_AT_PICKUP: 'EMPLOYEE_AT_PICKUP',
+  EMPLOYEE_DURING_RENTAL: 'EMPLOYEE_DURING_RENTAL'
+};
+
+export type ExtensionTrigger = (typeof ExtensionTrigger)[keyof typeof ExtensionTrigger]
+
+
+export const ExtensionStatus: {
+  PENDING_PAYMENT: 'PENDING_PAYMENT',
+  PAYMENT_COLLECTED: 'PAYMENT_COLLECTED',
+  CONFIRMED: 'CONFIRMED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED'
+};
+
+export type ExtensionStatus = (typeof ExtensionStatus)[keyof typeof ExtensionStatus]
+
+
+export const ExtensionResolutionType: {
+  SAME_VEHICLE: 'SAME_VEHICLE',
+  SWAP_CURRENT_TO_OTHER: 'SWAP_CURRENT_TO_OTHER',
+  SWAP_FUTURE_BOOKING: 'SWAP_FUTURE_BOOKING',
+  PARTIAL_EXTENSION: 'PARTIAL_EXTENSION',
+  NO_RESOLUTION: 'NO_RESOLUTION'
+};
+
+export type ExtensionResolutionType = (typeof ExtensionResolutionType)[keyof typeof ExtensionResolutionType]
+
 }
 
 export type AuthProvider = $Enums.AuthProvider
@@ -714,6 +753,18 @@ export const RefundStatus: typeof $Enums.RefundStatus
 export type CashShiftStatus = $Enums.CashShiftStatus
 
 export const CashShiftStatus: typeof $Enums.CashShiftStatus
+
+export type ExtensionTrigger = $Enums.ExtensionTrigger
+
+export const ExtensionTrigger: typeof $Enums.ExtensionTrigger
+
+export type ExtensionStatus = $Enums.ExtensionStatus
+
+export const ExtensionStatus: typeof $Enums.ExtensionStatus
+
+export type ExtensionResolutionType = $Enums.ExtensionResolutionType
+
+export const ExtensionResolutionType: typeof $Enums.ExtensionResolutionType
 
 /**
  * ##  Prisma Client ʲˢ
@@ -1327,6 +1378,16 @@ export class PrismaClient<
     * ```
     */
   get cashShift(): Prisma.CashShiftDelegate<ExtArgs>;
+
+  /**
+   * `prisma.bookingExtension`: Exposes CRUD operations for the **BookingExtension** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more BookingExtensions
+    * const bookingExtensions = await prisma.bookingExtension.findMany()
+    * ```
+    */
+  get bookingExtension(): Prisma.BookingExtensionDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -1816,7 +1877,8 @@ export namespace Prisma {
     BranchPaymentConfig: 'BranchPaymentConfig',
     PaymentTransaction: 'PaymentTransaction',
     RefundRequest: 'RefundRequest',
-    CashShift: 'CashShift'
+    CashShift: 'CashShift',
+    BookingExtension: 'BookingExtension'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1832,7 +1894,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehiclePhotoCaptureConfig" | "vehicle" | "vehiclePricingOverride" | "vehicleCustomPricing" | "branchPricingDefaults" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "gSTRule" | "timezoneSetting" | "cancellationInvoice" | "featureFlag" | "branchFeatureFlag" | "vehicleFeatureFlag" | "vehicleSwap" | "discountRule" | "durationDiscountSlab" | "branchDiscountConfig" | "discountApplication" | "couponUsageLog" | "manualDiscount" | "branchPaymentConfig" | "paymentTransaction" | "refundRequest" | "cashShift"
+      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehiclePhotoCaptureConfig" | "vehicle" | "vehiclePricingOverride" | "vehicleCustomPricing" | "branchPricingDefaults" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "gSTRule" | "timezoneSetting" | "cancellationInvoice" | "featureFlag" | "branchFeatureFlag" | "vehicleFeatureFlag" | "vehicleSwap" | "discountRule" | "durationDiscountSlab" | "branchDiscountConfig" | "discountApplication" | "couponUsageLog" | "manualDiscount" | "branchPaymentConfig" | "paymentTransaction" | "refundRequest" | "cashShift" | "bookingExtension"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -5266,6 +5328,76 @@ export namespace Prisma {
           }
         }
       }
+      BookingExtension: {
+        payload: Prisma.$BookingExtensionPayload<ExtArgs>
+        fields: Prisma.BookingExtensionFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.BookingExtensionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BookingExtensionPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.BookingExtensionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BookingExtensionPayload>
+          }
+          findFirst: {
+            args: Prisma.BookingExtensionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BookingExtensionPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.BookingExtensionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BookingExtensionPayload>
+          }
+          findMany: {
+            args: Prisma.BookingExtensionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BookingExtensionPayload>[]
+          }
+          create: {
+            args: Prisma.BookingExtensionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BookingExtensionPayload>
+          }
+          createMany: {
+            args: Prisma.BookingExtensionCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.BookingExtensionCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BookingExtensionPayload>[]
+          }
+          delete: {
+            args: Prisma.BookingExtensionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BookingExtensionPayload>
+          }
+          update: {
+            args: Prisma.BookingExtensionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BookingExtensionPayload>
+          }
+          deleteMany: {
+            args: Prisma.BookingExtensionDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.BookingExtensionUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.BookingExtensionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BookingExtensionPayload>
+          }
+          aggregate: {
+            args: Prisma.BookingExtensionAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateBookingExtension>
+          }
+          groupBy: {
+            args: Prisma.BookingExtensionGroupByArgs<ExtArgs>
+            result: $Utils.Optional<BookingExtensionGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.BookingExtensionCountArgs<ExtArgs>
+            result: $Utils.Optional<BookingExtensionCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -5445,6 +5577,7 @@ export namespace Prisma {
     refundRequestsMade: number
     refundRequestsApproved: number
     refundRequestsCompleted: number
+    initiatedExtensions: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -5466,6 +5599,7 @@ export namespace Prisma {
     refundRequestsMade?: boolean | UserCountOutputTypeCountRefundRequestsMadeArgs
     refundRequestsApproved?: boolean | UserCountOutputTypeCountRefundRequestsApprovedArgs
     refundRequestsCompleted?: boolean | UserCountOutputTypeCountRefundRequestsCompletedArgs
+    initiatedExtensions?: boolean | UserCountOutputTypeCountInitiatedExtensionsArgs
   }
 
   // Custom InputTypes
@@ -5603,6 +5737,13 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountRefundRequestsCompletedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: RefundRequestWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountInitiatedExtensionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BookingExtensionWhereInput
   }
 
 
@@ -5750,6 +5891,7 @@ export namespace Prisma {
     paymentTransactions: number
     cashShifts: number
     refundRequests: number
+    extensions: number
   }
 
   export type BranchCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -5767,6 +5909,7 @@ export namespace Prisma {
     paymentTransactions?: boolean | BranchCountOutputTypeCountPaymentTransactionsArgs
     cashShifts?: boolean | BranchCountOutputTypeCountCashShiftsArgs
     refundRequests?: boolean | BranchCountOutputTypeCountRefundRequestsArgs
+    extensions?: boolean | BranchCountOutputTypeCountExtensionsArgs
   }
 
   // Custom InputTypes
@@ -5878,6 +6021,13 @@ export namespace Prisma {
     where?: RefundRequestWhereInput
   }
 
+  /**
+   * BranchCountOutputType without action
+   */
+  export type BranchCountOutputTypeCountExtensionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BookingExtensionWhereInput
+  }
+
 
   /**
    * Count Type VehicleCategoryCountOutputType
@@ -5968,6 +6118,7 @@ export namespace Prisma {
     featureFlags: number
     swapsAsOriginal: number
     swapsAsNew: number
+    extensionSwaps: number
   }
 
   export type VehicleCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -5979,6 +6130,7 @@ export namespace Prisma {
     featureFlags?: boolean | VehicleCountOutputTypeCountFeatureFlagsArgs
     swapsAsOriginal?: boolean | VehicleCountOutputTypeCountSwapsAsOriginalArgs
     swapsAsNew?: boolean | VehicleCountOutputTypeCountSwapsAsNewArgs
+    extensionSwaps?: boolean | VehicleCountOutputTypeCountExtensionSwapsArgs
   }
 
   // Custom InputTypes
@@ -6048,6 +6200,13 @@ export namespace Prisma {
     where?: VehicleSwapWhereInput
   }
 
+  /**
+   * VehicleCountOutputType without action
+   */
+  export type VehicleCountOutputTypeCountExtensionSwapsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BookingExtensionWhereInput
+  }
+
 
   /**
    * Count Type BookingCountOutputType
@@ -6060,6 +6219,7 @@ export namespace Prisma {
     vehicleSwaps: number
     paymentTransactions: number
     refundRequests: number
+    extensions: number
   }
 
   export type BookingCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6069,6 +6229,7 @@ export namespace Prisma {
     vehicleSwaps?: boolean | BookingCountOutputTypeCountVehicleSwapsArgs
     paymentTransactions?: boolean | BookingCountOutputTypeCountPaymentTransactionsArgs
     refundRequests?: boolean | BookingCountOutputTypeCountRefundRequestsArgs
+    extensions?: boolean | BookingCountOutputTypeCountExtensionsArgs
   }
 
   // Custom InputTypes
@@ -6122,6 +6283,13 @@ export namespace Prisma {
    */
   export type BookingCountOutputTypeCountRefundRequestsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: RefundRequestWhereInput
+  }
+
+  /**
+   * BookingCountOutputType without action
+   */
+  export type BookingCountOutputTypeCountExtensionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BookingExtensionWhereInput
   }
 
 
@@ -6313,6 +6481,37 @@ export namespace Prisma {
    */
   export type CashShiftCountOutputTypeCountTransactionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: PaymentTransactionWhereInput
+  }
+
+
+  /**
+   * Count Type BookingExtensionCountOutputType
+   */
+
+  export type BookingExtensionCountOutputType = {
+    activeForBookings: number
+  }
+
+  export type BookingExtensionCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    activeForBookings?: boolean | BookingExtensionCountOutputTypeCountActiveForBookingsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * BookingExtensionCountOutputType without action
+   */
+  export type BookingExtensionCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingExtensionCountOutputType
+     */
+    select?: BookingExtensionCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * BookingExtensionCountOutputType without action
+   */
+  export type BookingExtensionCountOutputTypeCountActiveForBookingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BookingWhereInput
   }
 
 
@@ -6606,6 +6805,7 @@ export namespace Prisma {
     refundRequestsMade?: boolean | User$refundRequestsMadeArgs<ExtArgs>
     refundRequestsApproved?: boolean | User$refundRequestsApprovedArgs<ExtArgs>
     refundRequestsCompleted?: boolean | User$refundRequestsCompletedArgs<ExtArgs>
+    initiatedExtensions?: boolean | User$initiatedExtensionsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -6663,6 +6863,7 @@ export namespace Prisma {
     refundRequestsMade?: boolean | User$refundRequestsMadeArgs<ExtArgs>
     refundRequestsApproved?: boolean | User$refundRequestsApprovedArgs<ExtArgs>
     refundRequestsCompleted?: boolean | User$refundRequestsCompletedArgs<ExtArgs>
+    initiatedExtensions?: boolean | User$initiatedExtensionsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type UserIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6692,6 +6893,7 @@ export namespace Prisma {
       refundRequestsMade: Prisma.$RefundRequestPayload<ExtArgs>[]
       refundRequestsApproved: Prisma.$RefundRequestPayload<ExtArgs>[]
       refundRequestsCompleted: Prisma.$RefundRequestPayload<ExtArgs>[]
+      initiatedExtensions: Prisma.$BookingExtensionPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -7091,6 +7293,7 @@ export namespace Prisma {
     refundRequestsMade<T extends User$refundRequestsMadeArgs<ExtArgs> = {}>(args?: Subset<T, User$refundRequestsMadeArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "findMany"> | Null>
     refundRequestsApproved<T extends User$refundRequestsApprovedArgs<ExtArgs> = {}>(args?: Subset<T, User$refundRequestsApprovedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "findMany"> | Null>
     refundRequestsCompleted<T extends User$refundRequestsCompletedArgs<ExtArgs> = {}>(args?: Subset<T, User$refundRequestsCompletedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "findMany"> | Null>
+    initiatedExtensions<T extends User$initiatedExtensionsArgs<ExtArgs> = {}>(args?: Subset<T, User$initiatedExtensionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingExtensionPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -7847,6 +8050,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: RefundRequestScalarFieldEnum | RefundRequestScalarFieldEnum[]
+  }
+
+  /**
+   * User.initiatedExtensions
+   */
+  export type User$initiatedExtensionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingExtension
+     */
+    select?: BookingExtensionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingExtensionInclude<ExtArgs> | null
+    where?: BookingExtensionWhereInput
+    orderBy?: BookingExtensionOrderByWithRelationInput | BookingExtensionOrderByWithRelationInput[]
+    cursor?: BookingExtensionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: BookingExtensionScalarFieldEnum | BookingExtensionScalarFieldEnum[]
   }
 
   /**
@@ -13443,6 +13666,7 @@ export namespace Prisma {
     paymentTransactions?: boolean | Branch$paymentTransactionsArgs<ExtArgs>
     cashShifts?: boolean | Branch$cashShiftsArgs<ExtArgs>
     refundRequests?: boolean | Branch$refundRequestsArgs<ExtArgs>
+    extensions?: boolean | Branch$extensionsArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["branch"]>
 
@@ -13485,6 +13709,7 @@ export namespace Prisma {
     paymentTransactions?: boolean | Branch$paymentTransactionsArgs<ExtArgs>
     cashShifts?: boolean | Branch$cashShiftsArgs<ExtArgs>
     refundRequests?: boolean | Branch$refundRequestsArgs<ExtArgs>
+    extensions?: boolean | Branch$extensionsArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type BranchIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -13510,6 +13735,7 @@ export namespace Prisma {
       paymentTransactions: Prisma.$PaymentTransactionPayload<ExtArgs>[]
       cashShifts: Prisma.$CashShiftPayload<ExtArgs>[]
       refundRequests: Prisma.$RefundRequestPayload<ExtArgs>[]
+      extensions: Prisma.$BookingExtensionPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -13901,6 +14127,7 @@ export namespace Prisma {
     paymentTransactions<T extends Branch$paymentTransactionsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$paymentTransactionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentTransactionPayload<ExtArgs>, T, "findMany"> | Null>
     cashShifts<T extends Branch$cashShiftsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$cashShiftsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CashShiftPayload<ExtArgs>, T, "findMany"> | Null>
     refundRequests<T extends Branch$refundRequestsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$refundRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "findMany"> | Null>
+    extensions<T extends Branch$extensionsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$extensionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingExtensionPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -14597,6 +14824,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: RefundRequestScalarFieldEnum | RefundRequestScalarFieldEnum[]
+  }
+
+  /**
+   * Branch.extensions
+   */
+  export type Branch$extensionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingExtension
+     */
+    select?: BookingExtensionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingExtensionInclude<ExtArgs> | null
+    where?: BookingExtensionWhereInput
+    orderBy?: BookingExtensionOrderByWithRelationInput | BookingExtensionOrderByWithRelationInput[]
+    cursor?: BookingExtensionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: BookingExtensionScalarFieldEnum | BookingExtensionScalarFieldEnum[]
   }
 
   /**
@@ -19173,6 +19420,7 @@ export namespace Prisma {
     featureFlags?: boolean | Vehicle$featureFlagsArgs<ExtArgs>
     swapsAsOriginal?: boolean | Vehicle$swapsAsOriginalArgs<ExtArgs>
     swapsAsNew?: boolean | Vehicle$swapsAsNewArgs<ExtArgs>
+    extensionSwaps?: boolean | Vehicle$extensionSwapsArgs<ExtArgs>
     _count?: boolean | VehicleCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["vehicle"]>
 
@@ -19227,6 +19475,7 @@ export namespace Prisma {
     featureFlags?: boolean | Vehicle$featureFlagsArgs<ExtArgs>
     swapsAsOriginal?: boolean | Vehicle$swapsAsOriginalArgs<ExtArgs>
     swapsAsNew?: boolean | Vehicle$swapsAsNewArgs<ExtArgs>
+    extensionSwaps?: boolean | Vehicle$extensionSwapsArgs<ExtArgs>
     _count?: boolean | VehicleCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type VehicleIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -19249,6 +19498,7 @@ export namespace Prisma {
       featureFlags: Prisma.$VehicleFeatureFlagPayload<ExtArgs>[]
       swapsAsOriginal: Prisma.$VehicleSwapPayload<ExtArgs>[]
       swapsAsNew: Prisma.$VehicleSwapPayload<ExtArgs>[]
+      extensionSwaps: Prisma.$BookingExtensionPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -19642,6 +19892,7 @@ export namespace Prisma {
     featureFlags<T extends Vehicle$featureFlagsArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$featureFlagsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleFeatureFlagPayload<ExtArgs>, T, "findMany"> | Null>
     swapsAsOriginal<T extends Vehicle$swapsAsOriginalArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$swapsAsOriginalArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleSwapPayload<ExtArgs>, T, "findMany"> | Null>
     swapsAsNew<T extends Vehicle$swapsAsNewArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$swapsAsNewArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleSwapPayload<ExtArgs>, T, "findMany"> | Null>
+    extensionSwaps<T extends Vehicle$extensionSwapsArgs<ExtArgs> = {}>(args?: Subset<T, Vehicle$extensionSwapsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingExtensionPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -20200,6 +20451,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: VehicleSwapScalarFieldEnum | VehicleSwapScalarFieldEnum[]
+  }
+
+  /**
+   * Vehicle.extensionSwaps
+   */
+  export type Vehicle$extensionSwapsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingExtension
+     */
+    select?: BookingExtensionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingExtensionInclude<ExtArgs> | null
+    where?: BookingExtensionWhereInput
+    orderBy?: BookingExtensionOrderByWithRelationInput | BookingExtensionOrderByWithRelationInput[]
+    cursor?: BookingExtensionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: BookingExtensionScalarFieldEnum | BookingExtensionScalarFieldEnum[]
   }
 
   /**
@@ -29533,6 +29804,9 @@ export namespace Prisma {
     remainingBalance: Decimal | null
     safetyDeposit: Decimal | null
     discountRuleId: number | null
+    extensionCount: number | null
+    activeExtensionId: number | null
+    displacedByExtensionId: number | null
   }
 
   export type BookingSumAggregateOutputType = {
@@ -29558,6 +29832,9 @@ export namespace Prisma {
     remainingBalance: Decimal | null
     safetyDeposit: Decimal | null
     discountRuleId: number | null
+    extensionCount: number | null
+    activeExtensionId: number | null
+    displacedByExtensionId: number | null
   }
 
   export type BookingMinAggregateOutputType = {
@@ -29609,6 +29886,12 @@ export namespace Prisma {
     requiresManagerConfirmation: boolean | null
     couponCode: string | null
     discountRuleId: number | null
+    originalEndAt: Date | null
+    extensionCount: number | null
+    lastExtendedAt: Date | null
+    activeExtensionId: number | null
+    displacedByExtensionId: number | null
+    extensionDisplacedAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
     deletedAt: Date | null
@@ -29663,6 +29946,12 @@ export namespace Prisma {
     requiresManagerConfirmation: boolean | null
     couponCode: string | null
     discountRuleId: number | null
+    originalEndAt: Date | null
+    extensionCount: number | null
+    lastExtendedAt: Date | null
+    activeExtensionId: number | null
+    displacedByExtensionId: number | null
+    extensionDisplacedAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
     deletedAt: Date | null
@@ -29718,6 +30007,12 @@ export namespace Prisma {
     requiresManagerConfirmation: number
     couponCode: number
     discountRuleId: number
+    originalEndAt: number
+    extensionCount: number
+    lastExtendedAt: number
+    activeExtensionId: number
+    displacedByExtensionId: number
+    extensionDisplacedAt: number
     createdAt: number
     updatedAt: number
     deletedAt: number
@@ -29748,6 +30043,9 @@ export namespace Prisma {
     remainingBalance?: true
     safetyDeposit?: true
     discountRuleId?: true
+    extensionCount?: true
+    activeExtensionId?: true
+    displacedByExtensionId?: true
   }
 
   export type BookingSumAggregateInputType = {
@@ -29773,6 +30071,9 @@ export namespace Prisma {
     remainingBalance?: true
     safetyDeposit?: true
     discountRuleId?: true
+    extensionCount?: true
+    activeExtensionId?: true
+    displacedByExtensionId?: true
   }
 
   export type BookingMinAggregateInputType = {
@@ -29824,6 +30125,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: true
     couponCode?: true
     discountRuleId?: true
+    originalEndAt?: true
+    extensionCount?: true
+    lastExtendedAt?: true
+    activeExtensionId?: true
+    displacedByExtensionId?: true
+    extensionDisplacedAt?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -29878,6 +30185,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: true
     couponCode?: true
     discountRuleId?: true
+    originalEndAt?: true
+    extensionCount?: true
+    lastExtendedAt?: true
+    activeExtensionId?: true
+    displacedByExtensionId?: true
+    extensionDisplacedAt?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -29933,6 +30246,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: true
     couponCode?: true
     discountRuleId?: true
+    originalEndAt?: true
+    extensionCount?: true
+    lastExtendedAt?: true
+    activeExtensionId?: true
+    displacedByExtensionId?: true
+    extensionDisplacedAt?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -30075,6 +30394,12 @@ export namespace Prisma {
     requiresManagerConfirmation: boolean
     couponCode: string | null
     discountRuleId: number | null
+    originalEndAt: Date | null
+    extensionCount: number
+    lastExtendedAt: Date | null
+    activeExtensionId: number | null
+    displacedByExtensionId: number | null
+    extensionDisplacedAt: Date | null
     createdAt: Date
     updatedAt: Date
     deletedAt: Date | null
@@ -30149,6 +30474,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: boolean
     discountRuleId?: boolean
+    originalEndAt?: boolean
+    extensionCount?: boolean
+    lastExtendedAt?: boolean
+    activeExtensionId?: boolean
+    displacedByExtensionId?: boolean
+    extensionDisplacedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -30168,6 +30499,8 @@ export namespace Prisma {
     manualDiscount?: boolean | Booking$manualDiscountArgs<ExtArgs>
     paymentTransactions?: boolean | Booking$paymentTransactionsArgs<ExtArgs>
     refundRequests?: boolean | Booking$refundRequestsArgs<ExtArgs>
+    activeExtension?: boolean | Booking$activeExtensionArgs<ExtArgs>
+    extensions?: boolean | Booking$extensionsArgs<ExtArgs>
     _count?: boolean | BookingCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["booking"]>
 
@@ -30221,6 +30554,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: boolean
     discountRuleId?: boolean
+    originalEndAt?: boolean
+    extensionCount?: boolean
+    lastExtendedAt?: boolean
+    activeExtensionId?: boolean
+    displacedByExtensionId?: boolean
+    extensionDisplacedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -30229,6 +30568,7 @@ export namespace Prisma {
     branch?: boolean | BranchDefaultArgs<ExtArgs>
     createdBy?: boolean | UserDefaultArgs<ExtArgs>
     discountRule?: boolean | Booking$discountRuleArgs<ExtArgs>
+    activeExtension?: boolean | Booking$activeExtensionArgs<ExtArgs>
   }, ExtArgs["result"]["booking"]>
 
   export type BookingSelectScalar = {
@@ -30281,6 +30621,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: boolean
     discountRuleId?: boolean
+    originalEndAt?: boolean
+    extensionCount?: boolean
+    lastExtendedAt?: boolean
+    activeExtensionId?: boolean
+    displacedByExtensionId?: boolean
+    extensionDisplacedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -30303,6 +30649,8 @@ export namespace Prisma {
     manualDiscount?: boolean | Booking$manualDiscountArgs<ExtArgs>
     paymentTransactions?: boolean | Booking$paymentTransactionsArgs<ExtArgs>
     refundRequests?: boolean | Booking$refundRequestsArgs<ExtArgs>
+    activeExtension?: boolean | Booking$activeExtensionArgs<ExtArgs>
+    extensions?: boolean | Booking$extensionsArgs<ExtArgs>
     _count?: boolean | BookingCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type BookingIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -30311,6 +30659,7 @@ export namespace Prisma {
     branch?: boolean | BranchDefaultArgs<ExtArgs>
     createdBy?: boolean | UserDefaultArgs<ExtArgs>
     discountRule?: boolean | Booking$discountRuleArgs<ExtArgs>
+    activeExtension?: boolean | Booking$activeExtensionArgs<ExtArgs>
   }
 
   export type $BookingPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -30332,6 +30681,8 @@ export namespace Prisma {
       manualDiscount: Prisma.$ManualDiscountPayload<ExtArgs> | null
       paymentTransactions: Prisma.$PaymentTransactionPayload<ExtArgs>[]
       refundRequests: Prisma.$RefundRequestPayload<ExtArgs>[]
+      activeExtension: Prisma.$BookingExtensionPayload<ExtArgs> | null
+      extensions: Prisma.$BookingExtensionPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -30383,6 +30734,12 @@ export namespace Prisma {
       requiresManagerConfirmation: boolean
       couponCode: string | null
       discountRuleId: number | null
+      originalEndAt: Date | null
+      extensionCount: number
+      lastExtendedAt: Date | null
+      activeExtensionId: number | null
+      displacedByExtensionId: number | null
+      extensionDisplacedAt: Date | null
       createdAt: Date
       updatedAt: Date
       deletedAt: Date | null
@@ -30766,6 +31123,8 @@ export namespace Prisma {
     manualDiscount<T extends Booking$manualDiscountArgs<ExtArgs> = {}>(args?: Subset<T, Booking$manualDiscountArgs<ExtArgs>>): Prisma__ManualDiscountClient<$Result.GetResult<Prisma.$ManualDiscountPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     paymentTransactions<T extends Booking$paymentTransactionsArgs<ExtArgs> = {}>(args?: Subset<T, Booking$paymentTransactionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentTransactionPayload<ExtArgs>, T, "findMany"> | Null>
     refundRequests<T extends Booking$refundRequestsArgs<ExtArgs> = {}>(args?: Subset<T, Booking$refundRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "findMany"> | Null>
+    activeExtension<T extends Booking$activeExtensionArgs<ExtArgs> = {}>(args?: Subset<T, Booking$activeExtensionArgs<ExtArgs>>): Prisma__BookingExtensionClient<$Result.GetResult<Prisma.$BookingExtensionPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    extensions<T extends Booking$extensionsArgs<ExtArgs> = {}>(args?: Subset<T, Booking$extensionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingExtensionPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -30844,6 +31203,12 @@ export namespace Prisma {
     readonly requiresManagerConfirmation: FieldRef<"Booking", 'Boolean'>
     readonly couponCode: FieldRef<"Booking", 'String'>
     readonly discountRuleId: FieldRef<"Booking", 'Int'>
+    readonly originalEndAt: FieldRef<"Booking", 'DateTime'>
+    readonly extensionCount: FieldRef<"Booking", 'Int'>
+    readonly lastExtendedAt: FieldRef<"Booking", 'DateTime'>
+    readonly activeExtensionId: FieldRef<"Booking", 'Int'>
+    readonly displacedByExtensionId: FieldRef<"Booking", 'Int'>
+    readonly extensionDisplacedAt: FieldRef<"Booking", 'DateTime'>
     readonly createdAt: FieldRef<"Booking", 'DateTime'>
     readonly updatedAt: FieldRef<"Booking", 'DateTime'>
     readonly deletedAt: FieldRef<"Booking", 'DateTime'>
@@ -31396,6 +31761,41 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: RefundRequestScalarFieldEnum | RefundRequestScalarFieldEnum[]
+  }
+
+  /**
+   * Booking.activeExtension
+   */
+  export type Booking$activeExtensionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingExtension
+     */
+    select?: BookingExtensionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingExtensionInclude<ExtArgs> | null
+    where?: BookingExtensionWhereInput
+  }
+
+  /**
+   * Booking.extensions
+   */
+  export type Booking$extensionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingExtension
+     */
+    select?: BookingExtensionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingExtensionInclude<ExtArgs> | null
+    where?: BookingExtensionWhereInput
+    orderBy?: BookingExtensionOrderByWithRelationInput | BookingExtensionOrderByWithRelationInput[]
+    cursor?: BookingExtensionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: BookingExtensionScalarFieldEnum | BookingExtensionScalarFieldEnum[]
   }
 
   /**
@@ -48542,6 +48942,7 @@ export namespace Prisma {
     originalVehicle?: boolean | VehicleDefaultArgs<ExtArgs>
     newVehicle?: boolean | VehicleDefaultArgs<ExtArgs>
     swappedBy?: boolean | UserDefaultArgs<ExtArgs>
+    extension?: boolean | VehicleSwap$extensionArgs<ExtArgs>
   }, ExtArgs["result"]["vehicleSwap"]>
 
   export type VehicleSwapSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -48585,6 +48986,7 @@ export namespace Prisma {
     originalVehicle?: boolean | VehicleDefaultArgs<ExtArgs>
     newVehicle?: boolean | VehicleDefaultArgs<ExtArgs>
     swappedBy?: boolean | UserDefaultArgs<ExtArgs>
+    extension?: boolean | VehicleSwap$extensionArgs<ExtArgs>
   }
   export type VehicleSwapIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     booking?: boolean | BookingDefaultArgs<ExtArgs>
@@ -48600,6 +49002,7 @@ export namespace Prisma {
       originalVehicle: Prisma.$VehiclePayload<ExtArgs>
       newVehicle: Prisma.$VehiclePayload<ExtArgs>
       swappedBy: Prisma.$UserPayload<ExtArgs>
+      extension: Prisma.$BookingExtensionPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -48983,6 +49386,7 @@ export namespace Prisma {
     originalVehicle<T extends VehicleDefaultArgs<ExtArgs> = {}>(args?: Subset<T, VehicleDefaultArgs<ExtArgs>>): Prisma__VehicleClient<$Result.GetResult<Prisma.$VehiclePayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     newVehicle<T extends VehicleDefaultArgs<ExtArgs> = {}>(args?: Subset<T, VehicleDefaultArgs<ExtArgs>>): Prisma__VehicleClient<$Result.GetResult<Prisma.$VehiclePayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     swappedBy<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    extension<T extends VehicleSwap$extensionArgs<ExtArgs> = {}>(args?: Subset<T, VehicleSwap$extensionArgs<ExtArgs>>): Prisma__BookingExtensionClient<$Result.GetResult<Prisma.$BookingExtensionPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -49349,6 +49753,21 @@ export namespace Prisma {
      * Filter which VehicleSwaps to delete
      */
     where?: VehicleSwapWhereInput
+  }
+
+  /**
+   * VehicleSwap.extension
+   */
+  export type VehicleSwap$extensionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingExtension
+     */
+    select?: BookingExtensionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingExtensionInclude<ExtArgs> | null
+    where?: BookingExtensionWhereInput
   }
 
   /**
@@ -57860,6 +58279,7 @@ export namespace Prisma {
     confirmedBy?: boolean | PaymentTransaction$confirmedByArgs<ExtArgs>
     rejectedBy?: boolean | PaymentTransaction$rejectedByArgs<ExtArgs>
     cashShift?: boolean | PaymentTransaction$cashShiftArgs<ExtArgs>
+    extension?: boolean | PaymentTransaction$extensionArgs<ExtArgs>
   }, ExtArgs["result"]["paymentTransaction"]>
 
   export type PaymentTransactionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -57927,6 +58347,7 @@ export namespace Prisma {
     confirmedBy?: boolean | PaymentTransaction$confirmedByArgs<ExtArgs>
     rejectedBy?: boolean | PaymentTransaction$rejectedByArgs<ExtArgs>
     cashShift?: boolean | PaymentTransaction$cashShiftArgs<ExtArgs>
+    extension?: boolean | PaymentTransaction$extensionArgs<ExtArgs>
   }
   export type PaymentTransactionIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     booking?: boolean | BookingDefaultArgs<ExtArgs>
@@ -57946,6 +58367,7 @@ export namespace Prisma {
       confirmedBy: Prisma.$UserPayload<ExtArgs> | null
       rejectedBy: Prisma.$UserPayload<ExtArgs> | null
       cashShift: Prisma.$CashShiftPayload<ExtArgs> | null
+      extension: Prisma.$BookingExtensionPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -58341,6 +58763,7 @@ export namespace Prisma {
     confirmedBy<T extends PaymentTransaction$confirmedByArgs<ExtArgs> = {}>(args?: Subset<T, PaymentTransaction$confirmedByArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     rejectedBy<T extends PaymentTransaction$rejectedByArgs<ExtArgs> = {}>(args?: Subset<T, PaymentTransaction$rejectedByArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     cashShift<T extends PaymentTransaction$cashShiftArgs<ExtArgs> = {}>(args?: Subset<T, PaymentTransaction$cashShiftArgs<ExtArgs>>): Prisma__CashShiftClient<$Result.GetResult<Prisma.$CashShiftPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    extension<T extends PaymentTransaction$extensionArgs<ExtArgs> = {}>(args?: Subset<T, PaymentTransaction$extensionArgs<ExtArgs>>): Prisma__BookingExtensionClient<$Result.GetResult<Prisma.$BookingExtensionPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -58777,6 +59200,21 @@ export namespace Prisma {
      */
     include?: CashShiftInclude<ExtArgs> | null
     where?: CashShiftWhereInput
+  }
+
+  /**
+   * PaymentTransaction.extension
+   */
+  export type PaymentTransaction$extensionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingExtension
+     */
+    select?: BookingExtensionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingExtensionInclude<ExtArgs> | null
+    where?: BookingExtensionWhereInput
   }
 
   /**
@@ -61178,6 +61616,1343 @@ export namespace Prisma {
 
 
   /**
+   * Model BookingExtension
+   */
+
+  export type AggregateBookingExtension = {
+    _count: BookingExtensionCountAggregateOutputType | null
+    _avg: BookingExtensionAvgAggregateOutputType | null
+    _sum: BookingExtensionSumAggregateOutputType | null
+    _min: BookingExtensionMinAggregateOutputType | null
+    _max: BookingExtensionMaxAggregateOutputType | null
+  }
+
+  export type BookingExtensionAvgAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    branchId: number | null
+    additionalAmount: Decimal | null
+    newTotalFinal: Decimal | null
+    swappedVehicleId: number | null
+    affectedBookingIds: number | null
+    paymentTransactionId: number | null
+    vehicleSwapId: number | null
+    actorId: number | null
+  }
+
+  export type BookingExtensionSumAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    branchId: number | null
+    additionalAmount: Decimal | null
+    newTotalFinal: Decimal | null
+    swappedVehicleId: number | null
+    affectedBookingIds: number[]
+    paymentTransactionId: number | null
+    vehicleSwapId: number | null
+    actorId: number | null
+  }
+
+  export type BookingExtensionMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    bookingId: number | null
+    branchId: number | null
+    extensionTrigger: $Enums.ExtensionTrigger | null
+    extensionStatus: $Enums.ExtensionStatus | null
+    oldEndAt: Date | null
+    requestedEndAt: Date | null
+    actualNewEndAt: Date | null
+    additionalAmount: Decimal | null
+    newTotalFinal: Decimal | null
+    resolutionType: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred: boolean | null
+    swappedVehicleId: number | null
+    paymentTransactionId: number | null
+    vehicleSwapId: number | null
+    actorId: number | null
+    actorPublicId: string | null
+    actorRole: string | null
+    rejectionReason: string | null
+    notes: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type BookingExtensionMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    bookingId: number | null
+    branchId: number | null
+    extensionTrigger: $Enums.ExtensionTrigger | null
+    extensionStatus: $Enums.ExtensionStatus | null
+    oldEndAt: Date | null
+    requestedEndAt: Date | null
+    actualNewEndAt: Date | null
+    additionalAmount: Decimal | null
+    newTotalFinal: Decimal | null
+    resolutionType: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred: boolean | null
+    swappedVehicleId: number | null
+    paymentTransactionId: number | null
+    vehicleSwapId: number | null
+    actorId: number | null
+    actorPublicId: string | null
+    actorRole: string | null
+    rejectionReason: string | null
+    notes: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type BookingExtensionCountAggregateOutputType = {
+    id: number
+    publicId: number
+    bookingId: number
+    branchId: number
+    extensionTrigger: number
+    extensionStatus: number
+    oldEndAt: number
+    requestedEndAt: number
+    actualNewEndAt: number
+    additionalAmount: number
+    newTotalFinal: number
+    resolutionType: number
+    vehicleSwapOccurred: number
+    swappedVehicleId: number
+    affectedBookingIds: number
+    paymentTransactionId: number
+    vehicleSwapId: number
+    actorId: number
+    actorPublicId: number
+    actorRole: number
+    rejectionReason: number
+    notes: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type BookingExtensionAvgAggregateInputType = {
+    id?: true
+    bookingId?: true
+    branchId?: true
+    additionalAmount?: true
+    newTotalFinal?: true
+    swappedVehicleId?: true
+    affectedBookingIds?: true
+    paymentTransactionId?: true
+    vehicleSwapId?: true
+    actorId?: true
+  }
+
+  export type BookingExtensionSumAggregateInputType = {
+    id?: true
+    bookingId?: true
+    branchId?: true
+    additionalAmount?: true
+    newTotalFinal?: true
+    swappedVehicleId?: true
+    affectedBookingIds?: true
+    paymentTransactionId?: true
+    vehicleSwapId?: true
+    actorId?: true
+  }
+
+  export type BookingExtensionMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    branchId?: true
+    extensionTrigger?: true
+    extensionStatus?: true
+    oldEndAt?: true
+    requestedEndAt?: true
+    actualNewEndAt?: true
+    additionalAmount?: true
+    newTotalFinal?: true
+    resolutionType?: true
+    vehicleSwapOccurred?: true
+    swappedVehicleId?: true
+    paymentTransactionId?: true
+    vehicleSwapId?: true
+    actorId?: true
+    actorPublicId?: true
+    actorRole?: true
+    rejectionReason?: true
+    notes?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type BookingExtensionMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    branchId?: true
+    extensionTrigger?: true
+    extensionStatus?: true
+    oldEndAt?: true
+    requestedEndAt?: true
+    actualNewEndAt?: true
+    additionalAmount?: true
+    newTotalFinal?: true
+    resolutionType?: true
+    vehicleSwapOccurred?: true
+    swappedVehicleId?: true
+    paymentTransactionId?: true
+    vehicleSwapId?: true
+    actorId?: true
+    actorPublicId?: true
+    actorRole?: true
+    rejectionReason?: true
+    notes?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type BookingExtensionCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    branchId?: true
+    extensionTrigger?: true
+    extensionStatus?: true
+    oldEndAt?: true
+    requestedEndAt?: true
+    actualNewEndAt?: true
+    additionalAmount?: true
+    newTotalFinal?: true
+    resolutionType?: true
+    vehicleSwapOccurred?: true
+    swappedVehicleId?: true
+    affectedBookingIds?: true
+    paymentTransactionId?: true
+    vehicleSwapId?: true
+    actorId?: true
+    actorPublicId?: true
+    actorRole?: true
+    rejectionReason?: true
+    notes?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type BookingExtensionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which BookingExtension to aggregate.
+     */
+    where?: BookingExtensionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BookingExtensions to fetch.
+     */
+    orderBy?: BookingExtensionOrderByWithRelationInput | BookingExtensionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: BookingExtensionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BookingExtensions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BookingExtensions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned BookingExtensions
+    **/
+    _count?: true | BookingExtensionCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: BookingExtensionAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: BookingExtensionSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: BookingExtensionMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: BookingExtensionMaxAggregateInputType
+  }
+
+  export type GetBookingExtensionAggregateType<T extends BookingExtensionAggregateArgs> = {
+        [P in keyof T & keyof AggregateBookingExtension]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateBookingExtension[P]>
+      : GetScalarType<T[P], AggregateBookingExtension[P]>
+  }
+
+
+
+
+  export type BookingExtensionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BookingExtensionWhereInput
+    orderBy?: BookingExtensionOrderByWithAggregationInput | BookingExtensionOrderByWithAggregationInput[]
+    by: BookingExtensionScalarFieldEnum[] | BookingExtensionScalarFieldEnum
+    having?: BookingExtensionScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: BookingExtensionCountAggregateInputType | true
+    _avg?: BookingExtensionAvgAggregateInputType
+    _sum?: BookingExtensionSumAggregateInputType
+    _min?: BookingExtensionMinAggregateInputType
+    _max?: BookingExtensionMaxAggregateInputType
+  }
+
+  export type BookingExtensionGroupByOutputType = {
+    id: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    extensionTrigger: $Enums.ExtensionTrigger
+    extensionStatus: $Enums.ExtensionStatus
+    oldEndAt: Date
+    requestedEndAt: Date
+    actualNewEndAt: Date | null
+    additionalAmount: Decimal
+    newTotalFinal: Decimal
+    resolutionType: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred: boolean
+    swappedVehicleId: number | null
+    affectedBookingIds: number[]
+    paymentTransactionId: number | null
+    vehicleSwapId: number | null
+    actorId: number
+    actorPublicId: string
+    actorRole: string
+    rejectionReason: string | null
+    notes: string | null
+    createdAt: Date
+    updatedAt: Date
+    _count: BookingExtensionCountAggregateOutputType | null
+    _avg: BookingExtensionAvgAggregateOutputType | null
+    _sum: BookingExtensionSumAggregateOutputType | null
+    _min: BookingExtensionMinAggregateOutputType | null
+    _max: BookingExtensionMaxAggregateOutputType | null
+  }
+
+  type GetBookingExtensionGroupByPayload<T extends BookingExtensionGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<BookingExtensionGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof BookingExtensionGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], BookingExtensionGroupByOutputType[P]>
+            : GetScalarType<T[P], BookingExtensionGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type BookingExtensionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    branchId?: boolean
+    extensionTrigger?: boolean
+    extensionStatus?: boolean
+    oldEndAt?: boolean
+    requestedEndAt?: boolean
+    actualNewEndAt?: boolean
+    additionalAmount?: boolean
+    newTotalFinal?: boolean
+    resolutionType?: boolean
+    vehicleSwapOccurred?: boolean
+    swappedVehicleId?: boolean
+    affectedBookingIds?: boolean
+    paymentTransactionId?: boolean
+    vehicleSwapId?: boolean
+    actorId?: boolean
+    actorPublicId?: boolean
+    actorRole?: boolean
+    rejectionReason?: boolean
+    notes?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    actor?: boolean | UserDefaultArgs<ExtArgs>
+    swappedVehicle?: boolean | BookingExtension$swappedVehicleArgs<ExtArgs>
+    paymentTransaction?: boolean | BookingExtension$paymentTransactionArgs<ExtArgs>
+    vehicleSwap?: boolean | BookingExtension$vehicleSwapArgs<ExtArgs>
+    activeForBookings?: boolean | BookingExtension$activeForBookingsArgs<ExtArgs>
+    _count?: boolean | BookingExtensionCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["bookingExtension"]>
+
+  export type BookingExtensionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    branchId?: boolean
+    extensionTrigger?: boolean
+    extensionStatus?: boolean
+    oldEndAt?: boolean
+    requestedEndAt?: boolean
+    actualNewEndAt?: boolean
+    additionalAmount?: boolean
+    newTotalFinal?: boolean
+    resolutionType?: boolean
+    vehicleSwapOccurred?: boolean
+    swappedVehicleId?: boolean
+    affectedBookingIds?: boolean
+    paymentTransactionId?: boolean
+    vehicleSwapId?: boolean
+    actorId?: boolean
+    actorPublicId?: boolean
+    actorRole?: boolean
+    rejectionReason?: boolean
+    notes?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    actor?: boolean | UserDefaultArgs<ExtArgs>
+    swappedVehicle?: boolean | BookingExtension$swappedVehicleArgs<ExtArgs>
+    paymentTransaction?: boolean | BookingExtension$paymentTransactionArgs<ExtArgs>
+    vehicleSwap?: boolean | BookingExtension$vehicleSwapArgs<ExtArgs>
+  }, ExtArgs["result"]["bookingExtension"]>
+
+  export type BookingExtensionSelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    branchId?: boolean
+    extensionTrigger?: boolean
+    extensionStatus?: boolean
+    oldEndAt?: boolean
+    requestedEndAt?: boolean
+    actualNewEndAt?: boolean
+    additionalAmount?: boolean
+    newTotalFinal?: boolean
+    resolutionType?: boolean
+    vehicleSwapOccurred?: boolean
+    swappedVehicleId?: boolean
+    affectedBookingIds?: boolean
+    paymentTransactionId?: boolean
+    vehicleSwapId?: boolean
+    actorId?: boolean
+    actorPublicId?: boolean
+    actorRole?: boolean
+    rejectionReason?: boolean
+    notes?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type BookingExtensionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    actor?: boolean | UserDefaultArgs<ExtArgs>
+    swappedVehicle?: boolean | BookingExtension$swappedVehicleArgs<ExtArgs>
+    paymentTransaction?: boolean | BookingExtension$paymentTransactionArgs<ExtArgs>
+    vehicleSwap?: boolean | BookingExtension$vehicleSwapArgs<ExtArgs>
+    activeForBookings?: boolean | BookingExtension$activeForBookingsArgs<ExtArgs>
+    _count?: boolean | BookingExtensionCountOutputTypeDefaultArgs<ExtArgs>
+  }
+  export type BookingExtensionIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    actor?: boolean | UserDefaultArgs<ExtArgs>
+    swappedVehicle?: boolean | BookingExtension$swappedVehicleArgs<ExtArgs>
+    paymentTransaction?: boolean | BookingExtension$paymentTransactionArgs<ExtArgs>
+    vehicleSwap?: boolean | BookingExtension$vehicleSwapArgs<ExtArgs>
+  }
+
+  export type $BookingExtensionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "BookingExtension"
+    objects: {
+      booking: Prisma.$BookingPayload<ExtArgs>
+      branch: Prisma.$BranchPayload<ExtArgs>
+      actor: Prisma.$UserPayload<ExtArgs>
+      swappedVehicle: Prisma.$VehiclePayload<ExtArgs> | null
+      paymentTransaction: Prisma.$PaymentTransactionPayload<ExtArgs> | null
+      vehicleSwap: Prisma.$VehicleSwapPayload<ExtArgs> | null
+      activeForBookings: Prisma.$BookingPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      bookingId: number
+      branchId: number
+      extensionTrigger: $Enums.ExtensionTrigger
+      extensionStatus: $Enums.ExtensionStatus
+      oldEndAt: Date
+      requestedEndAt: Date
+      actualNewEndAt: Date | null
+      additionalAmount: Prisma.Decimal
+      newTotalFinal: Prisma.Decimal
+      resolutionType: $Enums.ExtensionResolutionType | null
+      vehicleSwapOccurred: boolean
+      swappedVehicleId: number | null
+      affectedBookingIds: number[]
+      paymentTransactionId: number | null
+      vehicleSwapId: number | null
+      actorId: number
+      actorPublicId: string
+      actorRole: string
+      rejectionReason: string | null
+      notes: string | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["bookingExtension"]>
+    composites: {}
+  }
+
+  type BookingExtensionGetPayload<S extends boolean | null | undefined | BookingExtensionDefaultArgs> = $Result.GetResult<Prisma.$BookingExtensionPayload, S>
+
+  type BookingExtensionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<BookingExtensionFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: BookingExtensionCountAggregateInputType | true
+    }
+
+  export interface BookingExtensionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['BookingExtension'], meta: { name: 'BookingExtension' } }
+    /**
+     * Find zero or one BookingExtension that matches the filter.
+     * @param {BookingExtensionFindUniqueArgs} args - Arguments to find a BookingExtension
+     * @example
+     * // Get one BookingExtension
+     * const bookingExtension = await prisma.bookingExtension.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends BookingExtensionFindUniqueArgs>(args: SelectSubset<T, BookingExtensionFindUniqueArgs<ExtArgs>>): Prisma__BookingExtensionClient<$Result.GetResult<Prisma.$BookingExtensionPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one BookingExtension that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {BookingExtensionFindUniqueOrThrowArgs} args - Arguments to find a BookingExtension
+     * @example
+     * // Get one BookingExtension
+     * const bookingExtension = await prisma.bookingExtension.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends BookingExtensionFindUniqueOrThrowArgs>(args: SelectSubset<T, BookingExtensionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__BookingExtensionClient<$Result.GetResult<Prisma.$BookingExtensionPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first BookingExtension that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BookingExtensionFindFirstArgs} args - Arguments to find a BookingExtension
+     * @example
+     * // Get one BookingExtension
+     * const bookingExtension = await prisma.bookingExtension.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends BookingExtensionFindFirstArgs>(args?: SelectSubset<T, BookingExtensionFindFirstArgs<ExtArgs>>): Prisma__BookingExtensionClient<$Result.GetResult<Prisma.$BookingExtensionPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first BookingExtension that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BookingExtensionFindFirstOrThrowArgs} args - Arguments to find a BookingExtension
+     * @example
+     * // Get one BookingExtension
+     * const bookingExtension = await prisma.bookingExtension.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends BookingExtensionFindFirstOrThrowArgs>(args?: SelectSubset<T, BookingExtensionFindFirstOrThrowArgs<ExtArgs>>): Prisma__BookingExtensionClient<$Result.GetResult<Prisma.$BookingExtensionPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more BookingExtensions that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BookingExtensionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all BookingExtensions
+     * const bookingExtensions = await prisma.bookingExtension.findMany()
+     * 
+     * // Get first 10 BookingExtensions
+     * const bookingExtensions = await prisma.bookingExtension.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const bookingExtensionWithIdOnly = await prisma.bookingExtension.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends BookingExtensionFindManyArgs>(args?: SelectSubset<T, BookingExtensionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingExtensionPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a BookingExtension.
+     * @param {BookingExtensionCreateArgs} args - Arguments to create a BookingExtension.
+     * @example
+     * // Create one BookingExtension
+     * const BookingExtension = await prisma.bookingExtension.create({
+     *   data: {
+     *     // ... data to create a BookingExtension
+     *   }
+     * })
+     * 
+     */
+    create<T extends BookingExtensionCreateArgs>(args: SelectSubset<T, BookingExtensionCreateArgs<ExtArgs>>): Prisma__BookingExtensionClient<$Result.GetResult<Prisma.$BookingExtensionPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many BookingExtensions.
+     * @param {BookingExtensionCreateManyArgs} args - Arguments to create many BookingExtensions.
+     * @example
+     * // Create many BookingExtensions
+     * const bookingExtension = await prisma.bookingExtension.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends BookingExtensionCreateManyArgs>(args?: SelectSubset<T, BookingExtensionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many BookingExtensions and returns the data saved in the database.
+     * @param {BookingExtensionCreateManyAndReturnArgs} args - Arguments to create many BookingExtensions.
+     * @example
+     * // Create many BookingExtensions
+     * const bookingExtension = await prisma.bookingExtension.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many BookingExtensions and only return the `id`
+     * const bookingExtensionWithIdOnly = await prisma.bookingExtension.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends BookingExtensionCreateManyAndReturnArgs>(args?: SelectSubset<T, BookingExtensionCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingExtensionPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a BookingExtension.
+     * @param {BookingExtensionDeleteArgs} args - Arguments to delete one BookingExtension.
+     * @example
+     * // Delete one BookingExtension
+     * const BookingExtension = await prisma.bookingExtension.delete({
+     *   where: {
+     *     // ... filter to delete one BookingExtension
+     *   }
+     * })
+     * 
+     */
+    delete<T extends BookingExtensionDeleteArgs>(args: SelectSubset<T, BookingExtensionDeleteArgs<ExtArgs>>): Prisma__BookingExtensionClient<$Result.GetResult<Prisma.$BookingExtensionPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one BookingExtension.
+     * @param {BookingExtensionUpdateArgs} args - Arguments to update one BookingExtension.
+     * @example
+     * // Update one BookingExtension
+     * const bookingExtension = await prisma.bookingExtension.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends BookingExtensionUpdateArgs>(args: SelectSubset<T, BookingExtensionUpdateArgs<ExtArgs>>): Prisma__BookingExtensionClient<$Result.GetResult<Prisma.$BookingExtensionPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more BookingExtensions.
+     * @param {BookingExtensionDeleteManyArgs} args - Arguments to filter BookingExtensions to delete.
+     * @example
+     * // Delete a few BookingExtensions
+     * const { count } = await prisma.bookingExtension.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends BookingExtensionDeleteManyArgs>(args?: SelectSubset<T, BookingExtensionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more BookingExtensions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BookingExtensionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many BookingExtensions
+     * const bookingExtension = await prisma.bookingExtension.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends BookingExtensionUpdateManyArgs>(args: SelectSubset<T, BookingExtensionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one BookingExtension.
+     * @param {BookingExtensionUpsertArgs} args - Arguments to update or create a BookingExtension.
+     * @example
+     * // Update or create a BookingExtension
+     * const bookingExtension = await prisma.bookingExtension.upsert({
+     *   create: {
+     *     // ... data to create a BookingExtension
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the BookingExtension we want to update
+     *   }
+     * })
+     */
+    upsert<T extends BookingExtensionUpsertArgs>(args: SelectSubset<T, BookingExtensionUpsertArgs<ExtArgs>>): Prisma__BookingExtensionClient<$Result.GetResult<Prisma.$BookingExtensionPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of BookingExtensions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BookingExtensionCountArgs} args - Arguments to filter BookingExtensions to count.
+     * @example
+     * // Count the number of BookingExtensions
+     * const count = await prisma.bookingExtension.count({
+     *   where: {
+     *     // ... the filter for the BookingExtensions we want to count
+     *   }
+     * })
+    **/
+    count<T extends BookingExtensionCountArgs>(
+      args?: Subset<T, BookingExtensionCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], BookingExtensionCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a BookingExtension.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BookingExtensionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends BookingExtensionAggregateArgs>(args: Subset<T, BookingExtensionAggregateArgs>): Prisma.PrismaPromise<GetBookingExtensionAggregateType<T>>
+
+    /**
+     * Group by BookingExtension.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BookingExtensionGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends BookingExtensionGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: BookingExtensionGroupByArgs['orderBy'] }
+        : { orderBy?: BookingExtensionGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, BookingExtensionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetBookingExtensionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the BookingExtension model
+   */
+  readonly fields: BookingExtensionFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for BookingExtension.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__BookingExtensionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    booking<T extends BookingDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BookingDefaultArgs<ExtArgs>>): Prisma__BookingClient<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    branch<T extends BranchDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BranchDefaultArgs<ExtArgs>>): Prisma__BranchClient<$Result.GetResult<Prisma.$BranchPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    actor<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    swappedVehicle<T extends BookingExtension$swappedVehicleArgs<ExtArgs> = {}>(args?: Subset<T, BookingExtension$swappedVehicleArgs<ExtArgs>>): Prisma__VehicleClient<$Result.GetResult<Prisma.$VehiclePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    paymentTransaction<T extends BookingExtension$paymentTransactionArgs<ExtArgs> = {}>(args?: Subset<T, BookingExtension$paymentTransactionArgs<ExtArgs>>): Prisma__PaymentTransactionClient<$Result.GetResult<Prisma.$PaymentTransactionPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    vehicleSwap<T extends BookingExtension$vehicleSwapArgs<ExtArgs> = {}>(args?: Subset<T, BookingExtension$vehicleSwapArgs<ExtArgs>>): Prisma__VehicleSwapClient<$Result.GetResult<Prisma.$VehicleSwapPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    activeForBookings<T extends BookingExtension$activeForBookingsArgs<ExtArgs> = {}>(args?: Subset<T, BookingExtension$activeForBookingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findMany"> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the BookingExtension model
+   */ 
+  interface BookingExtensionFieldRefs {
+    readonly id: FieldRef<"BookingExtension", 'Int'>
+    readonly publicId: FieldRef<"BookingExtension", 'String'>
+    readonly bookingId: FieldRef<"BookingExtension", 'Int'>
+    readonly branchId: FieldRef<"BookingExtension", 'Int'>
+    readonly extensionTrigger: FieldRef<"BookingExtension", 'ExtensionTrigger'>
+    readonly extensionStatus: FieldRef<"BookingExtension", 'ExtensionStatus'>
+    readonly oldEndAt: FieldRef<"BookingExtension", 'DateTime'>
+    readonly requestedEndAt: FieldRef<"BookingExtension", 'DateTime'>
+    readonly actualNewEndAt: FieldRef<"BookingExtension", 'DateTime'>
+    readonly additionalAmount: FieldRef<"BookingExtension", 'Decimal'>
+    readonly newTotalFinal: FieldRef<"BookingExtension", 'Decimal'>
+    readonly resolutionType: FieldRef<"BookingExtension", 'ExtensionResolutionType'>
+    readonly vehicleSwapOccurred: FieldRef<"BookingExtension", 'Boolean'>
+    readonly swappedVehicleId: FieldRef<"BookingExtension", 'Int'>
+    readonly affectedBookingIds: FieldRef<"BookingExtension", 'Int[]'>
+    readonly paymentTransactionId: FieldRef<"BookingExtension", 'Int'>
+    readonly vehicleSwapId: FieldRef<"BookingExtension", 'Int'>
+    readonly actorId: FieldRef<"BookingExtension", 'Int'>
+    readonly actorPublicId: FieldRef<"BookingExtension", 'String'>
+    readonly actorRole: FieldRef<"BookingExtension", 'String'>
+    readonly rejectionReason: FieldRef<"BookingExtension", 'String'>
+    readonly notes: FieldRef<"BookingExtension", 'String'>
+    readonly createdAt: FieldRef<"BookingExtension", 'DateTime'>
+    readonly updatedAt: FieldRef<"BookingExtension", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * BookingExtension findUnique
+   */
+  export type BookingExtensionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingExtension
+     */
+    select?: BookingExtensionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingExtensionInclude<ExtArgs> | null
+    /**
+     * Filter, which BookingExtension to fetch.
+     */
+    where: BookingExtensionWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BookingExtension findUniqueOrThrow
+   */
+  export type BookingExtensionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingExtension
+     */
+    select?: BookingExtensionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingExtensionInclude<ExtArgs> | null
+    /**
+     * Filter, which BookingExtension to fetch.
+     */
+    where: BookingExtensionWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BookingExtension findFirst
+   */
+  export type BookingExtensionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingExtension
+     */
+    select?: BookingExtensionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingExtensionInclude<ExtArgs> | null
+    /**
+     * Filter, which BookingExtension to fetch.
+     */
+    where?: BookingExtensionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BookingExtensions to fetch.
+     */
+    orderBy?: BookingExtensionOrderByWithRelationInput | BookingExtensionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for BookingExtensions.
+     */
+    cursor?: BookingExtensionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BookingExtensions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BookingExtensions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of BookingExtensions.
+     */
+    distinct?: BookingExtensionScalarFieldEnum | BookingExtensionScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BookingExtension findFirstOrThrow
+   */
+  export type BookingExtensionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingExtension
+     */
+    select?: BookingExtensionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingExtensionInclude<ExtArgs> | null
+    /**
+     * Filter, which BookingExtension to fetch.
+     */
+    where?: BookingExtensionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BookingExtensions to fetch.
+     */
+    orderBy?: BookingExtensionOrderByWithRelationInput | BookingExtensionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for BookingExtensions.
+     */
+    cursor?: BookingExtensionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BookingExtensions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BookingExtensions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of BookingExtensions.
+     */
+    distinct?: BookingExtensionScalarFieldEnum | BookingExtensionScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BookingExtension findMany
+   */
+  export type BookingExtensionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingExtension
+     */
+    select?: BookingExtensionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingExtensionInclude<ExtArgs> | null
+    /**
+     * Filter, which BookingExtensions to fetch.
+     */
+    where?: BookingExtensionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BookingExtensions to fetch.
+     */
+    orderBy?: BookingExtensionOrderByWithRelationInput | BookingExtensionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing BookingExtensions.
+     */
+    cursor?: BookingExtensionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BookingExtensions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BookingExtensions.
+     */
+    skip?: number
+    distinct?: BookingExtensionScalarFieldEnum | BookingExtensionScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BookingExtension create
+   */
+  export type BookingExtensionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingExtension
+     */
+    select?: BookingExtensionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingExtensionInclude<ExtArgs> | null
+    /**
+     * The data needed to create a BookingExtension.
+     */
+    data: XOR<BookingExtensionCreateInput, BookingExtensionUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BookingExtension createMany
+   */
+  export type BookingExtensionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many BookingExtensions.
+     */
+    data: BookingExtensionCreateManyInput | BookingExtensionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * BookingExtension createManyAndReturn
+   */
+  export type BookingExtensionCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingExtension
+     */
+    select?: BookingExtensionSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many BookingExtensions.
+     */
+    data: BookingExtensionCreateManyInput | BookingExtensionCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingExtensionIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * BookingExtension update
+   */
+  export type BookingExtensionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingExtension
+     */
+    select?: BookingExtensionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingExtensionInclude<ExtArgs> | null
+    /**
+     * The data needed to update a BookingExtension.
+     */
+    data: XOR<BookingExtensionUpdateInput, BookingExtensionUncheckedUpdateInput>
+    /**
+     * Choose, which BookingExtension to update.
+     */
+    where: BookingExtensionWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BookingExtension updateMany
+   */
+  export type BookingExtensionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update BookingExtensions.
+     */
+    data: XOR<BookingExtensionUpdateManyMutationInput, BookingExtensionUncheckedUpdateManyInput>
+    /**
+     * Filter which BookingExtensions to update
+     */
+    where?: BookingExtensionWhereInput
+  }
+
+  /**
+   * BookingExtension upsert
+   */
+  export type BookingExtensionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingExtension
+     */
+    select?: BookingExtensionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingExtensionInclude<ExtArgs> | null
+    /**
+     * The filter to search for the BookingExtension to update in case it exists.
+     */
+    where: BookingExtensionWhereUniqueInput
+    /**
+     * In case the BookingExtension found by the `where` argument doesn't exist, create a new BookingExtension with this data.
+     */
+    create: XOR<BookingExtensionCreateInput, BookingExtensionUncheckedCreateInput>
+    /**
+     * In case the BookingExtension was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<BookingExtensionUpdateInput, BookingExtensionUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BookingExtension delete
+   */
+  export type BookingExtensionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingExtension
+     */
+    select?: BookingExtensionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingExtensionInclude<ExtArgs> | null
+    /**
+     * Filter which BookingExtension to delete.
+     */
+    where: BookingExtensionWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BookingExtension deleteMany
+   */
+  export type BookingExtensionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which BookingExtensions to delete
+     */
+    where?: BookingExtensionWhereInput
+  }
+
+  /**
+   * BookingExtension.swappedVehicle
+   */
+  export type BookingExtension$swappedVehicleArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Vehicle
+     */
+    select?: VehicleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleInclude<ExtArgs> | null
+    where?: VehicleWhereInput
+  }
+
+  /**
+   * BookingExtension.paymentTransaction
+   */
+  export type BookingExtension$paymentTransactionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentTransaction
+     */
+    select?: PaymentTransactionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+    where?: PaymentTransactionWhereInput
+  }
+
+  /**
+   * BookingExtension.vehicleSwap
+   */
+  export type BookingExtension$vehicleSwapArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VehicleSwap
+     */
+    select?: VehicleSwapSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VehicleSwapInclude<ExtArgs> | null
+    where?: VehicleSwapWhereInput
+  }
+
+  /**
+   * BookingExtension.activeForBookings
+   */
+  export type BookingExtension$activeForBookingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Booking
+     */
+    select?: BookingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingInclude<ExtArgs> | null
+    where?: BookingWhereInput
+    orderBy?: BookingOrderByWithRelationInput | BookingOrderByWithRelationInput[]
+    cursor?: BookingWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: BookingScalarFieldEnum | BookingScalarFieldEnum[]
+  }
+
+  /**
+   * BookingExtension without action
+   */
+  export type BookingExtensionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingExtension
+     */
+    select?: BookingExtensionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingExtensionInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -61557,6 +63332,12 @@ export namespace Prisma {
     requiresManagerConfirmation: 'requiresManagerConfirmation',
     couponCode: 'couponCode',
     discountRuleId: 'discountRuleId',
+    originalEndAt: 'originalEndAt',
+    extensionCount: 'extensionCount',
+    lastExtendedAt: 'lastExtendedAt',
+    activeExtensionId: 'activeExtensionId',
+    displacedByExtensionId: 'displacedByExtensionId',
+    extensionDisplacedAt: 'extensionDisplacedAt',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
     deletedAt: 'deletedAt'
@@ -62064,6 +63845,36 @@ export namespace Prisma {
   };
 
   export type CashShiftScalarFieldEnum = (typeof CashShiftScalarFieldEnum)[keyof typeof CashShiftScalarFieldEnum]
+
+
+  export const BookingExtensionScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    bookingId: 'bookingId',
+    branchId: 'branchId',
+    extensionTrigger: 'extensionTrigger',
+    extensionStatus: 'extensionStatus',
+    oldEndAt: 'oldEndAt',
+    requestedEndAt: 'requestedEndAt',
+    actualNewEndAt: 'actualNewEndAt',
+    additionalAmount: 'additionalAmount',
+    newTotalFinal: 'newTotalFinal',
+    resolutionType: 'resolutionType',
+    vehicleSwapOccurred: 'vehicleSwapOccurred',
+    swappedVehicleId: 'swappedVehicleId',
+    affectedBookingIds: 'affectedBookingIds',
+    paymentTransactionId: 'paymentTransactionId',
+    vehicleSwapId: 'vehicleSwapId',
+    actorId: 'actorId',
+    actorPublicId: 'actorPublicId',
+    actorRole: 'actorRole',
+    rejectionReason: 'rejectionReason',
+    notes: 'notes',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type BookingExtensionScalarFieldEnum = (typeof BookingExtensionScalarFieldEnum)[keyof typeof BookingExtensionScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -62610,6 +64421,48 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'ExtensionTrigger'
+   */
+  export type EnumExtensionTriggerFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ExtensionTrigger'>
+    
+
+
+  /**
+   * Reference to a field of type 'ExtensionTrigger[]'
+   */
+  export type ListEnumExtensionTriggerFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ExtensionTrigger[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'ExtensionStatus'
+   */
+  export type EnumExtensionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ExtensionStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'ExtensionStatus[]'
+   */
+  export type ListEnumExtensionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ExtensionStatus[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'ExtensionResolutionType'
+   */
+  export type EnumExtensionResolutionTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ExtensionResolutionType'>
+    
+
+
+  /**
+   * Reference to a field of type 'ExtensionResolutionType[]'
+   */
+  export type ListEnumExtensionResolutionTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ExtensionResolutionType[]'>
+    
+
+
+  /**
    * Reference to a field of type 'Float'
    */
   export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -62663,6 +64516,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestListRelationFilter
     refundRequestsApproved?: RefundRequestListRelationFilter
     refundRequestsCompleted?: RefundRequestListRelationFilter
+    initiatedExtensions?: BookingExtensionListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -62699,6 +64553,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestOrderByRelationAggregateInput
     refundRequestsApproved?: RefundRequestOrderByRelationAggregateInput
     refundRequestsCompleted?: RefundRequestOrderByRelationAggregateInput
+    initiatedExtensions?: BookingExtensionOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -62738,6 +64593,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestListRelationFilter
     refundRequestsApproved?: RefundRequestListRelationFilter
     refundRequestsCompleted?: RefundRequestListRelationFilter
+    initiatedExtensions?: BookingExtensionListRelationFilter
   }, "id" | "publicId" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -63218,6 +65074,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionListRelationFilter
     cashShifts?: CashShiftListRelationFilter
     refundRequests?: RefundRequestListRelationFilter
+    extensions?: BookingExtensionListRelationFilter
   }
 
   export type BranchOrderByWithRelationInput = {
@@ -63246,6 +65103,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionOrderByRelationAggregateInput
     cashShifts?: CashShiftOrderByRelationAggregateInput
     refundRequests?: RefundRequestOrderByRelationAggregateInput
+    extensions?: BookingExtensionOrderByRelationAggregateInput
   }
 
   export type BranchWhereUniqueInput = Prisma.AtLeast<{
@@ -63277,6 +65135,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionListRelationFilter
     cashShifts?: CashShiftListRelationFilter
     refundRequests?: RefundRequestListRelationFilter
+    extensions?: BookingExtensionListRelationFilter
   }, "id" | "publicId">
 
   export type BranchOrderByWithAggregationInput = {
@@ -63660,6 +65519,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagListRelationFilter
     swapsAsOriginal?: VehicleSwapListRelationFilter
     swapsAsNew?: VehicleSwapListRelationFilter
+    extensionSwaps?: BookingExtensionListRelationFilter
   }
 
   export type VehicleOrderByWithRelationInput = {
@@ -63690,6 +65550,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagOrderByRelationAggregateInput
     swapsAsOriginal?: VehicleSwapOrderByRelationAggregateInput
     swapsAsNew?: VehicleSwapOrderByRelationAggregateInput
+    extensionSwaps?: BookingExtensionOrderByRelationAggregateInput
   }
 
   export type VehicleWhereUniqueInput = Prisma.AtLeast<{
@@ -63723,6 +65584,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagListRelationFilter
     swapsAsOriginal?: VehicleSwapListRelationFilter
     swapsAsNew?: VehicleSwapListRelationFilter
+    extensionSwaps?: BookingExtensionListRelationFilter
   }, "id" | "publicId" | "regNo">
 
   export type VehicleOrderByWithAggregationInput = {
@@ -64464,6 +66326,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFilter<"Booking"> | boolean
     couponCode?: StringNullableFilter<"Booking"> | string | null
     discountRuleId?: IntNullableFilter<"Booking"> | number | null
+    originalEndAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
+    extensionCount?: IntFilter<"Booking"> | number
+    lastExtendedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
+    activeExtensionId?: IntNullableFilter<"Booking"> | number | null
+    displacedByExtensionId?: IntNullableFilter<"Booking"> | number | null
+    extensionDisplacedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     createdAt?: DateTimeFilter<"Booking"> | Date | string
     updatedAt?: DateTimeFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
@@ -64483,6 +66351,8 @@ export namespace Prisma {
     manualDiscount?: XOR<ManualDiscountNullableRelationFilter, ManualDiscountWhereInput> | null
     paymentTransactions?: PaymentTransactionListRelationFilter
     refundRequests?: RefundRequestListRelationFilter
+    activeExtension?: XOR<BookingExtensionNullableRelationFilter, BookingExtensionWhereInput> | null
+    extensions?: BookingExtensionListRelationFilter
   }
 
   export type BookingOrderByWithRelationInput = {
@@ -64535,6 +66405,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: SortOrder
     couponCode?: SortOrderInput | SortOrder
     discountRuleId?: SortOrderInput | SortOrder
+    originalEndAt?: SortOrderInput | SortOrder
+    extensionCount?: SortOrder
+    lastExtendedAt?: SortOrderInput | SortOrder
+    activeExtensionId?: SortOrderInput | SortOrder
+    displacedByExtensionId?: SortOrderInput | SortOrder
+    extensionDisplacedAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrderInput | SortOrder
@@ -64554,6 +66430,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountOrderByWithRelationInput
     paymentTransactions?: PaymentTransactionOrderByRelationAggregateInput
     refundRequests?: RefundRequestOrderByRelationAggregateInput
+    activeExtension?: BookingExtensionOrderByWithRelationInput
+    extensions?: BookingExtensionOrderByRelationAggregateInput
   }
 
   export type BookingWhereUniqueInput = Prisma.AtLeast<{
@@ -64609,6 +66487,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFilter<"Booking"> | boolean
     couponCode?: StringNullableFilter<"Booking"> | string | null
     discountRuleId?: IntNullableFilter<"Booking"> | number | null
+    originalEndAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
+    extensionCount?: IntFilter<"Booking"> | number
+    lastExtendedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
+    activeExtensionId?: IntNullableFilter<"Booking"> | number | null
+    displacedByExtensionId?: IntNullableFilter<"Booking"> | number | null
+    extensionDisplacedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     createdAt?: DateTimeFilter<"Booking"> | Date | string
     updatedAt?: DateTimeFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
@@ -64628,6 +66512,8 @@ export namespace Prisma {
     manualDiscount?: XOR<ManualDiscountNullableRelationFilter, ManualDiscountWhereInput> | null
     paymentTransactions?: PaymentTransactionListRelationFilter
     refundRequests?: RefundRequestListRelationFilter
+    activeExtension?: XOR<BookingExtensionNullableRelationFilter, BookingExtensionWhereInput> | null
+    extensions?: BookingExtensionListRelationFilter
   }, "id" | "publicId" | "transactionId" | "remainingPaymentId">
 
   export type BookingOrderByWithAggregationInput = {
@@ -64680,6 +66566,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: SortOrder
     couponCode?: SortOrderInput | SortOrder
     discountRuleId?: SortOrderInput | SortOrder
+    originalEndAt?: SortOrderInput | SortOrder
+    extensionCount?: SortOrder
+    lastExtendedAt?: SortOrderInput | SortOrder
+    activeExtensionId?: SortOrderInput | SortOrder
+    displacedByExtensionId?: SortOrderInput | SortOrder
+    extensionDisplacedAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrderInput | SortOrder
@@ -64743,6 +66635,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolWithAggregatesFilter<"Booking"> | boolean
     couponCode?: StringNullableWithAggregatesFilter<"Booking"> | string | null
     discountRuleId?: IntNullableWithAggregatesFilter<"Booking"> | number | null
+    originalEndAt?: DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
+    extensionCount?: IntWithAggregatesFilter<"Booking"> | number
+    lastExtendedAt?: DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
+    activeExtensionId?: IntNullableWithAggregatesFilter<"Booking"> | number | null
+    displacedByExtensionId?: IntNullableWithAggregatesFilter<"Booking"> | number | null
+    extensionDisplacedAt?: DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Booking"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
@@ -66117,6 +68015,7 @@ export namespace Prisma {
     originalVehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
     newVehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
     swappedBy?: XOR<UserRelationFilter, UserWhereInput>
+    extension?: XOR<BookingExtensionNullableRelationFilter, BookingExtensionWhereInput> | null
   }
 
   export type VehicleSwapOrderByWithRelationInput = {
@@ -66137,6 +68036,7 @@ export namespace Prisma {
     originalVehicle?: VehicleOrderByWithRelationInput
     newVehicle?: VehicleOrderByWithRelationInput
     swappedBy?: UserOrderByWithRelationInput
+    extension?: BookingExtensionOrderByWithRelationInput
   }
 
   export type VehicleSwapWhereUniqueInput = Prisma.AtLeast<{
@@ -66160,6 +68060,7 @@ export namespace Prisma {
     originalVehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
     newVehicle?: XOR<VehicleRelationFilter, VehicleWhereInput>
     swappedBy?: XOR<UserRelationFilter, UserWhereInput>
+    extension?: XOR<BookingExtensionNullableRelationFilter, BookingExtensionWhereInput> | null
   }, "id" | "publicId">
 
   export type VehicleSwapOrderByWithAggregationInput = {
@@ -67038,6 +68939,7 @@ export namespace Prisma {
     confirmedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
     rejectedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
     cashShift?: XOR<CashShiftNullableRelationFilter, CashShiftWhereInput> | null
+    extension?: XOR<BookingExtensionNullableRelationFilter, BookingExtensionWhereInput> | null
   }
 
   export type PaymentTransactionOrderByWithRelationInput = {
@@ -67070,6 +68972,7 @@ export namespace Prisma {
     confirmedBy?: UserOrderByWithRelationInput
     rejectedBy?: UserOrderByWithRelationInput
     cashShift?: CashShiftOrderByWithRelationInput
+    extension?: BookingExtensionOrderByWithRelationInput
   }
 
   export type PaymentTransactionWhereUniqueInput = Prisma.AtLeast<{
@@ -67105,6 +69008,7 @@ export namespace Prisma {
     confirmedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
     rejectedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
     cashShift?: XOR<CashShiftNullableRelationFilter, CashShiftWhereInput> | null
+    extension?: XOR<BookingExtensionNullableRelationFilter, BookingExtensionWhereInput> | null
   }, "id" | "publicId" | "idempotencyKey">
 
   export type PaymentTransactionOrderByWithAggregationInput = {
@@ -67417,6 +69321,176 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"CashShift"> | Date | string
   }
 
+  export type BookingExtensionWhereInput = {
+    AND?: BookingExtensionWhereInput | BookingExtensionWhereInput[]
+    OR?: BookingExtensionWhereInput[]
+    NOT?: BookingExtensionWhereInput | BookingExtensionWhereInput[]
+    id?: IntFilter<"BookingExtension"> | number
+    publicId?: StringFilter<"BookingExtension"> | string
+    bookingId?: IntFilter<"BookingExtension"> | number
+    branchId?: IntFilter<"BookingExtension"> | number
+    extensionTrigger?: EnumExtensionTriggerFilter<"BookingExtension"> | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFilter<"BookingExtension"> | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFilter<"BookingExtension"> | Date | string
+    requestedEndAt?: DateTimeFilter<"BookingExtension"> | Date | string
+    actualNewEndAt?: DateTimeNullableFilter<"BookingExtension"> | Date | string | null
+    additionalAmount?: DecimalFilter<"BookingExtension"> | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFilter<"BookingExtension"> | Decimal | DecimalJsLike | number | string
+    resolutionType?: EnumExtensionResolutionTypeNullableFilter<"BookingExtension"> | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFilter<"BookingExtension"> | boolean
+    swappedVehicleId?: IntNullableFilter<"BookingExtension"> | number | null
+    affectedBookingIds?: IntNullableListFilter<"BookingExtension">
+    paymentTransactionId?: IntNullableFilter<"BookingExtension"> | number | null
+    vehicleSwapId?: IntNullableFilter<"BookingExtension"> | number | null
+    actorId?: IntFilter<"BookingExtension"> | number
+    actorPublicId?: StringFilter<"BookingExtension"> | string
+    actorRole?: StringFilter<"BookingExtension"> | string
+    rejectionReason?: StringNullableFilter<"BookingExtension"> | string | null
+    notes?: StringNullableFilter<"BookingExtension"> | string | null
+    createdAt?: DateTimeFilter<"BookingExtension"> | Date | string
+    updatedAt?: DateTimeFilter<"BookingExtension"> | Date | string
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+    actor?: XOR<UserRelationFilter, UserWhereInput>
+    swappedVehicle?: XOR<VehicleNullableRelationFilter, VehicleWhereInput> | null
+    paymentTransaction?: XOR<PaymentTransactionNullableRelationFilter, PaymentTransactionWhereInput> | null
+    vehicleSwap?: XOR<VehicleSwapNullableRelationFilter, VehicleSwapWhereInput> | null
+    activeForBookings?: BookingListRelationFilter
+  }
+
+  export type BookingExtensionOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    extensionTrigger?: SortOrder
+    extensionStatus?: SortOrder
+    oldEndAt?: SortOrder
+    requestedEndAt?: SortOrder
+    actualNewEndAt?: SortOrderInput | SortOrder
+    additionalAmount?: SortOrder
+    newTotalFinal?: SortOrder
+    resolutionType?: SortOrderInput | SortOrder
+    vehicleSwapOccurred?: SortOrder
+    swappedVehicleId?: SortOrderInput | SortOrder
+    affectedBookingIds?: SortOrder
+    paymentTransactionId?: SortOrderInput | SortOrder
+    vehicleSwapId?: SortOrderInput | SortOrder
+    actorId?: SortOrder
+    actorPublicId?: SortOrder
+    actorRole?: SortOrder
+    rejectionReason?: SortOrderInput | SortOrder
+    notes?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    booking?: BookingOrderByWithRelationInput
+    branch?: BranchOrderByWithRelationInput
+    actor?: UserOrderByWithRelationInput
+    swappedVehicle?: VehicleOrderByWithRelationInput
+    paymentTransaction?: PaymentTransactionOrderByWithRelationInput
+    vehicleSwap?: VehicleSwapOrderByWithRelationInput
+    activeForBookings?: BookingOrderByRelationAggregateInput
+  }
+
+  export type BookingExtensionWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    paymentTransactionId?: number
+    vehicleSwapId?: number
+    AND?: BookingExtensionWhereInput | BookingExtensionWhereInput[]
+    OR?: BookingExtensionWhereInput[]
+    NOT?: BookingExtensionWhereInput | BookingExtensionWhereInput[]
+    bookingId?: IntFilter<"BookingExtension"> | number
+    branchId?: IntFilter<"BookingExtension"> | number
+    extensionTrigger?: EnumExtensionTriggerFilter<"BookingExtension"> | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFilter<"BookingExtension"> | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFilter<"BookingExtension"> | Date | string
+    requestedEndAt?: DateTimeFilter<"BookingExtension"> | Date | string
+    actualNewEndAt?: DateTimeNullableFilter<"BookingExtension"> | Date | string | null
+    additionalAmount?: DecimalFilter<"BookingExtension"> | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFilter<"BookingExtension"> | Decimal | DecimalJsLike | number | string
+    resolutionType?: EnumExtensionResolutionTypeNullableFilter<"BookingExtension"> | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFilter<"BookingExtension"> | boolean
+    swappedVehicleId?: IntNullableFilter<"BookingExtension"> | number | null
+    affectedBookingIds?: IntNullableListFilter<"BookingExtension">
+    actorId?: IntFilter<"BookingExtension"> | number
+    actorPublicId?: StringFilter<"BookingExtension"> | string
+    actorRole?: StringFilter<"BookingExtension"> | string
+    rejectionReason?: StringNullableFilter<"BookingExtension"> | string | null
+    notes?: StringNullableFilter<"BookingExtension"> | string | null
+    createdAt?: DateTimeFilter<"BookingExtension"> | Date | string
+    updatedAt?: DateTimeFilter<"BookingExtension"> | Date | string
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+    actor?: XOR<UserRelationFilter, UserWhereInput>
+    swappedVehicle?: XOR<VehicleNullableRelationFilter, VehicleWhereInput> | null
+    paymentTransaction?: XOR<PaymentTransactionNullableRelationFilter, PaymentTransactionWhereInput> | null
+    vehicleSwap?: XOR<VehicleSwapNullableRelationFilter, VehicleSwapWhereInput> | null
+    activeForBookings?: BookingListRelationFilter
+  }, "id" | "publicId" | "paymentTransactionId" | "vehicleSwapId">
+
+  export type BookingExtensionOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    extensionTrigger?: SortOrder
+    extensionStatus?: SortOrder
+    oldEndAt?: SortOrder
+    requestedEndAt?: SortOrder
+    actualNewEndAt?: SortOrderInput | SortOrder
+    additionalAmount?: SortOrder
+    newTotalFinal?: SortOrder
+    resolutionType?: SortOrderInput | SortOrder
+    vehicleSwapOccurred?: SortOrder
+    swappedVehicleId?: SortOrderInput | SortOrder
+    affectedBookingIds?: SortOrder
+    paymentTransactionId?: SortOrderInput | SortOrder
+    vehicleSwapId?: SortOrderInput | SortOrder
+    actorId?: SortOrder
+    actorPublicId?: SortOrder
+    actorRole?: SortOrder
+    rejectionReason?: SortOrderInput | SortOrder
+    notes?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: BookingExtensionCountOrderByAggregateInput
+    _avg?: BookingExtensionAvgOrderByAggregateInput
+    _max?: BookingExtensionMaxOrderByAggregateInput
+    _min?: BookingExtensionMinOrderByAggregateInput
+    _sum?: BookingExtensionSumOrderByAggregateInput
+  }
+
+  export type BookingExtensionScalarWhereWithAggregatesInput = {
+    AND?: BookingExtensionScalarWhereWithAggregatesInput | BookingExtensionScalarWhereWithAggregatesInput[]
+    OR?: BookingExtensionScalarWhereWithAggregatesInput[]
+    NOT?: BookingExtensionScalarWhereWithAggregatesInput | BookingExtensionScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"BookingExtension"> | number
+    publicId?: StringWithAggregatesFilter<"BookingExtension"> | string
+    bookingId?: IntWithAggregatesFilter<"BookingExtension"> | number
+    branchId?: IntWithAggregatesFilter<"BookingExtension"> | number
+    extensionTrigger?: EnumExtensionTriggerWithAggregatesFilter<"BookingExtension"> | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusWithAggregatesFilter<"BookingExtension"> | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeWithAggregatesFilter<"BookingExtension"> | Date | string
+    requestedEndAt?: DateTimeWithAggregatesFilter<"BookingExtension"> | Date | string
+    actualNewEndAt?: DateTimeNullableWithAggregatesFilter<"BookingExtension"> | Date | string | null
+    additionalAmount?: DecimalWithAggregatesFilter<"BookingExtension"> | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalWithAggregatesFilter<"BookingExtension"> | Decimal | DecimalJsLike | number | string
+    resolutionType?: EnumExtensionResolutionTypeNullableWithAggregatesFilter<"BookingExtension"> | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolWithAggregatesFilter<"BookingExtension"> | boolean
+    swappedVehicleId?: IntNullableWithAggregatesFilter<"BookingExtension"> | number | null
+    affectedBookingIds?: IntNullableListFilter<"BookingExtension">
+    paymentTransactionId?: IntNullableWithAggregatesFilter<"BookingExtension"> | number | null
+    vehicleSwapId?: IntNullableWithAggregatesFilter<"BookingExtension"> | number | null
+    actorId?: IntWithAggregatesFilter<"BookingExtension"> | number
+    actorPublicId?: StringWithAggregatesFilter<"BookingExtension"> | string
+    actorRole?: StringWithAggregatesFilter<"BookingExtension"> | string
+    rejectionReason?: StringNullableWithAggregatesFilter<"BookingExtension"> | string | null
+    notes?: StringNullableWithAggregatesFilter<"BookingExtension"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"BookingExtension"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"BookingExtension"> | Date | string
+  }
+
   export type UserCreateInput = {
     publicId: string
     name: string
@@ -67449,6 +69523,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -67484,6 +69559,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
   }
 
   export type UserUpdateInput = {
@@ -67518,6 +69594,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -67553,6 +69630,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -68055,6 +70133,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateInput = {
@@ -68083,6 +70162,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUpdateInput = {
@@ -68110,6 +70190,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateInput = {
@@ -68138,6 +70219,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchCreateManyInput = {
@@ -68531,6 +70613,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
     swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleUncheckedCreateInput = {
@@ -68559,6 +70642,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
     swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionUncheckedCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleUpdateInput = {
@@ -68586,6 +70670,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
     swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateInput = {
@@ -68614,6 +70699,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
     swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUncheckedUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type VehicleCreateManyInput = {
@@ -69336,6 +71422,11 @@ export namespace Prisma {
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -69355,6 +71446,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateInput = {
@@ -69407,6 +71500,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
     discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -69421,6 +71520,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUpdateInput = {
@@ -69467,6 +71567,11 @@ export namespace Prisma {
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -69486,6 +71591,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateInput = {
@@ -69538,6 +71645,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -69552,6 +71665,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingCreateManyInput = {
@@ -69604,6 +71718,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
     discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -69653,6 +71773,11 @@ export namespace Prisma {
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -69708,6 +71833,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -71123,6 +73254,7 @@ export namespace Prisma {
     originalVehicle: VehicleCreateNestedOneWithoutSwapsAsOriginalInput
     newVehicle: VehicleCreateNestedOneWithoutSwapsAsNewInput
     swappedBy: UserCreateNestedOneWithoutVehicleSwapsInput
+    extension?: BookingExtensionCreateNestedOneWithoutVehicleSwapInput
   }
 
   export type VehicleSwapUncheckedCreateInput = {
@@ -71139,6 +73271,7 @@ export namespace Prisma {
     swappedAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    extension?: BookingExtensionUncheckedCreateNestedOneWithoutVehicleSwapInput
   }
 
   export type VehicleSwapUpdateInput = {
@@ -71154,6 +73287,7 @@ export namespace Prisma {
     originalVehicle?: VehicleUpdateOneRequiredWithoutSwapsAsOriginalNestedInput
     newVehicle?: VehicleUpdateOneRequiredWithoutSwapsAsNewNestedInput
     swappedBy?: UserUpdateOneRequiredWithoutVehicleSwapsNestedInput
+    extension?: BookingExtensionUpdateOneWithoutVehicleSwapNestedInput
   }
 
   export type VehicleSwapUncheckedUpdateInput = {
@@ -71170,6 +73304,7 @@ export namespace Prisma {
     swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    extension?: BookingExtensionUncheckedUpdateOneWithoutVehicleSwapNestedInput
   }
 
   export type VehicleSwapCreateManyInput = {
@@ -72146,6 +74281,7 @@ export namespace Prisma {
     confirmedBy?: UserCreateNestedOneWithoutConfirmedPaymentsInput
     rejectedBy?: UserCreateNestedOneWithoutRejectedPaymentsInput
     cashShift?: CashShiftCreateNestedOneWithoutTransactionsInput
+    extension?: BookingExtensionCreateNestedOneWithoutPaymentTransactionInput
   }
 
   export type PaymentTransactionUncheckedCreateInput = {
@@ -72172,6 +74308,7 @@ export namespace Prisma {
     cashShiftId?: number | null
     notes?: string | null
     createdAt?: Date | string
+    extension?: BookingExtensionUncheckedCreateNestedOneWithoutPaymentTransactionInput
   }
 
   export type PaymentTransactionUpdateInput = {
@@ -72197,6 +74334,7 @@ export namespace Prisma {
     confirmedBy?: UserUpdateOneWithoutConfirmedPaymentsNestedInput
     rejectedBy?: UserUpdateOneWithoutRejectedPaymentsNestedInput
     cashShift?: CashShiftUpdateOneWithoutTransactionsNestedInput
+    extension?: BookingExtensionUpdateOneWithoutPaymentTransactionNestedInput
   }
 
   export type PaymentTransactionUncheckedUpdateInput = {
@@ -72223,6 +74361,7 @@ export namespace Prisma {
     cashShiftId?: NullableIntFieldUpdateOperationsInput | number | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    extension?: BookingExtensionUncheckedUpdateOneWithoutPaymentTransactionNestedInput
   }
 
   export type PaymentTransactionCreateManyInput = {
@@ -72559,6 +74698,190 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type BookingExtensionCreateInput = {
+    publicId: string
+    extensionTrigger: $Enums.ExtensionTrigger
+    extensionStatus?: $Enums.ExtensionStatus
+    oldEndAt: Date | string
+    requestedEndAt: Date | string
+    actualNewEndAt?: Date | string | null
+    additionalAmount: Decimal | DecimalJsLike | number | string
+    newTotalFinal: Decimal | DecimalJsLike | number | string
+    resolutionType?: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: boolean
+    affectedBookingIds?: BookingExtensionCreateaffectedBookingIdsInput | number[]
+    actorPublicId: string
+    actorRole: string
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutExtensionsInput
+    branch: BranchCreateNestedOneWithoutExtensionsInput
+    actor: UserCreateNestedOneWithoutInitiatedExtensionsInput
+    swappedVehicle?: VehicleCreateNestedOneWithoutExtensionSwapsInput
+    paymentTransaction?: PaymentTransactionCreateNestedOneWithoutExtensionInput
+    vehicleSwap?: VehicleSwapCreateNestedOneWithoutExtensionInput
+    activeForBookings?: BookingCreateNestedManyWithoutActiveExtensionInput
+  }
+
+  export type BookingExtensionUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    extensionTrigger: $Enums.ExtensionTrigger
+    extensionStatus?: $Enums.ExtensionStatus
+    oldEndAt: Date | string
+    requestedEndAt: Date | string
+    actualNewEndAt?: Date | string | null
+    additionalAmount: Decimal | DecimalJsLike | number | string
+    newTotalFinal: Decimal | DecimalJsLike | number | string
+    resolutionType?: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: boolean
+    swappedVehicleId?: number | null
+    affectedBookingIds?: BookingExtensionCreateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: number | null
+    vehicleSwapId?: number | null
+    actorId: number
+    actorPublicId: string
+    actorRole: string
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    activeForBookings?: BookingUncheckedCreateNestedManyWithoutActiveExtensionInput
+  }
+
+  export type BookingExtensionUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    extensionTrigger?: EnumExtensionTriggerFieldUpdateOperationsInput | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFieldUpdateOperationsInput | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestedEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualNewEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    additionalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    resolutionType?: NullableEnumExtensionResolutionTypeFieldUpdateOperationsInput | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFieldUpdateOperationsInput | boolean
+    affectedBookingIds?: BookingExtensionUpdateaffectedBookingIdsInput | number[]
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorRole?: StringFieldUpdateOperationsInput | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutExtensionsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutExtensionsNestedInput
+    actor?: UserUpdateOneRequiredWithoutInitiatedExtensionsNestedInput
+    swappedVehicle?: VehicleUpdateOneWithoutExtensionSwapsNestedInput
+    paymentTransaction?: PaymentTransactionUpdateOneWithoutExtensionNestedInput
+    vehicleSwap?: VehicleSwapUpdateOneWithoutExtensionNestedInput
+    activeForBookings?: BookingUpdateManyWithoutActiveExtensionNestedInput
+  }
+
+  export type BookingExtensionUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    extensionTrigger?: EnumExtensionTriggerFieldUpdateOperationsInput | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFieldUpdateOperationsInput | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestedEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualNewEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    additionalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    resolutionType?: NullableEnumExtensionResolutionTypeFieldUpdateOperationsInput | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFieldUpdateOperationsInput | boolean
+    swappedVehicleId?: NullableIntFieldUpdateOperationsInput | number | null
+    affectedBookingIds?: BookingExtensionUpdateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: NullableIntFieldUpdateOperationsInput | number | null
+    vehicleSwapId?: NullableIntFieldUpdateOperationsInput | number | null
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorRole?: StringFieldUpdateOperationsInput | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    activeForBookings?: BookingUncheckedUpdateManyWithoutActiveExtensionNestedInput
+  }
+
+  export type BookingExtensionCreateManyInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    extensionTrigger: $Enums.ExtensionTrigger
+    extensionStatus?: $Enums.ExtensionStatus
+    oldEndAt: Date | string
+    requestedEndAt: Date | string
+    actualNewEndAt?: Date | string | null
+    additionalAmount: Decimal | DecimalJsLike | number | string
+    newTotalFinal: Decimal | DecimalJsLike | number | string
+    resolutionType?: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: boolean
+    swappedVehicleId?: number | null
+    affectedBookingIds?: BookingExtensionCreateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: number | null
+    vehicleSwapId?: number | null
+    actorId: number
+    actorPublicId: string
+    actorRole: string
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BookingExtensionUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    extensionTrigger?: EnumExtensionTriggerFieldUpdateOperationsInput | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFieldUpdateOperationsInput | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestedEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualNewEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    additionalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    resolutionType?: NullableEnumExtensionResolutionTypeFieldUpdateOperationsInput | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFieldUpdateOperationsInput | boolean
+    affectedBookingIds?: BookingExtensionUpdateaffectedBookingIdsInput | number[]
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorRole?: StringFieldUpdateOperationsInput | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BookingExtensionUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    extensionTrigger?: EnumExtensionTriggerFieldUpdateOperationsInput | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFieldUpdateOperationsInput | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestedEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualNewEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    additionalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    resolutionType?: NullableEnumExtensionResolutionTypeFieldUpdateOperationsInput | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFieldUpdateOperationsInput | boolean
+    swappedVehicleId?: NullableIntFieldUpdateOperationsInput | number | null
+    affectedBookingIds?: BookingExtensionUpdateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: NullableIntFieldUpdateOperationsInput | number | null
+    vehicleSwapId?: NullableIntFieldUpdateOperationsInput | number | null
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorRole?: StringFieldUpdateOperationsInput | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type IntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -72723,6 +75046,12 @@ export namespace Prisma {
     none?: RefundRequestWhereInput
   }
 
+  export type BookingExtensionListRelationFilter = {
+    every?: BookingExtensionWhereInput
+    some?: BookingExtensionWhereInput
+    none?: BookingExtensionWhereInput
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -72769,6 +75098,10 @@ export namespace Prisma {
   }
 
   export type RefundRequestOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type BookingExtensionOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -74509,6 +76842,11 @@ export namespace Prisma {
     isNot?: ManualDiscountWhereInput | null
   }
 
+  export type BookingExtensionNullableRelationFilter = {
+    is?: BookingExtensionWhereInput | null
+    isNot?: BookingExtensionWhereInput | null
+  }
+
   export type BookingCountOrderByAggregateInput = {
     id?: SortOrder
     publicId?: SortOrder
@@ -74559,6 +76897,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: SortOrder
     couponCode?: SortOrder
     discountRuleId?: SortOrder
+    originalEndAt?: SortOrder
+    extensionCount?: SortOrder
+    lastExtendedAt?: SortOrder
+    activeExtensionId?: SortOrder
+    displacedByExtensionId?: SortOrder
+    extensionDisplacedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -74587,6 +76931,9 @@ export namespace Prisma {
     remainingBalance?: SortOrder
     safetyDeposit?: SortOrder
     discountRuleId?: SortOrder
+    extensionCount?: SortOrder
+    activeExtensionId?: SortOrder
+    displacedByExtensionId?: SortOrder
   }
 
   export type BookingMaxOrderByAggregateInput = {
@@ -74638,6 +76985,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: SortOrder
     couponCode?: SortOrder
     discountRuleId?: SortOrder
+    originalEndAt?: SortOrder
+    extensionCount?: SortOrder
+    lastExtendedAt?: SortOrder
+    activeExtensionId?: SortOrder
+    displacedByExtensionId?: SortOrder
+    extensionDisplacedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -74692,6 +77045,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: SortOrder
     couponCode?: SortOrder
     discountRuleId?: SortOrder
+    originalEndAt?: SortOrder
+    extensionCount?: SortOrder
+    lastExtendedAt?: SortOrder
+    activeExtensionId?: SortOrder
+    displacedByExtensionId?: SortOrder
+    extensionDisplacedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -74720,6 +77079,9 @@ export namespace Prisma {
     remainingBalance?: SortOrder
     safetyDeposit?: SortOrder
     discountRuleId?: SortOrder
+    extensionCount?: SortOrder
+    activeExtensionId?: SortOrder
+    displacedByExtensionId?: SortOrder
   }
 
   export type EnumRentalPeriodTypeNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -76926,6 +79288,177 @@ export namespace Prisma {
     _max?: NestedEnumCashShiftStatusFilter<$PrismaModel>
   }
 
+  export type EnumExtensionTriggerFilter<$PrismaModel = never> = {
+    equals?: $Enums.ExtensionTrigger | EnumExtensionTriggerFieldRefInput<$PrismaModel>
+    in?: $Enums.ExtensionTrigger[] | ListEnumExtensionTriggerFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ExtensionTrigger[] | ListEnumExtensionTriggerFieldRefInput<$PrismaModel>
+    not?: NestedEnumExtensionTriggerFilter<$PrismaModel> | $Enums.ExtensionTrigger
+  }
+
+  export type EnumExtensionStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.ExtensionStatus | EnumExtensionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.ExtensionStatus[] | ListEnumExtensionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ExtensionStatus[] | ListEnumExtensionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumExtensionStatusFilter<$PrismaModel> | $Enums.ExtensionStatus
+  }
+
+  export type EnumExtensionResolutionTypeNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.ExtensionResolutionType | EnumExtensionResolutionTypeFieldRefInput<$PrismaModel> | null
+    in?: $Enums.ExtensionResolutionType[] | ListEnumExtensionResolutionTypeFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.ExtensionResolutionType[] | ListEnumExtensionResolutionTypeFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumExtensionResolutionTypeNullableFilter<$PrismaModel> | $Enums.ExtensionResolutionType | null
+  }
+
+  export type VehicleNullableRelationFilter = {
+    is?: VehicleWhereInput | null
+    isNot?: VehicleWhereInput | null
+  }
+
+  export type PaymentTransactionNullableRelationFilter = {
+    is?: PaymentTransactionWhereInput | null
+    isNot?: PaymentTransactionWhereInput | null
+  }
+
+  export type VehicleSwapNullableRelationFilter = {
+    is?: VehicleSwapWhereInput | null
+    isNot?: VehicleSwapWhereInput | null
+  }
+
+  export type BookingExtensionCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    extensionTrigger?: SortOrder
+    extensionStatus?: SortOrder
+    oldEndAt?: SortOrder
+    requestedEndAt?: SortOrder
+    actualNewEndAt?: SortOrder
+    additionalAmount?: SortOrder
+    newTotalFinal?: SortOrder
+    resolutionType?: SortOrder
+    vehicleSwapOccurred?: SortOrder
+    swappedVehicleId?: SortOrder
+    affectedBookingIds?: SortOrder
+    paymentTransactionId?: SortOrder
+    vehicleSwapId?: SortOrder
+    actorId?: SortOrder
+    actorPublicId?: SortOrder
+    actorRole?: SortOrder
+    rejectionReason?: SortOrder
+    notes?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BookingExtensionAvgOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    additionalAmount?: SortOrder
+    newTotalFinal?: SortOrder
+    swappedVehicleId?: SortOrder
+    affectedBookingIds?: SortOrder
+    paymentTransactionId?: SortOrder
+    vehicleSwapId?: SortOrder
+    actorId?: SortOrder
+  }
+
+  export type BookingExtensionMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    extensionTrigger?: SortOrder
+    extensionStatus?: SortOrder
+    oldEndAt?: SortOrder
+    requestedEndAt?: SortOrder
+    actualNewEndAt?: SortOrder
+    additionalAmount?: SortOrder
+    newTotalFinal?: SortOrder
+    resolutionType?: SortOrder
+    vehicleSwapOccurred?: SortOrder
+    swappedVehicleId?: SortOrder
+    paymentTransactionId?: SortOrder
+    vehicleSwapId?: SortOrder
+    actorId?: SortOrder
+    actorPublicId?: SortOrder
+    actorRole?: SortOrder
+    rejectionReason?: SortOrder
+    notes?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BookingExtensionMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    extensionTrigger?: SortOrder
+    extensionStatus?: SortOrder
+    oldEndAt?: SortOrder
+    requestedEndAt?: SortOrder
+    actualNewEndAt?: SortOrder
+    additionalAmount?: SortOrder
+    newTotalFinal?: SortOrder
+    resolutionType?: SortOrder
+    vehicleSwapOccurred?: SortOrder
+    swappedVehicleId?: SortOrder
+    paymentTransactionId?: SortOrder
+    vehicleSwapId?: SortOrder
+    actorId?: SortOrder
+    actorPublicId?: SortOrder
+    actorRole?: SortOrder
+    rejectionReason?: SortOrder
+    notes?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BookingExtensionSumOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    additionalAmount?: SortOrder
+    newTotalFinal?: SortOrder
+    swappedVehicleId?: SortOrder
+    affectedBookingIds?: SortOrder
+    paymentTransactionId?: SortOrder
+    vehicleSwapId?: SortOrder
+    actorId?: SortOrder
+  }
+
+  export type EnumExtensionTriggerWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.ExtensionTrigger | EnumExtensionTriggerFieldRefInput<$PrismaModel>
+    in?: $Enums.ExtensionTrigger[] | ListEnumExtensionTriggerFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ExtensionTrigger[] | ListEnumExtensionTriggerFieldRefInput<$PrismaModel>
+    not?: NestedEnumExtensionTriggerWithAggregatesFilter<$PrismaModel> | $Enums.ExtensionTrigger
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumExtensionTriggerFilter<$PrismaModel>
+    _max?: NestedEnumExtensionTriggerFilter<$PrismaModel>
+  }
+
+  export type EnumExtensionStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.ExtensionStatus | EnumExtensionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.ExtensionStatus[] | ListEnumExtensionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ExtensionStatus[] | ListEnumExtensionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumExtensionStatusWithAggregatesFilter<$PrismaModel> | $Enums.ExtensionStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumExtensionStatusFilter<$PrismaModel>
+    _max?: NestedEnumExtensionStatusFilter<$PrismaModel>
+  }
+
+  export type EnumExtensionResolutionTypeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.ExtensionResolutionType | EnumExtensionResolutionTypeFieldRefInput<$PrismaModel> | null
+    in?: $Enums.ExtensionResolutionType[] | ListEnumExtensionResolutionTypeFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.ExtensionResolutionType[] | ListEnumExtensionResolutionTypeFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumExtensionResolutionTypeNullableWithAggregatesFilter<$PrismaModel> | $Enums.ExtensionResolutionType | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumExtensionResolutionTypeNullableFilter<$PrismaModel>
+    _max?: NestedEnumExtensionResolutionTypeNullableFilter<$PrismaModel>
+  }
+
   export type BranchCreateNestedOneWithoutUsersInput = {
     create?: XOR<BranchCreateWithoutUsersInput, BranchUncheckedCreateWithoutUsersInput>
     connectOrCreate?: BranchCreateOrConnectWithoutUsersInput
@@ -77064,6 +79597,13 @@ export namespace Prisma {
     connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
   }
 
+  export type BookingExtensionCreateNestedManyWithoutActorInput = {
+    create?: XOR<BookingExtensionCreateWithoutActorInput, BookingExtensionUncheckedCreateWithoutActorInput> | BookingExtensionCreateWithoutActorInput[] | BookingExtensionUncheckedCreateWithoutActorInput[]
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutActorInput | BookingExtensionCreateOrConnectWithoutActorInput[]
+    createMany?: BookingExtensionCreateManyActorInputEnvelope
+    connect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+  }
+
   export type EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput = {
     create?: XOR<EmailVerificationOtpCreateWithoutUserInput, EmailVerificationOtpUncheckedCreateWithoutUserInput> | EmailVerificationOtpCreateWithoutUserInput[] | EmailVerificationOtpUncheckedCreateWithoutUserInput[]
     connectOrCreate?: EmailVerificationOtpCreateOrConnectWithoutUserInput | EmailVerificationOtpCreateOrConnectWithoutUserInput[]
@@ -77194,6 +79734,13 @@ export namespace Prisma {
     connectOrCreate?: RefundRequestCreateOrConnectWithoutCompletedByInput | RefundRequestCreateOrConnectWithoutCompletedByInput[]
     createMany?: RefundRequestCreateManyCompletedByInputEnvelope
     connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+  }
+
+  export type BookingExtensionUncheckedCreateNestedManyWithoutActorInput = {
+    create?: XOR<BookingExtensionCreateWithoutActorInput, BookingExtensionUncheckedCreateWithoutActorInput> | BookingExtensionCreateWithoutActorInput[] | BookingExtensionUncheckedCreateWithoutActorInput[]
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutActorInput | BookingExtensionCreateOrConnectWithoutActorInput[]
+    createMany?: BookingExtensionCreateManyActorInputEnvelope
+    connect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -77492,6 +80039,20 @@ export namespace Prisma {
     deleteMany?: RefundRequestScalarWhereInput | RefundRequestScalarWhereInput[]
   }
 
+  export type BookingExtensionUpdateManyWithoutActorNestedInput = {
+    create?: XOR<BookingExtensionCreateWithoutActorInput, BookingExtensionUncheckedCreateWithoutActorInput> | BookingExtensionCreateWithoutActorInput[] | BookingExtensionUncheckedCreateWithoutActorInput[]
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutActorInput | BookingExtensionCreateOrConnectWithoutActorInput[]
+    upsert?: BookingExtensionUpsertWithWhereUniqueWithoutActorInput | BookingExtensionUpsertWithWhereUniqueWithoutActorInput[]
+    createMany?: BookingExtensionCreateManyActorInputEnvelope
+    set?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    disconnect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    delete?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    connect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    update?: BookingExtensionUpdateWithWhereUniqueWithoutActorInput | BookingExtensionUpdateWithWhereUniqueWithoutActorInput[]
+    updateMany?: BookingExtensionUpdateManyWithWhereWithoutActorInput | BookingExtensionUpdateManyWithWhereWithoutActorInput[]
+    deleteMany?: BookingExtensionScalarWhereInput | BookingExtensionScalarWhereInput[]
+  }
+
   export type IntFieldUpdateOperationsInput = {
     set?: number
     increment?: number
@@ -77768,6 +80329,20 @@ export namespace Prisma {
     update?: RefundRequestUpdateWithWhereUniqueWithoutCompletedByInput | RefundRequestUpdateWithWhereUniqueWithoutCompletedByInput[]
     updateMany?: RefundRequestUpdateManyWithWhereWithoutCompletedByInput | RefundRequestUpdateManyWithWhereWithoutCompletedByInput[]
     deleteMany?: RefundRequestScalarWhereInput | RefundRequestScalarWhereInput[]
+  }
+
+  export type BookingExtensionUncheckedUpdateManyWithoutActorNestedInput = {
+    create?: XOR<BookingExtensionCreateWithoutActorInput, BookingExtensionUncheckedCreateWithoutActorInput> | BookingExtensionCreateWithoutActorInput[] | BookingExtensionUncheckedCreateWithoutActorInput[]
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutActorInput | BookingExtensionCreateOrConnectWithoutActorInput[]
+    upsert?: BookingExtensionUpsertWithWhereUniqueWithoutActorInput | BookingExtensionUpsertWithWhereUniqueWithoutActorInput[]
+    createMany?: BookingExtensionCreateManyActorInputEnvelope
+    set?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    disconnect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    delete?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    connect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    update?: BookingExtensionUpdateWithWhereUniqueWithoutActorInput | BookingExtensionUpdateWithWhereUniqueWithoutActorInput[]
+    updateMany?: BookingExtensionUpdateManyWithWhereWithoutActorInput | BookingExtensionUpdateManyWithWhereWithoutActorInput[]
+    deleteMany?: BookingExtensionScalarWhereInput | BookingExtensionScalarWhereInput[]
   }
 
   export type UserCreateNestedOneWithoutProvidersInput = {
@@ -78352,6 +80927,13 @@ export namespace Prisma {
     connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
   }
 
+  export type BookingExtensionCreateNestedManyWithoutBranchInput = {
+    create?: XOR<BookingExtensionCreateWithoutBranchInput, BookingExtensionUncheckedCreateWithoutBranchInput> | BookingExtensionCreateWithoutBranchInput[] | BookingExtensionUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutBranchInput | BookingExtensionCreateOrConnectWithoutBranchInput[]
+    createMany?: BookingExtensionCreateManyBranchInputEnvelope
+    connect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+  }
+
   export type UserUncheckedCreateNestedManyWithoutBranchInput = {
     create?: XOR<UserCreateWithoutBranchInput, UserUncheckedCreateWithoutBranchInput> | UserCreateWithoutBranchInput[] | UserUncheckedCreateWithoutBranchInput[]
     connectOrCreate?: UserCreateOrConnectWithoutBranchInput | UserCreateOrConnectWithoutBranchInput[]
@@ -78472,6 +81054,13 @@ export namespace Prisma {
     connectOrCreate?: RefundRequestCreateOrConnectWithoutBranchInput | RefundRequestCreateOrConnectWithoutBranchInput[]
     createMany?: RefundRequestCreateManyBranchInputEnvelope
     connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+  }
+
+  export type BookingExtensionUncheckedCreateNestedManyWithoutBranchInput = {
+    create?: XOR<BookingExtensionCreateWithoutBranchInput, BookingExtensionUncheckedCreateWithoutBranchInput> | BookingExtensionCreateWithoutBranchInput[] | BookingExtensionUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutBranchInput | BookingExtensionCreateOrConnectWithoutBranchInput[]
+    createMany?: BookingExtensionCreateManyBranchInputEnvelope
+    connect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
   }
 
   export type UserUpdateManyWithoutBranchNestedInput = {
@@ -78710,6 +81299,20 @@ export namespace Prisma {
     deleteMany?: RefundRequestScalarWhereInput | RefundRequestScalarWhereInput[]
   }
 
+  export type BookingExtensionUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<BookingExtensionCreateWithoutBranchInput, BookingExtensionUncheckedCreateWithoutBranchInput> | BookingExtensionCreateWithoutBranchInput[] | BookingExtensionUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutBranchInput | BookingExtensionCreateOrConnectWithoutBranchInput[]
+    upsert?: BookingExtensionUpsertWithWhereUniqueWithoutBranchInput | BookingExtensionUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: BookingExtensionCreateManyBranchInputEnvelope
+    set?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    disconnect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    delete?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    connect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    update?: BookingExtensionUpdateWithWhereUniqueWithoutBranchInput | BookingExtensionUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: BookingExtensionUpdateManyWithWhereWithoutBranchInput | BookingExtensionUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: BookingExtensionScalarWhereInput | BookingExtensionScalarWhereInput[]
+  }
+
   export type UserUncheckedUpdateManyWithoutBranchNestedInput = {
     create?: XOR<UserCreateWithoutBranchInput, UserUncheckedCreateWithoutBranchInput> | UserCreateWithoutBranchInput[] | UserUncheckedCreateWithoutBranchInput[]
     connectOrCreate?: UserCreateOrConnectWithoutBranchInput | UserCreateOrConnectWithoutBranchInput[]
@@ -78944,6 +81547,20 @@ export namespace Prisma {
     update?: RefundRequestUpdateWithWhereUniqueWithoutBranchInput | RefundRequestUpdateWithWhereUniqueWithoutBranchInput[]
     updateMany?: RefundRequestUpdateManyWithWhereWithoutBranchInput | RefundRequestUpdateManyWithWhereWithoutBranchInput[]
     deleteMany?: RefundRequestScalarWhereInput | RefundRequestScalarWhereInput[]
+  }
+
+  export type BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<BookingExtensionCreateWithoutBranchInput, BookingExtensionUncheckedCreateWithoutBranchInput> | BookingExtensionCreateWithoutBranchInput[] | BookingExtensionUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutBranchInput | BookingExtensionCreateOrConnectWithoutBranchInput[]
+    upsert?: BookingExtensionUpsertWithWhereUniqueWithoutBranchInput | BookingExtensionUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: BookingExtensionCreateManyBranchInputEnvelope
+    set?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    disconnect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    delete?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    connect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    update?: BookingExtensionUpdateWithWhereUniqueWithoutBranchInput | BookingExtensionUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: BookingExtensionUpdateManyWithWhereWithoutBranchInput | BookingExtensionUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: BookingExtensionScalarWhereInput | BookingExtensionScalarWhereInput[]
   }
 
   export type BranchCreateNestedOneWithoutStaffActivityLogsInput = {
@@ -79350,6 +81967,13 @@ export namespace Prisma {
     connect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
   }
 
+  export type BookingExtensionCreateNestedManyWithoutSwappedVehicleInput = {
+    create?: XOR<BookingExtensionCreateWithoutSwappedVehicleInput, BookingExtensionUncheckedCreateWithoutSwappedVehicleInput> | BookingExtensionCreateWithoutSwappedVehicleInput[] | BookingExtensionUncheckedCreateWithoutSwappedVehicleInput[]
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutSwappedVehicleInput | BookingExtensionCreateOrConnectWithoutSwappedVehicleInput[]
+    createMany?: BookingExtensionCreateManySwappedVehicleInputEnvelope
+    connect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+  }
+
   export type VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput = {
     create?: XOR<VehicleInsuranceCreateWithoutVehicleInput, VehicleInsuranceUncheckedCreateWithoutVehicleInput> | VehicleInsuranceCreateWithoutVehicleInput[] | VehicleInsuranceUncheckedCreateWithoutVehicleInput[]
     connectOrCreate?: VehicleInsuranceCreateOrConnectWithoutVehicleInput | VehicleInsuranceCreateOrConnectWithoutVehicleInput[]
@@ -79416,6 +82040,13 @@ export namespace Prisma {
     connectOrCreate?: VehicleSwapCreateOrConnectWithoutNewVehicleInput | VehicleSwapCreateOrConnectWithoutNewVehicleInput[]
     createMany?: VehicleSwapCreateManyNewVehicleInputEnvelope
     connect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+  }
+
+  export type BookingExtensionUncheckedCreateNestedManyWithoutSwappedVehicleInput = {
+    create?: XOR<BookingExtensionCreateWithoutSwappedVehicleInput, BookingExtensionUncheckedCreateWithoutSwappedVehicleInput> | BookingExtensionCreateWithoutSwappedVehicleInput[] | BookingExtensionUncheckedCreateWithoutSwappedVehicleInput[]
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutSwappedVehicleInput | BookingExtensionCreateOrConnectWithoutSwappedVehicleInput[]
+    createMany?: BookingExtensionCreateManySwappedVehicleInputEnvelope
+    connect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
   }
 
   export type EnumVehicleStatusFieldUpdateOperationsInput = {
@@ -79570,6 +82201,20 @@ export namespace Prisma {
     deleteMany?: VehicleSwapScalarWhereInput | VehicleSwapScalarWhereInput[]
   }
 
+  export type BookingExtensionUpdateManyWithoutSwappedVehicleNestedInput = {
+    create?: XOR<BookingExtensionCreateWithoutSwappedVehicleInput, BookingExtensionUncheckedCreateWithoutSwappedVehicleInput> | BookingExtensionCreateWithoutSwappedVehicleInput[] | BookingExtensionUncheckedCreateWithoutSwappedVehicleInput[]
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutSwappedVehicleInput | BookingExtensionCreateOrConnectWithoutSwappedVehicleInput[]
+    upsert?: BookingExtensionUpsertWithWhereUniqueWithoutSwappedVehicleInput | BookingExtensionUpsertWithWhereUniqueWithoutSwappedVehicleInput[]
+    createMany?: BookingExtensionCreateManySwappedVehicleInputEnvelope
+    set?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    disconnect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    delete?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    connect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    update?: BookingExtensionUpdateWithWhereUniqueWithoutSwappedVehicleInput | BookingExtensionUpdateWithWhereUniqueWithoutSwappedVehicleInput[]
+    updateMany?: BookingExtensionUpdateManyWithWhereWithoutSwappedVehicleInput | BookingExtensionUpdateManyWithWhereWithoutSwappedVehicleInput[]
+    deleteMany?: BookingExtensionScalarWhereInput | BookingExtensionScalarWhereInput[]
+  }
+
   export type VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput = {
     create?: XOR<VehicleInsuranceCreateWithoutVehicleInput, VehicleInsuranceUncheckedCreateWithoutVehicleInput> | VehicleInsuranceCreateWithoutVehicleInput[] | VehicleInsuranceUncheckedCreateWithoutVehicleInput[]
     connectOrCreate?: VehicleInsuranceCreateOrConnectWithoutVehicleInput | VehicleInsuranceCreateOrConnectWithoutVehicleInput[]
@@ -79700,6 +82345,20 @@ export namespace Prisma {
     update?: VehicleSwapUpdateWithWhereUniqueWithoutNewVehicleInput | VehicleSwapUpdateWithWhereUniqueWithoutNewVehicleInput[]
     updateMany?: VehicleSwapUpdateManyWithWhereWithoutNewVehicleInput | VehicleSwapUpdateManyWithWhereWithoutNewVehicleInput[]
     deleteMany?: VehicleSwapScalarWhereInput | VehicleSwapScalarWhereInput[]
+  }
+
+  export type BookingExtensionUncheckedUpdateManyWithoutSwappedVehicleNestedInput = {
+    create?: XOR<BookingExtensionCreateWithoutSwappedVehicleInput, BookingExtensionUncheckedCreateWithoutSwappedVehicleInput> | BookingExtensionCreateWithoutSwappedVehicleInput[] | BookingExtensionUncheckedCreateWithoutSwappedVehicleInput[]
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutSwappedVehicleInput | BookingExtensionCreateOrConnectWithoutSwappedVehicleInput[]
+    upsert?: BookingExtensionUpsertWithWhereUniqueWithoutSwappedVehicleInput | BookingExtensionUpsertWithWhereUniqueWithoutSwappedVehicleInput[]
+    createMany?: BookingExtensionCreateManySwappedVehicleInputEnvelope
+    set?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    disconnect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    delete?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    connect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    update?: BookingExtensionUpdateWithWhereUniqueWithoutSwappedVehicleInput | BookingExtensionUpdateWithWhereUniqueWithoutSwappedVehicleInput[]
+    updateMany?: BookingExtensionUpdateManyWithWhereWithoutSwappedVehicleInput | BookingExtensionUpdateManyWithWhereWithoutSwappedVehicleInput[]
+    deleteMany?: BookingExtensionScalarWhereInput | BookingExtensionScalarWhereInput[]
   }
 
   export type VehicleCreateNestedOneWithoutPricingOverrideInput = {
@@ -80004,6 +82663,19 @@ export namespace Prisma {
     connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
   }
 
+  export type BookingExtensionCreateNestedOneWithoutActiveForBookingsInput = {
+    create?: XOR<BookingExtensionCreateWithoutActiveForBookingsInput, BookingExtensionUncheckedCreateWithoutActiveForBookingsInput>
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutActiveForBookingsInput
+    connect?: BookingExtensionWhereUniqueInput
+  }
+
+  export type BookingExtensionCreateNestedManyWithoutBookingInput = {
+    create?: XOR<BookingExtensionCreateWithoutBookingInput, BookingExtensionUncheckedCreateWithoutBookingInput> | BookingExtensionCreateWithoutBookingInput[] | BookingExtensionUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutBookingInput | BookingExtensionCreateOrConnectWithoutBookingInput[]
+    createMany?: BookingExtensionCreateManyBookingInputEnvelope
+    connect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+  }
+
   export type BookingPhotoUncheckedCreateNestedManyWithoutBookingInput = {
     create?: XOR<BookingPhotoCreateWithoutBookingInput, BookingPhotoUncheckedCreateWithoutBookingInput> | BookingPhotoCreateWithoutBookingInput[] | BookingPhotoUncheckedCreateWithoutBookingInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutBookingInput | BookingPhotoCreateOrConnectWithoutBookingInput[]
@@ -80074,6 +82746,13 @@ export namespace Prisma {
     connectOrCreate?: RefundRequestCreateOrConnectWithoutBookingInput | RefundRequestCreateOrConnectWithoutBookingInput[]
     createMany?: RefundRequestCreateManyBookingInputEnvelope
     connect?: RefundRequestWhereUniqueInput | RefundRequestWhereUniqueInput[]
+  }
+
+  export type BookingExtensionUncheckedCreateNestedManyWithoutBookingInput = {
+    create?: XOR<BookingExtensionCreateWithoutBookingInput, BookingExtensionUncheckedCreateWithoutBookingInput> | BookingExtensionCreateWithoutBookingInput[] | BookingExtensionUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutBookingInput | BookingExtensionCreateOrConnectWithoutBookingInput[]
+    createMany?: BookingExtensionCreateManyBookingInputEnvelope
+    connect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
   }
 
   export type NullableEnumRentalPeriodTypeFieldUpdateOperationsInput = {
@@ -80270,6 +82949,30 @@ export namespace Prisma {
     deleteMany?: RefundRequestScalarWhereInput | RefundRequestScalarWhereInput[]
   }
 
+  export type BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput = {
+    create?: XOR<BookingExtensionCreateWithoutActiveForBookingsInput, BookingExtensionUncheckedCreateWithoutActiveForBookingsInput>
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutActiveForBookingsInput
+    upsert?: BookingExtensionUpsertWithoutActiveForBookingsInput
+    disconnect?: BookingExtensionWhereInput | boolean
+    delete?: BookingExtensionWhereInput | boolean
+    connect?: BookingExtensionWhereUniqueInput
+    update?: XOR<XOR<BookingExtensionUpdateToOneWithWhereWithoutActiveForBookingsInput, BookingExtensionUpdateWithoutActiveForBookingsInput>, BookingExtensionUncheckedUpdateWithoutActiveForBookingsInput>
+  }
+
+  export type BookingExtensionUpdateManyWithoutBookingNestedInput = {
+    create?: XOR<BookingExtensionCreateWithoutBookingInput, BookingExtensionUncheckedCreateWithoutBookingInput> | BookingExtensionCreateWithoutBookingInput[] | BookingExtensionUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutBookingInput | BookingExtensionCreateOrConnectWithoutBookingInput[]
+    upsert?: BookingExtensionUpsertWithWhereUniqueWithoutBookingInput | BookingExtensionUpsertWithWhereUniqueWithoutBookingInput[]
+    createMany?: BookingExtensionCreateManyBookingInputEnvelope
+    set?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    disconnect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    delete?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    connect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    update?: BookingExtensionUpdateWithWhereUniqueWithoutBookingInput | BookingExtensionUpdateWithWhereUniqueWithoutBookingInput[]
+    updateMany?: BookingExtensionUpdateManyWithWhereWithoutBookingInput | BookingExtensionUpdateManyWithWhereWithoutBookingInput[]
+    deleteMany?: BookingExtensionScalarWhereInput | BookingExtensionScalarWhereInput[]
+  }
+
   export type BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput = {
     create?: XOR<BookingPhotoCreateWithoutBookingInput, BookingPhotoUncheckedCreateWithoutBookingInput> | BookingPhotoCreateWithoutBookingInput[] | BookingPhotoUncheckedCreateWithoutBookingInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutBookingInput | BookingPhotoCreateOrConnectWithoutBookingInput[]
@@ -80402,6 +83105,20 @@ export namespace Prisma {
     update?: RefundRequestUpdateWithWhereUniqueWithoutBookingInput | RefundRequestUpdateWithWhereUniqueWithoutBookingInput[]
     updateMany?: RefundRequestUpdateManyWithWhereWithoutBookingInput | RefundRequestUpdateManyWithWhereWithoutBookingInput[]
     deleteMany?: RefundRequestScalarWhereInput | RefundRequestScalarWhereInput[]
+  }
+
+  export type BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput = {
+    create?: XOR<BookingExtensionCreateWithoutBookingInput, BookingExtensionUncheckedCreateWithoutBookingInput> | BookingExtensionCreateWithoutBookingInput[] | BookingExtensionUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutBookingInput | BookingExtensionCreateOrConnectWithoutBookingInput[]
+    upsert?: BookingExtensionUpsertWithWhereUniqueWithoutBookingInput | BookingExtensionUpsertWithWhereUniqueWithoutBookingInput[]
+    createMany?: BookingExtensionCreateManyBookingInputEnvelope
+    set?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    disconnect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    delete?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    connect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+    update?: BookingExtensionUpdateWithWhereUniqueWithoutBookingInput | BookingExtensionUpdateWithWhereUniqueWithoutBookingInput[]
+    updateMany?: BookingExtensionUpdateManyWithWhereWithoutBookingInput | BookingExtensionUpdateManyWithWhereWithoutBookingInput[]
+    deleteMany?: BookingExtensionScalarWhereInput | BookingExtensionScalarWhereInput[]
   }
 
   export type VehicleCreateNestedOneWithoutBookingItemsInput = {
@@ -81037,6 +83754,18 @@ export namespace Prisma {
     connect?: UserWhereUniqueInput
   }
 
+  export type BookingExtensionCreateNestedOneWithoutVehicleSwapInput = {
+    create?: XOR<BookingExtensionCreateWithoutVehicleSwapInput, BookingExtensionUncheckedCreateWithoutVehicleSwapInput>
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutVehicleSwapInput
+    connect?: BookingExtensionWhereUniqueInput
+  }
+
+  export type BookingExtensionUncheckedCreateNestedOneWithoutVehicleSwapInput = {
+    create?: XOR<BookingExtensionCreateWithoutVehicleSwapInput, BookingExtensionUncheckedCreateWithoutVehicleSwapInput>
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutVehicleSwapInput
+    connect?: BookingExtensionWhereUniqueInput
+  }
+
   export type EnumSwapReasonFieldUpdateOperationsInput = {
     set?: $Enums.SwapReason
   }
@@ -81075,6 +83804,26 @@ export namespace Prisma {
     upsert?: UserUpsertWithoutVehicleSwapsInput
     connect?: UserWhereUniqueInput
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutVehicleSwapsInput, UserUpdateWithoutVehicleSwapsInput>, UserUncheckedUpdateWithoutVehicleSwapsInput>
+  }
+
+  export type BookingExtensionUpdateOneWithoutVehicleSwapNestedInput = {
+    create?: XOR<BookingExtensionCreateWithoutVehicleSwapInput, BookingExtensionUncheckedCreateWithoutVehicleSwapInput>
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutVehicleSwapInput
+    upsert?: BookingExtensionUpsertWithoutVehicleSwapInput
+    disconnect?: BookingExtensionWhereInput | boolean
+    delete?: BookingExtensionWhereInput | boolean
+    connect?: BookingExtensionWhereUniqueInput
+    update?: XOR<XOR<BookingExtensionUpdateToOneWithWhereWithoutVehicleSwapInput, BookingExtensionUpdateWithoutVehicleSwapInput>, BookingExtensionUncheckedUpdateWithoutVehicleSwapInput>
+  }
+
+  export type BookingExtensionUncheckedUpdateOneWithoutVehicleSwapNestedInput = {
+    create?: XOR<BookingExtensionCreateWithoutVehicleSwapInput, BookingExtensionUncheckedCreateWithoutVehicleSwapInput>
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutVehicleSwapInput
+    upsert?: BookingExtensionUpsertWithoutVehicleSwapInput
+    disconnect?: BookingExtensionWhereInput | boolean
+    delete?: BookingExtensionWhereInput | boolean
+    connect?: BookingExtensionWhereUniqueInput
+    update?: XOR<XOR<BookingExtensionUpdateToOneWithWhereWithoutVehicleSwapInput, BookingExtensionUpdateWithoutVehicleSwapInput>, BookingExtensionUncheckedUpdateWithoutVehicleSwapInput>
   }
 
   export type DiscountRuleCreateapplicableBranchIdsInput = {
@@ -81483,6 +84232,18 @@ export namespace Prisma {
     connect?: CashShiftWhereUniqueInput
   }
 
+  export type BookingExtensionCreateNestedOneWithoutPaymentTransactionInput = {
+    create?: XOR<BookingExtensionCreateWithoutPaymentTransactionInput, BookingExtensionUncheckedCreateWithoutPaymentTransactionInput>
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutPaymentTransactionInput
+    connect?: BookingExtensionWhereUniqueInput
+  }
+
+  export type BookingExtensionUncheckedCreateNestedOneWithoutPaymentTransactionInput = {
+    create?: XOR<BookingExtensionCreateWithoutPaymentTransactionInput, BookingExtensionUncheckedCreateWithoutPaymentTransactionInput>
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutPaymentTransactionInput
+    connect?: BookingExtensionWhereUniqueInput
+  }
+
   export type EnumPaymentPurposeFieldUpdateOperationsInput = {
     set?: $Enums.PaymentPurpose
   }
@@ -81549,6 +84310,26 @@ export namespace Prisma {
     delete?: CashShiftWhereInput | boolean
     connect?: CashShiftWhereUniqueInput
     update?: XOR<XOR<CashShiftUpdateToOneWithWhereWithoutTransactionsInput, CashShiftUpdateWithoutTransactionsInput>, CashShiftUncheckedUpdateWithoutTransactionsInput>
+  }
+
+  export type BookingExtensionUpdateOneWithoutPaymentTransactionNestedInput = {
+    create?: XOR<BookingExtensionCreateWithoutPaymentTransactionInput, BookingExtensionUncheckedCreateWithoutPaymentTransactionInput>
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutPaymentTransactionInput
+    upsert?: BookingExtensionUpsertWithoutPaymentTransactionInput
+    disconnect?: BookingExtensionWhereInput | boolean
+    delete?: BookingExtensionWhereInput | boolean
+    connect?: BookingExtensionWhereUniqueInput
+    update?: XOR<XOR<BookingExtensionUpdateToOneWithWhereWithoutPaymentTransactionInput, BookingExtensionUpdateWithoutPaymentTransactionInput>, BookingExtensionUncheckedUpdateWithoutPaymentTransactionInput>
+  }
+
+  export type BookingExtensionUncheckedUpdateOneWithoutPaymentTransactionNestedInput = {
+    create?: XOR<BookingExtensionCreateWithoutPaymentTransactionInput, BookingExtensionUncheckedCreateWithoutPaymentTransactionInput>
+    connectOrCreate?: BookingExtensionCreateOrConnectWithoutPaymentTransactionInput
+    upsert?: BookingExtensionUpsertWithoutPaymentTransactionInput
+    disconnect?: BookingExtensionWhereInput | boolean
+    delete?: BookingExtensionWhereInput | boolean
+    connect?: BookingExtensionWhereUniqueInput
+    update?: XOR<XOR<BookingExtensionUpdateToOneWithWhereWithoutPaymentTransactionInput, BookingExtensionUpdateWithoutPaymentTransactionInput>, BookingExtensionUncheckedUpdateWithoutPaymentTransactionInput>
   }
 
   export type BookingCreateNestedOneWithoutRefundRequestsInput = {
@@ -81717,6 +84498,159 @@ export namespace Prisma {
     update?: PaymentTransactionUpdateWithWhereUniqueWithoutCashShiftInput | PaymentTransactionUpdateWithWhereUniqueWithoutCashShiftInput[]
     updateMany?: PaymentTransactionUpdateManyWithWhereWithoutCashShiftInput | PaymentTransactionUpdateManyWithWhereWithoutCashShiftInput[]
     deleteMany?: PaymentTransactionScalarWhereInput | PaymentTransactionScalarWhereInput[]
+  }
+
+  export type BookingExtensionCreateaffectedBookingIdsInput = {
+    set: number[]
+  }
+
+  export type BookingCreateNestedOneWithoutExtensionsInput = {
+    create?: XOR<BookingCreateWithoutExtensionsInput, BookingUncheckedCreateWithoutExtensionsInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutExtensionsInput
+    connect?: BookingWhereUniqueInput
+  }
+
+  export type BranchCreateNestedOneWithoutExtensionsInput = {
+    create?: XOR<BranchCreateWithoutExtensionsInput, BranchUncheckedCreateWithoutExtensionsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutExtensionsInput
+    connect?: BranchWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutInitiatedExtensionsInput = {
+    create?: XOR<UserCreateWithoutInitiatedExtensionsInput, UserUncheckedCreateWithoutInitiatedExtensionsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutInitiatedExtensionsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type VehicleCreateNestedOneWithoutExtensionSwapsInput = {
+    create?: XOR<VehicleCreateWithoutExtensionSwapsInput, VehicleUncheckedCreateWithoutExtensionSwapsInput>
+    connectOrCreate?: VehicleCreateOrConnectWithoutExtensionSwapsInput
+    connect?: VehicleWhereUniqueInput
+  }
+
+  export type PaymentTransactionCreateNestedOneWithoutExtensionInput = {
+    create?: XOR<PaymentTransactionCreateWithoutExtensionInput, PaymentTransactionUncheckedCreateWithoutExtensionInput>
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutExtensionInput
+    connect?: PaymentTransactionWhereUniqueInput
+  }
+
+  export type VehicleSwapCreateNestedOneWithoutExtensionInput = {
+    create?: XOR<VehicleSwapCreateWithoutExtensionInput, VehicleSwapUncheckedCreateWithoutExtensionInput>
+    connectOrCreate?: VehicleSwapCreateOrConnectWithoutExtensionInput
+    connect?: VehicleSwapWhereUniqueInput
+  }
+
+  export type BookingCreateNestedManyWithoutActiveExtensionInput = {
+    create?: XOR<BookingCreateWithoutActiveExtensionInput, BookingUncheckedCreateWithoutActiveExtensionInput> | BookingCreateWithoutActiveExtensionInput[] | BookingUncheckedCreateWithoutActiveExtensionInput[]
+    connectOrCreate?: BookingCreateOrConnectWithoutActiveExtensionInput | BookingCreateOrConnectWithoutActiveExtensionInput[]
+    createMany?: BookingCreateManyActiveExtensionInputEnvelope
+    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+  }
+
+  export type BookingUncheckedCreateNestedManyWithoutActiveExtensionInput = {
+    create?: XOR<BookingCreateWithoutActiveExtensionInput, BookingUncheckedCreateWithoutActiveExtensionInput> | BookingCreateWithoutActiveExtensionInput[] | BookingUncheckedCreateWithoutActiveExtensionInput[]
+    connectOrCreate?: BookingCreateOrConnectWithoutActiveExtensionInput | BookingCreateOrConnectWithoutActiveExtensionInput[]
+    createMany?: BookingCreateManyActiveExtensionInputEnvelope
+    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+  }
+
+  export type EnumExtensionTriggerFieldUpdateOperationsInput = {
+    set?: $Enums.ExtensionTrigger
+  }
+
+  export type EnumExtensionStatusFieldUpdateOperationsInput = {
+    set?: $Enums.ExtensionStatus
+  }
+
+  export type NullableEnumExtensionResolutionTypeFieldUpdateOperationsInput = {
+    set?: $Enums.ExtensionResolutionType | null
+  }
+
+  export type BookingExtensionUpdateaffectedBookingIdsInput = {
+    set?: number[]
+    push?: number | number[]
+  }
+
+  export type BookingUpdateOneRequiredWithoutExtensionsNestedInput = {
+    create?: XOR<BookingCreateWithoutExtensionsInput, BookingUncheckedCreateWithoutExtensionsInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutExtensionsInput
+    upsert?: BookingUpsertWithoutExtensionsInput
+    connect?: BookingWhereUniqueInput
+    update?: XOR<XOR<BookingUpdateToOneWithWhereWithoutExtensionsInput, BookingUpdateWithoutExtensionsInput>, BookingUncheckedUpdateWithoutExtensionsInput>
+  }
+
+  export type BranchUpdateOneRequiredWithoutExtensionsNestedInput = {
+    create?: XOR<BranchCreateWithoutExtensionsInput, BranchUncheckedCreateWithoutExtensionsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutExtensionsInput
+    upsert?: BranchUpsertWithoutExtensionsInput
+    connect?: BranchWhereUniqueInput
+    update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutExtensionsInput, BranchUpdateWithoutExtensionsInput>, BranchUncheckedUpdateWithoutExtensionsInput>
+  }
+
+  export type UserUpdateOneRequiredWithoutInitiatedExtensionsNestedInput = {
+    create?: XOR<UserCreateWithoutInitiatedExtensionsInput, UserUncheckedCreateWithoutInitiatedExtensionsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutInitiatedExtensionsInput
+    upsert?: UserUpsertWithoutInitiatedExtensionsInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutInitiatedExtensionsInput, UserUpdateWithoutInitiatedExtensionsInput>, UserUncheckedUpdateWithoutInitiatedExtensionsInput>
+  }
+
+  export type VehicleUpdateOneWithoutExtensionSwapsNestedInput = {
+    create?: XOR<VehicleCreateWithoutExtensionSwapsInput, VehicleUncheckedCreateWithoutExtensionSwapsInput>
+    connectOrCreate?: VehicleCreateOrConnectWithoutExtensionSwapsInput
+    upsert?: VehicleUpsertWithoutExtensionSwapsInput
+    disconnect?: VehicleWhereInput | boolean
+    delete?: VehicleWhereInput | boolean
+    connect?: VehicleWhereUniqueInput
+    update?: XOR<XOR<VehicleUpdateToOneWithWhereWithoutExtensionSwapsInput, VehicleUpdateWithoutExtensionSwapsInput>, VehicleUncheckedUpdateWithoutExtensionSwapsInput>
+  }
+
+  export type PaymentTransactionUpdateOneWithoutExtensionNestedInput = {
+    create?: XOR<PaymentTransactionCreateWithoutExtensionInput, PaymentTransactionUncheckedCreateWithoutExtensionInput>
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutExtensionInput
+    upsert?: PaymentTransactionUpsertWithoutExtensionInput
+    disconnect?: PaymentTransactionWhereInput | boolean
+    delete?: PaymentTransactionWhereInput | boolean
+    connect?: PaymentTransactionWhereUniqueInput
+    update?: XOR<XOR<PaymentTransactionUpdateToOneWithWhereWithoutExtensionInput, PaymentTransactionUpdateWithoutExtensionInput>, PaymentTransactionUncheckedUpdateWithoutExtensionInput>
+  }
+
+  export type VehicleSwapUpdateOneWithoutExtensionNestedInput = {
+    create?: XOR<VehicleSwapCreateWithoutExtensionInput, VehicleSwapUncheckedCreateWithoutExtensionInput>
+    connectOrCreate?: VehicleSwapCreateOrConnectWithoutExtensionInput
+    upsert?: VehicleSwapUpsertWithoutExtensionInput
+    disconnect?: VehicleSwapWhereInput | boolean
+    delete?: VehicleSwapWhereInput | boolean
+    connect?: VehicleSwapWhereUniqueInput
+    update?: XOR<XOR<VehicleSwapUpdateToOneWithWhereWithoutExtensionInput, VehicleSwapUpdateWithoutExtensionInput>, VehicleSwapUncheckedUpdateWithoutExtensionInput>
+  }
+
+  export type BookingUpdateManyWithoutActiveExtensionNestedInput = {
+    create?: XOR<BookingCreateWithoutActiveExtensionInput, BookingUncheckedCreateWithoutActiveExtensionInput> | BookingCreateWithoutActiveExtensionInput[] | BookingUncheckedCreateWithoutActiveExtensionInput[]
+    connectOrCreate?: BookingCreateOrConnectWithoutActiveExtensionInput | BookingCreateOrConnectWithoutActiveExtensionInput[]
+    upsert?: BookingUpsertWithWhereUniqueWithoutActiveExtensionInput | BookingUpsertWithWhereUniqueWithoutActiveExtensionInput[]
+    createMany?: BookingCreateManyActiveExtensionInputEnvelope
+    set?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    disconnect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    delete?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    update?: BookingUpdateWithWhereUniqueWithoutActiveExtensionInput | BookingUpdateWithWhereUniqueWithoutActiveExtensionInput[]
+    updateMany?: BookingUpdateManyWithWhereWithoutActiveExtensionInput | BookingUpdateManyWithWhereWithoutActiveExtensionInput[]
+    deleteMany?: BookingScalarWhereInput | BookingScalarWhereInput[]
+  }
+
+  export type BookingUncheckedUpdateManyWithoutActiveExtensionNestedInput = {
+    create?: XOR<BookingCreateWithoutActiveExtensionInput, BookingUncheckedCreateWithoutActiveExtensionInput> | BookingCreateWithoutActiveExtensionInput[] | BookingUncheckedCreateWithoutActiveExtensionInput[]
+    connectOrCreate?: BookingCreateOrConnectWithoutActiveExtensionInput | BookingCreateOrConnectWithoutActiveExtensionInput[]
+    upsert?: BookingUpsertWithWhereUniqueWithoutActiveExtensionInput | BookingUpsertWithWhereUniqueWithoutActiveExtensionInput[]
+    createMany?: BookingCreateManyActiveExtensionInputEnvelope
+    set?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    disconnect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    delete?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    update?: BookingUpdateWithWhereUniqueWithoutActiveExtensionInput | BookingUpdateWithWhereUniqueWithoutActiveExtensionInput[]
+    updateMany?: BookingUpdateManyWithWhereWithoutActiveExtensionInput | BookingUpdateManyWithWhereWithoutActiveExtensionInput[]
+    deleteMany?: BookingScalarWhereInput | BookingScalarWhereInput[]
   }
 
   export type NestedIntFilter<$PrismaModel = never> = {
@@ -82579,6 +85513,57 @@ export namespace Prisma {
     _max?: NestedEnumCashShiftStatusFilter<$PrismaModel>
   }
 
+  export type NestedEnumExtensionTriggerFilter<$PrismaModel = never> = {
+    equals?: $Enums.ExtensionTrigger | EnumExtensionTriggerFieldRefInput<$PrismaModel>
+    in?: $Enums.ExtensionTrigger[] | ListEnumExtensionTriggerFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ExtensionTrigger[] | ListEnumExtensionTriggerFieldRefInput<$PrismaModel>
+    not?: NestedEnumExtensionTriggerFilter<$PrismaModel> | $Enums.ExtensionTrigger
+  }
+
+  export type NestedEnumExtensionStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.ExtensionStatus | EnumExtensionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.ExtensionStatus[] | ListEnumExtensionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ExtensionStatus[] | ListEnumExtensionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumExtensionStatusFilter<$PrismaModel> | $Enums.ExtensionStatus
+  }
+
+  export type NestedEnumExtensionResolutionTypeNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.ExtensionResolutionType | EnumExtensionResolutionTypeFieldRefInput<$PrismaModel> | null
+    in?: $Enums.ExtensionResolutionType[] | ListEnumExtensionResolutionTypeFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.ExtensionResolutionType[] | ListEnumExtensionResolutionTypeFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumExtensionResolutionTypeNullableFilter<$PrismaModel> | $Enums.ExtensionResolutionType | null
+  }
+
+  export type NestedEnumExtensionTriggerWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.ExtensionTrigger | EnumExtensionTriggerFieldRefInput<$PrismaModel>
+    in?: $Enums.ExtensionTrigger[] | ListEnumExtensionTriggerFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ExtensionTrigger[] | ListEnumExtensionTriggerFieldRefInput<$PrismaModel>
+    not?: NestedEnumExtensionTriggerWithAggregatesFilter<$PrismaModel> | $Enums.ExtensionTrigger
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumExtensionTriggerFilter<$PrismaModel>
+    _max?: NestedEnumExtensionTriggerFilter<$PrismaModel>
+  }
+
+  export type NestedEnumExtensionStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.ExtensionStatus | EnumExtensionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.ExtensionStatus[] | ListEnumExtensionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ExtensionStatus[] | ListEnumExtensionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumExtensionStatusWithAggregatesFilter<$PrismaModel> | $Enums.ExtensionStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumExtensionStatusFilter<$PrismaModel>
+    _max?: NestedEnumExtensionStatusFilter<$PrismaModel>
+  }
+
+  export type NestedEnumExtensionResolutionTypeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.ExtensionResolutionType | EnumExtensionResolutionTypeFieldRefInput<$PrismaModel> | null
+    in?: $Enums.ExtensionResolutionType[] | ListEnumExtensionResolutionTypeFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.ExtensionResolutionType[] | ListEnumExtensionResolutionTypeFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumExtensionResolutionTypeNullableWithAggregatesFilter<$PrismaModel> | $Enums.ExtensionResolutionType | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumExtensionResolutionTypeNullableFilter<$PrismaModel>
+    _max?: NestedEnumExtensionResolutionTypeNullableFilter<$PrismaModel>
+  }
+
   export type BranchCreateWithoutUsersInput = {
     publicId: string
     name: string
@@ -82603,6 +85588,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutUsersInput = {
@@ -82630,6 +85616,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutUsersInput = {
@@ -82903,6 +85890,11 @@ export namespace Prisma {
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -82921,6 +85913,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCreatedByInput = {
@@ -82972,6 +85966,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
     discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -82986,6 +85986,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCreatedByInput = {
@@ -83051,6 +86052,7 @@ export namespace Prisma {
     booking: BookingCreateNestedOneWithoutVehicleSwapsInput
     originalVehicle: VehicleCreateNestedOneWithoutSwapsAsOriginalInput
     newVehicle: VehicleCreateNestedOneWithoutSwapsAsNewInput
+    extension?: BookingExtensionCreateNestedOneWithoutVehicleSwapInput
   }
 
   export type VehicleSwapUncheckedCreateWithoutSwappedByInput = {
@@ -83066,6 +86068,7 @@ export namespace Prisma {
     swappedAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    extension?: BookingExtensionUncheckedCreateNestedOneWithoutVehicleSwapInput
   }
 
   export type VehicleSwapCreateOrConnectWithoutSwappedByInput = {
@@ -83277,6 +86280,7 @@ export namespace Prisma {
     confirmedBy?: UserCreateNestedOneWithoutConfirmedPaymentsInput
     rejectedBy?: UserCreateNestedOneWithoutRejectedPaymentsInput
     cashShift?: CashShiftCreateNestedOneWithoutTransactionsInput
+    extension?: BookingExtensionCreateNestedOneWithoutPaymentTransactionInput
   }
 
   export type PaymentTransactionUncheckedCreateWithoutCollectedByInput = {
@@ -83302,6 +86306,7 @@ export namespace Prisma {
     cashShiftId?: number | null
     notes?: string | null
     createdAt?: Date | string
+    extension?: BookingExtensionUncheckedCreateNestedOneWithoutPaymentTransactionInput
   }
 
   export type PaymentTransactionCreateOrConnectWithoutCollectedByInput = {
@@ -83336,6 +86341,7 @@ export namespace Prisma {
     collectedBy?: UserCreateNestedOneWithoutCollectedPaymentsInput
     rejectedBy?: UserCreateNestedOneWithoutRejectedPaymentsInput
     cashShift?: CashShiftCreateNestedOneWithoutTransactionsInput
+    extension?: BookingExtensionCreateNestedOneWithoutPaymentTransactionInput
   }
 
   export type PaymentTransactionUncheckedCreateWithoutConfirmedByInput = {
@@ -83361,6 +86367,7 @@ export namespace Prisma {
     cashShiftId?: number | null
     notes?: string | null
     createdAt?: Date | string
+    extension?: BookingExtensionUncheckedCreateNestedOneWithoutPaymentTransactionInput
   }
 
   export type PaymentTransactionCreateOrConnectWithoutConfirmedByInput = {
@@ -83395,6 +86402,7 @@ export namespace Prisma {
     collectedBy?: UserCreateNestedOneWithoutCollectedPaymentsInput
     confirmedBy?: UserCreateNestedOneWithoutConfirmedPaymentsInput
     cashShift?: CashShiftCreateNestedOneWithoutTransactionsInput
+    extension?: BookingExtensionCreateNestedOneWithoutPaymentTransactionInput
   }
 
   export type PaymentTransactionUncheckedCreateWithoutRejectedByInput = {
@@ -83420,6 +86428,7 @@ export namespace Prisma {
     cashShiftId?: number | null
     notes?: string | null
     createdAt?: Date | string
+    extension?: BookingExtensionUncheckedCreateNestedOneWithoutPaymentTransactionInput
   }
 
   export type PaymentTransactionCreateOrConnectWithoutRejectedByInput = {
@@ -83669,6 +86678,69 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type BookingExtensionCreateWithoutActorInput = {
+    publicId: string
+    extensionTrigger: $Enums.ExtensionTrigger
+    extensionStatus?: $Enums.ExtensionStatus
+    oldEndAt: Date | string
+    requestedEndAt: Date | string
+    actualNewEndAt?: Date | string | null
+    additionalAmount: Decimal | DecimalJsLike | number | string
+    newTotalFinal: Decimal | DecimalJsLike | number | string
+    resolutionType?: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: boolean
+    affectedBookingIds?: BookingExtensionCreateaffectedBookingIdsInput | number[]
+    actorPublicId: string
+    actorRole: string
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutExtensionsInput
+    branch: BranchCreateNestedOneWithoutExtensionsInput
+    swappedVehicle?: VehicleCreateNestedOneWithoutExtensionSwapsInput
+    paymentTransaction?: PaymentTransactionCreateNestedOneWithoutExtensionInput
+    vehicleSwap?: VehicleSwapCreateNestedOneWithoutExtensionInput
+    activeForBookings?: BookingCreateNestedManyWithoutActiveExtensionInput
+  }
+
+  export type BookingExtensionUncheckedCreateWithoutActorInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    extensionTrigger: $Enums.ExtensionTrigger
+    extensionStatus?: $Enums.ExtensionStatus
+    oldEndAt: Date | string
+    requestedEndAt: Date | string
+    actualNewEndAt?: Date | string | null
+    additionalAmount: Decimal | DecimalJsLike | number | string
+    newTotalFinal: Decimal | DecimalJsLike | number | string
+    resolutionType?: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: boolean
+    swappedVehicleId?: number | null
+    affectedBookingIds?: BookingExtensionCreateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: number | null
+    vehicleSwapId?: number | null
+    actorPublicId: string
+    actorRole: string
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    activeForBookings?: BookingUncheckedCreateNestedManyWithoutActiveExtensionInput
+  }
+
+  export type BookingExtensionCreateOrConnectWithoutActorInput = {
+    where: BookingExtensionWhereUniqueInput
+    create: XOR<BookingExtensionCreateWithoutActorInput, BookingExtensionUncheckedCreateWithoutActorInput>
+  }
+
+  export type BookingExtensionCreateManyActorInputEnvelope = {
+    data: BookingExtensionCreateManyActorInput | BookingExtensionCreateManyActorInput[]
+    skipDuplicates?: boolean
+  }
+
   export type BranchUpsertWithoutUsersInput = {
     update: XOR<BranchUpdateWithoutUsersInput, BranchUncheckedUpdateWithoutUsersInput>
     create: XOR<BranchCreateWithoutUsersInput, BranchUncheckedCreateWithoutUsersInput>
@@ -83704,6 +86776,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutUsersInput = {
@@ -83731,6 +86804,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type EmailVerificationOtpUpsertWithWhereUniqueWithoutUserInput = {
@@ -83972,6 +87046,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFilter<"Booking"> | boolean
     couponCode?: StringNullableFilter<"Booking"> | string | null
     discountRuleId?: IntNullableFilter<"Booking"> | number | null
+    originalEndAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
+    extensionCount?: IntFilter<"Booking"> | number
+    lastExtendedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
+    activeExtensionId?: IntNullableFilter<"Booking"> | number | null
+    displacedByExtensionId?: IntNullableFilter<"Booking"> | number | null
+    extensionDisplacedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     createdAt?: DateTimeFilter<"Booking"> | Date | string
     updatedAt?: DateTimeFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
@@ -84359,6 +87439,52 @@ export namespace Prisma {
     data: XOR<RefundRequestUpdateManyMutationInput, RefundRequestUncheckedUpdateManyWithoutCompletedByInput>
   }
 
+  export type BookingExtensionUpsertWithWhereUniqueWithoutActorInput = {
+    where: BookingExtensionWhereUniqueInput
+    update: XOR<BookingExtensionUpdateWithoutActorInput, BookingExtensionUncheckedUpdateWithoutActorInput>
+    create: XOR<BookingExtensionCreateWithoutActorInput, BookingExtensionUncheckedCreateWithoutActorInput>
+  }
+
+  export type BookingExtensionUpdateWithWhereUniqueWithoutActorInput = {
+    where: BookingExtensionWhereUniqueInput
+    data: XOR<BookingExtensionUpdateWithoutActorInput, BookingExtensionUncheckedUpdateWithoutActorInput>
+  }
+
+  export type BookingExtensionUpdateManyWithWhereWithoutActorInput = {
+    where: BookingExtensionScalarWhereInput
+    data: XOR<BookingExtensionUpdateManyMutationInput, BookingExtensionUncheckedUpdateManyWithoutActorInput>
+  }
+
+  export type BookingExtensionScalarWhereInput = {
+    AND?: BookingExtensionScalarWhereInput | BookingExtensionScalarWhereInput[]
+    OR?: BookingExtensionScalarWhereInput[]
+    NOT?: BookingExtensionScalarWhereInput | BookingExtensionScalarWhereInput[]
+    id?: IntFilter<"BookingExtension"> | number
+    publicId?: StringFilter<"BookingExtension"> | string
+    bookingId?: IntFilter<"BookingExtension"> | number
+    branchId?: IntFilter<"BookingExtension"> | number
+    extensionTrigger?: EnumExtensionTriggerFilter<"BookingExtension"> | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFilter<"BookingExtension"> | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFilter<"BookingExtension"> | Date | string
+    requestedEndAt?: DateTimeFilter<"BookingExtension"> | Date | string
+    actualNewEndAt?: DateTimeNullableFilter<"BookingExtension"> | Date | string | null
+    additionalAmount?: DecimalFilter<"BookingExtension"> | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFilter<"BookingExtension"> | Decimal | DecimalJsLike | number | string
+    resolutionType?: EnumExtensionResolutionTypeNullableFilter<"BookingExtension"> | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFilter<"BookingExtension"> | boolean
+    swappedVehicleId?: IntNullableFilter<"BookingExtension"> | number | null
+    affectedBookingIds?: IntNullableListFilter<"BookingExtension">
+    paymentTransactionId?: IntNullableFilter<"BookingExtension"> | number | null
+    vehicleSwapId?: IntNullableFilter<"BookingExtension"> | number | null
+    actorId?: IntFilter<"BookingExtension"> | number
+    actorPublicId?: StringFilter<"BookingExtension"> | string
+    actorRole?: StringFilter<"BookingExtension"> | string
+    rejectionReason?: StringNullableFilter<"BookingExtension"> | string | null
+    notes?: StringNullableFilter<"BookingExtension"> | string | null
+    createdAt?: DateTimeFilter<"BookingExtension"> | Date | string
+    updatedAt?: DateTimeFilter<"BookingExtension"> | Date | string
+  }
+
   export type UserCreateWithoutProvidersInput = {
     publicId: string
     name: string
@@ -84390,6 +87516,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
   }
 
   export type UserUncheckedCreateWithoutProvidersInput = {
@@ -84424,6 +87551,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
   }
 
   export type UserCreateOrConnectWithoutProvidersInput = {
@@ -84473,6 +87601,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
   }
 
   export type UserUncheckedUpdateWithoutProvidersInput = {
@@ -84507,6 +87636,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
   }
 
   export type UserCreateWithoutEmailOtpsInput = {
@@ -84540,6 +87670,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
   }
 
   export type UserUncheckedCreateWithoutEmailOtpsInput = {
@@ -84574,6 +87705,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
   }
 
   export type UserCreateOrConnectWithoutEmailOtpsInput = {
@@ -84623,6 +87755,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
   }
 
   export type UserUncheckedUpdateWithoutEmailOtpsInput = {
@@ -84657,6 +87790,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
   }
 
   export type UserCreateWithoutCustomerProfileInput = {
@@ -84690,6 +87824,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
   }
 
   export type UserUncheckedCreateWithoutCustomerProfileInput = {
@@ -84724,6 +87859,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
   }
 
   export type UserCreateOrConnectWithoutCustomerProfileInput = {
@@ -84802,6 +87938,11 @@ export namespace Prisma {
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -84820,6 +87961,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCustomerInput = {
@@ -84871,6 +88014,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
     discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -84885,6 +88034,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCustomerInput = {
@@ -84982,6 +88132,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
   }
 
   export type UserUncheckedUpdateWithoutCustomerProfileInput = {
@@ -85016,6 +88167,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
   }
 
   export type CustomerKycUpsertWithWhereUniqueWithoutCustomerInput = {
@@ -85364,6 +88516,11 @@ export namespace Prisma {
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -85382,6 +88539,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutKycFileInput = {
@@ -85433,6 +88592,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
     discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -85447,6 +88612,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutKycFileInput = {
@@ -85742,6 +88908,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
   }
 
   export type UserUncheckedCreateWithoutBranchInput = {
@@ -85776,6 +88943,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
   }
 
   export type UserCreateOrConnectWithoutBranchInput = {
@@ -85812,6 +88980,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
     swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutBranchInput = {
@@ -85839,6 +89008,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
     swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionUncheckedCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutBranchInput = {
@@ -85895,6 +89065,11 @@ export namespace Prisma {
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -85913,6 +89088,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutBranchInput = {
@@ -85964,6 +89141,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
     discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -85978,6 +89161,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutBranchInput = {
@@ -86410,6 +89594,7 @@ export namespace Prisma {
     confirmedBy?: UserCreateNestedOneWithoutConfirmedPaymentsInput
     rejectedBy?: UserCreateNestedOneWithoutRejectedPaymentsInput
     cashShift?: CashShiftCreateNestedOneWithoutTransactionsInput
+    extension?: BookingExtensionCreateNestedOneWithoutPaymentTransactionInput
   }
 
   export type PaymentTransactionUncheckedCreateWithoutBranchInput = {
@@ -86435,6 +89620,7 @@ export namespace Prisma {
     cashShiftId?: number | null
     notes?: string | null
     createdAt?: Date | string
+    extension?: BookingExtensionUncheckedCreateNestedOneWithoutPaymentTransactionInput
   }
 
   export type PaymentTransactionCreateOrConnectWithoutBranchInput = {
@@ -86538,6 +89724,69 @@ export namespace Prisma {
 
   export type RefundRequestCreateManyBranchInputEnvelope = {
     data: RefundRequestCreateManyBranchInput | RefundRequestCreateManyBranchInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type BookingExtensionCreateWithoutBranchInput = {
+    publicId: string
+    extensionTrigger: $Enums.ExtensionTrigger
+    extensionStatus?: $Enums.ExtensionStatus
+    oldEndAt: Date | string
+    requestedEndAt: Date | string
+    actualNewEndAt?: Date | string | null
+    additionalAmount: Decimal | DecimalJsLike | number | string
+    newTotalFinal: Decimal | DecimalJsLike | number | string
+    resolutionType?: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: boolean
+    affectedBookingIds?: BookingExtensionCreateaffectedBookingIdsInput | number[]
+    actorPublicId: string
+    actorRole: string
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutExtensionsInput
+    actor: UserCreateNestedOneWithoutInitiatedExtensionsInput
+    swappedVehicle?: VehicleCreateNestedOneWithoutExtensionSwapsInput
+    paymentTransaction?: PaymentTransactionCreateNestedOneWithoutExtensionInput
+    vehicleSwap?: VehicleSwapCreateNestedOneWithoutExtensionInput
+    activeForBookings?: BookingCreateNestedManyWithoutActiveExtensionInput
+  }
+
+  export type BookingExtensionUncheckedCreateWithoutBranchInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    extensionTrigger: $Enums.ExtensionTrigger
+    extensionStatus?: $Enums.ExtensionStatus
+    oldEndAt: Date | string
+    requestedEndAt: Date | string
+    actualNewEndAt?: Date | string | null
+    additionalAmount: Decimal | DecimalJsLike | number | string
+    newTotalFinal: Decimal | DecimalJsLike | number | string
+    resolutionType?: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: boolean
+    swappedVehicleId?: number | null
+    affectedBookingIds?: BookingExtensionCreateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: number | null
+    vehicleSwapId?: number | null
+    actorId: number
+    actorPublicId: string
+    actorRole: string
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    activeForBookings?: BookingUncheckedCreateNestedManyWithoutActiveExtensionInput
+  }
+
+  export type BookingExtensionCreateOrConnectWithoutBranchInput = {
+    where: BookingExtensionWhereUniqueInput
+    create: XOR<BookingExtensionCreateWithoutBranchInput, BookingExtensionUncheckedCreateWithoutBranchInput>
+  }
+
+  export type BookingExtensionCreateManyBranchInputEnvelope = {
+    data: BookingExtensionCreateManyBranchInput | BookingExtensionCreateManyBranchInput[]
     skipDuplicates?: boolean
   }
 
@@ -87057,6 +90306,22 @@ export namespace Prisma {
     data: XOR<RefundRequestUpdateManyMutationInput, RefundRequestUncheckedUpdateManyWithoutBranchInput>
   }
 
+  export type BookingExtensionUpsertWithWhereUniqueWithoutBranchInput = {
+    where: BookingExtensionWhereUniqueInput
+    update: XOR<BookingExtensionUpdateWithoutBranchInput, BookingExtensionUncheckedUpdateWithoutBranchInput>
+    create: XOR<BookingExtensionCreateWithoutBranchInput, BookingExtensionUncheckedCreateWithoutBranchInput>
+  }
+
+  export type BookingExtensionUpdateWithWhereUniqueWithoutBranchInput = {
+    where: BookingExtensionWhereUniqueInput
+    data: XOR<BookingExtensionUpdateWithoutBranchInput, BookingExtensionUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type BookingExtensionUpdateManyWithWhereWithoutBranchInput = {
+    where: BookingExtensionScalarWhereInput
+    data: XOR<BookingExtensionUpdateManyMutationInput, BookingExtensionUncheckedUpdateManyWithoutBranchInput>
+  }
+
   export type BranchCreateWithoutStaffActivityLogsInput = {
     publicId: string
     name: string
@@ -87081,6 +90346,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutStaffActivityLogsInput = {
@@ -87108,6 +90374,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutStaffActivityLogsInput = {
@@ -87150,6 +90417,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutStaffActivityLogsInput = {
@@ -87177,6 +90445,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchCreateWithoutPricingSettingInput = {
@@ -87203,6 +90472,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPricingSettingInput = {
@@ -87230,6 +90500,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPricingSettingInput = {
@@ -87272,6 +90543,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPricingSettingInput = {
@@ -87299,6 +90571,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type PricingDiscountSlabCreateWithoutCategoryInput = {
@@ -87369,6 +90642,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
     swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutCategoryInput = {
@@ -87396,6 +90670,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
     swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionUncheckedCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutCategoryInput = {
@@ -87635,6 +90910,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutCaptureConfigsInput = {
@@ -87662,6 +90938,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutCaptureConfigsInput = {
@@ -87734,6 +91011,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutCaptureConfigsInput = {
@@ -87761,6 +91039,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutCaptureConfigsInput = {
@@ -87823,6 +91102,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutVehiclesInput = {
@@ -87850,6 +91130,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutVehiclesInput = {
@@ -88137,6 +91418,7 @@ export namespace Prisma {
     booking: BookingCreateNestedOneWithoutVehicleSwapsInput
     newVehicle: VehicleCreateNestedOneWithoutSwapsAsNewInput
     swappedBy: UserCreateNestedOneWithoutVehicleSwapsInput
+    extension?: BookingExtensionCreateNestedOneWithoutVehicleSwapInput
   }
 
   export type VehicleSwapUncheckedCreateWithoutOriginalVehicleInput = {
@@ -88152,6 +91434,7 @@ export namespace Prisma {
     swappedAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    extension?: BookingExtensionUncheckedCreateNestedOneWithoutVehicleSwapInput
   }
 
   export type VehicleSwapCreateOrConnectWithoutOriginalVehicleInput = {
@@ -88176,6 +91459,7 @@ export namespace Prisma {
     booking: BookingCreateNestedOneWithoutVehicleSwapsInput
     originalVehicle: VehicleCreateNestedOneWithoutSwapsAsOriginalInput
     swappedBy: UserCreateNestedOneWithoutVehicleSwapsInput
+    extension?: BookingExtensionCreateNestedOneWithoutVehicleSwapInput
   }
 
   export type VehicleSwapUncheckedCreateWithoutNewVehicleInput = {
@@ -88191,6 +91475,7 @@ export namespace Prisma {
     swappedAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    extension?: BookingExtensionUncheckedCreateNestedOneWithoutVehicleSwapInput
   }
 
   export type VehicleSwapCreateOrConnectWithoutNewVehicleInput = {
@@ -88200,6 +91485,69 @@ export namespace Prisma {
 
   export type VehicleSwapCreateManyNewVehicleInputEnvelope = {
     data: VehicleSwapCreateManyNewVehicleInput | VehicleSwapCreateManyNewVehicleInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type BookingExtensionCreateWithoutSwappedVehicleInput = {
+    publicId: string
+    extensionTrigger: $Enums.ExtensionTrigger
+    extensionStatus?: $Enums.ExtensionStatus
+    oldEndAt: Date | string
+    requestedEndAt: Date | string
+    actualNewEndAt?: Date | string | null
+    additionalAmount: Decimal | DecimalJsLike | number | string
+    newTotalFinal: Decimal | DecimalJsLike | number | string
+    resolutionType?: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: boolean
+    affectedBookingIds?: BookingExtensionCreateaffectedBookingIdsInput | number[]
+    actorPublicId: string
+    actorRole: string
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutExtensionsInput
+    branch: BranchCreateNestedOneWithoutExtensionsInput
+    actor: UserCreateNestedOneWithoutInitiatedExtensionsInput
+    paymentTransaction?: PaymentTransactionCreateNestedOneWithoutExtensionInput
+    vehicleSwap?: VehicleSwapCreateNestedOneWithoutExtensionInput
+    activeForBookings?: BookingCreateNestedManyWithoutActiveExtensionInput
+  }
+
+  export type BookingExtensionUncheckedCreateWithoutSwappedVehicleInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    extensionTrigger: $Enums.ExtensionTrigger
+    extensionStatus?: $Enums.ExtensionStatus
+    oldEndAt: Date | string
+    requestedEndAt: Date | string
+    actualNewEndAt?: Date | string | null
+    additionalAmount: Decimal | DecimalJsLike | number | string
+    newTotalFinal: Decimal | DecimalJsLike | number | string
+    resolutionType?: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: boolean
+    affectedBookingIds?: BookingExtensionCreateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: number | null
+    vehicleSwapId?: number | null
+    actorId: number
+    actorPublicId: string
+    actorRole: string
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    activeForBookings?: BookingUncheckedCreateNestedManyWithoutActiveExtensionInput
+  }
+
+  export type BookingExtensionCreateOrConnectWithoutSwappedVehicleInput = {
+    where: BookingExtensionWhereUniqueInput
+    create: XOR<BookingExtensionCreateWithoutSwappedVehicleInput, BookingExtensionUncheckedCreateWithoutSwappedVehicleInput>
+  }
+
+  export type BookingExtensionCreateManySwappedVehicleInputEnvelope = {
+    data: BookingExtensionCreateManySwappedVehicleInput | BookingExtensionCreateManySwappedVehicleInput[]
     skipDuplicates?: boolean
   }
 
@@ -88238,6 +91586,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutVehiclesInput = {
@@ -88265,6 +91614,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutVehiclesInput = {
@@ -88555,6 +91905,22 @@ export namespace Prisma {
     data: XOR<VehicleSwapUpdateManyMutationInput, VehicleSwapUncheckedUpdateManyWithoutNewVehicleInput>
   }
 
+  export type BookingExtensionUpsertWithWhereUniqueWithoutSwappedVehicleInput = {
+    where: BookingExtensionWhereUniqueInput
+    update: XOR<BookingExtensionUpdateWithoutSwappedVehicleInput, BookingExtensionUncheckedUpdateWithoutSwappedVehicleInput>
+    create: XOR<BookingExtensionCreateWithoutSwappedVehicleInput, BookingExtensionUncheckedCreateWithoutSwappedVehicleInput>
+  }
+
+  export type BookingExtensionUpdateWithWhereUniqueWithoutSwappedVehicleInput = {
+    where: BookingExtensionWhereUniqueInput
+    data: XOR<BookingExtensionUpdateWithoutSwappedVehicleInput, BookingExtensionUncheckedUpdateWithoutSwappedVehicleInput>
+  }
+
+  export type BookingExtensionUpdateManyWithWhereWithoutSwappedVehicleInput = {
+    where: BookingExtensionScalarWhereInput
+    data: XOR<BookingExtensionUpdateManyMutationInput, BookingExtensionUncheckedUpdateManyWithoutSwappedVehicleInput>
+  }
+
   export type VehicleCreateWithoutPricingOverrideInput = {
     publicId: string
     make: string
@@ -88579,6 +91945,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
     swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutPricingOverrideInput = {
@@ -88606,6 +91973,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
     swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionUncheckedCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutPricingOverrideInput = {
@@ -88648,6 +92016,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
     swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutPricingOverrideInput = {
@@ -88675,6 +92044,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
     swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUncheckedUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type VehicleCreateWithoutCustomPricingInput = {
@@ -88701,6 +92071,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
     swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutCustomPricingInput = {
@@ -88728,6 +92099,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
     swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionUncheckedCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutCustomPricingInput = {
@@ -88770,6 +92142,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
     swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutCustomPricingInput = {
@@ -88797,6 +92170,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
     swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUncheckedUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type BranchCreateWithoutBranchPricingDefaultsInput = {
@@ -88823,6 +92197,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutBranchPricingDefaultsInput = {
@@ -88850,6 +92225,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutBranchPricingDefaultsInput = {
@@ -88922,6 +92298,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutBranchPricingDefaultsInput = {
@@ -88949,6 +92326,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutBranchPricingDefaultsInput = {
@@ -89011,6 +92389,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
     swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutInsuranceRecordsInput = {
@@ -89038,6 +92417,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
     swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionUncheckedCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutInsuranceRecordsInput = {
@@ -89080,6 +92460,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
     swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutInsuranceRecordsInput = {
@@ -89107,6 +92488,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
     swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUncheckedUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type VehicleCreateWithoutMaintenanceInput = {
@@ -89133,6 +92515,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
     swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutMaintenanceInput = {
@@ -89160,6 +92543,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
     swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionUncheckedCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutMaintenanceInput = {
@@ -89202,6 +92586,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
     swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutMaintenanceInput = {
@@ -89229,6 +92614,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
     swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUncheckedUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type VehicleCreateWithoutImagesInput = {
@@ -89255,6 +92641,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
     swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutImagesInput = {
@@ -89282,6 +92669,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
     swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionUncheckedCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutImagesInput = {
@@ -89358,6 +92746,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
     swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutImagesInput = {
@@ -89385,6 +92774,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
     swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUncheckedUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type FileObjectUpsertWithoutVehicleImagesInput = {
@@ -89517,6 +92907,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPricingDiscountSlabsInput = {
@@ -89544,6 +92935,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPricingDiscountSlabsInput = {
@@ -89616,6 +93008,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPricingDiscountSlabsInput = {
@@ -89643,6 +93036,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutPricingDiscountSlabsInput = {
@@ -89705,6 +93099,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutCategoryDepositSettingsInput = {
@@ -89732,6 +93127,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutCategoryDepositSettingsInput = {
@@ -89804,6 +93200,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutCategoryDepositSettingsInput = {
@@ -89831,6 +93228,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutCategoryDepositSettingsInput = {
@@ -89969,6 +93367,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutBookingsInput = {
@@ -89996,6 +93395,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutBookingsInput = {
@@ -90034,6 +93434,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
   }
 
   export type UserUncheckedCreateWithoutBookingsCreatedInput = {
@@ -90068,6 +93469,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
   }
 
   export type UserCreateOrConnectWithoutBookingsCreatedInput = {
@@ -90298,6 +93700,7 @@ export namespace Prisma {
     originalVehicle: VehicleCreateNestedOneWithoutSwapsAsOriginalInput
     newVehicle: VehicleCreateNestedOneWithoutSwapsAsNewInput
     swappedBy: UserCreateNestedOneWithoutVehicleSwapsInput
+    extension?: BookingExtensionCreateNestedOneWithoutVehicleSwapInput
   }
 
   export type VehicleSwapUncheckedCreateWithoutBookingInput = {
@@ -90313,6 +93716,7 @@ export namespace Prisma {
     swappedAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    extension?: BookingExtensionUncheckedCreateNestedOneWithoutVehicleSwapInput
   }
 
   export type VehicleSwapCreateOrConnectWithoutBookingInput = {
@@ -90513,6 +93917,7 @@ export namespace Prisma {
     confirmedBy?: UserCreateNestedOneWithoutConfirmedPaymentsInput
     rejectedBy?: UserCreateNestedOneWithoutRejectedPaymentsInput
     cashShift?: CashShiftCreateNestedOneWithoutTransactionsInput
+    extension?: BookingExtensionCreateNestedOneWithoutPaymentTransactionInput
   }
 
   export type PaymentTransactionUncheckedCreateWithoutBookingInput = {
@@ -90538,6 +93943,7 @@ export namespace Prisma {
     cashShiftId?: number | null
     notes?: string | null
     createdAt?: Date | string
+    extension?: BookingExtensionUncheckedCreateNestedOneWithoutPaymentTransactionInput
   }
 
   export type PaymentTransactionCreateOrConnectWithoutBookingInput = {
@@ -90596,6 +94002,127 @@ export namespace Prisma {
 
   export type RefundRequestCreateManyBookingInputEnvelope = {
     data: RefundRequestCreateManyBookingInput | RefundRequestCreateManyBookingInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type BookingExtensionCreateWithoutActiveForBookingsInput = {
+    publicId: string
+    extensionTrigger: $Enums.ExtensionTrigger
+    extensionStatus?: $Enums.ExtensionStatus
+    oldEndAt: Date | string
+    requestedEndAt: Date | string
+    actualNewEndAt?: Date | string | null
+    additionalAmount: Decimal | DecimalJsLike | number | string
+    newTotalFinal: Decimal | DecimalJsLike | number | string
+    resolutionType?: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: boolean
+    affectedBookingIds?: BookingExtensionCreateaffectedBookingIdsInput | number[]
+    actorPublicId: string
+    actorRole: string
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutExtensionsInput
+    branch: BranchCreateNestedOneWithoutExtensionsInput
+    actor: UserCreateNestedOneWithoutInitiatedExtensionsInput
+    swappedVehicle?: VehicleCreateNestedOneWithoutExtensionSwapsInput
+    paymentTransaction?: PaymentTransactionCreateNestedOneWithoutExtensionInput
+    vehicleSwap?: VehicleSwapCreateNestedOneWithoutExtensionInput
+  }
+
+  export type BookingExtensionUncheckedCreateWithoutActiveForBookingsInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    extensionTrigger: $Enums.ExtensionTrigger
+    extensionStatus?: $Enums.ExtensionStatus
+    oldEndAt: Date | string
+    requestedEndAt: Date | string
+    actualNewEndAt?: Date | string | null
+    additionalAmount: Decimal | DecimalJsLike | number | string
+    newTotalFinal: Decimal | DecimalJsLike | number | string
+    resolutionType?: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: boolean
+    swappedVehicleId?: number | null
+    affectedBookingIds?: BookingExtensionCreateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: number | null
+    vehicleSwapId?: number | null
+    actorId: number
+    actorPublicId: string
+    actorRole: string
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BookingExtensionCreateOrConnectWithoutActiveForBookingsInput = {
+    where: BookingExtensionWhereUniqueInput
+    create: XOR<BookingExtensionCreateWithoutActiveForBookingsInput, BookingExtensionUncheckedCreateWithoutActiveForBookingsInput>
+  }
+
+  export type BookingExtensionCreateWithoutBookingInput = {
+    publicId: string
+    extensionTrigger: $Enums.ExtensionTrigger
+    extensionStatus?: $Enums.ExtensionStatus
+    oldEndAt: Date | string
+    requestedEndAt: Date | string
+    actualNewEndAt?: Date | string | null
+    additionalAmount: Decimal | DecimalJsLike | number | string
+    newTotalFinal: Decimal | DecimalJsLike | number | string
+    resolutionType?: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: boolean
+    affectedBookingIds?: BookingExtensionCreateaffectedBookingIdsInput | number[]
+    actorPublicId: string
+    actorRole: string
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    branch: BranchCreateNestedOneWithoutExtensionsInput
+    actor: UserCreateNestedOneWithoutInitiatedExtensionsInput
+    swappedVehicle?: VehicleCreateNestedOneWithoutExtensionSwapsInput
+    paymentTransaction?: PaymentTransactionCreateNestedOneWithoutExtensionInput
+    vehicleSwap?: VehicleSwapCreateNestedOneWithoutExtensionInput
+    activeForBookings?: BookingCreateNestedManyWithoutActiveExtensionInput
+  }
+
+  export type BookingExtensionUncheckedCreateWithoutBookingInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    extensionTrigger: $Enums.ExtensionTrigger
+    extensionStatus?: $Enums.ExtensionStatus
+    oldEndAt: Date | string
+    requestedEndAt: Date | string
+    actualNewEndAt?: Date | string | null
+    additionalAmount: Decimal | DecimalJsLike | number | string
+    newTotalFinal: Decimal | DecimalJsLike | number | string
+    resolutionType?: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: boolean
+    swappedVehicleId?: number | null
+    affectedBookingIds?: BookingExtensionCreateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: number | null
+    vehicleSwapId?: number | null
+    actorId: number
+    actorPublicId: string
+    actorRole: string
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    activeForBookings?: BookingUncheckedCreateNestedManyWithoutActiveExtensionInput
+  }
+
+  export type BookingExtensionCreateOrConnectWithoutBookingInput = {
+    where: BookingExtensionWhereUniqueInput
+    create: XOR<BookingExtensionCreateWithoutBookingInput, BookingExtensionUncheckedCreateWithoutBookingInput>
+  }
+
+  export type BookingExtensionCreateManyBookingInputEnvelope = {
+    data: BookingExtensionCreateManyBookingInput | BookingExtensionCreateManyBookingInput[]
     skipDuplicates?: boolean
   }
 
@@ -90722,6 +94249,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutBookingsInput = {
@@ -90749,6 +94277,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type UserUpsertWithoutBookingsCreatedInput = {
@@ -90793,6 +94322,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
   }
 
   export type UserUncheckedUpdateWithoutBookingsCreatedInput = {
@@ -90827,6 +94357,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
   }
 
   export type BookingPhotoUpsertWithWhereUniqueWithoutBookingInput = {
@@ -91229,6 +94760,86 @@ export namespace Prisma {
     data: XOR<RefundRequestUpdateManyMutationInput, RefundRequestUncheckedUpdateManyWithoutBookingInput>
   }
 
+  export type BookingExtensionUpsertWithoutActiveForBookingsInput = {
+    update: XOR<BookingExtensionUpdateWithoutActiveForBookingsInput, BookingExtensionUncheckedUpdateWithoutActiveForBookingsInput>
+    create: XOR<BookingExtensionCreateWithoutActiveForBookingsInput, BookingExtensionUncheckedCreateWithoutActiveForBookingsInput>
+    where?: BookingExtensionWhereInput
+  }
+
+  export type BookingExtensionUpdateToOneWithWhereWithoutActiveForBookingsInput = {
+    where?: BookingExtensionWhereInput
+    data: XOR<BookingExtensionUpdateWithoutActiveForBookingsInput, BookingExtensionUncheckedUpdateWithoutActiveForBookingsInput>
+  }
+
+  export type BookingExtensionUpdateWithoutActiveForBookingsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    extensionTrigger?: EnumExtensionTriggerFieldUpdateOperationsInput | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFieldUpdateOperationsInput | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestedEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualNewEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    additionalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    resolutionType?: NullableEnumExtensionResolutionTypeFieldUpdateOperationsInput | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFieldUpdateOperationsInput | boolean
+    affectedBookingIds?: BookingExtensionUpdateaffectedBookingIdsInput | number[]
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorRole?: StringFieldUpdateOperationsInput | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutExtensionsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutExtensionsNestedInput
+    actor?: UserUpdateOneRequiredWithoutInitiatedExtensionsNestedInput
+    swappedVehicle?: VehicleUpdateOneWithoutExtensionSwapsNestedInput
+    paymentTransaction?: PaymentTransactionUpdateOneWithoutExtensionNestedInput
+    vehicleSwap?: VehicleSwapUpdateOneWithoutExtensionNestedInput
+  }
+
+  export type BookingExtensionUncheckedUpdateWithoutActiveForBookingsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    extensionTrigger?: EnumExtensionTriggerFieldUpdateOperationsInput | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFieldUpdateOperationsInput | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestedEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualNewEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    additionalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    resolutionType?: NullableEnumExtensionResolutionTypeFieldUpdateOperationsInput | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFieldUpdateOperationsInput | boolean
+    swappedVehicleId?: NullableIntFieldUpdateOperationsInput | number | null
+    affectedBookingIds?: BookingExtensionUpdateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: NullableIntFieldUpdateOperationsInput | number | null
+    vehicleSwapId?: NullableIntFieldUpdateOperationsInput | number | null
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorRole?: StringFieldUpdateOperationsInput | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BookingExtensionUpsertWithWhereUniqueWithoutBookingInput = {
+    where: BookingExtensionWhereUniqueInput
+    update: XOR<BookingExtensionUpdateWithoutBookingInput, BookingExtensionUncheckedUpdateWithoutBookingInput>
+    create: XOR<BookingExtensionCreateWithoutBookingInput, BookingExtensionUncheckedCreateWithoutBookingInput>
+  }
+
+  export type BookingExtensionUpdateWithWhereUniqueWithoutBookingInput = {
+    where: BookingExtensionWhereUniqueInput
+    data: XOR<BookingExtensionUpdateWithoutBookingInput, BookingExtensionUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type BookingExtensionUpdateManyWithWhereWithoutBookingInput = {
+    where: BookingExtensionScalarWhereInput
+    data: XOR<BookingExtensionUpdateManyMutationInput, BookingExtensionUncheckedUpdateManyWithoutBookingInput>
+  }
+
   export type VehicleCreateWithoutBookingItemsInput = {
     publicId: string
     make: string
@@ -91253,6 +94864,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
     swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutBookingItemsInput = {
@@ -91280,6 +94892,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
     swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionUncheckedCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutBookingItemsInput = {
@@ -91331,6 +94944,11 @@ export namespace Prisma {
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -91349,6 +94967,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutItemsInput = {
@@ -91401,6 +95021,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
     discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -91414,6 +95040,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutItemsInput = {
@@ -91456,6 +95083,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
     swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutBookingItemsInput = {
@@ -91483,6 +95111,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
     swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUncheckedUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type BookingUpsertWithoutItemsInput = {
@@ -91540,6 +95169,11 @@ export namespace Prisma {
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -91558,6 +95192,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutItemsInput = {
@@ -91610,6 +95246,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -91623,6 +95265,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingCreateWithoutPhotosInput = {
@@ -91669,6 +95312,11 @@ export namespace Prisma {
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -91687,6 +95335,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutPhotosInput = {
@@ -91739,6 +95389,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
     discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -91752,6 +95408,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutPhotosInput = {
@@ -91884,6 +95541,11 @@ export namespace Prisma {
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -91902,6 +95564,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutPhotosInput = {
@@ -91954,6 +95618,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -91967,6 +95637,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type FileObjectUpsertWithoutBookingPhotosInput = {
@@ -92095,6 +95766,11 @@ export namespace Prisma {
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -92113,6 +95789,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDamagesInput = {
@@ -92165,6 +95843,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
     discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -92178,6 +95862,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDamagesInput = {
@@ -92209,6 +95894,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
     swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutDamageReportsInput = {
@@ -92236,6 +95922,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
     swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionUncheckedCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutDamageReportsInput = {
@@ -92274,6 +95961,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
   }
 
   export type UserUncheckedCreateWithoutApprovedDamageReportsInput = {
@@ -92308,6 +95996,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
   }
 
   export type UserCreateOrConnectWithoutApprovedDamageReportsInput = {
@@ -92399,6 +96088,11 @@ export namespace Prisma {
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -92417,6 +96111,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDamagesInput = {
@@ -92469,6 +96165,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -92482,6 +96184,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type VehicleUpsertWithoutDamageReportsInput = {
@@ -92519,6 +96222,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
     swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutDamageReportsInput = {
@@ -92546,6 +96250,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
     swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUncheckedUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type UserUpsertWithoutApprovedDamageReportsInput = {
@@ -92590,6 +96295,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
   }
 
   export type UserUncheckedUpdateWithoutApprovedDamageReportsInput = {
@@ -92624,6 +96330,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
   }
 
   export type BookingPhotoUpsertWithWhereUniqueWithoutDamageReportInput = {
@@ -92686,6 +96393,11 @@ export namespace Prisma {
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -92704,6 +96416,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDepositInput = {
@@ -92756,6 +96470,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
     discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -92769,6 +96489,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDepositInput = {
@@ -92831,6 +96552,11 @@ export namespace Prisma {
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -92849,6 +96575,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDepositInput = {
@@ -92901,6 +96629,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -92914,6 +96648,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type InvoiceCreateWithoutPaymentsInput = {
@@ -93076,6 +96811,11 @@ export namespace Prisma {
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -93094,6 +96834,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutInvoiceInput = {
@@ -93146,6 +96888,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
     discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -93159,6 +96907,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutInvoiceInput = {
@@ -93315,6 +97064,11 @@ export namespace Prisma {
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -93333,6 +97087,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutInvoiceInput = {
@@ -93385,6 +97141,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -93398,6 +97160,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type InvoiceItemUpsertWithWhereUniqueWithoutInvoiceInput = {
@@ -93571,6 +97334,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
   }
 
   export type UserUncheckedCreateWithoutActorAuditLogsInput = {
@@ -93605,6 +97369,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
   }
 
   export type UserCreateOrConnectWithoutActorAuditLogsInput = {
@@ -93643,6 +97408,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
   }
 
   export type UserUncheckedCreateWithoutApproverAuditLogsInput = {
@@ -93677,6 +97443,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
   }
 
   export type UserCreateOrConnectWithoutApproverAuditLogsInput = {
@@ -93708,6 +97475,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutAuditLogsInput = {
@@ -93735,6 +97503,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutAuditLogsInput = {
@@ -93784,6 +97553,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
   }
 
   export type UserUncheckedUpdateWithoutActorAuditLogsInput = {
@@ -93818,6 +97588,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
   }
 
   export type UserUpsertWithoutApproverAuditLogsInput = {
@@ -93862,6 +97633,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
   }
 
   export type UserUncheckedUpdateWithoutApproverAuditLogsInput = {
@@ -93896,6 +97668,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
   }
 
   export type BranchUpsertWithoutAuditLogsInput = {
@@ -93933,6 +97706,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutAuditLogsInput = {
@@ -93960,6 +97734,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchCreateWithoutGstRuleInput = {
@@ -93986,6 +97761,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutGstRuleInput = {
@@ -94013,6 +97789,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutGstRuleInput = {
@@ -94055,6 +97832,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutGstRuleInput = {
@@ -94082,6 +97860,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BookingCreateWithoutCancellationInvoiceInput = {
@@ -94128,6 +97907,11 @@ export namespace Prisma {
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -94146,6 +97930,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCancellationInvoiceInput = {
@@ -94198,6 +97984,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
     discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -94211,6 +98003,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCancellationInvoiceInput = {
@@ -94349,6 +98142,11 @@ export namespace Prisma {
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -94367,6 +98165,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCancellationInvoiceInput = {
@@ -94419,6 +98219,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -94432,6 +98238,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type CustomerUpsertWithoutCancellationInvoicesInput = {
@@ -94632,6 +98439,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutFeatureFlagsInput = {
@@ -94659,6 +98467,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutFeatureFlagsInput = {
@@ -94733,6 +98542,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutFeatureFlagsInput = {
@@ -94760,6 +98570,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type FeatureFlagUpsertWithoutBranchFlagsInput = {
@@ -94824,6 +98635,7 @@ export namespace Prisma {
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
     swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutFeatureFlagsInput = {
@@ -94851,6 +98663,7 @@ export namespace Prisma {
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
     swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionUncheckedCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutFeatureFlagsInput = {
@@ -94925,6 +98738,7 @@ export namespace Prisma {
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
     swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutFeatureFlagsInput = {
@@ -94952,6 +98766,7 @@ export namespace Prisma {
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
     swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUncheckedUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type FeatureFlagUpsertWithoutVehicleFlagsInput = {
@@ -95036,6 +98851,11 @@ export namespace Prisma {
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -95054,6 +98874,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutVehicleSwapsInput = {
@@ -95106,6 +98928,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
     discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -95119,6 +98947,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutVehicleSwapsInput = {
@@ -95150,6 +98979,7 @@ export namespace Prisma {
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
     swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutSwapsAsOriginalInput = {
@@ -95177,6 +99007,7 @@ export namespace Prisma {
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
     swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
+    extensionSwaps?: BookingExtensionUncheckedCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutSwapsAsOriginalInput = {
@@ -95208,6 +99039,7 @@ export namespace Prisma {
     bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
+    extensionSwaps?: BookingExtensionCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleUncheckedCreateWithoutSwapsAsNewInput = {
@@ -95235,6 +99067,7 @@ export namespace Prisma {
     bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
     featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
     swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
+    extensionSwaps?: BookingExtensionUncheckedCreateNestedManyWithoutSwappedVehicleInput
   }
 
   export type VehicleCreateOrConnectWithoutSwapsAsNewInput = {
@@ -95273,6 +99106,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
   }
 
   export type UserUncheckedCreateWithoutVehicleSwapsInput = {
@@ -95307,11 +99141,70 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
   }
 
   export type UserCreateOrConnectWithoutVehicleSwapsInput = {
     where: UserWhereUniqueInput
     create: XOR<UserCreateWithoutVehicleSwapsInput, UserUncheckedCreateWithoutVehicleSwapsInput>
+  }
+
+  export type BookingExtensionCreateWithoutVehicleSwapInput = {
+    publicId: string
+    extensionTrigger: $Enums.ExtensionTrigger
+    extensionStatus?: $Enums.ExtensionStatus
+    oldEndAt: Date | string
+    requestedEndAt: Date | string
+    actualNewEndAt?: Date | string | null
+    additionalAmount: Decimal | DecimalJsLike | number | string
+    newTotalFinal: Decimal | DecimalJsLike | number | string
+    resolutionType?: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: boolean
+    affectedBookingIds?: BookingExtensionCreateaffectedBookingIdsInput | number[]
+    actorPublicId: string
+    actorRole: string
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutExtensionsInput
+    branch: BranchCreateNestedOneWithoutExtensionsInput
+    actor: UserCreateNestedOneWithoutInitiatedExtensionsInput
+    swappedVehicle?: VehicleCreateNestedOneWithoutExtensionSwapsInput
+    paymentTransaction?: PaymentTransactionCreateNestedOneWithoutExtensionInput
+    activeForBookings?: BookingCreateNestedManyWithoutActiveExtensionInput
+  }
+
+  export type BookingExtensionUncheckedCreateWithoutVehicleSwapInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    extensionTrigger: $Enums.ExtensionTrigger
+    extensionStatus?: $Enums.ExtensionStatus
+    oldEndAt: Date | string
+    requestedEndAt: Date | string
+    actualNewEndAt?: Date | string | null
+    additionalAmount: Decimal | DecimalJsLike | number | string
+    newTotalFinal: Decimal | DecimalJsLike | number | string
+    resolutionType?: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: boolean
+    swappedVehicleId?: number | null
+    affectedBookingIds?: BookingExtensionCreateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: number | null
+    actorId: number
+    actorPublicId: string
+    actorRole: string
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    activeForBookings?: BookingUncheckedCreateNestedManyWithoutActiveExtensionInput
+  }
+
+  export type BookingExtensionCreateOrConnectWithoutVehicleSwapInput = {
+    where: BookingExtensionWhereUniqueInput
+    create: XOR<BookingExtensionCreateWithoutVehicleSwapInput, BookingExtensionUncheckedCreateWithoutVehicleSwapInput>
   }
 
   export type BookingUpsertWithoutVehicleSwapsInput = {
@@ -95369,6 +99262,11 @@ export namespace Prisma {
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -95387,6 +99285,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutVehicleSwapsInput = {
@@ -95439,6 +99339,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -95452,6 +99358,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type VehicleUpsertWithoutSwapsAsOriginalInput = {
@@ -95489,6 +99396,7 @@ export namespace Prisma {
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
     swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutSwapsAsOriginalInput = {
@@ -95516,6 +99424,7 @@ export namespace Prisma {
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
     swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUncheckedUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type VehicleUpsertWithoutSwapsAsNewInput = {
@@ -95553,6 +99462,7 @@ export namespace Prisma {
     bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
+    extensionSwaps?: BookingExtensionUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutSwapsAsNewInput = {
@@ -95580,6 +99490,7 @@ export namespace Prisma {
     bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
     featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
+    extensionSwaps?: BookingExtensionUncheckedUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type UserUpsertWithoutVehicleSwapsInput = {
@@ -95624,6 +99535,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
   }
 
   export type UserUncheckedUpdateWithoutVehicleSwapsInput = {
@@ -95658,6 +99570,71 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+  }
+
+  export type BookingExtensionUpsertWithoutVehicleSwapInput = {
+    update: XOR<BookingExtensionUpdateWithoutVehicleSwapInput, BookingExtensionUncheckedUpdateWithoutVehicleSwapInput>
+    create: XOR<BookingExtensionCreateWithoutVehicleSwapInput, BookingExtensionUncheckedCreateWithoutVehicleSwapInput>
+    where?: BookingExtensionWhereInput
+  }
+
+  export type BookingExtensionUpdateToOneWithWhereWithoutVehicleSwapInput = {
+    where?: BookingExtensionWhereInput
+    data: XOR<BookingExtensionUpdateWithoutVehicleSwapInput, BookingExtensionUncheckedUpdateWithoutVehicleSwapInput>
+  }
+
+  export type BookingExtensionUpdateWithoutVehicleSwapInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    extensionTrigger?: EnumExtensionTriggerFieldUpdateOperationsInput | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFieldUpdateOperationsInput | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestedEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualNewEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    additionalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    resolutionType?: NullableEnumExtensionResolutionTypeFieldUpdateOperationsInput | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFieldUpdateOperationsInput | boolean
+    affectedBookingIds?: BookingExtensionUpdateaffectedBookingIdsInput | number[]
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorRole?: StringFieldUpdateOperationsInput | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutExtensionsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutExtensionsNestedInput
+    actor?: UserUpdateOneRequiredWithoutInitiatedExtensionsNestedInput
+    swappedVehicle?: VehicleUpdateOneWithoutExtensionSwapsNestedInput
+    paymentTransaction?: PaymentTransactionUpdateOneWithoutExtensionNestedInput
+    activeForBookings?: BookingUpdateManyWithoutActiveExtensionNestedInput
+  }
+
+  export type BookingExtensionUncheckedUpdateWithoutVehicleSwapInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    extensionTrigger?: EnumExtensionTriggerFieldUpdateOperationsInput | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFieldUpdateOperationsInput | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestedEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualNewEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    additionalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    resolutionType?: NullableEnumExtensionResolutionTypeFieldUpdateOperationsInput | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFieldUpdateOperationsInput | boolean
+    swappedVehicleId?: NullableIntFieldUpdateOperationsInput | number | null
+    affectedBookingIds?: BookingExtensionUpdateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: NullableIntFieldUpdateOperationsInput | number | null
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorRole?: StringFieldUpdateOperationsInput | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    activeForBookings?: BookingUncheckedUpdateManyWithoutActiveExtensionNestedInput
   }
 
   export type UserCreateWithoutDiscountRulesCreatedInput = {
@@ -95691,6 +99668,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
   }
 
   export type UserUncheckedCreateWithoutDiscountRulesCreatedInput = {
@@ -95725,6 +99703,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
   }
 
   export type UserCreateOrConnectWithoutDiscountRulesCreatedInput = {
@@ -95803,6 +99782,11 @@ export namespace Prisma {
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -95821,6 +99805,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDiscountRuleInput = {
@@ -95872,6 +99858,12 @@ export namespace Prisma {
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -95886,6 +99878,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDiscountRuleInput = {
@@ -95987,6 +99980,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
   }
 
   export type UserUncheckedUpdateWithoutDiscountRulesCreatedInput = {
@@ -96021,6 +100015,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
   }
 
   export type CouponUsageLogUpsertWithWhereUniqueWithoutDiscountRuleInput = {
@@ -96131,6 +100126,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutDurationDiscountSlabsInput = {
@@ -96158,6 +100154,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutDurationDiscountSlabsInput = {
@@ -96200,6 +100197,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutDurationDiscountSlabsInput = {
@@ -96227,6 +100225,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchCreateWithoutDiscountConfigInput = {
@@ -96253,6 +100252,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutDiscountConfigInput = {
@@ -96280,6 +100280,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutDiscountConfigInput = {
@@ -96322,6 +100323,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutDiscountConfigInput = {
@@ -96349,6 +100351,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BookingCreateWithoutDiscountApplicationInput = {
@@ -96395,6 +100398,11 @@ export namespace Prisma {
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -96413,6 +100421,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDiscountApplicationInput = {
@@ -96465,6 +100475,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
     discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -96478,6 +100494,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDiscountApplicationInput = {
@@ -96664,6 +100681,11 @@ export namespace Prisma {
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -96682,6 +100704,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDiscountApplicationInput = {
@@ -96734,6 +100758,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -96747,6 +100777,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type DiscountRuleUpsertWithoutApplicationsInput = {
@@ -97094,6 +101125,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
   }
 
   export type UserUncheckedCreateWithoutManualDiscountsIssuedInput = {
@@ -97128,6 +101160,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
   }
 
   export type UserCreateOrConnectWithoutManualDiscountsIssuedInput = {
@@ -97166,6 +101199,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
   }
 
   export type UserUncheckedCreateWithoutManualDiscountsApprovedInput = {
@@ -97200,6 +101234,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
   }
 
   export type UserCreateOrConnectWithoutManualDiscountsApprovedInput = {
@@ -97251,6 +101286,11 @@ export namespace Prisma {
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -97269,6 +101309,8 @@ export namespace Prisma {
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutManualDiscountInput = {
@@ -97321,6 +101363,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
     discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -97334,6 +101382,7 @@ export namespace Prisma {
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutManualDiscountInput = {
@@ -97425,6 +101474,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
   }
 
   export type UserUncheckedUpdateWithoutManualDiscountsIssuedInput = {
@@ -97459,6 +101509,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
   }
 
   export type UserUpsertWithoutManualDiscountsApprovedInput = {
@@ -97503,6 +101554,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
   }
 
   export type UserUncheckedUpdateWithoutManualDiscountsApprovedInput = {
@@ -97537,6 +101589,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
   }
 
   export type BookingUpsertWithoutManualDiscountInput = {
@@ -97594,6 +101647,11 @@ export namespace Prisma {
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -97612,6 +101670,8 @@ export namespace Prisma {
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutManualDiscountInput = {
@@ -97664,6 +101724,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -97677,6 +101743,7 @@ export namespace Prisma {
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type DiscountApplicationUpsertWithoutManualDiscountInput = {
@@ -97751,6 +101818,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPaymentConfigInput = {
@@ -97778,6 +101846,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPaymentConfigInput = {
@@ -97820,6 +101889,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPaymentConfigInput = {
@@ -97847,6 +101917,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BookingCreateWithoutPaymentTransactionsInput = {
@@ -97893,6 +101964,11 @@ export namespace Prisma {
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -97911,6 +101987,8 @@ export namespace Prisma {
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutPaymentTransactionsInput = {
@@ -97963,6 +102041,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
     discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -97976,6 +102060,7 @@ export namespace Prisma {
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutPaymentTransactionsInput = {
@@ -98007,6 +102092,7 @@ export namespace Prisma {
     paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPaymentTransactionsInput = {
@@ -98034,6 +102120,7 @@ export namespace Prisma {
     paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPaymentTransactionsInput = {
@@ -98072,6 +102159,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
   }
 
   export type UserUncheckedCreateWithoutCollectedPaymentsInput = {
@@ -98106,6 +102194,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
   }
 
   export type UserCreateOrConnectWithoutCollectedPaymentsInput = {
@@ -98144,6 +102233,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
   }
 
   export type UserUncheckedCreateWithoutConfirmedPaymentsInput = {
@@ -98178,6 +102268,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
   }
 
   export type UserCreateOrConnectWithoutConfirmedPaymentsInput = {
@@ -98216,6 +102307,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
   }
 
   export type UserUncheckedCreateWithoutRejectedPaymentsInput = {
@@ -98250,6 +102342,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
   }
 
   export type UserCreateOrConnectWithoutRejectedPaymentsInput = {
@@ -98295,6 +102388,64 @@ export namespace Prisma {
   export type CashShiftCreateOrConnectWithoutTransactionsInput = {
     where: CashShiftWhereUniqueInput
     create: XOR<CashShiftCreateWithoutTransactionsInput, CashShiftUncheckedCreateWithoutTransactionsInput>
+  }
+
+  export type BookingExtensionCreateWithoutPaymentTransactionInput = {
+    publicId: string
+    extensionTrigger: $Enums.ExtensionTrigger
+    extensionStatus?: $Enums.ExtensionStatus
+    oldEndAt: Date | string
+    requestedEndAt: Date | string
+    actualNewEndAt?: Date | string | null
+    additionalAmount: Decimal | DecimalJsLike | number | string
+    newTotalFinal: Decimal | DecimalJsLike | number | string
+    resolutionType?: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: boolean
+    affectedBookingIds?: BookingExtensionCreateaffectedBookingIdsInput | number[]
+    actorPublicId: string
+    actorRole: string
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutExtensionsInput
+    branch: BranchCreateNestedOneWithoutExtensionsInput
+    actor: UserCreateNestedOneWithoutInitiatedExtensionsInput
+    swappedVehicle?: VehicleCreateNestedOneWithoutExtensionSwapsInput
+    vehicleSwap?: VehicleSwapCreateNestedOneWithoutExtensionInput
+    activeForBookings?: BookingCreateNestedManyWithoutActiveExtensionInput
+  }
+
+  export type BookingExtensionUncheckedCreateWithoutPaymentTransactionInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    extensionTrigger: $Enums.ExtensionTrigger
+    extensionStatus?: $Enums.ExtensionStatus
+    oldEndAt: Date | string
+    requestedEndAt: Date | string
+    actualNewEndAt?: Date | string | null
+    additionalAmount: Decimal | DecimalJsLike | number | string
+    newTotalFinal: Decimal | DecimalJsLike | number | string
+    resolutionType?: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: boolean
+    swappedVehicleId?: number | null
+    affectedBookingIds?: BookingExtensionCreateaffectedBookingIdsInput | number[]
+    vehicleSwapId?: number | null
+    actorId: number
+    actorPublicId: string
+    actorRole: string
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    activeForBookings?: BookingUncheckedCreateNestedManyWithoutActiveExtensionInput
+  }
+
+  export type BookingExtensionCreateOrConnectWithoutPaymentTransactionInput = {
+    where: BookingExtensionWhereUniqueInput
+    create: XOR<BookingExtensionCreateWithoutPaymentTransactionInput, BookingExtensionUncheckedCreateWithoutPaymentTransactionInput>
   }
 
   export type BookingUpsertWithoutPaymentTransactionsInput = {
@@ -98352,6 +102503,11 @@ export namespace Prisma {
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -98370,6 +102526,8 @@ export namespace Prisma {
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutPaymentTransactionsInput = {
@@ -98422,6 +102580,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -98435,6 +102599,7 @@ export namespace Prisma {
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BranchUpsertWithoutPaymentTransactionsInput = {
@@ -98472,6 +102637,7 @@ export namespace Prisma {
     paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPaymentTransactionsInput = {
@@ -98499,6 +102665,7 @@ export namespace Prisma {
     paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type UserUpsertWithoutCollectedPaymentsInput = {
@@ -98543,6 +102710,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
   }
 
   export type UserUncheckedUpdateWithoutCollectedPaymentsInput = {
@@ -98577,6 +102745,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
   }
 
   export type UserUpsertWithoutConfirmedPaymentsInput = {
@@ -98621,6 +102790,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
   }
 
   export type UserUncheckedUpdateWithoutConfirmedPaymentsInput = {
@@ -98655,6 +102825,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
   }
 
   export type UserUpsertWithoutRejectedPaymentsInput = {
@@ -98699,6 +102870,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRejectedPaymentsInput = {
@@ -98733,6 +102905,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
   }
 
   export type CashShiftUpsertWithoutTransactionsInput = {
@@ -98781,6 +102954,70 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type BookingExtensionUpsertWithoutPaymentTransactionInput = {
+    update: XOR<BookingExtensionUpdateWithoutPaymentTransactionInput, BookingExtensionUncheckedUpdateWithoutPaymentTransactionInput>
+    create: XOR<BookingExtensionCreateWithoutPaymentTransactionInput, BookingExtensionUncheckedCreateWithoutPaymentTransactionInput>
+    where?: BookingExtensionWhereInput
+  }
+
+  export type BookingExtensionUpdateToOneWithWhereWithoutPaymentTransactionInput = {
+    where?: BookingExtensionWhereInput
+    data: XOR<BookingExtensionUpdateWithoutPaymentTransactionInput, BookingExtensionUncheckedUpdateWithoutPaymentTransactionInput>
+  }
+
+  export type BookingExtensionUpdateWithoutPaymentTransactionInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    extensionTrigger?: EnumExtensionTriggerFieldUpdateOperationsInput | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFieldUpdateOperationsInput | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestedEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualNewEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    additionalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    resolutionType?: NullableEnumExtensionResolutionTypeFieldUpdateOperationsInput | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFieldUpdateOperationsInput | boolean
+    affectedBookingIds?: BookingExtensionUpdateaffectedBookingIdsInput | number[]
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorRole?: StringFieldUpdateOperationsInput | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutExtensionsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutExtensionsNestedInput
+    actor?: UserUpdateOneRequiredWithoutInitiatedExtensionsNestedInput
+    swappedVehicle?: VehicleUpdateOneWithoutExtensionSwapsNestedInput
+    vehicleSwap?: VehicleSwapUpdateOneWithoutExtensionNestedInput
+    activeForBookings?: BookingUpdateManyWithoutActiveExtensionNestedInput
+  }
+
+  export type BookingExtensionUncheckedUpdateWithoutPaymentTransactionInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    extensionTrigger?: EnumExtensionTriggerFieldUpdateOperationsInput | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFieldUpdateOperationsInput | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestedEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualNewEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    additionalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    resolutionType?: NullableEnumExtensionResolutionTypeFieldUpdateOperationsInput | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFieldUpdateOperationsInput | boolean
+    swappedVehicleId?: NullableIntFieldUpdateOperationsInput | number | null
+    affectedBookingIds?: BookingExtensionUpdateaffectedBookingIdsInput | number[]
+    vehicleSwapId?: NullableIntFieldUpdateOperationsInput | number | null
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorRole?: StringFieldUpdateOperationsInput | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    activeForBookings?: BookingUncheckedUpdateManyWithoutActiveExtensionNestedInput
+  }
+
   export type BookingCreateWithoutRefundRequestsInput = {
     publicId: string
     startAt: Date | string
@@ -98825,6 +103062,11 @@ export namespace Prisma {
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -98843,6 +103085,8 @@ export namespace Prisma {
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutRefundRequestsInput = {
@@ -98895,6 +103139,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
     discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -98908,6 +103158,7 @@ export namespace Prisma {
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutRefundRequestsInput = {
@@ -98939,6 +103190,7 @@ export namespace Prisma {
     paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutRefundRequestsInput = {
@@ -98966,6 +103218,7 @@ export namespace Prisma {
     paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutRefundRequestsInput = {
@@ -99004,6 +103257,7 @@ export namespace Prisma {
     reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
   }
 
   export type UserUncheckedCreateWithoutRefundRequestsMadeInput = {
@@ -99038,6 +103292,7 @@ export namespace Prisma {
     reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
   }
 
   export type UserCreateOrConnectWithoutRefundRequestsMadeInput = {
@@ -99076,6 +103331,7 @@ export namespace Prisma {
     reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
     refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
   }
 
   export type UserUncheckedCreateWithoutRefundRequestsApprovedInput = {
@@ -99110,6 +103366,7 @@ export namespace Prisma {
     reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
     refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
   }
 
   export type UserCreateOrConnectWithoutRefundRequestsApprovedInput = {
@@ -99148,6 +103405,7 @@ export namespace Prisma {
     reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
     refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
   }
 
   export type UserUncheckedCreateWithoutRefundRequestsCompletedInput = {
@@ -99182,6 +103440,7 @@ export namespace Prisma {
     reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
     refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
   }
 
   export type UserCreateOrConnectWithoutRefundRequestsCompletedInput = {
@@ -99244,6 +103503,11 @@ export namespace Prisma {
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -99262,6 +103526,8 @@ export namespace Prisma {
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutRefundRequestsInput = {
@@ -99314,6 +103580,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -99327,6 +103599,7 @@ export namespace Prisma {
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BranchUpsertWithoutRefundRequestsInput = {
@@ -99364,6 +103637,7 @@ export namespace Prisma {
     paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutRefundRequestsInput = {
@@ -99391,6 +103665,7 @@ export namespace Prisma {
     paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type UserUpsertWithoutRefundRequestsMadeInput = {
@@ -99435,6 +103710,7 @@ export namespace Prisma {
     reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRefundRequestsMadeInput = {
@@ -99469,6 +103745,7 @@ export namespace Prisma {
     reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
   }
 
   export type UserUpsertWithoutRefundRequestsApprovedInput = {
@@ -99513,6 +103790,7 @@ export namespace Prisma {
     reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
     refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRefundRequestsApprovedInput = {
@@ -99547,6 +103825,7 @@ export namespace Prisma {
     reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
     refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
   }
 
   export type UserUpsertWithoutRefundRequestsCompletedInput = {
@@ -99591,6 +103870,7 @@ export namespace Prisma {
     reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
     refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRefundRequestsCompletedInput = {
@@ -99625,6 +103905,7 @@ export namespace Prisma {
     reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
     refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
   }
 
   export type UserCreateWithoutOpenShiftsInput = {
@@ -99658,6 +103939,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
   }
 
   export type UserUncheckedCreateWithoutOpenShiftsInput = {
@@ -99692,6 +103974,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
   }
 
   export type UserCreateOrConnectWithoutOpenShiftsInput = {
@@ -99723,6 +104006,7 @@ export namespace Prisma {
     paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutCashShiftsInput = {
@@ -99750,6 +104034,7 @@ export namespace Prisma {
     paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutCashShiftsInput = {
@@ -99788,6 +104073,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
   }
 
   export type UserUncheckedCreateWithoutReconciledShiftsInput = {
@@ -99822,6 +104108,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
   }
 
   export type UserCreateOrConnectWithoutReconciledShiftsInput = {
@@ -99851,6 +104138,7 @@ export namespace Prisma {
     collectedBy?: UserCreateNestedOneWithoutCollectedPaymentsInput
     confirmedBy?: UserCreateNestedOneWithoutConfirmedPaymentsInput
     rejectedBy?: UserCreateNestedOneWithoutRejectedPaymentsInput
+    extension?: BookingExtensionCreateNestedOneWithoutPaymentTransactionInput
   }
 
   export type PaymentTransactionUncheckedCreateWithoutCashShiftInput = {
@@ -99876,6 +104164,7 @@ export namespace Prisma {
     rejectionReason?: string | null
     notes?: string | null
     createdAt?: Date | string
+    extension?: BookingExtensionUncheckedCreateNestedOneWithoutPaymentTransactionInput
   }
 
   export type PaymentTransactionCreateOrConnectWithoutCashShiftInput = {
@@ -99930,6 +104219,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
   }
 
   export type UserUncheckedUpdateWithoutOpenShiftsInput = {
@@ -99964,6 +104254,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
   }
 
   export type BranchUpsertWithoutCashShiftsInput = {
@@ -100001,6 +104292,7 @@ export namespace Prisma {
     paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutCashShiftsInput = {
@@ -100028,6 +104320,7 @@ export namespace Prisma {
     paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type UserUpsertWithoutReconciledShiftsInput = {
@@ -100072,6 +104365,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
   }
 
   export type UserUncheckedUpdateWithoutReconciledShiftsInput = {
@@ -100106,6 +104400,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
   }
 
   export type PaymentTransactionUpsertWithWhereUniqueWithoutCashShiftInput = {
@@ -100122,6 +104417,1079 @@ export namespace Prisma {
   export type PaymentTransactionUpdateManyWithWhereWithoutCashShiftInput = {
     where: PaymentTransactionScalarWhereInput
     data: XOR<PaymentTransactionUpdateManyMutationInput, PaymentTransactionUncheckedUpdateManyWithoutCashShiftInput>
+  }
+
+  export type BookingCreateWithoutExtensionsInput = {
+    publicId: string
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
+    customer: CustomerCreateNestedOneWithoutBookingsInput
+    branch: BranchCreateNestedOneWithoutBookingsInput
+    createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
+    photos?: BookingPhotoCreateNestedManyWithoutBookingInput
+    damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
+    deposit?: DepositCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+  }
+
+  export type BookingUncheckedCreateWithoutExtensionsInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
+    damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
+    deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+  }
+
+  export type BookingCreateOrConnectWithoutExtensionsInput = {
+    where: BookingWhereUniqueInput
+    create: XOR<BookingCreateWithoutExtensionsInput, BookingUncheckedCreateWithoutExtensionsInput>
+  }
+
+  export type BranchCreateWithoutExtensionsInput = {
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleCreateNestedManyWithoutBranchInput
+    bookings?: BookingCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
+    auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchUncheckedCreateWithoutExtensionsInput = {
+    id?: number
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserUncheckedCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchCreateOrConnectWithoutExtensionsInput = {
+    where: BranchWhereUniqueInput
+    create: XOR<BranchCreateWithoutExtensionsInput, BranchUncheckedCreateWithoutExtensionsInput>
+  }
+
+  export type UserCreateWithoutInitiatedExtensionsInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+  }
+
+  export type UserUncheckedCreateWithoutInitiatedExtensionsInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+  }
+
+  export type UserCreateOrConnectWithoutInitiatedExtensionsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutInitiatedExtensionsInput, UserUncheckedCreateWithoutInitiatedExtensionsInput>
+  }
+
+  export type VehicleCreateWithoutExtensionSwapsInput = {
+    publicId: string
+    make: string
+    model: string
+    regNo: string
+    odo: number
+    fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
+    insuranceExpiry: Date | string
+    status?: $Enums.VehicleStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch: BranchCreateNestedOneWithoutVehiclesInput
+    category: VehicleCategoryCreateNestedOneWithoutVehiclesInput
+    insuranceRecords?: VehicleInsuranceCreateNestedManyWithoutVehicleInput
+    maintenance?: VehicleMaintenanceRecordCreateNestedManyWithoutVehicleInput
+    damageReports?: DamageReportCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapCreateNestedManyWithoutNewVehicleInput
+  }
+
+  export type VehicleUncheckedCreateWithoutExtensionSwapsInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    categoryId: number
+    make: string
+    model: string
+    regNo: string
+    odo: number
+    fuelLevel?: number
+    advancePayAmount?: Decimal | DecimalJsLike | number | string
+    insuranceExpiry: Date | string
+    status?: $Enums.VehicleStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    insuranceRecords?: VehicleInsuranceUncheckedCreateNestedManyWithoutVehicleInput
+    maintenance?: VehicleMaintenanceRecordUncheckedCreateNestedManyWithoutVehicleInput
+    damageReports?: DamageReportUncheckedCreateNestedManyWithoutVehicleInput
+    pricingOverride?: VehiclePricingOverrideUncheckedCreateNestedOneWithoutVehicleInput
+    customPricing?: VehicleCustomPricingUncheckedCreateNestedOneWithoutVehicleInput
+    images?: VehicleImageUncheckedCreateNestedManyWithoutVehicleInput
+    bookingItems?: BookingItemUncheckedCreateNestedManyWithoutVehicleInput
+    featureFlags?: VehicleFeatureFlagUncheckedCreateNestedManyWithoutVehicleInput
+    swapsAsOriginal?: VehicleSwapUncheckedCreateNestedManyWithoutOriginalVehicleInput
+    swapsAsNew?: VehicleSwapUncheckedCreateNestedManyWithoutNewVehicleInput
+  }
+
+  export type VehicleCreateOrConnectWithoutExtensionSwapsInput = {
+    where: VehicleWhereUniqueInput
+    create: XOR<VehicleCreateWithoutExtensionSwapsInput, VehicleUncheckedCreateWithoutExtensionSwapsInput>
+  }
+
+  export type PaymentTransactionCreateWithoutExtensionInput = {
+    publicId: string
+    idempotencyKey: string
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status?: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal | DecimalJsLike | number | string
+    cashAmount?: Decimal | DecimalJsLike | number | string
+    onlineAmount?: Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: string | null
+    onlineGateway?: string | null
+    collectedAt?: Date | string | null
+    confirmedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    booking: BookingCreateNestedOneWithoutPaymentTransactionsInput
+    branch: BranchCreateNestedOneWithoutPaymentTransactionsInput
+    collectedBy?: UserCreateNestedOneWithoutCollectedPaymentsInput
+    confirmedBy?: UserCreateNestedOneWithoutConfirmedPaymentsInput
+    rejectedBy?: UserCreateNestedOneWithoutRejectedPaymentsInput
+    cashShift?: CashShiftCreateNestedOneWithoutTransactionsInput
+  }
+
+  export type PaymentTransactionUncheckedCreateWithoutExtensionInput = {
+    id?: number
+    publicId: string
+    idempotencyKey: string
+    bookingId: number
+    branchId: number
+    purpose: $Enums.PaymentPurpose
+    method: $Enums.PaymentMethod
+    status?: $Enums.PaymentTransactionStatus
+    totalAmount: Decimal | DecimalJsLike | number | string
+    cashAmount?: Decimal | DecimalJsLike | number | string
+    onlineAmount?: Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: string | null
+    onlineGateway?: string | null
+    collectedById?: number | null
+    collectedAt?: Date | string | null
+    confirmedById?: number | null
+    confirmedAt?: Date | string | null
+    rejectedById?: number | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    cashShiftId?: number | null
+    notes?: string | null
+    createdAt?: Date | string
+  }
+
+  export type PaymentTransactionCreateOrConnectWithoutExtensionInput = {
+    where: PaymentTransactionWhereUniqueInput
+    create: XOR<PaymentTransactionCreateWithoutExtensionInput, PaymentTransactionUncheckedCreateWithoutExtensionInput>
+  }
+
+  export type VehicleSwapCreateWithoutExtensionInput = {
+    publicId: string
+    reason: $Enums.SwapReason
+    reasonNotes?: string | null
+    originalVehicleStatus?: $Enums.VehicleStatus | null
+    originalVehicleNotes?: string | null
+    swappedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutVehicleSwapsInput
+    originalVehicle: VehicleCreateNestedOneWithoutSwapsAsOriginalInput
+    newVehicle: VehicleCreateNestedOneWithoutSwapsAsNewInput
+    swappedBy: UserCreateNestedOneWithoutVehicleSwapsInput
+  }
+
+  export type VehicleSwapUncheckedCreateWithoutExtensionInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    originalVehicleId: number
+    newVehicleId: number
+    swappedById: number
+    reason: $Enums.SwapReason
+    reasonNotes?: string | null
+    originalVehicleStatus?: $Enums.VehicleStatus | null
+    originalVehicleNotes?: string | null
+    swappedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type VehicleSwapCreateOrConnectWithoutExtensionInput = {
+    where: VehicleSwapWhereUniqueInput
+    create: XOR<VehicleSwapCreateWithoutExtensionInput, VehicleSwapUncheckedCreateWithoutExtensionInput>
+  }
+
+  export type BookingCreateWithoutActiveExtensionInput = {
+    publicId: string
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
+    customer: CustomerCreateNestedOneWithoutBookingsInput
+    branch: BranchCreateNestedOneWithoutBookingsInput
+    createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
+    photos?: BookingPhotoCreateNestedManyWithoutBookingInput
+    damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
+    deposit?: DepositCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+  }
+
+  export type BookingUncheckedCreateWithoutActiveExtensionInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
+    damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
+    deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+  }
+
+  export type BookingCreateOrConnectWithoutActiveExtensionInput = {
+    where: BookingWhereUniqueInput
+    create: XOR<BookingCreateWithoutActiveExtensionInput, BookingUncheckedCreateWithoutActiveExtensionInput>
+  }
+
+  export type BookingCreateManyActiveExtensionInputEnvelope = {
+    data: BookingCreateManyActiveExtensionInput | BookingCreateManyActiveExtensionInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type BookingUpsertWithoutExtensionsInput = {
+    update: XOR<BookingUpdateWithoutExtensionsInput, BookingUncheckedUpdateWithoutExtensionsInput>
+    create: XOR<BookingCreateWithoutExtensionsInput, BookingUncheckedCreateWithoutExtensionsInput>
+    where?: BookingWhereInput
+  }
+
+  export type BookingUpdateToOneWithWhereWithoutExtensionsInput = {
+    where?: BookingWhereInput
+    data: XOR<BookingUpdateWithoutExtensionsInput, BookingUncheckedUpdateWithoutExtensionsInput>
+  }
+
+  export type BookingUpdateWithoutExtensionsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
+    customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
+    photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+  }
+
+  export type BookingUncheckedUpdateWithoutExtensionsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+  }
+
+  export type BranchUpsertWithoutExtensionsInput = {
+    update: XOR<BranchUpdateWithoutExtensionsInput, BranchUncheckedUpdateWithoutExtensionsInput>
+    create: XOR<BranchCreateWithoutExtensionsInput, BranchUncheckedCreateWithoutExtensionsInput>
+    where?: BranchWhereInput
+  }
+
+  export type BranchUpdateToOneWithWhereWithoutExtensionsInput = {
+    where?: BranchWhereInput
+    data: XOR<BranchUpdateWithoutExtensionsInput, BranchUncheckedUpdateWithoutExtensionsInput>
+  }
+
+  export type BranchUpdateWithoutExtensionsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+  }
+
+  export type BranchUncheckedUpdateWithoutExtensionsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUncheckedUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+  }
+
+  export type UserUpsertWithoutInitiatedExtensionsInput = {
+    update: XOR<UserUpdateWithoutInitiatedExtensionsInput, UserUncheckedUpdateWithoutInitiatedExtensionsInput>
+    create: XOR<UserCreateWithoutInitiatedExtensionsInput, UserUncheckedCreateWithoutInitiatedExtensionsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutInitiatedExtensionsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutInitiatedExtensionsInput, UserUncheckedUpdateWithoutInitiatedExtensionsInput>
+  }
+
+  export type UserUpdateWithoutInitiatedExtensionsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutInitiatedExtensionsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+  }
+
+  export type VehicleUpsertWithoutExtensionSwapsInput = {
+    update: XOR<VehicleUpdateWithoutExtensionSwapsInput, VehicleUncheckedUpdateWithoutExtensionSwapsInput>
+    create: XOR<VehicleCreateWithoutExtensionSwapsInput, VehicleUncheckedCreateWithoutExtensionSwapsInput>
+    where?: VehicleWhereInput
+  }
+
+  export type VehicleUpdateToOneWithWhereWithoutExtensionSwapsInput = {
+    where?: VehicleWhereInput
+    data: XOR<VehicleUpdateWithoutExtensionSwapsInput, VehicleUncheckedUpdateWithoutExtensionSwapsInput>
+  }
+
+  export type VehicleUpdateWithoutExtensionSwapsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    make?: StringFieldUpdateOperationsInput | string
+    model?: StringFieldUpdateOperationsInput | string
+    regNo?: StringFieldUpdateOperationsInput | string
+    odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneRequiredWithoutVehiclesNestedInput
+    category?: VehicleCategoryUpdateOneRequiredWithoutVehiclesNestedInput
+    insuranceRecords?: VehicleInsuranceUpdateManyWithoutVehicleNestedInput
+    maintenance?: VehicleMaintenanceRecordUpdateManyWithoutVehicleNestedInput
+    damageReports?: DamageReportUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
+  }
+
+  export type VehicleUncheckedUpdateWithoutExtensionSwapsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    categoryId?: IntFieldUpdateOperationsInput | number
+    make?: StringFieldUpdateOperationsInput | string
+    model?: StringFieldUpdateOperationsInput | string
+    regNo?: StringFieldUpdateOperationsInput | string
+    odo?: IntFieldUpdateOperationsInput | number
+    fuelLevel?: IntFieldUpdateOperationsInput | number
+    advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    insuranceRecords?: VehicleInsuranceUncheckedUpdateManyWithoutVehicleNestedInput
+    maintenance?: VehicleMaintenanceRecordUncheckedUpdateManyWithoutVehicleNestedInput
+    damageReports?: DamageReportUncheckedUpdateManyWithoutVehicleNestedInput
+    pricingOverride?: VehiclePricingOverrideUncheckedUpdateOneWithoutVehicleNestedInput
+    customPricing?: VehicleCustomPricingUncheckedUpdateOneWithoutVehicleNestedInput
+    images?: VehicleImageUncheckedUpdateManyWithoutVehicleNestedInput
+    bookingItems?: BookingItemUncheckedUpdateManyWithoutVehicleNestedInput
+    featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
+    swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
+    swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
+  }
+
+  export type PaymentTransactionUpsertWithoutExtensionInput = {
+    update: XOR<PaymentTransactionUpdateWithoutExtensionInput, PaymentTransactionUncheckedUpdateWithoutExtensionInput>
+    create: XOR<PaymentTransactionCreateWithoutExtensionInput, PaymentTransactionUncheckedCreateWithoutExtensionInput>
+    where?: PaymentTransactionWhereInput
+  }
+
+  export type PaymentTransactionUpdateToOneWithWhereWithoutExtensionInput = {
+    where?: PaymentTransactionWhereInput
+    data: XOR<PaymentTransactionUpdateWithoutExtensionInput, PaymentTransactionUncheckedUpdateWithoutExtensionInput>
+  }
+
+  export type PaymentTransactionUpdateWithoutExtensionInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutPaymentTransactionsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutPaymentTransactionsNestedInput
+    collectedBy?: UserUpdateOneWithoutCollectedPaymentsNestedInput
+    confirmedBy?: UserUpdateOneWithoutConfirmedPaymentsNestedInput
+    rejectedBy?: UserUpdateOneWithoutRejectedPaymentsNestedInput
+    cashShift?: CashShiftUpdateOneWithoutTransactionsNestedInput
+  }
+
+  export type PaymentTransactionUncheckedUpdateWithoutExtensionInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    purpose?: EnumPaymentPurposeFieldUpdateOperationsInput | $Enums.PaymentPurpose
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    status?: EnumPaymentTransactionStatusFieldUpdateOperationsInput | $Enums.PaymentTransactionStatus
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    onlineGateway?: NullableStringFieldUpdateOperationsInput | string | null
+    collectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    collectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedById?: NullableIntFieldUpdateOperationsInput | number | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedById?: NullableIntFieldUpdateOperationsInput | number | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cashShiftId?: NullableIntFieldUpdateOperationsInput | number | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VehicleSwapUpsertWithoutExtensionInput = {
+    update: XOR<VehicleSwapUpdateWithoutExtensionInput, VehicleSwapUncheckedUpdateWithoutExtensionInput>
+    create: XOR<VehicleSwapCreateWithoutExtensionInput, VehicleSwapUncheckedCreateWithoutExtensionInput>
+    where?: VehicleSwapWhereInput
+  }
+
+  export type VehicleSwapUpdateToOneWithWhereWithoutExtensionInput = {
+    where?: VehicleSwapWhereInput
+    data: XOR<VehicleSwapUpdateWithoutExtensionInput, VehicleSwapUncheckedUpdateWithoutExtensionInput>
+  }
+
+  export type VehicleSwapUpdateWithoutExtensionInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    reason?: EnumSwapReasonFieldUpdateOperationsInput | $Enums.SwapReason
+    reasonNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    originalVehicleStatus?: NullableEnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus | null
+    originalVehicleNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutVehicleSwapsNestedInput
+    originalVehicle?: VehicleUpdateOneRequiredWithoutSwapsAsOriginalNestedInput
+    newVehicle?: VehicleUpdateOneRequiredWithoutSwapsAsNewNestedInput
+    swappedBy?: UserUpdateOneRequiredWithoutVehicleSwapsNestedInput
+  }
+
+  export type VehicleSwapUncheckedUpdateWithoutExtensionInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    originalVehicleId?: IntFieldUpdateOperationsInput | number
+    newVehicleId?: IntFieldUpdateOperationsInput | number
+    swappedById?: IntFieldUpdateOperationsInput | number
+    reason?: EnumSwapReasonFieldUpdateOperationsInput | $Enums.SwapReason
+    reasonNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    originalVehicleStatus?: NullableEnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus | null
+    originalVehicleNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BookingUpsertWithWhereUniqueWithoutActiveExtensionInput = {
+    where: BookingWhereUniqueInput
+    update: XOR<BookingUpdateWithoutActiveExtensionInput, BookingUncheckedUpdateWithoutActiveExtensionInput>
+    create: XOR<BookingCreateWithoutActiveExtensionInput, BookingUncheckedCreateWithoutActiveExtensionInput>
+  }
+
+  export type BookingUpdateWithWhereUniqueWithoutActiveExtensionInput = {
+    where: BookingWhereUniqueInput
+    data: XOR<BookingUpdateWithoutActiveExtensionInput, BookingUncheckedUpdateWithoutActiveExtensionInput>
+  }
+
+  export type BookingUpdateManyWithWhereWithoutActiveExtensionInput = {
+    where: BookingScalarWhereInput
+    data: XOR<BookingUpdateManyMutationInput, BookingUncheckedUpdateManyWithoutActiveExtensionInput>
   }
 
   export type EmailVerificationOtpCreateManyUserInput = {
@@ -100245,6 +105613,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
     discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -100519,6 +105893,32 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type BookingExtensionCreateManyActorInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    extensionTrigger: $Enums.ExtensionTrigger
+    extensionStatus?: $Enums.ExtensionStatus
+    oldEndAt: Date | string
+    requestedEndAt: Date | string
+    actualNewEndAt?: Date | string | null
+    additionalAmount: Decimal | DecimalJsLike | number | string
+    newTotalFinal: Decimal | DecimalJsLike | number | string
+    resolutionType?: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: boolean
+    swappedVehicleId?: number | null
+    affectedBookingIds?: BookingExtensionCreateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: number | null
+    vehicleSwapId?: number | null
+    actorPublicId: string
+    actorRole: string
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type EmailVerificationOtpUpdateWithoutUserInput = {
     phone?: StringFieldUpdateOperationsInput | string
     otpHash?: StringFieldUpdateOperationsInput | string
@@ -100775,6 +106175,11 @@ export namespace Prisma {
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -100793,6 +106198,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCreatedByInput = {
@@ -100844,6 +106251,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -100858,6 +106271,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutCreatedByInput = {
@@ -100909,6 +106323,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -100972,6 +106392,7 @@ export namespace Prisma {
     booking?: BookingUpdateOneRequiredWithoutVehicleSwapsNestedInput
     originalVehicle?: VehicleUpdateOneRequiredWithoutSwapsAsOriginalNestedInput
     newVehicle?: VehicleUpdateOneRequiredWithoutSwapsAsNewNestedInput
+    extension?: BookingExtensionUpdateOneWithoutVehicleSwapNestedInput
   }
 
   export type VehicleSwapUncheckedUpdateWithoutSwappedByInput = {
@@ -100987,6 +106408,7 @@ export namespace Prisma {
     swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    extension?: BookingExtensionUncheckedUpdateOneWithoutVehicleSwapNestedInput
   }
 
   export type VehicleSwapUncheckedUpdateManyWithoutSwappedByInput = {
@@ -101243,6 +106665,7 @@ export namespace Prisma {
     confirmedBy?: UserUpdateOneWithoutConfirmedPaymentsNestedInput
     rejectedBy?: UserUpdateOneWithoutRejectedPaymentsNestedInput
     cashShift?: CashShiftUpdateOneWithoutTransactionsNestedInput
+    extension?: BookingExtensionUpdateOneWithoutPaymentTransactionNestedInput
   }
 
   export type PaymentTransactionUncheckedUpdateWithoutCollectedByInput = {
@@ -101268,6 +106691,7 @@ export namespace Prisma {
     cashShiftId?: NullableIntFieldUpdateOperationsInput | number | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    extension?: BookingExtensionUncheckedUpdateOneWithoutPaymentTransactionNestedInput
   }
 
   export type PaymentTransactionUncheckedUpdateManyWithoutCollectedByInput = {
@@ -101317,6 +106741,7 @@ export namespace Prisma {
     collectedBy?: UserUpdateOneWithoutCollectedPaymentsNestedInput
     rejectedBy?: UserUpdateOneWithoutRejectedPaymentsNestedInput
     cashShift?: CashShiftUpdateOneWithoutTransactionsNestedInput
+    extension?: BookingExtensionUpdateOneWithoutPaymentTransactionNestedInput
   }
 
   export type PaymentTransactionUncheckedUpdateWithoutConfirmedByInput = {
@@ -101342,6 +106767,7 @@ export namespace Prisma {
     cashShiftId?: NullableIntFieldUpdateOperationsInput | number | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    extension?: BookingExtensionUncheckedUpdateOneWithoutPaymentTransactionNestedInput
   }
 
   export type PaymentTransactionUncheckedUpdateManyWithoutConfirmedByInput = {
@@ -101391,6 +106817,7 @@ export namespace Prisma {
     collectedBy?: UserUpdateOneWithoutCollectedPaymentsNestedInput
     confirmedBy?: UserUpdateOneWithoutConfirmedPaymentsNestedInput
     cashShift?: CashShiftUpdateOneWithoutTransactionsNestedInput
+    extension?: BookingExtensionUpdateOneWithoutPaymentTransactionNestedInput
   }
 
   export type PaymentTransactionUncheckedUpdateWithoutRejectedByInput = {
@@ -101416,6 +106843,7 @@ export namespace Prisma {
     cashShiftId?: NullableIntFieldUpdateOperationsInput | number | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    extension?: BookingExtensionUncheckedUpdateOneWithoutPaymentTransactionNestedInput
   }
 
   export type PaymentTransactionUncheckedUpdateManyWithoutRejectedByInput = {
@@ -101724,6 +107152,85 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type BookingExtensionUpdateWithoutActorInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    extensionTrigger?: EnumExtensionTriggerFieldUpdateOperationsInput | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFieldUpdateOperationsInput | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestedEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualNewEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    additionalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    resolutionType?: NullableEnumExtensionResolutionTypeFieldUpdateOperationsInput | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFieldUpdateOperationsInput | boolean
+    affectedBookingIds?: BookingExtensionUpdateaffectedBookingIdsInput | number[]
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorRole?: StringFieldUpdateOperationsInput | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutExtensionsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutExtensionsNestedInput
+    swappedVehicle?: VehicleUpdateOneWithoutExtensionSwapsNestedInput
+    paymentTransaction?: PaymentTransactionUpdateOneWithoutExtensionNestedInput
+    vehicleSwap?: VehicleSwapUpdateOneWithoutExtensionNestedInput
+    activeForBookings?: BookingUpdateManyWithoutActiveExtensionNestedInput
+  }
+
+  export type BookingExtensionUncheckedUpdateWithoutActorInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    extensionTrigger?: EnumExtensionTriggerFieldUpdateOperationsInput | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFieldUpdateOperationsInput | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestedEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualNewEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    additionalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    resolutionType?: NullableEnumExtensionResolutionTypeFieldUpdateOperationsInput | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFieldUpdateOperationsInput | boolean
+    swappedVehicleId?: NullableIntFieldUpdateOperationsInput | number | null
+    affectedBookingIds?: BookingExtensionUpdateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: NullableIntFieldUpdateOperationsInput | number | null
+    vehicleSwapId?: NullableIntFieldUpdateOperationsInput | number | null
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorRole?: StringFieldUpdateOperationsInput | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    activeForBookings?: BookingUncheckedUpdateManyWithoutActiveExtensionNestedInput
+  }
+
+  export type BookingExtensionUncheckedUpdateManyWithoutActorInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    extensionTrigger?: EnumExtensionTriggerFieldUpdateOperationsInput | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFieldUpdateOperationsInput | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestedEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualNewEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    additionalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    resolutionType?: NullableEnumExtensionResolutionTypeFieldUpdateOperationsInput | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFieldUpdateOperationsInput | boolean
+    swappedVehicleId?: NullableIntFieldUpdateOperationsInput | number | null
+    affectedBookingIds?: BookingExtensionUpdateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: NullableIntFieldUpdateOperationsInput | number | null
+    vehicleSwapId?: NullableIntFieldUpdateOperationsInput | number | null
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorRole?: StringFieldUpdateOperationsInput | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type CustomerKycCreateManyCustomerInput = {
     id?: number
     publicId: string
@@ -101782,6 +107289,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
     discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -101874,6 +107387,11 @@ export namespace Prisma {
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -101892,6 +107410,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCustomerInput = {
@@ -101943,6 +107463,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -101957,6 +107483,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutCustomerInput = {
@@ -102008,6 +107535,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -102131,6 +107664,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
     discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -102275,6 +107814,11 @@ export namespace Prisma {
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -102293,6 +107837,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutKycFileInput = {
@@ -102344,6 +107890,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -102358,6 +107910,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutKycFileInput = {
@@ -102409,6 +107962,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -102616,6 +108175,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
     discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -102783,6 +108348,32 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type BookingExtensionCreateManyBranchInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    extensionTrigger: $Enums.ExtensionTrigger
+    extensionStatus?: $Enums.ExtensionStatus
+    oldEndAt: Date | string
+    requestedEndAt: Date | string
+    actualNewEndAt?: Date | string | null
+    additionalAmount: Decimal | DecimalJsLike | number | string
+    newTotalFinal: Decimal | DecimalJsLike | number | string
+    resolutionType?: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: boolean
+    swappedVehicleId?: number | null
+    affectedBookingIds?: BookingExtensionCreateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: number | null
+    vehicleSwapId?: number | null
+    actorId: number
+    actorPublicId: string
+    actorRole: string
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type UserUpdateWithoutBranchInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
@@ -102814,6 +108405,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
   }
 
   export type UserUncheckedUpdateWithoutBranchInput = {
@@ -102848,6 +108440,7 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
   }
 
   export type UserUncheckedUpdateManyWithoutBranchInput = {
@@ -102889,6 +108482,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
     swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutBranchInput = {
@@ -102916,6 +108510,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
     swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUncheckedUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateManyWithoutBranchInput = {
@@ -102979,6 +108574,11 @@ export namespace Prisma {
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -102997,6 +108597,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutBranchInput = {
@@ -103048,6 +108650,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -103062,6 +108670,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutBranchInput = {
@@ -103113,6 +108722,12 @@ export namespace Prisma {
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -103432,6 +109047,7 @@ export namespace Prisma {
     confirmedBy?: UserUpdateOneWithoutConfirmedPaymentsNestedInput
     rejectedBy?: UserUpdateOneWithoutRejectedPaymentsNestedInput
     cashShift?: CashShiftUpdateOneWithoutTransactionsNestedInput
+    extension?: BookingExtensionUpdateOneWithoutPaymentTransactionNestedInput
   }
 
   export type PaymentTransactionUncheckedUpdateWithoutBranchInput = {
@@ -103457,6 +109073,7 @@ export namespace Prisma {
     cashShiftId?: NullableIntFieldUpdateOperationsInput | number | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    extension?: BookingExtensionUncheckedUpdateOneWithoutPaymentTransactionNestedInput
   }
 
   export type PaymentTransactionUncheckedUpdateManyWithoutBranchInput = {
@@ -103595,6 +109212,85 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type BookingExtensionUpdateWithoutBranchInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    extensionTrigger?: EnumExtensionTriggerFieldUpdateOperationsInput | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFieldUpdateOperationsInput | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestedEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualNewEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    additionalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    resolutionType?: NullableEnumExtensionResolutionTypeFieldUpdateOperationsInput | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFieldUpdateOperationsInput | boolean
+    affectedBookingIds?: BookingExtensionUpdateaffectedBookingIdsInput | number[]
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorRole?: StringFieldUpdateOperationsInput | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutExtensionsNestedInput
+    actor?: UserUpdateOneRequiredWithoutInitiatedExtensionsNestedInput
+    swappedVehicle?: VehicleUpdateOneWithoutExtensionSwapsNestedInput
+    paymentTransaction?: PaymentTransactionUpdateOneWithoutExtensionNestedInput
+    vehicleSwap?: VehicleSwapUpdateOneWithoutExtensionNestedInput
+    activeForBookings?: BookingUpdateManyWithoutActiveExtensionNestedInput
+  }
+
+  export type BookingExtensionUncheckedUpdateWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    extensionTrigger?: EnumExtensionTriggerFieldUpdateOperationsInput | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFieldUpdateOperationsInput | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestedEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualNewEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    additionalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    resolutionType?: NullableEnumExtensionResolutionTypeFieldUpdateOperationsInput | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFieldUpdateOperationsInput | boolean
+    swappedVehicleId?: NullableIntFieldUpdateOperationsInput | number | null
+    affectedBookingIds?: BookingExtensionUpdateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: NullableIntFieldUpdateOperationsInput | number | null
+    vehicleSwapId?: NullableIntFieldUpdateOperationsInput | number | null
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorRole?: StringFieldUpdateOperationsInput | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    activeForBookings?: BookingUncheckedUpdateManyWithoutActiveExtensionNestedInput
+  }
+
+  export type BookingExtensionUncheckedUpdateManyWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    extensionTrigger?: EnumExtensionTriggerFieldUpdateOperationsInput | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFieldUpdateOperationsInput | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestedEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualNewEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    additionalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    resolutionType?: NullableEnumExtensionResolutionTypeFieldUpdateOperationsInput | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFieldUpdateOperationsInput | boolean
+    swappedVehicleId?: NullableIntFieldUpdateOperationsInput | number | null
+    affectedBookingIds?: BookingExtensionUpdateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: NullableIntFieldUpdateOperationsInput | number | null
+    vehicleSwapId?: NullableIntFieldUpdateOperationsInput | number | null
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorRole?: StringFieldUpdateOperationsInput | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type PricingDiscountSlabCreateManyCategoryInput = {
     id?: number
     days: number
@@ -103720,6 +109416,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUpdateManyWithoutOriginalVehicleNestedInput
     swapsAsNew?: VehicleSwapUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateWithoutCategoryInput = {
@@ -103747,6 +109444,7 @@ export namespace Prisma {
     featureFlags?: VehicleFeatureFlagUncheckedUpdateManyWithoutVehicleNestedInput
     swapsAsOriginal?: VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleNestedInput
     swapsAsNew?: VehicleSwapUncheckedUpdateManyWithoutNewVehicleNestedInput
+    extensionSwaps?: BookingExtensionUncheckedUpdateManyWithoutSwappedVehicleNestedInput
   }
 
   export type VehicleUncheckedUpdateManyWithoutCategoryInput = {
@@ -103958,6 +109656,32 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type BookingExtensionCreateManySwappedVehicleInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    extensionTrigger: $Enums.ExtensionTrigger
+    extensionStatus?: $Enums.ExtensionStatus
+    oldEndAt: Date | string
+    requestedEndAt: Date | string
+    actualNewEndAt?: Date | string | null
+    additionalAmount: Decimal | DecimalJsLike | number | string
+    newTotalFinal: Decimal | DecimalJsLike | number | string
+    resolutionType?: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: boolean
+    affectedBookingIds?: BookingExtensionCreateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: number | null
+    vehicleSwapId?: number | null
+    actorId: number
+    actorPublicId: string
+    actorRole: string
+    rejectionReason?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type VehicleInsuranceUpdateWithoutVehicleInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     policyNumber?: StringFieldUpdateOperationsInput | string
@@ -104155,6 +109879,7 @@ export namespace Prisma {
     booking?: BookingUpdateOneRequiredWithoutVehicleSwapsNestedInput
     newVehicle?: VehicleUpdateOneRequiredWithoutSwapsAsNewNestedInput
     swappedBy?: UserUpdateOneRequiredWithoutVehicleSwapsNestedInput
+    extension?: BookingExtensionUpdateOneWithoutVehicleSwapNestedInput
   }
 
   export type VehicleSwapUncheckedUpdateWithoutOriginalVehicleInput = {
@@ -104170,6 +109895,7 @@ export namespace Prisma {
     swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    extension?: BookingExtensionUncheckedUpdateOneWithoutVehicleSwapNestedInput
   }
 
   export type VehicleSwapUncheckedUpdateManyWithoutOriginalVehicleInput = {
@@ -104199,6 +109925,7 @@ export namespace Prisma {
     booking?: BookingUpdateOneRequiredWithoutVehicleSwapsNestedInput
     originalVehicle?: VehicleUpdateOneRequiredWithoutSwapsAsOriginalNestedInput
     swappedBy?: UserUpdateOneRequiredWithoutVehicleSwapsNestedInput
+    extension?: BookingExtensionUpdateOneWithoutVehicleSwapNestedInput
   }
 
   export type VehicleSwapUncheckedUpdateWithoutNewVehicleInput = {
@@ -104214,6 +109941,7 @@ export namespace Prisma {
     swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    extension?: BookingExtensionUncheckedUpdateOneWithoutVehicleSwapNestedInput
   }
 
   export type VehicleSwapUncheckedUpdateManyWithoutNewVehicleInput = {
@@ -104227,6 +109955,85 @@ export namespace Prisma {
     originalVehicleStatus?: NullableEnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus | null
     originalVehicleNotes?: NullableStringFieldUpdateOperationsInput | string | null
     swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BookingExtensionUpdateWithoutSwappedVehicleInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    extensionTrigger?: EnumExtensionTriggerFieldUpdateOperationsInput | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFieldUpdateOperationsInput | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestedEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualNewEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    additionalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    resolutionType?: NullableEnumExtensionResolutionTypeFieldUpdateOperationsInput | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFieldUpdateOperationsInput | boolean
+    affectedBookingIds?: BookingExtensionUpdateaffectedBookingIdsInput | number[]
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorRole?: StringFieldUpdateOperationsInput | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutExtensionsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutExtensionsNestedInput
+    actor?: UserUpdateOneRequiredWithoutInitiatedExtensionsNestedInput
+    paymentTransaction?: PaymentTransactionUpdateOneWithoutExtensionNestedInput
+    vehicleSwap?: VehicleSwapUpdateOneWithoutExtensionNestedInput
+    activeForBookings?: BookingUpdateManyWithoutActiveExtensionNestedInput
+  }
+
+  export type BookingExtensionUncheckedUpdateWithoutSwappedVehicleInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    extensionTrigger?: EnumExtensionTriggerFieldUpdateOperationsInput | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFieldUpdateOperationsInput | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestedEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualNewEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    additionalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    resolutionType?: NullableEnumExtensionResolutionTypeFieldUpdateOperationsInput | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFieldUpdateOperationsInput | boolean
+    affectedBookingIds?: BookingExtensionUpdateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: NullableIntFieldUpdateOperationsInput | number | null
+    vehicleSwapId?: NullableIntFieldUpdateOperationsInput | number | null
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorRole?: StringFieldUpdateOperationsInput | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    activeForBookings?: BookingUncheckedUpdateManyWithoutActiveExtensionNestedInput
+  }
+
+  export type BookingExtensionUncheckedUpdateManyWithoutSwappedVehicleInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    extensionTrigger?: EnumExtensionTriggerFieldUpdateOperationsInput | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFieldUpdateOperationsInput | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestedEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualNewEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    additionalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    resolutionType?: NullableEnumExtensionResolutionTypeFieldUpdateOperationsInput | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFieldUpdateOperationsInput | boolean
+    affectedBookingIds?: BookingExtensionUpdateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: NullableIntFieldUpdateOperationsInput | number | null
+    vehicleSwapId?: NullableIntFieldUpdateOperationsInput | number | null
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorRole?: StringFieldUpdateOperationsInput | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -104327,6 +110134,32 @@ export namespace Prisma {
     onlineTransactionRef?: string | null
     rejectionReason?: string | null
     rejectedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BookingExtensionCreateManyBookingInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    extensionTrigger: $Enums.ExtensionTrigger
+    extensionStatus?: $Enums.ExtensionStatus
+    oldEndAt: Date | string
+    requestedEndAt: Date | string
+    actualNewEndAt?: Date | string | null
+    additionalAmount: Decimal | DecimalJsLike | number | string
+    newTotalFinal: Decimal | DecimalJsLike | number | string
+    resolutionType?: $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: boolean
+    swappedVehicleId?: number | null
+    affectedBookingIds?: BookingExtensionCreateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: number | null
+    vehicleSwapId?: number | null
+    actorId: number
+    actorPublicId: string
+    actorRole: string
+    rejectionReason?: string | null
+    notes?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -104462,6 +110295,7 @@ export namespace Prisma {
     originalVehicle?: VehicleUpdateOneRequiredWithoutSwapsAsOriginalNestedInput
     newVehicle?: VehicleUpdateOneRequiredWithoutSwapsAsNewNestedInput
     swappedBy?: UserUpdateOneRequiredWithoutVehicleSwapsNestedInput
+    extension?: BookingExtensionUpdateOneWithoutVehicleSwapNestedInput
   }
 
   export type VehicleSwapUncheckedUpdateWithoutBookingInput = {
@@ -104477,6 +110311,7 @@ export namespace Prisma {
     swappedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    extension?: BookingExtensionUncheckedUpdateOneWithoutVehicleSwapNestedInput
   }
 
   export type VehicleSwapUncheckedUpdateManyWithoutBookingInput = {
@@ -104516,6 +110351,7 @@ export namespace Prisma {
     confirmedBy?: UserUpdateOneWithoutConfirmedPaymentsNestedInput
     rejectedBy?: UserUpdateOneWithoutRejectedPaymentsNestedInput
     cashShift?: CashShiftUpdateOneWithoutTransactionsNestedInput
+    extension?: BookingExtensionUpdateOneWithoutPaymentTransactionNestedInput
   }
 
   export type PaymentTransactionUncheckedUpdateWithoutBookingInput = {
@@ -104541,6 +110377,7 @@ export namespace Prisma {
     cashShiftId?: NullableIntFieldUpdateOperationsInput | number | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    extension?: BookingExtensionUncheckedUpdateOneWithoutPaymentTransactionNestedInput
   }
 
   export type PaymentTransactionUncheckedUpdateManyWithoutBookingInput = {
@@ -104623,6 +110460,85 @@ export namespace Prisma {
     onlineTransactionRef?: NullableStringFieldUpdateOperationsInput | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
     rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BookingExtensionUpdateWithoutBookingInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    extensionTrigger?: EnumExtensionTriggerFieldUpdateOperationsInput | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFieldUpdateOperationsInput | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestedEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualNewEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    additionalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    resolutionType?: NullableEnumExtensionResolutionTypeFieldUpdateOperationsInput | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFieldUpdateOperationsInput | boolean
+    affectedBookingIds?: BookingExtensionUpdateaffectedBookingIdsInput | number[]
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorRole?: StringFieldUpdateOperationsInput | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    branch?: BranchUpdateOneRequiredWithoutExtensionsNestedInput
+    actor?: UserUpdateOneRequiredWithoutInitiatedExtensionsNestedInput
+    swappedVehicle?: VehicleUpdateOneWithoutExtensionSwapsNestedInput
+    paymentTransaction?: PaymentTransactionUpdateOneWithoutExtensionNestedInput
+    vehicleSwap?: VehicleSwapUpdateOneWithoutExtensionNestedInput
+    activeForBookings?: BookingUpdateManyWithoutActiveExtensionNestedInput
+  }
+
+  export type BookingExtensionUncheckedUpdateWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    extensionTrigger?: EnumExtensionTriggerFieldUpdateOperationsInput | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFieldUpdateOperationsInput | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestedEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualNewEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    additionalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    resolutionType?: NullableEnumExtensionResolutionTypeFieldUpdateOperationsInput | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFieldUpdateOperationsInput | boolean
+    swappedVehicleId?: NullableIntFieldUpdateOperationsInput | number | null
+    affectedBookingIds?: BookingExtensionUpdateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: NullableIntFieldUpdateOperationsInput | number | null
+    vehicleSwapId?: NullableIntFieldUpdateOperationsInput | number | null
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorRole?: StringFieldUpdateOperationsInput | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    activeForBookings?: BookingUncheckedUpdateManyWithoutActiveExtensionNestedInput
+  }
+
+  export type BookingExtensionUncheckedUpdateManyWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    extensionTrigger?: EnumExtensionTriggerFieldUpdateOperationsInput | $Enums.ExtensionTrigger
+    extensionStatus?: EnumExtensionStatusFieldUpdateOperationsInput | $Enums.ExtensionStatus
+    oldEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestedEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualNewEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    additionalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    newTotalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    resolutionType?: NullableEnumExtensionResolutionTypeFieldUpdateOperationsInput | $Enums.ExtensionResolutionType | null
+    vehicleSwapOccurred?: BoolFieldUpdateOperationsInput | boolean
+    swappedVehicleId?: NullableIntFieldUpdateOperationsInput | number | null
+    affectedBookingIds?: BookingExtensionUpdateaffectedBookingIdsInput | number[]
+    paymentTransactionId?: NullableIntFieldUpdateOperationsInput | number | null
+    vehicleSwapId?: NullableIntFieldUpdateOperationsInput | number | null
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorPublicId?: StringFieldUpdateOperationsInput | string
+    actorRole?: StringFieldUpdateOperationsInput | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -104864,6 +110780,12 @@ export namespace Prisma {
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
     couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -104958,6 +110880,11 @@ export namespace Prisma {
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -104976,6 +110903,8 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDiscountRuleInput = {
@@ -105027,6 +110956,12 @@ export namespace Prisma {
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -105041,6 +110976,7 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutDiscountRuleInput = {
@@ -105092,6 +111028,12 @@ export namespace Prisma {
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -105200,6 +111142,7 @@ export namespace Prisma {
     collectedBy?: UserUpdateOneWithoutCollectedPaymentsNestedInput
     confirmedBy?: UserUpdateOneWithoutConfirmedPaymentsNestedInput
     rejectedBy?: UserUpdateOneWithoutRejectedPaymentsNestedInput
+    extension?: BookingExtensionUpdateOneWithoutPaymentTransactionNestedInput
   }
 
   export type PaymentTransactionUncheckedUpdateWithoutCashShiftInput = {
@@ -105225,6 +111168,7 @@ export namespace Prisma {
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    extension?: BookingExtensionUncheckedUpdateOneWithoutPaymentTransactionNestedInput
   }
 
   export type PaymentTransactionUncheckedUpdateManyWithoutCashShiftInput = {
@@ -105250,6 +111194,269 @@ export namespace Prisma {
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BookingCreateManyActiveExtensionInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+  }
+
+  export type BookingUpdateWithoutActiveExtensionInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
+    customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
+    photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateWithoutActiveExtensionInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateManyWithoutActiveExtensionInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
 
@@ -105305,6 +111512,10 @@ export namespace Prisma {
      * @deprecated Use CashShiftCountOutputTypeDefaultArgs instead
      */
     export type CashShiftCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CashShiftCountOutputTypeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use BookingExtensionCountOutputTypeDefaultArgs instead
+     */
+    export type BookingExtensionCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = BookingExtensionCountOutputTypeDefaultArgs<ExtArgs>
     /**
      * @deprecated Use UserDefaultArgs instead
      */
@@ -105501,6 +111712,10 @@ export namespace Prisma {
      * @deprecated Use CashShiftDefaultArgs instead
      */
     export type CashShiftArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CashShiftDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use BookingExtensionDefaultArgs instead
+     */
+    export type BookingExtensionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = BookingExtensionDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

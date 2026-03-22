@@ -82,6 +82,7 @@ import {
 import { upload } from "../../middlewares/upload.middleware.js";
 import discountRouter from "./discount.routes.js";
 import paymentRouter from "./payment.routes.js";
+import extensionRouter from "./extension.routes.js";
 
 const router: Router = Router();
 
@@ -231,5 +232,8 @@ router.use("/discount", discountRouter);
 
 // Payment & Cash Management
 router.use("/payment", paymentRouter);
+
+// Rental Extensions
+router.use("/extensions", extensionRouter);
 
 export default router;

@@ -422,6 +422,12 @@ exports.Prisma.BookingScalarFieldEnum = {
   requiresManagerConfirmation: 'requiresManagerConfirmation',
   couponCode: 'couponCode',
   discountRuleId: 'discountRuleId',
+  originalEndAt: 'originalEndAt',
+  extensionCount: 'extensionCount',
+  lastExtendedAt: 'lastExtendedAt',
+  activeExtensionId: 'activeExtensionId',
+  displacedByExtensionId: 'displacedByExtensionId',
+  extensionDisplacedAt: 'extensionDisplacedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   deletedAt: 'deletedAt'
@@ -847,6 +853,33 @@ exports.Prisma.CashShiftScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.BookingExtensionScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  bookingId: 'bookingId',
+  branchId: 'branchId',
+  extensionTrigger: 'extensionTrigger',
+  extensionStatus: 'extensionStatus',
+  oldEndAt: 'oldEndAt',
+  requestedEndAt: 'requestedEndAt',
+  actualNewEndAt: 'actualNewEndAt',
+  additionalAmount: 'additionalAmount',
+  newTotalFinal: 'newTotalFinal',
+  resolutionType: 'resolutionType',
+  vehicleSwapOccurred: 'vehicleSwapOccurred',
+  swappedVehicleId: 'swappedVehicleId',
+  affectedBookingIds: 'affectedBookingIds',
+  paymentTransactionId: 'paymentTransactionId',
+  vehicleSwapId: 'vehicleSwapId',
+  actorId: 'actorId',
+  actorPublicId: 'actorPublicId',
+  actorRole: 'actorRole',
+  rejectionReason: 'rejectionReason',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -922,7 +955,8 @@ exports.StaffActionType = exports.$Enums.StaffActionType = {
   COLLECTED: 'COLLECTED',
   RECONCILED: 'RECONCILED',
   SETTLED: 'SETTLED',
-  DISBURSED: 'DISBURSED'
+  DISBURSED: 'DISBURSED',
+  EXTENDED: 'EXTENDED'
 };
 
 exports.StaffEntityType = exports.$Enums.StaffEntityType = {
@@ -942,7 +976,8 @@ exports.StaffEntityType = exports.$Enums.StaffEntityType = {
   MANUAL_DISCOUNT: 'MANUAL_DISCOUNT',
   PAYMENT_TRANSACTION: 'PAYMENT_TRANSACTION',
   CASH_SHIFT: 'CASH_SHIFT',
-  REFUND_REQUEST: 'REFUND_REQUEST'
+  REFUND_REQUEST: 'REFUND_REQUEST',
+  BOOKING_EXTENSION: 'BOOKING_EXTENSION'
 };
 
 exports.VehicleStatus = exports.$Enums.VehicleStatus = {
@@ -1117,6 +1152,29 @@ exports.CashShiftStatus = exports.$Enums.CashShiftStatus = {
   DISCREPANCY_FLAGGED: 'DISCREPANCY_FLAGGED'
 };
 
+exports.ExtensionTrigger = exports.$Enums.ExtensionTrigger = {
+  CUSTOMER_BEFORE_PICKUP: 'CUSTOMER_BEFORE_PICKUP',
+  CUSTOMER_AFTER_PICKUP: 'CUSTOMER_AFTER_PICKUP',
+  EMPLOYEE_AT_PICKUP: 'EMPLOYEE_AT_PICKUP',
+  EMPLOYEE_DURING_RENTAL: 'EMPLOYEE_DURING_RENTAL'
+};
+
+exports.ExtensionStatus = exports.$Enums.ExtensionStatus = {
+  PENDING_PAYMENT: 'PENDING_PAYMENT',
+  PAYMENT_COLLECTED: 'PAYMENT_COLLECTED',
+  CONFIRMED: 'CONFIRMED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED'
+};
+
+exports.ExtensionResolutionType = exports.$Enums.ExtensionResolutionType = {
+  SAME_VEHICLE: 'SAME_VEHICLE',
+  SWAP_CURRENT_TO_OTHER: 'SWAP_CURRENT_TO_OTHER',
+  SWAP_FUTURE_BOOKING: 'SWAP_FUTURE_BOOKING',
+  PARTIAL_EXTENSION: 'PARTIAL_EXTENSION',
+  NO_RESOLUTION: 'NO_RESOLUTION'
+};
+
 exports.Prisma.ModelName = {
   User: 'User',
   UserProvider: 'UserProvider',
@@ -1166,7 +1224,8 @@ exports.Prisma.ModelName = {
   BranchPaymentConfig: 'BranchPaymentConfig',
   PaymentTransaction: 'PaymentTransaction',
   RefundRequest: 'RefundRequest',
-  CashShift: 'CashShift'
+  CashShift: 'CashShift',
+  BookingExtension: 'BookingExtension'
 };
 
 /**
