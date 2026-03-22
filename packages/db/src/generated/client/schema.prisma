@@ -133,17 +133,20 @@ model User {
   branchId        Int?
   branch          Branch?      @relation(fields: [branchId], references: [id], onDelete: Restrict)
 
-  emailOtps             EmailVerificationOtp[]
-  providers             UserProvider[]
-  customerProfile       Customer?
-  actorAuditLogs        AuditLog[]             @relation("ActorAuditLogs")
-  approverAuditLogs     AuditLog[]             @relation("ApproverAuditLogs")
-  bookingsCreated       Booking[]              @relation("BookingCreator")
-  approvedDamageReports DamageReport[]
-  vehicleSwaps          VehicleSwap[]
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-  deletedAt             DateTime?
+  emailOtps               EmailVerificationOtp[]
+  providers               UserProvider[]
+  customerProfile         Customer?
+  actorAuditLogs          AuditLog[]             @relation("ActorAuditLogs")
+  approverAuditLogs       AuditLog[]             @relation("ApproverAuditLogs")
+  bookingsCreated         Booking[]              @relation("BookingCreator")
+  approvedDamageReports   DamageReport[]
+  vehicleSwaps            VehicleSwap[]
+  discountRulesCreated    DiscountRule[]         @relation("DiscountRuleCreator")
+  manualDiscountsIssued   ManualDiscount[]       @relation("ManualDiscountIssuer")
+  manualDiscountsApproved ManualDiscount[]       @relation("ManualDiscountApprover")
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  deletedAt               DateTime?
 
   @@index([branchId])
   @@index([role])
@@ -259,6 +262,8 @@ model Branch {
   captureConfigs          VehiclePhotoCaptureConfig[]
   auditLogs               AuditLog[]
   staffActivityLogs       StaffActivityLog[]
+  durationDiscountSlabs   DurationDiscountSlab[]
+  discountConfig          BranchDiscountConfig?
   createdAt               DateTime                    @default(now())
   deletedAt               DateTime?
 }
@@ -277,6 +282,10 @@ enum StaffActionType {
   ASSESSED
   INITIATED
   COMPLETED
+  APPLIED
+  OVERRIDDEN
+  RECALCULATED
+  FLAGGED
 }
 
 enum StaffEntityType {
@@ -291,6 +300,9 @@ enum StaffEntityType {
   EMPLOYEE
   PRICING
   CAPTURE_CONFIG
+  DISCOUNT_RULE
+  DISCOUNT_APPLICATION
+  MANUAL_DISCOUNT
 }
 
 model StaffActivityLog {
@@ -626,6 +638,13 @@ model Booking {
   // Manager Confirmation Flag
   requiresManagerConfirmation Boolean @default(false)
 
+  // Discount Tracking
+  couponCode          String?
+  discountRuleId      Int?
+  discountRule        DiscountRule?        @relation(fields: [discountRuleId], references: [id])
+  discountApplication DiscountApplication?
+  manualDiscount      ManualDiscount?
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -641,6 +660,8 @@ model Booking {
   // Performance index
   @@index([status, startAt, endAt])
   @@index([rentalPeriodType])
+  @@index([discountRuleId])
+  @@index([couponCode])
 }
 
 model BookingItem {
@@ -798,6 +819,7 @@ enum AuditCategory {
   BRANCH
   AUTH
   SYSTEM
+  DISCOUNT
 }
 
 enum AuditSeverity {
@@ -1011,4 +1033,243 @@ model VehicleSwap {
   @@index([swappedById])
   @@index([swappedAt])
   @@index([reason])
+}
+
+// ─── DISCOUNT SYSTEM ────────────────────────────────────────────────────────
+
+enum DiscountScope {
+  GLOBAL
+  BRANCH
+  USER
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FLAT
+}
+
+enum AdjustmentType {
+  NONE
+  PENDING_REFUND
+  REFUNDED
+  WALLET_CREDITED
+  CASH_HANDLED
+}
+
+enum ManualDiscountStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
+// Coupon / promo rule definitions. Each row is one discount rule that can be
+// referenced by a coupon code or applied automatically via scope logic.
+model DiscountRule {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique
+
+  code        String  @unique
+  name        String
+  description String?
+
+  // Type & value
+  discountType   DiscountType
+  value          Decimal      @db.Decimal(10, 4)
+  maxDiscountCap Decimal?     @db.Decimal(10, 2)
+
+  // Scope — GLOBAL applies everywhere; BRANCH restricts to applicableBranchIds;
+  // USER restricts to targetCustomerIds.
+  scope               DiscountScope @default(GLOBAL)
+  applicableBranchIds Int[]
+  targetCustomerIds   Int[]
+
+  // Customer eligibility
+  newCustomersOnly Boolean @default(false)
+  minBookingCount  Int?
+  maxBookingCount  Int?
+
+  // Booking constraints
+  minBookingAmount             Decimal? @db.Decimal(10, 2)
+  maxBookingAmount             Decimal? @db.Decimal(10, 2)
+  applicableVehicleCategoryIds Int[]
+  minRentalDays                Int?
+  maxRentalDays                Int?
+
+  // Payment plan constraints — e.g. ["FULL"], ["ADVANCE"], ["FULL","ADVANCE"]
+  applicablePaymentPlans  String[]
+  allowPartialPayment     Boolean  @default(true)
+  minAdvanceAfterDiscount Decimal? @db.Decimal(10, 2)
+  allowPostBooking        Boolean  @default(false)
+  allowPostInvoice        Boolean  @default(false)
+
+  // Usage limits
+  totalUsageLimit Int?
+  perUserLimit    Int?
+  perBranchLimit  Int?
+  perDayLimit     Int?
+
+  // Stacking & priority
+  stackable Boolean @default(false)
+  priority  Int     @default(0)
+
+  // Validity window
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean  @default(true)
+
+  // Audit
+  createdById Int
+  createdBy   User @relation("DiscountRuleCreator", fields: [createdById], references: [id])
+
+  // Relations
+  usageLogs    CouponUsageLog[]
+  bookings     Booking[]
+  applications DiscountApplication[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([code])
+  @@index([isActive, startDate, endDate])
+  @@index([scope])
+  @@index([createdById])
+}
+
+// Per-branch rental-duration-based discount slabs. Replaces PricingDiscountSlab
+// with an explicit discountType + value instead of a multiplier.
+model DurationDiscountSlab {
+  id           Int          @id @default(autoincrement())
+  branchId     Int
+  minDays      Int
+  maxDays      Int? // null = open-ended upper bound
+  discountType DiscountType
+  value        Decimal      @db.Decimal(10, 4)
+  label        String? // e.g. "Weekly", "Bi-weekly"
+
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([branchId, minDays])
+}
+
+// Branch-level discount system configuration. One row per branch (upserted).
+model BranchDiscountConfig {
+  id                                  Int      @id @default(autoincrement())
+  branchId                            Int      @unique
+  durationDiscountEnabled             Boolean  @default(false)
+  stackWithCoupon                     Boolean  @default(false)
+  maxCombinedDiscountPercent          Decimal? @db.Decimal(5, 2)
+  // If manual discount amount >= managerApprovalThreshold, requiresApproval = true
+  managerApprovalThreshold            Decimal  @default(500) @db.Decimal(10, 2)
+  maxManualDiscountsPerEmployeePerDay Int      @default(5)
+
+  // ── Manager coupon creation guardrails (set by ADMIN only) ─────────────────
+  // Master switch — admin enables per branch; defaults to OFF
+  managerCouponCreationEnabled    Boolean @default(false)
+  // Maximum discount % a manager coupon can offer (enforced server-side)
+  maxManagerCouponDiscountPercent Decimal @default(15) @db.Decimal(5, 2)
+  // Maximum flat discount ₹ a manager coupon can offer
+  maxManagerCouponFlatAmount      Decimal @default(500) @db.Decimal(10, 2)
+  // Maximum validity window in days from creation date
+  maxManagerCouponValidityDays    Int     @default(7)
+  // Maximum total uses allowed per manager-generated coupon
+  maxManagerCouponUsageLimit      Int     @default(5)
+  // How many coupons one manager can create per day
+  maxManagerCouponsPerDay         Int     @default(3)
+
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Immutable record of every discount applied to a booking. Created once, never
+// updated or deleted.
+model DiscountApplication {
+  id        Int    @id @default(autoincrement())
+  publicId  String @unique
+  bookingId Int    @unique
+
+  // Base amount before any discount
+  originalAmount Decimal @db.Decimal(10, 2)
+
+  // Layer 1 — duration-based discount
+  durationDiscountAmount  Decimal @default(0) @db.Decimal(10, 2)
+  durationDiscountPercent Decimal @default(0) @db.Decimal(10, 4)
+  durationSlabId          Int?
+
+  // Layer 2 — coupon discount
+  couponDiscountAmount  Decimal @default(0) @db.Decimal(10, 2)
+  couponDiscountPercent Decimal @default(0) @db.Decimal(10, 4)
+  discountRuleId        Int?
+
+  // Layer 3 — manual override
+  manualDiscountAmount Decimal @default(0) @db.Decimal(10, 2)
+  manualDiscountId     Int?    @unique
+
+  // Totals
+  totalDiscountAmount Decimal @db.Decimal(10, 2)
+  finalAmount         Decimal @db.Decimal(10, 2)
+
+  // Context
+  paymentPlan    String // "FULL" | "ADVANCE"
+  adjustmentType AdjustmentType @default(NONE)
+
+  // Relations
+  booking        Booking         @relation(fields: [bookingId], references: [id])
+  discountRule   DiscountRule?   @relation(fields: [discountRuleId], references: [id])
+  manualDiscount ManualDiscount? @relation(fields: [manualDiscountId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([bookingId])
+  @@index([discountRuleId])
+}
+
+// Append-only log — one row per coupon redemption. Used for usage-limit checks.
+model CouponUsageLog {
+  id               Int      @id @default(autoincrement())
+  discountRuleId   Int
+  bookingId        Int
+  customerId       Int
+  branchId         Int
+  discountedAmount Decimal  @db.Decimal(10, 2)
+  appliedAt        DateTime @default(now())
+
+  discountRule DiscountRule @relation(fields: [discountRuleId], references: [id])
+
+  @@index([discountRuleId, customerId])
+  @@index([discountRuleId, branchId, appliedAt])
+  @@index([customerId, appliedAt])
+}
+
+// Manager-issued manual discount override for a booking.
+model ManualDiscount {
+  id        Int     @id @default(autoincrement())
+  publicId  String  @unique
+  bookingId Int     @unique
+  amount    Decimal @db.Decimal(10, 2)
+  reason    String
+
+  issuedById   Int
+  approvedById Int?
+
+  status           ManualDiscountStatus @default(PENDING_APPROVAL)
+  requiresApproval Boolean              @default(false)
+
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  rejectionReason String?
+
+  issuedBy    User                 @relation("ManualDiscountIssuer", fields: [issuedById], references: [id])
+  approvedBy  User?                @relation("ManualDiscountApprover", fields: [approvedById], references: [id])
+  booking     Booking              @relation(fields: [bookingId], references: [id])
+  application DiscountApplication?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([issuedById, createdAt])
+  @@index([bookingId])
+  @@index([status])
 }

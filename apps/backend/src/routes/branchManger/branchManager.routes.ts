@@ -80,6 +80,7 @@ import {
   DeleteCaptureConfig,
 } from "../../controller/branchManager/captureConfig.controller.js";
 import { upload } from "../../middlewares/upload.middleware.js";
+import discountRouter from "./discount.routes.js";
 
 const router: Router = Router();
 
@@ -223,5 +224,8 @@ router.get("/capture-configs", ManagerCheck, GetCaptureConfigs);
 router.post("/capture-configs", ManagerCheck, CreateCaptureConfig);
 router.put("/capture-configs/:publicId", ManagerCheck, UpdateCaptureConfig);
 router.delete("/capture-configs/:publicId", ManagerCheck, DeleteCaptureConfig);
+
+// Discount System
+router.use("/discount", discountRouter);
 
 export default router;

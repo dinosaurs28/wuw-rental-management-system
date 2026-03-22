@@ -208,6 +208,36 @@ export type VehicleFeatureFlag = $Result.DefaultSelection<Prisma.$VehicleFeature
  * 
  */
 export type VehicleSwap = $Result.DefaultSelection<Prisma.$VehicleSwapPayload>
+/**
+ * Model DiscountRule
+ * 
+ */
+export type DiscountRule = $Result.DefaultSelection<Prisma.$DiscountRulePayload>
+/**
+ * Model DurationDiscountSlab
+ * 
+ */
+export type DurationDiscountSlab = $Result.DefaultSelection<Prisma.$DurationDiscountSlabPayload>
+/**
+ * Model BranchDiscountConfig
+ * 
+ */
+export type BranchDiscountConfig = $Result.DefaultSelection<Prisma.$BranchDiscountConfigPayload>
+/**
+ * Model DiscountApplication
+ * 
+ */
+export type DiscountApplication = $Result.DefaultSelection<Prisma.$DiscountApplicationPayload>
+/**
+ * Model CouponUsageLog
+ * 
+ */
+export type CouponUsageLog = $Result.DefaultSelection<Prisma.$CouponUsageLogPayload>
+/**
+ * Model ManualDiscount
+ * 
+ */
+export type ManualDiscount = $Result.DefaultSelection<Prisma.$ManualDiscountPayload>
 
 /**
  * Enums
@@ -263,7 +293,11 @@ export const StaffActionType: {
   REFUNDED: 'REFUNDED',
   ASSESSED: 'ASSESSED',
   INITIATED: 'INITIATED',
-  COMPLETED: 'COMPLETED'
+  COMPLETED: 'COMPLETED',
+  APPLIED: 'APPLIED',
+  OVERRIDDEN: 'OVERRIDDEN',
+  RECALCULATED: 'RECALCULATED',
+  FLAGGED: 'FLAGGED'
 };
 
 export type StaffActionType = (typeof StaffActionType)[keyof typeof StaffActionType]
@@ -280,7 +314,10 @@ export const StaffEntityType: {
   DEPOSIT: 'DEPOSIT',
   EMPLOYEE: 'EMPLOYEE',
   PRICING: 'PRICING',
-  CAPTURE_CONFIG: 'CAPTURE_CONFIG'
+  CAPTURE_CONFIG: 'CAPTURE_CONFIG',
+  DISCOUNT_RULE: 'DISCOUNT_RULE',
+  DISCOUNT_APPLICATION: 'DISCOUNT_APPLICATION',
+  MANUAL_DISCOUNT: 'MANUAL_DISCOUNT'
 };
 
 export type StaffEntityType = (typeof StaffEntityType)[keyof typeof StaffEntityType]
@@ -402,7 +439,8 @@ export const AuditCategory: {
   EMPLOYEE: 'EMPLOYEE',
   BRANCH: 'BRANCH',
   AUTH: 'AUTH',
-  SYSTEM: 'SYSTEM'
+  SYSTEM: 'SYSTEM',
+  DISCOUNT: 'DISCOUNT'
 };
 
 export type AuditCategory = (typeof AuditCategory)[keyof typeof AuditCategory]
@@ -436,6 +474,43 @@ export const SwapReason: {
 };
 
 export type SwapReason = (typeof SwapReason)[keyof typeof SwapReason]
+
+
+export const DiscountType: {
+  PERCENTAGE: 'PERCENTAGE',
+  FLAT: 'FLAT'
+};
+
+export type DiscountType = (typeof DiscountType)[keyof typeof DiscountType]
+
+
+export const DiscountScope: {
+  GLOBAL: 'GLOBAL',
+  BRANCH: 'BRANCH',
+  USER: 'USER'
+};
+
+export type DiscountScope = (typeof DiscountScope)[keyof typeof DiscountScope]
+
+
+export const AdjustmentType: {
+  NONE: 'NONE',
+  PENDING_REFUND: 'PENDING_REFUND',
+  REFUNDED: 'REFUNDED',
+  WALLET_CREDITED: 'WALLET_CREDITED',
+  CASH_HANDLED: 'CASH_HANDLED'
+};
+
+export type AdjustmentType = (typeof AdjustmentType)[keyof typeof AdjustmentType]
+
+
+export const ManualDiscountStatus: {
+  PENDING_APPROVAL: 'PENDING_APPROVAL',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED'
+};
+
+export type ManualDiscountStatus = (typeof ManualDiscountStatus)[keyof typeof ManualDiscountStatus]
 
 }
 
@@ -522,6 +597,22 @@ export const FeatureFlagScope: typeof $Enums.FeatureFlagScope
 export type SwapReason = $Enums.SwapReason
 
 export const SwapReason: typeof $Enums.SwapReason
+
+export type DiscountType = $Enums.DiscountType
+
+export const DiscountType: typeof $Enums.DiscountType
+
+export type DiscountScope = $Enums.DiscountScope
+
+export const DiscountScope: typeof $Enums.DiscountScope
+
+export type AdjustmentType = $Enums.AdjustmentType
+
+export const AdjustmentType: typeof $Enums.AdjustmentType
+
+export type ManualDiscountStatus = $Enums.ManualDiscountStatus
+
+export const ManualDiscountStatus: typeof $Enums.ManualDiscountStatus
 
 /**
  * ##  Prisma Client ʲˢ
@@ -1035,6 +1126,66 @@ export class PrismaClient<
     * ```
     */
   get vehicleSwap(): Prisma.VehicleSwapDelegate<ExtArgs>;
+
+  /**
+   * `prisma.discountRule`: Exposes CRUD operations for the **DiscountRule** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more DiscountRules
+    * const discountRules = await prisma.discountRule.findMany()
+    * ```
+    */
+  get discountRule(): Prisma.DiscountRuleDelegate<ExtArgs>;
+
+  /**
+   * `prisma.durationDiscountSlab`: Exposes CRUD operations for the **DurationDiscountSlab** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more DurationDiscountSlabs
+    * const durationDiscountSlabs = await prisma.durationDiscountSlab.findMany()
+    * ```
+    */
+  get durationDiscountSlab(): Prisma.DurationDiscountSlabDelegate<ExtArgs>;
+
+  /**
+   * `prisma.branchDiscountConfig`: Exposes CRUD operations for the **BranchDiscountConfig** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more BranchDiscountConfigs
+    * const branchDiscountConfigs = await prisma.branchDiscountConfig.findMany()
+    * ```
+    */
+  get branchDiscountConfig(): Prisma.BranchDiscountConfigDelegate<ExtArgs>;
+
+  /**
+   * `prisma.discountApplication`: Exposes CRUD operations for the **DiscountApplication** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more DiscountApplications
+    * const discountApplications = await prisma.discountApplication.findMany()
+    * ```
+    */
+  get discountApplication(): Prisma.DiscountApplicationDelegate<ExtArgs>;
+
+  /**
+   * `prisma.couponUsageLog`: Exposes CRUD operations for the **CouponUsageLog** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more CouponUsageLogs
+    * const couponUsageLogs = await prisma.couponUsageLog.findMany()
+    * ```
+    */
+  get couponUsageLog(): Prisma.CouponUsageLogDelegate<ExtArgs>;
+
+  /**
+   * `prisma.manualDiscount`: Exposes CRUD operations for the **ManualDiscount** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ManualDiscounts
+    * const manualDiscounts = await prisma.manualDiscount.findMany()
+    * ```
+    */
+  get manualDiscount(): Prisma.ManualDiscountDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -1514,7 +1665,13 @@ export namespace Prisma {
     FeatureFlag: 'FeatureFlag',
     BranchFeatureFlag: 'BranchFeatureFlag',
     VehicleFeatureFlag: 'VehicleFeatureFlag',
-    VehicleSwap: 'VehicleSwap'
+    VehicleSwap: 'VehicleSwap',
+    DiscountRule: 'DiscountRule',
+    DurationDiscountSlab: 'DurationDiscountSlab',
+    BranchDiscountConfig: 'BranchDiscountConfig',
+    DiscountApplication: 'DiscountApplication',
+    CouponUsageLog: 'CouponUsageLog',
+    ManualDiscount: 'ManualDiscount'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1530,7 +1687,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehiclePhotoCaptureConfig" | "vehicle" | "vehiclePricingOverride" | "vehicleCustomPricing" | "branchPricingDefaults" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "gSTRule" | "timezoneSetting" | "cancellationInvoice" | "featureFlag" | "branchFeatureFlag" | "vehicleFeatureFlag" | "vehicleSwap"
+      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehiclePhotoCaptureConfig" | "vehicle" | "vehiclePricingOverride" | "vehicleCustomPricing" | "branchPricingDefaults" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "gSTRule" | "timezoneSetting" | "cancellationInvoice" | "featureFlag" | "branchFeatureFlag" | "vehicleFeatureFlag" | "vehicleSwap" | "discountRule" | "durationDiscountSlab" | "branchDiscountConfig" | "discountApplication" | "couponUsageLog" | "manualDiscount"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -4264,6 +4421,426 @@ export namespace Prisma {
           }
         }
       }
+      DiscountRule: {
+        payload: Prisma.$DiscountRulePayload<ExtArgs>
+        fields: Prisma.DiscountRuleFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.DiscountRuleFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiscountRulePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.DiscountRuleFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiscountRulePayload>
+          }
+          findFirst: {
+            args: Prisma.DiscountRuleFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiscountRulePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.DiscountRuleFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiscountRulePayload>
+          }
+          findMany: {
+            args: Prisma.DiscountRuleFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiscountRulePayload>[]
+          }
+          create: {
+            args: Prisma.DiscountRuleCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiscountRulePayload>
+          }
+          createMany: {
+            args: Prisma.DiscountRuleCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.DiscountRuleCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiscountRulePayload>[]
+          }
+          delete: {
+            args: Prisma.DiscountRuleDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiscountRulePayload>
+          }
+          update: {
+            args: Prisma.DiscountRuleUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiscountRulePayload>
+          }
+          deleteMany: {
+            args: Prisma.DiscountRuleDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.DiscountRuleUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.DiscountRuleUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiscountRulePayload>
+          }
+          aggregate: {
+            args: Prisma.DiscountRuleAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateDiscountRule>
+          }
+          groupBy: {
+            args: Prisma.DiscountRuleGroupByArgs<ExtArgs>
+            result: $Utils.Optional<DiscountRuleGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.DiscountRuleCountArgs<ExtArgs>
+            result: $Utils.Optional<DiscountRuleCountAggregateOutputType> | number
+          }
+        }
+      }
+      DurationDiscountSlab: {
+        payload: Prisma.$DurationDiscountSlabPayload<ExtArgs>
+        fields: Prisma.DurationDiscountSlabFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.DurationDiscountSlabFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DurationDiscountSlabPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.DurationDiscountSlabFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DurationDiscountSlabPayload>
+          }
+          findFirst: {
+            args: Prisma.DurationDiscountSlabFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DurationDiscountSlabPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.DurationDiscountSlabFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DurationDiscountSlabPayload>
+          }
+          findMany: {
+            args: Prisma.DurationDiscountSlabFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DurationDiscountSlabPayload>[]
+          }
+          create: {
+            args: Prisma.DurationDiscountSlabCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DurationDiscountSlabPayload>
+          }
+          createMany: {
+            args: Prisma.DurationDiscountSlabCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.DurationDiscountSlabCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DurationDiscountSlabPayload>[]
+          }
+          delete: {
+            args: Prisma.DurationDiscountSlabDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DurationDiscountSlabPayload>
+          }
+          update: {
+            args: Prisma.DurationDiscountSlabUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DurationDiscountSlabPayload>
+          }
+          deleteMany: {
+            args: Prisma.DurationDiscountSlabDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.DurationDiscountSlabUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.DurationDiscountSlabUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DurationDiscountSlabPayload>
+          }
+          aggregate: {
+            args: Prisma.DurationDiscountSlabAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateDurationDiscountSlab>
+          }
+          groupBy: {
+            args: Prisma.DurationDiscountSlabGroupByArgs<ExtArgs>
+            result: $Utils.Optional<DurationDiscountSlabGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.DurationDiscountSlabCountArgs<ExtArgs>
+            result: $Utils.Optional<DurationDiscountSlabCountAggregateOutputType> | number
+          }
+        }
+      }
+      BranchDiscountConfig: {
+        payload: Prisma.$BranchDiscountConfigPayload<ExtArgs>
+        fields: Prisma.BranchDiscountConfigFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.BranchDiscountConfigFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchDiscountConfigPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.BranchDiscountConfigFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchDiscountConfigPayload>
+          }
+          findFirst: {
+            args: Prisma.BranchDiscountConfigFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchDiscountConfigPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.BranchDiscountConfigFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchDiscountConfigPayload>
+          }
+          findMany: {
+            args: Prisma.BranchDiscountConfigFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchDiscountConfigPayload>[]
+          }
+          create: {
+            args: Prisma.BranchDiscountConfigCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchDiscountConfigPayload>
+          }
+          createMany: {
+            args: Prisma.BranchDiscountConfigCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.BranchDiscountConfigCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchDiscountConfigPayload>[]
+          }
+          delete: {
+            args: Prisma.BranchDiscountConfigDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchDiscountConfigPayload>
+          }
+          update: {
+            args: Prisma.BranchDiscountConfigUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchDiscountConfigPayload>
+          }
+          deleteMany: {
+            args: Prisma.BranchDiscountConfigDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.BranchDiscountConfigUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.BranchDiscountConfigUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchDiscountConfigPayload>
+          }
+          aggregate: {
+            args: Prisma.BranchDiscountConfigAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateBranchDiscountConfig>
+          }
+          groupBy: {
+            args: Prisma.BranchDiscountConfigGroupByArgs<ExtArgs>
+            result: $Utils.Optional<BranchDiscountConfigGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.BranchDiscountConfigCountArgs<ExtArgs>
+            result: $Utils.Optional<BranchDiscountConfigCountAggregateOutputType> | number
+          }
+        }
+      }
+      DiscountApplication: {
+        payload: Prisma.$DiscountApplicationPayload<ExtArgs>
+        fields: Prisma.DiscountApplicationFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.DiscountApplicationFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiscountApplicationPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.DiscountApplicationFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiscountApplicationPayload>
+          }
+          findFirst: {
+            args: Prisma.DiscountApplicationFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiscountApplicationPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.DiscountApplicationFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiscountApplicationPayload>
+          }
+          findMany: {
+            args: Prisma.DiscountApplicationFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiscountApplicationPayload>[]
+          }
+          create: {
+            args: Prisma.DiscountApplicationCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiscountApplicationPayload>
+          }
+          createMany: {
+            args: Prisma.DiscountApplicationCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.DiscountApplicationCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiscountApplicationPayload>[]
+          }
+          delete: {
+            args: Prisma.DiscountApplicationDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiscountApplicationPayload>
+          }
+          update: {
+            args: Prisma.DiscountApplicationUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiscountApplicationPayload>
+          }
+          deleteMany: {
+            args: Prisma.DiscountApplicationDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.DiscountApplicationUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.DiscountApplicationUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiscountApplicationPayload>
+          }
+          aggregate: {
+            args: Prisma.DiscountApplicationAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateDiscountApplication>
+          }
+          groupBy: {
+            args: Prisma.DiscountApplicationGroupByArgs<ExtArgs>
+            result: $Utils.Optional<DiscountApplicationGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.DiscountApplicationCountArgs<ExtArgs>
+            result: $Utils.Optional<DiscountApplicationCountAggregateOutputType> | number
+          }
+        }
+      }
+      CouponUsageLog: {
+        payload: Prisma.$CouponUsageLogPayload<ExtArgs>
+        fields: Prisma.CouponUsageLogFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.CouponUsageLogFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CouponUsageLogPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.CouponUsageLogFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CouponUsageLogPayload>
+          }
+          findFirst: {
+            args: Prisma.CouponUsageLogFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CouponUsageLogPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.CouponUsageLogFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CouponUsageLogPayload>
+          }
+          findMany: {
+            args: Prisma.CouponUsageLogFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CouponUsageLogPayload>[]
+          }
+          create: {
+            args: Prisma.CouponUsageLogCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CouponUsageLogPayload>
+          }
+          createMany: {
+            args: Prisma.CouponUsageLogCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.CouponUsageLogCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CouponUsageLogPayload>[]
+          }
+          delete: {
+            args: Prisma.CouponUsageLogDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CouponUsageLogPayload>
+          }
+          update: {
+            args: Prisma.CouponUsageLogUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CouponUsageLogPayload>
+          }
+          deleteMany: {
+            args: Prisma.CouponUsageLogDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.CouponUsageLogUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.CouponUsageLogUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CouponUsageLogPayload>
+          }
+          aggregate: {
+            args: Prisma.CouponUsageLogAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateCouponUsageLog>
+          }
+          groupBy: {
+            args: Prisma.CouponUsageLogGroupByArgs<ExtArgs>
+            result: $Utils.Optional<CouponUsageLogGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.CouponUsageLogCountArgs<ExtArgs>
+            result: $Utils.Optional<CouponUsageLogCountAggregateOutputType> | number
+          }
+        }
+      }
+      ManualDiscount: {
+        payload: Prisma.$ManualDiscountPayload<ExtArgs>
+        fields: Prisma.ManualDiscountFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ManualDiscountFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ManualDiscountPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ManualDiscountFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ManualDiscountPayload>
+          }
+          findFirst: {
+            args: Prisma.ManualDiscountFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ManualDiscountPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ManualDiscountFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ManualDiscountPayload>
+          }
+          findMany: {
+            args: Prisma.ManualDiscountFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ManualDiscountPayload>[]
+          }
+          create: {
+            args: Prisma.ManualDiscountCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ManualDiscountPayload>
+          }
+          createMany: {
+            args: Prisma.ManualDiscountCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ManualDiscountCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ManualDiscountPayload>[]
+          }
+          delete: {
+            args: Prisma.ManualDiscountDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ManualDiscountPayload>
+          }
+          update: {
+            args: Prisma.ManualDiscountUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ManualDiscountPayload>
+          }
+          deleteMany: {
+            args: Prisma.ManualDiscountDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ManualDiscountUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ManualDiscountUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ManualDiscountPayload>
+          }
+          aggregate: {
+            args: Prisma.ManualDiscountAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateManualDiscount>
+          }
+          groupBy: {
+            args: Prisma.ManualDiscountGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ManualDiscountGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ManualDiscountCountArgs<ExtArgs>
+            result: $Utils.Optional<ManualDiscountCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -4432,6 +5009,9 @@ export namespace Prisma {
     bookingsCreated: number
     approvedDamageReports: number
     vehicleSwaps: number
+    discountRulesCreated: number
+    manualDiscountsIssued: number
+    manualDiscountsApproved: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -4442,6 +5022,9 @@ export namespace Prisma {
     bookingsCreated?: boolean | UserCountOutputTypeCountBookingsCreatedArgs
     approvedDamageReports?: boolean | UserCountOutputTypeCountApprovedDamageReportsArgs
     vehicleSwaps?: boolean | UserCountOutputTypeCountVehicleSwapsArgs
+    discountRulesCreated?: boolean | UserCountOutputTypeCountDiscountRulesCreatedArgs
+    manualDiscountsIssued?: boolean | UserCountOutputTypeCountManualDiscountsIssuedArgs
+    manualDiscountsApproved?: boolean | UserCountOutputTypeCountManualDiscountsApprovedArgs
   }
 
   // Custom InputTypes
@@ -4502,6 +5085,27 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountVehicleSwapsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: VehicleSwapWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountDiscountRulesCreatedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DiscountRuleWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountManualDiscountsIssuedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ManualDiscountWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountManualDiscountsApprovedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ManualDiscountWhereInput
   }
 
 
@@ -4645,6 +5249,7 @@ export namespace Prisma {
     captureConfigs: number
     auditLogs: number
     staffActivityLogs: number
+    durationDiscountSlabs: number
   }
 
   export type BranchCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -4658,6 +5263,7 @@ export namespace Prisma {
     captureConfigs?: boolean | BranchCountOutputTypeCountCaptureConfigsArgs
     auditLogs?: boolean | BranchCountOutputTypeCountAuditLogsArgs
     staffActivityLogs?: boolean | BranchCountOutputTypeCountStaffActivityLogsArgs
+    durationDiscountSlabs?: boolean | BranchCountOutputTypeCountDurationDiscountSlabsArgs
   }
 
   // Custom InputTypes
@@ -4739,6 +5345,13 @@ export namespace Prisma {
    */
   export type BranchCountOutputTypeCountStaffActivityLogsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: StaffActivityLogWhereInput
+  }
+
+  /**
+   * BranchCountOutputType without action
+   */
+  export type BranchCountOutputTypeCountDurationDiscountSlabsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DurationDiscountSlabWhereInput
   }
 
 
@@ -5082,6 +5695,55 @@ export namespace Prisma {
 
 
   /**
+   * Count Type DiscountRuleCountOutputType
+   */
+
+  export type DiscountRuleCountOutputType = {
+    usageLogs: number
+    bookings: number
+    applications: number
+  }
+
+  export type DiscountRuleCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    usageLogs?: boolean | DiscountRuleCountOutputTypeCountUsageLogsArgs
+    bookings?: boolean | DiscountRuleCountOutputTypeCountBookingsArgs
+    applications?: boolean | DiscountRuleCountOutputTypeCountApplicationsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * DiscountRuleCountOutputType without action
+   */
+  export type DiscountRuleCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountRuleCountOutputType
+     */
+    select?: DiscountRuleCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * DiscountRuleCountOutputType without action
+   */
+  export type DiscountRuleCountOutputTypeCountUsageLogsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CouponUsageLogWhereInput
+  }
+
+  /**
+   * DiscountRuleCountOutputType without action
+   */
+  export type DiscountRuleCountOutputTypeCountBookingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BookingWhereInput
+  }
+
+  /**
+   * DiscountRuleCountOutputType without action
+   */
+  export type DiscountRuleCountOutputTypeCountApplicationsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DiscountApplicationWhereInput
+  }
+
+
+  /**
    * Models
    */
 
@@ -5360,6 +6022,9 @@ export namespace Prisma {
     bookingsCreated?: boolean | User$bookingsCreatedArgs<ExtArgs>
     approvedDamageReports?: boolean | User$approvedDamageReportsArgs<ExtArgs>
     vehicleSwaps?: boolean | User$vehicleSwapsArgs<ExtArgs>
+    discountRulesCreated?: boolean | User$discountRulesCreatedArgs<ExtArgs>
+    manualDiscountsIssued?: boolean | User$manualDiscountsIssuedArgs<ExtArgs>
+    manualDiscountsApproved?: boolean | User$manualDiscountsApprovedArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -5406,6 +6071,9 @@ export namespace Prisma {
     bookingsCreated?: boolean | User$bookingsCreatedArgs<ExtArgs>
     approvedDamageReports?: boolean | User$approvedDamageReportsArgs<ExtArgs>
     vehicleSwaps?: boolean | User$vehicleSwapsArgs<ExtArgs>
+    discountRulesCreated?: boolean | User$discountRulesCreatedArgs<ExtArgs>
+    manualDiscountsIssued?: boolean | User$manualDiscountsIssuedArgs<ExtArgs>
+    manualDiscountsApproved?: boolean | User$manualDiscountsApprovedArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type UserIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -5424,6 +6092,9 @@ export namespace Prisma {
       bookingsCreated: Prisma.$BookingPayload<ExtArgs>[]
       approvedDamageReports: Prisma.$DamageReportPayload<ExtArgs>[]
       vehicleSwaps: Prisma.$VehicleSwapPayload<ExtArgs>[]
+      discountRulesCreated: Prisma.$DiscountRulePayload<ExtArgs>[]
+      manualDiscountsIssued: Prisma.$ManualDiscountPayload<ExtArgs>[]
+      manualDiscountsApproved: Prisma.$ManualDiscountPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -5812,6 +6483,9 @@ export namespace Prisma {
     bookingsCreated<T extends User$bookingsCreatedArgs<ExtArgs> = {}>(args?: Subset<T, User$bookingsCreatedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findMany"> | Null>
     approvedDamageReports<T extends User$approvedDamageReportsArgs<ExtArgs> = {}>(args?: Subset<T, User$approvedDamageReportsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DamageReportPayload<ExtArgs>, T, "findMany"> | Null>
     vehicleSwaps<T extends User$vehicleSwapsArgs<ExtArgs> = {}>(args?: Subset<T, User$vehicleSwapsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleSwapPayload<ExtArgs>, T, "findMany"> | Null>
+    discountRulesCreated<T extends User$discountRulesCreatedArgs<ExtArgs> = {}>(args?: Subset<T, User$discountRulesCreatedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DiscountRulePayload<ExtArgs>, T, "findMany"> | Null>
+    manualDiscountsIssued<T extends User$manualDiscountsIssuedArgs<ExtArgs> = {}>(args?: Subset<T, User$manualDiscountsIssuedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ManualDiscountPayload<ExtArgs>, T, "findMany"> | Null>
+    manualDiscountsApproved<T extends User$manualDiscountsApprovedArgs<ExtArgs> = {}>(args?: Subset<T, User$manualDiscountsApprovedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ManualDiscountPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -6348,6 +7022,66 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: VehicleSwapScalarFieldEnum | VehicleSwapScalarFieldEnum[]
+  }
+
+  /**
+   * User.discountRulesCreated
+   */
+  export type User$discountRulesCreatedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountRule
+     */
+    select?: DiscountRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountRuleInclude<ExtArgs> | null
+    where?: DiscountRuleWhereInput
+    orderBy?: DiscountRuleOrderByWithRelationInput | DiscountRuleOrderByWithRelationInput[]
+    cursor?: DiscountRuleWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: DiscountRuleScalarFieldEnum | DiscountRuleScalarFieldEnum[]
+  }
+
+  /**
+   * User.manualDiscountsIssued
+   */
+  export type User$manualDiscountsIssuedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManualDiscount
+     */
+    select?: ManualDiscountSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ManualDiscountInclude<ExtArgs> | null
+    where?: ManualDiscountWhereInput
+    orderBy?: ManualDiscountOrderByWithRelationInput | ManualDiscountOrderByWithRelationInput[]
+    cursor?: ManualDiscountWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ManualDiscountScalarFieldEnum | ManualDiscountScalarFieldEnum[]
+  }
+
+  /**
+   * User.manualDiscountsApproved
+   */
+  export type User$manualDiscountsApprovedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManualDiscount
+     */
+    select?: ManualDiscountSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ManualDiscountInclude<ExtArgs> | null
+    where?: ManualDiscountWhereInput
+    orderBy?: ManualDiscountOrderByWithRelationInput | ManualDiscountOrderByWithRelationInput[]
+    cursor?: ManualDiscountWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ManualDiscountScalarFieldEnum | ManualDiscountScalarFieldEnum[]
   }
 
   /**
@@ -11938,6 +12672,8 @@ export namespace Prisma {
     captureConfigs?: boolean | Branch$captureConfigsArgs<ExtArgs>
     auditLogs?: boolean | Branch$auditLogsArgs<ExtArgs>
     staffActivityLogs?: boolean | Branch$staffActivityLogsArgs<ExtArgs>
+    durationDiscountSlabs?: boolean | Branch$durationDiscountSlabsArgs<ExtArgs>
+    discountConfig?: boolean | Branch$discountConfigArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["branch"]>
 
@@ -11974,6 +12710,8 @@ export namespace Prisma {
     captureConfigs?: boolean | Branch$captureConfigsArgs<ExtArgs>
     auditLogs?: boolean | Branch$auditLogsArgs<ExtArgs>
     staffActivityLogs?: boolean | Branch$staffActivityLogsArgs<ExtArgs>
+    durationDiscountSlabs?: boolean | Branch$durationDiscountSlabsArgs<ExtArgs>
+    discountConfig?: boolean | Branch$discountConfigArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type BranchIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -11993,6 +12731,8 @@ export namespace Prisma {
       captureConfigs: Prisma.$VehiclePhotoCaptureConfigPayload<ExtArgs>[]
       auditLogs: Prisma.$AuditLogPayload<ExtArgs>[]
       staffActivityLogs: Prisma.$StaffActivityLogPayload<ExtArgs>[]
+      durationDiscountSlabs: Prisma.$DurationDiscountSlabPayload<ExtArgs>[]
+      discountConfig: Prisma.$BranchDiscountConfigPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -12378,6 +13118,8 @@ export namespace Prisma {
     captureConfigs<T extends Branch$captureConfigsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$captureConfigsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehiclePhotoCaptureConfigPayload<ExtArgs>, T, "findMany"> | Null>
     auditLogs<T extends Branch$auditLogsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$auditLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AuditLogPayload<ExtArgs>, T, "findMany"> | Null>
     staffActivityLogs<T extends Branch$staffActivityLogsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$staffActivityLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StaffActivityLogPayload<ExtArgs>, T, "findMany"> | Null>
+    durationDiscountSlabs<T extends Branch$durationDiscountSlabsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$durationDiscountSlabsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DurationDiscountSlabPayload<ExtArgs>, T, "findMany"> | Null>
+    discountConfig<T extends Branch$discountConfigArgs<ExtArgs> = {}>(args?: Subset<T, Branch$discountConfigArgs<ExtArgs>>): Prisma__BranchDiscountConfigClient<$Result.GetResult<Prisma.$BranchDiscountConfigPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -12964,6 +13706,41 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: StaffActivityLogScalarFieldEnum | StaffActivityLogScalarFieldEnum[]
+  }
+
+  /**
+   * Branch.durationDiscountSlabs
+   */
+  export type Branch$durationDiscountSlabsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DurationDiscountSlab
+     */
+    select?: DurationDiscountSlabSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DurationDiscountSlabInclude<ExtArgs> | null
+    where?: DurationDiscountSlabWhereInput
+    orderBy?: DurationDiscountSlabOrderByWithRelationInput | DurationDiscountSlabOrderByWithRelationInput[]
+    cursor?: DurationDiscountSlabWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: DurationDiscountSlabScalarFieldEnum | DurationDiscountSlabScalarFieldEnum[]
+  }
+
+  /**
+   * Branch.discountConfig
+   */
+  export type Branch$discountConfigArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchDiscountConfig
+     */
+    select?: BranchDiscountConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchDiscountConfigInclude<ExtArgs> | null
+    where?: BranchDiscountConfigWhereInput
   }
 
   /**
@@ -27899,6 +28676,7 @@ export namespace Prisma {
     advanceAmount: Decimal | null
     remainingBalance: Decimal | null
     safetyDeposit: Decimal | null
+    discountRuleId: number | null
   }
 
   export type BookingSumAggregateOutputType = {
@@ -27923,6 +28701,7 @@ export namespace Prisma {
     advanceAmount: Decimal | null
     remainingBalance: Decimal | null
     safetyDeposit: Decimal | null
+    discountRuleId: number | null
   }
 
   export type BookingMinAggregateOutputType = {
@@ -27972,6 +28751,8 @@ export namespace Prisma {
     cancelledAt: Date | null
     cancellationReason: string | null
     requiresManagerConfirmation: boolean | null
+    couponCode: string | null
+    discountRuleId: number | null
     createdAt: Date | null
     updatedAt: Date | null
     deletedAt: Date | null
@@ -28024,6 +28805,8 @@ export namespace Prisma {
     cancelledAt: Date | null
     cancellationReason: string | null
     requiresManagerConfirmation: boolean | null
+    couponCode: string | null
+    discountRuleId: number | null
     createdAt: Date | null
     updatedAt: Date | null
     deletedAt: Date | null
@@ -28077,6 +28860,8 @@ export namespace Prisma {
     cancelledAt: number
     cancellationReason: number
     requiresManagerConfirmation: number
+    couponCode: number
+    discountRuleId: number
     createdAt: number
     updatedAt: number
     deletedAt: number
@@ -28106,6 +28891,7 @@ export namespace Prisma {
     advanceAmount?: true
     remainingBalance?: true
     safetyDeposit?: true
+    discountRuleId?: true
   }
 
   export type BookingSumAggregateInputType = {
@@ -28130,6 +28916,7 @@ export namespace Prisma {
     advanceAmount?: true
     remainingBalance?: true
     safetyDeposit?: true
+    discountRuleId?: true
   }
 
   export type BookingMinAggregateInputType = {
@@ -28179,6 +28966,8 @@ export namespace Prisma {
     cancelledAt?: true
     cancellationReason?: true
     requiresManagerConfirmation?: true
+    couponCode?: true
+    discountRuleId?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -28231,6 +29020,8 @@ export namespace Prisma {
     cancelledAt?: true
     cancellationReason?: true
     requiresManagerConfirmation?: true
+    couponCode?: true
+    discountRuleId?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -28284,6 +29075,8 @@ export namespace Prisma {
     cancelledAt?: true
     cancellationReason?: true
     requiresManagerConfirmation?: true
+    couponCode?: true
+    discountRuleId?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -28424,6 +29217,8 @@ export namespace Prisma {
     cancelledAt: Date | null
     cancellationReason: string | null
     requiresManagerConfirmation: boolean
+    couponCode: string | null
+    discountRuleId: number | null
     createdAt: Date
     updatedAt: Date
     deletedAt: Date | null
@@ -28496,6 +29291,8 @@ export namespace Prisma {
     cancelledAt?: boolean
     cancellationReason?: boolean
     requiresManagerConfirmation?: boolean
+    couponCode?: boolean
+    discountRuleId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -28510,6 +29307,9 @@ export namespace Prisma {
     invoice?: boolean | Booking$invoiceArgs<ExtArgs>
     cancellationInvoice?: boolean | Booking$cancellationInvoiceArgs<ExtArgs>
     vehicleSwaps?: boolean | Booking$vehicleSwapsArgs<ExtArgs>
+    discountRule?: boolean | Booking$discountRuleArgs<ExtArgs>
+    discountApplication?: boolean | Booking$discountApplicationArgs<ExtArgs>
+    manualDiscount?: boolean | Booking$manualDiscountArgs<ExtArgs>
     _count?: boolean | BookingCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["booking"]>
 
@@ -28561,6 +29361,8 @@ export namespace Prisma {
     cancelledAt?: boolean
     cancellationReason?: boolean
     requiresManagerConfirmation?: boolean
+    couponCode?: boolean
+    discountRuleId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -28568,6 +29370,7 @@ export namespace Prisma {
     customer?: boolean | CustomerDefaultArgs<ExtArgs>
     branch?: boolean | BranchDefaultArgs<ExtArgs>
     createdBy?: boolean | UserDefaultArgs<ExtArgs>
+    discountRule?: boolean | Booking$discountRuleArgs<ExtArgs>
   }, ExtArgs["result"]["booking"]>
 
   export type BookingSelectScalar = {
@@ -28618,6 +29421,8 @@ export namespace Prisma {
     cancelledAt?: boolean
     cancellationReason?: boolean
     requiresManagerConfirmation?: boolean
+    couponCode?: boolean
+    discountRuleId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -28635,6 +29440,9 @@ export namespace Prisma {
     invoice?: boolean | Booking$invoiceArgs<ExtArgs>
     cancellationInvoice?: boolean | Booking$cancellationInvoiceArgs<ExtArgs>
     vehicleSwaps?: boolean | Booking$vehicleSwapsArgs<ExtArgs>
+    discountRule?: boolean | Booking$discountRuleArgs<ExtArgs>
+    discountApplication?: boolean | Booking$discountApplicationArgs<ExtArgs>
+    manualDiscount?: boolean | Booking$manualDiscountArgs<ExtArgs>
     _count?: boolean | BookingCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type BookingIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -28642,6 +29450,7 @@ export namespace Prisma {
     customer?: boolean | CustomerDefaultArgs<ExtArgs>
     branch?: boolean | BranchDefaultArgs<ExtArgs>
     createdBy?: boolean | UserDefaultArgs<ExtArgs>
+    discountRule?: boolean | Booking$discountRuleArgs<ExtArgs>
   }
 
   export type $BookingPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -28658,6 +29467,9 @@ export namespace Prisma {
       invoice: Prisma.$InvoicePayload<ExtArgs> | null
       cancellationInvoice: Prisma.$CancellationInvoicePayload<ExtArgs> | null
       vehicleSwaps: Prisma.$VehicleSwapPayload<ExtArgs>[]
+      discountRule: Prisma.$DiscountRulePayload<ExtArgs> | null
+      discountApplication: Prisma.$DiscountApplicationPayload<ExtArgs> | null
+      manualDiscount: Prisma.$ManualDiscountPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -28707,6 +29519,8 @@ export namespace Prisma {
       cancelledAt: Date | null
       cancellationReason: string | null
       requiresManagerConfirmation: boolean
+      couponCode: string | null
+      discountRuleId: number | null
       createdAt: Date
       updatedAt: Date
       deletedAt: Date | null
@@ -29085,6 +29899,9 @@ export namespace Prisma {
     invoice<T extends Booking$invoiceArgs<ExtArgs> = {}>(args?: Subset<T, Booking$invoiceArgs<ExtArgs>>): Prisma__InvoiceClient<$Result.GetResult<Prisma.$InvoicePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     cancellationInvoice<T extends Booking$cancellationInvoiceArgs<ExtArgs> = {}>(args?: Subset<T, Booking$cancellationInvoiceArgs<ExtArgs>>): Prisma__CancellationInvoiceClient<$Result.GetResult<Prisma.$CancellationInvoicePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     vehicleSwaps<T extends Booking$vehicleSwapsArgs<ExtArgs> = {}>(args?: Subset<T, Booking$vehicleSwapsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleSwapPayload<ExtArgs>, T, "findMany"> | Null>
+    discountRule<T extends Booking$discountRuleArgs<ExtArgs> = {}>(args?: Subset<T, Booking$discountRuleArgs<ExtArgs>>): Prisma__DiscountRuleClient<$Result.GetResult<Prisma.$DiscountRulePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    discountApplication<T extends Booking$discountApplicationArgs<ExtArgs> = {}>(args?: Subset<T, Booking$discountApplicationArgs<ExtArgs>>): Prisma__DiscountApplicationClient<$Result.GetResult<Prisma.$DiscountApplicationPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    manualDiscount<T extends Booking$manualDiscountArgs<ExtArgs> = {}>(args?: Subset<T, Booking$manualDiscountArgs<ExtArgs>>): Prisma__ManualDiscountClient<$Result.GetResult<Prisma.$ManualDiscountPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -29161,6 +29978,8 @@ export namespace Prisma {
     readonly cancelledAt: FieldRef<"Booking", 'DateTime'>
     readonly cancellationReason: FieldRef<"Booking", 'String'>
     readonly requiresManagerConfirmation: FieldRef<"Booking", 'Boolean'>
+    readonly couponCode: FieldRef<"Booking", 'String'>
+    readonly discountRuleId: FieldRef<"Booking", 'Int'>
     readonly createdAt: FieldRef<"Booking", 'DateTime'>
     readonly updatedAt: FieldRef<"Booking", 'DateTime'>
     readonly deletedAt: FieldRef<"Booking", 'DateTime'>
@@ -29628,6 +30447,51 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: VehicleSwapScalarFieldEnum | VehicleSwapScalarFieldEnum[]
+  }
+
+  /**
+   * Booking.discountRule
+   */
+  export type Booking$discountRuleArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountRule
+     */
+    select?: DiscountRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountRuleInclude<ExtArgs> | null
+    where?: DiscountRuleWhereInput
+  }
+
+  /**
+   * Booking.discountApplication
+   */
+  export type Booking$discountApplicationArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountApplication
+     */
+    select?: DiscountApplicationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountApplicationInclude<ExtArgs> | null
+    where?: DiscountApplicationWhereInput
+  }
+
+  /**
+   * Booking.manualDiscount
+   */
+  export type Booking$manualDiscountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManualDiscount
+     */
+    select?: ManualDiscountSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ManualDiscountInclude<ExtArgs> | null
+    where?: ManualDiscountWhereInput
   }
 
   /**
@@ -47599,6 +48463,7032 @@ export namespace Prisma {
 
 
   /**
+   * Model DiscountRule
+   */
+
+  export type AggregateDiscountRule = {
+    _count: DiscountRuleCountAggregateOutputType | null
+    _avg: DiscountRuleAvgAggregateOutputType | null
+    _sum: DiscountRuleSumAggregateOutputType | null
+    _min: DiscountRuleMinAggregateOutputType | null
+    _max: DiscountRuleMaxAggregateOutputType | null
+  }
+
+  export type DiscountRuleAvgAggregateOutputType = {
+    id: number | null
+    value: Decimal | null
+    maxDiscountCap: Decimal | null
+    applicableBranchIds: number | null
+    targetCustomerIds: number | null
+    minBookingCount: number | null
+    maxBookingCount: number | null
+    minBookingAmount: Decimal | null
+    maxBookingAmount: Decimal | null
+    applicableVehicleCategoryIds: number | null
+    minRentalDays: number | null
+    maxRentalDays: number | null
+    minAdvanceAfterDiscount: Decimal | null
+    totalUsageLimit: number | null
+    perUserLimit: number | null
+    perBranchLimit: number | null
+    perDayLimit: number | null
+    priority: number | null
+    createdById: number | null
+  }
+
+  export type DiscountRuleSumAggregateOutputType = {
+    id: number | null
+    value: Decimal | null
+    maxDiscountCap: Decimal | null
+    applicableBranchIds: number[]
+    targetCustomerIds: number[]
+    minBookingCount: number | null
+    maxBookingCount: number | null
+    minBookingAmount: Decimal | null
+    maxBookingAmount: Decimal | null
+    applicableVehicleCategoryIds: number[]
+    minRentalDays: number | null
+    maxRentalDays: number | null
+    minAdvanceAfterDiscount: Decimal | null
+    totalUsageLimit: number | null
+    perUserLimit: number | null
+    perBranchLimit: number | null
+    perDayLimit: number | null
+    priority: number | null
+    createdById: number | null
+  }
+
+  export type DiscountRuleMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    code: string | null
+    name: string | null
+    description: string | null
+    discountType: $Enums.DiscountType | null
+    value: Decimal | null
+    maxDiscountCap: Decimal | null
+    scope: $Enums.DiscountScope | null
+    newCustomersOnly: boolean | null
+    minBookingCount: number | null
+    maxBookingCount: number | null
+    minBookingAmount: Decimal | null
+    maxBookingAmount: Decimal | null
+    minRentalDays: number | null
+    maxRentalDays: number | null
+    allowPartialPayment: boolean | null
+    minAdvanceAfterDiscount: Decimal | null
+    allowPostBooking: boolean | null
+    allowPostInvoice: boolean | null
+    totalUsageLimit: number | null
+    perUserLimit: number | null
+    perBranchLimit: number | null
+    perDayLimit: number | null
+    stackable: boolean | null
+    priority: number | null
+    startDate: Date | null
+    endDate: Date | null
+    isActive: boolean | null
+    createdById: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type DiscountRuleMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    code: string | null
+    name: string | null
+    description: string | null
+    discountType: $Enums.DiscountType | null
+    value: Decimal | null
+    maxDiscountCap: Decimal | null
+    scope: $Enums.DiscountScope | null
+    newCustomersOnly: boolean | null
+    minBookingCount: number | null
+    maxBookingCount: number | null
+    minBookingAmount: Decimal | null
+    maxBookingAmount: Decimal | null
+    minRentalDays: number | null
+    maxRentalDays: number | null
+    allowPartialPayment: boolean | null
+    minAdvanceAfterDiscount: Decimal | null
+    allowPostBooking: boolean | null
+    allowPostInvoice: boolean | null
+    totalUsageLimit: number | null
+    perUserLimit: number | null
+    perBranchLimit: number | null
+    perDayLimit: number | null
+    stackable: boolean | null
+    priority: number | null
+    startDate: Date | null
+    endDate: Date | null
+    isActive: boolean | null
+    createdById: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type DiscountRuleCountAggregateOutputType = {
+    id: number
+    publicId: number
+    code: number
+    name: number
+    description: number
+    discountType: number
+    value: number
+    maxDiscountCap: number
+    scope: number
+    applicableBranchIds: number
+    targetCustomerIds: number
+    newCustomersOnly: number
+    minBookingCount: number
+    maxBookingCount: number
+    minBookingAmount: number
+    maxBookingAmount: number
+    applicableVehicleCategoryIds: number
+    minRentalDays: number
+    maxRentalDays: number
+    applicablePaymentPlans: number
+    allowPartialPayment: number
+    minAdvanceAfterDiscount: number
+    allowPostBooking: number
+    allowPostInvoice: number
+    totalUsageLimit: number
+    perUserLimit: number
+    perBranchLimit: number
+    perDayLimit: number
+    stackable: number
+    priority: number
+    startDate: number
+    endDate: number
+    isActive: number
+    createdById: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type DiscountRuleAvgAggregateInputType = {
+    id?: true
+    value?: true
+    maxDiscountCap?: true
+    applicableBranchIds?: true
+    targetCustomerIds?: true
+    minBookingCount?: true
+    maxBookingCount?: true
+    minBookingAmount?: true
+    maxBookingAmount?: true
+    applicableVehicleCategoryIds?: true
+    minRentalDays?: true
+    maxRentalDays?: true
+    minAdvanceAfterDiscount?: true
+    totalUsageLimit?: true
+    perUserLimit?: true
+    perBranchLimit?: true
+    perDayLimit?: true
+    priority?: true
+    createdById?: true
+  }
+
+  export type DiscountRuleSumAggregateInputType = {
+    id?: true
+    value?: true
+    maxDiscountCap?: true
+    applicableBranchIds?: true
+    targetCustomerIds?: true
+    minBookingCount?: true
+    maxBookingCount?: true
+    minBookingAmount?: true
+    maxBookingAmount?: true
+    applicableVehicleCategoryIds?: true
+    minRentalDays?: true
+    maxRentalDays?: true
+    minAdvanceAfterDiscount?: true
+    totalUsageLimit?: true
+    perUserLimit?: true
+    perBranchLimit?: true
+    perDayLimit?: true
+    priority?: true
+    createdById?: true
+  }
+
+  export type DiscountRuleMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    code?: true
+    name?: true
+    description?: true
+    discountType?: true
+    value?: true
+    maxDiscountCap?: true
+    scope?: true
+    newCustomersOnly?: true
+    minBookingCount?: true
+    maxBookingCount?: true
+    minBookingAmount?: true
+    maxBookingAmount?: true
+    minRentalDays?: true
+    maxRentalDays?: true
+    allowPartialPayment?: true
+    minAdvanceAfterDiscount?: true
+    allowPostBooking?: true
+    allowPostInvoice?: true
+    totalUsageLimit?: true
+    perUserLimit?: true
+    perBranchLimit?: true
+    perDayLimit?: true
+    stackable?: true
+    priority?: true
+    startDate?: true
+    endDate?: true
+    isActive?: true
+    createdById?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type DiscountRuleMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    code?: true
+    name?: true
+    description?: true
+    discountType?: true
+    value?: true
+    maxDiscountCap?: true
+    scope?: true
+    newCustomersOnly?: true
+    minBookingCount?: true
+    maxBookingCount?: true
+    minBookingAmount?: true
+    maxBookingAmount?: true
+    minRentalDays?: true
+    maxRentalDays?: true
+    allowPartialPayment?: true
+    minAdvanceAfterDiscount?: true
+    allowPostBooking?: true
+    allowPostInvoice?: true
+    totalUsageLimit?: true
+    perUserLimit?: true
+    perBranchLimit?: true
+    perDayLimit?: true
+    stackable?: true
+    priority?: true
+    startDate?: true
+    endDate?: true
+    isActive?: true
+    createdById?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type DiscountRuleCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    code?: true
+    name?: true
+    description?: true
+    discountType?: true
+    value?: true
+    maxDiscountCap?: true
+    scope?: true
+    applicableBranchIds?: true
+    targetCustomerIds?: true
+    newCustomersOnly?: true
+    minBookingCount?: true
+    maxBookingCount?: true
+    minBookingAmount?: true
+    maxBookingAmount?: true
+    applicableVehicleCategoryIds?: true
+    minRentalDays?: true
+    maxRentalDays?: true
+    applicablePaymentPlans?: true
+    allowPartialPayment?: true
+    minAdvanceAfterDiscount?: true
+    allowPostBooking?: true
+    allowPostInvoice?: true
+    totalUsageLimit?: true
+    perUserLimit?: true
+    perBranchLimit?: true
+    perDayLimit?: true
+    stackable?: true
+    priority?: true
+    startDate?: true
+    endDate?: true
+    isActive?: true
+    createdById?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type DiscountRuleAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which DiscountRule to aggregate.
+     */
+    where?: DiscountRuleWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DiscountRules to fetch.
+     */
+    orderBy?: DiscountRuleOrderByWithRelationInput | DiscountRuleOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: DiscountRuleWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DiscountRules from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DiscountRules.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned DiscountRules
+    **/
+    _count?: true | DiscountRuleCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: DiscountRuleAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: DiscountRuleSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: DiscountRuleMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: DiscountRuleMaxAggregateInputType
+  }
+
+  export type GetDiscountRuleAggregateType<T extends DiscountRuleAggregateArgs> = {
+        [P in keyof T & keyof AggregateDiscountRule]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateDiscountRule[P]>
+      : GetScalarType<T[P], AggregateDiscountRule[P]>
+  }
+
+
+
+
+  export type DiscountRuleGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DiscountRuleWhereInput
+    orderBy?: DiscountRuleOrderByWithAggregationInput | DiscountRuleOrderByWithAggregationInput[]
+    by: DiscountRuleScalarFieldEnum[] | DiscountRuleScalarFieldEnum
+    having?: DiscountRuleScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: DiscountRuleCountAggregateInputType | true
+    _avg?: DiscountRuleAvgAggregateInputType
+    _sum?: DiscountRuleSumAggregateInputType
+    _min?: DiscountRuleMinAggregateInputType
+    _max?: DiscountRuleMaxAggregateInputType
+  }
+
+  export type DiscountRuleGroupByOutputType = {
+    id: number
+    publicId: string
+    code: string
+    name: string
+    description: string | null
+    discountType: $Enums.DiscountType
+    value: Decimal
+    maxDiscountCap: Decimal | null
+    scope: $Enums.DiscountScope
+    applicableBranchIds: number[]
+    targetCustomerIds: number[]
+    newCustomersOnly: boolean
+    minBookingCount: number | null
+    maxBookingCount: number | null
+    minBookingAmount: Decimal | null
+    maxBookingAmount: Decimal | null
+    applicableVehicleCategoryIds: number[]
+    minRentalDays: number | null
+    maxRentalDays: number | null
+    applicablePaymentPlans: string[]
+    allowPartialPayment: boolean
+    minAdvanceAfterDiscount: Decimal | null
+    allowPostBooking: boolean
+    allowPostInvoice: boolean
+    totalUsageLimit: number | null
+    perUserLimit: number | null
+    perBranchLimit: number | null
+    perDayLimit: number | null
+    stackable: boolean
+    priority: number
+    startDate: Date
+    endDate: Date
+    isActive: boolean
+    createdById: number
+    createdAt: Date
+    updatedAt: Date
+    _count: DiscountRuleCountAggregateOutputType | null
+    _avg: DiscountRuleAvgAggregateOutputType | null
+    _sum: DiscountRuleSumAggregateOutputType | null
+    _min: DiscountRuleMinAggregateOutputType | null
+    _max: DiscountRuleMaxAggregateOutputType | null
+  }
+
+  type GetDiscountRuleGroupByPayload<T extends DiscountRuleGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<DiscountRuleGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof DiscountRuleGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], DiscountRuleGroupByOutputType[P]>
+            : GetScalarType<T[P], DiscountRuleGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type DiscountRuleSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    code?: boolean
+    name?: boolean
+    description?: boolean
+    discountType?: boolean
+    value?: boolean
+    maxDiscountCap?: boolean
+    scope?: boolean
+    applicableBranchIds?: boolean
+    targetCustomerIds?: boolean
+    newCustomersOnly?: boolean
+    minBookingCount?: boolean
+    maxBookingCount?: boolean
+    minBookingAmount?: boolean
+    maxBookingAmount?: boolean
+    applicableVehicleCategoryIds?: boolean
+    minRentalDays?: boolean
+    maxRentalDays?: boolean
+    applicablePaymentPlans?: boolean
+    allowPartialPayment?: boolean
+    minAdvanceAfterDiscount?: boolean
+    allowPostBooking?: boolean
+    allowPostInvoice?: boolean
+    totalUsageLimit?: boolean
+    perUserLimit?: boolean
+    perBranchLimit?: boolean
+    perDayLimit?: boolean
+    stackable?: boolean
+    priority?: boolean
+    startDate?: boolean
+    endDate?: boolean
+    isActive?: boolean
+    createdById?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    createdBy?: boolean | UserDefaultArgs<ExtArgs>
+    usageLogs?: boolean | DiscountRule$usageLogsArgs<ExtArgs>
+    bookings?: boolean | DiscountRule$bookingsArgs<ExtArgs>
+    applications?: boolean | DiscountRule$applicationsArgs<ExtArgs>
+    _count?: boolean | DiscountRuleCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["discountRule"]>
+
+  export type DiscountRuleSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    code?: boolean
+    name?: boolean
+    description?: boolean
+    discountType?: boolean
+    value?: boolean
+    maxDiscountCap?: boolean
+    scope?: boolean
+    applicableBranchIds?: boolean
+    targetCustomerIds?: boolean
+    newCustomersOnly?: boolean
+    minBookingCount?: boolean
+    maxBookingCount?: boolean
+    minBookingAmount?: boolean
+    maxBookingAmount?: boolean
+    applicableVehicleCategoryIds?: boolean
+    minRentalDays?: boolean
+    maxRentalDays?: boolean
+    applicablePaymentPlans?: boolean
+    allowPartialPayment?: boolean
+    minAdvanceAfterDiscount?: boolean
+    allowPostBooking?: boolean
+    allowPostInvoice?: boolean
+    totalUsageLimit?: boolean
+    perUserLimit?: boolean
+    perBranchLimit?: boolean
+    perDayLimit?: boolean
+    stackable?: boolean
+    priority?: boolean
+    startDate?: boolean
+    endDate?: boolean
+    isActive?: boolean
+    createdById?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    createdBy?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["discountRule"]>
+
+  export type DiscountRuleSelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    code?: boolean
+    name?: boolean
+    description?: boolean
+    discountType?: boolean
+    value?: boolean
+    maxDiscountCap?: boolean
+    scope?: boolean
+    applicableBranchIds?: boolean
+    targetCustomerIds?: boolean
+    newCustomersOnly?: boolean
+    minBookingCount?: boolean
+    maxBookingCount?: boolean
+    minBookingAmount?: boolean
+    maxBookingAmount?: boolean
+    applicableVehicleCategoryIds?: boolean
+    minRentalDays?: boolean
+    maxRentalDays?: boolean
+    applicablePaymentPlans?: boolean
+    allowPartialPayment?: boolean
+    minAdvanceAfterDiscount?: boolean
+    allowPostBooking?: boolean
+    allowPostInvoice?: boolean
+    totalUsageLimit?: boolean
+    perUserLimit?: boolean
+    perBranchLimit?: boolean
+    perDayLimit?: boolean
+    stackable?: boolean
+    priority?: boolean
+    startDate?: boolean
+    endDate?: boolean
+    isActive?: boolean
+    createdById?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type DiscountRuleInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    createdBy?: boolean | UserDefaultArgs<ExtArgs>
+    usageLogs?: boolean | DiscountRule$usageLogsArgs<ExtArgs>
+    bookings?: boolean | DiscountRule$bookingsArgs<ExtArgs>
+    applications?: boolean | DiscountRule$applicationsArgs<ExtArgs>
+    _count?: boolean | DiscountRuleCountOutputTypeDefaultArgs<ExtArgs>
+  }
+  export type DiscountRuleIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    createdBy?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $DiscountRulePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "DiscountRule"
+    objects: {
+      createdBy: Prisma.$UserPayload<ExtArgs>
+      usageLogs: Prisma.$CouponUsageLogPayload<ExtArgs>[]
+      bookings: Prisma.$BookingPayload<ExtArgs>[]
+      applications: Prisma.$DiscountApplicationPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      code: string
+      name: string
+      description: string | null
+      discountType: $Enums.DiscountType
+      value: Prisma.Decimal
+      maxDiscountCap: Prisma.Decimal | null
+      scope: $Enums.DiscountScope
+      applicableBranchIds: number[]
+      targetCustomerIds: number[]
+      newCustomersOnly: boolean
+      minBookingCount: number | null
+      maxBookingCount: number | null
+      minBookingAmount: Prisma.Decimal | null
+      maxBookingAmount: Prisma.Decimal | null
+      applicableVehicleCategoryIds: number[]
+      minRentalDays: number | null
+      maxRentalDays: number | null
+      applicablePaymentPlans: string[]
+      allowPartialPayment: boolean
+      minAdvanceAfterDiscount: Prisma.Decimal | null
+      allowPostBooking: boolean
+      allowPostInvoice: boolean
+      totalUsageLimit: number | null
+      perUserLimit: number | null
+      perBranchLimit: number | null
+      perDayLimit: number | null
+      stackable: boolean
+      priority: number
+      startDate: Date
+      endDate: Date
+      isActive: boolean
+      createdById: number
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["discountRule"]>
+    composites: {}
+  }
+
+  type DiscountRuleGetPayload<S extends boolean | null | undefined | DiscountRuleDefaultArgs> = $Result.GetResult<Prisma.$DiscountRulePayload, S>
+
+  type DiscountRuleCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<DiscountRuleFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: DiscountRuleCountAggregateInputType | true
+    }
+
+  export interface DiscountRuleDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['DiscountRule'], meta: { name: 'DiscountRule' } }
+    /**
+     * Find zero or one DiscountRule that matches the filter.
+     * @param {DiscountRuleFindUniqueArgs} args - Arguments to find a DiscountRule
+     * @example
+     * // Get one DiscountRule
+     * const discountRule = await prisma.discountRule.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends DiscountRuleFindUniqueArgs>(args: SelectSubset<T, DiscountRuleFindUniqueArgs<ExtArgs>>): Prisma__DiscountRuleClient<$Result.GetResult<Prisma.$DiscountRulePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one DiscountRule that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {DiscountRuleFindUniqueOrThrowArgs} args - Arguments to find a DiscountRule
+     * @example
+     * // Get one DiscountRule
+     * const discountRule = await prisma.discountRule.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends DiscountRuleFindUniqueOrThrowArgs>(args: SelectSubset<T, DiscountRuleFindUniqueOrThrowArgs<ExtArgs>>): Prisma__DiscountRuleClient<$Result.GetResult<Prisma.$DiscountRulePayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first DiscountRule that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiscountRuleFindFirstArgs} args - Arguments to find a DiscountRule
+     * @example
+     * // Get one DiscountRule
+     * const discountRule = await prisma.discountRule.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends DiscountRuleFindFirstArgs>(args?: SelectSubset<T, DiscountRuleFindFirstArgs<ExtArgs>>): Prisma__DiscountRuleClient<$Result.GetResult<Prisma.$DiscountRulePayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first DiscountRule that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiscountRuleFindFirstOrThrowArgs} args - Arguments to find a DiscountRule
+     * @example
+     * // Get one DiscountRule
+     * const discountRule = await prisma.discountRule.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends DiscountRuleFindFirstOrThrowArgs>(args?: SelectSubset<T, DiscountRuleFindFirstOrThrowArgs<ExtArgs>>): Prisma__DiscountRuleClient<$Result.GetResult<Prisma.$DiscountRulePayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more DiscountRules that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiscountRuleFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all DiscountRules
+     * const discountRules = await prisma.discountRule.findMany()
+     * 
+     * // Get first 10 DiscountRules
+     * const discountRules = await prisma.discountRule.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const discountRuleWithIdOnly = await prisma.discountRule.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends DiscountRuleFindManyArgs>(args?: SelectSubset<T, DiscountRuleFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DiscountRulePayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a DiscountRule.
+     * @param {DiscountRuleCreateArgs} args - Arguments to create a DiscountRule.
+     * @example
+     * // Create one DiscountRule
+     * const DiscountRule = await prisma.discountRule.create({
+     *   data: {
+     *     // ... data to create a DiscountRule
+     *   }
+     * })
+     * 
+     */
+    create<T extends DiscountRuleCreateArgs>(args: SelectSubset<T, DiscountRuleCreateArgs<ExtArgs>>): Prisma__DiscountRuleClient<$Result.GetResult<Prisma.$DiscountRulePayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many DiscountRules.
+     * @param {DiscountRuleCreateManyArgs} args - Arguments to create many DiscountRules.
+     * @example
+     * // Create many DiscountRules
+     * const discountRule = await prisma.discountRule.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends DiscountRuleCreateManyArgs>(args?: SelectSubset<T, DiscountRuleCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many DiscountRules and returns the data saved in the database.
+     * @param {DiscountRuleCreateManyAndReturnArgs} args - Arguments to create many DiscountRules.
+     * @example
+     * // Create many DiscountRules
+     * const discountRule = await prisma.discountRule.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many DiscountRules and only return the `id`
+     * const discountRuleWithIdOnly = await prisma.discountRule.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends DiscountRuleCreateManyAndReturnArgs>(args?: SelectSubset<T, DiscountRuleCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DiscountRulePayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a DiscountRule.
+     * @param {DiscountRuleDeleteArgs} args - Arguments to delete one DiscountRule.
+     * @example
+     * // Delete one DiscountRule
+     * const DiscountRule = await prisma.discountRule.delete({
+     *   where: {
+     *     // ... filter to delete one DiscountRule
+     *   }
+     * })
+     * 
+     */
+    delete<T extends DiscountRuleDeleteArgs>(args: SelectSubset<T, DiscountRuleDeleteArgs<ExtArgs>>): Prisma__DiscountRuleClient<$Result.GetResult<Prisma.$DiscountRulePayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one DiscountRule.
+     * @param {DiscountRuleUpdateArgs} args - Arguments to update one DiscountRule.
+     * @example
+     * // Update one DiscountRule
+     * const discountRule = await prisma.discountRule.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends DiscountRuleUpdateArgs>(args: SelectSubset<T, DiscountRuleUpdateArgs<ExtArgs>>): Prisma__DiscountRuleClient<$Result.GetResult<Prisma.$DiscountRulePayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more DiscountRules.
+     * @param {DiscountRuleDeleteManyArgs} args - Arguments to filter DiscountRules to delete.
+     * @example
+     * // Delete a few DiscountRules
+     * const { count } = await prisma.discountRule.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends DiscountRuleDeleteManyArgs>(args?: SelectSubset<T, DiscountRuleDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more DiscountRules.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiscountRuleUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many DiscountRules
+     * const discountRule = await prisma.discountRule.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends DiscountRuleUpdateManyArgs>(args: SelectSubset<T, DiscountRuleUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one DiscountRule.
+     * @param {DiscountRuleUpsertArgs} args - Arguments to update or create a DiscountRule.
+     * @example
+     * // Update or create a DiscountRule
+     * const discountRule = await prisma.discountRule.upsert({
+     *   create: {
+     *     // ... data to create a DiscountRule
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the DiscountRule we want to update
+     *   }
+     * })
+     */
+    upsert<T extends DiscountRuleUpsertArgs>(args: SelectSubset<T, DiscountRuleUpsertArgs<ExtArgs>>): Prisma__DiscountRuleClient<$Result.GetResult<Prisma.$DiscountRulePayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of DiscountRules.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiscountRuleCountArgs} args - Arguments to filter DiscountRules to count.
+     * @example
+     * // Count the number of DiscountRules
+     * const count = await prisma.discountRule.count({
+     *   where: {
+     *     // ... the filter for the DiscountRules we want to count
+     *   }
+     * })
+    **/
+    count<T extends DiscountRuleCountArgs>(
+      args?: Subset<T, DiscountRuleCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], DiscountRuleCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a DiscountRule.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiscountRuleAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends DiscountRuleAggregateArgs>(args: Subset<T, DiscountRuleAggregateArgs>): Prisma.PrismaPromise<GetDiscountRuleAggregateType<T>>
+
+    /**
+     * Group by DiscountRule.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiscountRuleGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends DiscountRuleGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: DiscountRuleGroupByArgs['orderBy'] }
+        : { orderBy?: DiscountRuleGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, DiscountRuleGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetDiscountRuleGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the DiscountRule model
+   */
+  readonly fields: DiscountRuleFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for DiscountRule.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__DiscountRuleClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    createdBy<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    usageLogs<T extends DiscountRule$usageLogsArgs<ExtArgs> = {}>(args?: Subset<T, DiscountRule$usageLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CouponUsageLogPayload<ExtArgs>, T, "findMany"> | Null>
+    bookings<T extends DiscountRule$bookingsArgs<ExtArgs> = {}>(args?: Subset<T, DiscountRule$bookingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findMany"> | Null>
+    applications<T extends DiscountRule$applicationsArgs<ExtArgs> = {}>(args?: Subset<T, DiscountRule$applicationsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DiscountApplicationPayload<ExtArgs>, T, "findMany"> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the DiscountRule model
+   */ 
+  interface DiscountRuleFieldRefs {
+    readonly id: FieldRef<"DiscountRule", 'Int'>
+    readonly publicId: FieldRef<"DiscountRule", 'String'>
+    readonly code: FieldRef<"DiscountRule", 'String'>
+    readonly name: FieldRef<"DiscountRule", 'String'>
+    readonly description: FieldRef<"DiscountRule", 'String'>
+    readonly discountType: FieldRef<"DiscountRule", 'DiscountType'>
+    readonly value: FieldRef<"DiscountRule", 'Decimal'>
+    readonly maxDiscountCap: FieldRef<"DiscountRule", 'Decimal'>
+    readonly scope: FieldRef<"DiscountRule", 'DiscountScope'>
+    readonly applicableBranchIds: FieldRef<"DiscountRule", 'Int[]'>
+    readonly targetCustomerIds: FieldRef<"DiscountRule", 'Int[]'>
+    readonly newCustomersOnly: FieldRef<"DiscountRule", 'Boolean'>
+    readonly minBookingCount: FieldRef<"DiscountRule", 'Int'>
+    readonly maxBookingCount: FieldRef<"DiscountRule", 'Int'>
+    readonly minBookingAmount: FieldRef<"DiscountRule", 'Decimal'>
+    readonly maxBookingAmount: FieldRef<"DiscountRule", 'Decimal'>
+    readonly applicableVehicleCategoryIds: FieldRef<"DiscountRule", 'Int[]'>
+    readonly minRentalDays: FieldRef<"DiscountRule", 'Int'>
+    readonly maxRentalDays: FieldRef<"DiscountRule", 'Int'>
+    readonly applicablePaymentPlans: FieldRef<"DiscountRule", 'String[]'>
+    readonly allowPartialPayment: FieldRef<"DiscountRule", 'Boolean'>
+    readonly minAdvanceAfterDiscount: FieldRef<"DiscountRule", 'Decimal'>
+    readonly allowPostBooking: FieldRef<"DiscountRule", 'Boolean'>
+    readonly allowPostInvoice: FieldRef<"DiscountRule", 'Boolean'>
+    readonly totalUsageLimit: FieldRef<"DiscountRule", 'Int'>
+    readonly perUserLimit: FieldRef<"DiscountRule", 'Int'>
+    readonly perBranchLimit: FieldRef<"DiscountRule", 'Int'>
+    readonly perDayLimit: FieldRef<"DiscountRule", 'Int'>
+    readonly stackable: FieldRef<"DiscountRule", 'Boolean'>
+    readonly priority: FieldRef<"DiscountRule", 'Int'>
+    readonly startDate: FieldRef<"DiscountRule", 'DateTime'>
+    readonly endDate: FieldRef<"DiscountRule", 'DateTime'>
+    readonly isActive: FieldRef<"DiscountRule", 'Boolean'>
+    readonly createdById: FieldRef<"DiscountRule", 'Int'>
+    readonly createdAt: FieldRef<"DiscountRule", 'DateTime'>
+    readonly updatedAt: FieldRef<"DiscountRule", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * DiscountRule findUnique
+   */
+  export type DiscountRuleFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountRule
+     */
+    select?: DiscountRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountRuleInclude<ExtArgs> | null
+    /**
+     * Filter, which DiscountRule to fetch.
+     */
+    where: DiscountRuleWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DiscountRule findUniqueOrThrow
+   */
+  export type DiscountRuleFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountRule
+     */
+    select?: DiscountRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountRuleInclude<ExtArgs> | null
+    /**
+     * Filter, which DiscountRule to fetch.
+     */
+    where: DiscountRuleWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DiscountRule findFirst
+   */
+  export type DiscountRuleFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountRule
+     */
+    select?: DiscountRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountRuleInclude<ExtArgs> | null
+    /**
+     * Filter, which DiscountRule to fetch.
+     */
+    where?: DiscountRuleWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DiscountRules to fetch.
+     */
+    orderBy?: DiscountRuleOrderByWithRelationInput | DiscountRuleOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for DiscountRules.
+     */
+    cursor?: DiscountRuleWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DiscountRules from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DiscountRules.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DiscountRules.
+     */
+    distinct?: DiscountRuleScalarFieldEnum | DiscountRuleScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DiscountRule findFirstOrThrow
+   */
+  export type DiscountRuleFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountRule
+     */
+    select?: DiscountRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountRuleInclude<ExtArgs> | null
+    /**
+     * Filter, which DiscountRule to fetch.
+     */
+    where?: DiscountRuleWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DiscountRules to fetch.
+     */
+    orderBy?: DiscountRuleOrderByWithRelationInput | DiscountRuleOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for DiscountRules.
+     */
+    cursor?: DiscountRuleWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DiscountRules from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DiscountRules.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DiscountRules.
+     */
+    distinct?: DiscountRuleScalarFieldEnum | DiscountRuleScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DiscountRule findMany
+   */
+  export type DiscountRuleFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountRule
+     */
+    select?: DiscountRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountRuleInclude<ExtArgs> | null
+    /**
+     * Filter, which DiscountRules to fetch.
+     */
+    where?: DiscountRuleWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DiscountRules to fetch.
+     */
+    orderBy?: DiscountRuleOrderByWithRelationInput | DiscountRuleOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing DiscountRules.
+     */
+    cursor?: DiscountRuleWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DiscountRules from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DiscountRules.
+     */
+    skip?: number
+    distinct?: DiscountRuleScalarFieldEnum | DiscountRuleScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DiscountRule create
+   */
+  export type DiscountRuleCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountRule
+     */
+    select?: DiscountRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountRuleInclude<ExtArgs> | null
+    /**
+     * The data needed to create a DiscountRule.
+     */
+    data: XOR<DiscountRuleCreateInput, DiscountRuleUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DiscountRule createMany
+   */
+  export type DiscountRuleCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many DiscountRules.
+     */
+    data: DiscountRuleCreateManyInput | DiscountRuleCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * DiscountRule createManyAndReturn
+   */
+  export type DiscountRuleCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountRule
+     */
+    select?: DiscountRuleSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many DiscountRules.
+     */
+    data: DiscountRuleCreateManyInput | DiscountRuleCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountRuleIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * DiscountRule update
+   */
+  export type DiscountRuleUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountRule
+     */
+    select?: DiscountRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountRuleInclude<ExtArgs> | null
+    /**
+     * The data needed to update a DiscountRule.
+     */
+    data: XOR<DiscountRuleUpdateInput, DiscountRuleUncheckedUpdateInput>
+    /**
+     * Choose, which DiscountRule to update.
+     */
+    where: DiscountRuleWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DiscountRule updateMany
+   */
+  export type DiscountRuleUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update DiscountRules.
+     */
+    data: XOR<DiscountRuleUpdateManyMutationInput, DiscountRuleUncheckedUpdateManyInput>
+    /**
+     * Filter which DiscountRules to update
+     */
+    where?: DiscountRuleWhereInput
+  }
+
+  /**
+   * DiscountRule upsert
+   */
+  export type DiscountRuleUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountRule
+     */
+    select?: DiscountRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountRuleInclude<ExtArgs> | null
+    /**
+     * The filter to search for the DiscountRule to update in case it exists.
+     */
+    where: DiscountRuleWhereUniqueInput
+    /**
+     * In case the DiscountRule found by the `where` argument doesn't exist, create a new DiscountRule with this data.
+     */
+    create: XOR<DiscountRuleCreateInput, DiscountRuleUncheckedCreateInput>
+    /**
+     * In case the DiscountRule was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<DiscountRuleUpdateInput, DiscountRuleUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DiscountRule delete
+   */
+  export type DiscountRuleDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountRule
+     */
+    select?: DiscountRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountRuleInclude<ExtArgs> | null
+    /**
+     * Filter which DiscountRule to delete.
+     */
+    where: DiscountRuleWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DiscountRule deleteMany
+   */
+  export type DiscountRuleDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which DiscountRules to delete
+     */
+    where?: DiscountRuleWhereInput
+  }
+
+  /**
+   * DiscountRule.usageLogs
+   */
+  export type DiscountRule$usageLogsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CouponUsageLog
+     */
+    select?: CouponUsageLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CouponUsageLogInclude<ExtArgs> | null
+    where?: CouponUsageLogWhereInput
+    orderBy?: CouponUsageLogOrderByWithRelationInput | CouponUsageLogOrderByWithRelationInput[]
+    cursor?: CouponUsageLogWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CouponUsageLogScalarFieldEnum | CouponUsageLogScalarFieldEnum[]
+  }
+
+  /**
+   * DiscountRule.bookings
+   */
+  export type DiscountRule$bookingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Booking
+     */
+    select?: BookingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingInclude<ExtArgs> | null
+    where?: BookingWhereInput
+    orderBy?: BookingOrderByWithRelationInput | BookingOrderByWithRelationInput[]
+    cursor?: BookingWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: BookingScalarFieldEnum | BookingScalarFieldEnum[]
+  }
+
+  /**
+   * DiscountRule.applications
+   */
+  export type DiscountRule$applicationsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountApplication
+     */
+    select?: DiscountApplicationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountApplicationInclude<ExtArgs> | null
+    where?: DiscountApplicationWhereInput
+    orderBy?: DiscountApplicationOrderByWithRelationInput | DiscountApplicationOrderByWithRelationInput[]
+    cursor?: DiscountApplicationWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: DiscountApplicationScalarFieldEnum | DiscountApplicationScalarFieldEnum[]
+  }
+
+  /**
+   * DiscountRule without action
+   */
+  export type DiscountRuleDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountRule
+     */
+    select?: DiscountRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountRuleInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model DurationDiscountSlab
+   */
+
+  export type AggregateDurationDiscountSlab = {
+    _count: DurationDiscountSlabCountAggregateOutputType | null
+    _avg: DurationDiscountSlabAvgAggregateOutputType | null
+    _sum: DurationDiscountSlabSumAggregateOutputType | null
+    _min: DurationDiscountSlabMinAggregateOutputType | null
+    _max: DurationDiscountSlabMaxAggregateOutputType | null
+  }
+
+  export type DurationDiscountSlabAvgAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    minDays: number | null
+    maxDays: number | null
+    value: Decimal | null
+  }
+
+  export type DurationDiscountSlabSumAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    minDays: number | null
+    maxDays: number | null
+    value: Decimal | null
+  }
+
+  export type DurationDiscountSlabMinAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    minDays: number | null
+    maxDays: number | null
+    discountType: $Enums.DiscountType | null
+    value: Decimal | null
+    label: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type DurationDiscountSlabMaxAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    minDays: number | null
+    maxDays: number | null
+    discountType: $Enums.DiscountType | null
+    value: Decimal | null
+    label: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type DurationDiscountSlabCountAggregateOutputType = {
+    id: number
+    branchId: number
+    minDays: number
+    maxDays: number
+    discountType: number
+    value: number
+    label: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type DurationDiscountSlabAvgAggregateInputType = {
+    id?: true
+    branchId?: true
+    minDays?: true
+    maxDays?: true
+    value?: true
+  }
+
+  export type DurationDiscountSlabSumAggregateInputType = {
+    id?: true
+    branchId?: true
+    minDays?: true
+    maxDays?: true
+    value?: true
+  }
+
+  export type DurationDiscountSlabMinAggregateInputType = {
+    id?: true
+    branchId?: true
+    minDays?: true
+    maxDays?: true
+    discountType?: true
+    value?: true
+    label?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type DurationDiscountSlabMaxAggregateInputType = {
+    id?: true
+    branchId?: true
+    minDays?: true
+    maxDays?: true
+    discountType?: true
+    value?: true
+    label?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type DurationDiscountSlabCountAggregateInputType = {
+    id?: true
+    branchId?: true
+    minDays?: true
+    maxDays?: true
+    discountType?: true
+    value?: true
+    label?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type DurationDiscountSlabAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which DurationDiscountSlab to aggregate.
+     */
+    where?: DurationDiscountSlabWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DurationDiscountSlabs to fetch.
+     */
+    orderBy?: DurationDiscountSlabOrderByWithRelationInput | DurationDiscountSlabOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: DurationDiscountSlabWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DurationDiscountSlabs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DurationDiscountSlabs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned DurationDiscountSlabs
+    **/
+    _count?: true | DurationDiscountSlabCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: DurationDiscountSlabAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: DurationDiscountSlabSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: DurationDiscountSlabMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: DurationDiscountSlabMaxAggregateInputType
+  }
+
+  export type GetDurationDiscountSlabAggregateType<T extends DurationDiscountSlabAggregateArgs> = {
+        [P in keyof T & keyof AggregateDurationDiscountSlab]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateDurationDiscountSlab[P]>
+      : GetScalarType<T[P], AggregateDurationDiscountSlab[P]>
+  }
+
+
+
+
+  export type DurationDiscountSlabGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DurationDiscountSlabWhereInput
+    orderBy?: DurationDiscountSlabOrderByWithAggregationInput | DurationDiscountSlabOrderByWithAggregationInput[]
+    by: DurationDiscountSlabScalarFieldEnum[] | DurationDiscountSlabScalarFieldEnum
+    having?: DurationDiscountSlabScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: DurationDiscountSlabCountAggregateInputType | true
+    _avg?: DurationDiscountSlabAvgAggregateInputType
+    _sum?: DurationDiscountSlabSumAggregateInputType
+    _min?: DurationDiscountSlabMinAggregateInputType
+    _max?: DurationDiscountSlabMaxAggregateInputType
+  }
+
+  export type DurationDiscountSlabGroupByOutputType = {
+    id: number
+    branchId: number
+    minDays: number
+    maxDays: number | null
+    discountType: $Enums.DiscountType
+    value: Decimal
+    label: string | null
+    createdAt: Date
+    updatedAt: Date
+    _count: DurationDiscountSlabCountAggregateOutputType | null
+    _avg: DurationDiscountSlabAvgAggregateOutputType | null
+    _sum: DurationDiscountSlabSumAggregateOutputType | null
+    _min: DurationDiscountSlabMinAggregateOutputType | null
+    _max: DurationDiscountSlabMaxAggregateOutputType | null
+  }
+
+  type GetDurationDiscountSlabGroupByPayload<T extends DurationDiscountSlabGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<DurationDiscountSlabGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof DurationDiscountSlabGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], DurationDiscountSlabGroupByOutputType[P]>
+            : GetScalarType<T[P], DurationDiscountSlabGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type DurationDiscountSlabSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    branchId?: boolean
+    minDays?: boolean
+    maxDays?: boolean
+    discountType?: boolean
+    value?: boolean
+    label?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["durationDiscountSlab"]>
+
+  export type DurationDiscountSlabSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    branchId?: boolean
+    minDays?: boolean
+    maxDays?: boolean
+    discountType?: boolean
+    value?: boolean
+    label?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["durationDiscountSlab"]>
+
+  export type DurationDiscountSlabSelectScalar = {
+    id?: boolean
+    branchId?: boolean
+    minDays?: boolean
+    maxDays?: boolean
+    discountType?: boolean
+    value?: boolean
+    label?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type DurationDiscountSlabInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }
+  export type DurationDiscountSlabIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }
+
+  export type $DurationDiscountSlabPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "DurationDiscountSlab"
+    objects: {
+      branch: Prisma.$BranchPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      branchId: number
+      minDays: number
+      maxDays: number | null
+      discountType: $Enums.DiscountType
+      value: Prisma.Decimal
+      label: string | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["durationDiscountSlab"]>
+    composites: {}
+  }
+
+  type DurationDiscountSlabGetPayload<S extends boolean | null | undefined | DurationDiscountSlabDefaultArgs> = $Result.GetResult<Prisma.$DurationDiscountSlabPayload, S>
+
+  type DurationDiscountSlabCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<DurationDiscountSlabFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: DurationDiscountSlabCountAggregateInputType | true
+    }
+
+  export interface DurationDiscountSlabDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['DurationDiscountSlab'], meta: { name: 'DurationDiscountSlab' } }
+    /**
+     * Find zero or one DurationDiscountSlab that matches the filter.
+     * @param {DurationDiscountSlabFindUniqueArgs} args - Arguments to find a DurationDiscountSlab
+     * @example
+     * // Get one DurationDiscountSlab
+     * const durationDiscountSlab = await prisma.durationDiscountSlab.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends DurationDiscountSlabFindUniqueArgs>(args: SelectSubset<T, DurationDiscountSlabFindUniqueArgs<ExtArgs>>): Prisma__DurationDiscountSlabClient<$Result.GetResult<Prisma.$DurationDiscountSlabPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one DurationDiscountSlab that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {DurationDiscountSlabFindUniqueOrThrowArgs} args - Arguments to find a DurationDiscountSlab
+     * @example
+     * // Get one DurationDiscountSlab
+     * const durationDiscountSlab = await prisma.durationDiscountSlab.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends DurationDiscountSlabFindUniqueOrThrowArgs>(args: SelectSubset<T, DurationDiscountSlabFindUniqueOrThrowArgs<ExtArgs>>): Prisma__DurationDiscountSlabClient<$Result.GetResult<Prisma.$DurationDiscountSlabPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first DurationDiscountSlab that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DurationDiscountSlabFindFirstArgs} args - Arguments to find a DurationDiscountSlab
+     * @example
+     * // Get one DurationDiscountSlab
+     * const durationDiscountSlab = await prisma.durationDiscountSlab.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends DurationDiscountSlabFindFirstArgs>(args?: SelectSubset<T, DurationDiscountSlabFindFirstArgs<ExtArgs>>): Prisma__DurationDiscountSlabClient<$Result.GetResult<Prisma.$DurationDiscountSlabPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first DurationDiscountSlab that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DurationDiscountSlabFindFirstOrThrowArgs} args - Arguments to find a DurationDiscountSlab
+     * @example
+     * // Get one DurationDiscountSlab
+     * const durationDiscountSlab = await prisma.durationDiscountSlab.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends DurationDiscountSlabFindFirstOrThrowArgs>(args?: SelectSubset<T, DurationDiscountSlabFindFirstOrThrowArgs<ExtArgs>>): Prisma__DurationDiscountSlabClient<$Result.GetResult<Prisma.$DurationDiscountSlabPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more DurationDiscountSlabs that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DurationDiscountSlabFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all DurationDiscountSlabs
+     * const durationDiscountSlabs = await prisma.durationDiscountSlab.findMany()
+     * 
+     * // Get first 10 DurationDiscountSlabs
+     * const durationDiscountSlabs = await prisma.durationDiscountSlab.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const durationDiscountSlabWithIdOnly = await prisma.durationDiscountSlab.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends DurationDiscountSlabFindManyArgs>(args?: SelectSubset<T, DurationDiscountSlabFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DurationDiscountSlabPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a DurationDiscountSlab.
+     * @param {DurationDiscountSlabCreateArgs} args - Arguments to create a DurationDiscountSlab.
+     * @example
+     * // Create one DurationDiscountSlab
+     * const DurationDiscountSlab = await prisma.durationDiscountSlab.create({
+     *   data: {
+     *     // ... data to create a DurationDiscountSlab
+     *   }
+     * })
+     * 
+     */
+    create<T extends DurationDiscountSlabCreateArgs>(args: SelectSubset<T, DurationDiscountSlabCreateArgs<ExtArgs>>): Prisma__DurationDiscountSlabClient<$Result.GetResult<Prisma.$DurationDiscountSlabPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many DurationDiscountSlabs.
+     * @param {DurationDiscountSlabCreateManyArgs} args - Arguments to create many DurationDiscountSlabs.
+     * @example
+     * // Create many DurationDiscountSlabs
+     * const durationDiscountSlab = await prisma.durationDiscountSlab.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends DurationDiscountSlabCreateManyArgs>(args?: SelectSubset<T, DurationDiscountSlabCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many DurationDiscountSlabs and returns the data saved in the database.
+     * @param {DurationDiscountSlabCreateManyAndReturnArgs} args - Arguments to create many DurationDiscountSlabs.
+     * @example
+     * // Create many DurationDiscountSlabs
+     * const durationDiscountSlab = await prisma.durationDiscountSlab.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many DurationDiscountSlabs and only return the `id`
+     * const durationDiscountSlabWithIdOnly = await prisma.durationDiscountSlab.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends DurationDiscountSlabCreateManyAndReturnArgs>(args?: SelectSubset<T, DurationDiscountSlabCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DurationDiscountSlabPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a DurationDiscountSlab.
+     * @param {DurationDiscountSlabDeleteArgs} args - Arguments to delete one DurationDiscountSlab.
+     * @example
+     * // Delete one DurationDiscountSlab
+     * const DurationDiscountSlab = await prisma.durationDiscountSlab.delete({
+     *   where: {
+     *     // ... filter to delete one DurationDiscountSlab
+     *   }
+     * })
+     * 
+     */
+    delete<T extends DurationDiscountSlabDeleteArgs>(args: SelectSubset<T, DurationDiscountSlabDeleteArgs<ExtArgs>>): Prisma__DurationDiscountSlabClient<$Result.GetResult<Prisma.$DurationDiscountSlabPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one DurationDiscountSlab.
+     * @param {DurationDiscountSlabUpdateArgs} args - Arguments to update one DurationDiscountSlab.
+     * @example
+     * // Update one DurationDiscountSlab
+     * const durationDiscountSlab = await prisma.durationDiscountSlab.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends DurationDiscountSlabUpdateArgs>(args: SelectSubset<T, DurationDiscountSlabUpdateArgs<ExtArgs>>): Prisma__DurationDiscountSlabClient<$Result.GetResult<Prisma.$DurationDiscountSlabPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more DurationDiscountSlabs.
+     * @param {DurationDiscountSlabDeleteManyArgs} args - Arguments to filter DurationDiscountSlabs to delete.
+     * @example
+     * // Delete a few DurationDiscountSlabs
+     * const { count } = await prisma.durationDiscountSlab.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends DurationDiscountSlabDeleteManyArgs>(args?: SelectSubset<T, DurationDiscountSlabDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more DurationDiscountSlabs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DurationDiscountSlabUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many DurationDiscountSlabs
+     * const durationDiscountSlab = await prisma.durationDiscountSlab.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends DurationDiscountSlabUpdateManyArgs>(args: SelectSubset<T, DurationDiscountSlabUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one DurationDiscountSlab.
+     * @param {DurationDiscountSlabUpsertArgs} args - Arguments to update or create a DurationDiscountSlab.
+     * @example
+     * // Update or create a DurationDiscountSlab
+     * const durationDiscountSlab = await prisma.durationDiscountSlab.upsert({
+     *   create: {
+     *     // ... data to create a DurationDiscountSlab
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the DurationDiscountSlab we want to update
+     *   }
+     * })
+     */
+    upsert<T extends DurationDiscountSlabUpsertArgs>(args: SelectSubset<T, DurationDiscountSlabUpsertArgs<ExtArgs>>): Prisma__DurationDiscountSlabClient<$Result.GetResult<Prisma.$DurationDiscountSlabPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of DurationDiscountSlabs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DurationDiscountSlabCountArgs} args - Arguments to filter DurationDiscountSlabs to count.
+     * @example
+     * // Count the number of DurationDiscountSlabs
+     * const count = await prisma.durationDiscountSlab.count({
+     *   where: {
+     *     // ... the filter for the DurationDiscountSlabs we want to count
+     *   }
+     * })
+    **/
+    count<T extends DurationDiscountSlabCountArgs>(
+      args?: Subset<T, DurationDiscountSlabCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], DurationDiscountSlabCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a DurationDiscountSlab.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DurationDiscountSlabAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends DurationDiscountSlabAggregateArgs>(args: Subset<T, DurationDiscountSlabAggregateArgs>): Prisma.PrismaPromise<GetDurationDiscountSlabAggregateType<T>>
+
+    /**
+     * Group by DurationDiscountSlab.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DurationDiscountSlabGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends DurationDiscountSlabGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: DurationDiscountSlabGroupByArgs['orderBy'] }
+        : { orderBy?: DurationDiscountSlabGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, DurationDiscountSlabGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetDurationDiscountSlabGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the DurationDiscountSlab model
+   */
+  readonly fields: DurationDiscountSlabFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for DurationDiscountSlab.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__DurationDiscountSlabClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    branch<T extends BranchDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BranchDefaultArgs<ExtArgs>>): Prisma__BranchClient<$Result.GetResult<Prisma.$BranchPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the DurationDiscountSlab model
+   */ 
+  interface DurationDiscountSlabFieldRefs {
+    readonly id: FieldRef<"DurationDiscountSlab", 'Int'>
+    readonly branchId: FieldRef<"DurationDiscountSlab", 'Int'>
+    readonly minDays: FieldRef<"DurationDiscountSlab", 'Int'>
+    readonly maxDays: FieldRef<"DurationDiscountSlab", 'Int'>
+    readonly discountType: FieldRef<"DurationDiscountSlab", 'DiscountType'>
+    readonly value: FieldRef<"DurationDiscountSlab", 'Decimal'>
+    readonly label: FieldRef<"DurationDiscountSlab", 'String'>
+    readonly createdAt: FieldRef<"DurationDiscountSlab", 'DateTime'>
+    readonly updatedAt: FieldRef<"DurationDiscountSlab", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * DurationDiscountSlab findUnique
+   */
+  export type DurationDiscountSlabFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DurationDiscountSlab
+     */
+    select?: DurationDiscountSlabSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DurationDiscountSlabInclude<ExtArgs> | null
+    /**
+     * Filter, which DurationDiscountSlab to fetch.
+     */
+    where: DurationDiscountSlabWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DurationDiscountSlab findUniqueOrThrow
+   */
+  export type DurationDiscountSlabFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DurationDiscountSlab
+     */
+    select?: DurationDiscountSlabSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DurationDiscountSlabInclude<ExtArgs> | null
+    /**
+     * Filter, which DurationDiscountSlab to fetch.
+     */
+    where: DurationDiscountSlabWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DurationDiscountSlab findFirst
+   */
+  export type DurationDiscountSlabFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DurationDiscountSlab
+     */
+    select?: DurationDiscountSlabSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DurationDiscountSlabInclude<ExtArgs> | null
+    /**
+     * Filter, which DurationDiscountSlab to fetch.
+     */
+    where?: DurationDiscountSlabWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DurationDiscountSlabs to fetch.
+     */
+    orderBy?: DurationDiscountSlabOrderByWithRelationInput | DurationDiscountSlabOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for DurationDiscountSlabs.
+     */
+    cursor?: DurationDiscountSlabWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DurationDiscountSlabs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DurationDiscountSlabs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DurationDiscountSlabs.
+     */
+    distinct?: DurationDiscountSlabScalarFieldEnum | DurationDiscountSlabScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DurationDiscountSlab findFirstOrThrow
+   */
+  export type DurationDiscountSlabFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DurationDiscountSlab
+     */
+    select?: DurationDiscountSlabSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DurationDiscountSlabInclude<ExtArgs> | null
+    /**
+     * Filter, which DurationDiscountSlab to fetch.
+     */
+    where?: DurationDiscountSlabWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DurationDiscountSlabs to fetch.
+     */
+    orderBy?: DurationDiscountSlabOrderByWithRelationInput | DurationDiscountSlabOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for DurationDiscountSlabs.
+     */
+    cursor?: DurationDiscountSlabWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DurationDiscountSlabs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DurationDiscountSlabs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DurationDiscountSlabs.
+     */
+    distinct?: DurationDiscountSlabScalarFieldEnum | DurationDiscountSlabScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DurationDiscountSlab findMany
+   */
+  export type DurationDiscountSlabFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DurationDiscountSlab
+     */
+    select?: DurationDiscountSlabSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DurationDiscountSlabInclude<ExtArgs> | null
+    /**
+     * Filter, which DurationDiscountSlabs to fetch.
+     */
+    where?: DurationDiscountSlabWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DurationDiscountSlabs to fetch.
+     */
+    orderBy?: DurationDiscountSlabOrderByWithRelationInput | DurationDiscountSlabOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing DurationDiscountSlabs.
+     */
+    cursor?: DurationDiscountSlabWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DurationDiscountSlabs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DurationDiscountSlabs.
+     */
+    skip?: number
+    distinct?: DurationDiscountSlabScalarFieldEnum | DurationDiscountSlabScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DurationDiscountSlab create
+   */
+  export type DurationDiscountSlabCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DurationDiscountSlab
+     */
+    select?: DurationDiscountSlabSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DurationDiscountSlabInclude<ExtArgs> | null
+    /**
+     * The data needed to create a DurationDiscountSlab.
+     */
+    data: XOR<DurationDiscountSlabCreateInput, DurationDiscountSlabUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DurationDiscountSlab createMany
+   */
+  export type DurationDiscountSlabCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many DurationDiscountSlabs.
+     */
+    data: DurationDiscountSlabCreateManyInput | DurationDiscountSlabCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * DurationDiscountSlab createManyAndReturn
+   */
+  export type DurationDiscountSlabCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DurationDiscountSlab
+     */
+    select?: DurationDiscountSlabSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many DurationDiscountSlabs.
+     */
+    data: DurationDiscountSlabCreateManyInput | DurationDiscountSlabCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DurationDiscountSlabIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * DurationDiscountSlab update
+   */
+  export type DurationDiscountSlabUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DurationDiscountSlab
+     */
+    select?: DurationDiscountSlabSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DurationDiscountSlabInclude<ExtArgs> | null
+    /**
+     * The data needed to update a DurationDiscountSlab.
+     */
+    data: XOR<DurationDiscountSlabUpdateInput, DurationDiscountSlabUncheckedUpdateInput>
+    /**
+     * Choose, which DurationDiscountSlab to update.
+     */
+    where: DurationDiscountSlabWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DurationDiscountSlab updateMany
+   */
+  export type DurationDiscountSlabUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update DurationDiscountSlabs.
+     */
+    data: XOR<DurationDiscountSlabUpdateManyMutationInput, DurationDiscountSlabUncheckedUpdateManyInput>
+    /**
+     * Filter which DurationDiscountSlabs to update
+     */
+    where?: DurationDiscountSlabWhereInput
+  }
+
+  /**
+   * DurationDiscountSlab upsert
+   */
+  export type DurationDiscountSlabUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DurationDiscountSlab
+     */
+    select?: DurationDiscountSlabSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DurationDiscountSlabInclude<ExtArgs> | null
+    /**
+     * The filter to search for the DurationDiscountSlab to update in case it exists.
+     */
+    where: DurationDiscountSlabWhereUniqueInput
+    /**
+     * In case the DurationDiscountSlab found by the `where` argument doesn't exist, create a new DurationDiscountSlab with this data.
+     */
+    create: XOR<DurationDiscountSlabCreateInput, DurationDiscountSlabUncheckedCreateInput>
+    /**
+     * In case the DurationDiscountSlab was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<DurationDiscountSlabUpdateInput, DurationDiscountSlabUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DurationDiscountSlab delete
+   */
+  export type DurationDiscountSlabDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DurationDiscountSlab
+     */
+    select?: DurationDiscountSlabSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DurationDiscountSlabInclude<ExtArgs> | null
+    /**
+     * Filter which DurationDiscountSlab to delete.
+     */
+    where: DurationDiscountSlabWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DurationDiscountSlab deleteMany
+   */
+  export type DurationDiscountSlabDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which DurationDiscountSlabs to delete
+     */
+    where?: DurationDiscountSlabWhereInput
+  }
+
+  /**
+   * DurationDiscountSlab without action
+   */
+  export type DurationDiscountSlabDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DurationDiscountSlab
+     */
+    select?: DurationDiscountSlabSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DurationDiscountSlabInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model BranchDiscountConfig
+   */
+
+  export type AggregateBranchDiscountConfig = {
+    _count: BranchDiscountConfigCountAggregateOutputType | null
+    _avg: BranchDiscountConfigAvgAggregateOutputType | null
+    _sum: BranchDiscountConfigSumAggregateOutputType | null
+    _min: BranchDiscountConfigMinAggregateOutputType | null
+    _max: BranchDiscountConfigMaxAggregateOutputType | null
+  }
+
+  export type BranchDiscountConfigAvgAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    maxCombinedDiscountPercent: Decimal | null
+    managerApprovalThreshold: Decimal | null
+    maxManualDiscountsPerEmployeePerDay: number | null
+    maxManagerCouponDiscountPercent: Decimal | null
+    maxManagerCouponFlatAmount: Decimal | null
+    maxManagerCouponValidityDays: number | null
+    maxManagerCouponUsageLimit: number | null
+    maxManagerCouponsPerDay: number | null
+  }
+
+  export type BranchDiscountConfigSumAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    maxCombinedDiscountPercent: Decimal | null
+    managerApprovalThreshold: Decimal | null
+    maxManualDiscountsPerEmployeePerDay: number | null
+    maxManagerCouponDiscountPercent: Decimal | null
+    maxManagerCouponFlatAmount: Decimal | null
+    maxManagerCouponValidityDays: number | null
+    maxManagerCouponUsageLimit: number | null
+    maxManagerCouponsPerDay: number | null
+  }
+
+  export type BranchDiscountConfigMinAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    durationDiscountEnabled: boolean | null
+    stackWithCoupon: boolean | null
+    maxCombinedDiscountPercent: Decimal | null
+    managerApprovalThreshold: Decimal | null
+    maxManualDiscountsPerEmployeePerDay: number | null
+    managerCouponCreationEnabled: boolean | null
+    maxManagerCouponDiscountPercent: Decimal | null
+    maxManagerCouponFlatAmount: Decimal | null
+    maxManagerCouponValidityDays: number | null
+    maxManagerCouponUsageLimit: number | null
+    maxManagerCouponsPerDay: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type BranchDiscountConfigMaxAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    durationDiscountEnabled: boolean | null
+    stackWithCoupon: boolean | null
+    maxCombinedDiscountPercent: Decimal | null
+    managerApprovalThreshold: Decimal | null
+    maxManualDiscountsPerEmployeePerDay: number | null
+    managerCouponCreationEnabled: boolean | null
+    maxManagerCouponDiscountPercent: Decimal | null
+    maxManagerCouponFlatAmount: Decimal | null
+    maxManagerCouponValidityDays: number | null
+    maxManagerCouponUsageLimit: number | null
+    maxManagerCouponsPerDay: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type BranchDiscountConfigCountAggregateOutputType = {
+    id: number
+    branchId: number
+    durationDiscountEnabled: number
+    stackWithCoupon: number
+    maxCombinedDiscountPercent: number
+    managerApprovalThreshold: number
+    maxManualDiscountsPerEmployeePerDay: number
+    managerCouponCreationEnabled: number
+    maxManagerCouponDiscountPercent: number
+    maxManagerCouponFlatAmount: number
+    maxManagerCouponValidityDays: number
+    maxManagerCouponUsageLimit: number
+    maxManagerCouponsPerDay: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type BranchDiscountConfigAvgAggregateInputType = {
+    id?: true
+    branchId?: true
+    maxCombinedDiscountPercent?: true
+    managerApprovalThreshold?: true
+    maxManualDiscountsPerEmployeePerDay?: true
+    maxManagerCouponDiscountPercent?: true
+    maxManagerCouponFlatAmount?: true
+    maxManagerCouponValidityDays?: true
+    maxManagerCouponUsageLimit?: true
+    maxManagerCouponsPerDay?: true
+  }
+
+  export type BranchDiscountConfigSumAggregateInputType = {
+    id?: true
+    branchId?: true
+    maxCombinedDiscountPercent?: true
+    managerApprovalThreshold?: true
+    maxManualDiscountsPerEmployeePerDay?: true
+    maxManagerCouponDiscountPercent?: true
+    maxManagerCouponFlatAmount?: true
+    maxManagerCouponValidityDays?: true
+    maxManagerCouponUsageLimit?: true
+    maxManagerCouponsPerDay?: true
+  }
+
+  export type BranchDiscountConfigMinAggregateInputType = {
+    id?: true
+    branchId?: true
+    durationDiscountEnabled?: true
+    stackWithCoupon?: true
+    maxCombinedDiscountPercent?: true
+    managerApprovalThreshold?: true
+    maxManualDiscountsPerEmployeePerDay?: true
+    managerCouponCreationEnabled?: true
+    maxManagerCouponDiscountPercent?: true
+    maxManagerCouponFlatAmount?: true
+    maxManagerCouponValidityDays?: true
+    maxManagerCouponUsageLimit?: true
+    maxManagerCouponsPerDay?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type BranchDiscountConfigMaxAggregateInputType = {
+    id?: true
+    branchId?: true
+    durationDiscountEnabled?: true
+    stackWithCoupon?: true
+    maxCombinedDiscountPercent?: true
+    managerApprovalThreshold?: true
+    maxManualDiscountsPerEmployeePerDay?: true
+    managerCouponCreationEnabled?: true
+    maxManagerCouponDiscountPercent?: true
+    maxManagerCouponFlatAmount?: true
+    maxManagerCouponValidityDays?: true
+    maxManagerCouponUsageLimit?: true
+    maxManagerCouponsPerDay?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type BranchDiscountConfigCountAggregateInputType = {
+    id?: true
+    branchId?: true
+    durationDiscountEnabled?: true
+    stackWithCoupon?: true
+    maxCombinedDiscountPercent?: true
+    managerApprovalThreshold?: true
+    maxManualDiscountsPerEmployeePerDay?: true
+    managerCouponCreationEnabled?: true
+    maxManagerCouponDiscountPercent?: true
+    maxManagerCouponFlatAmount?: true
+    maxManagerCouponValidityDays?: true
+    maxManagerCouponUsageLimit?: true
+    maxManagerCouponsPerDay?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type BranchDiscountConfigAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which BranchDiscountConfig to aggregate.
+     */
+    where?: BranchDiscountConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchDiscountConfigs to fetch.
+     */
+    orderBy?: BranchDiscountConfigOrderByWithRelationInput | BranchDiscountConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: BranchDiscountConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchDiscountConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchDiscountConfigs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned BranchDiscountConfigs
+    **/
+    _count?: true | BranchDiscountConfigCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: BranchDiscountConfigAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: BranchDiscountConfigSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: BranchDiscountConfigMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: BranchDiscountConfigMaxAggregateInputType
+  }
+
+  export type GetBranchDiscountConfigAggregateType<T extends BranchDiscountConfigAggregateArgs> = {
+        [P in keyof T & keyof AggregateBranchDiscountConfig]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateBranchDiscountConfig[P]>
+      : GetScalarType<T[P], AggregateBranchDiscountConfig[P]>
+  }
+
+
+
+
+  export type BranchDiscountConfigGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BranchDiscountConfigWhereInput
+    orderBy?: BranchDiscountConfigOrderByWithAggregationInput | BranchDiscountConfigOrderByWithAggregationInput[]
+    by: BranchDiscountConfigScalarFieldEnum[] | BranchDiscountConfigScalarFieldEnum
+    having?: BranchDiscountConfigScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: BranchDiscountConfigCountAggregateInputType | true
+    _avg?: BranchDiscountConfigAvgAggregateInputType
+    _sum?: BranchDiscountConfigSumAggregateInputType
+    _min?: BranchDiscountConfigMinAggregateInputType
+    _max?: BranchDiscountConfigMaxAggregateInputType
+  }
+
+  export type BranchDiscountConfigGroupByOutputType = {
+    id: number
+    branchId: number
+    durationDiscountEnabled: boolean
+    stackWithCoupon: boolean
+    maxCombinedDiscountPercent: Decimal | null
+    managerApprovalThreshold: Decimal
+    maxManualDiscountsPerEmployeePerDay: number
+    managerCouponCreationEnabled: boolean
+    maxManagerCouponDiscountPercent: Decimal
+    maxManagerCouponFlatAmount: Decimal
+    maxManagerCouponValidityDays: number
+    maxManagerCouponUsageLimit: number
+    maxManagerCouponsPerDay: number
+    createdAt: Date
+    updatedAt: Date
+    _count: BranchDiscountConfigCountAggregateOutputType | null
+    _avg: BranchDiscountConfigAvgAggregateOutputType | null
+    _sum: BranchDiscountConfigSumAggregateOutputType | null
+    _min: BranchDiscountConfigMinAggregateOutputType | null
+    _max: BranchDiscountConfigMaxAggregateOutputType | null
+  }
+
+  type GetBranchDiscountConfigGroupByPayload<T extends BranchDiscountConfigGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<BranchDiscountConfigGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof BranchDiscountConfigGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], BranchDiscountConfigGroupByOutputType[P]>
+            : GetScalarType<T[P], BranchDiscountConfigGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type BranchDiscountConfigSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    branchId?: boolean
+    durationDiscountEnabled?: boolean
+    stackWithCoupon?: boolean
+    maxCombinedDiscountPercent?: boolean
+    managerApprovalThreshold?: boolean
+    maxManualDiscountsPerEmployeePerDay?: boolean
+    managerCouponCreationEnabled?: boolean
+    maxManagerCouponDiscountPercent?: boolean
+    maxManagerCouponFlatAmount?: boolean
+    maxManagerCouponValidityDays?: boolean
+    maxManagerCouponUsageLimit?: boolean
+    maxManagerCouponsPerDay?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["branchDiscountConfig"]>
+
+  export type BranchDiscountConfigSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    branchId?: boolean
+    durationDiscountEnabled?: boolean
+    stackWithCoupon?: boolean
+    maxCombinedDiscountPercent?: boolean
+    managerApprovalThreshold?: boolean
+    maxManualDiscountsPerEmployeePerDay?: boolean
+    managerCouponCreationEnabled?: boolean
+    maxManagerCouponDiscountPercent?: boolean
+    maxManagerCouponFlatAmount?: boolean
+    maxManagerCouponValidityDays?: boolean
+    maxManagerCouponUsageLimit?: boolean
+    maxManagerCouponsPerDay?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["branchDiscountConfig"]>
+
+  export type BranchDiscountConfigSelectScalar = {
+    id?: boolean
+    branchId?: boolean
+    durationDiscountEnabled?: boolean
+    stackWithCoupon?: boolean
+    maxCombinedDiscountPercent?: boolean
+    managerApprovalThreshold?: boolean
+    maxManualDiscountsPerEmployeePerDay?: boolean
+    managerCouponCreationEnabled?: boolean
+    maxManagerCouponDiscountPercent?: boolean
+    maxManagerCouponFlatAmount?: boolean
+    maxManagerCouponValidityDays?: boolean
+    maxManagerCouponUsageLimit?: boolean
+    maxManagerCouponsPerDay?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type BranchDiscountConfigInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }
+  export type BranchDiscountConfigIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }
+
+  export type $BranchDiscountConfigPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "BranchDiscountConfig"
+    objects: {
+      branch: Prisma.$BranchPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      branchId: number
+      durationDiscountEnabled: boolean
+      stackWithCoupon: boolean
+      maxCombinedDiscountPercent: Prisma.Decimal | null
+      managerApprovalThreshold: Prisma.Decimal
+      maxManualDiscountsPerEmployeePerDay: number
+      managerCouponCreationEnabled: boolean
+      maxManagerCouponDiscountPercent: Prisma.Decimal
+      maxManagerCouponFlatAmount: Prisma.Decimal
+      maxManagerCouponValidityDays: number
+      maxManagerCouponUsageLimit: number
+      maxManagerCouponsPerDay: number
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["branchDiscountConfig"]>
+    composites: {}
+  }
+
+  type BranchDiscountConfigGetPayload<S extends boolean | null | undefined | BranchDiscountConfigDefaultArgs> = $Result.GetResult<Prisma.$BranchDiscountConfigPayload, S>
+
+  type BranchDiscountConfigCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<BranchDiscountConfigFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: BranchDiscountConfigCountAggregateInputType | true
+    }
+
+  export interface BranchDiscountConfigDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['BranchDiscountConfig'], meta: { name: 'BranchDiscountConfig' } }
+    /**
+     * Find zero or one BranchDiscountConfig that matches the filter.
+     * @param {BranchDiscountConfigFindUniqueArgs} args - Arguments to find a BranchDiscountConfig
+     * @example
+     * // Get one BranchDiscountConfig
+     * const branchDiscountConfig = await prisma.branchDiscountConfig.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends BranchDiscountConfigFindUniqueArgs>(args: SelectSubset<T, BranchDiscountConfigFindUniqueArgs<ExtArgs>>): Prisma__BranchDiscountConfigClient<$Result.GetResult<Prisma.$BranchDiscountConfigPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one BranchDiscountConfig that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {BranchDiscountConfigFindUniqueOrThrowArgs} args - Arguments to find a BranchDiscountConfig
+     * @example
+     * // Get one BranchDiscountConfig
+     * const branchDiscountConfig = await prisma.branchDiscountConfig.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends BranchDiscountConfigFindUniqueOrThrowArgs>(args: SelectSubset<T, BranchDiscountConfigFindUniqueOrThrowArgs<ExtArgs>>): Prisma__BranchDiscountConfigClient<$Result.GetResult<Prisma.$BranchDiscountConfigPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first BranchDiscountConfig that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchDiscountConfigFindFirstArgs} args - Arguments to find a BranchDiscountConfig
+     * @example
+     * // Get one BranchDiscountConfig
+     * const branchDiscountConfig = await prisma.branchDiscountConfig.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends BranchDiscountConfigFindFirstArgs>(args?: SelectSubset<T, BranchDiscountConfigFindFirstArgs<ExtArgs>>): Prisma__BranchDiscountConfigClient<$Result.GetResult<Prisma.$BranchDiscountConfigPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first BranchDiscountConfig that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchDiscountConfigFindFirstOrThrowArgs} args - Arguments to find a BranchDiscountConfig
+     * @example
+     * // Get one BranchDiscountConfig
+     * const branchDiscountConfig = await prisma.branchDiscountConfig.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends BranchDiscountConfigFindFirstOrThrowArgs>(args?: SelectSubset<T, BranchDiscountConfigFindFirstOrThrowArgs<ExtArgs>>): Prisma__BranchDiscountConfigClient<$Result.GetResult<Prisma.$BranchDiscountConfigPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more BranchDiscountConfigs that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchDiscountConfigFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all BranchDiscountConfigs
+     * const branchDiscountConfigs = await prisma.branchDiscountConfig.findMany()
+     * 
+     * // Get first 10 BranchDiscountConfigs
+     * const branchDiscountConfigs = await prisma.branchDiscountConfig.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const branchDiscountConfigWithIdOnly = await prisma.branchDiscountConfig.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends BranchDiscountConfigFindManyArgs>(args?: SelectSubset<T, BranchDiscountConfigFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BranchDiscountConfigPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a BranchDiscountConfig.
+     * @param {BranchDiscountConfigCreateArgs} args - Arguments to create a BranchDiscountConfig.
+     * @example
+     * // Create one BranchDiscountConfig
+     * const BranchDiscountConfig = await prisma.branchDiscountConfig.create({
+     *   data: {
+     *     // ... data to create a BranchDiscountConfig
+     *   }
+     * })
+     * 
+     */
+    create<T extends BranchDiscountConfigCreateArgs>(args: SelectSubset<T, BranchDiscountConfigCreateArgs<ExtArgs>>): Prisma__BranchDiscountConfigClient<$Result.GetResult<Prisma.$BranchDiscountConfigPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many BranchDiscountConfigs.
+     * @param {BranchDiscountConfigCreateManyArgs} args - Arguments to create many BranchDiscountConfigs.
+     * @example
+     * // Create many BranchDiscountConfigs
+     * const branchDiscountConfig = await prisma.branchDiscountConfig.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends BranchDiscountConfigCreateManyArgs>(args?: SelectSubset<T, BranchDiscountConfigCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many BranchDiscountConfigs and returns the data saved in the database.
+     * @param {BranchDiscountConfigCreateManyAndReturnArgs} args - Arguments to create many BranchDiscountConfigs.
+     * @example
+     * // Create many BranchDiscountConfigs
+     * const branchDiscountConfig = await prisma.branchDiscountConfig.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many BranchDiscountConfigs and only return the `id`
+     * const branchDiscountConfigWithIdOnly = await prisma.branchDiscountConfig.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends BranchDiscountConfigCreateManyAndReturnArgs>(args?: SelectSubset<T, BranchDiscountConfigCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BranchDiscountConfigPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a BranchDiscountConfig.
+     * @param {BranchDiscountConfigDeleteArgs} args - Arguments to delete one BranchDiscountConfig.
+     * @example
+     * // Delete one BranchDiscountConfig
+     * const BranchDiscountConfig = await prisma.branchDiscountConfig.delete({
+     *   where: {
+     *     // ... filter to delete one BranchDiscountConfig
+     *   }
+     * })
+     * 
+     */
+    delete<T extends BranchDiscountConfigDeleteArgs>(args: SelectSubset<T, BranchDiscountConfigDeleteArgs<ExtArgs>>): Prisma__BranchDiscountConfigClient<$Result.GetResult<Prisma.$BranchDiscountConfigPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one BranchDiscountConfig.
+     * @param {BranchDiscountConfigUpdateArgs} args - Arguments to update one BranchDiscountConfig.
+     * @example
+     * // Update one BranchDiscountConfig
+     * const branchDiscountConfig = await prisma.branchDiscountConfig.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends BranchDiscountConfigUpdateArgs>(args: SelectSubset<T, BranchDiscountConfigUpdateArgs<ExtArgs>>): Prisma__BranchDiscountConfigClient<$Result.GetResult<Prisma.$BranchDiscountConfigPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more BranchDiscountConfigs.
+     * @param {BranchDiscountConfigDeleteManyArgs} args - Arguments to filter BranchDiscountConfigs to delete.
+     * @example
+     * // Delete a few BranchDiscountConfigs
+     * const { count } = await prisma.branchDiscountConfig.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends BranchDiscountConfigDeleteManyArgs>(args?: SelectSubset<T, BranchDiscountConfigDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more BranchDiscountConfigs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchDiscountConfigUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many BranchDiscountConfigs
+     * const branchDiscountConfig = await prisma.branchDiscountConfig.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends BranchDiscountConfigUpdateManyArgs>(args: SelectSubset<T, BranchDiscountConfigUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one BranchDiscountConfig.
+     * @param {BranchDiscountConfigUpsertArgs} args - Arguments to update or create a BranchDiscountConfig.
+     * @example
+     * // Update or create a BranchDiscountConfig
+     * const branchDiscountConfig = await prisma.branchDiscountConfig.upsert({
+     *   create: {
+     *     // ... data to create a BranchDiscountConfig
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the BranchDiscountConfig we want to update
+     *   }
+     * })
+     */
+    upsert<T extends BranchDiscountConfigUpsertArgs>(args: SelectSubset<T, BranchDiscountConfigUpsertArgs<ExtArgs>>): Prisma__BranchDiscountConfigClient<$Result.GetResult<Prisma.$BranchDiscountConfigPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of BranchDiscountConfigs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchDiscountConfigCountArgs} args - Arguments to filter BranchDiscountConfigs to count.
+     * @example
+     * // Count the number of BranchDiscountConfigs
+     * const count = await prisma.branchDiscountConfig.count({
+     *   where: {
+     *     // ... the filter for the BranchDiscountConfigs we want to count
+     *   }
+     * })
+    **/
+    count<T extends BranchDiscountConfigCountArgs>(
+      args?: Subset<T, BranchDiscountConfigCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], BranchDiscountConfigCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a BranchDiscountConfig.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchDiscountConfigAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends BranchDiscountConfigAggregateArgs>(args: Subset<T, BranchDiscountConfigAggregateArgs>): Prisma.PrismaPromise<GetBranchDiscountConfigAggregateType<T>>
+
+    /**
+     * Group by BranchDiscountConfig.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchDiscountConfigGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends BranchDiscountConfigGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: BranchDiscountConfigGroupByArgs['orderBy'] }
+        : { orderBy?: BranchDiscountConfigGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, BranchDiscountConfigGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetBranchDiscountConfigGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the BranchDiscountConfig model
+   */
+  readonly fields: BranchDiscountConfigFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for BranchDiscountConfig.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__BranchDiscountConfigClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    branch<T extends BranchDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BranchDefaultArgs<ExtArgs>>): Prisma__BranchClient<$Result.GetResult<Prisma.$BranchPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the BranchDiscountConfig model
+   */ 
+  interface BranchDiscountConfigFieldRefs {
+    readonly id: FieldRef<"BranchDiscountConfig", 'Int'>
+    readonly branchId: FieldRef<"BranchDiscountConfig", 'Int'>
+    readonly durationDiscountEnabled: FieldRef<"BranchDiscountConfig", 'Boolean'>
+    readonly stackWithCoupon: FieldRef<"BranchDiscountConfig", 'Boolean'>
+    readonly maxCombinedDiscountPercent: FieldRef<"BranchDiscountConfig", 'Decimal'>
+    readonly managerApprovalThreshold: FieldRef<"BranchDiscountConfig", 'Decimal'>
+    readonly maxManualDiscountsPerEmployeePerDay: FieldRef<"BranchDiscountConfig", 'Int'>
+    readonly managerCouponCreationEnabled: FieldRef<"BranchDiscountConfig", 'Boolean'>
+    readonly maxManagerCouponDiscountPercent: FieldRef<"BranchDiscountConfig", 'Decimal'>
+    readonly maxManagerCouponFlatAmount: FieldRef<"BranchDiscountConfig", 'Decimal'>
+    readonly maxManagerCouponValidityDays: FieldRef<"BranchDiscountConfig", 'Int'>
+    readonly maxManagerCouponUsageLimit: FieldRef<"BranchDiscountConfig", 'Int'>
+    readonly maxManagerCouponsPerDay: FieldRef<"BranchDiscountConfig", 'Int'>
+    readonly createdAt: FieldRef<"BranchDiscountConfig", 'DateTime'>
+    readonly updatedAt: FieldRef<"BranchDiscountConfig", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * BranchDiscountConfig findUnique
+   */
+  export type BranchDiscountConfigFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchDiscountConfig
+     */
+    select?: BranchDiscountConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchDiscountConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchDiscountConfig to fetch.
+     */
+    where: BranchDiscountConfigWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchDiscountConfig findUniqueOrThrow
+   */
+  export type BranchDiscountConfigFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchDiscountConfig
+     */
+    select?: BranchDiscountConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchDiscountConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchDiscountConfig to fetch.
+     */
+    where: BranchDiscountConfigWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchDiscountConfig findFirst
+   */
+  export type BranchDiscountConfigFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchDiscountConfig
+     */
+    select?: BranchDiscountConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchDiscountConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchDiscountConfig to fetch.
+     */
+    where?: BranchDiscountConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchDiscountConfigs to fetch.
+     */
+    orderBy?: BranchDiscountConfigOrderByWithRelationInput | BranchDiscountConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for BranchDiscountConfigs.
+     */
+    cursor?: BranchDiscountConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchDiscountConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchDiscountConfigs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of BranchDiscountConfigs.
+     */
+    distinct?: BranchDiscountConfigScalarFieldEnum | BranchDiscountConfigScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchDiscountConfig findFirstOrThrow
+   */
+  export type BranchDiscountConfigFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchDiscountConfig
+     */
+    select?: BranchDiscountConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchDiscountConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchDiscountConfig to fetch.
+     */
+    where?: BranchDiscountConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchDiscountConfigs to fetch.
+     */
+    orderBy?: BranchDiscountConfigOrderByWithRelationInput | BranchDiscountConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for BranchDiscountConfigs.
+     */
+    cursor?: BranchDiscountConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchDiscountConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchDiscountConfigs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of BranchDiscountConfigs.
+     */
+    distinct?: BranchDiscountConfigScalarFieldEnum | BranchDiscountConfigScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchDiscountConfig findMany
+   */
+  export type BranchDiscountConfigFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchDiscountConfig
+     */
+    select?: BranchDiscountConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchDiscountConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchDiscountConfigs to fetch.
+     */
+    where?: BranchDiscountConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchDiscountConfigs to fetch.
+     */
+    orderBy?: BranchDiscountConfigOrderByWithRelationInput | BranchDiscountConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing BranchDiscountConfigs.
+     */
+    cursor?: BranchDiscountConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchDiscountConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchDiscountConfigs.
+     */
+    skip?: number
+    distinct?: BranchDiscountConfigScalarFieldEnum | BranchDiscountConfigScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchDiscountConfig create
+   */
+  export type BranchDiscountConfigCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchDiscountConfig
+     */
+    select?: BranchDiscountConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchDiscountConfigInclude<ExtArgs> | null
+    /**
+     * The data needed to create a BranchDiscountConfig.
+     */
+    data: XOR<BranchDiscountConfigCreateInput, BranchDiscountConfigUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchDiscountConfig createMany
+   */
+  export type BranchDiscountConfigCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many BranchDiscountConfigs.
+     */
+    data: BranchDiscountConfigCreateManyInput | BranchDiscountConfigCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * BranchDiscountConfig createManyAndReturn
+   */
+  export type BranchDiscountConfigCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchDiscountConfig
+     */
+    select?: BranchDiscountConfigSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many BranchDiscountConfigs.
+     */
+    data: BranchDiscountConfigCreateManyInput | BranchDiscountConfigCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchDiscountConfigIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * BranchDiscountConfig update
+   */
+  export type BranchDiscountConfigUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchDiscountConfig
+     */
+    select?: BranchDiscountConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchDiscountConfigInclude<ExtArgs> | null
+    /**
+     * The data needed to update a BranchDiscountConfig.
+     */
+    data: XOR<BranchDiscountConfigUpdateInput, BranchDiscountConfigUncheckedUpdateInput>
+    /**
+     * Choose, which BranchDiscountConfig to update.
+     */
+    where: BranchDiscountConfigWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchDiscountConfig updateMany
+   */
+  export type BranchDiscountConfigUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update BranchDiscountConfigs.
+     */
+    data: XOR<BranchDiscountConfigUpdateManyMutationInput, BranchDiscountConfigUncheckedUpdateManyInput>
+    /**
+     * Filter which BranchDiscountConfigs to update
+     */
+    where?: BranchDiscountConfigWhereInput
+  }
+
+  /**
+   * BranchDiscountConfig upsert
+   */
+  export type BranchDiscountConfigUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchDiscountConfig
+     */
+    select?: BranchDiscountConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchDiscountConfigInclude<ExtArgs> | null
+    /**
+     * The filter to search for the BranchDiscountConfig to update in case it exists.
+     */
+    where: BranchDiscountConfigWhereUniqueInput
+    /**
+     * In case the BranchDiscountConfig found by the `where` argument doesn't exist, create a new BranchDiscountConfig with this data.
+     */
+    create: XOR<BranchDiscountConfigCreateInput, BranchDiscountConfigUncheckedCreateInput>
+    /**
+     * In case the BranchDiscountConfig was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<BranchDiscountConfigUpdateInput, BranchDiscountConfigUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchDiscountConfig delete
+   */
+  export type BranchDiscountConfigDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchDiscountConfig
+     */
+    select?: BranchDiscountConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchDiscountConfigInclude<ExtArgs> | null
+    /**
+     * Filter which BranchDiscountConfig to delete.
+     */
+    where: BranchDiscountConfigWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchDiscountConfig deleteMany
+   */
+  export type BranchDiscountConfigDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which BranchDiscountConfigs to delete
+     */
+    where?: BranchDiscountConfigWhereInput
+  }
+
+  /**
+   * BranchDiscountConfig without action
+   */
+  export type BranchDiscountConfigDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchDiscountConfig
+     */
+    select?: BranchDiscountConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchDiscountConfigInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model DiscountApplication
+   */
+
+  export type AggregateDiscountApplication = {
+    _count: DiscountApplicationCountAggregateOutputType | null
+    _avg: DiscountApplicationAvgAggregateOutputType | null
+    _sum: DiscountApplicationSumAggregateOutputType | null
+    _min: DiscountApplicationMinAggregateOutputType | null
+    _max: DiscountApplicationMaxAggregateOutputType | null
+  }
+
+  export type DiscountApplicationAvgAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    originalAmount: Decimal | null
+    durationDiscountAmount: Decimal | null
+    durationDiscountPercent: Decimal | null
+    durationSlabId: number | null
+    couponDiscountAmount: Decimal | null
+    couponDiscountPercent: Decimal | null
+    discountRuleId: number | null
+    manualDiscountAmount: Decimal | null
+    manualDiscountId: number | null
+    totalDiscountAmount: Decimal | null
+    finalAmount: Decimal | null
+  }
+
+  export type DiscountApplicationSumAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    originalAmount: Decimal | null
+    durationDiscountAmount: Decimal | null
+    durationDiscountPercent: Decimal | null
+    durationSlabId: number | null
+    couponDiscountAmount: Decimal | null
+    couponDiscountPercent: Decimal | null
+    discountRuleId: number | null
+    manualDiscountAmount: Decimal | null
+    manualDiscountId: number | null
+    totalDiscountAmount: Decimal | null
+    finalAmount: Decimal | null
+  }
+
+  export type DiscountApplicationMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    bookingId: number | null
+    originalAmount: Decimal | null
+    durationDiscountAmount: Decimal | null
+    durationDiscountPercent: Decimal | null
+    durationSlabId: number | null
+    couponDiscountAmount: Decimal | null
+    couponDiscountPercent: Decimal | null
+    discountRuleId: number | null
+    manualDiscountAmount: Decimal | null
+    manualDiscountId: number | null
+    totalDiscountAmount: Decimal | null
+    finalAmount: Decimal | null
+    paymentPlan: string | null
+    adjustmentType: $Enums.AdjustmentType | null
+    createdAt: Date | null
+  }
+
+  export type DiscountApplicationMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    bookingId: number | null
+    originalAmount: Decimal | null
+    durationDiscountAmount: Decimal | null
+    durationDiscountPercent: Decimal | null
+    durationSlabId: number | null
+    couponDiscountAmount: Decimal | null
+    couponDiscountPercent: Decimal | null
+    discountRuleId: number | null
+    manualDiscountAmount: Decimal | null
+    manualDiscountId: number | null
+    totalDiscountAmount: Decimal | null
+    finalAmount: Decimal | null
+    paymentPlan: string | null
+    adjustmentType: $Enums.AdjustmentType | null
+    createdAt: Date | null
+  }
+
+  export type DiscountApplicationCountAggregateOutputType = {
+    id: number
+    publicId: number
+    bookingId: number
+    originalAmount: number
+    durationDiscountAmount: number
+    durationDiscountPercent: number
+    durationSlabId: number
+    couponDiscountAmount: number
+    couponDiscountPercent: number
+    discountRuleId: number
+    manualDiscountAmount: number
+    manualDiscountId: number
+    totalDiscountAmount: number
+    finalAmount: number
+    paymentPlan: number
+    adjustmentType: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type DiscountApplicationAvgAggregateInputType = {
+    id?: true
+    bookingId?: true
+    originalAmount?: true
+    durationDiscountAmount?: true
+    durationDiscountPercent?: true
+    durationSlabId?: true
+    couponDiscountAmount?: true
+    couponDiscountPercent?: true
+    discountRuleId?: true
+    manualDiscountAmount?: true
+    manualDiscountId?: true
+    totalDiscountAmount?: true
+    finalAmount?: true
+  }
+
+  export type DiscountApplicationSumAggregateInputType = {
+    id?: true
+    bookingId?: true
+    originalAmount?: true
+    durationDiscountAmount?: true
+    durationDiscountPercent?: true
+    durationSlabId?: true
+    couponDiscountAmount?: true
+    couponDiscountPercent?: true
+    discountRuleId?: true
+    manualDiscountAmount?: true
+    manualDiscountId?: true
+    totalDiscountAmount?: true
+    finalAmount?: true
+  }
+
+  export type DiscountApplicationMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    originalAmount?: true
+    durationDiscountAmount?: true
+    durationDiscountPercent?: true
+    durationSlabId?: true
+    couponDiscountAmount?: true
+    couponDiscountPercent?: true
+    discountRuleId?: true
+    manualDiscountAmount?: true
+    manualDiscountId?: true
+    totalDiscountAmount?: true
+    finalAmount?: true
+    paymentPlan?: true
+    adjustmentType?: true
+    createdAt?: true
+  }
+
+  export type DiscountApplicationMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    originalAmount?: true
+    durationDiscountAmount?: true
+    durationDiscountPercent?: true
+    durationSlabId?: true
+    couponDiscountAmount?: true
+    couponDiscountPercent?: true
+    discountRuleId?: true
+    manualDiscountAmount?: true
+    manualDiscountId?: true
+    totalDiscountAmount?: true
+    finalAmount?: true
+    paymentPlan?: true
+    adjustmentType?: true
+    createdAt?: true
+  }
+
+  export type DiscountApplicationCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    originalAmount?: true
+    durationDiscountAmount?: true
+    durationDiscountPercent?: true
+    durationSlabId?: true
+    couponDiscountAmount?: true
+    couponDiscountPercent?: true
+    discountRuleId?: true
+    manualDiscountAmount?: true
+    manualDiscountId?: true
+    totalDiscountAmount?: true
+    finalAmount?: true
+    paymentPlan?: true
+    adjustmentType?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type DiscountApplicationAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which DiscountApplication to aggregate.
+     */
+    where?: DiscountApplicationWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DiscountApplications to fetch.
+     */
+    orderBy?: DiscountApplicationOrderByWithRelationInput | DiscountApplicationOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: DiscountApplicationWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DiscountApplications from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DiscountApplications.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned DiscountApplications
+    **/
+    _count?: true | DiscountApplicationCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: DiscountApplicationAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: DiscountApplicationSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: DiscountApplicationMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: DiscountApplicationMaxAggregateInputType
+  }
+
+  export type GetDiscountApplicationAggregateType<T extends DiscountApplicationAggregateArgs> = {
+        [P in keyof T & keyof AggregateDiscountApplication]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateDiscountApplication[P]>
+      : GetScalarType<T[P], AggregateDiscountApplication[P]>
+  }
+
+
+
+
+  export type DiscountApplicationGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DiscountApplicationWhereInput
+    orderBy?: DiscountApplicationOrderByWithAggregationInput | DiscountApplicationOrderByWithAggregationInput[]
+    by: DiscountApplicationScalarFieldEnum[] | DiscountApplicationScalarFieldEnum
+    having?: DiscountApplicationScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: DiscountApplicationCountAggregateInputType | true
+    _avg?: DiscountApplicationAvgAggregateInputType
+    _sum?: DiscountApplicationSumAggregateInputType
+    _min?: DiscountApplicationMinAggregateInputType
+    _max?: DiscountApplicationMaxAggregateInputType
+  }
+
+  export type DiscountApplicationGroupByOutputType = {
+    id: number
+    publicId: string
+    bookingId: number
+    originalAmount: Decimal
+    durationDiscountAmount: Decimal
+    durationDiscountPercent: Decimal
+    durationSlabId: number | null
+    couponDiscountAmount: Decimal
+    couponDiscountPercent: Decimal
+    discountRuleId: number | null
+    manualDiscountAmount: Decimal
+    manualDiscountId: number | null
+    totalDiscountAmount: Decimal
+    finalAmount: Decimal
+    paymentPlan: string
+    adjustmentType: $Enums.AdjustmentType
+    createdAt: Date
+    _count: DiscountApplicationCountAggregateOutputType | null
+    _avg: DiscountApplicationAvgAggregateOutputType | null
+    _sum: DiscountApplicationSumAggregateOutputType | null
+    _min: DiscountApplicationMinAggregateOutputType | null
+    _max: DiscountApplicationMaxAggregateOutputType | null
+  }
+
+  type GetDiscountApplicationGroupByPayload<T extends DiscountApplicationGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<DiscountApplicationGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof DiscountApplicationGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], DiscountApplicationGroupByOutputType[P]>
+            : GetScalarType<T[P], DiscountApplicationGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type DiscountApplicationSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    originalAmount?: boolean
+    durationDiscountAmount?: boolean
+    durationDiscountPercent?: boolean
+    durationSlabId?: boolean
+    couponDiscountAmount?: boolean
+    couponDiscountPercent?: boolean
+    discountRuleId?: boolean
+    manualDiscountAmount?: boolean
+    manualDiscountId?: boolean
+    totalDiscountAmount?: boolean
+    finalAmount?: boolean
+    paymentPlan?: boolean
+    adjustmentType?: boolean
+    createdAt?: boolean
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    discountRule?: boolean | DiscountApplication$discountRuleArgs<ExtArgs>
+    manualDiscount?: boolean | DiscountApplication$manualDiscountArgs<ExtArgs>
+  }, ExtArgs["result"]["discountApplication"]>
+
+  export type DiscountApplicationSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    originalAmount?: boolean
+    durationDiscountAmount?: boolean
+    durationDiscountPercent?: boolean
+    durationSlabId?: boolean
+    couponDiscountAmount?: boolean
+    couponDiscountPercent?: boolean
+    discountRuleId?: boolean
+    manualDiscountAmount?: boolean
+    manualDiscountId?: boolean
+    totalDiscountAmount?: boolean
+    finalAmount?: boolean
+    paymentPlan?: boolean
+    adjustmentType?: boolean
+    createdAt?: boolean
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    discountRule?: boolean | DiscountApplication$discountRuleArgs<ExtArgs>
+    manualDiscount?: boolean | DiscountApplication$manualDiscountArgs<ExtArgs>
+  }, ExtArgs["result"]["discountApplication"]>
+
+  export type DiscountApplicationSelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    originalAmount?: boolean
+    durationDiscountAmount?: boolean
+    durationDiscountPercent?: boolean
+    durationSlabId?: boolean
+    couponDiscountAmount?: boolean
+    couponDiscountPercent?: boolean
+    discountRuleId?: boolean
+    manualDiscountAmount?: boolean
+    manualDiscountId?: boolean
+    totalDiscountAmount?: boolean
+    finalAmount?: boolean
+    paymentPlan?: boolean
+    adjustmentType?: boolean
+    createdAt?: boolean
+  }
+
+  export type DiscountApplicationInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    discountRule?: boolean | DiscountApplication$discountRuleArgs<ExtArgs>
+    manualDiscount?: boolean | DiscountApplication$manualDiscountArgs<ExtArgs>
+  }
+  export type DiscountApplicationIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    discountRule?: boolean | DiscountApplication$discountRuleArgs<ExtArgs>
+    manualDiscount?: boolean | DiscountApplication$manualDiscountArgs<ExtArgs>
+  }
+
+  export type $DiscountApplicationPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "DiscountApplication"
+    objects: {
+      booking: Prisma.$BookingPayload<ExtArgs>
+      discountRule: Prisma.$DiscountRulePayload<ExtArgs> | null
+      manualDiscount: Prisma.$ManualDiscountPayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      bookingId: number
+      originalAmount: Prisma.Decimal
+      durationDiscountAmount: Prisma.Decimal
+      durationDiscountPercent: Prisma.Decimal
+      durationSlabId: number | null
+      couponDiscountAmount: Prisma.Decimal
+      couponDiscountPercent: Prisma.Decimal
+      discountRuleId: number | null
+      manualDiscountAmount: Prisma.Decimal
+      manualDiscountId: number | null
+      totalDiscountAmount: Prisma.Decimal
+      finalAmount: Prisma.Decimal
+      paymentPlan: string
+      adjustmentType: $Enums.AdjustmentType
+      createdAt: Date
+    }, ExtArgs["result"]["discountApplication"]>
+    composites: {}
+  }
+
+  type DiscountApplicationGetPayload<S extends boolean | null | undefined | DiscountApplicationDefaultArgs> = $Result.GetResult<Prisma.$DiscountApplicationPayload, S>
+
+  type DiscountApplicationCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<DiscountApplicationFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: DiscountApplicationCountAggregateInputType | true
+    }
+
+  export interface DiscountApplicationDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['DiscountApplication'], meta: { name: 'DiscountApplication' } }
+    /**
+     * Find zero or one DiscountApplication that matches the filter.
+     * @param {DiscountApplicationFindUniqueArgs} args - Arguments to find a DiscountApplication
+     * @example
+     * // Get one DiscountApplication
+     * const discountApplication = await prisma.discountApplication.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends DiscountApplicationFindUniqueArgs>(args: SelectSubset<T, DiscountApplicationFindUniqueArgs<ExtArgs>>): Prisma__DiscountApplicationClient<$Result.GetResult<Prisma.$DiscountApplicationPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one DiscountApplication that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {DiscountApplicationFindUniqueOrThrowArgs} args - Arguments to find a DiscountApplication
+     * @example
+     * // Get one DiscountApplication
+     * const discountApplication = await prisma.discountApplication.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends DiscountApplicationFindUniqueOrThrowArgs>(args: SelectSubset<T, DiscountApplicationFindUniqueOrThrowArgs<ExtArgs>>): Prisma__DiscountApplicationClient<$Result.GetResult<Prisma.$DiscountApplicationPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first DiscountApplication that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiscountApplicationFindFirstArgs} args - Arguments to find a DiscountApplication
+     * @example
+     * // Get one DiscountApplication
+     * const discountApplication = await prisma.discountApplication.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends DiscountApplicationFindFirstArgs>(args?: SelectSubset<T, DiscountApplicationFindFirstArgs<ExtArgs>>): Prisma__DiscountApplicationClient<$Result.GetResult<Prisma.$DiscountApplicationPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first DiscountApplication that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiscountApplicationFindFirstOrThrowArgs} args - Arguments to find a DiscountApplication
+     * @example
+     * // Get one DiscountApplication
+     * const discountApplication = await prisma.discountApplication.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends DiscountApplicationFindFirstOrThrowArgs>(args?: SelectSubset<T, DiscountApplicationFindFirstOrThrowArgs<ExtArgs>>): Prisma__DiscountApplicationClient<$Result.GetResult<Prisma.$DiscountApplicationPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more DiscountApplications that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiscountApplicationFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all DiscountApplications
+     * const discountApplications = await prisma.discountApplication.findMany()
+     * 
+     * // Get first 10 DiscountApplications
+     * const discountApplications = await prisma.discountApplication.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const discountApplicationWithIdOnly = await prisma.discountApplication.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends DiscountApplicationFindManyArgs>(args?: SelectSubset<T, DiscountApplicationFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DiscountApplicationPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a DiscountApplication.
+     * @param {DiscountApplicationCreateArgs} args - Arguments to create a DiscountApplication.
+     * @example
+     * // Create one DiscountApplication
+     * const DiscountApplication = await prisma.discountApplication.create({
+     *   data: {
+     *     // ... data to create a DiscountApplication
+     *   }
+     * })
+     * 
+     */
+    create<T extends DiscountApplicationCreateArgs>(args: SelectSubset<T, DiscountApplicationCreateArgs<ExtArgs>>): Prisma__DiscountApplicationClient<$Result.GetResult<Prisma.$DiscountApplicationPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many DiscountApplications.
+     * @param {DiscountApplicationCreateManyArgs} args - Arguments to create many DiscountApplications.
+     * @example
+     * // Create many DiscountApplications
+     * const discountApplication = await prisma.discountApplication.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends DiscountApplicationCreateManyArgs>(args?: SelectSubset<T, DiscountApplicationCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many DiscountApplications and returns the data saved in the database.
+     * @param {DiscountApplicationCreateManyAndReturnArgs} args - Arguments to create many DiscountApplications.
+     * @example
+     * // Create many DiscountApplications
+     * const discountApplication = await prisma.discountApplication.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many DiscountApplications and only return the `id`
+     * const discountApplicationWithIdOnly = await prisma.discountApplication.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends DiscountApplicationCreateManyAndReturnArgs>(args?: SelectSubset<T, DiscountApplicationCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DiscountApplicationPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a DiscountApplication.
+     * @param {DiscountApplicationDeleteArgs} args - Arguments to delete one DiscountApplication.
+     * @example
+     * // Delete one DiscountApplication
+     * const DiscountApplication = await prisma.discountApplication.delete({
+     *   where: {
+     *     // ... filter to delete one DiscountApplication
+     *   }
+     * })
+     * 
+     */
+    delete<T extends DiscountApplicationDeleteArgs>(args: SelectSubset<T, DiscountApplicationDeleteArgs<ExtArgs>>): Prisma__DiscountApplicationClient<$Result.GetResult<Prisma.$DiscountApplicationPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one DiscountApplication.
+     * @param {DiscountApplicationUpdateArgs} args - Arguments to update one DiscountApplication.
+     * @example
+     * // Update one DiscountApplication
+     * const discountApplication = await prisma.discountApplication.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends DiscountApplicationUpdateArgs>(args: SelectSubset<T, DiscountApplicationUpdateArgs<ExtArgs>>): Prisma__DiscountApplicationClient<$Result.GetResult<Prisma.$DiscountApplicationPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more DiscountApplications.
+     * @param {DiscountApplicationDeleteManyArgs} args - Arguments to filter DiscountApplications to delete.
+     * @example
+     * // Delete a few DiscountApplications
+     * const { count } = await prisma.discountApplication.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends DiscountApplicationDeleteManyArgs>(args?: SelectSubset<T, DiscountApplicationDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more DiscountApplications.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiscountApplicationUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many DiscountApplications
+     * const discountApplication = await prisma.discountApplication.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends DiscountApplicationUpdateManyArgs>(args: SelectSubset<T, DiscountApplicationUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one DiscountApplication.
+     * @param {DiscountApplicationUpsertArgs} args - Arguments to update or create a DiscountApplication.
+     * @example
+     * // Update or create a DiscountApplication
+     * const discountApplication = await prisma.discountApplication.upsert({
+     *   create: {
+     *     // ... data to create a DiscountApplication
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the DiscountApplication we want to update
+     *   }
+     * })
+     */
+    upsert<T extends DiscountApplicationUpsertArgs>(args: SelectSubset<T, DiscountApplicationUpsertArgs<ExtArgs>>): Prisma__DiscountApplicationClient<$Result.GetResult<Prisma.$DiscountApplicationPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of DiscountApplications.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiscountApplicationCountArgs} args - Arguments to filter DiscountApplications to count.
+     * @example
+     * // Count the number of DiscountApplications
+     * const count = await prisma.discountApplication.count({
+     *   where: {
+     *     // ... the filter for the DiscountApplications we want to count
+     *   }
+     * })
+    **/
+    count<T extends DiscountApplicationCountArgs>(
+      args?: Subset<T, DiscountApplicationCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], DiscountApplicationCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a DiscountApplication.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiscountApplicationAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends DiscountApplicationAggregateArgs>(args: Subset<T, DiscountApplicationAggregateArgs>): Prisma.PrismaPromise<GetDiscountApplicationAggregateType<T>>
+
+    /**
+     * Group by DiscountApplication.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiscountApplicationGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends DiscountApplicationGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: DiscountApplicationGroupByArgs['orderBy'] }
+        : { orderBy?: DiscountApplicationGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, DiscountApplicationGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetDiscountApplicationGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the DiscountApplication model
+   */
+  readonly fields: DiscountApplicationFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for DiscountApplication.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__DiscountApplicationClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    booking<T extends BookingDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BookingDefaultArgs<ExtArgs>>): Prisma__BookingClient<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    discountRule<T extends DiscountApplication$discountRuleArgs<ExtArgs> = {}>(args?: Subset<T, DiscountApplication$discountRuleArgs<ExtArgs>>): Prisma__DiscountRuleClient<$Result.GetResult<Prisma.$DiscountRulePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    manualDiscount<T extends DiscountApplication$manualDiscountArgs<ExtArgs> = {}>(args?: Subset<T, DiscountApplication$manualDiscountArgs<ExtArgs>>): Prisma__ManualDiscountClient<$Result.GetResult<Prisma.$ManualDiscountPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the DiscountApplication model
+   */ 
+  interface DiscountApplicationFieldRefs {
+    readonly id: FieldRef<"DiscountApplication", 'Int'>
+    readonly publicId: FieldRef<"DiscountApplication", 'String'>
+    readonly bookingId: FieldRef<"DiscountApplication", 'Int'>
+    readonly originalAmount: FieldRef<"DiscountApplication", 'Decimal'>
+    readonly durationDiscountAmount: FieldRef<"DiscountApplication", 'Decimal'>
+    readonly durationDiscountPercent: FieldRef<"DiscountApplication", 'Decimal'>
+    readonly durationSlabId: FieldRef<"DiscountApplication", 'Int'>
+    readonly couponDiscountAmount: FieldRef<"DiscountApplication", 'Decimal'>
+    readonly couponDiscountPercent: FieldRef<"DiscountApplication", 'Decimal'>
+    readonly discountRuleId: FieldRef<"DiscountApplication", 'Int'>
+    readonly manualDiscountAmount: FieldRef<"DiscountApplication", 'Decimal'>
+    readonly manualDiscountId: FieldRef<"DiscountApplication", 'Int'>
+    readonly totalDiscountAmount: FieldRef<"DiscountApplication", 'Decimal'>
+    readonly finalAmount: FieldRef<"DiscountApplication", 'Decimal'>
+    readonly paymentPlan: FieldRef<"DiscountApplication", 'String'>
+    readonly adjustmentType: FieldRef<"DiscountApplication", 'AdjustmentType'>
+    readonly createdAt: FieldRef<"DiscountApplication", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * DiscountApplication findUnique
+   */
+  export type DiscountApplicationFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountApplication
+     */
+    select?: DiscountApplicationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountApplicationInclude<ExtArgs> | null
+    /**
+     * Filter, which DiscountApplication to fetch.
+     */
+    where: DiscountApplicationWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DiscountApplication findUniqueOrThrow
+   */
+  export type DiscountApplicationFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountApplication
+     */
+    select?: DiscountApplicationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountApplicationInclude<ExtArgs> | null
+    /**
+     * Filter, which DiscountApplication to fetch.
+     */
+    where: DiscountApplicationWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DiscountApplication findFirst
+   */
+  export type DiscountApplicationFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountApplication
+     */
+    select?: DiscountApplicationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountApplicationInclude<ExtArgs> | null
+    /**
+     * Filter, which DiscountApplication to fetch.
+     */
+    where?: DiscountApplicationWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DiscountApplications to fetch.
+     */
+    orderBy?: DiscountApplicationOrderByWithRelationInput | DiscountApplicationOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for DiscountApplications.
+     */
+    cursor?: DiscountApplicationWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DiscountApplications from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DiscountApplications.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DiscountApplications.
+     */
+    distinct?: DiscountApplicationScalarFieldEnum | DiscountApplicationScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DiscountApplication findFirstOrThrow
+   */
+  export type DiscountApplicationFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountApplication
+     */
+    select?: DiscountApplicationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountApplicationInclude<ExtArgs> | null
+    /**
+     * Filter, which DiscountApplication to fetch.
+     */
+    where?: DiscountApplicationWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DiscountApplications to fetch.
+     */
+    orderBy?: DiscountApplicationOrderByWithRelationInput | DiscountApplicationOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for DiscountApplications.
+     */
+    cursor?: DiscountApplicationWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DiscountApplications from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DiscountApplications.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DiscountApplications.
+     */
+    distinct?: DiscountApplicationScalarFieldEnum | DiscountApplicationScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DiscountApplication findMany
+   */
+  export type DiscountApplicationFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountApplication
+     */
+    select?: DiscountApplicationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountApplicationInclude<ExtArgs> | null
+    /**
+     * Filter, which DiscountApplications to fetch.
+     */
+    where?: DiscountApplicationWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DiscountApplications to fetch.
+     */
+    orderBy?: DiscountApplicationOrderByWithRelationInput | DiscountApplicationOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing DiscountApplications.
+     */
+    cursor?: DiscountApplicationWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DiscountApplications from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DiscountApplications.
+     */
+    skip?: number
+    distinct?: DiscountApplicationScalarFieldEnum | DiscountApplicationScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DiscountApplication create
+   */
+  export type DiscountApplicationCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountApplication
+     */
+    select?: DiscountApplicationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountApplicationInclude<ExtArgs> | null
+    /**
+     * The data needed to create a DiscountApplication.
+     */
+    data: XOR<DiscountApplicationCreateInput, DiscountApplicationUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DiscountApplication createMany
+   */
+  export type DiscountApplicationCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many DiscountApplications.
+     */
+    data: DiscountApplicationCreateManyInput | DiscountApplicationCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * DiscountApplication createManyAndReturn
+   */
+  export type DiscountApplicationCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountApplication
+     */
+    select?: DiscountApplicationSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many DiscountApplications.
+     */
+    data: DiscountApplicationCreateManyInput | DiscountApplicationCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountApplicationIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * DiscountApplication update
+   */
+  export type DiscountApplicationUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountApplication
+     */
+    select?: DiscountApplicationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountApplicationInclude<ExtArgs> | null
+    /**
+     * The data needed to update a DiscountApplication.
+     */
+    data: XOR<DiscountApplicationUpdateInput, DiscountApplicationUncheckedUpdateInput>
+    /**
+     * Choose, which DiscountApplication to update.
+     */
+    where: DiscountApplicationWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DiscountApplication updateMany
+   */
+  export type DiscountApplicationUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update DiscountApplications.
+     */
+    data: XOR<DiscountApplicationUpdateManyMutationInput, DiscountApplicationUncheckedUpdateManyInput>
+    /**
+     * Filter which DiscountApplications to update
+     */
+    where?: DiscountApplicationWhereInput
+  }
+
+  /**
+   * DiscountApplication upsert
+   */
+  export type DiscountApplicationUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountApplication
+     */
+    select?: DiscountApplicationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountApplicationInclude<ExtArgs> | null
+    /**
+     * The filter to search for the DiscountApplication to update in case it exists.
+     */
+    where: DiscountApplicationWhereUniqueInput
+    /**
+     * In case the DiscountApplication found by the `where` argument doesn't exist, create a new DiscountApplication with this data.
+     */
+    create: XOR<DiscountApplicationCreateInput, DiscountApplicationUncheckedCreateInput>
+    /**
+     * In case the DiscountApplication was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<DiscountApplicationUpdateInput, DiscountApplicationUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DiscountApplication delete
+   */
+  export type DiscountApplicationDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountApplication
+     */
+    select?: DiscountApplicationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountApplicationInclude<ExtArgs> | null
+    /**
+     * Filter which DiscountApplication to delete.
+     */
+    where: DiscountApplicationWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * DiscountApplication deleteMany
+   */
+  export type DiscountApplicationDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which DiscountApplications to delete
+     */
+    where?: DiscountApplicationWhereInput
+  }
+
+  /**
+   * DiscountApplication.discountRule
+   */
+  export type DiscountApplication$discountRuleArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountRule
+     */
+    select?: DiscountRuleSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountRuleInclude<ExtArgs> | null
+    where?: DiscountRuleWhereInput
+  }
+
+  /**
+   * DiscountApplication.manualDiscount
+   */
+  export type DiscountApplication$manualDiscountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManualDiscount
+     */
+    select?: ManualDiscountSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ManualDiscountInclude<ExtArgs> | null
+    where?: ManualDiscountWhereInput
+  }
+
+  /**
+   * DiscountApplication without action
+   */
+  export type DiscountApplicationDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountApplication
+     */
+    select?: DiscountApplicationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountApplicationInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model CouponUsageLog
+   */
+
+  export type AggregateCouponUsageLog = {
+    _count: CouponUsageLogCountAggregateOutputType | null
+    _avg: CouponUsageLogAvgAggregateOutputType | null
+    _sum: CouponUsageLogSumAggregateOutputType | null
+    _min: CouponUsageLogMinAggregateOutputType | null
+    _max: CouponUsageLogMaxAggregateOutputType | null
+  }
+
+  export type CouponUsageLogAvgAggregateOutputType = {
+    id: number | null
+    discountRuleId: number | null
+    bookingId: number | null
+    customerId: number | null
+    branchId: number | null
+    discountedAmount: Decimal | null
+  }
+
+  export type CouponUsageLogSumAggregateOutputType = {
+    id: number | null
+    discountRuleId: number | null
+    bookingId: number | null
+    customerId: number | null
+    branchId: number | null
+    discountedAmount: Decimal | null
+  }
+
+  export type CouponUsageLogMinAggregateOutputType = {
+    id: number | null
+    discountRuleId: number | null
+    bookingId: number | null
+    customerId: number | null
+    branchId: number | null
+    discountedAmount: Decimal | null
+    appliedAt: Date | null
+  }
+
+  export type CouponUsageLogMaxAggregateOutputType = {
+    id: number | null
+    discountRuleId: number | null
+    bookingId: number | null
+    customerId: number | null
+    branchId: number | null
+    discountedAmount: Decimal | null
+    appliedAt: Date | null
+  }
+
+  export type CouponUsageLogCountAggregateOutputType = {
+    id: number
+    discountRuleId: number
+    bookingId: number
+    customerId: number
+    branchId: number
+    discountedAmount: number
+    appliedAt: number
+    _all: number
+  }
+
+
+  export type CouponUsageLogAvgAggregateInputType = {
+    id?: true
+    discountRuleId?: true
+    bookingId?: true
+    customerId?: true
+    branchId?: true
+    discountedAmount?: true
+  }
+
+  export type CouponUsageLogSumAggregateInputType = {
+    id?: true
+    discountRuleId?: true
+    bookingId?: true
+    customerId?: true
+    branchId?: true
+    discountedAmount?: true
+  }
+
+  export type CouponUsageLogMinAggregateInputType = {
+    id?: true
+    discountRuleId?: true
+    bookingId?: true
+    customerId?: true
+    branchId?: true
+    discountedAmount?: true
+    appliedAt?: true
+  }
+
+  export type CouponUsageLogMaxAggregateInputType = {
+    id?: true
+    discountRuleId?: true
+    bookingId?: true
+    customerId?: true
+    branchId?: true
+    discountedAmount?: true
+    appliedAt?: true
+  }
+
+  export type CouponUsageLogCountAggregateInputType = {
+    id?: true
+    discountRuleId?: true
+    bookingId?: true
+    customerId?: true
+    branchId?: true
+    discountedAmount?: true
+    appliedAt?: true
+    _all?: true
+  }
+
+  export type CouponUsageLogAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CouponUsageLog to aggregate.
+     */
+    where?: CouponUsageLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CouponUsageLogs to fetch.
+     */
+    orderBy?: CouponUsageLogOrderByWithRelationInput | CouponUsageLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: CouponUsageLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CouponUsageLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CouponUsageLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned CouponUsageLogs
+    **/
+    _count?: true | CouponUsageLogCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: CouponUsageLogAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: CouponUsageLogSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: CouponUsageLogMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: CouponUsageLogMaxAggregateInputType
+  }
+
+  export type GetCouponUsageLogAggregateType<T extends CouponUsageLogAggregateArgs> = {
+        [P in keyof T & keyof AggregateCouponUsageLog]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateCouponUsageLog[P]>
+      : GetScalarType<T[P], AggregateCouponUsageLog[P]>
+  }
+
+
+
+
+  export type CouponUsageLogGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CouponUsageLogWhereInput
+    orderBy?: CouponUsageLogOrderByWithAggregationInput | CouponUsageLogOrderByWithAggregationInput[]
+    by: CouponUsageLogScalarFieldEnum[] | CouponUsageLogScalarFieldEnum
+    having?: CouponUsageLogScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: CouponUsageLogCountAggregateInputType | true
+    _avg?: CouponUsageLogAvgAggregateInputType
+    _sum?: CouponUsageLogSumAggregateInputType
+    _min?: CouponUsageLogMinAggregateInputType
+    _max?: CouponUsageLogMaxAggregateInputType
+  }
+
+  export type CouponUsageLogGroupByOutputType = {
+    id: number
+    discountRuleId: number
+    bookingId: number
+    customerId: number
+    branchId: number
+    discountedAmount: Decimal
+    appliedAt: Date
+    _count: CouponUsageLogCountAggregateOutputType | null
+    _avg: CouponUsageLogAvgAggregateOutputType | null
+    _sum: CouponUsageLogSumAggregateOutputType | null
+    _min: CouponUsageLogMinAggregateOutputType | null
+    _max: CouponUsageLogMaxAggregateOutputType | null
+  }
+
+  type GetCouponUsageLogGroupByPayload<T extends CouponUsageLogGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<CouponUsageLogGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof CouponUsageLogGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], CouponUsageLogGroupByOutputType[P]>
+            : GetScalarType<T[P], CouponUsageLogGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type CouponUsageLogSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    discountRuleId?: boolean
+    bookingId?: boolean
+    customerId?: boolean
+    branchId?: boolean
+    discountedAmount?: boolean
+    appliedAt?: boolean
+    discountRule?: boolean | DiscountRuleDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["couponUsageLog"]>
+
+  export type CouponUsageLogSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    discountRuleId?: boolean
+    bookingId?: boolean
+    customerId?: boolean
+    branchId?: boolean
+    discountedAmount?: boolean
+    appliedAt?: boolean
+    discountRule?: boolean | DiscountRuleDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["couponUsageLog"]>
+
+  export type CouponUsageLogSelectScalar = {
+    id?: boolean
+    discountRuleId?: boolean
+    bookingId?: boolean
+    customerId?: boolean
+    branchId?: boolean
+    discountedAmount?: boolean
+    appliedAt?: boolean
+  }
+
+  export type CouponUsageLogInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    discountRule?: boolean | DiscountRuleDefaultArgs<ExtArgs>
+  }
+  export type CouponUsageLogIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    discountRule?: boolean | DiscountRuleDefaultArgs<ExtArgs>
+  }
+
+  export type $CouponUsageLogPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "CouponUsageLog"
+    objects: {
+      discountRule: Prisma.$DiscountRulePayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      discountRuleId: number
+      bookingId: number
+      customerId: number
+      branchId: number
+      discountedAmount: Prisma.Decimal
+      appliedAt: Date
+    }, ExtArgs["result"]["couponUsageLog"]>
+    composites: {}
+  }
+
+  type CouponUsageLogGetPayload<S extends boolean | null | undefined | CouponUsageLogDefaultArgs> = $Result.GetResult<Prisma.$CouponUsageLogPayload, S>
+
+  type CouponUsageLogCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<CouponUsageLogFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: CouponUsageLogCountAggregateInputType | true
+    }
+
+  export interface CouponUsageLogDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['CouponUsageLog'], meta: { name: 'CouponUsageLog' } }
+    /**
+     * Find zero or one CouponUsageLog that matches the filter.
+     * @param {CouponUsageLogFindUniqueArgs} args - Arguments to find a CouponUsageLog
+     * @example
+     * // Get one CouponUsageLog
+     * const couponUsageLog = await prisma.couponUsageLog.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends CouponUsageLogFindUniqueArgs>(args: SelectSubset<T, CouponUsageLogFindUniqueArgs<ExtArgs>>): Prisma__CouponUsageLogClient<$Result.GetResult<Prisma.$CouponUsageLogPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one CouponUsageLog that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {CouponUsageLogFindUniqueOrThrowArgs} args - Arguments to find a CouponUsageLog
+     * @example
+     * // Get one CouponUsageLog
+     * const couponUsageLog = await prisma.couponUsageLog.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends CouponUsageLogFindUniqueOrThrowArgs>(args: SelectSubset<T, CouponUsageLogFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CouponUsageLogClient<$Result.GetResult<Prisma.$CouponUsageLogPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first CouponUsageLog that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CouponUsageLogFindFirstArgs} args - Arguments to find a CouponUsageLog
+     * @example
+     * // Get one CouponUsageLog
+     * const couponUsageLog = await prisma.couponUsageLog.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends CouponUsageLogFindFirstArgs>(args?: SelectSubset<T, CouponUsageLogFindFirstArgs<ExtArgs>>): Prisma__CouponUsageLogClient<$Result.GetResult<Prisma.$CouponUsageLogPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first CouponUsageLog that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CouponUsageLogFindFirstOrThrowArgs} args - Arguments to find a CouponUsageLog
+     * @example
+     * // Get one CouponUsageLog
+     * const couponUsageLog = await prisma.couponUsageLog.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends CouponUsageLogFindFirstOrThrowArgs>(args?: SelectSubset<T, CouponUsageLogFindFirstOrThrowArgs<ExtArgs>>): Prisma__CouponUsageLogClient<$Result.GetResult<Prisma.$CouponUsageLogPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more CouponUsageLogs that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CouponUsageLogFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all CouponUsageLogs
+     * const couponUsageLogs = await prisma.couponUsageLog.findMany()
+     * 
+     * // Get first 10 CouponUsageLogs
+     * const couponUsageLogs = await prisma.couponUsageLog.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const couponUsageLogWithIdOnly = await prisma.couponUsageLog.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends CouponUsageLogFindManyArgs>(args?: SelectSubset<T, CouponUsageLogFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CouponUsageLogPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a CouponUsageLog.
+     * @param {CouponUsageLogCreateArgs} args - Arguments to create a CouponUsageLog.
+     * @example
+     * // Create one CouponUsageLog
+     * const CouponUsageLog = await prisma.couponUsageLog.create({
+     *   data: {
+     *     // ... data to create a CouponUsageLog
+     *   }
+     * })
+     * 
+     */
+    create<T extends CouponUsageLogCreateArgs>(args: SelectSubset<T, CouponUsageLogCreateArgs<ExtArgs>>): Prisma__CouponUsageLogClient<$Result.GetResult<Prisma.$CouponUsageLogPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many CouponUsageLogs.
+     * @param {CouponUsageLogCreateManyArgs} args - Arguments to create many CouponUsageLogs.
+     * @example
+     * // Create many CouponUsageLogs
+     * const couponUsageLog = await prisma.couponUsageLog.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends CouponUsageLogCreateManyArgs>(args?: SelectSubset<T, CouponUsageLogCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many CouponUsageLogs and returns the data saved in the database.
+     * @param {CouponUsageLogCreateManyAndReturnArgs} args - Arguments to create many CouponUsageLogs.
+     * @example
+     * // Create many CouponUsageLogs
+     * const couponUsageLog = await prisma.couponUsageLog.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many CouponUsageLogs and only return the `id`
+     * const couponUsageLogWithIdOnly = await prisma.couponUsageLog.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends CouponUsageLogCreateManyAndReturnArgs>(args?: SelectSubset<T, CouponUsageLogCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CouponUsageLogPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a CouponUsageLog.
+     * @param {CouponUsageLogDeleteArgs} args - Arguments to delete one CouponUsageLog.
+     * @example
+     * // Delete one CouponUsageLog
+     * const CouponUsageLog = await prisma.couponUsageLog.delete({
+     *   where: {
+     *     // ... filter to delete one CouponUsageLog
+     *   }
+     * })
+     * 
+     */
+    delete<T extends CouponUsageLogDeleteArgs>(args: SelectSubset<T, CouponUsageLogDeleteArgs<ExtArgs>>): Prisma__CouponUsageLogClient<$Result.GetResult<Prisma.$CouponUsageLogPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one CouponUsageLog.
+     * @param {CouponUsageLogUpdateArgs} args - Arguments to update one CouponUsageLog.
+     * @example
+     * // Update one CouponUsageLog
+     * const couponUsageLog = await prisma.couponUsageLog.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends CouponUsageLogUpdateArgs>(args: SelectSubset<T, CouponUsageLogUpdateArgs<ExtArgs>>): Prisma__CouponUsageLogClient<$Result.GetResult<Prisma.$CouponUsageLogPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more CouponUsageLogs.
+     * @param {CouponUsageLogDeleteManyArgs} args - Arguments to filter CouponUsageLogs to delete.
+     * @example
+     * // Delete a few CouponUsageLogs
+     * const { count } = await prisma.couponUsageLog.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends CouponUsageLogDeleteManyArgs>(args?: SelectSubset<T, CouponUsageLogDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more CouponUsageLogs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CouponUsageLogUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many CouponUsageLogs
+     * const couponUsageLog = await prisma.couponUsageLog.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends CouponUsageLogUpdateManyArgs>(args: SelectSubset<T, CouponUsageLogUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one CouponUsageLog.
+     * @param {CouponUsageLogUpsertArgs} args - Arguments to update or create a CouponUsageLog.
+     * @example
+     * // Update or create a CouponUsageLog
+     * const couponUsageLog = await prisma.couponUsageLog.upsert({
+     *   create: {
+     *     // ... data to create a CouponUsageLog
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the CouponUsageLog we want to update
+     *   }
+     * })
+     */
+    upsert<T extends CouponUsageLogUpsertArgs>(args: SelectSubset<T, CouponUsageLogUpsertArgs<ExtArgs>>): Prisma__CouponUsageLogClient<$Result.GetResult<Prisma.$CouponUsageLogPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of CouponUsageLogs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CouponUsageLogCountArgs} args - Arguments to filter CouponUsageLogs to count.
+     * @example
+     * // Count the number of CouponUsageLogs
+     * const count = await prisma.couponUsageLog.count({
+     *   where: {
+     *     // ... the filter for the CouponUsageLogs we want to count
+     *   }
+     * })
+    **/
+    count<T extends CouponUsageLogCountArgs>(
+      args?: Subset<T, CouponUsageLogCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], CouponUsageLogCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a CouponUsageLog.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CouponUsageLogAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends CouponUsageLogAggregateArgs>(args: Subset<T, CouponUsageLogAggregateArgs>): Prisma.PrismaPromise<GetCouponUsageLogAggregateType<T>>
+
+    /**
+     * Group by CouponUsageLog.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CouponUsageLogGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends CouponUsageLogGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: CouponUsageLogGroupByArgs['orderBy'] }
+        : { orderBy?: CouponUsageLogGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, CouponUsageLogGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCouponUsageLogGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the CouponUsageLog model
+   */
+  readonly fields: CouponUsageLogFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for CouponUsageLog.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__CouponUsageLogClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    discountRule<T extends DiscountRuleDefaultArgs<ExtArgs> = {}>(args?: Subset<T, DiscountRuleDefaultArgs<ExtArgs>>): Prisma__DiscountRuleClient<$Result.GetResult<Prisma.$DiscountRulePayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the CouponUsageLog model
+   */ 
+  interface CouponUsageLogFieldRefs {
+    readonly id: FieldRef<"CouponUsageLog", 'Int'>
+    readonly discountRuleId: FieldRef<"CouponUsageLog", 'Int'>
+    readonly bookingId: FieldRef<"CouponUsageLog", 'Int'>
+    readonly customerId: FieldRef<"CouponUsageLog", 'Int'>
+    readonly branchId: FieldRef<"CouponUsageLog", 'Int'>
+    readonly discountedAmount: FieldRef<"CouponUsageLog", 'Decimal'>
+    readonly appliedAt: FieldRef<"CouponUsageLog", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * CouponUsageLog findUnique
+   */
+  export type CouponUsageLogFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CouponUsageLog
+     */
+    select?: CouponUsageLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CouponUsageLogInclude<ExtArgs> | null
+    /**
+     * Filter, which CouponUsageLog to fetch.
+     */
+    where: CouponUsageLogWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CouponUsageLog findUniqueOrThrow
+   */
+  export type CouponUsageLogFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CouponUsageLog
+     */
+    select?: CouponUsageLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CouponUsageLogInclude<ExtArgs> | null
+    /**
+     * Filter, which CouponUsageLog to fetch.
+     */
+    where: CouponUsageLogWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CouponUsageLog findFirst
+   */
+  export type CouponUsageLogFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CouponUsageLog
+     */
+    select?: CouponUsageLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CouponUsageLogInclude<ExtArgs> | null
+    /**
+     * Filter, which CouponUsageLog to fetch.
+     */
+    where?: CouponUsageLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CouponUsageLogs to fetch.
+     */
+    orderBy?: CouponUsageLogOrderByWithRelationInput | CouponUsageLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CouponUsageLogs.
+     */
+    cursor?: CouponUsageLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CouponUsageLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CouponUsageLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CouponUsageLogs.
+     */
+    distinct?: CouponUsageLogScalarFieldEnum | CouponUsageLogScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CouponUsageLog findFirstOrThrow
+   */
+  export type CouponUsageLogFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CouponUsageLog
+     */
+    select?: CouponUsageLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CouponUsageLogInclude<ExtArgs> | null
+    /**
+     * Filter, which CouponUsageLog to fetch.
+     */
+    where?: CouponUsageLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CouponUsageLogs to fetch.
+     */
+    orderBy?: CouponUsageLogOrderByWithRelationInput | CouponUsageLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CouponUsageLogs.
+     */
+    cursor?: CouponUsageLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CouponUsageLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CouponUsageLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CouponUsageLogs.
+     */
+    distinct?: CouponUsageLogScalarFieldEnum | CouponUsageLogScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CouponUsageLog findMany
+   */
+  export type CouponUsageLogFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CouponUsageLog
+     */
+    select?: CouponUsageLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CouponUsageLogInclude<ExtArgs> | null
+    /**
+     * Filter, which CouponUsageLogs to fetch.
+     */
+    where?: CouponUsageLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CouponUsageLogs to fetch.
+     */
+    orderBy?: CouponUsageLogOrderByWithRelationInput | CouponUsageLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing CouponUsageLogs.
+     */
+    cursor?: CouponUsageLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CouponUsageLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CouponUsageLogs.
+     */
+    skip?: number
+    distinct?: CouponUsageLogScalarFieldEnum | CouponUsageLogScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CouponUsageLog create
+   */
+  export type CouponUsageLogCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CouponUsageLog
+     */
+    select?: CouponUsageLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CouponUsageLogInclude<ExtArgs> | null
+    /**
+     * The data needed to create a CouponUsageLog.
+     */
+    data: XOR<CouponUsageLogCreateInput, CouponUsageLogUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CouponUsageLog createMany
+   */
+  export type CouponUsageLogCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many CouponUsageLogs.
+     */
+    data: CouponUsageLogCreateManyInput | CouponUsageLogCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * CouponUsageLog createManyAndReturn
+   */
+  export type CouponUsageLogCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CouponUsageLog
+     */
+    select?: CouponUsageLogSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many CouponUsageLogs.
+     */
+    data: CouponUsageLogCreateManyInput | CouponUsageLogCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CouponUsageLogIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * CouponUsageLog update
+   */
+  export type CouponUsageLogUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CouponUsageLog
+     */
+    select?: CouponUsageLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CouponUsageLogInclude<ExtArgs> | null
+    /**
+     * The data needed to update a CouponUsageLog.
+     */
+    data: XOR<CouponUsageLogUpdateInput, CouponUsageLogUncheckedUpdateInput>
+    /**
+     * Choose, which CouponUsageLog to update.
+     */
+    where: CouponUsageLogWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CouponUsageLog updateMany
+   */
+  export type CouponUsageLogUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update CouponUsageLogs.
+     */
+    data: XOR<CouponUsageLogUpdateManyMutationInput, CouponUsageLogUncheckedUpdateManyInput>
+    /**
+     * Filter which CouponUsageLogs to update
+     */
+    where?: CouponUsageLogWhereInput
+  }
+
+  /**
+   * CouponUsageLog upsert
+   */
+  export type CouponUsageLogUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CouponUsageLog
+     */
+    select?: CouponUsageLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CouponUsageLogInclude<ExtArgs> | null
+    /**
+     * The filter to search for the CouponUsageLog to update in case it exists.
+     */
+    where: CouponUsageLogWhereUniqueInput
+    /**
+     * In case the CouponUsageLog found by the `where` argument doesn't exist, create a new CouponUsageLog with this data.
+     */
+    create: XOR<CouponUsageLogCreateInput, CouponUsageLogUncheckedCreateInput>
+    /**
+     * In case the CouponUsageLog was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<CouponUsageLogUpdateInput, CouponUsageLogUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CouponUsageLog delete
+   */
+  export type CouponUsageLogDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CouponUsageLog
+     */
+    select?: CouponUsageLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CouponUsageLogInclude<ExtArgs> | null
+    /**
+     * Filter which CouponUsageLog to delete.
+     */
+    where: CouponUsageLogWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CouponUsageLog deleteMany
+   */
+  export type CouponUsageLogDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CouponUsageLogs to delete
+     */
+    where?: CouponUsageLogWhereInput
+  }
+
+  /**
+   * CouponUsageLog without action
+   */
+  export type CouponUsageLogDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CouponUsageLog
+     */
+    select?: CouponUsageLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CouponUsageLogInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ManualDiscount
+   */
+
+  export type AggregateManualDiscount = {
+    _count: ManualDiscountCountAggregateOutputType | null
+    _avg: ManualDiscountAvgAggregateOutputType | null
+    _sum: ManualDiscountSumAggregateOutputType | null
+    _min: ManualDiscountMinAggregateOutputType | null
+    _max: ManualDiscountMaxAggregateOutputType | null
+  }
+
+  export type ManualDiscountAvgAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    amount: Decimal | null
+    issuedById: number | null
+    approvedById: number | null
+  }
+
+  export type ManualDiscountSumAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    amount: Decimal | null
+    issuedById: number | null
+    approvedById: number | null
+  }
+
+  export type ManualDiscountMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    bookingId: number | null
+    amount: Decimal | null
+    reason: string | null
+    issuedById: number | null
+    approvedById: number | null
+    status: $Enums.ManualDiscountStatus | null
+    requiresApproval: boolean | null
+    approvedAt: Date | null
+    rejectedAt: Date | null
+    rejectionReason: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ManualDiscountMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    bookingId: number | null
+    amount: Decimal | null
+    reason: string | null
+    issuedById: number | null
+    approvedById: number | null
+    status: $Enums.ManualDiscountStatus | null
+    requiresApproval: boolean | null
+    approvedAt: Date | null
+    rejectedAt: Date | null
+    rejectionReason: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ManualDiscountCountAggregateOutputType = {
+    id: number
+    publicId: number
+    bookingId: number
+    amount: number
+    reason: number
+    issuedById: number
+    approvedById: number
+    status: number
+    requiresApproval: number
+    approvedAt: number
+    rejectedAt: number
+    rejectionReason: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type ManualDiscountAvgAggregateInputType = {
+    id?: true
+    bookingId?: true
+    amount?: true
+    issuedById?: true
+    approvedById?: true
+  }
+
+  export type ManualDiscountSumAggregateInputType = {
+    id?: true
+    bookingId?: true
+    amount?: true
+    issuedById?: true
+    approvedById?: true
+  }
+
+  export type ManualDiscountMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    amount?: true
+    reason?: true
+    issuedById?: true
+    approvedById?: true
+    status?: true
+    requiresApproval?: true
+    approvedAt?: true
+    rejectedAt?: true
+    rejectionReason?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ManualDiscountMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    amount?: true
+    reason?: true
+    issuedById?: true
+    approvedById?: true
+    status?: true
+    requiresApproval?: true
+    approvedAt?: true
+    rejectedAt?: true
+    rejectionReason?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ManualDiscountCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    amount?: true
+    reason?: true
+    issuedById?: true
+    approvedById?: true
+    status?: true
+    requiresApproval?: true
+    approvedAt?: true
+    rejectedAt?: true
+    rejectionReason?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type ManualDiscountAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ManualDiscount to aggregate.
+     */
+    where?: ManualDiscountWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ManualDiscounts to fetch.
+     */
+    orderBy?: ManualDiscountOrderByWithRelationInput | ManualDiscountOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ManualDiscountWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ManualDiscounts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ManualDiscounts.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ManualDiscounts
+    **/
+    _count?: true | ManualDiscountCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ManualDiscountAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ManualDiscountSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ManualDiscountMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ManualDiscountMaxAggregateInputType
+  }
+
+  export type GetManualDiscountAggregateType<T extends ManualDiscountAggregateArgs> = {
+        [P in keyof T & keyof AggregateManualDiscount]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateManualDiscount[P]>
+      : GetScalarType<T[P], AggregateManualDiscount[P]>
+  }
+
+
+
+
+  export type ManualDiscountGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ManualDiscountWhereInput
+    orderBy?: ManualDiscountOrderByWithAggregationInput | ManualDiscountOrderByWithAggregationInput[]
+    by: ManualDiscountScalarFieldEnum[] | ManualDiscountScalarFieldEnum
+    having?: ManualDiscountScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ManualDiscountCountAggregateInputType | true
+    _avg?: ManualDiscountAvgAggregateInputType
+    _sum?: ManualDiscountSumAggregateInputType
+    _min?: ManualDiscountMinAggregateInputType
+    _max?: ManualDiscountMaxAggregateInputType
+  }
+
+  export type ManualDiscountGroupByOutputType = {
+    id: number
+    publicId: string
+    bookingId: number
+    amount: Decimal
+    reason: string
+    issuedById: number
+    approvedById: number | null
+    status: $Enums.ManualDiscountStatus
+    requiresApproval: boolean
+    approvedAt: Date | null
+    rejectedAt: Date | null
+    rejectionReason: string | null
+    createdAt: Date
+    updatedAt: Date
+    _count: ManualDiscountCountAggregateOutputType | null
+    _avg: ManualDiscountAvgAggregateOutputType | null
+    _sum: ManualDiscountSumAggregateOutputType | null
+    _min: ManualDiscountMinAggregateOutputType | null
+    _max: ManualDiscountMaxAggregateOutputType | null
+  }
+
+  type GetManualDiscountGroupByPayload<T extends ManualDiscountGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ManualDiscountGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ManualDiscountGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ManualDiscountGroupByOutputType[P]>
+            : GetScalarType<T[P], ManualDiscountGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ManualDiscountSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    amount?: boolean
+    reason?: boolean
+    issuedById?: boolean
+    approvedById?: boolean
+    status?: boolean
+    requiresApproval?: boolean
+    approvedAt?: boolean
+    rejectedAt?: boolean
+    rejectionReason?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    issuedBy?: boolean | UserDefaultArgs<ExtArgs>
+    approvedBy?: boolean | ManualDiscount$approvedByArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    application?: boolean | ManualDiscount$applicationArgs<ExtArgs>
+  }, ExtArgs["result"]["manualDiscount"]>
+
+  export type ManualDiscountSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    amount?: boolean
+    reason?: boolean
+    issuedById?: boolean
+    approvedById?: boolean
+    status?: boolean
+    requiresApproval?: boolean
+    approvedAt?: boolean
+    rejectedAt?: boolean
+    rejectionReason?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    issuedBy?: boolean | UserDefaultArgs<ExtArgs>
+    approvedBy?: boolean | ManualDiscount$approvedByArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["manualDiscount"]>
+
+  export type ManualDiscountSelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    amount?: boolean
+    reason?: boolean
+    issuedById?: boolean
+    approvedById?: boolean
+    status?: boolean
+    requiresApproval?: boolean
+    approvedAt?: boolean
+    rejectedAt?: boolean
+    rejectionReason?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type ManualDiscountInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    issuedBy?: boolean | UserDefaultArgs<ExtArgs>
+    approvedBy?: boolean | ManualDiscount$approvedByArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    application?: boolean | ManualDiscount$applicationArgs<ExtArgs>
+  }
+  export type ManualDiscountIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    issuedBy?: boolean | UserDefaultArgs<ExtArgs>
+    approvedBy?: boolean | ManualDiscount$approvedByArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+  }
+
+  export type $ManualDiscountPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ManualDiscount"
+    objects: {
+      issuedBy: Prisma.$UserPayload<ExtArgs>
+      approvedBy: Prisma.$UserPayload<ExtArgs> | null
+      booking: Prisma.$BookingPayload<ExtArgs>
+      application: Prisma.$DiscountApplicationPayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      bookingId: number
+      amount: Prisma.Decimal
+      reason: string
+      issuedById: number
+      approvedById: number | null
+      status: $Enums.ManualDiscountStatus
+      requiresApproval: boolean
+      approvedAt: Date | null
+      rejectedAt: Date | null
+      rejectionReason: string | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["manualDiscount"]>
+    composites: {}
+  }
+
+  type ManualDiscountGetPayload<S extends boolean | null | undefined | ManualDiscountDefaultArgs> = $Result.GetResult<Prisma.$ManualDiscountPayload, S>
+
+  type ManualDiscountCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<ManualDiscountFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: ManualDiscountCountAggregateInputType | true
+    }
+
+  export interface ManualDiscountDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ManualDiscount'], meta: { name: 'ManualDiscount' } }
+    /**
+     * Find zero or one ManualDiscount that matches the filter.
+     * @param {ManualDiscountFindUniqueArgs} args - Arguments to find a ManualDiscount
+     * @example
+     * // Get one ManualDiscount
+     * const manualDiscount = await prisma.manualDiscount.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ManualDiscountFindUniqueArgs>(args: SelectSubset<T, ManualDiscountFindUniqueArgs<ExtArgs>>): Prisma__ManualDiscountClient<$Result.GetResult<Prisma.$ManualDiscountPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one ManualDiscount that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {ManualDiscountFindUniqueOrThrowArgs} args - Arguments to find a ManualDiscount
+     * @example
+     * // Get one ManualDiscount
+     * const manualDiscount = await prisma.manualDiscount.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ManualDiscountFindUniqueOrThrowArgs>(args: SelectSubset<T, ManualDiscountFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ManualDiscountClient<$Result.GetResult<Prisma.$ManualDiscountPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first ManualDiscount that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ManualDiscountFindFirstArgs} args - Arguments to find a ManualDiscount
+     * @example
+     * // Get one ManualDiscount
+     * const manualDiscount = await prisma.manualDiscount.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ManualDiscountFindFirstArgs>(args?: SelectSubset<T, ManualDiscountFindFirstArgs<ExtArgs>>): Prisma__ManualDiscountClient<$Result.GetResult<Prisma.$ManualDiscountPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first ManualDiscount that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ManualDiscountFindFirstOrThrowArgs} args - Arguments to find a ManualDiscount
+     * @example
+     * // Get one ManualDiscount
+     * const manualDiscount = await prisma.manualDiscount.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ManualDiscountFindFirstOrThrowArgs>(args?: SelectSubset<T, ManualDiscountFindFirstOrThrowArgs<ExtArgs>>): Prisma__ManualDiscountClient<$Result.GetResult<Prisma.$ManualDiscountPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more ManualDiscounts that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ManualDiscountFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ManualDiscounts
+     * const manualDiscounts = await prisma.manualDiscount.findMany()
+     * 
+     * // Get first 10 ManualDiscounts
+     * const manualDiscounts = await prisma.manualDiscount.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const manualDiscountWithIdOnly = await prisma.manualDiscount.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ManualDiscountFindManyArgs>(args?: SelectSubset<T, ManualDiscountFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ManualDiscountPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a ManualDiscount.
+     * @param {ManualDiscountCreateArgs} args - Arguments to create a ManualDiscount.
+     * @example
+     * // Create one ManualDiscount
+     * const ManualDiscount = await prisma.manualDiscount.create({
+     *   data: {
+     *     // ... data to create a ManualDiscount
+     *   }
+     * })
+     * 
+     */
+    create<T extends ManualDiscountCreateArgs>(args: SelectSubset<T, ManualDiscountCreateArgs<ExtArgs>>): Prisma__ManualDiscountClient<$Result.GetResult<Prisma.$ManualDiscountPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many ManualDiscounts.
+     * @param {ManualDiscountCreateManyArgs} args - Arguments to create many ManualDiscounts.
+     * @example
+     * // Create many ManualDiscounts
+     * const manualDiscount = await prisma.manualDiscount.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ManualDiscountCreateManyArgs>(args?: SelectSubset<T, ManualDiscountCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ManualDiscounts and returns the data saved in the database.
+     * @param {ManualDiscountCreateManyAndReturnArgs} args - Arguments to create many ManualDiscounts.
+     * @example
+     * // Create many ManualDiscounts
+     * const manualDiscount = await prisma.manualDiscount.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many ManualDiscounts and only return the `id`
+     * const manualDiscountWithIdOnly = await prisma.manualDiscount.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends ManualDiscountCreateManyAndReturnArgs>(args?: SelectSubset<T, ManualDiscountCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ManualDiscountPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a ManualDiscount.
+     * @param {ManualDiscountDeleteArgs} args - Arguments to delete one ManualDiscount.
+     * @example
+     * // Delete one ManualDiscount
+     * const ManualDiscount = await prisma.manualDiscount.delete({
+     *   where: {
+     *     // ... filter to delete one ManualDiscount
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ManualDiscountDeleteArgs>(args: SelectSubset<T, ManualDiscountDeleteArgs<ExtArgs>>): Prisma__ManualDiscountClient<$Result.GetResult<Prisma.$ManualDiscountPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one ManualDiscount.
+     * @param {ManualDiscountUpdateArgs} args - Arguments to update one ManualDiscount.
+     * @example
+     * // Update one ManualDiscount
+     * const manualDiscount = await prisma.manualDiscount.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ManualDiscountUpdateArgs>(args: SelectSubset<T, ManualDiscountUpdateArgs<ExtArgs>>): Prisma__ManualDiscountClient<$Result.GetResult<Prisma.$ManualDiscountPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more ManualDiscounts.
+     * @param {ManualDiscountDeleteManyArgs} args - Arguments to filter ManualDiscounts to delete.
+     * @example
+     * // Delete a few ManualDiscounts
+     * const { count } = await prisma.manualDiscount.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ManualDiscountDeleteManyArgs>(args?: SelectSubset<T, ManualDiscountDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ManualDiscounts.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ManualDiscountUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ManualDiscounts
+     * const manualDiscount = await prisma.manualDiscount.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ManualDiscountUpdateManyArgs>(args: SelectSubset<T, ManualDiscountUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ManualDiscount.
+     * @param {ManualDiscountUpsertArgs} args - Arguments to update or create a ManualDiscount.
+     * @example
+     * // Update or create a ManualDiscount
+     * const manualDiscount = await prisma.manualDiscount.upsert({
+     *   create: {
+     *     // ... data to create a ManualDiscount
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ManualDiscount we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ManualDiscountUpsertArgs>(args: SelectSubset<T, ManualDiscountUpsertArgs<ExtArgs>>): Prisma__ManualDiscountClient<$Result.GetResult<Prisma.$ManualDiscountPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of ManualDiscounts.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ManualDiscountCountArgs} args - Arguments to filter ManualDiscounts to count.
+     * @example
+     * // Count the number of ManualDiscounts
+     * const count = await prisma.manualDiscount.count({
+     *   where: {
+     *     // ... the filter for the ManualDiscounts we want to count
+     *   }
+     * })
+    **/
+    count<T extends ManualDiscountCountArgs>(
+      args?: Subset<T, ManualDiscountCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ManualDiscountCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ManualDiscount.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ManualDiscountAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ManualDiscountAggregateArgs>(args: Subset<T, ManualDiscountAggregateArgs>): Prisma.PrismaPromise<GetManualDiscountAggregateType<T>>
+
+    /**
+     * Group by ManualDiscount.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ManualDiscountGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ManualDiscountGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ManualDiscountGroupByArgs['orderBy'] }
+        : { orderBy?: ManualDiscountGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ManualDiscountGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetManualDiscountGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ManualDiscount model
+   */
+  readonly fields: ManualDiscountFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ManualDiscount.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ManualDiscountClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    issuedBy<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    approvedBy<T extends ManualDiscount$approvedByArgs<ExtArgs> = {}>(args?: Subset<T, ManualDiscount$approvedByArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    booking<T extends BookingDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BookingDefaultArgs<ExtArgs>>): Prisma__BookingClient<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    application<T extends ManualDiscount$applicationArgs<ExtArgs> = {}>(args?: Subset<T, ManualDiscount$applicationArgs<ExtArgs>>): Prisma__DiscountApplicationClient<$Result.GetResult<Prisma.$DiscountApplicationPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ManualDiscount model
+   */ 
+  interface ManualDiscountFieldRefs {
+    readonly id: FieldRef<"ManualDiscount", 'Int'>
+    readonly publicId: FieldRef<"ManualDiscount", 'String'>
+    readonly bookingId: FieldRef<"ManualDiscount", 'Int'>
+    readonly amount: FieldRef<"ManualDiscount", 'Decimal'>
+    readonly reason: FieldRef<"ManualDiscount", 'String'>
+    readonly issuedById: FieldRef<"ManualDiscount", 'Int'>
+    readonly approvedById: FieldRef<"ManualDiscount", 'Int'>
+    readonly status: FieldRef<"ManualDiscount", 'ManualDiscountStatus'>
+    readonly requiresApproval: FieldRef<"ManualDiscount", 'Boolean'>
+    readonly approvedAt: FieldRef<"ManualDiscount", 'DateTime'>
+    readonly rejectedAt: FieldRef<"ManualDiscount", 'DateTime'>
+    readonly rejectionReason: FieldRef<"ManualDiscount", 'String'>
+    readonly createdAt: FieldRef<"ManualDiscount", 'DateTime'>
+    readonly updatedAt: FieldRef<"ManualDiscount", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ManualDiscount findUnique
+   */
+  export type ManualDiscountFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManualDiscount
+     */
+    select?: ManualDiscountSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ManualDiscountInclude<ExtArgs> | null
+    /**
+     * Filter, which ManualDiscount to fetch.
+     */
+    where: ManualDiscountWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ManualDiscount findUniqueOrThrow
+   */
+  export type ManualDiscountFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManualDiscount
+     */
+    select?: ManualDiscountSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ManualDiscountInclude<ExtArgs> | null
+    /**
+     * Filter, which ManualDiscount to fetch.
+     */
+    where: ManualDiscountWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ManualDiscount findFirst
+   */
+  export type ManualDiscountFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManualDiscount
+     */
+    select?: ManualDiscountSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ManualDiscountInclude<ExtArgs> | null
+    /**
+     * Filter, which ManualDiscount to fetch.
+     */
+    where?: ManualDiscountWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ManualDiscounts to fetch.
+     */
+    orderBy?: ManualDiscountOrderByWithRelationInput | ManualDiscountOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ManualDiscounts.
+     */
+    cursor?: ManualDiscountWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ManualDiscounts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ManualDiscounts.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ManualDiscounts.
+     */
+    distinct?: ManualDiscountScalarFieldEnum | ManualDiscountScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ManualDiscount findFirstOrThrow
+   */
+  export type ManualDiscountFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManualDiscount
+     */
+    select?: ManualDiscountSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ManualDiscountInclude<ExtArgs> | null
+    /**
+     * Filter, which ManualDiscount to fetch.
+     */
+    where?: ManualDiscountWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ManualDiscounts to fetch.
+     */
+    orderBy?: ManualDiscountOrderByWithRelationInput | ManualDiscountOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ManualDiscounts.
+     */
+    cursor?: ManualDiscountWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ManualDiscounts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ManualDiscounts.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ManualDiscounts.
+     */
+    distinct?: ManualDiscountScalarFieldEnum | ManualDiscountScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ManualDiscount findMany
+   */
+  export type ManualDiscountFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManualDiscount
+     */
+    select?: ManualDiscountSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ManualDiscountInclude<ExtArgs> | null
+    /**
+     * Filter, which ManualDiscounts to fetch.
+     */
+    where?: ManualDiscountWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ManualDiscounts to fetch.
+     */
+    orderBy?: ManualDiscountOrderByWithRelationInput | ManualDiscountOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ManualDiscounts.
+     */
+    cursor?: ManualDiscountWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ManualDiscounts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ManualDiscounts.
+     */
+    skip?: number
+    distinct?: ManualDiscountScalarFieldEnum | ManualDiscountScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ManualDiscount create
+   */
+  export type ManualDiscountCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManualDiscount
+     */
+    select?: ManualDiscountSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ManualDiscountInclude<ExtArgs> | null
+    /**
+     * The data needed to create a ManualDiscount.
+     */
+    data: XOR<ManualDiscountCreateInput, ManualDiscountUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ManualDiscount createMany
+   */
+  export type ManualDiscountCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ManualDiscounts.
+     */
+    data: ManualDiscountCreateManyInput | ManualDiscountCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ManualDiscount createManyAndReturn
+   */
+  export type ManualDiscountCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManualDiscount
+     */
+    select?: ManualDiscountSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many ManualDiscounts.
+     */
+    data: ManualDiscountCreateManyInput | ManualDiscountCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ManualDiscountIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * ManualDiscount update
+   */
+  export type ManualDiscountUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManualDiscount
+     */
+    select?: ManualDiscountSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ManualDiscountInclude<ExtArgs> | null
+    /**
+     * The data needed to update a ManualDiscount.
+     */
+    data: XOR<ManualDiscountUpdateInput, ManualDiscountUncheckedUpdateInput>
+    /**
+     * Choose, which ManualDiscount to update.
+     */
+    where: ManualDiscountWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ManualDiscount updateMany
+   */
+  export type ManualDiscountUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ManualDiscounts.
+     */
+    data: XOR<ManualDiscountUpdateManyMutationInput, ManualDiscountUncheckedUpdateManyInput>
+    /**
+     * Filter which ManualDiscounts to update
+     */
+    where?: ManualDiscountWhereInput
+  }
+
+  /**
+   * ManualDiscount upsert
+   */
+  export type ManualDiscountUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManualDiscount
+     */
+    select?: ManualDiscountSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ManualDiscountInclude<ExtArgs> | null
+    /**
+     * The filter to search for the ManualDiscount to update in case it exists.
+     */
+    where: ManualDiscountWhereUniqueInput
+    /**
+     * In case the ManualDiscount found by the `where` argument doesn't exist, create a new ManualDiscount with this data.
+     */
+    create: XOR<ManualDiscountCreateInput, ManualDiscountUncheckedCreateInput>
+    /**
+     * In case the ManualDiscount was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ManualDiscountUpdateInput, ManualDiscountUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ManualDiscount delete
+   */
+  export type ManualDiscountDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManualDiscount
+     */
+    select?: ManualDiscountSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ManualDiscountInclude<ExtArgs> | null
+    /**
+     * Filter which ManualDiscount to delete.
+     */
+    where: ManualDiscountWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ManualDiscount deleteMany
+   */
+  export type ManualDiscountDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ManualDiscounts to delete
+     */
+    where?: ManualDiscountWhereInput
+  }
+
+  /**
+   * ManualDiscount.approvedBy
+   */
+  export type ManualDiscount$approvedByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the User
+     */
+    select?: UserSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    where?: UserWhereInput
+  }
+
+  /**
+   * ManualDiscount.application
+   */
+  export type ManualDiscount$applicationArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiscountApplication
+     */
+    select?: DiscountApplicationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiscountApplicationInclude<ExtArgs> | null
+    where?: DiscountApplicationWhereInput
+  }
+
+  /**
+   * ManualDiscount without action
+   */
+  export type ManualDiscountDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManualDiscount
+     */
+    select?: ManualDiscountSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ManualDiscountInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -47976,6 +55866,8 @@ export namespace Prisma {
     cancelledAt: 'cancelledAt',
     cancellationReason: 'cancellationReason',
     requiresManagerConfirmation: 'requiresManagerConfirmation',
+    couponCode: 'couponCode',
+    discountRuleId: 'discountRuleId',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
     deletedAt: 'deletedAt'
@@ -48256,6 +56148,140 @@ export namespace Prisma {
   };
 
   export type VehicleSwapScalarFieldEnum = (typeof VehicleSwapScalarFieldEnum)[keyof typeof VehicleSwapScalarFieldEnum]
+
+
+  export const DiscountRuleScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    code: 'code',
+    name: 'name',
+    description: 'description',
+    discountType: 'discountType',
+    value: 'value',
+    maxDiscountCap: 'maxDiscountCap',
+    scope: 'scope',
+    applicableBranchIds: 'applicableBranchIds',
+    targetCustomerIds: 'targetCustomerIds',
+    newCustomersOnly: 'newCustomersOnly',
+    minBookingCount: 'minBookingCount',
+    maxBookingCount: 'maxBookingCount',
+    minBookingAmount: 'minBookingAmount',
+    maxBookingAmount: 'maxBookingAmount',
+    applicableVehicleCategoryIds: 'applicableVehicleCategoryIds',
+    minRentalDays: 'minRentalDays',
+    maxRentalDays: 'maxRentalDays',
+    applicablePaymentPlans: 'applicablePaymentPlans',
+    allowPartialPayment: 'allowPartialPayment',
+    minAdvanceAfterDiscount: 'minAdvanceAfterDiscount',
+    allowPostBooking: 'allowPostBooking',
+    allowPostInvoice: 'allowPostInvoice',
+    totalUsageLimit: 'totalUsageLimit',
+    perUserLimit: 'perUserLimit',
+    perBranchLimit: 'perBranchLimit',
+    perDayLimit: 'perDayLimit',
+    stackable: 'stackable',
+    priority: 'priority',
+    startDate: 'startDate',
+    endDate: 'endDate',
+    isActive: 'isActive',
+    createdById: 'createdById',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type DiscountRuleScalarFieldEnum = (typeof DiscountRuleScalarFieldEnum)[keyof typeof DiscountRuleScalarFieldEnum]
+
+
+  export const DurationDiscountSlabScalarFieldEnum: {
+    id: 'id',
+    branchId: 'branchId',
+    minDays: 'minDays',
+    maxDays: 'maxDays',
+    discountType: 'discountType',
+    value: 'value',
+    label: 'label',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type DurationDiscountSlabScalarFieldEnum = (typeof DurationDiscountSlabScalarFieldEnum)[keyof typeof DurationDiscountSlabScalarFieldEnum]
+
+
+  export const BranchDiscountConfigScalarFieldEnum: {
+    id: 'id',
+    branchId: 'branchId',
+    durationDiscountEnabled: 'durationDiscountEnabled',
+    stackWithCoupon: 'stackWithCoupon',
+    maxCombinedDiscountPercent: 'maxCombinedDiscountPercent',
+    managerApprovalThreshold: 'managerApprovalThreshold',
+    maxManualDiscountsPerEmployeePerDay: 'maxManualDiscountsPerEmployeePerDay',
+    managerCouponCreationEnabled: 'managerCouponCreationEnabled',
+    maxManagerCouponDiscountPercent: 'maxManagerCouponDiscountPercent',
+    maxManagerCouponFlatAmount: 'maxManagerCouponFlatAmount',
+    maxManagerCouponValidityDays: 'maxManagerCouponValidityDays',
+    maxManagerCouponUsageLimit: 'maxManagerCouponUsageLimit',
+    maxManagerCouponsPerDay: 'maxManagerCouponsPerDay',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type BranchDiscountConfigScalarFieldEnum = (typeof BranchDiscountConfigScalarFieldEnum)[keyof typeof BranchDiscountConfigScalarFieldEnum]
+
+
+  export const DiscountApplicationScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    bookingId: 'bookingId',
+    originalAmount: 'originalAmount',
+    durationDiscountAmount: 'durationDiscountAmount',
+    durationDiscountPercent: 'durationDiscountPercent',
+    durationSlabId: 'durationSlabId',
+    couponDiscountAmount: 'couponDiscountAmount',
+    couponDiscountPercent: 'couponDiscountPercent',
+    discountRuleId: 'discountRuleId',
+    manualDiscountAmount: 'manualDiscountAmount',
+    manualDiscountId: 'manualDiscountId',
+    totalDiscountAmount: 'totalDiscountAmount',
+    finalAmount: 'finalAmount',
+    paymentPlan: 'paymentPlan',
+    adjustmentType: 'adjustmentType',
+    createdAt: 'createdAt'
+  };
+
+  export type DiscountApplicationScalarFieldEnum = (typeof DiscountApplicationScalarFieldEnum)[keyof typeof DiscountApplicationScalarFieldEnum]
+
+
+  export const CouponUsageLogScalarFieldEnum: {
+    id: 'id',
+    discountRuleId: 'discountRuleId',
+    bookingId: 'bookingId',
+    customerId: 'customerId',
+    branchId: 'branchId',
+    discountedAmount: 'discountedAmount',
+    appliedAt: 'appliedAt'
+  };
+
+  export type CouponUsageLogScalarFieldEnum = (typeof CouponUsageLogScalarFieldEnum)[keyof typeof CouponUsageLogScalarFieldEnum]
+
+
+  export const ManualDiscountScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    bookingId: 'bookingId',
+    amount: 'amount',
+    reason: 'reason',
+    issuedById: 'issuedById',
+    approvedById: 'approvedById',
+    status: 'status',
+    requiresApproval: 'requiresApproval',
+    approvedAt: 'approvedAt',
+    rejectedAt: 'rejectedAt',
+    rejectionReason: 'rejectionReason',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type ManualDiscountScalarFieldEnum = (typeof ManualDiscountScalarFieldEnum)[keyof typeof ManualDiscountScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -48676,6 +56702,62 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'DiscountType'
+   */
+  export type EnumDiscountTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DiscountType'>
+    
+
+
+  /**
+   * Reference to a field of type 'DiscountType[]'
+   */
+  export type ListEnumDiscountTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DiscountType[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'DiscountScope'
+   */
+  export type EnumDiscountScopeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DiscountScope'>
+    
+
+
+  /**
+   * Reference to a field of type 'DiscountScope[]'
+   */
+  export type ListEnumDiscountScopeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DiscountScope[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'AdjustmentType'
+   */
+  export type EnumAdjustmentTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AdjustmentType'>
+    
+
+
+  /**
+   * Reference to a field of type 'AdjustmentType[]'
+   */
+  export type ListEnumAdjustmentTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AdjustmentType[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'ManualDiscountStatus'
+   */
+  export type EnumManualDiscountStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ManualDiscountStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'ManualDiscountStatus[]'
+   */
+  export type ListEnumManualDiscountStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ManualDiscountStatus[]'>
+    
+
+
+  /**
    * Reference to a field of type 'Float'
    */
   export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -48718,6 +56800,9 @@ export namespace Prisma {
     bookingsCreated?: BookingListRelationFilter
     approvedDamageReports?: DamageReportListRelationFilter
     vehicleSwaps?: VehicleSwapListRelationFilter
+    discountRulesCreated?: DiscountRuleListRelationFilter
+    manualDiscountsIssued?: ManualDiscountListRelationFilter
+    manualDiscountsApproved?: ManualDiscountListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -48743,6 +56828,9 @@ export namespace Prisma {
     bookingsCreated?: BookingOrderByRelationAggregateInput
     approvedDamageReports?: DamageReportOrderByRelationAggregateInput
     vehicleSwaps?: VehicleSwapOrderByRelationAggregateInput
+    discountRulesCreated?: DiscountRuleOrderByRelationAggregateInput
+    manualDiscountsIssued?: ManualDiscountOrderByRelationAggregateInput
+    manualDiscountsApproved?: ManualDiscountOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -48771,6 +56859,9 @@ export namespace Prisma {
     bookingsCreated?: BookingListRelationFilter
     approvedDamageReports?: DamageReportListRelationFilter
     vehicleSwaps?: VehicleSwapListRelationFilter
+    discountRulesCreated?: DiscountRuleListRelationFilter
+    manualDiscountsIssued?: ManualDiscountListRelationFilter
+    manualDiscountsApproved?: ManualDiscountListRelationFilter
   }, "id" | "publicId" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -49245,6 +57336,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigListRelationFilter
     auditLogs?: AuditLogListRelationFilter
     staffActivityLogs?: StaffActivityLogListRelationFilter
+    durationDiscountSlabs?: DurationDiscountSlabListRelationFilter
+    discountConfig?: XOR<BranchDiscountConfigNullableRelationFilter, BranchDiscountConfigWhereInput> | null
   }
 
   export type BranchOrderByWithRelationInput = {
@@ -49267,6 +57360,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigOrderByRelationAggregateInput
     auditLogs?: AuditLogOrderByRelationAggregateInput
     staffActivityLogs?: StaffActivityLogOrderByRelationAggregateInput
+    durationDiscountSlabs?: DurationDiscountSlabOrderByRelationAggregateInput
+    discountConfig?: BranchDiscountConfigOrderByWithRelationInput
   }
 
   export type BranchWhereUniqueInput = Prisma.AtLeast<{
@@ -49292,6 +57387,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigListRelationFilter
     auditLogs?: AuditLogListRelationFilter
     staffActivityLogs?: StaffActivityLogListRelationFilter
+    durationDiscountSlabs?: DurationDiscountSlabListRelationFilter
+    discountConfig?: XOR<BranchDiscountConfigNullableRelationFilter, BranchDiscountConfigWhereInput> | null
   }, "id" | "publicId">
 
   export type BranchOrderByWithAggregationInput = {
@@ -50477,6 +58574,8 @@ export namespace Prisma {
     cancelledAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     cancellationReason?: StringNullableFilter<"Booking"> | string | null
     requiresManagerConfirmation?: BoolFilter<"Booking"> | boolean
+    couponCode?: StringNullableFilter<"Booking"> | string | null
+    discountRuleId?: IntNullableFilter<"Booking"> | number | null
     createdAt?: DateTimeFilter<"Booking"> | Date | string
     updatedAt?: DateTimeFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
@@ -50491,6 +58590,9 @@ export namespace Prisma {
     invoice?: XOR<InvoiceNullableRelationFilter, InvoiceWhereInput> | null
     cancellationInvoice?: XOR<CancellationInvoiceNullableRelationFilter, CancellationInvoiceWhereInput> | null
     vehicleSwaps?: VehicleSwapListRelationFilter
+    discountRule?: XOR<DiscountRuleNullableRelationFilter, DiscountRuleWhereInput> | null
+    discountApplication?: XOR<DiscountApplicationNullableRelationFilter, DiscountApplicationWhereInput> | null
+    manualDiscount?: XOR<ManualDiscountNullableRelationFilter, ManualDiscountWhereInput> | null
   }
 
   export type BookingOrderByWithRelationInput = {
@@ -50541,6 +58643,8 @@ export namespace Prisma {
     cancelledAt?: SortOrderInput | SortOrder
     cancellationReason?: SortOrderInput | SortOrder
     requiresManagerConfirmation?: SortOrder
+    couponCode?: SortOrderInput | SortOrder
+    discountRuleId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrderInput | SortOrder
@@ -50555,6 +58659,9 @@ export namespace Prisma {
     invoice?: InvoiceOrderByWithRelationInput
     cancellationInvoice?: CancellationInvoiceOrderByWithRelationInput
     vehicleSwaps?: VehicleSwapOrderByRelationAggregateInput
+    discountRule?: DiscountRuleOrderByWithRelationInput
+    discountApplication?: DiscountApplicationOrderByWithRelationInput
+    manualDiscount?: ManualDiscountOrderByWithRelationInput
   }
 
   export type BookingWhereUniqueInput = Prisma.AtLeast<{
@@ -50608,6 +58715,8 @@ export namespace Prisma {
     cancelledAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     cancellationReason?: StringNullableFilter<"Booking"> | string | null
     requiresManagerConfirmation?: BoolFilter<"Booking"> | boolean
+    couponCode?: StringNullableFilter<"Booking"> | string | null
+    discountRuleId?: IntNullableFilter<"Booking"> | number | null
     createdAt?: DateTimeFilter<"Booking"> | Date | string
     updatedAt?: DateTimeFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
@@ -50622,6 +58731,9 @@ export namespace Prisma {
     invoice?: XOR<InvoiceNullableRelationFilter, InvoiceWhereInput> | null
     cancellationInvoice?: XOR<CancellationInvoiceNullableRelationFilter, CancellationInvoiceWhereInput> | null
     vehicleSwaps?: VehicleSwapListRelationFilter
+    discountRule?: XOR<DiscountRuleNullableRelationFilter, DiscountRuleWhereInput> | null
+    discountApplication?: XOR<DiscountApplicationNullableRelationFilter, DiscountApplicationWhereInput> | null
+    manualDiscount?: XOR<ManualDiscountNullableRelationFilter, ManualDiscountWhereInput> | null
   }, "id" | "publicId" | "transactionId" | "remainingPaymentId">
 
   export type BookingOrderByWithAggregationInput = {
@@ -50672,6 +58784,8 @@ export namespace Prisma {
     cancelledAt?: SortOrderInput | SortOrder
     cancellationReason?: SortOrderInput | SortOrder
     requiresManagerConfirmation?: SortOrder
+    couponCode?: SortOrderInput | SortOrder
+    discountRuleId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrderInput | SortOrder
@@ -50733,6 +58847,8 @@ export namespace Prisma {
     cancelledAt?: DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
     cancellationReason?: StringNullableWithAggregatesFilter<"Booking"> | string | null
     requiresManagerConfirmation?: BoolWithAggregatesFilter<"Booking"> | boolean
+    couponCode?: StringNullableWithAggregatesFilter<"Booking"> | string | null
+    discountRuleId?: IntNullableWithAggregatesFilter<"Booking"> | number | null
     createdAt?: DateTimeWithAggregatesFilter<"Booking"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
@@ -52192,6 +60308,712 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"VehicleSwap"> | Date | string
   }
 
+  export type DiscountRuleWhereInput = {
+    AND?: DiscountRuleWhereInput | DiscountRuleWhereInput[]
+    OR?: DiscountRuleWhereInput[]
+    NOT?: DiscountRuleWhereInput | DiscountRuleWhereInput[]
+    id?: IntFilter<"DiscountRule"> | number
+    publicId?: StringFilter<"DiscountRule"> | string
+    code?: StringFilter<"DiscountRule"> | string
+    name?: StringFilter<"DiscountRule"> | string
+    description?: StringNullableFilter<"DiscountRule"> | string | null
+    discountType?: EnumDiscountTypeFilter<"DiscountRule"> | $Enums.DiscountType
+    value?: DecimalFilter<"DiscountRule"> | Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: DecimalNullableFilter<"DiscountRule"> | Decimal | DecimalJsLike | number | string | null
+    scope?: EnumDiscountScopeFilter<"DiscountRule"> | $Enums.DiscountScope
+    applicableBranchIds?: IntNullableListFilter<"DiscountRule">
+    targetCustomerIds?: IntNullableListFilter<"DiscountRule">
+    newCustomersOnly?: BoolFilter<"DiscountRule"> | boolean
+    minBookingCount?: IntNullableFilter<"DiscountRule"> | number | null
+    maxBookingCount?: IntNullableFilter<"DiscountRule"> | number | null
+    minBookingAmount?: DecimalNullableFilter<"DiscountRule"> | Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: DecimalNullableFilter<"DiscountRule"> | Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: IntNullableListFilter<"DiscountRule">
+    minRentalDays?: IntNullableFilter<"DiscountRule"> | number | null
+    maxRentalDays?: IntNullableFilter<"DiscountRule"> | number | null
+    applicablePaymentPlans?: StringNullableListFilter<"DiscountRule">
+    allowPartialPayment?: BoolFilter<"DiscountRule"> | boolean
+    minAdvanceAfterDiscount?: DecimalNullableFilter<"DiscountRule"> | Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: BoolFilter<"DiscountRule"> | boolean
+    allowPostInvoice?: BoolFilter<"DiscountRule"> | boolean
+    totalUsageLimit?: IntNullableFilter<"DiscountRule"> | number | null
+    perUserLimit?: IntNullableFilter<"DiscountRule"> | number | null
+    perBranchLimit?: IntNullableFilter<"DiscountRule"> | number | null
+    perDayLimit?: IntNullableFilter<"DiscountRule"> | number | null
+    stackable?: BoolFilter<"DiscountRule"> | boolean
+    priority?: IntFilter<"DiscountRule"> | number
+    startDate?: DateTimeFilter<"DiscountRule"> | Date | string
+    endDate?: DateTimeFilter<"DiscountRule"> | Date | string
+    isActive?: BoolFilter<"DiscountRule"> | boolean
+    createdById?: IntFilter<"DiscountRule"> | number
+    createdAt?: DateTimeFilter<"DiscountRule"> | Date | string
+    updatedAt?: DateTimeFilter<"DiscountRule"> | Date | string
+    createdBy?: XOR<UserRelationFilter, UserWhereInput>
+    usageLogs?: CouponUsageLogListRelationFilter
+    bookings?: BookingListRelationFilter
+    applications?: DiscountApplicationListRelationFilter
+  }
+
+  export type DiscountRuleOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    code?: SortOrder
+    name?: SortOrder
+    description?: SortOrderInput | SortOrder
+    discountType?: SortOrder
+    value?: SortOrder
+    maxDiscountCap?: SortOrderInput | SortOrder
+    scope?: SortOrder
+    applicableBranchIds?: SortOrder
+    targetCustomerIds?: SortOrder
+    newCustomersOnly?: SortOrder
+    minBookingCount?: SortOrderInput | SortOrder
+    maxBookingCount?: SortOrderInput | SortOrder
+    minBookingAmount?: SortOrderInput | SortOrder
+    maxBookingAmount?: SortOrderInput | SortOrder
+    applicableVehicleCategoryIds?: SortOrder
+    minRentalDays?: SortOrderInput | SortOrder
+    maxRentalDays?: SortOrderInput | SortOrder
+    applicablePaymentPlans?: SortOrder
+    allowPartialPayment?: SortOrder
+    minAdvanceAfterDiscount?: SortOrderInput | SortOrder
+    allowPostBooking?: SortOrder
+    allowPostInvoice?: SortOrder
+    totalUsageLimit?: SortOrderInput | SortOrder
+    perUserLimit?: SortOrderInput | SortOrder
+    perBranchLimit?: SortOrderInput | SortOrder
+    perDayLimit?: SortOrderInput | SortOrder
+    stackable?: SortOrder
+    priority?: SortOrder
+    startDate?: SortOrder
+    endDate?: SortOrder
+    isActive?: SortOrder
+    createdById?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    createdBy?: UserOrderByWithRelationInput
+    usageLogs?: CouponUsageLogOrderByRelationAggregateInput
+    bookings?: BookingOrderByRelationAggregateInput
+    applications?: DiscountApplicationOrderByRelationAggregateInput
+  }
+
+  export type DiscountRuleWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    code?: string
+    AND?: DiscountRuleWhereInput | DiscountRuleWhereInput[]
+    OR?: DiscountRuleWhereInput[]
+    NOT?: DiscountRuleWhereInput | DiscountRuleWhereInput[]
+    name?: StringFilter<"DiscountRule"> | string
+    description?: StringNullableFilter<"DiscountRule"> | string | null
+    discountType?: EnumDiscountTypeFilter<"DiscountRule"> | $Enums.DiscountType
+    value?: DecimalFilter<"DiscountRule"> | Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: DecimalNullableFilter<"DiscountRule"> | Decimal | DecimalJsLike | number | string | null
+    scope?: EnumDiscountScopeFilter<"DiscountRule"> | $Enums.DiscountScope
+    applicableBranchIds?: IntNullableListFilter<"DiscountRule">
+    targetCustomerIds?: IntNullableListFilter<"DiscountRule">
+    newCustomersOnly?: BoolFilter<"DiscountRule"> | boolean
+    minBookingCount?: IntNullableFilter<"DiscountRule"> | number | null
+    maxBookingCount?: IntNullableFilter<"DiscountRule"> | number | null
+    minBookingAmount?: DecimalNullableFilter<"DiscountRule"> | Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: DecimalNullableFilter<"DiscountRule"> | Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: IntNullableListFilter<"DiscountRule">
+    minRentalDays?: IntNullableFilter<"DiscountRule"> | number | null
+    maxRentalDays?: IntNullableFilter<"DiscountRule"> | number | null
+    applicablePaymentPlans?: StringNullableListFilter<"DiscountRule">
+    allowPartialPayment?: BoolFilter<"DiscountRule"> | boolean
+    minAdvanceAfterDiscount?: DecimalNullableFilter<"DiscountRule"> | Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: BoolFilter<"DiscountRule"> | boolean
+    allowPostInvoice?: BoolFilter<"DiscountRule"> | boolean
+    totalUsageLimit?: IntNullableFilter<"DiscountRule"> | number | null
+    perUserLimit?: IntNullableFilter<"DiscountRule"> | number | null
+    perBranchLimit?: IntNullableFilter<"DiscountRule"> | number | null
+    perDayLimit?: IntNullableFilter<"DiscountRule"> | number | null
+    stackable?: BoolFilter<"DiscountRule"> | boolean
+    priority?: IntFilter<"DiscountRule"> | number
+    startDate?: DateTimeFilter<"DiscountRule"> | Date | string
+    endDate?: DateTimeFilter<"DiscountRule"> | Date | string
+    isActive?: BoolFilter<"DiscountRule"> | boolean
+    createdById?: IntFilter<"DiscountRule"> | number
+    createdAt?: DateTimeFilter<"DiscountRule"> | Date | string
+    updatedAt?: DateTimeFilter<"DiscountRule"> | Date | string
+    createdBy?: XOR<UserRelationFilter, UserWhereInput>
+    usageLogs?: CouponUsageLogListRelationFilter
+    bookings?: BookingListRelationFilter
+    applications?: DiscountApplicationListRelationFilter
+  }, "id" | "publicId" | "code">
+
+  export type DiscountRuleOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    code?: SortOrder
+    name?: SortOrder
+    description?: SortOrderInput | SortOrder
+    discountType?: SortOrder
+    value?: SortOrder
+    maxDiscountCap?: SortOrderInput | SortOrder
+    scope?: SortOrder
+    applicableBranchIds?: SortOrder
+    targetCustomerIds?: SortOrder
+    newCustomersOnly?: SortOrder
+    minBookingCount?: SortOrderInput | SortOrder
+    maxBookingCount?: SortOrderInput | SortOrder
+    minBookingAmount?: SortOrderInput | SortOrder
+    maxBookingAmount?: SortOrderInput | SortOrder
+    applicableVehicleCategoryIds?: SortOrder
+    minRentalDays?: SortOrderInput | SortOrder
+    maxRentalDays?: SortOrderInput | SortOrder
+    applicablePaymentPlans?: SortOrder
+    allowPartialPayment?: SortOrder
+    minAdvanceAfterDiscount?: SortOrderInput | SortOrder
+    allowPostBooking?: SortOrder
+    allowPostInvoice?: SortOrder
+    totalUsageLimit?: SortOrderInput | SortOrder
+    perUserLimit?: SortOrderInput | SortOrder
+    perBranchLimit?: SortOrderInput | SortOrder
+    perDayLimit?: SortOrderInput | SortOrder
+    stackable?: SortOrder
+    priority?: SortOrder
+    startDate?: SortOrder
+    endDate?: SortOrder
+    isActive?: SortOrder
+    createdById?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: DiscountRuleCountOrderByAggregateInput
+    _avg?: DiscountRuleAvgOrderByAggregateInput
+    _max?: DiscountRuleMaxOrderByAggregateInput
+    _min?: DiscountRuleMinOrderByAggregateInput
+    _sum?: DiscountRuleSumOrderByAggregateInput
+  }
+
+  export type DiscountRuleScalarWhereWithAggregatesInput = {
+    AND?: DiscountRuleScalarWhereWithAggregatesInput | DiscountRuleScalarWhereWithAggregatesInput[]
+    OR?: DiscountRuleScalarWhereWithAggregatesInput[]
+    NOT?: DiscountRuleScalarWhereWithAggregatesInput | DiscountRuleScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"DiscountRule"> | number
+    publicId?: StringWithAggregatesFilter<"DiscountRule"> | string
+    code?: StringWithAggregatesFilter<"DiscountRule"> | string
+    name?: StringWithAggregatesFilter<"DiscountRule"> | string
+    description?: StringNullableWithAggregatesFilter<"DiscountRule"> | string | null
+    discountType?: EnumDiscountTypeWithAggregatesFilter<"DiscountRule"> | $Enums.DiscountType
+    value?: DecimalWithAggregatesFilter<"DiscountRule"> | Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: DecimalNullableWithAggregatesFilter<"DiscountRule"> | Decimal | DecimalJsLike | number | string | null
+    scope?: EnumDiscountScopeWithAggregatesFilter<"DiscountRule"> | $Enums.DiscountScope
+    applicableBranchIds?: IntNullableListFilter<"DiscountRule">
+    targetCustomerIds?: IntNullableListFilter<"DiscountRule">
+    newCustomersOnly?: BoolWithAggregatesFilter<"DiscountRule"> | boolean
+    minBookingCount?: IntNullableWithAggregatesFilter<"DiscountRule"> | number | null
+    maxBookingCount?: IntNullableWithAggregatesFilter<"DiscountRule"> | number | null
+    minBookingAmount?: DecimalNullableWithAggregatesFilter<"DiscountRule"> | Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: DecimalNullableWithAggregatesFilter<"DiscountRule"> | Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: IntNullableListFilter<"DiscountRule">
+    minRentalDays?: IntNullableWithAggregatesFilter<"DiscountRule"> | number | null
+    maxRentalDays?: IntNullableWithAggregatesFilter<"DiscountRule"> | number | null
+    applicablePaymentPlans?: StringNullableListFilter<"DiscountRule">
+    allowPartialPayment?: BoolWithAggregatesFilter<"DiscountRule"> | boolean
+    minAdvanceAfterDiscount?: DecimalNullableWithAggregatesFilter<"DiscountRule"> | Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: BoolWithAggregatesFilter<"DiscountRule"> | boolean
+    allowPostInvoice?: BoolWithAggregatesFilter<"DiscountRule"> | boolean
+    totalUsageLimit?: IntNullableWithAggregatesFilter<"DiscountRule"> | number | null
+    perUserLimit?: IntNullableWithAggregatesFilter<"DiscountRule"> | number | null
+    perBranchLimit?: IntNullableWithAggregatesFilter<"DiscountRule"> | number | null
+    perDayLimit?: IntNullableWithAggregatesFilter<"DiscountRule"> | number | null
+    stackable?: BoolWithAggregatesFilter<"DiscountRule"> | boolean
+    priority?: IntWithAggregatesFilter<"DiscountRule"> | number
+    startDate?: DateTimeWithAggregatesFilter<"DiscountRule"> | Date | string
+    endDate?: DateTimeWithAggregatesFilter<"DiscountRule"> | Date | string
+    isActive?: BoolWithAggregatesFilter<"DiscountRule"> | boolean
+    createdById?: IntWithAggregatesFilter<"DiscountRule"> | number
+    createdAt?: DateTimeWithAggregatesFilter<"DiscountRule"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"DiscountRule"> | Date | string
+  }
+
+  export type DurationDiscountSlabWhereInput = {
+    AND?: DurationDiscountSlabWhereInput | DurationDiscountSlabWhereInput[]
+    OR?: DurationDiscountSlabWhereInput[]
+    NOT?: DurationDiscountSlabWhereInput | DurationDiscountSlabWhereInput[]
+    id?: IntFilter<"DurationDiscountSlab"> | number
+    branchId?: IntFilter<"DurationDiscountSlab"> | number
+    minDays?: IntFilter<"DurationDiscountSlab"> | number
+    maxDays?: IntNullableFilter<"DurationDiscountSlab"> | number | null
+    discountType?: EnumDiscountTypeFilter<"DurationDiscountSlab"> | $Enums.DiscountType
+    value?: DecimalFilter<"DurationDiscountSlab"> | Decimal | DecimalJsLike | number | string
+    label?: StringNullableFilter<"DurationDiscountSlab"> | string | null
+    createdAt?: DateTimeFilter<"DurationDiscountSlab"> | Date | string
+    updatedAt?: DateTimeFilter<"DurationDiscountSlab"> | Date | string
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+  }
+
+  export type DurationDiscountSlabOrderByWithRelationInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    minDays?: SortOrder
+    maxDays?: SortOrderInput | SortOrder
+    discountType?: SortOrder
+    value?: SortOrder
+    label?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    branch?: BranchOrderByWithRelationInput
+  }
+
+  export type DurationDiscountSlabWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    AND?: DurationDiscountSlabWhereInput | DurationDiscountSlabWhereInput[]
+    OR?: DurationDiscountSlabWhereInput[]
+    NOT?: DurationDiscountSlabWhereInput | DurationDiscountSlabWhereInput[]
+    branchId?: IntFilter<"DurationDiscountSlab"> | number
+    minDays?: IntFilter<"DurationDiscountSlab"> | number
+    maxDays?: IntNullableFilter<"DurationDiscountSlab"> | number | null
+    discountType?: EnumDiscountTypeFilter<"DurationDiscountSlab"> | $Enums.DiscountType
+    value?: DecimalFilter<"DurationDiscountSlab"> | Decimal | DecimalJsLike | number | string
+    label?: StringNullableFilter<"DurationDiscountSlab"> | string | null
+    createdAt?: DateTimeFilter<"DurationDiscountSlab"> | Date | string
+    updatedAt?: DateTimeFilter<"DurationDiscountSlab"> | Date | string
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+  }, "id">
+
+  export type DurationDiscountSlabOrderByWithAggregationInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    minDays?: SortOrder
+    maxDays?: SortOrderInput | SortOrder
+    discountType?: SortOrder
+    value?: SortOrder
+    label?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: DurationDiscountSlabCountOrderByAggregateInput
+    _avg?: DurationDiscountSlabAvgOrderByAggregateInput
+    _max?: DurationDiscountSlabMaxOrderByAggregateInput
+    _min?: DurationDiscountSlabMinOrderByAggregateInput
+    _sum?: DurationDiscountSlabSumOrderByAggregateInput
+  }
+
+  export type DurationDiscountSlabScalarWhereWithAggregatesInput = {
+    AND?: DurationDiscountSlabScalarWhereWithAggregatesInput | DurationDiscountSlabScalarWhereWithAggregatesInput[]
+    OR?: DurationDiscountSlabScalarWhereWithAggregatesInput[]
+    NOT?: DurationDiscountSlabScalarWhereWithAggregatesInput | DurationDiscountSlabScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"DurationDiscountSlab"> | number
+    branchId?: IntWithAggregatesFilter<"DurationDiscountSlab"> | number
+    minDays?: IntWithAggregatesFilter<"DurationDiscountSlab"> | number
+    maxDays?: IntNullableWithAggregatesFilter<"DurationDiscountSlab"> | number | null
+    discountType?: EnumDiscountTypeWithAggregatesFilter<"DurationDiscountSlab"> | $Enums.DiscountType
+    value?: DecimalWithAggregatesFilter<"DurationDiscountSlab"> | Decimal | DecimalJsLike | number | string
+    label?: StringNullableWithAggregatesFilter<"DurationDiscountSlab"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"DurationDiscountSlab"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"DurationDiscountSlab"> | Date | string
+  }
+
+  export type BranchDiscountConfigWhereInput = {
+    AND?: BranchDiscountConfigWhereInput | BranchDiscountConfigWhereInput[]
+    OR?: BranchDiscountConfigWhereInput[]
+    NOT?: BranchDiscountConfigWhereInput | BranchDiscountConfigWhereInput[]
+    id?: IntFilter<"BranchDiscountConfig"> | number
+    branchId?: IntFilter<"BranchDiscountConfig"> | number
+    durationDiscountEnabled?: BoolFilter<"BranchDiscountConfig"> | boolean
+    stackWithCoupon?: BoolFilter<"BranchDiscountConfig"> | boolean
+    maxCombinedDiscountPercent?: DecimalNullableFilter<"BranchDiscountConfig"> | Decimal | DecimalJsLike | number | string | null
+    managerApprovalThreshold?: DecimalFilter<"BranchDiscountConfig"> | Decimal | DecimalJsLike | number | string
+    maxManualDiscountsPerEmployeePerDay?: IntFilter<"BranchDiscountConfig"> | number
+    managerCouponCreationEnabled?: BoolFilter<"BranchDiscountConfig"> | boolean
+    maxManagerCouponDiscountPercent?: DecimalFilter<"BranchDiscountConfig"> | Decimal | DecimalJsLike | number | string
+    maxManagerCouponFlatAmount?: DecimalFilter<"BranchDiscountConfig"> | Decimal | DecimalJsLike | number | string
+    maxManagerCouponValidityDays?: IntFilter<"BranchDiscountConfig"> | number
+    maxManagerCouponUsageLimit?: IntFilter<"BranchDiscountConfig"> | number
+    maxManagerCouponsPerDay?: IntFilter<"BranchDiscountConfig"> | number
+    createdAt?: DateTimeFilter<"BranchDiscountConfig"> | Date | string
+    updatedAt?: DateTimeFilter<"BranchDiscountConfig"> | Date | string
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+  }
+
+  export type BranchDiscountConfigOrderByWithRelationInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    durationDiscountEnabled?: SortOrder
+    stackWithCoupon?: SortOrder
+    maxCombinedDiscountPercent?: SortOrderInput | SortOrder
+    managerApprovalThreshold?: SortOrder
+    maxManualDiscountsPerEmployeePerDay?: SortOrder
+    managerCouponCreationEnabled?: SortOrder
+    maxManagerCouponDiscountPercent?: SortOrder
+    maxManagerCouponFlatAmount?: SortOrder
+    maxManagerCouponValidityDays?: SortOrder
+    maxManagerCouponUsageLimit?: SortOrder
+    maxManagerCouponsPerDay?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    branch?: BranchOrderByWithRelationInput
+  }
+
+  export type BranchDiscountConfigWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    branchId?: number
+    AND?: BranchDiscountConfigWhereInput | BranchDiscountConfigWhereInput[]
+    OR?: BranchDiscountConfigWhereInput[]
+    NOT?: BranchDiscountConfigWhereInput | BranchDiscountConfigWhereInput[]
+    durationDiscountEnabled?: BoolFilter<"BranchDiscountConfig"> | boolean
+    stackWithCoupon?: BoolFilter<"BranchDiscountConfig"> | boolean
+    maxCombinedDiscountPercent?: DecimalNullableFilter<"BranchDiscountConfig"> | Decimal | DecimalJsLike | number | string | null
+    managerApprovalThreshold?: DecimalFilter<"BranchDiscountConfig"> | Decimal | DecimalJsLike | number | string
+    maxManualDiscountsPerEmployeePerDay?: IntFilter<"BranchDiscountConfig"> | number
+    managerCouponCreationEnabled?: BoolFilter<"BranchDiscountConfig"> | boolean
+    maxManagerCouponDiscountPercent?: DecimalFilter<"BranchDiscountConfig"> | Decimal | DecimalJsLike | number | string
+    maxManagerCouponFlatAmount?: DecimalFilter<"BranchDiscountConfig"> | Decimal | DecimalJsLike | number | string
+    maxManagerCouponValidityDays?: IntFilter<"BranchDiscountConfig"> | number
+    maxManagerCouponUsageLimit?: IntFilter<"BranchDiscountConfig"> | number
+    maxManagerCouponsPerDay?: IntFilter<"BranchDiscountConfig"> | number
+    createdAt?: DateTimeFilter<"BranchDiscountConfig"> | Date | string
+    updatedAt?: DateTimeFilter<"BranchDiscountConfig"> | Date | string
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+  }, "id" | "branchId">
+
+  export type BranchDiscountConfigOrderByWithAggregationInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    durationDiscountEnabled?: SortOrder
+    stackWithCoupon?: SortOrder
+    maxCombinedDiscountPercent?: SortOrderInput | SortOrder
+    managerApprovalThreshold?: SortOrder
+    maxManualDiscountsPerEmployeePerDay?: SortOrder
+    managerCouponCreationEnabled?: SortOrder
+    maxManagerCouponDiscountPercent?: SortOrder
+    maxManagerCouponFlatAmount?: SortOrder
+    maxManagerCouponValidityDays?: SortOrder
+    maxManagerCouponUsageLimit?: SortOrder
+    maxManagerCouponsPerDay?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: BranchDiscountConfigCountOrderByAggregateInput
+    _avg?: BranchDiscountConfigAvgOrderByAggregateInput
+    _max?: BranchDiscountConfigMaxOrderByAggregateInput
+    _min?: BranchDiscountConfigMinOrderByAggregateInput
+    _sum?: BranchDiscountConfigSumOrderByAggregateInput
+  }
+
+  export type BranchDiscountConfigScalarWhereWithAggregatesInput = {
+    AND?: BranchDiscountConfigScalarWhereWithAggregatesInput | BranchDiscountConfigScalarWhereWithAggregatesInput[]
+    OR?: BranchDiscountConfigScalarWhereWithAggregatesInput[]
+    NOT?: BranchDiscountConfigScalarWhereWithAggregatesInput | BranchDiscountConfigScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"BranchDiscountConfig"> | number
+    branchId?: IntWithAggregatesFilter<"BranchDiscountConfig"> | number
+    durationDiscountEnabled?: BoolWithAggregatesFilter<"BranchDiscountConfig"> | boolean
+    stackWithCoupon?: BoolWithAggregatesFilter<"BranchDiscountConfig"> | boolean
+    maxCombinedDiscountPercent?: DecimalNullableWithAggregatesFilter<"BranchDiscountConfig"> | Decimal | DecimalJsLike | number | string | null
+    managerApprovalThreshold?: DecimalWithAggregatesFilter<"BranchDiscountConfig"> | Decimal | DecimalJsLike | number | string
+    maxManualDiscountsPerEmployeePerDay?: IntWithAggregatesFilter<"BranchDiscountConfig"> | number
+    managerCouponCreationEnabled?: BoolWithAggregatesFilter<"BranchDiscountConfig"> | boolean
+    maxManagerCouponDiscountPercent?: DecimalWithAggregatesFilter<"BranchDiscountConfig"> | Decimal | DecimalJsLike | number | string
+    maxManagerCouponFlatAmount?: DecimalWithAggregatesFilter<"BranchDiscountConfig"> | Decimal | DecimalJsLike | number | string
+    maxManagerCouponValidityDays?: IntWithAggregatesFilter<"BranchDiscountConfig"> | number
+    maxManagerCouponUsageLimit?: IntWithAggregatesFilter<"BranchDiscountConfig"> | number
+    maxManagerCouponsPerDay?: IntWithAggregatesFilter<"BranchDiscountConfig"> | number
+    createdAt?: DateTimeWithAggregatesFilter<"BranchDiscountConfig"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"BranchDiscountConfig"> | Date | string
+  }
+
+  export type DiscountApplicationWhereInput = {
+    AND?: DiscountApplicationWhereInput | DiscountApplicationWhereInput[]
+    OR?: DiscountApplicationWhereInput[]
+    NOT?: DiscountApplicationWhereInput | DiscountApplicationWhereInput[]
+    id?: IntFilter<"DiscountApplication"> | number
+    publicId?: StringFilter<"DiscountApplication"> | string
+    bookingId?: IntFilter<"DiscountApplication"> | number
+    originalAmount?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    durationSlabId?: IntNullableFilter<"DiscountApplication"> | number | null
+    couponDiscountAmount?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    discountRuleId?: IntNullableFilter<"DiscountApplication"> | number | null
+    manualDiscountAmount?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    manualDiscountId?: IntNullableFilter<"DiscountApplication"> | number | null
+    totalDiscountAmount?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    paymentPlan?: StringFilter<"DiscountApplication"> | string
+    adjustmentType?: EnumAdjustmentTypeFilter<"DiscountApplication"> | $Enums.AdjustmentType
+    createdAt?: DateTimeFilter<"DiscountApplication"> | Date | string
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    discountRule?: XOR<DiscountRuleNullableRelationFilter, DiscountRuleWhereInput> | null
+    manualDiscount?: XOR<ManualDiscountNullableRelationFilter, ManualDiscountWhereInput> | null
+  }
+
+  export type DiscountApplicationOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    originalAmount?: SortOrder
+    durationDiscountAmount?: SortOrder
+    durationDiscountPercent?: SortOrder
+    durationSlabId?: SortOrderInput | SortOrder
+    couponDiscountAmount?: SortOrder
+    couponDiscountPercent?: SortOrder
+    discountRuleId?: SortOrderInput | SortOrder
+    manualDiscountAmount?: SortOrder
+    manualDiscountId?: SortOrderInput | SortOrder
+    totalDiscountAmount?: SortOrder
+    finalAmount?: SortOrder
+    paymentPlan?: SortOrder
+    adjustmentType?: SortOrder
+    createdAt?: SortOrder
+    booking?: BookingOrderByWithRelationInput
+    discountRule?: DiscountRuleOrderByWithRelationInput
+    manualDiscount?: ManualDiscountOrderByWithRelationInput
+  }
+
+  export type DiscountApplicationWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    bookingId?: number
+    manualDiscountId?: number
+    AND?: DiscountApplicationWhereInput | DiscountApplicationWhereInput[]
+    OR?: DiscountApplicationWhereInput[]
+    NOT?: DiscountApplicationWhereInput | DiscountApplicationWhereInput[]
+    originalAmount?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    durationSlabId?: IntNullableFilter<"DiscountApplication"> | number | null
+    couponDiscountAmount?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    discountRuleId?: IntNullableFilter<"DiscountApplication"> | number | null
+    manualDiscountAmount?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    totalDiscountAmount?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    paymentPlan?: StringFilter<"DiscountApplication"> | string
+    adjustmentType?: EnumAdjustmentTypeFilter<"DiscountApplication"> | $Enums.AdjustmentType
+    createdAt?: DateTimeFilter<"DiscountApplication"> | Date | string
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    discountRule?: XOR<DiscountRuleNullableRelationFilter, DiscountRuleWhereInput> | null
+    manualDiscount?: XOR<ManualDiscountNullableRelationFilter, ManualDiscountWhereInput> | null
+  }, "id" | "publicId" | "bookingId" | "manualDiscountId">
+
+  export type DiscountApplicationOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    originalAmount?: SortOrder
+    durationDiscountAmount?: SortOrder
+    durationDiscountPercent?: SortOrder
+    durationSlabId?: SortOrderInput | SortOrder
+    couponDiscountAmount?: SortOrder
+    couponDiscountPercent?: SortOrder
+    discountRuleId?: SortOrderInput | SortOrder
+    manualDiscountAmount?: SortOrder
+    manualDiscountId?: SortOrderInput | SortOrder
+    totalDiscountAmount?: SortOrder
+    finalAmount?: SortOrder
+    paymentPlan?: SortOrder
+    adjustmentType?: SortOrder
+    createdAt?: SortOrder
+    _count?: DiscountApplicationCountOrderByAggregateInput
+    _avg?: DiscountApplicationAvgOrderByAggregateInput
+    _max?: DiscountApplicationMaxOrderByAggregateInput
+    _min?: DiscountApplicationMinOrderByAggregateInput
+    _sum?: DiscountApplicationSumOrderByAggregateInput
+  }
+
+  export type DiscountApplicationScalarWhereWithAggregatesInput = {
+    AND?: DiscountApplicationScalarWhereWithAggregatesInput | DiscountApplicationScalarWhereWithAggregatesInput[]
+    OR?: DiscountApplicationScalarWhereWithAggregatesInput[]
+    NOT?: DiscountApplicationScalarWhereWithAggregatesInput | DiscountApplicationScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"DiscountApplication"> | number
+    publicId?: StringWithAggregatesFilter<"DiscountApplication"> | string
+    bookingId?: IntWithAggregatesFilter<"DiscountApplication"> | number
+    originalAmount?: DecimalWithAggregatesFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: DecimalWithAggregatesFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: DecimalWithAggregatesFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    durationSlabId?: IntNullableWithAggregatesFilter<"DiscountApplication"> | number | null
+    couponDiscountAmount?: DecimalWithAggregatesFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: DecimalWithAggregatesFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    discountRuleId?: IntNullableWithAggregatesFilter<"DiscountApplication"> | number | null
+    manualDiscountAmount?: DecimalWithAggregatesFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    manualDiscountId?: IntNullableWithAggregatesFilter<"DiscountApplication"> | number | null
+    totalDiscountAmount?: DecimalWithAggregatesFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalWithAggregatesFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    paymentPlan?: StringWithAggregatesFilter<"DiscountApplication"> | string
+    adjustmentType?: EnumAdjustmentTypeWithAggregatesFilter<"DiscountApplication"> | $Enums.AdjustmentType
+    createdAt?: DateTimeWithAggregatesFilter<"DiscountApplication"> | Date | string
+  }
+
+  export type CouponUsageLogWhereInput = {
+    AND?: CouponUsageLogWhereInput | CouponUsageLogWhereInput[]
+    OR?: CouponUsageLogWhereInput[]
+    NOT?: CouponUsageLogWhereInput | CouponUsageLogWhereInput[]
+    id?: IntFilter<"CouponUsageLog"> | number
+    discountRuleId?: IntFilter<"CouponUsageLog"> | number
+    bookingId?: IntFilter<"CouponUsageLog"> | number
+    customerId?: IntFilter<"CouponUsageLog"> | number
+    branchId?: IntFilter<"CouponUsageLog"> | number
+    discountedAmount?: DecimalFilter<"CouponUsageLog"> | Decimal | DecimalJsLike | number | string
+    appliedAt?: DateTimeFilter<"CouponUsageLog"> | Date | string
+    discountRule?: XOR<DiscountRuleRelationFilter, DiscountRuleWhereInput>
+  }
+
+  export type CouponUsageLogOrderByWithRelationInput = {
+    id?: SortOrder
+    discountRuleId?: SortOrder
+    bookingId?: SortOrder
+    customerId?: SortOrder
+    branchId?: SortOrder
+    discountedAmount?: SortOrder
+    appliedAt?: SortOrder
+    discountRule?: DiscountRuleOrderByWithRelationInput
+  }
+
+  export type CouponUsageLogWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    AND?: CouponUsageLogWhereInput | CouponUsageLogWhereInput[]
+    OR?: CouponUsageLogWhereInput[]
+    NOT?: CouponUsageLogWhereInput | CouponUsageLogWhereInput[]
+    discountRuleId?: IntFilter<"CouponUsageLog"> | number
+    bookingId?: IntFilter<"CouponUsageLog"> | number
+    customerId?: IntFilter<"CouponUsageLog"> | number
+    branchId?: IntFilter<"CouponUsageLog"> | number
+    discountedAmount?: DecimalFilter<"CouponUsageLog"> | Decimal | DecimalJsLike | number | string
+    appliedAt?: DateTimeFilter<"CouponUsageLog"> | Date | string
+    discountRule?: XOR<DiscountRuleRelationFilter, DiscountRuleWhereInput>
+  }, "id">
+
+  export type CouponUsageLogOrderByWithAggregationInput = {
+    id?: SortOrder
+    discountRuleId?: SortOrder
+    bookingId?: SortOrder
+    customerId?: SortOrder
+    branchId?: SortOrder
+    discountedAmount?: SortOrder
+    appliedAt?: SortOrder
+    _count?: CouponUsageLogCountOrderByAggregateInput
+    _avg?: CouponUsageLogAvgOrderByAggregateInput
+    _max?: CouponUsageLogMaxOrderByAggregateInput
+    _min?: CouponUsageLogMinOrderByAggregateInput
+    _sum?: CouponUsageLogSumOrderByAggregateInput
+  }
+
+  export type CouponUsageLogScalarWhereWithAggregatesInput = {
+    AND?: CouponUsageLogScalarWhereWithAggregatesInput | CouponUsageLogScalarWhereWithAggregatesInput[]
+    OR?: CouponUsageLogScalarWhereWithAggregatesInput[]
+    NOT?: CouponUsageLogScalarWhereWithAggregatesInput | CouponUsageLogScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"CouponUsageLog"> | number
+    discountRuleId?: IntWithAggregatesFilter<"CouponUsageLog"> | number
+    bookingId?: IntWithAggregatesFilter<"CouponUsageLog"> | number
+    customerId?: IntWithAggregatesFilter<"CouponUsageLog"> | number
+    branchId?: IntWithAggregatesFilter<"CouponUsageLog"> | number
+    discountedAmount?: DecimalWithAggregatesFilter<"CouponUsageLog"> | Decimal | DecimalJsLike | number | string
+    appliedAt?: DateTimeWithAggregatesFilter<"CouponUsageLog"> | Date | string
+  }
+
+  export type ManualDiscountWhereInput = {
+    AND?: ManualDiscountWhereInput | ManualDiscountWhereInput[]
+    OR?: ManualDiscountWhereInput[]
+    NOT?: ManualDiscountWhereInput | ManualDiscountWhereInput[]
+    id?: IntFilter<"ManualDiscount"> | number
+    publicId?: StringFilter<"ManualDiscount"> | string
+    bookingId?: IntFilter<"ManualDiscount"> | number
+    amount?: DecimalFilter<"ManualDiscount"> | Decimal | DecimalJsLike | number | string
+    reason?: StringFilter<"ManualDiscount"> | string
+    issuedById?: IntFilter<"ManualDiscount"> | number
+    approvedById?: IntNullableFilter<"ManualDiscount"> | number | null
+    status?: EnumManualDiscountStatusFilter<"ManualDiscount"> | $Enums.ManualDiscountStatus
+    requiresApproval?: BoolFilter<"ManualDiscount"> | boolean
+    approvedAt?: DateTimeNullableFilter<"ManualDiscount"> | Date | string | null
+    rejectedAt?: DateTimeNullableFilter<"ManualDiscount"> | Date | string | null
+    rejectionReason?: StringNullableFilter<"ManualDiscount"> | string | null
+    createdAt?: DateTimeFilter<"ManualDiscount"> | Date | string
+    updatedAt?: DateTimeFilter<"ManualDiscount"> | Date | string
+    issuedBy?: XOR<UserRelationFilter, UserWhereInput>
+    approvedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    application?: XOR<DiscountApplicationNullableRelationFilter, DiscountApplicationWhereInput> | null
+  }
+
+  export type ManualDiscountOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    amount?: SortOrder
+    reason?: SortOrder
+    issuedById?: SortOrder
+    approvedById?: SortOrderInput | SortOrder
+    status?: SortOrder
+    requiresApproval?: SortOrder
+    approvedAt?: SortOrderInput | SortOrder
+    rejectedAt?: SortOrderInput | SortOrder
+    rejectionReason?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    issuedBy?: UserOrderByWithRelationInput
+    approvedBy?: UserOrderByWithRelationInput
+    booking?: BookingOrderByWithRelationInput
+    application?: DiscountApplicationOrderByWithRelationInput
+  }
+
+  export type ManualDiscountWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    bookingId?: number
+    AND?: ManualDiscountWhereInput | ManualDiscountWhereInput[]
+    OR?: ManualDiscountWhereInput[]
+    NOT?: ManualDiscountWhereInput | ManualDiscountWhereInput[]
+    amount?: DecimalFilter<"ManualDiscount"> | Decimal | DecimalJsLike | number | string
+    reason?: StringFilter<"ManualDiscount"> | string
+    issuedById?: IntFilter<"ManualDiscount"> | number
+    approvedById?: IntNullableFilter<"ManualDiscount"> | number | null
+    status?: EnumManualDiscountStatusFilter<"ManualDiscount"> | $Enums.ManualDiscountStatus
+    requiresApproval?: BoolFilter<"ManualDiscount"> | boolean
+    approvedAt?: DateTimeNullableFilter<"ManualDiscount"> | Date | string | null
+    rejectedAt?: DateTimeNullableFilter<"ManualDiscount"> | Date | string | null
+    rejectionReason?: StringNullableFilter<"ManualDiscount"> | string | null
+    createdAt?: DateTimeFilter<"ManualDiscount"> | Date | string
+    updatedAt?: DateTimeFilter<"ManualDiscount"> | Date | string
+    issuedBy?: XOR<UserRelationFilter, UserWhereInput>
+    approvedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    application?: XOR<DiscountApplicationNullableRelationFilter, DiscountApplicationWhereInput> | null
+  }, "id" | "publicId" | "bookingId">
+
+  export type ManualDiscountOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    amount?: SortOrder
+    reason?: SortOrder
+    issuedById?: SortOrder
+    approvedById?: SortOrderInput | SortOrder
+    status?: SortOrder
+    requiresApproval?: SortOrder
+    approvedAt?: SortOrderInput | SortOrder
+    rejectedAt?: SortOrderInput | SortOrder
+    rejectionReason?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: ManualDiscountCountOrderByAggregateInput
+    _avg?: ManualDiscountAvgOrderByAggregateInput
+    _max?: ManualDiscountMaxOrderByAggregateInput
+    _min?: ManualDiscountMinOrderByAggregateInput
+    _sum?: ManualDiscountSumOrderByAggregateInput
+  }
+
+  export type ManualDiscountScalarWhereWithAggregatesInput = {
+    AND?: ManualDiscountScalarWhereWithAggregatesInput | ManualDiscountScalarWhereWithAggregatesInput[]
+    OR?: ManualDiscountScalarWhereWithAggregatesInput[]
+    NOT?: ManualDiscountScalarWhereWithAggregatesInput | ManualDiscountScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"ManualDiscount"> | number
+    publicId?: StringWithAggregatesFilter<"ManualDiscount"> | string
+    bookingId?: IntWithAggregatesFilter<"ManualDiscount"> | number
+    amount?: DecimalWithAggregatesFilter<"ManualDiscount"> | Decimal | DecimalJsLike | number | string
+    reason?: StringWithAggregatesFilter<"ManualDiscount"> | string
+    issuedById?: IntWithAggregatesFilter<"ManualDiscount"> | number
+    approvedById?: IntNullableWithAggregatesFilter<"ManualDiscount"> | number | null
+    status?: EnumManualDiscountStatusWithAggregatesFilter<"ManualDiscount"> | $Enums.ManualDiscountStatus
+    requiresApproval?: BoolWithAggregatesFilter<"ManualDiscount"> | boolean
+    approvedAt?: DateTimeNullableWithAggregatesFilter<"ManualDiscount"> | Date | string | null
+    rejectedAt?: DateTimeNullableWithAggregatesFilter<"ManualDiscount"> | Date | string | null
+    rejectionReason?: StringNullableWithAggregatesFilter<"ManualDiscount"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"ManualDiscount"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"ManualDiscount"> | Date | string
+  }
+
   export type UserCreateInput = {
     publicId: string
     name: string
@@ -52213,6 +61035,9 @@ export namespace Prisma {
     bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -52237,6 +61062,9 @@ export namespace Prisma {
     bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUpdateInput = {
@@ -52260,6 +61088,9 @@ export namespace Prisma {
     bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -52284,6 +61115,9 @@ export namespace Prisma {
     bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -52780,6 +61614,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateInput = {
@@ -52802,6 +61638,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUpdateInput = {
@@ -52823,6 +61661,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateInput = {
@@ -52845,6 +61685,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchCreateManyInput = {
@@ -54042,6 +62884,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -54056,6 +62899,9 @@ export namespace Prisma {
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateInput = {
@@ -54106,6 +62952,8 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -54116,6 +62964,8 @@ export namespace Prisma {
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUpdateInput = {
@@ -54161,6 +63011,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -54175,6 +63026,9 @@ export namespace Prisma {
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateInput = {
@@ -54225,6 +63079,8 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -54235,6 +63091,8 @@ export namespace Prisma {
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingCreateManyInput = {
@@ -54285,6 +63143,8 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -54333,6 +63193,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -54386,6 +63247,8 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -55893,6 +64756,806 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type DiscountRuleCreateInput = {
+    publicId: string
+    code: string
+    name: string
+    description?: string | null
+    discountType: $Enums.DiscountType
+    value: Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: Decimal | DecimalJsLike | number | string | null
+    scope?: $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleCreateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleCreatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: boolean
+    minBookingCount?: number | null
+    maxBookingCount?: number | null
+    minBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleCreateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: number | null
+    maxRentalDays?: number | null
+    applicablePaymentPlans?: DiscountRuleCreateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: boolean
+    minAdvanceAfterDiscount?: Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: boolean
+    allowPostInvoice?: boolean
+    totalUsageLimit?: number | null
+    perUserLimit?: number | null
+    perBranchLimit?: number | null
+    perDayLimit?: number | null
+    stackable?: boolean
+    priority?: number
+    startDate: Date | string
+    endDate: Date | string
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    createdBy: UserCreateNestedOneWithoutDiscountRulesCreatedInput
+    usageLogs?: CouponUsageLogCreateNestedManyWithoutDiscountRuleInput
+    bookings?: BookingCreateNestedManyWithoutDiscountRuleInput
+    applications?: DiscountApplicationCreateNestedManyWithoutDiscountRuleInput
+  }
+
+  export type DiscountRuleUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    code: string
+    name: string
+    description?: string | null
+    discountType: $Enums.DiscountType
+    value: Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: Decimal | DecimalJsLike | number | string | null
+    scope?: $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleCreateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleCreatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: boolean
+    minBookingCount?: number | null
+    maxBookingCount?: number | null
+    minBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleCreateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: number | null
+    maxRentalDays?: number | null
+    applicablePaymentPlans?: DiscountRuleCreateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: boolean
+    minAdvanceAfterDiscount?: Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: boolean
+    allowPostInvoice?: boolean
+    totalUsageLimit?: number | null
+    perUserLimit?: number | null
+    perBranchLimit?: number | null
+    perDayLimit?: number | null
+    stackable?: boolean
+    priority?: number
+    startDate: Date | string
+    endDate: Date | string
+    isActive?: boolean
+    createdById: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    usageLogs?: CouponUsageLogUncheckedCreateNestedManyWithoutDiscountRuleInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutDiscountRuleInput
+    applications?: DiscountApplicationUncheckedCreateNestedManyWithoutDiscountRuleInput
+  }
+
+  export type DiscountRuleUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    discountType?: EnumDiscountTypeFieldUpdateOperationsInput | $Enums.DiscountType
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    scope?: EnumDiscountScopeFieldUpdateOperationsInput | $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleUpdateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleUpdatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: BoolFieldUpdateOperationsInput | boolean
+    minBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    maxBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    minBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleUpdateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    maxRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    applicablePaymentPlans?: DiscountRuleUpdateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: BoolFieldUpdateOperationsInput | boolean
+    minAdvanceAfterDiscount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: BoolFieldUpdateOperationsInput | boolean
+    allowPostInvoice?: BoolFieldUpdateOperationsInput | boolean
+    totalUsageLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perUserLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perBranchLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perDayLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    stackable?: BoolFieldUpdateOperationsInput | boolean
+    priority?: IntFieldUpdateOperationsInput | number
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    endDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdBy?: UserUpdateOneRequiredWithoutDiscountRulesCreatedNestedInput
+    usageLogs?: CouponUsageLogUpdateManyWithoutDiscountRuleNestedInput
+    bookings?: BookingUpdateManyWithoutDiscountRuleNestedInput
+    applications?: DiscountApplicationUpdateManyWithoutDiscountRuleNestedInput
+  }
+
+  export type DiscountRuleUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    discountType?: EnumDiscountTypeFieldUpdateOperationsInput | $Enums.DiscountType
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    scope?: EnumDiscountScopeFieldUpdateOperationsInput | $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleUpdateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleUpdatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: BoolFieldUpdateOperationsInput | boolean
+    minBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    maxBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    minBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleUpdateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    maxRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    applicablePaymentPlans?: DiscountRuleUpdateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: BoolFieldUpdateOperationsInput | boolean
+    minAdvanceAfterDiscount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: BoolFieldUpdateOperationsInput | boolean
+    allowPostInvoice?: BoolFieldUpdateOperationsInput | boolean
+    totalUsageLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perUserLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perBranchLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perDayLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    stackable?: BoolFieldUpdateOperationsInput | boolean
+    priority?: IntFieldUpdateOperationsInput | number
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    endDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdById?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    usageLogs?: CouponUsageLogUncheckedUpdateManyWithoutDiscountRuleNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutDiscountRuleNestedInput
+    applications?: DiscountApplicationUncheckedUpdateManyWithoutDiscountRuleNestedInput
+  }
+
+  export type DiscountRuleCreateManyInput = {
+    id?: number
+    publicId: string
+    code: string
+    name: string
+    description?: string | null
+    discountType: $Enums.DiscountType
+    value: Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: Decimal | DecimalJsLike | number | string | null
+    scope?: $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleCreateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleCreatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: boolean
+    minBookingCount?: number | null
+    maxBookingCount?: number | null
+    minBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleCreateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: number | null
+    maxRentalDays?: number | null
+    applicablePaymentPlans?: DiscountRuleCreateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: boolean
+    minAdvanceAfterDiscount?: Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: boolean
+    allowPostInvoice?: boolean
+    totalUsageLimit?: number | null
+    perUserLimit?: number | null
+    perBranchLimit?: number | null
+    perDayLimit?: number | null
+    stackable?: boolean
+    priority?: number
+    startDate: Date | string
+    endDate: Date | string
+    isActive?: boolean
+    createdById: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type DiscountRuleUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    discountType?: EnumDiscountTypeFieldUpdateOperationsInput | $Enums.DiscountType
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    scope?: EnumDiscountScopeFieldUpdateOperationsInput | $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleUpdateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleUpdatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: BoolFieldUpdateOperationsInput | boolean
+    minBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    maxBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    minBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleUpdateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    maxRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    applicablePaymentPlans?: DiscountRuleUpdateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: BoolFieldUpdateOperationsInput | boolean
+    minAdvanceAfterDiscount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: BoolFieldUpdateOperationsInput | boolean
+    allowPostInvoice?: BoolFieldUpdateOperationsInput | boolean
+    totalUsageLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perUserLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perBranchLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perDayLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    stackable?: BoolFieldUpdateOperationsInput | boolean
+    priority?: IntFieldUpdateOperationsInput | number
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    endDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DiscountRuleUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    discountType?: EnumDiscountTypeFieldUpdateOperationsInput | $Enums.DiscountType
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    scope?: EnumDiscountScopeFieldUpdateOperationsInput | $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleUpdateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleUpdatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: BoolFieldUpdateOperationsInput | boolean
+    minBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    maxBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    minBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleUpdateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    maxRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    applicablePaymentPlans?: DiscountRuleUpdateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: BoolFieldUpdateOperationsInput | boolean
+    minAdvanceAfterDiscount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: BoolFieldUpdateOperationsInput | boolean
+    allowPostInvoice?: BoolFieldUpdateOperationsInput | boolean
+    totalUsageLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perUserLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perBranchLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perDayLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    stackable?: BoolFieldUpdateOperationsInput | boolean
+    priority?: IntFieldUpdateOperationsInput | number
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    endDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdById?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DurationDiscountSlabCreateInput = {
+    minDays: number
+    maxDays?: number | null
+    discountType: $Enums.DiscountType
+    value: Decimal | DecimalJsLike | number | string
+    label?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    branch: BranchCreateNestedOneWithoutDurationDiscountSlabsInput
+  }
+
+  export type DurationDiscountSlabUncheckedCreateInput = {
+    id?: number
+    branchId: number
+    minDays: number
+    maxDays?: number | null
+    discountType: $Enums.DiscountType
+    value: Decimal | DecimalJsLike | number | string
+    label?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type DurationDiscountSlabUpdateInput = {
+    minDays?: IntFieldUpdateOperationsInput | number
+    maxDays?: NullableIntFieldUpdateOperationsInput | number | null
+    discountType?: EnumDiscountTypeFieldUpdateOperationsInput | $Enums.DiscountType
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    label?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    branch?: BranchUpdateOneRequiredWithoutDurationDiscountSlabsNestedInput
+  }
+
+  export type DurationDiscountSlabUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    minDays?: IntFieldUpdateOperationsInput | number
+    maxDays?: NullableIntFieldUpdateOperationsInput | number | null
+    discountType?: EnumDiscountTypeFieldUpdateOperationsInput | $Enums.DiscountType
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    label?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DurationDiscountSlabCreateManyInput = {
+    id?: number
+    branchId: number
+    minDays: number
+    maxDays?: number | null
+    discountType: $Enums.DiscountType
+    value: Decimal | DecimalJsLike | number | string
+    label?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type DurationDiscountSlabUpdateManyMutationInput = {
+    minDays?: IntFieldUpdateOperationsInput | number
+    maxDays?: NullableIntFieldUpdateOperationsInput | number | null
+    discountType?: EnumDiscountTypeFieldUpdateOperationsInput | $Enums.DiscountType
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    label?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DurationDiscountSlabUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    minDays?: IntFieldUpdateOperationsInput | number
+    maxDays?: NullableIntFieldUpdateOperationsInput | number | null
+    discountType?: EnumDiscountTypeFieldUpdateOperationsInput | $Enums.DiscountType
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    label?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchDiscountConfigCreateInput = {
+    durationDiscountEnabled?: boolean
+    stackWithCoupon?: boolean
+    maxCombinedDiscountPercent?: Decimal | DecimalJsLike | number | string | null
+    managerApprovalThreshold?: Decimal | DecimalJsLike | number | string
+    maxManualDiscountsPerEmployeePerDay?: number
+    managerCouponCreationEnabled?: boolean
+    maxManagerCouponDiscountPercent?: Decimal | DecimalJsLike | number | string
+    maxManagerCouponFlatAmount?: Decimal | DecimalJsLike | number | string
+    maxManagerCouponValidityDays?: number
+    maxManagerCouponUsageLimit?: number
+    maxManagerCouponsPerDay?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    branch: BranchCreateNestedOneWithoutDiscountConfigInput
+  }
+
+  export type BranchDiscountConfigUncheckedCreateInput = {
+    id?: number
+    branchId: number
+    durationDiscountEnabled?: boolean
+    stackWithCoupon?: boolean
+    maxCombinedDiscountPercent?: Decimal | DecimalJsLike | number | string | null
+    managerApprovalThreshold?: Decimal | DecimalJsLike | number | string
+    maxManualDiscountsPerEmployeePerDay?: number
+    managerCouponCreationEnabled?: boolean
+    maxManagerCouponDiscountPercent?: Decimal | DecimalJsLike | number | string
+    maxManagerCouponFlatAmount?: Decimal | DecimalJsLike | number | string
+    maxManagerCouponValidityDays?: number
+    maxManagerCouponUsageLimit?: number
+    maxManagerCouponsPerDay?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchDiscountConfigUpdateInput = {
+    durationDiscountEnabled?: BoolFieldUpdateOperationsInput | boolean
+    stackWithCoupon?: BoolFieldUpdateOperationsInput | boolean
+    maxCombinedDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    managerApprovalThreshold?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxManualDiscountsPerEmployeePerDay?: IntFieldUpdateOperationsInput | number
+    managerCouponCreationEnabled?: BoolFieldUpdateOperationsInput | boolean
+    maxManagerCouponDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxManagerCouponFlatAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxManagerCouponValidityDays?: IntFieldUpdateOperationsInput | number
+    maxManagerCouponUsageLimit?: IntFieldUpdateOperationsInput | number
+    maxManagerCouponsPerDay?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    branch?: BranchUpdateOneRequiredWithoutDiscountConfigNestedInput
+  }
+
+  export type BranchDiscountConfigUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    durationDiscountEnabled?: BoolFieldUpdateOperationsInput | boolean
+    stackWithCoupon?: BoolFieldUpdateOperationsInput | boolean
+    maxCombinedDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    managerApprovalThreshold?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxManualDiscountsPerEmployeePerDay?: IntFieldUpdateOperationsInput | number
+    managerCouponCreationEnabled?: BoolFieldUpdateOperationsInput | boolean
+    maxManagerCouponDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxManagerCouponFlatAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxManagerCouponValidityDays?: IntFieldUpdateOperationsInput | number
+    maxManagerCouponUsageLimit?: IntFieldUpdateOperationsInput | number
+    maxManagerCouponsPerDay?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchDiscountConfigCreateManyInput = {
+    id?: number
+    branchId: number
+    durationDiscountEnabled?: boolean
+    stackWithCoupon?: boolean
+    maxCombinedDiscountPercent?: Decimal | DecimalJsLike | number | string | null
+    managerApprovalThreshold?: Decimal | DecimalJsLike | number | string
+    maxManualDiscountsPerEmployeePerDay?: number
+    managerCouponCreationEnabled?: boolean
+    maxManagerCouponDiscountPercent?: Decimal | DecimalJsLike | number | string
+    maxManagerCouponFlatAmount?: Decimal | DecimalJsLike | number | string
+    maxManagerCouponValidityDays?: number
+    maxManagerCouponUsageLimit?: number
+    maxManagerCouponsPerDay?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchDiscountConfigUpdateManyMutationInput = {
+    durationDiscountEnabled?: BoolFieldUpdateOperationsInput | boolean
+    stackWithCoupon?: BoolFieldUpdateOperationsInput | boolean
+    maxCombinedDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    managerApprovalThreshold?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxManualDiscountsPerEmployeePerDay?: IntFieldUpdateOperationsInput | number
+    managerCouponCreationEnabled?: BoolFieldUpdateOperationsInput | boolean
+    maxManagerCouponDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxManagerCouponFlatAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxManagerCouponValidityDays?: IntFieldUpdateOperationsInput | number
+    maxManagerCouponUsageLimit?: IntFieldUpdateOperationsInput | number
+    maxManagerCouponsPerDay?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchDiscountConfigUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    durationDiscountEnabled?: BoolFieldUpdateOperationsInput | boolean
+    stackWithCoupon?: BoolFieldUpdateOperationsInput | boolean
+    maxCombinedDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    managerApprovalThreshold?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxManualDiscountsPerEmployeePerDay?: IntFieldUpdateOperationsInput | number
+    managerCouponCreationEnabled?: BoolFieldUpdateOperationsInput | boolean
+    maxManagerCouponDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxManagerCouponFlatAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxManagerCouponValidityDays?: IntFieldUpdateOperationsInput | number
+    maxManagerCouponUsageLimit?: IntFieldUpdateOperationsInput | number
+    maxManagerCouponsPerDay?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DiscountApplicationCreateInput = {
+    publicId: string
+    originalAmount: Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: Decimal | DecimalJsLike | number | string
+    durationSlabId?: number | null
+    couponDiscountAmount?: Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: Decimal | DecimalJsLike | number | string
+    manualDiscountAmount?: Decimal | DecimalJsLike | number | string
+    totalDiscountAmount: Decimal | DecimalJsLike | number | string
+    finalAmount: Decimal | DecimalJsLike | number | string
+    paymentPlan: string
+    adjustmentType?: $Enums.AdjustmentType
+    createdAt?: Date | string
+    booking: BookingCreateNestedOneWithoutDiscountApplicationInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutApplicationsInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutApplicationInput
+  }
+
+  export type DiscountApplicationUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    originalAmount: Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: Decimal | DecimalJsLike | number | string
+    durationSlabId?: number | null
+    couponDiscountAmount?: Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: Decimal | DecimalJsLike | number | string
+    discountRuleId?: number | null
+    manualDiscountAmount?: Decimal | DecimalJsLike | number | string
+    manualDiscountId?: number | null
+    totalDiscountAmount: Decimal | DecimalJsLike | number | string
+    finalAmount: Decimal | DecimalJsLike | number | string
+    paymentPlan: string
+    adjustmentType?: $Enums.AdjustmentType
+    createdAt?: Date | string
+  }
+
+  export type DiscountApplicationUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationSlabId?: NullableIntFieldUpdateOperationsInput | number | null
+    couponDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    manualDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paymentPlan?: StringFieldUpdateOperationsInput | string
+    adjustmentType?: EnumAdjustmentTypeFieldUpdateOperationsInput | $Enums.AdjustmentType
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutDiscountApplicationNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutApplicationsNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutApplicationNestedInput
+  }
+
+  export type DiscountApplicationUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationSlabId?: NullableIntFieldUpdateOperationsInput | number | null
+    couponDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    manualDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    manualDiscountId?: NullableIntFieldUpdateOperationsInput | number | null
+    totalDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paymentPlan?: StringFieldUpdateOperationsInput | string
+    adjustmentType?: EnumAdjustmentTypeFieldUpdateOperationsInput | $Enums.AdjustmentType
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DiscountApplicationCreateManyInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    originalAmount: Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: Decimal | DecimalJsLike | number | string
+    durationSlabId?: number | null
+    couponDiscountAmount?: Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: Decimal | DecimalJsLike | number | string
+    discountRuleId?: number | null
+    manualDiscountAmount?: Decimal | DecimalJsLike | number | string
+    manualDiscountId?: number | null
+    totalDiscountAmount: Decimal | DecimalJsLike | number | string
+    finalAmount: Decimal | DecimalJsLike | number | string
+    paymentPlan: string
+    adjustmentType?: $Enums.AdjustmentType
+    createdAt?: Date | string
+  }
+
+  export type DiscountApplicationUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationSlabId?: NullableIntFieldUpdateOperationsInput | number | null
+    couponDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    manualDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paymentPlan?: StringFieldUpdateOperationsInput | string
+    adjustmentType?: EnumAdjustmentTypeFieldUpdateOperationsInput | $Enums.AdjustmentType
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DiscountApplicationUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationSlabId?: NullableIntFieldUpdateOperationsInput | number | null
+    couponDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    manualDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    manualDiscountId?: NullableIntFieldUpdateOperationsInput | number | null
+    totalDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paymentPlan?: StringFieldUpdateOperationsInput | string
+    adjustmentType?: EnumAdjustmentTypeFieldUpdateOperationsInput | $Enums.AdjustmentType
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CouponUsageLogCreateInput = {
+    bookingId: number
+    customerId: number
+    branchId: number
+    discountedAmount: Decimal | DecimalJsLike | number | string
+    appliedAt?: Date | string
+    discountRule: DiscountRuleCreateNestedOneWithoutUsageLogsInput
+  }
+
+  export type CouponUsageLogUncheckedCreateInput = {
+    id?: number
+    discountRuleId: number
+    bookingId: number
+    customerId: number
+    branchId: number
+    discountedAmount: Decimal | DecimalJsLike | number | string
+    appliedAt?: Date | string
+  }
+
+  export type CouponUsageLogUpdateInput = {
+    bookingId?: IntFieldUpdateOperationsInput | number
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    discountedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    appliedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    discountRule?: DiscountRuleUpdateOneRequiredWithoutUsageLogsNestedInput
+  }
+
+  export type CouponUsageLogUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    discountRuleId?: IntFieldUpdateOperationsInput | number
+    bookingId?: IntFieldUpdateOperationsInput | number
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    discountedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    appliedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CouponUsageLogCreateManyInput = {
+    id?: number
+    discountRuleId: number
+    bookingId: number
+    customerId: number
+    branchId: number
+    discountedAmount: Decimal | DecimalJsLike | number | string
+    appliedAt?: Date | string
+  }
+
+  export type CouponUsageLogUpdateManyMutationInput = {
+    bookingId?: IntFieldUpdateOperationsInput | number
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    discountedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    appliedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CouponUsageLogUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    discountRuleId?: IntFieldUpdateOperationsInput | number
+    bookingId?: IntFieldUpdateOperationsInput | number
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    discountedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    appliedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ManualDiscountCreateInput = {
+    publicId: string
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.ManualDiscountStatus
+    requiresApproval?: boolean
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    issuedBy: UserCreateNestedOneWithoutManualDiscountsIssuedInput
+    approvedBy?: UserCreateNestedOneWithoutManualDiscountsApprovedInput
+    booking: BookingCreateNestedOneWithoutManualDiscountInput
+    application?: DiscountApplicationCreateNestedOneWithoutManualDiscountInput
+  }
+
+  export type ManualDiscountUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    issuedById: number
+    approvedById?: number | null
+    status?: $Enums.ManualDiscountStatus
+    requiresApproval?: boolean
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    application?: DiscountApplicationUncheckedCreateNestedOneWithoutManualDiscountInput
+  }
+
+  export type ManualDiscountUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumManualDiscountStatusFieldUpdateOperationsInput | $Enums.ManualDiscountStatus
+    requiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    issuedBy?: UserUpdateOneRequiredWithoutManualDiscountsIssuedNestedInput
+    approvedBy?: UserUpdateOneWithoutManualDiscountsApprovedNestedInput
+    booking?: BookingUpdateOneRequiredWithoutManualDiscountNestedInput
+    application?: DiscountApplicationUpdateOneWithoutManualDiscountNestedInput
+  }
+
+  export type ManualDiscountUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    issuedById?: IntFieldUpdateOperationsInput | number
+    approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    status?: EnumManualDiscountStatusFieldUpdateOperationsInput | $Enums.ManualDiscountStatus
+    requiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    application?: DiscountApplicationUncheckedUpdateOneWithoutManualDiscountNestedInput
+  }
+
+  export type ManualDiscountCreateManyInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    issuedById: number
+    approvedById?: number | null
+    status?: $Enums.ManualDiscountStatus
+    requiresApproval?: boolean
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ManualDiscountUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumManualDiscountStatusFieldUpdateOperationsInput | $Enums.ManualDiscountStatus
+    requiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ManualDiscountUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    issuedById?: IntFieldUpdateOperationsInput | number
+    approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    status?: EnumManualDiscountStatusFieldUpdateOperationsInput | $Enums.ManualDiscountStatus
+    requiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type IntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -56027,6 +65690,18 @@ export namespace Prisma {
     none?: VehicleSwapWhereInput
   }
 
+  export type DiscountRuleListRelationFilter = {
+    every?: DiscountRuleWhereInput
+    some?: DiscountRuleWhereInput
+    none?: DiscountRuleWhereInput
+  }
+
+  export type ManualDiscountListRelationFilter = {
+    every?: ManualDiscountWhereInput
+    some?: ManualDiscountWhereInput
+    none?: ManualDiscountWhereInput
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -56053,6 +65728,14 @@ export namespace Prisma {
   }
 
   export type VehicleSwapOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type DiscountRuleOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type ManualDiscountOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -56639,6 +66322,17 @@ export namespace Prisma {
     none?: StaffActivityLogWhereInput
   }
 
+  export type DurationDiscountSlabListRelationFilter = {
+    every?: DurationDiscountSlabWhereInput
+    some?: DurationDiscountSlabWhereInput
+    none?: DurationDiscountSlabWhereInput
+  }
+
+  export type BranchDiscountConfigNullableRelationFilter = {
+    is?: BranchDiscountConfigWhereInput | null
+    isNot?: BranchDiscountConfigWhereInput | null
+  }
+
   export type UserOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -56668,6 +66362,10 @@ export namespace Prisma {
   }
 
   export type StaffActivityLogOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type DurationDiscountSlabOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -57758,6 +67456,21 @@ export namespace Prisma {
     isNot?: CancellationInvoiceWhereInput | null
   }
 
+  export type DiscountRuleNullableRelationFilter = {
+    is?: DiscountRuleWhereInput | null
+    isNot?: DiscountRuleWhereInput | null
+  }
+
+  export type DiscountApplicationNullableRelationFilter = {
+    is?: DiscountApplicationWhereInput | null
+    isNot?: DiscountApplicationWhereInput | null
+  }
+
+  export type ManualDiscountNullableRelationFilter = {
+    is?: ManualDiscountWhereInput | null
+    isNot?: ManualDiscountWhereInput | null
+  }
+
   export type BookingCountOrderByAggregateInput = {
     id?: SortOrder
     publicId?: SortOrder
@@ -57806,6 +67519,8 @@ export namespace Prisma {
     cancelledAt?: SortOrder
     cancellationReason?: SortOrder
     requiresManagerConfirmation?: SortOrder
+    couponCode?: SortOrder
+    discountRuleId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -57833,6 +67548,7 @@ export namespace Prisma {
     advanceAmount?: SortOrder
     remainingBalance?: SortOrder
     safetyDeposit?: SortOrder
+    discountRuleId?: SortOrder
   }
 
   export type BookingMaxOrderByAggregateInput = {
@@ -57882,6 +67598,8 @@ export namespace Prisma {
     cancelledAt?: SortOrder
     cancellationReason?: SortOrder
     requiresManagerConfirmation?: SortOrder
+    couponCode?: SortOrder
+    discountRuleId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -57934,6 +67652,8 @@ export namespace Prisma {
     cancelledAt?: SortOrder
     cancellationReason?: SortOrder
     requiresManagerConfirmation?: SortOrder
+    couponCode?: SortOrder
+    discountRuleId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -57961,6 +67681,7 @@ export namespace Prisma {
     advanceAmount?: SortOrder
     remainingBalance?: SortOrder
     safetyDeposit?: SortOrder
+    discountRuleId?: SortOrder
   }
 
   export type EnumRentalPeriodTypeNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -59161,6 +68882,599 @@ export namespace Prisma {
     _max?: NestedEnumVehicleStatusNullableFilter<$PrismaModel>
   }
 
+  export type EnumDiscountTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.DiscountType | EnumDiscountTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.DiscountType[] | ListEnumDiscountTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DiscountType[] | ListEnumDiscountTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumDiscountTypeFilter<$PrismaModel> | $Enums.DiscountType
+  }
+
+  export type EnumDiscountScopeFilter<$PrismaModel = never> = {
+    equals?: $Enums.DiscountScope | EnumDiscountScopeFieldRefInput<$PrismaModel>
+    in?: $Enums.DiscountScope[] | ListEnumDiscountScopeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DiscountScope[] | ListEnumDiscountScopeFieldRefInput<$PrismaModel>
+    not?: NestedEnumDiscountScopeFilter<$PrismaModel> | $Enums.DiscountScope
+  }
+
+  export type IntNullableListFilter<$PrismaModel = never> = {
+    equals?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    has?: number | IntFieldRefInput<$PrismaModel> | null
+    hasEvery?: number[] | ListIntFieldRefInput<$PrismaModel>
+    hasSome?: number[] | ListIntFieldRefInput<$PrismaModel>
+    isEmpty?: boolean
+  }
+
+  export type CouponUsageLogListRelationFilter = {
+    every?: CouponUsageLogWhereInput
+    some?: CouponUsageLogWhereInput
+    none?: CouponUsageLogWhereInput
+  }
+
+  export type DiscountApplicationListRelationFilter = {
+    every?: DiscountApplicationWhereInput
+    some?: DiscountApplicationWhereInput
+    none?: DiscountApplicationWhereInput
+  }
+
+  export type CouponUsageLogOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type DiscountApplicationOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type DiscountRuleCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    code?: SortOrder
+    name?: SortOrder
+    description?: SortOrder
+    discountType?: SortOrder
+    value?: SortOrder
+    maxDiscountCap?: SortOrder
+    scope?: SortOrder
+    applicableBranchIds?: SortOrder
+    targetCustomerIds?: SortOrder
+    newCustomersOnly?: SortOrder
+    minBookingCount?: SortOrder
+    maxBookingCount?: SortOrder
+    minBookingAmount?: SortOrder
+    maxBookingAmount?: SortOrder
+    applicableVehicleCategoryIds?: SortOrder
+    minRentalDays?: SortOrder
+    maxRentalDays?: SortOrder
+    applicablePaymentPlans?: SortOrder
+    allowPartialPayment?: SortOrder
+    minAdvanceAfterDiscount?: SortOrder
+    allowPostBooking?: SortOrder
+    allowPostInvoice?: SortOrder
+    totalUsageLimit?: SortOrder
+    perUserLimit?: SortOrder
+    perBranchLimit?: SortOrder
+    perDayLimit?: SortOrder
+    stackable?: SortOrder
+    priority?: SortOrder
+    startDate?: SortOrder
+    endDate?: SortOrder
+    isActive?: SortOrder
+    createdById?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type DiscountRuleAvgOrderByAggregateInput = {
+    id?: SortOrder
+    value?: SortOrder
+    maxDiscountCap?: SortOrder
+    applicableBranchIds?: SortOrder
+    targetCustomerIds?: SortOrder
+    minBookingCount?: SortOrder
+    maxBookingCount?: SortOrder
+    minBookingAmount?: SortOrder
+    maxBookingAmount?: SortOrder
+    applicableVehicleCategoryIds?: SortOrder
+    minRentalDays?: SortOrder
+    maxRentalDays?: SortOrder
+    minAdvanceAfterDiscount?: SortOrder
+    totalUsageLimit?: SortOrder
+    perUserLimit?: SortOrder
+    perBranchLimit?: SortOrder
+    perDayLimit?: SortOrder
+    priority?: SortOrder
+    createdById?: SortOrder
+  }
+
+  export type DiscountRuleMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    code?: SortOrder
+    name?: SortOrder
+    description?: SortOrder
+    discountType?: SortOrder
+    value?: SortOrder
+    maxDiscountCap?: SortOrder
+    scope?: SortOrder
+    newCustomersOnly?: SortOrder
+    minBookingCount?: SortOrder
+    maxBookingCount?: SortOrder
+    minBookingAmount?: SortOrder
+    maxBookingAmount?: SortOrder
+    minRentalDays?: SortOrder
+    maxRentalDays?: SortOrder
+    allowPartialPayment?: SortOrder
+    minAdvanceAfterDiscount?: SortOrder
+    allowPostBooking?: SortOrder
+    allowPostInvoice?: SortOrder
+    totalUsageLimit?: SortOrder
+    perUserLimit?: SortOrder
+    perBranchLimit?: SortOrder
+    perDayLimit?: SortOrder
+    stackable?: SortOrder
+    priority?: SortOrder
+    startDate?: SortOrder
+    endDate?: SortOrder
+    isActive?: SortOrder
+    createdById?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type DiscountRuleMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    code?: SortOrder
+    name?: SortOrder
+    description?: SortOrder
+    discountType?: SortOrder
+    value?: SortOrder
+    maxDiscountCap?: SortOrder
+    scope?: SortOrder
+    newCustomersOnly?: SortOrder
+    minBookingCount?: SortOrder
+    maxBookingCount?: SortOrder
+    minBookingAmount?: SortOrder
+    maxBookingAmount?: SortOrder
+    minRentalDays?: SortOrder
+    maxRentalDays?: SortOrder
+    allowPartialPayment?: SortOrder
+    minAdvanceAfterDiscount?: SortOrder
+    allowPostBooking?: SortOrder
+    allowPostInvoice?: SortOrder
+    totalUsageLimit?: SortOrder
+    perUserLimit?: SortOrder
+    perBranchLimit?: SortOrder
+    perDayLimit?: SortOrder
+    stackable?: SortOrder
+    priority?: SortOrder
+    startDate?: SortOrder
+    endDate?: SortOrder
+    isActive?: SortOrder
+    createdById?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type DiscountRuleSumOrderByAggregateInput = {
+    id?: SortOrder
+    value?: SortOrder
+    maxDiscountCap?: SortOrder
+    applicableBranchIds?: SortOrder
+    targetCustomerIds?: SortOrder
+    minBookingCount?: SortOrder
+    maxBookingCount?: SortOrder
+    minBookingAmount?: SortOrder
+    maxBookingAmount?: SortOrder
+    applicableVehicleCategoryIds?: SortOrder
+    minRentalDays?: SortOrder
+    maxRentalDays?: SortOrder
+    minAdvanceAfterDiscount?: SortOrder
+    totalUsageLimit?: SortOrder
+    perUserLimit?: SortOrder
+    perBranchLimit?: SortOrder
+    perDayLimit?: SortOrder
+    priority?: SortOrder
+    createdById?: SortOrder
+  }
+
+  export type EnumDiscountTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.DiscountType | EnumDiscountTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.DiscountType[] | ListEnumDiscountTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DiscountType[] | ListEnumDiscountTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumDiscountTypeWithAggregatesFilter<$PrismaModel> | $Enums.DiscountType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumDiscountTypeFilter<$PrismaModel>
+    _max?: NestedEnumDiscountTypeFilter<$PrismaModel>
+  }
+
+  export type EnumDiscountScopeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.DiscountScope | EnumDiscountScopeFieldRefInput<$PrismaModel>
+    in?: $Enums.DiscountScope[] | ListEnumDiscountScopeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DiscountScope[] | ListEnumDiscountScopeFieldRefInput<$PrismaModel>
+    not?: NestedEnumDiscountScopeWithAggregatesFilter<$PrismaModel> | $Enums.DiscountScope
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumDiscountScopeFilter<$PrismaModel>
+    _max?: NestedEnumDiscountScopeFilter<$PrismaModel>
+  }
+
+  export type DurationDiscountSlabCountOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    minDays?: SortOrder
+    maxDays?: SortOrder
+    discountType?: SortOrder
+    value?: SortOrder
+    label?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type DurationDiscountSlabAvgOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    minDays?: SortOrder
+    maxDays?: SortOrder
+    value?: SortOrder
+  }
+
+  export type DurationDiscountSlabMaxOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    minDays?: SortOrder
+    maxDays?: SortOrder
+    discountType?: SortOrder
+    value?: SortOrder
+    label?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type DurationDiscountSlabMinOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    minDays?: SortOrder
+    maxDays?: SortOrder
+    discountType?: SortOrder
+    value?: SortOrder
+    label?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type DurationDiscountSlabSumOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    minDays?: SortOrder
+    maxDays?: SortOrder
+    value?: SortOrder
+  }
+
+  export type BranchDiscountConfigCountOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    durationDiscountEnabled?: SortOrder
+    stackWithCoupon?: SortOrder
+    maxCombinedDiscountPercent?: SortOrder
+    managerApprovalThreshold?: SortOrder
+    maxManualDiscountsPerEmployeePerDay?: SortOrder
+    managerCouponCreationEnabled?: SortOrder
+    maxManagerCouponDiscountPercent?: SortOrder
+    maxManagerCouponFlatAmount?: SortOrder
+    maxManagerCouponValidityDays?: SortOrder
+    maxManagerCouponUsageLimit?: SortOrder
+    maxManagerCouponsPerDay?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BranchDiscountConfigAvgOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    maxCombinedDiscountPercent?: SortOrder
+    managerApprovalThreshold?: SortOrder
+    maxManualDiscountsPerEmployeePerDay?: SortOrder
+    maxManagerCouponDiscountPercent?: SortOrder
+    maxManagerCouponFlatAmount?: SortOrder
+    maxManagerCouponValidityDays?: SortOrder
+    maxManagerCouponUsageLimit?: SortOrder
+    maxManagerCouponsPerDay?: SortOrder
+  }
+
+  export type BranchDiscountConfigMaxOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    durationDiscountEnabled?: SortOrder
+    stackWithCoupon?: SortOrder
+    maxCombinedDiscountPercent?: SortOrder
+    managerApprovalThreshold?: SortOrder
+    maxManualDiscountsPerEmployeePerDay?: SortOrder
+    managerCouponCreationEnabled?: SortOrder
+    maxManagerCouponDiscountPercent?: SortOrder
+    maxManagerCouponFlatAmount?: SortOrder
+    maxManagerCouponValidityDays?: SortOrder
+    maxManagerCouponUsageLimit?: SortOrder
+    maxManagerCouponsPerDay?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BranchDiscountConfigMinOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    durationDiscountEnabled?: SortOrder
+    stackWithCoupon?: SortOrder
+    maxCombinedDiscountPercent?: SortOrder
+    managerApprovalThreshold?: SortOrder
+    maxManualDiscountsPerEmployeePerDay?: SortOrder
+    managerCouponCreationEnabled?: SortOrder
+    maxManagerCouponDiscountPercent?: SortOrder
+    maxManagerCouponFlatAmount?: SortOrder
+    maxManagerCouponValidityDays?: SortOrder
+    maxManagerCouponUsageLimit?: SortOrder
+    maxManagerCouponsPerDay?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BranchDiscountConfigSumOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    maxCombinedDiscountPercent?: SortOrder
+    managerApprovalThreshold?: SortOrder
+    maxManualDiscountsPerEmployeePerDay?: SortOrder
+    maxManagerCouponDiscountPercent?: SortOrder
+    maxManagerCouponFlatAmount?: SortOrder
+    maxManagerCouponValidityDays?: SortOrder
+    maxManagerCouponUsageLimit?: SortOrder
+    maxManagerCouponsPerDay?: SortOrder
+  }
+
+  export type EnumAdjustmentTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.AdjustmentType | EnumAdjustmentTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.AdjustmentType[] | ListEnumAdjustmentTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.AdjustmentType[] | ListEnumAdjustmentTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumAdjustmentTypeFilter<$PrismaModel> | $Enums.AdjustmentType
+  }
+
+  export type DiscountApplicationCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    originalAmount?: SortOrder
+    durationDiscountAmount?: SortOrder
+    durationDiscountPercent?: SortOrder
+    durationSlabId?: SortOrder
+    couponDiscountAmount?: SortOrder
+    couponDiscountPercent?: SortOrder
+    discountRuleId?: SortOrder
+    manualDiscountAmount?: SortOrder
+    manualDiscountId?: SortOrder
+    totalDiscountAmount?: SortOrder
+    finalAmount?: SortOrder
+    paymentPlan?: SortOrder
+    adjustmentType?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type DiscountApplicationAvgOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    originalAmount?: SortOrder
+    durationDiscountAmount?: SortOrder
+    durationDiscountPercent?: SortOrder
+    durationSlabId?: SortOrder
+    couponDiscountAmount?: SortOrder
+    couponDiscountPercent?: SortOrder
+    discountRuleId?: SortOrder
+    manualDiscountAmount?: SortOrder
+    manualDiscountId?: SortOrder
+    totalDiscountAmount?: SortOrder
+    finalAmount?: SortOrder
+  }
+
+  export type DiscountApplicationMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    originalAmount?: SortOrder
+    durationDiscountAmount?: SortOrder
+    durationDiscountPercent?: SortOrder
+    durationSlabId?: SortOrder
+    couponDiscountAmount?: SortOrder
+    couponDiscountPercent?: SortOrder
+    discountRuleId?: SortOrder
+    manualDiscountAmount?: SortOrder
+    manualDiscountId?: SortOrder
+    totalDiscountAmount?: SortOrder
+    finalAmount?: SortOrder
+    paymentPlan?: SortOrder
+    adjustmentType?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type DiscountApplicationMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    originalAmount?: SortOrder
+    durationDiscountAmount?: SortOrder
+    durationDiscountPercent?: SortOrder
+    durationSlabId?: SortOrder
+    couponDiscountAmount?: SortOrder
+    couponDiscountPercent?: SortOrder
+    discountRuleId?: SortOrder
+    manualDiscountAmount?: SortOrder
+    manualDiscountId?: SortOrder
+    totalDiscountAmount?: SortOrder
+    finalAmount?: SortOrder
+    paymentPlan?: SortOrder
+    adjustmentType?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type DiscountApplicationSumOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    originalAmount?: SortOrder
+    durationDiscountAmount?: SortOrder
+    durationDiscountPercent?: SortOrder
+    durationSlabId?: SortOrder
+    couponDiscountAmount?: SortOrder
+    couponDiscountPercent?: SortOrder
+    discountRuleId?: SortOrder
+    manualDiscountAmount?: SortOrder
+    manualDiscountId?: SortOrder
+    totalDiscountAmount?: SortOrder
+    finalAmount?: SortOrder
+  }
+
+  export type EnumAdjustmentTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.AdjustmentType | EnumAdjustmentTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.AdjustmentType[] | ListEnumAdjustmentTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.AdjustmentType[] | ListEnumAdjustmentTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumAdjustmentTypeWithAggregatesFilter<$PrismaModel> | $Enums.AdjustmentType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumAdjustmentTypeFilter<$PrismaModel>
+    _max?: NestedEnumAdjustmentTypeFilter<$PrismaModel>
+  }
+
+  export type DiscountRuleRelationFilter = {
+    is?: DiscountRuleWhereInput
+    isNot?: DiscountRuleWhereInput
+  }
+
+  export type CouponUsageLogCountOrderByAggregateInput = {
+    id?: SortOrder
+    discountRuleId?: SortOrder
+    bookingId?: SortOrder
+    customerId?: SortOrder
+    branchId?: SortOrder
+    discountedAmount?: SortOrder
+    appliedAt?: SortOrder
+  }
+
+  export type CouponUsageLogAvgOrderByAggregateInput = {
+    id?: SortOrder
+    discountRuleId?: SortOrder
+    bookingId?: SortOrder
+    customerId?: SortOrder
+    branchId?: SortOrder
+    discountedAmount?: SortOrder
+  }
+
+  export type CouponUsageLogMaxOrderByAggregateInput = {
+    id?: SortOrder
+    discountRuleId?: SortOrder
+    bookingId?: SortOrder
+    customerId?: SortOrder
+    branchId?: SortOrder
+    discountedAmount?: SortOrder
+    appliedAt?: SortOrder
+  }
+
+  export type CouponUsageLogMinOrderByAggregateInput = {
+    id?: SortOrder
+    discountRuleId?: SortOrder
+    bookingId?: SortOrder
+    customerId?: SortOrder
+    branchId?: SortOrder
+    discountedAmount?: SortOrder
+    appliedAt?: SortOrder
+  }
+
+  export type CouponUsageLogSumOrderByAggregateInput = {
+    id?: SortOrder
+    discountRuleId?: SortOrder
+    bookingId?: SortOrder
+    customerId?: SortOrder
+    branchId?: SortOrder
+    discountedAmount?: SortOrder
+  }
+
+  export type EnumManualDiscountStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.ManualDiscountStatus | EnumManualDiscountStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.ManualDiscountStatus[] | ListEnumManualDiscountStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ManualDiscountStatus[] | ListEnumManualDiscountStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumManualDiscountStatusFilter<$PrismaModel> | $Enums.ManualDiscountStatus
+  }
+
+  export type ManualDiscountCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    amount?: SortOrder
+    reason?: SortOrder
+    issuedById?: SortOrder
+    approvedById?: SortOrder
+    status?: SortOrder
+    requiresApproval?: SortOrder
+    approvedAt?: SortOrder
+    rejectedAt?: SortOrder
+    rejectionReason?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ManualDiscountAvgOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    amount?: SortOrder
+    issuedById?: SortOrder
+    approvedById?: SortOrder
+  }
+
+  export type ManualDiscountMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    amount?: SortOrder
+    reason?: SortOrder
+    issuedById?: SortOrder
+    approvedById?: SortOrder
+    status?: SortOrder
+    requiresApproval?: SortOrder
+    approvedAt?: SortOrder
+    rejectedAt?: SortOrder
+    rejectionReason?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ManualDiscountMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    amount?: SortOrder
+    reason?: SortOrder
+    issuedById?: SortOrder
+    approvedById?: SortOrder
+    status?: SortOrder
+    requiresApproval?: SortOrder
+    approvedAt?: SortOrder
+    rejectedAt?: SortOrder
+    rejectionReason?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ManualDiscountSumOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    amount?: SortOrder
+    issuedById?: SortOrder
+    approvedById?: SortOrder
+  }
+
+  export type EnumManualDiscountStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.ManualDiscountStatus | EnumManualDiscountStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.ManualDiscountStatus[] | ListEnumManualDiscountStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ManualDiscountStatus[] | ListEnumManualDiscountStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumManualDiscountStatusWithAggregatesFilter<$PrismaModel> | $Enums.ManualDiscountStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumManualDiscountStatusFilter<$PrismaModel>
+    _max?: NestedEnumManualDiscountStatusFilter<$PrismaModel>
+  }
+
   export type BranchCreateNestedOneWithoutUsersInput = {
     create?: XOR<BranchCreateWithoutUsersInput, BranchUncheckedCreateWithoutUsersInput>
     connectOrCreate?: BranchCreateOrConnectWithoutUsersInput
@@ -59222,6 +69536,27 @@ export namespace Prisma {
     connect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
   }
 
+  export type DiscountRuleCreateNestedManyWithoutCreatedByInput = {
+    create?: XOR<DiscountRuleCreateWithoutCreatedByInput, DiscountRuleUncheckedCreateWithoutCreatedByInput> | DiscountRuleCreateWithoutCreatedByInput[] | DiscountRuleUncheckedCreateWithoutCreatedByInput[]
+    connectOrCreate?: DiscountRuleCreateOrConnectWithoutCreatedByInput | DiscountRuleCreateOrConnectWithoutCreatedByInput[]
+    createMany?: DiscountRuleCreateManyCreatedByInputEnvelope
+    connect?: DiscountRuleWhereUniqueInput | DiscountRuleWhereUniqueInput[]
+  }
+
+  export type ManualDiscountCreateNestedManyWithoutIssuedByInput = {
+    create?: XOR<ManualDiscountCreateWithoutIssuedByInput, ManualDiscountUncheckedCreateWithoutIssuedByInput> | ManualDiscountCreateWithoutIssuedByInput[] | ManualDiscountUncheckedCreateWithoutIssuedByInput[]
+    connectOrCreate?: ManualDiscountCreateOrConnectWithoutIssuedByInput | ManualDiscountCreateOrConnectWithoutIssuedByInput[]
+    createMany?: ManualDiscountCreateManyIssuedByInputEnvelope
+    connect?: ManualDiscountWhereUniqueInput | ManualDiscountWhereUniqueInput[]
+  }
+
+  export type ManualDiscountCreateNestedManyWithoutApprovedByInput = {
+    create?: XOR<ManualDiscountCreateWithoutApprovedByInput, ManualDiscountUncheckedCreateWithoutApprovedByInput> | ManualDiscountCreateWithoutApprovedByInput[] | ManualDiscountUncheckedCreateWithoutApprovedByInput[]
+    connectOrCreate?: ManualDiscountCreateOrConnectWithoutApprovedByInput | ManualDiscountCreateOrConnectWithoutApprovedByInput[]
+    createMany?: ManualDiscountCreateManyApprovedByInputEnvelope
+    connect?: ManualDiscountWhereUniqueInput | ManualDiscountWhereUniqueInput[]
+  }
+
   export type EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput = {
     create?: XOR<EmailVerificationOtpCreateWithoutUserInput, EmailVerificationOtpUncheckedCreateWithoutUserInput> | EmailVerificationOtpCreateWithoutUserInput[] | EmailVerificationOtpUncheckedCreateWithoutUserInput[]
     connectOrCreate?: EmailVerificationOtpCreateOrConnectWithoutUserInput | EmailVerificationOtpCreateOrConnectWithoutUserInput[]
@@ -59275,6 +69610,27 @@ export namespace Prisma {
     connectOrCreate?: VehicleSwapCreateOrConnectWithoutSwappedByInput | VehicleSwapCreateOrConnectWithoutSwappedByInput[]
     createMany?: VehicleSwapCreateManySwappedByInputEnvelope
     connect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+  }
+
+  export type DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput = {
+    create?: XOR<DiscountRuleCreateWithoutCreatedByInput, DiscountRuleUncheckedCreateWithoutCreatedByInput> | DiscountRuleCreateWithoutCreatedByInput[] | DiscountRuleUncheckedCreateWithoutCreatedByInput[]
+    connectOrCreate?: DiscountRuleCreateOrConnectWithoutCreatedByInput | DiscountRuleCreateOrConnectWithoutCreatedByInput[]
+    createMany?: DiscountRuleCreateManyCreatedByInputEnvelope
+    connect?: DiscountRuleWhereUniqueInput | DiscountRuleWhereUniqueInput[]
+  }
+
+  export type ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput = {
+    create?: XOR<ManualDiscountCreateWithoutIssuedByInput, ManualDiscountUncheckedCreateWithoutIssuedByInput> | ManualDiscountCreateWithoutIssuedByInput[] | ManualDiscountUncheckedCreateWithoutIssuedByInput[]
+    connectOrCreate?: ManualDiscountCreateOrConnectWithoutIssuedByInput | ManualDiscountCreateOrConnectWithoutIssuedByInput[]
+    createMany?: ManualDiscountCreateManyIssuedByInputEnvelope
+    connect?: ManualDiscountWhereUniqueInput | ManualDiscountWhereUniqueInput[]
+  }
+
+  export type ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput = {
+    create?: XOR<ManualDiscountCreateWithoutApprovedByInput, ManualDiscountUncheckedCreateWithoutApprovedByInput> | ManualDiscountCreateWithoutApprovedByInput[] | ManualDiscountUncheckedCreateWithoutApprovedByInput[]
+    connectOrCreate?: ManualDiscountCreateOrConnectWithoutApprovedByInput | ManualDiscountCreateOrConnectWithoutApprovedByInput[]
+    createMany?: ManualDiscountCreateManyApprovedByInputEnvelope
+    connect?: ManualDiscountWhereUniqueInput | ManualDiscountWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -59419,6 +69775,48 @@ export namespace Prisma {
     deleteMany?: VehicleSwapScalarWhereInput | VehicleSwapScalarWhereInput[]
   }
 
+  export type DiscountRuleUpdateManyWithoutCreatedByNestedInput = {
+    create?: XOR<DiscountRuleCreateWithoutCreatedByInput, DiscountRuleUncheckedCreateWithoutCreatedByInput> | DiscountRuleCreateWithoutCreatedByInput[] | DiscountRuleUncheckedCreateWithoutCreatedByInput[]
+    connectOrCreate?: DiscountRuleCreateOrConnectWithoutCreatedByInput | DiscountRuleCreateOrConnectWithoutCreatedByInput[]
+    upsert?: DiscountRuleUpsertWithWhereUniqueWithoutCreatedByInput | DiscountRuleUpsertWithWhereUniqueWithoutCreatedByInput[]
+    createMany?: DiscountRuleCreateManyCreatedByInputEnvelope
+    set?: DiscountRuleWhereUniqueInput | DiscountRuleWhereUniqueInput[]
+    disconnect?: DiscountRuleWhereUniqueInput | DiscountRuleWhereUniqueInput[]
+    delete?: DiscountRuleWhereUniqueInput | DiscountRuleWhereUniqueInput[]
+    connect?: DiscountRuleWhereUniqueInput | DiscountRuleWhereUniqueInput[]
+    update?: DiscountRuleUpdateWithWhereUniqueWithoutCreatedByInput | DiscountRuleUpdateWithWhereUniqueWithoutCreatedByInput[]
+    updateMany?: DiscountRuleUpdateManyWithWhereWithoutCreatedByInput | DiscountRuleUpdateManyWithWhereWithoutCreatedByInput[]
+    deleteMany?: DiscountRuleScalarWhereInput | DiscountRuleScalarWhereInput[]
+  }
+
+  export type ManualDiscountUpdateManyWithoutIssuedByNestedInput = {
+    create?: XOR<ManualDiscountCreateWithoutIssuedByInput, ManualDiscountUncheckedCreateWithoutIssuedByInput> | ManualDiscountCreateWithoutIssuedByInput[] | ManualDiscountUncheckedCreateWithoutIssuedByInput[]
+    connectOrCreate?: ManualDiscountCreateOrConnectWithoutIssuedByInput | ManualDiscountCreateOrConnectWithoutIssuedByInput[]
+    upsert?: ManualDiscountUpsertWithWhereUniqueWithoutIssuedByInput | ManualDiscountUpsertWithWhereUniqueWithoutIssuedByInput[]
+    createMany?: ManualDiscountCreateManyIssuedByInputEnvelope
+    set?: ManualDiscountWhereUniqueInput | ManualDiscountWhereUniqueInput[]
+    disconnect?: ManualDiscountWhereUniqueInput | ManualDiscountWhereUniqueInput[]
+    delete?: ManualDiscountWhereUniqueInput | ManualDiscountWhereUniqueInput[]
+    connect?: ManualDiscountWhereUniqueInput | ManualDiscountWhereUniqueInput[]
+    update?: ManualDiscountUpdateWithWhereUniqueWithoutIssuedByInput | ManualDiscountUpdateWithWhereUniqueWithoutIssuedByInput[]
+    updateMany?: ManualDiscountUpdateManyWithWhereWithoutIssuedByInput | ManualDiscountUpdateManyWithWhereWithoutIssuedByInput[]
+    deleteMany?: ManualDiscountScalarWhereInput | ManualDiscountScalarWhereInput[]
+  }
+
+  export type ManualDiscountUpdateManyWithoutApprovedByNestedInput = {
+    create?: XOR<ManualDiscountCreateWithoutApprovedByInput, ManualDiscountUncheckedCreateWithoutApprovedByInput> | ManualDiscountCreateWithoutApprovedByInput[] | ManualDiscountUncheckedCreateWithoutApprovedByInput[]
+    connectOrCreate?: ManualDiscountCreateOrConnectWithoutApprovedByInput | ManualDiscountCreateOrConnectWithoutApprovedByInput[]
+    upsert?: ManualDiscountUpsertWithWhereUniqueWithoutApprovedByInput | ManualDiscountUpsertWithWhereUniqueWithoutApprovedByInput[]
+    createMany?: ManualDiscountCreateManyApprovedByInputEnvelope
+    set?: ManualDiscountWhereUniqueInput | ManualDiscountWhereUniqueInput[]
+    disconnect?: ManualDiscountWhereUniqueInput | ManualDiscountWhereUniqueInput[]
+    delete?: ManualDiscountWhereUniqueInput | ManualDiscountWhereUniqueInput[]
+    connect?: ManualDiscountWhereUniqueInput | ManualDiscountWhereUniqueInput[]
+    update?: ManualDiscountUpdateWithWhereUniqueWithoutApprovedByInput | ManualDiscountUpdateWithWhereUniqueWithoutApprovedByInput[]
+    updateMany?: ManualDiscountUpdateManyWithWhereWithoutApprovedByInput | ManualDiscountUpdateManyWithWhereWithoutApprovedByInput[]
+    deleteMany?: ManualDiscountScalarWhereInput | ManualDiscountScalarWhereInput[]
+  }
+
   export type IntFieldUpdateOperationsInput = {
     set?: number
     increment?: number
@@ -59541,6 +69939,48 @@ export namespace Prisma {
     update?: VehicleSwapUpdateWithWhereUniqueWithoutSwappedByInput | VehicleSwapUpdateWithWhereUniqueWithoutSwappedByInput[]
     updateMany?: VehicleSwapUpdateManyWithWhereWithoutSwappedByInput | VehicleSwapUpdateManyWithWhereWithoutSwappedByInput[]
     deleteMany?: VehicleSwapScalarWhereInput | VehicleSwapScalarWhereInput[]
+  }
+
+  export type DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput = {
+    create?: XOR<DiscountRuleCreateWithoutCreatedByInput, DiscountRuleUncheckedCreateWithoutCreatedByInput> | DiscountRuleCreateWithoutCreatedByInput[] | DiscountRuleUncheckedCreateWithoutCreatedByInput[]
+    connectOrCreate?: DiscountRuleCreateOrConnectWithoutCreatedByInput | DiscountRuleCreateOrConnectWithoutCreatedByInput[]
+    upsert?: DiscountRuleUpsertWithWhereUniqueWithoutCreatedByInput | DiscountRuleUpsertWithWhereUniqueWithoutCreatedByInput[]
+    createMany?: DiscountRuleCreateManyCreatedByInputEnvelope
+    set?: DiscountRuleWhereUniqueInput | DiscountRuleWhereUniqueInput[]
+    disconnect?: DiscountRuleWhereUniqueInput | DiscountRuleWhereUniqueInput[]
+    delete?: DiscountRuleWhereUniqueInput | DiscountRuleWhereUniqueInput[]
+    connect?: DiscountRuleWhereUniqueInput | DiscountRuleWhereUniqueInput[]
+    update?: DiscountRuleUpdateWithWhereUniqueWithoutCreatedByInput | DiscountRuleUpdateWithWhereUniqueWithoutCreatedByInput[]
+    updateMany?: DiscountRuleUpdateManyWithWhereWithoutCreatedByInput | DiscountRuleUpdateManyWithWhereWithoutCreatedByInput[]
+    deleteMany?: DiscountRuleScalarWhereInput | DiscountRuleScalarWhereInput[]
+  }
+
+  export type ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput = {
+    create?: XOR<ManualDiscountCreateWithoutIssuedByInput, ManualDiscountUncheckedCreateWithoutIssuedByInput> | ManualDiscountCreateWithoutIssuedByInput[] | ManualDiscountUncheckedCreateWithoutIssuedByInput[]
+    connectOrCreate?: ManualDiscountCreateOrConnectWithoutIssuedByInput | ManualDiscountCreateOrConnectWithoutIssuedByInput[]
+    upsert?: ManualDiscountUpsertWithWhereUniqueWithoutIssuedByInput | ManualDiscountUpsertWithWhereUniqueWithoutIssuedByInput[]
+    createMany?: ManualDiscountCreateManyIssuedByInputEnvelope
+    set?: ManualDiscountWhereUniqueInput | ManualDiscountWhereUniqueInput[]
+    disconnect?: ManualDiscountWhereUniqueInput | ManualDiscountWhereUniqueInput[]
+    delete?: ManualDiscountWhereUniqueInput | ManualDiscountWhereUniqueInput[]
+    connect?: ManualDiscountWhereUniqueInput | ManualDiscountWhereUniqueInput[]
+    update?: ManualDiscountUpdateWithWhereUniqueWithoutIssuedByInput | ManualDiscountUpdateWithWhereUniqueWithoutIssuedByInput[]
+    updateMany?: ManualDiscountUpdateManyWithWhereWithoutIssuedByInput | ManualDiscountUpdateManyWithWhereWithoutIssuedByInput[]
+    deleteMany?: ManualDiscountScalarWhereInput | ManualDiscountScalarWhereInput[]
+  }
+
+  export type ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput = {
+    create?: XOR<ManualDiscountCreateWithoutApprovedByInput, ManualDiscountUncheckedCreateWithoutApprovedByInput> | ManualDiscountCreateWithoutApprovedByInput[] | ManualDiscountUncheckedCreateWithoutApprovedByInput[]
+    connectOrCreate?: ManualDiscountCreateOrConnectWithoutApprovedByInput | ManualDiscountCreateOrConnectWithoutApprovedByInput[]
+    upsert?: ManualDiscountUpsertWithWhereUniqueWithoutApprovedByInput | ManualDiscountUpsertWithWhereUniqueWithoutApprovedByInput[]
+    createMany?: ManualDiscountCreateManyApprovedByInputEnvelope
+    set?: ManualDiscountWhereUniqueInput | ManualDiscountWhereUniqueInput[]
+    disconnect?: ManualDiscountWhereUniqueInput | ManualDiscountWhereUniqueInput[]
+    delete?: ManualDiscountWhereUniqueInput | ManualDiscountWhereUniqueInput[]
+    connect?: ManualDiscountWhereUniqueInput | ManualDiscountWhereUniqueInput[]
+    update?: ManualDiscountUpdateWithWhereUniqueWithoutApprovedByInput | ManualDiscountUpdateWithWhereUniqueWithoutApprovedByInput[]
+    updateMany?: ManualDiscountUpdateManyWithWhereWithoutApprovedByInput | ManualDiscountUpdateManyWithWhereWithoutApprovedByInput[]
+    deleteMany?: ManualDiscountScalarWhereInput | ManualDiscountScalarWhereInput[]
   }
 
   export type UserCreateNestedOneWithoutProvidersInput = {
@@ -60085,6 +70525,19 @@ export namespace Prisma {
     connect?: StaffActivityLogWhereUniqueInput | StaffActivityLogWhereUniqueInput[]
   }
 
+  export type DurationDiscountSlabCreateNestedManyWithoutBranchInput = {
+    create?: XOR<DurationDiscountSlabCreateWithoutBranchInput, DurationDiscountSlabUncheckedCreateWithoutBranchInput> | DurationDiscountSlabCreateWithoutBranchInput[] | DurationDiscountSlabUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: DurationDiscountSlabCreateOrConnectWithoutBranchInput | DurationDiscountSlabCreateOrConnectWithoutBranchInput[]
+    createMany?: DurationDiscountSlabCreateManyBranchInputEnvelope
+    connect?: DurationDiscountSlabWhereUniqueInput | DurationDiscountSlabWhereUniqueInput[]
+  }
+
+  export type BranchDiscountConfigCreateNestedOneWithoutBranchInput = {
+    create?: XOR<BranchDiscountConfigCreateWithoutBranchInput, BranchDiscountConfigUncheckedCreateWithoutBranchInput>
+    connectOrCreate?: BranchDiscountConfigCreateOrConnectWithoutBranchInput
+    connect?: BranchDiscountConfigWhereUniqueInput
+  }
+
   export type UserUncheckedCreateNestedManyWithoutBranchInput = {
     create?: XOR<UserCreateWithoutBranchInput, UserUncheckedCreateWithoutBranchInput> | UserCreateWithoutBranchInput[] | UserUncheckedCreateWithoutBranchInput[]
     connectOrCreate?: UserCreateOrConnectWithoutBranchInput | UserCreateOrConnectWithoutBranchInput[]
@@ -60165,6 +70618,19 @@ export namespace Prisma {
     connectOrCreate?: StaffActivityLogCreateOrConnectWithoutBranchInput | StaffActivityLogCreateOrConnectWithoutBranchInput[]
     createMany?: StaffActivityLogCreateManyBranchInputEnvelope
     connect?: StaffActivityLogWhereUniqueInput | StaffActivityLogWhereUniqueInput[]
+  }
+
+  export type DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput = {
+    create?: XOR<DurationDiscountSlabCreateWithoutBranchInput, DurationDiscountSlabUncheckedCreateWithoutBranchInput> | DurationDiscountSlabCreateWithoutBranchInput[] | DurationDiscountSlabUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: DurationDiscountSlabCreateOrConnectWithoutBranchInput | DurationDiscountSlabCreateOrConnectWithoutBranchInput[]
+    createMany?: DurationDiscountSlabCreateManyBranchInputEnvelope
+    connect?: DurationDiscountSlabWhereUniqueInput | DurationDiscountSlabWhereUniqueInput[]
+  }
+
+  export type BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput = {
+    create?: XOR<BranchDiscountConfigCreateWithoutBranchInput, BranchDiscountConfigUncheckedCreateWithoutBranchInput>
+    connectOrCreate?: BranchDiscountConfigCreateOrConnectWithoutBranchInput
+    connect?: BranchDiscountConfigWhereUniqueInput
   }
 
   export type UserUpdateManyWithoutBranchNestedInput = {
@@ -60327,6 +70793,30 @@ export namespace Prisma {
     deleteMany?: StaffActivityLogScalarWhereInput | StaffActivityLogScalarWhereInput[]
   }
 
+  export type DurationDiscountSlabUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<DurationDiscountSlabCreateWithoutBranchInput, DurationDiscountSlabUncheckedCreateWithoutBranchInput> | DurationDiscountSlabCreateWithoutBranchInput[] | DurationDiscountSlabUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: DurationDiscountSlabCreateOrConnectWithoutBranchInput | DurationDiscountSlabCreateOrConnectWithoutBranchInput[]
+    upsert?: DurationDiscountSlabUpsertWithWhereUniqueWithoutBranchInput | DurationDiscountSlabUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: DurationDiscountSlabCreateManyBranchInputEnvelope
+    set?: DurationDiscountSlabWhereUniqueInput | DurationDiscountSlabWhereUniqueInput[]
+    disconnect?: DurationDiscountSlabWhereUniqueInput | DurationDiscountSlabWhereUniqueInput[]
+    delete?: DurationDiscountSlabWhereUniqueInput | DurationDiscountSlabWhereUniqueInput[]
+    connect?: DurationDiscountSlabWhereUniqueInput | DurationDiscountSlabWhereUniqueInput[]
+    update?: DurationDiscountSlabUpdateWithWhereUniqueWithoutBranchInput | DurationDiscountSlabUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: DurationDiscountSlabUpdateManyWithWhereWithoutBranchInput | DurationDiscountSlabUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: DurationDiscountSlabScalarWhereInput | DurationDiscountSlabScalarWhereInput[]
+  }
+
+  export type BranchDiscountConfigUpdateOneWithoutBranchNestedInput = {
+    create?: XOR<BranchDiscountConfigCreateWithoutBranchInput, BranchDiscountConfigUncheckedCreateWithoutBranchInput>
+    connectOrCreate?: BranchDiscountConfigCreateOrConnectWithoutBranchInput
+    upsert?: BranchDiscountConfigUpsertWithoutBranchInput
+    disconnect?: BranchDiscountConfigWhereInput | boolean
+    delete?: BranchDiscountConfigWhereInput | boolean
+    connect?: BranchDiscountConfigWhereUniqueInput
+    update?: XOR<XOR<BranchDiscountConfigUpdateToOneWithWhereWithoutBranchInput, BranchDiscountConfigUpdateWithoutBranchInput>, BranchDiscountConfigUncheckedUpdateWithoutBranchInput>
+  }
+
   export type UserUncheckedUpdateManyWithoutBranchNestedInput = {
     create?: XOR<UserCreateWithoutBranchInput, UserUncheckedCreateWithoutBranchInput> | UserCreateWithoutBranchInput[] | UserUncheckedCreateWithoutBranchInput[]
     connectOrCreate?: UserCreateOrConnectWithoutBranchInput | UserCreateOrConnectWithoutBranchInput[]
@@ -60485,6 +70975,30 @@ export namespace Prisma {
     update?: StaffActivityLogUpdateWithWhereUniqueWithoutBranchInput | StaffActivityLogUpdateWithWhereUniqueWithoutBranchInput[]
     updateMany?: StaffActivityLogUpdateManyWithWhereWithoutBranchInput | StaffActivityLogUpdateManyWithWhereWithoutBranchInput[]
     deleteMany?: StaffActivityLogScalarWhereInput | StaffActivityLogScalarWhereInput[]
+  }
+
+  export type DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<DurationDiscountSlabCreateWithoutBranchInput, DurationDiscountSlabUncheckedCreateWithoutBranchInput> | DurationDiscountSlabCreateWithoutBranchInput[] | DurationDiscountSlabUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: DurationDiscountSlabCreateOrConnectWithoutBranchInput | DurationDiscountSlabCreateOrConnectWithoutBranchInput[]
+    upsert?: DurationDiscountSlabUpsertWithWhereUniqueWithoutBranchInput | DurationDiscountSlabUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: DurationDiscountSlabCreateManyBranchInputEnvelope
+    set?: DurationDiscountSlabWhereUniqueInput | DurationDiscountSlabWhereUniqueInput[]
+    disconnect?: DurationDiscountSlabWhereUniqueInput | DurationDiscountSlabWhereUniqueInput[]
+    delete?: DurationDiscountSlabWhereUniqueInput | DurationDiscountSlabWhereUniqueInput[]
+    connect?: DurationDiscountSlabWhereUniqueInput | DurationDiscountSlabWhereUniqueInput[]
+    update?: DurationDiscountSlabUpdateWithWhereUniqueWithoutBranchInput | DurationDiscountSlabUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: DurationDiscountSlabUpdateManyWithWhereWithoutBranchInput | DurationDiscountSlabUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: DurationDiscountSlabScalarWhereInput | DurationDiscountSlabScalarWhereInput[]
+  }
+
+  export type BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput = {
+    create?: XOR<BranchDiscountConfigCreateWithoutBranchInput, BranchDiscountConfigUncheckedCreateWithoutBranchInput>
+    connectOrCreate?: BranchDiscountConfigCreateOrConnectWithoutBranchInput
+    upsert?: BranchDiscountConfigUpsertWithoutBranchInput
+    disconnect?: BranchDiscountConfigWhereInput | boolean
+    delete?: BranchDiscountConfigWhereInput | boolean
+    connect?: BranchDiscountConfigWhereUniqueInput
+    update?: XOR<XOR<BranchDiscountConfigUpdateToOneWithWhereWithoutBranchInput, BranchDiscountConfigUpdateWithoutBranchInput>, BranchDiscountConfigUncheckedUpdateWithoutBranchInput>
   }
 
   export type BranchCreateNestedOneWithoutStaffActivityLogsInput = {
@@ -61513,6 +72027,24 @@ export namespace Prisma {
     connect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
   }
 
+  export type DiscountRuleCreateNestedOneWithoutBookingsInput = {
+    create?: XOR<DiscountRuleCreateWithoutBookingsInput, DiscountRuleUncheckedCreateWithoutBookingsInput>
+    connectOrCreate?: DiscountRuleCreateOrConnectWithoutBookingsInput
+    connect?: DiscountRuleWhereUniqueInput
+  }
+
+  export type DiscountApplicationCreateNestedOneWithoutBookingInput = {
+    create?: XOR<DiscountApplicationCreateWithoutBookingInput, DiscountApplicationUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: DiscountApplicationCreateOrConnectWithoutBookingInput
+    connect?: DiscountApplicationWhereUniqueInput
+  }
+
+  export type ManualDiscountCreateNestedOneWithoutBookingInput = {
+    create?: XOR<ManualDiscountCreateWithoutBookingInput, ManualDiscountUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: ManualDiscountCreateOrConnectWithoutBookingInput
+    connect?: ManualDiscountWhereUniqueInput
+  }
+
   export type BookingPhotoUncheckedCreateNestedManyWithoutBookingInput = {
     create?: XOR<BookingPhotoCreateWithoutBookingInput, BookingPhotoUncheckedCreateWithoutBookingInput> | BookingPhotoCreateWithoutBookingInput[] | BookingPhotoUncheckedCreateWithoutBookingInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutBookingInput | BookingPhotoCreateOrConnectWithoutBookingInput[]
@@ -61557,6 +72089,18 @@ export namespace Prisma {
     connectOrCreate?: VehicleSwapCreateOrConnectWithoutBookingInput | VehicleSwapCreateOrConnectWithoutBookingInput[]
     createMany?: VehicleSwapCreateManyBookingInputEnvelope
     connect?: VehicleSwapWhereUniqueInput | VehicleSwapWhereUniqueInput[]
+  }
+
+  export type DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput = {
+    create?: XOR<DiscountApplicationCreateWithoutBookingInput, DiscountApplicationUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: DiscountApplicationCreateOrConnectWithoutBookingInput
+    connect?: DiscountApplicationWhereUniqueInput
+  }
+
+  export type ManualDiscountUncheckedCreateNestedOneWithoutBookingInput = {
+    create?: XOR<ManualDiscountCreateWithoutBookingInput, ManualDiscountUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: ManualDiscountCreateOrConnectWithoutBookingInput
+    connect?: ManualDiscountWhereUniqueInput
   }
 
   export type NullableEnumRentalPeriodTypeFieldUpdateOperationsInput = {
@@ -61695,6 +72239,36 @@ export namespace Prisma {
     deleteMany?: VehicleSwapScalarWhereInput | VehicleSwapScalarWhereInput[]
   }
 
+  export type DiscountRuleUpdateOneWithoutBookingsNestedInput = {
+    create?: XOR<DiscountRuleCreateWithoutBookingsInput, DiscountRuleUncheckedCreateWithoutBookingsInput>
+    connectOrCreate?: DiscountRuleCreateOrConnectWithoutBookingsInput
+    upsert?: DiscountRuleUpsertWithoutBookingsInput
+    disconnect?: DiscountRuleWhereInput | boolean
+    delete?: DiscountRuleWhereInput | boolean
+    connect?: DiscountRuleWhereUniqueInput
+    update?: XOR<XOR<DiscountRuleUpdateToOneWithWhereWithoutBookingsInput, DiscountRuleUpdateWithoutBookingsInput>, DiscountRuleUncheckedUpdateWithoutBookingsInput>
+  }
+
+  export type DiscountApplicationUpdateOneWithoutBookingNestedInput = {
+    create?: XOR<DiscountApplicationCreateWithoutBookingInput, DiscountApplicationUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: DiscountApplicationCreateOrConnectWithoutBookingInput
+    upsert?: DiscountApplicationUpsertWithoutBookingInput
+    disconnect?: DiscountApplicationWhereInput | boolean
+    delete?: DiscountApplicationWhereInput | boolean
+    connect?: DiscountApplicationWhereUniqueInput
+    update?: XOR<XOR<DiscountApplicationUpdateToOneWithWhereWithoutBookingInput, DiscountApplicationUpdateWithoutBookingInput>, DiscountApplicationUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type ManualDiscountUpdateOneWithoutBookingNestedInput = {
+    create?: XOR<ManualDiscountCreateWithoutBookingInput, ManualDiscountUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: ManualDiscountCreateOrConnectWithoutBookingInput
+    upsert?: ManualDiscountUpsertWithoutBookingInput
+    disconnect?: ManualDiscountWhereInput | boolean
+    delete?: ManualDiscountWhereInput | boolean
+    connect?: ManualDiscountWhereUniqueInput
+    update?: XOR<XOR<ManualDiscountUpdateToOneWithWhereWithoutBookingInput, ManualDiscountUpdateWithoutBookingInput>, ManualDiscountUncheckedUpdateWithoutBookingInput>
+  }
+
   export type BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput = {
     create?: XOR<BookingPhotoCreateWithoutBookingInput, BookingPhotoUncheckedCreateWithoutBookingInput> | BookingPhotoCreateWithoutBookingInput[] | BookingPhotoUncheckedCreateWithoutBookingInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutBookingInput | BookingPhotoCreateOrConnectWithoutBookingInput[]
@@ -61779,6 +72353,26 @@ export namespace Prisma {
     update?: VehicleSwapUpdateWithWhereUniqueWithoutBookingInput | VehicleSwapUpdateWithWhereUniqueWithoutBookingInput[]
     updateMany?: VehicleSwapUpdateManyWithWhereWithoutBookingInput | VehicleSwapUpdateManyWithWhereWithoutBookingInput[]
     deleteMany?: VehicleSwapScalarWhereInput | VehicleSwapScalarWhereInput[]
+  }
+
+  export type DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput = {
+    create?: XOR<DiscountApplicationCreateWithoutBookingInput, DiscountApplicationUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: DiscountApplicationCreateOrConnectWithoutBookingInput
+    upsert?: DiscountApplicationUpsertWithoutBookingInput
+    disconnect?: DiscountApplicationWhereInput | boolean
+    delete?: DiscountApplicationWhereInput | boolean
+    connect?: DiscountApplicationWhereUniqueInput
+    update?: XOR<XOR<DiscountApplicationUpdateToOneWithWhereWithoutBookingInput, DiscountApplicationUpdateWithoutBookingInput>, DiscountApplicationUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput = {
+    create?: XOR<ManualDiscountCreateWithoutBookingInput, ManualDiscountUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: ManualDiscountCreateOrConnectWithoutBookingInput
+    upsert?: ManualDiscountUpsertWithoutBookingInput
+    disconnect?: ManualDiscountWhereInput | boolean
+    delete?: ManualDiscountWhereInput | boolean
+    connect?: ManualDiscountWhereUniqueInput
+    update?: XOR<XOR<ManualDiscountUpdateToOneWithWhereWithoutBookingInput, ManualDiscountUpdateWithoutBookingInput>, ManualDiscountUncheckedUpdateWithoutBookingInput>
   }
 
   export type VehicleCreateNestedOneWithoutBookingItemsInput = {
@@ -62452,6 +73046,362 @@ export namespace Prisma {
     upsert?: UserUpsertWithoutVehicleSwapsInput
     connect?: UserWhereUniqueInput
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutVehicleSwapsInput, UserUpdateWithoutVehicleSwapsInput>, UserUncheckedUpdateWithoutVehicleSwapsInput>
+  }
+
+  export type DiscountRuleCreateapplicableBranchIdsInput = {
+    set: number[]
+  }
+
+  export type DiscountRuleCreatetargetCustomerIdsInput = {
+    set: number[]
+  }
+
+  export type DiscountRuleCreateapplicableVehicleCategoryIdsInput = {
+    set: number[]
+  }
+
+  export type DiscountRuleCreateapplicablePaymentPlansInput = {
+    set: string[]
+  }
+
+  export type UserCreateNestedOneWithoutDiscountRulesCreatedInput = {
+    create?: XOR<UserCreateWithoutDiscountRulesCreatedInput, UserUncheckedCreateWithoutDiscountRulesCreatedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutDiscountRulesCreatedInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type CouponUsageLogCreateNestedManyWithoutDiscountRuleInput = {
+    create?: XOR<CouponUsageLogCreateWithoutDiscountRuleInput, CouponUsageLogUncheckedCreateWithoutDiscountRuleInput> | CouponUsageLogCreateWithoutDiscountRuleInput[] | CouponUsageLogUncheckedCreateWithoutDiscountRuleInput[]
+    connectOrCreate?: CouponUsageLogCreateOrConnectWithoutDiscountRuleInput | CouponUsageLogCreateOrConnectWithoutDiscountRuleInput[]
+    createMany?: CouponUsageLogCreateManyDiscountRuleInputEnvelope
+    connect?: CouponUsageLogWhereUniqueInput | CouponUsageLogWhereUniqueInput[]
+  }
+
+  export type BookingCreateNestedManyWithoutDiscountRuleInput = {
+    create?: XOR<BookingCreateWithoutDiscountRuleInput, BookingUncheckedCreateWithoutDiscountRuleInput> | BookingCreateWithoutDiscountRuleInput[] | BookingUncheckedCreateWithoutDiscountRuleInput[]
+    connectOrCreate?: BookingCreateOrConnectWithoutDiscountRuleInput | BookingCreateOrConnectWithoutDiscountRuleInput[]
+    createMany?: BookingCreateManyDiscountRuleInputEnvelope
+    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+  }
+
+  export type DiscountApplicationCreateNestedManyWithoutDiscountRuleInput = {
+    create?: XOR<DiscountApplicationCreateWithoutDiscountRuleInput, DiscountApplicationUncheckedCreateWithoutDiscountRuleInput> | DiscountApplicationCreateWithoutDiscountRuleInput[] | DiscountApplicationUncheckedCreateWithoutDiscountRuleInput[]
+    connectOrCreate?: DiscountApplicationCreateOrConnectWithoutDiscountRuleInput | DiscountApplicationCreateOrConnectWithoutDiscountRuleInput[]
+    createMany?: DiscountApplicationCreateManyDiscountRuleInputEnvelope
+    connect?: DiscountApplicationWhereUniqueInput | DiscountApplicationWhereUniqueInput[]
+  }
+
+  export type CouponUsageLogUncheckedCreateNestedManyWithoutDiscountRuleInput = {
+    create?: XOR<CouponUsageLogCreateWithoutDiscountRuleInput, CouponUsageLogUncheckedCreateWithoutDiscountRuleInput> | CouponUsageLogCreateWithoutDiscountRuleInput[] | CouponUsageLogUncheckedCreateWithoutDiscountRuleInput[]
+    connectOrCreate?: CouponUsageLogCreateOrConnectWithoutDiscountRuleInput | CouponUsageLogCreateOrConnectWithoutDiscountRuleInput[]
+    createMany?: CouponUsageLogCreateManyDiscountRuleInputEnvelope
+    connect?: CouponUsageLogWhereUniqueInput | CouponUsageLogWhereUniqueInput[]
+  }
+
+  export type BookingUncheckedCreateNestedManyWithoutDiscountRuleInput = {
+    create?: XOR<BookingCreateWithoutDiscountRuleInput, BookingUncheckedCreateWithoutDiscountRuleInput> | BookingCreateWithoutDiscountRuleInput[] | BookingUncheckedCreateWithoutDiscountRuleInput[]
+    connectOrCreate?: BookingCreateOrConnectWithoutDiscountRuleInput | BookingCreateOrConnectWithoutDiscountRuleInput[]
+    createMany?: BookingCreateManyDiscountRuleInputEnvelope
+    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+  }
+
+  export type DiscountApplicationUncheckedCreateNestedManyWithoutDiscountRuleInput = {
+    create?: XOR<DiscountApplicationCreateWithoutDiscountRuleInput, DiscountApplicationUncheckedCreateWithoutDiscountRuleInput> | DiscountApplicationCreateWithoutDiscountRuleInput[] | DiscountApplicationUncheckedCreateWithoutDiscountRuleInput[]
+    connectOrCreate?: DiscountApplicationCreateOrConnectWithoutDiscountRuleInput | DiscountApplicationCreateOrConnectWithoutDiscountRuleInput[]
+    createMany?: DiscountApplicationCreateManyDiscountRuleInputEnvelope
+    connect?: DiscountApplicationWhereUniqueInput | DiscountApplicationWhereUniqueInput[]
+  }
+
+  export type EnumDiscountTypeFieldUpdateOperationsInput = {
+    set?: $Enums.DiscountType
+  }
+
+  export type EnumDiscountScopeFieldUpdateOperationsInput = {
+    set?: $Enums.DiscountScope
+  }
+
+  export type DiscountRuleUpdateapplicableBranchIdsInput = {
+    set?: number[]
+    push?: number | number[]
+  }
+
+  export type DiscountRuleUpdatetargetCustomerIdsInput = {
+    set?: number[]
+    push?: number | number[]
+  }
+
+  export type DiscountRuleUpdateapplicableVehicleCategoryIdsInput = {
+    set?: number[]
+    push?: number | number[]
+  }
+
+  export type DiscountRuleUpdateapplicablePaymentPlansInput = {
+    set?: string[]
+    push?: string | string[]
+  }
+
+  export type UserUpdateOneRequiredWithoutDiscountRulesCreatedNestedInput = {
+    create?: XOR<UserCreateWithoutDiscountRulesCreatedInput, UserUncheckedCreateWithoutDiscountRulesCreatedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutDiscountRulesCreatedInput
+    upsert?: UserUpsertWithoutDiscountRulesCreatedInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutDiscountRulesCreatedInput, UserUpdateWithoutDiscountRulesCreatedInput>, UserUncheckedUpdateWithoutDiscountRulesCreatedInput>
+  }
+
+  export type CouponUsageLogUpdateManyWithoutDiscountRuleNestedInput = {
+    create?: XOR<CouponUsageLogCreateWithoutDiscountRuleInput, CouponUsageLogUncheckedCreateWithoutDiscountRuleInput> | CouponUsageLogCreateWithoutDiscountRuleInput[] | CouponUsageLogUncheckedCreateWithoutDiscountRuleInput[]
+    connectOrCreate?: CouponUsageLogCreateOrConnectWithoutDiscountRuleInput | CouponUsageLogCreateOrConnectWithoutDiscountRuleInput[]
+    upsert?: CouponUsageLogUpsertWithWhereUniqueWithoutDiscountRuleInput | CouponUsageLogUpsertWithWhereUniqueWithoutDiscountRuleInput[]
+    createMany?: CouponUsageLogCreateManyDiscountRuleInputEnvelope
+    set?: CouponUsageLogWhereUniqueInput | CouponUsageLogWhereUniqueInput[]
+    disconnect?: CouponUsageLogWhereUniqueInput | CouponUsageLogWhereUniqueInput[]
+    delete?: CouponUsageLogWhereUniqueInput | CouponUsageLogWhereUniqueInput[]
+    connect?: CouponUsageLogWhereUniqueInput | CouponUsageLogWhereUniqueInput[]
+    update?: CouponUsageLogUpdateWithWhereUniqueWithoutDiscountRuleInput | CouponUsageLogUpdateWithWhereUniqueWithoutDiscountRuleInput[]
+    updateMany?: CouponUsageLogUpdateManyWithWhereWithoutDiscountRuleInput | CouponUsageLogUpdateManyWithWhereWithoutDiscountRuleInput[]
+    deleteMany?: CouponUsageLogScalarWhereInput | CouponUsageLogScalarWhereInput[]
+  }
+
+  export type BookingUpdateManyWithoutDiscountRuleNestedInput = {
+    create?: XOR<BookingCreateWithoutDiscountRuleInput, BookingUncheckedCreateWithoutDiscountRuleInput> | BookingCreateWithoutDiscountRuleInput[] | BookingUncheckedCreateWithoutDiscountRuleInput[]
+    connectOrCreate?: BookingCreateOrConnectWithoutDiscountRuleInput | BookingCreateOrConnectWithoutDiscountRuleInput[]
+    upsert?: BookingUpsertWithWhereUniqueWithoutDiscountRuleInput | BookingUpsertWithWhereUniqueWithoutDiscountRuleInput[]
+    createMany?: BookingCreateManyDiscountRuleInputEnvelope
+    set?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    disconnect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    delete?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    update?: BookingUpdateWithWhereUniqueWithoutDiscountRuleInput | BookingUpdateWithWhereUniqueWithoutDiscountRuleInput[]
+    updateMany?: BookingUpdateManyWithWhereWithoutDiscountRuleInput | BookingUpdateManyWithWhereWithoutDiscountRuleInput[]
+    deleteMany?: BookingScalarWhereInput | BookingScalarWhereInput[]
+  }
+
+  export type DiscountApplicationUpdateManyWithoutDiscountRuleNestedInput = {
+    create?: XOR<DiscountApplicationCreateWithoutDiscountRuleInput, DiscountApplicationUncheckedCreateWithoutDiscountRuleInput> | DiscountApplicationCreateWithoutDiscountRuleInput[] | DiscountApplicationUncheckedCreateWithoutDiscountRuleInput[]
+    connectOrCreate?: DiscountApplicationCreateOrConnectWithoutDiscountRuleInput | DiscountApplicationCreateOrConnectWithoutDiscountRuleInput[]
+    upsert?: DiscountApplicationUpsertWithWhereUniqueWithoutDiscountRuleInput | DiscountApplicationUpsertWithWhereUniqueWithoutDiscountRuleInput[]
+    createMany?: DiscountApplicationCreateManyDiscountRuleInputEnvelope
+    set?: DiscountApplicationWhereUniqueInput | DiscountApplicationWhereUniqueInput[]
+    disconnect?: DiscountApplicationWhereUniqueInput | DiscountApplicationWhereUniqueInput[]
+    delete?: DiscountApplicationWhereUniqueInput | DiscountApplicationWhereUniqueInput[]
+    connect?: DiscountApplicationWhereUniqueInput | DiscountApplicationWhereUniqueInput[]
+    update?: DiscountApplicationUpdateWithWhereUniqueWithoutDiscountRuleInput | DiscountApplicationUpdateWithWhereUniqueWithoutDiscountRuleInput[]
+    updateMany?: DiscountApplicationUpdateManyWithWhereWithoutDiscountRuleInput | DiscountApplicationUpdateManyWithWhereWithoutDiscountRuleInput[]
+    deleteMany?: DiscountApplicationScalarWhereInput | DiscountApplicationScalarWhereInput[]
+  }
+
+  export type CouponUsageLogUncheckedUpdateManyWithoutDiscountRuleNestedInput = {
+    create?: XOR<CouponUsageLogCreateWithoutDiscountRuleInput, CouponUsageLogUncheckedCreateWithoutDiscountRuleInput> | CouponUsageLogCreateWithoutDiscountRuleInput[] | CouponUsageLogUncheckedCreateWithoutDiscountRuleInput[]
+    connectOrCreate?: CouponUsageLogCreateOrConnectWithoutDiscountRuleInput | CouponUsageLogCreateOrConnectWithoutDiscountRuleInput[]
+    upsert?: CouponUsageLogUpsertWithWhereUniqueWithoutDiscountRuleInput | CouponUsageLogUpsertWithWhereUniqueWithoutDiscountRuleInput[]
+    createMany?: CouponUsageLogCreateManyDiscountRuleInputEnvelope
+    set?: CouponUsageLogWhereUniqueInput | CouponUsageLogWhereUniqueInput[]
+    disconnect?: CouponUsageLogWhereUniqueInput | CouponUsageLogWhereUniqueInput[]
+    delete?: CouponUsageLogWhereUniqueInput | CouponUsageLogWhereUniqueInput[]
+    connect?: CouponUsageLogWhereUniqueInput | CouponUsageLogWhereUniqueInput[]
+    update?: CouponUsageLogUpdateWithWhereUniqueWithoutDiscountRuleInput | CouponUsageLogUpdateWithWhereUniqueWithoutDiscountRuleInput[]
+    updateMany?: CouponUsageLogUpdateManyWithWhereWithoutDiscountRuleInput | CouponUsageLogUpdateManyWithWhereWithoutDiscountRuleInput[]
+    deleteMany?: CouponUsageLogScalarWhereInput | CouponUsageLogScalarWhereInput[]
+  }
+
+  export type BookingUncheckedUpdateManyWithoutDiscountRuleNestedInput = {
+    create?: XOR<BookingCreateWithoutDiscountRuleInput, BookingUncheckedCreateWithoutDiscountRuleInput> | BookingCreateWithoutDiscountRuleInput[] | BookingUncheckedCreateWithoutDiscountRuleInput[]
+    connectOrCreate?: BookingCreateOrConnectWithoutDiscountRuleInput | BookingCreateOrConnectWithoutDiscountRuleInput[]
+    upsert?: BookingUpsertWithWhereUniqueWithoutDiscountRuleInput | BookingUpsertWithWhereUniqueWithoutDiscountRuleInput[]
+    createMany?: BookingCreateManyDiscountRuleInputEnvelope
+    set?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    disconnect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    delete?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    update?: BookingUpdateWithWhereUniqueWithoutDiscountRuleInput | BookingUpdateWithWhereUniqueWithoutDiscountRuleInput[]
+    updateMany?: BookingUpdateManyWithWhereWithoutDiscountRuleInput | BookingUpdateManyWithWhereWithoutDiscountRuleInput[]
+    deleteMany?: BookingScalarWhereInput | BookingScalarWhereInput[]
+  }
+
+  export type DiscountApplicationUncheckedUpdateManyWithoutDiscountRuleNestedInput = {
+    create?: XOR<DiscountApplicationCreateWithoutDiscountRuleInput, DiscountApplicationUncheckedCreateWithoutDiscountRuleInput> | DiscountApplicationCreateWithoutDiscountRuleInput[] | DiscountApplicationUncheckedCreateWithoutDiscountRuleInput[]
+    connectOrCreate?: DiscountApplicationCreateOrConnectWithoutDiscountRuleInput | DiscountApplicationCreateOrConnectWithoutDiscountRuleInput[]
+    upsert?: DiscountApplicationUpsertWithWhereUniqueWithoutDiscountRuleInput | DiscountApplicationUpsertWithWhereUniqueWithoutDiscountRuleInput[]
+    createMany?: DiscountApplicationCreateManyDiscountRuleInputEnvelope
+    set?: DiscountApplicationWhereUniqueInput | DiscountApplicationWhereUniqueInput[]
+    disconnect?: DiscountApplicationWhereUniqueInput | DiscountApplicationWhereUniqueInput[]
+    delete?: DiscountApplicationWhereUniqueInput | DiscountApplicationWhereUniqueInput[]
+    connect?: DiscountApplicationWhereUniqueInput | DiscountApplicationWhereUniqueInput[]
+    update?: DiscountApplicationUpdateWithWhereUniqueWithoutDiscountRuleInput | DiscountApplicationUpdateWithWhereUniqueWithoutDiscountRuleInput[]
+    updateMany?: DiscountApplicationUpdateManyWithWhereWithoutDiscountRuleInput | DiscountApplicationUpdateManyWithWhereWithoutDiscountRuleInput[]
+    deleteMany?: DiscountApplicationScalarWhereInput | DiscountApplicationScalarWhereInput[]
+  }
+
+  export type BranchCreateNestedOneWithoutDurationDiscountSlabsInput = {
+    create?: XOR<BranchCreateWithoutDurationDiscountSlabsInput, BranchUncheckedCreateWithoutDurationDiscountSlabsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutDurationDiscountSlabsInput
+    connect?: BranchWhereUniqueInput
+  }
+
+  export type BranchUpdateOneRequiredWithoutDurationDiscountSlabsNestedInput = {
+    create?: XOR<BranchCreateWithoutDurationDiscountSlabsInput, BranchUncheckedCreateWithoutDurationDiscountSlabsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutDurationDiscountSlabsInput
+    upsert?: BranchUpsertWithoutDurationDiscountSlabsInput
+    connect?: BranchWhereUniqueInput
+    update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutDurationDiscountSlabsInput, BranchUpdateWithoutDurationDiscountSlabsInput>, BranchUncheckedUpdateWithoutDurationDiscountSlabsInput>
+  }
+
+  export type BranchCreateNestedOneWithoutDiscountConfigInput = {
+    create?: XOR<BranchCreateWithoutDiscountConfigInput, BranchUncheckedCreateWithoutDiscountConfigInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutDiscountConfigInput
+    connect?: BranchWhereUniqueInput
+  }
+
+  export type BranchUpdateOneRequiredWithoutDiscountConfigNestedInput = {
+    create?: XOR<BranchCreateWithoutDiscountConfigInput, BranchUncheckedCreateWithoutDiscountConfigInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutDiscountConfigInput
+    upsert?: BranchUpsertWithoutDiscountConfigInput
+    connect?: BranchWhereUniqueInput
+    update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutDiscountConfigInput, BranchUpdateWithoutDiscountConfigInput>, BranchUncheckedUpdateWithoutDiscountConfigInput>
+  }
+
+  export type BookingCreateNestedOneWithoutDiscountApplicationInput = {
+    create?: XOR<BookingCreateWithoutDiscountApplicationInput, BookingUncheckedCreateWithoutDiscountApplicationInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutDiscountApplicationInput
+    connect?: BookingWhereUniqueInput
+  }
+
+  export type DiscountRuleCreateNestedOneWithoutApplicationsInput = {
+    create?: XOR<DiscountRuleCreateWithoutApplicationsInput, DiscountRuleUncheckedCreateWithoutApplicationsInput>
+    connectOrCreate?: DiscountRuleCreateOrConnectWithoutApplicationsInput
+    connect?: DiscountRuleWhereUniqueInput
+  }
+
+  export type ManualDiscountCreateNestedOneWithoutApplicationInput = {
+    create?: XOR<ManualDiscountCreateWithoutApplicationInput, ManualDiscountUncheckedCreateWithoutApplicationInput>
+    connectOrCreate?: ManualDiscountCreateOrConnectWithoutApplicationInput
+    connect?: ManualDiscountWhereUniqueInput
+  }
+
+  export type EnumAdjustmentTypeFieldUpdateOperationsInput = {
+    set?: $Enums.AdjustmentType
+  }
+
+  export type BookingUpdateOneRequiredWithoutDiscountApplicationNestedInput = {
+    create?: XOR<BookingCreateWithoutDiscountApplicationInput, BookingUncheckedCreateWithoutDiscountApplicationInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutDiscountApplicationInput
+    upsert?: BookingUpsertWithoutDiscountApplicationInput
+    connect?: BookingWhereUniqueInput
+    update?: XOR<XOR<BookingUpdateToOneWithWhereWithoutDiscountApplicationInput, BookingUpdateWithoutDiscountApplicationInput>, BookingUncheckedUpdateWithoutDiscountApplicationInput>
+  }
+
+  export type DiscountRuleUpdateOneWithoutApplicationsNestedInput = {
+    create?: XOR<DiscountRuleCreateWithoutApplicationsInput, DiscountRuleUncheckedCreateWithoutApplicationsInput>
+    connectOrCreate?: DiscountRuleCreateOrConnectWithoutApplicationsInput
+    upsert?: DiscountRuleUpsertWithoutApplicationsInput
+    disconnect?: DiscountRuleWhereInput | boolean
+    delete?: DiscountRuleWhereInput | boolean
+    connect?: DiscountRuleWhereUniqueInput
+    update?: XOR<XOR<DiscountRuleUpdateToOneWithWhereWithoutApplicationsInput, DiscountRuleUpdateWithoutApplicationsInput>, DiscountRuleUncheckedUpdateWithoutApplicationsInput>
+  }
+
+  export type ManualDiscountUpdateOneWithoutApplicationNestedInput = {
+    create?: XOR<ManualDiscountCreateWithoutApplicationInput, ManualDiscountUncheckedCreateWithoutApplicationInput>
+    connectOrCreate?: ManualDiscountCreateOrConnectWithoutApplicationInput
+    upsert?: ManualDiscountUpsertWithoutApplicationInput
+    disconnect?: ManualDiscountWhereInput | boolean
+    delete?: ManualDiscountWhereInput | boolean
+    connect?: ManualDiscountWhereUniqueInput
+    update?: XOR<XOR<ManualDiscountUpdateToOneWithWhereWithoutApplicationInput, ManualDiscountUpdateWithoutApplicationInput>, ManualDiscountUncheckedUpdateWithoutApplicationInput>
+  }
+
+  export type DiscountRuleCreateNestedOneWithoutUsageLogsInput = {
+    create?: XOR<DiscountRuleCreateWithoutUsageLogsInput, DiscountRuleUncheckedCreateWithoutUsageLogsInput>
+    connectOrCreate?: DiscountRuleCreateOrConnectWithoutUsageLogsInput
+    connect?: DiscountRuleWhereUniqueInput
+  }
+
+  export type DiscountRuleUpdateOneRequiredWithoutUsageLogsNestedInput = {
+    create?: XOR<DiscountRuleCreateWithoutUsageLogsInput, DiscountRuleUncheckedCreateWithoutUsageLogsInput>
+    connectOrCreate?: DiscountRuleCreateOrConnectWithoutUsageLogsInput
+    upsert?: DiscountRuleUpsertWithoutUsageLogsInput
+    connect?: DiscountRuleWhereUniqueInput
+    update?: XOR<XOR<DiscountRuleUpdateToOneWithWhereWithoutUsageLogsInput, DiscountRuleUpdateWithoutUsageLogsInput>, DiscountRuleUncheckedUpdateWithoutUsageLogsInput>
+  }
+
+  export type UserCreateNestedOneWithoutManualDiscountsIssuedInput = {
+    create?: XOR<UserCreateWithoutManualDiscountsIssuedInput, UserUncheckedCreateWithoutManualDiscountsIssuedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutManualDiscountsIssuedInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutManualDiscountsApprovedInput = {
+    create?: XOR<UserCreateWithoutManualDiscountsApprovedInput, UserUncheckedCreateWithoutManualDiscountsApprovedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutManualDiscountsApprovedInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type BookingCreateNestedOneWithoutManualDiscountInput = {
+    create?: XOR<BookingCreateWithoutManualDiscountInput, BookingUncheckedCreateWithoutManualDiscountInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutManualDiscountInput
+    connect?: BookingWhereUniqueInput
+  }
+
+  export type DiscountApplicationCreateNestedOneWithoutManualDiscountInput = {
+    create?: XOR<DiscountApplicationCreateWithoutManualDiscountInput, DiscountApplicationUncheckedCreateWithoutManualDiscountInput>
+    connectOrCreate?: DiscountApplicationCreateOrConnectWithoutManualDiscountInput
+    connect?: DiscountApplicationWhereUniqueInput
+  }
+
+  export type DiscountApplicationUncheckedCreateNestedOneWithoutManualDiscountInput = {
+    create?: XOR<DiscountApplicationCreateWithoutManualDiscountInput, DiscountApplicationUncheckedCreateWithoutManualDiscountInput>
+    connectOrCreate?: DiscountApplicationCreateOrConnectWithoutManualDiscountInput
+    connect?: DiscountApplicationWhereUniqueInput
+  }
+
+  export type EnumManualDiscountStatusFieldUpdateOperationsInput = {
+    set?: $Enums.ManualDiscountStatus
+  }
+
+  export type UserUpdateOneRequiredWithoutManualDiscountsIssuedNestedInput = {
+    create?: XOR<UserCreateWithoutManualDiscountsIssuedInput, UserUncheckedCreateWithoutManualDiscountsIssuedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutManualDiscountsIssuedInput
+    upsert?: UserUpsertWithoutManualDiscountsIssuedInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutManualDiscountsIssuedInput, UserUpdateWithoutManualDiscountsIssuedInput>, UserUncheckedUpdateWithoutManualDiscountsIssuedInput>
+  }
+
+  export type UserUpdateOneWithoutManualDiscountsApprovedNestedInput = {
+    create?: XOR<UserCreateWithoutManualDiscountsApprovedInput, UserUncheckedCreateWithoutManualDiscountsApprovedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutManualDiscountsApprovedInput
+    upsert?: UserUpsertWithoutManualDiscountsApprovedInput
+    disconnect?: UserWhereInput | boolean
+    delete?: UserWhereInput | boolean
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutManualDiscountsApprovedInput, UserUpdateWithoutManualDiscountsApprovedInput>, UserUncheckedUpdateWithoutManualDiscountsApprovedInput>
+  }
+
+  export type BookingUpdateOneRequiredWithoutManualDiscountNestedInput = {
+    create?: XOR<BookingCreateWithoutManualDiscountInput, BookingUncheckedCreateWithoutManualDiscountInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutManualDiscountInput
+    upsert?: BookingUpsertWithoutManualDiscountInput
+    connect?: BookingWhereUniqueInput
+    update?: XOR<XOR<BookingUpdateToOneWithWhereWithoutManualDiscountInput, BookingUpdateWithoutManualDiscountInput>, BookingUncheckedUpdateWithoutManualDiscountInput>
+  }
+
+  export type DiscountApplicationUpdateOneWithoutManualDiscountNestedInput = {
+    create?: XOR<DiscountApplicationCreateWithoutManualDiscountInput, DiscountApplicationUncheckedCreateWithoutManualDiscountInput>
+    connectOrCreate?: DiscountApplicationCreateOrConnectWithoutManualDiscountInput
+    upsert?: DiscountApplicationUpsertWithoutManualDiscountInput
+    disconnect?: DiscountApplicationWhereInput | boolean
+    delete?: DiscountApplicationWhereInput | boolean
+    connect?: DiscountApplicationWhereUniqueInput
+    update?: XOR<XOR<DiscountApplicationUpdateToOneWithWhereWithoutManualDiscountInput, DiscountApplicationUpdateWithoutManualDiscountInput>, DiscountApplicationUncheckedUpdateWithoutManualDiscountInput>
+  }
+
+  export type DiscountApplicationUncheckedUpdateOneWithoutManualDiscountNestedInput = {
+    create?: XOR<DiscountApplicationCreateWithoutManualDiscountInput, DiscountApplicationUncheckedCreateWithoutManualDiscountInput>
+    connectOrCreate?: DiscountApplicationCreateOrConnectWithoutManualDiscountInput
+    upsert?: DiscountApplicationUpsertWithoutManualDiscountInput
+    disconnect?: DiscountApplicationWhereInput | boolean
+    delete?: DiscountApplicationWhereInput | boolean
+    connect?: DiscountApplicationWhereUniqueInput
+    update?: XOR<XOR<DiscountApplicationUpdateToOneWithWhereWithoutManualDiscountInput, DiscountApplicationUpdateWithoutManualDiscountInput>, DiscountApplicationUncheckedUpdateWithoutManualDiscountInput>
   }
 
   export type NestedIntFilter<$PrismaModel = never> = {
@@ -63161,6 +74111,74 @@ export namespace Prisma {
     _max?: NestedEnumVehicleStatusNullableFilter<$PrismaModel>
   }
 
+  export type NestedEnumDiscountTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.DiscountType | EnumDiscountTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.DiscountType[] | ListEnumDiscountTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DiscountType[] | ListEnumDiscountTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumDiscountTypeFilter<$PrismaModel> | $Enums.DiscountType
+  }
+
+  export type NestedEnumDiscountScopeFilter<$PrismaModel = never> = {
+    equals?: $Enums.DiscountScope | EnumDiscountScopeFieldRefInput<$PrismaModel>
+    in?: $Enums.DiscountScope[] | ListEnumDiscountScopeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DiscountScope[] | ListEnumDiscountScopeFieldRefInput<$PrismaModel>
+    not?: NestedEnumDiscountScopeFilter<$PrismaModel> | $Enums.DiscountScope
+  }
+
+  export type NestedEnumDiscountTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.DiscountType | EnumDiscountTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.DiscountType[] | ListEnumDiscountTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DiscountType[] | ListEnumDiscountTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumDiscountTypeWithAggregatesFilter<$PrismaModel> | $Enums.DiscountType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumDiscountTypeFilter<$PrismaModel>
+    _max?: NestedEnumDiscountTypeFilter<$PrismaModel>
+  }
+
+  export type NestedEnumDiscountScopeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.DiscountScope | EnumDiscountScopeFieldRefInput<$PrismaModel>
+    in?: $Enums.DiscountScope[] | ListEnumDiscountScopeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DiscountScope[] | ListEnumDiscountScopeFieldRefInput<$PrismaModel>
+    not?: NestedEnumDiscountScopeWithAggregatesFilter<$PrismaModel> | $Enums.DiscountScope
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumDiscountScopeFilter<$PrismaModel>
+    _max?: NestedEnumDiscountScopeFilter<$PrismaModel>
+  }
+
+  export type NestedEnumAdjustmentTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.AdjustmentType | EnumAdjustmentTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.AdjustmentType[] | ListEnumAdjustmentTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.AdjustmentType[] | ListEnumAdjustmentTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumAdjustmentTypeFilter<$PrismaModel> | $Enums.AdjustmentType
+  }
+
+  export type NestedEnumAdjustmentTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.AdjustmentType | EnumAdjustmentTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.AdjustmentType[] | ListEnumAdjustmentTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.AdjustmentType[] | ListEnumAdjustmentTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumAdjustmentTypeWithAggregatesFilter<$PrismaModel> | $Enums.AdjustmentType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumAdjustmentTypeFilter<$PrismaModel>
+    _max?: NestedEnumAdjustmentTypeFilter<$PrismaModel>
+  }
+
+  export type NestedEnumManualDiscountStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.ManualDiscountStatus | EnumManualDiscountStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.ManualDiscountStatus[] | ListEnumManualDiscountStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ManualDiscountStatus[] | ListEnumManualDiscountStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumManualDiscountStatusFilter<$PrismaModel> | $Enums.ManualDiscountStatus
+  }
+
+  export type NestedEnumManualDiscountStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.ManualDiscountStatus | EnumManualDiscountStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.ManualDiscountStatus[] | ListEnumManualDiscountStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ManualDiscountStatus[] | ListEnumManualDiscountStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumManualDiscountStatusWithAggregatesFilter<$PrismaModel> | $Enums.ManualDiscountStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumManualDiscountStatusFilter<$PrismaModel>
+    _max?: NestedEnumManualDiscountStatusFilter<$PrismaModel>
+  }
+
   export type BranchCreateWithoutUsersInput = {
     publicId: string
     name: string
@@ -63179,6 +74197,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutUsersInput = {
@@ -63200,6 +74220,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutUsersInput = {
@@ -63472,6 +74494,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -63485,6 +74508,9 @@ export namespace Prisma {
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCreatedByInput = {
@@ -63534,6 +74560,8 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -63544,6 +74572,8 @@ export namespace Prisma {
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCreatedByInput = {
@@ -63636,6 +74666,183 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type DiscountRuleCreateWithoutCreatedByInput = {
+    publicId: string
+    code: string
+    name: string
+    description?: string | null
+    discountType: $Enums.DiscountType
+    value: Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: Decimal | DecimalJsLike | number | string | null
+    scope?: $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleCreateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleCreatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: boolean
+    minBookingCount?: number | null
+    maxBookingCount?: number | null
+    minBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleCreateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: number | null
+    maxRentalDays?: number | null
+    applicablePaymentPlans?: DiscountRuleCreateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: boolean
+    minAdvanceAfterDiscount?: Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: boolean
+    allowPostInvoice?: boolean
+    totalUsageLimit?: number | null
+    perUserLimit?: number | null
+    perBranchLimit?: number | null
+    perDayLimit?: number | null
+    stackable?: boolean
+    priority?: number
+    startDate: Date | string
+    endDate: Date | string
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    usageLogs?: CouponUsageLogCreateNestedManyWithoutDiscountRuleInput
+    bookings?: BookingCreateNestedManyWithoutDiscountRuleInput
+    applications?: DiscountApplicationCreateNestedManyWithoutDiscountRuleInput
+  }
+
+  export type DiscountRuleUncheckedCreateWithoutCreatedByInput = {
+    id?: number
+    publicId: string
+    code: string
+    name: string
+    description?: string | null
+    discountType: $Enums.DiscountType
+    value: Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: Decimal | DecimalJsLike | number | string | null
+    scope?: $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleCreateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleCreatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: boolean
+    minBookingCount?: number | null
+    maxBookingCount?: number | null
+    minBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleCreateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: number | null
+    maxRentalDays?: number | null
+    applicablePaymentPlans?: DiscountRuleCreateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: boolean
+    minAdvanceAfterDiscount?: Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: boolean
+    allowPostInvoice?: boolean
+    totalUsageLimit?: number | null
+    perUserLimit?: number | null
+    perBranchLimit?: number | null
+    perDayLimit?: number | null
+    stackable?: boolean
+    priority?: number
+    startDate: Date | string
+    endDate: Date | string
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    usageLogs?: CouponUsageLogUncheckedCreateNestedManyWithoutDiscountRuleInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutDiscountRuleInput
+    applications?: DiscountApplicationUncheckedCreateNestedManyWithoutDiscountRuleInput
+  }
+
+  export type DiscountRuleCreateOrConnectWithoutCreatedByInput = {
+    where: DiscountRuleWhereUniqueInput
+    create: XOR<DiscountRuleCreateWithoutCreatedByInput, DiscountRuleUncheckedCreateWithoutCreatedByInput>
+  }
+
+  export type DiscountRuleCreateManyCreatedByInputEnvelope = {
+    data: DiscountRuleCreateManyCreatedByInput | DiscountRuleCreateManyCreatedByInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type ManualDiscountCreateWithoutIssuedByInput = {
+    publicId: string
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.ManualDiscountStatus
+    requiresApproval?: boolean
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    approvedBy?: UserCreateNestedOneWithoutManualDiscountsApprovedInput
+    booking: BookingCreateNestedOneWithoutManualDiscountInput
+    application?: DiscountApplicationCreateNestedOneWithoutManualDiscountInput
+  }
+
+  export type ManualDiscountUncheckedCreateWithoutIssuedByInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    approvedById?: number | null
+    status?: $Enums.ManualDiscountStatus
+    requiresApproval?: boolean
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    application?: DiscountApplicationUncheckedCreateNestedOneWithoutManualDiscountInput
+  }
+
+  export type ManualDiscountCreateOrConnectWithoutIssuedByInput = {
+    where: ManualDiscountWhereUniqueInput
+    create: XOR<ManualDiscountCreateWithoutIssuedByInput, ManualDiscountUncheckedCreateWithoutIssuedByInput>
+  }
+
+  export type ManualDiscountCreateManyIssuedByInputEnvelope = {
+    data: ManualDiscountCreateManyIssuedByInput | ManualDiscountCreateManyIssuedByInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type ManualDiscountCreateWithoutApprovedByInput = {
+    publicId: string
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.ManualDiscountStatus
+    requiresApproval?: boolean
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    issuedBy: UserCreateNestedOneWithoutManualDiscountsIssuedInput
+    booking: BookingCreateNestedOneWithoutManualDiscountInput
+    application?: DiscountApplicationCreateNestedOneWithoutManualDiscountInput
+  }
+
+  export type ManualDiscountUncheckedCreateWithoutApprovedByInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    issuedById: number
+    status?: $Enums.ManualDiscountStatus
+    requiresApproval?: boolean
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    application?: DiscountApplicationUncheckedCreateNestedOneWithoutManualDiscountInput
+  }
+
+  export type ManualDiscountCreateOrConnectWithoutApprovedByInput = {
+    where: ManualDiscountWhereUniqueInput
+    create: XOR<ManualDiscountCreateWithoutApprovedByInput, ManualDiscountUncheckedCreateWithoutApprovedByInput>
+  }
+
+  export type ManualDiscountCreateManyApprovedByInputEnvelope = {
+    data: ManualDiscountCreateManyApprovedByInput | ManualDiscountCreateManyApprovedByInput[]
+    skipDuplicates?: boolean
+  }
+
   export type BranchUpsertWithoutUsersInput = {
     update: XOR<BranchUpdateWithoutUsersInput, BranchUncheckedUpdateWithoutUsersInput>
     create: XOR<BranchCreateWithoutUsersInput, BranchUncheckedCreateWithoutUsersInput>
@@ -63665,6 +74872,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutUsersInput = {
@@ -63686,6 +74895,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type EmailVerificationOtpUpsertWithWhereUniqueWithoutUserInput = {
@@ -63925,6 +75136,8 @@ export namespace Prisma {
     cancelledAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     cancellationReason?: StringNullableFilter<"Booking"> | string | null
     requiresManagerConfirmation?: BoolFilter<"Booking"> | boolean
+    couponCode?: StringNullableFilter<"Booking"> | string | null
+    discountRuleId?: IntNullableFilter<"Booking"> | number | null
     createdAt?: DateTimeFilter<"Booking"> | Date | string
     updatedAt?: DateTimeFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
@@ -64000,6 +75213,116 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"VehicleSwap"> | Date | string
   }
 
+  export type DiscountRuleUpsertWithWhereUniqueWithoutCreatedByInput = {
+    where: DiscountRuleWhereUniqueInput
+    update: XOR<DiscountRuleUpdateWithoutCreatedByInput, DiscountRuleUncheckedUpdateWithoutCreatedByInput>
+    create: XOR<DiscountRuleCreateWithoutCreatedByInput, DiscountRuleUncheckedCreateWithoutCreatedByInput>
+  }
+
+  export type DiscountRuleUpdateWithWhereUniqueWithoutCreatedByInput = {
+    where: DiscountRuleWhereUniqueInput
+    data: XOR<DiscountRuleUpdateWithoutCreatedByInput, DiscountRuleUncheckedUpdateWithoutCreatedByInput>
+  }
+
+  export type DiscountRuleUpdateManyWithWhereWithoutCreatedByInput = {
+    where: DiscountRuleScalarWhereInput
+    data: XOR<DiscountRuleUpdateManyMutationInput, DiscountRuleUncheckedUpdateManyWithoutCreatedByInput>
+  }
+
+  export type DiscountRuleScalarWhereInput = {
+    AND?: DiscountRuleScalarWhereInput | DiscountRuleScalarWhereInput[]
+    OR?: DiscountRuleScalarWhereInput[]
+    NOT?: DiscountRuleScalarWhereInput | DiscountRuleScalarWhereInput[]
+    id?: IntFilter<"DiscountRule"> | number
+    publicId?: StringFilter<"DiscountRule"> | string
+    code?: StringFilter<"DiscountRule"> | string
+    name?: StringFilter<"DiscountRule"> | string
+    description?: StringNullableFilter<"DiscountRule"> | string | null
+    discountType?: EnumDiscountTypeFilter<"DiscountRule"> | $Enums.DiscountType
+    value?: DecimalFilter<"DiscountRule"> | Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: DecimalNullableFilter<"DiscountRule"> | Decimal | DecimalJsLike | number | string | null
+    scope?: EnumDiscountScopeFilter<"DiscountRule"> | $Enums.DiscountScope
+    applicableBranchIds?: IntNullableListFilter<"DiscountRule">
+    targetCustomerIds?: IntNullableListFilter<"DiscountRule">
+    newCustomersOnly?: BoolFilter<"DiscountRule"> | boolean
+    minBookingCount?: IntNullableFilter<"DiscountRule"> | number | null
+    maxBookingCount?: IntNullableFilter<"DiscountRule"> | number | null
+    minBookingAmount?: DecimalNullableFilter<"DiscountRule"> | Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: DecimalNullableFilter<"DiscountRule"> | Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: IntNullableListFilter<"DiscountRule">
+    minRentalDays?: IntNullableFilter<"DiscountRule"> | number | null
+    maxRentalDays?: IntNullableFilter<"DiscountRule"> | number | null
+    applicablePaymentPlans?: StringNullableListFilter<"DiscountRule">
+    allowPartialPayment?: BoolFilter<"DiscountRule"> | boolean
+    minAdvanceAfterDiscount?: DecimalNullableFilter<"DiscountRule"> | Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: BoolFilter<"DiscountRule"> | boolean
+    allowPostInvoice?: BoolFilter<"DiscountRule"> | boolean
+    totalUsageLimit?: IntNullableFilter<"DiscountRule"> | number | null
+    perUserLimit?: IntNullableFilter<"DiscountRule"> | number | null
+    perBranchLimit?: IntNullableFilter<"DiscountRule"> | number | null
+    perDayLimit?: IntNullableFilter<"DiscountRule"> | number | null
+    stackable?: BoolFilter<"DiscountRule"> | boolean
+    priority?: IntFilter<"DiscountRule"> | number
+    startDate?: DateTimeFilter<"DiscountRule"> | Date | string
+    endDate?: DateTimeFilter<"DiscountRule"> | Date | string
+    isActive?: BoolFilter<"DiscountRule"> | boolean
+    createdById?: IntFilter<"DiscountRule"> | number
+    createdAt?: DateTimeFilter<"DiscountRule"> | Date | string
+    updatedAt?: DateTimeFilter<"DiscountRule"> | Date | string
+  }
+
+  export type ManualDiscountUpsertWithWhereUniqueWithoutIssuedByInput = {
+    where: ManualDiscountWhereUniqueInput
+    update: XOR<ManualDiscountUpdateWithoutIssuedByInput, ManualDiscountUncheckedUpdateWithoutIssuedByInput>
+    create: XOR<ManualDiscountCreateWithoutIssuedByInput, ManualDiscountUncheckedCreateWithoutIssuedByInput>
+  }
+
+  export type ManualDiscountUpdateWithWhereUniqueWithoutIssuedByInput = {
+    where: ManualDiscountWhereUniqueInput
+    data: XOR<ManualDiscountUpdateWithoutIssuedByInput, ManualDiscountUncheckedUpdateWithoutIssuedByInput>
+  }
+
+  export type ManualDiscountUpdateManyWithWhereWithoutIssuedByInput = {
+    where: ManualDiscountScalarWhereInput
+    data: XOR<ManualDiscountUpdateManyMutationInput, ManualDiscountUncheckedUpdateManyWithoutIssuedByInput>
+  }
+
+  export type ManualDiscountScalarWhereInput = {
+    AND?: ManualDiscountScalarWhereInput | ManualDiscountScalarWhereInput[]
+    OR?: ManualDiscountScalarWhereInput[]
+    NOT?: ManualDiscountScalarWhereInput | ManualDiscountScalarWhereInput[]
+    id?: IntFilter<"ManualDiscount"> | number
+    publicId?: StringFilter<"ManualDiscount"> | string
+    bookingId?: IntFilter<"ManualDiscount"> | number
+    amount?: DecimalFilter<"ManualDiscount"> | Decimal | DecimalJsLike | number | string
+    reason?: StringFilter<"ManualDiscount"> | string
+    issuedById?: IntFilter<"ManualDiscount"> | number
+    approvedById?: IntNullableFilter<"ManualDiscount"> | number | null
+    status?: EnumManualDiscountStatusFilter<"ManualDiscount"> | $Enums.ManualDiscountStatus
+    requiresApproval?: BoolFilter<"ManualDiscount"> | boolean
+    approvedAt?: DateTimeNullableFilter<"ManualDiscount"> | Date | string | null
+    rejectedAt?: DateTimeNullableFilter<"ManualDiscount"> | Date | string | null
+    rejectionReason?: StringNullableFilter<"ManualDiscount"> | string | null
+    createdAt?: DateTimeFilter<"ManualDiscount"> | Date | string
+    updatedAt?: DateTimeFilter<"ManualDiscount"> | Date | string
+  }
+
+  export type ManualDiscountUpsertWithWhereUniqueWithoutApprovedByInput = {
+    where: ManualDiscountWhereUniqueInput
+    update: XOR<ManualDiscountUpdateWithoutApprovedByInput, ManualDiscountUncheckedUpdateWithoutApprovedByInput>
+    create: XOR<ManualDiscountCreateWithoutApprovedByInput, ManualDiscountUncheckedCreateWithoutApprovedByInput>
+  }
+
+  export type ManualDiscountUpdateWithWhereUniqueWithoutApprovedByInput = {
+    where: ManualDiscountWhereUniqueInput
+    data: XOR<ManualDiscountUpdateWithoutApprovedByInput, ManualDiscountUncheckedUpdateWithoutApprovedByInput>
+  }
+
+  export type ManualDiscountUpdateManyWithWhereWithoutApprovedByInput = {
+    where: ManualDiscountScalarWhereInput
+    data: XOR<ManualDiscountUpdateManyMutationInput, ManualDiscountUncheckedUpdateManyWithoutApprovedByInput>
+  }
+
   export type UserCreateWithoutProvidersInput = {
     publicId: string
     name: string
@@ -64020,6 +75343,9 @@ export namespace Prisma {
     bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutProvidersInput = {
@@ -64043,6 +75369,9 @@ export namespace Prisma {
     bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutProvidersInput = {
@@ -64081,6 +75410,9 @@ export namespace Prisma {
     bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutProvidersInput = {
@@ -64104,6 +75436,9 @@ export namespace Prisma {
     bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserCreateWithoutEmailOtpsInput = {
@@ -64126,6 +75461,9 @@ export namespace Prisma {
     bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutEmailOtpsInput = {
@@ -64149,6 +75487,9 @@ export namespace Prisma {
     bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutEmailOtpsInput = {
@@ -64187,6 +75528,9 @@ export namespace Prisma {
     bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutEmailOtpsInput = {
@@ -64210,6 +75554,9 @@ export namespace Prisma {
     bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserCreateWithoutCustomerProfileInput = {
@@ -64232,6 +75579,9 @@ export namespace Prisma {
     bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutCustomerProfileInput = {
@@ -64255,6 +75605,9 @@ export namespace Prisma {
     bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutCustomerProfileInput = {
@@ -64332,6 +75685,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -64345,6 +75699,9 @@ export namespace Prisma {
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCustomerInput = {
@@ -64394,6 +75751,8 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -64404,6 +75763,8 @@ export namespace Prisma {
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCustomerInput = {
@@ -64490,6 +75851,9 @@ export namespace Prisma {
     bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutCustomerProfileInput = {
@@ -64513,6 +75877,9 @@ export namespace Prisma {
     bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type CustomerKycUpsertWithWhereUniqueWithoutCustomerInput = {
@@ -64860,6 +76227,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -64873,6 +76241,9 @@ export namespace Prisma {
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutKycFileInput = {
@@ -64922,6 +76293,8 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -64932,6 +76305,8 @@ export namespace Prisma {
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutKycFileInput = {
@@ -65216,6 +76591,9 @@ export namespace Prisma {
     bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutBranchInput = {
@@ -65239,6 +76617,9 @@ export namespace Prisma {
     bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutBranchInput = {
@@ -65357,6 +76738,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -65370,6 +76752,9 @@ export namespace Prisma {
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutBranchInput = {
@@ -65419,6 +76804,8 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -65429,6 +76816,8 @@ export namespace Prisma {
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutBranchInput = {
@@ -65734,6 +77123,75 @@ export namespace Prisma {
   export type StaffActivityLogCreateManyBranchInputEnvelope = {
     data: StaffActivityLogCreateManyBranchInput | StaffActivityLogCreateManyBranchInput[]
     skipDuplicates?: boolean
+  }
+
+  export type DurationDiscountSlabCreateWithoutBranchInput = {
+    minDays: number
+    maxDays?: number | null
+    discountType: $Enums.DiscountType
+    value: Decimal | DecimalJsLike | number | string
+    label?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type DurationDiscountSlabUncheckedCreateWithoutBranchInput = {
+    id?: number
+    minDays: number
+    maxDays?: number | null
+    discountType: $Enums.DiscountType
+    value: Decimal | DecimalJsLike | number | string
+    label?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type DurationDiscountSlabCreateOrConnectWithoutBranchInput = {
+    where: DurationDiscountSlabWhereUniqueInput
+    create: XOR<DurationDiscountSlabCreateWithoutBranchInput, DurationDiscountSlabUncheckedCreateWithoutBranchInput>
+  }
+
+  export type DurationDiscountSlabCreateManyBranchInputEnvelope = {
+    data: DurationDiscountSlabCreateManyBranchInput | DurationDiscountSlabCreateManyBranchInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type BranchDiscountConfigCreateWithoutBranchInput = {
+    durationDiscountEnabled?: boolean
+    stackWithCoupon?: boolean
+    maxCombinedDiscountPercent?: Decimal | DecimalJsLike | number | string | null
+    managerApprovalThreshold?: Decimal | DecimalJsLike | number | string
+    maxManualDiscountsPerEmployeePerDay?: number
+    managerCouponCreationEnabled?: boolean
+    maxManagerCouponDiscountPercent?: Decimal | DecimalJsLike | number | string
+    maxManagerCouponFlatAmount?: Decimal | DecimalJsLike | number | string
+    maxManagerCouponValidityDays?: number
+    maxManagerCouponUsageLimit?: number
+    maxManagerCouponsPerDay?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchDiscountConfigUncheckedCreateWithoutBranchInput = {
+    id?: number
+    durationDiscountEnabled?: boolean
+    stackWithCoupon?: boolean
+    maxCombinedDiscountPercent?: Decimal | DecimalJsLike | number | string | null
+    managerApprovalThreshold?: Decimal | DecimalJsLike | number | string
+    maxManualDiscountsPerEmployeePerDay?: number
+    managerCouponCreationEnabled?: boolean
+    maxManagerCouponDiscountPercent?: Decimal | DecimalJsLike | number | string
+    maxManagerCouponFlatAmount?: Decimal | DecimalJsLike | number | string
+    maxManagerCouponValidityDays?: number
+    maxManagerCouponUsageLimit?: number
+    maxManagerCouponsPerDay?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchDiscountConfigCreateOrConnectWithoutBranchInput = {
+    where: BranchDiscountConfigWhereUniqueInput
+    create: XOR<BranchDiscountConfigCreateWithoutBranchInput, BranchDiscountConfigUncheckedCreateWithoutBranchInput>
   }
 
   export type UserUpsertWithWhereUniqueWithoutBranchInput = {
@@ -66089,6 +77547,81 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"StaffActivityLog"> | Date | string
   }
 
+  export type DurationDiscountSlabUpsertWithWhereUniqueWithoutBranchInput = {
+    where: DurationDiscountSlabWhereUniqueInput
+    update: XOR<DurationDiscountSlabUpdateWithoutBranchInput, DurationDiscountSlabUncheckedUpdateWithoutBranchInput>
+    create: XOR<DurationDiscountSlabCreateWithoutBranchInput, DurationDiscountSlabUncheckedCreateWithoutBranchInput>
+  }
+
+  export type DurationDiscountSlabUpdateWithWhereUniqueWithoutBranchInput = {
+    where: DurationDiscountSlabWhereUniqueInput
+    data: XOR<DurationDiscountSlabUpdateWithoutBranchInput, DurationDiscountSlabUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type DurationDiscountSlabUpdateManyWithWhereWithoutBranchInput = {
+    where: DurationDiscountSlabScalarWhereInput
+    data: XOR<DurationDiscountSlabUpdateManyMutationInput, DurationDiscountSlabUncheckedUpdateManyWithoutBranchInput>
+  }
+
+  export type DurationDiscountSlabScalarWhereInput = {
+    AND?: DurationDiscountSlabScalarWhereInput | DurationDiscountSlabScalarWhereInput[]
+    OR?: DurationDiscountSlabScalarWhereInput[]
+    NOT?: DurationDiscountSlabScalarWhereInput | DurationDiscountSlabScalarWhereInput[]
+    id?: IntFilter<"DurationDiscountSlab"> | number
+    branchId?: IntFilter<"DurationDiscountSlab"> | number
+    minDays?: IntFilter<"DurationDiscountSlab"> | number
+    maxDays?: IntNullableFilter<"DurationDiscountSlab"> | number | null
+    discountType?: EnumDiscountTypeFilter<"DurationDiscountSlab"> | $Enums.DiscountType
+    value?: DecimalFilter<"DurationDiscountSlab"> | Decimal | DecimalJsLike | number | string
+    label?: StringNullableFilter<"DurationDiscountSlab"> | string | null
+    createdAt?: DateTimeFilter<"DurationDiscountSlab"> | Date | string
+    updatedAt?: DateTimeFilter<"DurationDiscountSlab"> | Date | string
+  }
+
+  export type BranchDiscountConfigUpsertWithoutBranchInput = {
+    update: XOR<BranchDiscountConfigUpdateWithoutBranchInput, BranchDiscountConfigUncheckedUpdateWithoutBranchInput>
+    create: XOR<BranchDiscountConfigCreateWithoutBranchInput, BranchDiscountConfigUncheckedCreateWithoutBranchInput>
+    where?: BranchDiscountConfigWhereInput
+  }
+
+  export type BranchDiscountConfigUpdateToOneWithWhereWithoutBranchInput = {
+    where?: BranchDiscountConfigWhereInput
+    data: XOR<BranchDiscountConfigUpdateWithoutBranchInput, BranchDiscountConfigUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type BranchDiscountConfigUpdateWithoutBranchInput = {
+    durationDiscountEnabled?: BoolFieldUpdateOperationsInput | boolean
+    stackWithCoupon?: BoolFieldUpdateOperationsInput | boolean
+    maxCombinedDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    managerApprovalThreshold?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxManualDiscountsPerEmployeePerDay?: IntFieldUpdateOperationsInput | number
+    managerCouponCreationEnabled?: BoolFieldUpdateOperationsInput | boolean
+    maxManagerCouponDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxManagerCouponFlatAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxManagerCouponValidityDays?: IntFieldUpdateOperationsInput | number
+    maxManagerCouponUsageLimit?: IntFieldUpdateOperationsInput | number
+    maxManagerCouponsPerDay?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchDiscountConfigUncheckedUpdateWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    durationDiscountEnabled?: BoolFieldUpdateOperationsInput | boolean
+    stackWithCoupon?: BoolFieldUpdateOperationsInput | boolean
+    maxCombinedDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    managerApprovalThreshold?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxManualDiscountsPerEmployeePerDay?: IntFieldUpdateOperationsInput | number
+    managerCouponCreationEnabled?: BoolFieldUpdateOperationsInput | boolean
+    maxManagerCouponDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxManagerCouponFlatAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxManagerCouponValidityDays?: IntFieldUpdateOperationsInput | number
+    maxManagerCouponUsageLimit?: IntFieldUpdateOperationsInput | number
+    maxManagerCouponsPerDay?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type BranchCreateWithoutStaffActivityLogsInput = {
     publicId: string
     name: string
@@ -66107,6 +77640,8 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutStaffActivityLogsInput = {
@@ -66128,6 +77663,8 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutStaffActivityLogsInput = {
@@ -66164,6 +77701,8 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutStaffActivityLogsInput = {
@@ -66185,6 +77724,8 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchCreateWithoutPricingSettingInput = {
@@ -66205,6 +77746,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPricingSettingInput = {
@@ -66226,6 +77769,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPricingSettingInput = {
@@ -66262,6 +77807,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPricingSettingInput = {
@@ -66283,6 +77830,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type PricingDiscountSlabCreateWithoutCategoryInput = {
@@ -66613,6 +78162,8 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutCaptureConfigsInput = {
@@ -66634,6 +78185,8 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutCaptureConfigsInput = {
@@ -66700,6 +78253,8 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutCaptureConfigsInput = {
@@ -66721,6 +78276,8 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutCaptureConfigsInput = {
@@ -66777,6 +78334,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutVehiclesInput = {
@@ -66798,6 +78357,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutVehiclesInput = {
@@ -67180,6 +78741,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutVehiclesInput = {
@@ -67201,6 +78764,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutVehiclesInput = {
@@ -67753,6 +79318,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutBranchPricingDefaultsInput = {
@@ -67774,6 +79341,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutBranchPricingDefaultsInput = {
@@ -67840,6 +79409,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutBranchPricingDefaultsInput = {
@@ -67861,6 +79432,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutBranchPricingDefaultsInput = {
@@ -68423,6 +79996,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPricingDiscountSlabsInput = {
@@ -68444,6 +80019,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPricingDiscountSlabsInput = {
@@ -68510,6 +80087,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPricingDiscountSlabsInput = {
@@ -68531,6 +80110,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutPricingDiscountSlabsInput = {
@@ -68587,6 +80168,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutCategoryDepositSettingsInput = {
@@ -68608,6 +80191,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutCategoryDepositSettingsInput = {
@@ -68674,6 +80259,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutCategoryDepositSettingsInput = {
@@ -68695,6 +80282,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutCategoryDepositSettingsInput = {
@@ -68827,6 +80416,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutBookingsInput = {
@@ -68848,6 +80439,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutBookingsInput = {
@@ -68875,6 +80468,9 @@ export namespace Prisma {
     approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
     approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutBookingsCreatedInput = {
@@ -68898,6 +80494,9 @@ export namespace Prisma {
     approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
     approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutBookingsCreatedInput = {
@@ -69155,6 +80754,172 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type DiscountRuleCreateWithoutBookingsInput = {
+    publicId: string
+    code: string
+    name: string
+    description?: string | null
+    discountType: $Enums.DiscountType
+    value: Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: Decimal | DecimalJsLike | number | string | null
+    scope?: $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleCreateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleCreatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: boolean
+    minBookingCount?: number | null
+    maxBookingCount?: number | null
+    minBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleCreateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: number | null
+    maxRentalDays?: number | null
+    applicablePaymentPlans?: DiscountRuleCreateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: boolean
+    minAdvanceAfterDiscount?: Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: boolean
+    allowPostInvoice?: boolean
+    totalUsageLimit?: number | null
+    perUserLimit?: number | null
+    perBranchLimit?: number | null
+    perDayLimit?: number | null
+    stackable?: boolean
+    priority?: number
+    startDate: Date | string
+    endDate: Date | string
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    createdBy: UserCreateNestedOneWithoutDiscountRulesCreatedInput
+    usageLogs?: CouponUsageLogCreateNestedManyWithoutDiscountRuleInput
+    applications?: DiscountApplicationCreateNestedManyWithoutDiscountRuleInput
+  }
+
+  export type DiscountRuleUncheckedCreateWithoutBookingsInput = {
+    id?: number
+    publicId: string
+    code: string
+    name: string
+    description?: string | null
+    discountType: $Enums.DiscountType
+    value: Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: Decimal | DecimalJsLike | number | string | null
+    scope?: $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleCreateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleCreatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: boolean
+    minBookingCount?: number | null
+    maxBookingCount?: number | null
+    minBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleCreateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: number | null
+    maxRentalDays?: number | null
+    applicablePaymentPlans?: DiscountRuleCreateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: boolean
+    minAdvanceAfterDiscount?: Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: boolean
+    allowPostInvoice?: boolean
+    totalUsageLimit?: number | null
+    perUserLimit?: number | null
+    perBranchLimit?: number | null
+    perDayLimit?: number | null
+    stackable?: boolean
+    priority?: number
+    startDate: Date | string
+    endDate: Date | string
+    isActive?: boolean
+    createdById: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    usageLogs?: CouponUsageLogUncheckedCreateNestedManyWithoutDiscountRuleInput
+    applications?: DiscountApplicationUncheckedCreateNestedManyWithoutDiscountRuleInput
+  }
+
+  export type DiscountRuleCreateOrConnectWithoutBookingsInput = {
+    where: DiscountRuleWhereUniqueInput
+    create: XOR<DiscountRuleCreateWithoutBookingsInput, DiscountRuleUncheckedCreateWithoutBookingsInput>
+  }
+
+  export type DiscountApplicationCreateWithoutBookingInput = {
+    publicId: string
+    originalAmount: Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: Decimal | DecimalJsLike | number | string
+    durationSlabId?: number | null
+    couponDiscountAmount?: Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: Decimal | DecimalJsLike | number | string
+    manualDiscountAmount?: Decimal | DecimalJsLike | number | string
+    totalDiscountAmount: Decimal | DecimalJsLike | number | string
+    finalAmount: Decimal | DecimalJsLike | number | string
+    paymentPlan: string
+    adjustmentType?: $Enums.AdjustmentType
+    createdAt?: Date | string
+    discountRule?: DiscountRuleCreateNestedOneWithoutApplicationsInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutApplicationInput
+  }
+
+  export type DiscountApplicationUncheckedCreateWithoutBookingInput = {
+    id?: number
+    publicId: string
+    originalAmount: Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: Decimal | DecimalJsLike | number | string
+    durationSlabId?: number | null
+    couponDiscountAmount?: Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: Decimal | DecimalJsLike | number | string
+    discountRuleId?: number | null
+    manualDiscountAmount?: Decimal | DecimalJsLike | number | string
+    manualDiscountId?: number | null
+    totalDiscountAmount: Decimal | DecimalJsLike | number | string
+    finalAmount: Decimal | DecimalJsLike | number | string
+    paymentPlan: string
+    adjustmentType?: $Enums.AdjustmentType
+    createdAt?: Date | string
+  }
+
+  export type DiscountApplicationCreateOrConnectWithoutBookingInput = {
+    where: DiscountApplicationWhereUniqueInput
+    create: XOR<DiscountApplicationCreateWithoutBookingInput, DiscountApplicationUncheckedCreateWithoutBookingInput>
+  }
+
+  export type ManualDiscountCreateWithoutBookingInput = {
+    publicId: string
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.ManualDiscountStatus
+    requiresApproval?: boolean
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    issuedBy: UserCreateNestedOneWithoutManualDiscountsIssuedInput
+    approvedBy?: UserCreateNestedOneWithoutManualDiscountsApprovedInput
+    application?: DiscountApplicationCreateNestedOneWithoutManualDiscountInput
+  }
+
+  export type ManualDiscountUncheckedCreateWithoutBookingInput = {
+    id?: number
+    publicId: string
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    issuedById: number
+    approvedById?: number | null
+    status?: $Enums.ManualDiscountStatus
+    requiresApproval?: boolean
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    application?: DiscountApplicationUncheckedCreateNestedOneWithoutManualDiscountInput
+  }
+
+  export type ManualDiscountCreateOrConnectWithoutBookingInput = {
+    where: ManualDiscountWhereUniqueInput
+    create: XOR<ManualDiscountCreateWithoutBookingInput, ManualDiscountUncheckedCreateWithoutBookingInput>
+  }
+
   export type FileObjectUpsertWithoutBookingKycsInput = {
     update: XOR<FileObjectUpdateWithoutBookingKycsInput, FileObjectUncheckedUpdateWithoutBookingKycsInput>
     create: XOR<FileObjectCreateWithoutBookingKycsInput, FileObjectUncheckedCreateWithoutBookingKycsInput>
@@ -69272,6 +81037,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutBookingsInput = {
@@ -69293,6 +81060,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type UserUpsertWithoutBookingsCreatedInput = {
@@ -69326,6 +81095,9 @@ export namespace Prisma {
     approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
     approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutBookingsCreatedInput = {
@@ -69349,6 +81121,9 @@ export namespace Prisma {
     approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
     approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type BookingPhotoUpsertWithWhereUniqueWithoutBookingInput = {
@@ -69535,6 +81310,190 @@ export namespace Prisma {
     data: XOR<VehicleSwapUpdateManyMutationInput, VehicleSwapUncheckedUpdateManyWithoutBookingInput>
   }
 
+  export type DiscountRuleUpsertWithoutBookingsInput = {
+    update: XOR<DiscountRuleUpdateWithoutBookingsInput, DiscountRuleUncheckedUpdateWithoutBookingsInput>
+    create: XOR<DiscountRuleCreateWithoutBookingsInput, DiscountRuleUncheckedCreateWithoutBookingsInput>
+    where?: DiscountRuleWhereInput
+  }
+
+  export type DiscountRuleUpdateToOneWithWhereWithoutBookingsInput = {
+    where?: DiscountRuleWhereInput
+    data: XOR<DiscountRuleUpdateWithoutBookingsInput, DiscountRuleUncheckedUpdateWithoutBookingsInput>
+  }
+
+  export type DiscountRuleUpdateWithoutBookingsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    discountType?: EnumDiscountTypeFieldUpdateOperationsInput | $Enums.DiscountType
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    scope?: EnumDiscountScopeFieldUpdateOperationsInput | $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleUpdateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleUpdatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: BoolFieldUpdateOperationsInput | boolean
+    minBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    maxBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    minBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleUpdateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    maxRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    applicablePaymentPlans?: DiscountRuleUpdateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: BoolFieldUpdateOperationsInput | boolean
+    minAdvanceAfterDiscount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: BoolFieldUpdateOperationsInput | boolean
+    allowPostInvoice?: BoolFieldUpdateOperationsInput | boolean
+    totalUsageLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perUserLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perBranchLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perDayLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    stackable?: BoolFieldUpdateOperationsInput | boolean
+    priority?: IntFieldUpdateOperationsInput | number
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    endDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdBy?: UserUpdateOneRequiredWithoutDiscountRulesCreatedNestedInput
+    usageLogs?: CouponUsageLogUpdateManyWithoutDiscountRuleNestedInput
+    applications?: DiscountApplicationUpdateManyWithoutDiscountRuleNestedInput
+  }
+
+  export type DiscountRuleUncheckedUpdateWithoutBookingsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    discountType?: EnumDiscountTypeFieldUpdateOperationsInput | $Enums.DiscountType
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    scope?: EnumDiscountScopeFieldUpdateOperationsInput | $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleUpdateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleUpdatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: BoolFieldUpdateOperationsInput | boolean
+    minBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    maxBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    minBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleUpdateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    maxRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    applicablePaymentPlans?: DiscountRuleUpdateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: BoolFieldUpdateOperationsInput | boolean
+    minAdvanceAfterDiscount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: BoolFieldUpdateOperationsInput | boolean
+    allowPostInvoice?: BoolFieldUpdateOperationsInput | boolean
+    totalUsageLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perUserLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perBranchLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perDayLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    stackable?: BoolFieldUpdateOperationsInput | boolean
+    priority?: IntFieldUpdateOperationsInput | number
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    endDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdById?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    usageLogs?: CouponUsageLogUncheckedUpdateManyWithoutDiscountRuleNestedInput
+    applications?: DiscountApplicationUncheckedUpdateManyWithoutDiscountRuleNestedInput
+  }
+
+  export type DiscountApplicationUpsertWithoutBookingInput = {
+    update: XOR<DiscountApplicationUpdateWithoutBookingInput, DiscountApplicationUncheckedUpdateWithoutBookingInput>
+    create: XOR<DiscountApplicationCreateWithoutBookingInput, DiscountApplicationUncheckedCreateWithoutBookingInput>
+    where?: DiscountApplicationWhereInput
+  }
+
+  export type DiscountApplicationUpdateToOneWithWhereWithoutBookingInput = {
+    where?: DiscountApplicationWhereInput
+    data: XOR<DiscountApplicationUpdateWithoutBookingInput, DiscountApplicationUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type DiscountApplicationUpdateWithoutBookingInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationSlabId?: NullableIntFieldUpdateOperationsInput | number | null
+    couponDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    manualDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paymentPlan?: StringFieldUpdateOperationsInput | string
+    adjustmentType?: EnumAdjustmentTypeFieldUpdateOperationsInput | $Enums.AdjustmentType
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    discountRule?: DiscountRuleUpdateOneWithoutApplicationsNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutApplicationNestedInput
+  }
+
+  export type DiscountApplicationUncheckedUpdateWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationSlabId?: NullableIntFieldUpdateOperationsInput | number | null
+    couponDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    manualDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    manualDiscountId?: NullableIntFieldUpdateOperationsInput | number | null
+    totalDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paymentPlan?: StringFieldUpdateOperationsInput | string
+    adjustmentType?: EnumAdjustmentTypeFieldUpdateOperationsInput | $Enums.AdjustmentType
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ManualDiscountUpsertWithoutBookingInput = {
+    update: XOR<ManualDiscountUpdateWithoutBookingInput, ManualDiscountUncheckedUpdateWithoutBookingInput>
+    create: XOR<ManualDiscountCreateWithoutBookingInput, ManualDiscountUncheckedCreateWithoutBookingInput>
+    where?: ManualDiscountWhereInput
+  }
+
+  export type ManualDiscountUpdateToOneWithWhereWithoutBookingInput = {
+    where?: ManualDiscountWhereInput
+    data: XOR<ManualDiscountUpdateWithoutBookingInput, ManualDiscountUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type ManualDiscountUpdateWithoutBookingInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumManualDiscountStatusFieldUpdateOperationsInput | $Enums.ManualDiscountStatus
+    requiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    issuedBy?: UserUpdateOneRequiredWithoutManualDiscountsIssuedNestedInput
+    approvedBy?: UserUpdateOneWithoutManualDiscountsApprovedNestedInput
+    application?: DiscountApplicationUpdateOneWithoutManualDiscountNestedInput
+  }
+
+  export type ManualDiscountUncheckedUpdateWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    issuedById?: IntFieldUpdateOperationsInput | number
+    approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    status?: EnumManualDiscountStatusFieldUpdateOperationsInput | $Enums.ManualDiscountStatus
+    requiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    application?: DiscountApplicationUncheckedUpdateOneWithoutManualDiscountNestedInput
+  }
+
   export type VehicleCreateWithoutBookingItemsInput = {
     publicId: string
     make: string
@@ -69636,6 +81595,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -69649,6 +81609,9 @@ export namespace Prisma {
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutItemsInput = {
@@ -69699,6 +81662,8 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -69708,6 +81673,8 @@ export namespace Prisma {
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutItemsInput = {
@@ -69833,6 +81800,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -69846,6 +81814,9 @@ export namespace Prisma {
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutItemsInput = {
@@ -69896,6 +81867,8 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -69905,6 +81878,8 @@ export namespace Prisma {
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingCreateWithoutPhotosInput = {
@@ -69950,6 +81925,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -69963,6 +81939,9 @@ export namespace Prisma {
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutPhotosInput = {
@@ -70013,6 +81992,8 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -70022,6 +82003,8 @@ export namespace Prisma {
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutPhotosInput = {
@@ -70153,6 +82136,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -70166,6 +82150,9 @@ export namespace Prisma {
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutPhotosInput = {
@@ -70216,6 +82203,8 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -70225,6 +82214,8 @@ export namespace Prisma {
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type FileObjectUpsertWithoutBookingPhotosInput = {
@@ -70352,6 +82343,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -70365,6 +82357,9 @@ export namespace Prisma {
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDamagesInput = {
@@ -70415,6 +82410,8 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -70424,6 +82421,8 @@ export namespace Prisma {
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDamagesInput = {
@@ -70509,6 +82508,9 @@ export namespace Prisma {
     approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
     bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutApprovedDamageReportsInput = {
@@ -70532,6 +82534,9 @@ export namespace Prisma {
     approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
     bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutApprovedDamageReportsInput = {
@@ -70622,6 +82627,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -70635,6 +82641,9 @@ export namespace Prisma {
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDamagesInput = {
@@ -70685,6 +82694,8 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -70694,6 +82705,8 @@ export namespace Prisma {
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type VehicleUpsertWithoutDamageReportsInput = {
@@ -70791,6 +82804,9 @@ export namespace Prisma {
     approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
     bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutApprovedDamageReportsInput = {
@@ -70814,6 +82830,9 @@ export namespace Prisma {
     approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
     bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type BookingPhotoUpsertWithWhereUniqueWithoutDamageReportInput = {
@@ -70875,6 +82894,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -70888,6 +82908,9 @@ export namespace Prisma {
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDepositInput = {
@@ -70938,6 +82961,8 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -70947,6 +82972,8 @@ export namespace Prisma {
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDepositInput = {
@@ -71008,6 +83035,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -71021,6 +83049,9 @@ export namespace Prisma {
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDepositInput = {
@@ -71071,6 +83102,8 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -71080,6 +83113,8 @@ export namespace Prisma {
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type InvoiceCreateWithoutPaymentsInput = {
@@ -71241,6 +83276,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -71254,6 +83290,9 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutInvoiceInput = {
@@ -71304,6 +83343,8 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -71313,6 +83354,8 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutInvoiceInput = {
@@ -71468,6 +83511,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -71481,6 +83525,9 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutInvoiceInput = {
@@ -71531,6 +83578,8 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -71540,6 +83589,8 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type InvoiceItemUpsertWithWhereUniqueWithoutInvoiceInput = {
@@ -71702,6 +83753,9 @@ export namespace Prisma {
     bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutActorAuditLogsInput = {
@@ -71725,6 +83779,9 @@ export namespace Prisma {
     bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutActorAuditLogsInput = {
@@ -71752,6 +83809,9 @@ export namespace Prisma {
     bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutApproverAuditLogsInput = {
@@ -71775,6 +83835,9 @@ export namespace Prisma {
     bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutApproverAuditLogsInput = {
@@ -71800,6 +83863,8 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutAuditLogsInput = {
@@ -71821,6 +83886,8 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutAuditLogsInput = {
@@ -71859,6 +83926,9 @@ export namespace Prisma {
     bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutActorAuditLogsInput = {
@@ -71882,6 +83952,9 @@ export namespace Prisma {
     bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUpsertWithoutApproverAuditLogsInput = {
@@ -71915,6 +83988,9 @@ export namespace Prisma {
     bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutApproverAuditLogsInput = {
@@ -71938,6 +84014,9 @@ export namespace Prisma {
     bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type BranchUpsertWithoutAuditLogsInput = {
@@ -71969,6 +84048,8 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutAuditLogsInput = {
@@ -71990,6 +84071,8 @@ export namespace Prisma {
     featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchCreateWithoutGstRuleInput = {
@@ -72010,6 +84093,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutGstRuleInput = {
@@ -72031,6 +84116,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutGstRuleInput = {
@@ -72067,6 +84154,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutGstRuleInput = {
@@ -72088,6 +84177,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type BookingCreateWithoutCancellationInvoiceInput = {
@@ -72133,6 +84224,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -72146,6 +84238,9 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCancellationInvoiceInput = {
@@ -72196,6 +84291,8 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -72205,6 +84302,8 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCancellationInvoiceInput = {
@@ -72342,6 +84441,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -72355,6 +84455,9 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCancellationInvoiceInput = {
@@ -72405,6 +84508,8 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -72414,6 +84519,8 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type CustomerUpsertWithoutCancellationInvoicesInput = {
@@ -72608,6 +84715,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutFeatureFlagsInput = {
@@ -72629,6 +84738,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutFeatureFlagsInput = {
@@ -72697,6 +84808,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutFeatureFlagsInput = {
@@ -72718,6 +84831,8 @@ export namespace Prisma {
     captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
   }
 
   export type FeatureFlagUpsertWithoutBranchFlagsInput = {
@@ -72993,6 +85108,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -73006,6 +85122,9 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutVehicleSwapsInput = {
@@ -73056,6 +85175,8 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -73065,6 +85186,8 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutVehicleSwapsInput = {
@@ -73208,6 +85331,9 @@ export namespace Prisma {
     approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
     bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutVehicleSwapsInput = {
@@ -73231,6 +85357,9 @@ export namespace Prisma {
     approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
     bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
     approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutVehicleSwapsInput = {
@@ -73292,6 +85421,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -73305,6 +85435,9 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutVehicleSwapsInput = {
@@ -73355,6 +85488,8 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -73364,6 +85499,8 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type VehicleUpsertWithoutSwapsAsOriginalInput = {
@@ -73525,6 +85662,9 @@ export namespace Prisma {
     approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
     bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutVehicleSwapsInput = {
@@ -73548,6 +85688,1928 @@ export namespace Prisma {
     approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
     bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+  }
+
+  export type UserCreateWithoutDiscountRulesCreatedInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+  }
+
+  export type UserUncheckedCreateWithoutDiscountRulesCreatedInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+  }
+
+  export type UserCreateOrConnectWithoutDiscountRulesCreatedInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutDiscountRulesCreatedInput, UserUncheckedCreateWithoutDiscountRulesCreatedInput>
+  }
+
+  export type CouponUsageLogCreateWithoutDiscountRuleInput = {
+    bookingId: number
+    customerId: number
+    branchId: number
+    discountedAmount: Decimal | DecimalJsLike | number | string
+    appliedAt?: Date | string
+  }
+
+  export type CouponUsageLogUncheckedCreateWithoutDiscountRuleInput = {
+    id?: number
+    bookingId: number
+    customerId: number
+    branchId: number
+    discountedAmount: Decimal | DecimalJsLike | number | string
+    appliedAt?: Date | string
+  }
+
+  export type CouponUsageLogCreateOrConnectWithoutDiscountRuleInput = {
+    where: CouponUsageLogWhereUniqueInput
+    create: XOR<CouponUsageLogCreateWithoutDiscountRuleInput, CouponUsageLogUncheckedCreateWithoutDiscountRuleInput>
+  }
+
+  export type CouponUsageLogCreateManyDiscountRuleInputEnvelope = {
+    data: CouponUsageLogCreateManyDiscountRuleInput | CouponUsageLogCreateManyDiscountRuleInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type BookingCreateWithoutDiscountRuleInput = {
+    publicId: string
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
+    customer: CustomerCreateNestedOneWithoutBookingsInput
+    branch: BranchCreateNestedOneWithoutBookingsInput
+    createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
+    photos?: BookingPhotoCreateNestedManyWithoutBookingInput
+    damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
+    deposit?: DepositCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingUncheckedCreateWithoutDiscountRuleInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
+    damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
+    deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingCreateOrConnectWithoutDiscountRuleInput = {
+    where: BookingWhereUniqueInput
+    create: XOR<BookingCreateWithoutDiscountRuleInput, BookingUncheckedCreateWithoutDiscountRuleInput>
+  }
+
+  export type BookingCreateManyDiscountRuleInputEnvelope = {
+    data: BookingCreateManyDiscountRuleInput | BookingCreateManyDiscountRuleInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type DiscountApplicationCreateWithoutDiscountRuleInput = {
+    publicId: string
+    originalAmount: Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: Decimal | DecimalJsLike | number | string
+    durationSlabId?: number | null
+    couponDiscountAmount?: Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: Decimal | DecimalJsLike | number | string
+    manualDiscountAmount?: Decimal | DecimalJsLike | number | string
+    totalDiscountAmount: Decimal | DecimalJsLike | number | string
+    finalAmount: Decimal | DecimalJsLike | number | string
+    paymentPlan: string
+    adjustmentType?: $Enums.AdjustmentType
+    createdAt?: Date | string
+    booking: BookingCreateNestedOneWithoutDiscountApplicationInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutApplicationInput
+  }
+
+  export type DiscountApplicationUncheckedCreateWithoutDiscountRuleInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    originalAmount: Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: Decimal | DecimalJsLike | number | string
+    durationSlabId?: number | null
+    couponDiscountAmount?: Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: Decimal | DecimalJsLike | number | string
+    manualDiscountAmount?: Decimal | DecimalJsLike | number | string
+    manualDiscountId?: number | null
+    totalDiscountAmount: Decimal | DecimalJsLike | number | string
+    finalAmount: Decimal | DecimalJsLike | number | string
+    paymentPlan: string
+    adjustmentType?: $Enums.AdjustmentType
+    createdAt?: Date | string
+  }
+
+  export type DiscountApplicationCreateOrConnectWithoutDiscountRuleInput = {
+    where: DiscountApplicationWhereUniqueInput
+    create: XOR<DiscountApplicationCreateWithoutDiscountRuleInput, DiscountApplicationUncheckedCreateWithoutDiscountRuleInput>
+  }
+
+  export type DiscountApplicationCreateManyDiscountRuleInputEnvelope = {
+    data: DiscountApplicationCreateManyDiscountRuleInput | DiscountApplicationCreateManyDiscountRuleInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type UserUpsertWithoutDiscountRulesCreatedInput = {
+    update: XOR<UserUpdateWithoutDiscountRulesCreatedInput, UserUncheckedUpdateWithoutDiscountRulesCreatedInput>
+    create: XOR<UserCreateWithoutDiscountRulesCreatedInput, UserUncheckedCreateWithoutDiscountRulesCreatedInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutDiscountRulesCreatedInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutDiscountRulesCreatedInput, UserUncheckedUpdateWithoutDiscountRulesCreatedInput>
+  }
+
+  export type UserUpdateWithoutDiscountRulesCreatedInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutDiscountRulesCreatedInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+  }
+
+  export type CouponUsageLogUpsertWithWhereUniqueWithoutDiscountRuleInput = {
+    where: CouponUsageLogWhereUniqueInput
+    update: XOR<CouponUsageLogUpdateWithoutDiscountRuleInput, CouponUsageLogUncheckedUpdateWithoutDiscountRuleInput>
+    create: XOR<CouponUsageLogCreateWithoutDiscountRuleInput, CouponUsageLogUncheckedCreateWithoutDiscountRuleInput>
+  }
+
+  export type CouponUsageLogUpdateWithWhereUniqueWithoutDiscountRuleInput = {
+    where: CouponUsageLogWhereUniqueInput
+    data: XOR<CouponUsageLogUpdateWithoutDiscountRuleInput, CouponUsageLogUncheckedUpdateWithoutDiscountRuleInput>
+  }
+
+  export type CouponUsageLogUpdateManyWithWhereWithoutDiscountRuleInput = {
+    where: CouponUsageLogScalarWhereInput
+    data: XOR<CouponUsageLogUpdateManyMutationInput, CouponUsageLogUncheckedUpdateManyWithoutDiscountRuleInput>
+  }
+
+  export type CouponUsageLogScalarWhereInput = {
+    AND?: CouponUsageLogScalarWhereInput | CouponUsageLogScalarWhereInput[]
+    OR?: CouponUsageLogScalarWhereInput[]
+    NOT?: CouponUsageLogScalarWhereInput | CouponUsageLogScalarWhereInput[]
+    id?: IntFilter<"CouponUsageLog"> | number
+    discountRuleId?: IntFilter<"CouponUsageLog"> | number
+    bookingId?: IntFilter<"CouponUsageLog"> | number
+    customerId?: IntFilter<"CouponUsageLog"> | number
+    branchId?: IntFilter<"CouponUsageLog"> | number
+    discountedAmount?: DecimalFilter<"CouponUsageLog"> | Decimal | DecimalJsLike | number | string
+    appliedAt?: DateTimeFilter<"CouponUsageLog"> | Date | string
+  }
+
+  export type BookingUpsertWithWhereUniqueWithoutDiscountRuleInput = {
+    where: BookingWhereUniqueInput
+    update: XOR<BookingUpdateWithoutDiscountRuleInput, BookingUncheckedUpdateWithoutDiscountRuleInput>
+    create: XOR<BookingCreateWithoutDiscountRuleInput, BookingUncheckedCreateWithoutDiscountRuleInput>
+  }
+
+  export type BookingUpdateWithWhereUniqueWithoutDiscountRuleInput = {
+    where: BookingWhereUniqueInput
+    data: XOR<BookingUpdateWithoutDiscountRuleInput, BookingUncheckedUpdateWithoutDiscountRuleInput>
+  }
+
+  export type BookingUpdateManyWithWhereWithoutDiscountRuleInput = {
+    where: BookingScalarWhereInput
+    data: XOR<BookingUpdateManyMutationInput, BookingUncheckedUpdateManyWithoutDiscountRuleInput>
+  }
+
+  export type DiscountApplicationUpsertWithWhereUniqueWithoutDiscountRuleInput = {
+    where: DiscountApplicationWhereUniqueInput
+    update: XOR<DiscountApplicationUpdateWithoutDiscountRuleInput, DiscountApplicationUncheckedUpdateWithoutDiscountRuleInput>
+    create: XOR<DiscountApplicationCreateWithoutDiscountRuleInput, DiscountApplicationUncheckedCreateWithoutDiscountRuleInput>
+  }
+
+  export type DiscountApplicationUpdateWithWhereUniqueWithoutDiscountRuleInput = {
+    where: DiscountApplicationWhereUniqueInput
+    data: XOR<DiscountApplicationUpdateWithoutDiscountRuleInput, DiscountApplicationUncheckedUpdateWithoutDiscountRuleInput>
+  }
+
+  export type DiscountApplicationUpdateManyWithWhereWithoutDiscountRuleInput = {
+    where: DiscountApplicationScalarWhereInput
+    data: XOR<DiscountApplicationUpdateManyMutationInput, DiscountApplicationUncheckedUpdateManyWithoutDiscountRuleInput>
+  }
+
+  export type DiscountApplicationScalarWhereInput = {
+    AND?: DiscountApplicationScalarWhereInput | DiscountApplicationScalarWhereInput[]
+    OR?: DiscountApplicationScalarWhereInput[]
+    NOT?: DiscountApplicationScalarWhereInput | DiscountApplicationScalarWhereInput[]
+    id?: IntFilter<"DiscountApplication"> | number
+    publicId?: StringFilter<"DiscountApplication"> | string
+    bookingId?: IntFilter<"DiscountApplication"> | number
+    originalAmount?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    durationSlabId?: IntNullableFilter<"DiscountApplication"> | number | null
+    couponDiscountAmount?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    discountRuleId?: IntNullableFilter<"DiscountApplication"> | number | null
+    manualDiscountAmount?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    manualDiscountId?: IntNullableFilter<"DiscountApplication"> | number | null
+    totalDiscountAmount?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFilter<"DiscountApplication"> | Decimal | DecimalJsLike | number | string
+    paymentPlan?: StringFilter<"DiscountApplication"> | string
+    adjustmentType?: EnumAdjustmentTypeFilter<"DiscountApplication"> | $Enums.AdjustmentType
+    createdAt?: DateTimeFilter<"DiscountApplication"> | Date | string
+  }
+
+  export type BranchCreateWithoutDurationDiscountSlabsInput = {
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleCreateNestedManyWithoutBranchInput
+    bookings?: BookingCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
+    auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+  }
+
+  export type BranchUncheckedCreateWithoutDurationDiscountSlabsInput = {
+    id?: number
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserUncheckedCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+  }
+
+  export type BranchCreateOrConnectWithoutDurationDiscountSlabsInput = {
+    where: BranchWhereUniqueInput
+    create: XOR<BranchCreateWithoutDurationDiscountSlabsInput, BranchUncheckedCreateWithoutDurationDiscountSlabsInput>
+  }
+
+  export type BranchUpsertWithoutDurationDiscountSlabsInput = {
+    update: XOR<BranchUpdateWithoutDurationDiscountSlabsInput, BranchUncheckedUpdateWithoutDurationDiscountSlabsInput>
+    create: XOR<BranchCreateWithoutDurationDiscountSlabsInput, BranchUncheckedCreateWithoutDurationDiscountSlabsInput>
+    where?: BranchWhereInput
+  }
+
+  export type BranchUpdateToOneWithWhereWithoutDurationDiscountSlabsInput = {
+    where?: BranchWhereInput
+    data: XOR<BranchUpdateWithoutDurationDiscountSlabsInput, BranchUncheckedUpdateWithoutDurationDiscountSlabsInput>
+  }
+
+  export type BranchUpdateWithoutDurationDiscountSlabsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+  }
+
+  export type BranchUncheckedUpdateWithoutDurationDiscountSlabsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUncheckedUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+  }
+
+  export type BranchCreateWithoutDiscountConfigInput = {
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleCreateNestedManyWithoutBranchInput
+    bookings?: BookingCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
+    auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchUncheckedCreateWithoutDiscountConfigInput = {
+    id?: number
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserUncheckedCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchCreateOrConnectWithoutDiscountConfigInput = {
+    where: BranchWhereUniqueInput
+    create: XOR<BranchCreateWithoutDiscountConfigInput, BranchUncheckedCreateWithoutDiscountConfigInput>
+  }
+
+  export type BranchUpsertWithoutDiscountConfigInput = {
+    update: XOR<BranchUpdateWithoutDiscountConfigInput, BranchUncheckedUpdateWithoutDiscountConfigInput>
+    create: XOR<BranchCreateWithoutDiscountConfigInput, BranchUncheckedCreateWithoutDiscountConfigInput>
+    where?: BranchWhereInput
+  }
+
+  export type BranchUpdateToOneWithWhereWithoutDiscountConfigInput = {
+    where?: BranchWhereInput
+    data: XOR<BranchUpdateWithoutDiscountConfigInput, BranchUncheckedUpdateWithoutDiscountConfigInput>
+  }
+
+  export type BranchUpdateWithoutDiscountConfigInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
+  }
+
+  export type BranchUncheckedUpdateWithoutDiscountConfigInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUncheckedUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+  }
+
+  export type BookingCreateWithoutDiscountApplicationInput = {
+    publicId: string
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
+    customer: CustomerCreateNestedOneWithoutBookingsInput
+    branch: BranchCreateNestedOneWithoutBookingsInput
+    createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
+    photos?: BookingPhotoCreateNestedManyWithoutBookingInput
+    damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
+    deposit?: DepositCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingUncheckedCreateWithoutDiscountApplicationInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
+    damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
+    deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingCreateOrConnectWithoutDiscountApplicationInput = {
+    where: BookingWhereUniqueInput
+    create: XOR<BookingCreateWithoutDiscountApplicationInput, BookingUncheckedCreateWithoutDiscountApplicationInput>
+  }
+
+  export type DiscountRuleCreateWithoutApplicationsInput = {
+    publicId: string
+    code: string
+    name: string
+    description?: string | null
+    discountType: $Enums.DiscountType
+    value: Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: Decimal | DecimalJsLike | number | string | null
+    scope?: $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleCreateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleCreatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: boolean
+    minBookingCount?: number | null
+    maxBookingCount?: number | null
+    minBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleCreateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: number | null
+    maxRentalDays?: number | null
+    applicablePaymentPlans?: DiscountRuleCreateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: boolean
+    minAdvanceAfterDiscount?: Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: boolean
+    allowPostInvoice?: boolean
+    totalUsageLimit?: number | null
+    perUserLimit?: number | null
+    perBranchLimit?: number | null
+    perDayLimit?: number | null
+    stackable?: boolean
+    priority?: number
+    startDate: Date | string
+    endDate: Date | string
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    createdBy: UserCreateNestedOneWithoutDiscountRulesCreatedInput
+    usageLogs?: CouponUsageLogCreateNestedManyWithoutDiscountRuleInput
+    bookings?: BookingCreateNestedManyWithoutDiscountRuleInput
+  }
+
+  export type DiscountRuleUncheckedCreateWithoutApplicationsInput = {
+    id?: number
+    publicId: string
+    code: string
+    name: string
+    description?: string | null
+    discountType: $Enums.DiscountType
+    value: Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: Decimal | DecimalJsLike | number | string | null
+    scope?: $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleCreateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleCreatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: boolean
+    minBookingCount?: number | null
+    maxBookingCount?: number | null
+    minBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleCreateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: number | null
+    maxRentalDays?: number | null
+    applicablePaymentPlans?: DiscountRuleCreateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: boolean
+    minAdvanceAfterDiscount?: Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: boolean
+    allowPostInvoice?: boolean
+    totalUsageLimit?: number | null
+    perUserLimit?: number | null
+    perBranchLimit?: number | null
+    perDayLimit?: number | null
+    stackable?: boolean
+    priority?: number
+    startDate: Date | string
+    endDate: Date | string
+    isActive?: boolean
+    createdById: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    usageLogs?: CouponUsageLogUncheckedCreateNestedManyWithoutDiscountRuleInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutDiscountRuleInput
+  }
+
+  export type DiscountRuleCreateOrConnectWithoutApplicationsInput = {
+    where: DiscountRuleWhereUniqueInput
+    create: XOR<DiscountRuleCreateWithoutApplicationsInput, DiscountRuleUncheckedCreateWithoutApplicationsInput>
+  }
+
+  export type ManualDiscountCreateWithoutApplicationInput = {
+    publicId: string
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.ManualDiscountStatus
+    requiresApproval?: boolean
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    issuedBy: UserCreateNestedOneWithoutManualDiscountsIssuedInput
+    approvedBy?: UserCreateNestedOneWithoutManualDiscountsApprovedInput
+    booking: BookingCreateNestedOneWithoutManualDiscountInput
+  }
+
+  export type ManualDiscountUncheckedCreateWithoutApplicationInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    issuedById: number
+    approvedById?: number | null
+    status?: $Enums.ManualDiscountStatus
+    requiresApproval?: boolean
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ManualDiscountCreateOrConnectWithoutApplicationInput = {
+    where: ManualDiscountWhereUniqueInput
+    create: XOR<ManualDiscountCreateWithoutApplicationInput, ManualDiscountUncheckedCreateWithoutApplicationInput>
+  }
+
+  export type BookingUpsertWithoutDiscountApplicationInput = {
+    update: XOR<BookingUpdateWithoutDiscountApplicationInput, BookingUncheckedUpdateWithoutDiscountApplicationInput>
+    create: XOR<BookingCreateWithoutDiscountApplicationInput, BookingUncheckedCreateWithoutDiscountApplicationInput>
+    where?: BookingWhereInput
+  }
+
+  export type BookingUpdateToOneWithWhereWithoutDiscountApplicationInput = {
+    where?: BookingWhereInput
+    data: XOR<BookingUpdateWithoutDiscountApplicationInput, BookingUncheckedUpdateWithoutDiscountApplicationInput>
+  }
+
+  export type BookingUpdateWithoutDiscountApplicationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
+    customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
+    photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateWithoutDiscountApplicationInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+  }
+
+  export type DiscountRuleUpsertWithoutApplicationsInput = {
+    update: XOR<DiscountRuleUpdateWithoutApplicationsInput, DiscountRuleUncheckedUpdateWithoutApplicationsInput>
+    create: XOR<DiscountRuleCreateWithoutApplicationsInput, DiscountRuleUncheckedCreateWithoutApplicationsInput>
+    where?: DiscountRuleWhereInput
+  }
+
+  export type DiscountRuleUpdateToOneWithWhereWithoutApplicationsInput = {
+    where?: DiscountRuleWhereInput
+    data: XOR<DiscountRuleUpdateWithoutApplicationsInput, DiscountRuleUncheckedUpdateWithoutApplicationsInput>
+  }
+
+  export type DiscountRuleUpdateWithoutApplicationsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    discountType?: EnumDiscountTypeFieldUpdateOperationsInput | $Enums.DiscountType
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    scope?: EnumDiscountScopeFieldUpdateOperationsInput | $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleUpdateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleUpdatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: BoolFieldUpdateOperationsInput | boolean
+    minBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    maxBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    minBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleUpdateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    maxRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    applicablePaymentPlans?: DiscountRuleUpdateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: BoolFieldUpdateOperationsInput | boolean
+    minAdvanceAfterDiscount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: BoolFieldUpdateOperationsInput | boolean
+    allowPostInvoice?: BoolFieldUpdateOperationsInput | boolean
+    totalUsageLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perUserLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perBranchLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perDayLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    stackable?: BoolFieldUpdateOperationsInput | boolean
+    priority?: IntFieldUpdateOperationsInput | number
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    endDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdBy?: UserUpdateOneRequiredWithoutDiscountRulesCreatedNestedInput
+    usageLogs?: CouponUsageLogUpdateManyWithoutDiscountRuleNestedInput
+    bookings?: BookingUpdateManyWithoutDiscountRuleNestedInput
+  }
+
+  export type DiscountRuleUncheckedUpdateWithoutApplicationsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    discountType?: EnumDiscountTypeFieldUpdateOperationsInput | $Enums.DiscountType
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    scope?: EnumDiscountScopeFieldUpdateOperationsInput | $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleUpdateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleUpdatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: BoolFieldUpdateOperationsInput | boolean
+    minBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    maxBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    minBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleUpdateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    maxRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    applicablePaymentPlans?: DiscountRuleUpdateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: BoolFieldUpdateOperationsInput | boolean
+    minAdvanceAfterDiscount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: BoolFieldUpdateOperationsInput | boolean
+    allowPostInvoice?: BoolFieldUpdateOperationsInput | boolean
+    totalUsageLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perUserLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perBranchLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perDayLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    stackable?: BoolFieldUpdateOperationsInput | boolean
+    priority?: IntFieldUpdateOperationsInput | number
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    endDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdById?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    usageLogs?: CouponUsageLogUncheckedUpdateManyWithoutDiscountRuleNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutDiscountRuleNestedInput
+  }
+
+  export type ManualDiscountUpsertWithoutApplicationInput = {
+    update: XOR<ManualDiscountUpdateWithoutApplicationInput, ManualDiscountUncheckedUpdateWithoutApplicationInput>
+    create: XOR<ManualDiscountCreateWithoutApplicationInput, ManualDiscountUncheckedCreateWithoutApplicationInput>
+    where?: ManualDiscountWhereInput
+  }
+
+  export type ManualDiscountUpdateToOneWithWhereWithoutApplicationInput = {
+    where?: ManualDiscountWhereInput
+    data: XOR<ManualDiscountUpdateWithoutApplicationInput, ManualDiscountUncheckedUpdateWithoutApplicationInput>
+  }
+
+  export type ManualDiscountUpdateWithoutApplicationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumManualDiscountStatusFieldUpdateOperationsInput | $Enums.ManualDiscountStatus
+    requiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    issuedBy?: UserUpdateOneRequiredWithoutManualDiscountsIssuedNestedInput
+    approvedBy?: UserUpdateOneWithoutManualDiscountsApprovedNestedInput
+    booking?: BookingUpdateOneRequiredWithoutManualDiscountNestedInput
+  }
+
+  export type ManualDiscountUncheckedUpdateWithoutApplicationInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    issuedById?: IntFieldUpdateOperationsInput | number
+    approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    status?: EnumManualDiscountStatusFieldUpdateOperationsInput | $Enums.ManualDiscountStatus
+    requiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DiscountRuleCreateWithoutUsageLogsInput = {
+    publicId: string
+    code: string
+    name: string
+    description?: string | null
+    discountType: $Enums.DiscountType
+    value: Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: Decimal | DecimalJsLike | number | string | null
+    scope?: $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleCreateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleCreatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: boolean
+    minBookingCount?: number | null
+    maxBookingCount?: number | null
+    minBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleCreateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: number | null
+    maxRentalDays?: number | null
+    applicablePaymentPlans?: DiscountRuleCreateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: boolean
+    minAdvanceAfterDiscount?: Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: boolean
+    allowPostInvoice?: boolean
+    totalUsageLimit?: number | null
+    perUserLimit?: number | null
+    perBranchLimit?: number | null
+    perDayLimit?: number | null
+    stackable?: boolean
+    priority?: number
+    startDate: Date | string
+    endDate: Date | string
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    createdBy: UserCreateNestedOneWithoutDiscountRulesCreatedInput
+    bookings?: BookingCreateNestedManyWithoutDiscountRuleInput
+    applications?: DiscountApplicationCreateNestedManyWithoutDiscountRuleInput
+  }
+
+  export type DiscountRuleUncheckedCreateWithoutUsageLogsInput = {
+    id?: number
+    publicId: string
+    code: string
+    name: string
+    description?: string | null
+    discountType: $Enums.DiscountType
+    value: Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: Decimal | DecimalJsLike | number | string | null
+    scope?: $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleCreateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleCreatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: boolean
+    minBookingCount?: number | null
+    maxBookingCount?: number | null
+    minBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleCreateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: number | null
+    maxRentalDays?: number | null
+    applicablePaymentPlans?: DiscountRuleCreateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: boolean
+    minAdvanceAfterDiscount?: Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: boolean
+    allowPostInvoice?: boolean
+    totalUsageLimit?: number | null
+    perUserLimit?: number | null
+    perBranchLimit?: number | null
+    perDayLimit?: number | null
+    stackable?: boolean
+    priority?: number
+    startDate: Date | string
+    endDate: Date | string
+    isActive?: boolean
+    createdById: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    bookings?: BookingUncheckedCreateNestedManyWithoutDiscountRuleInput
+    applications?: DiscountApplicationUncheckedCreateNestedManyWithoutDiscountRuleInput
+  }
+
+  export type DiscountRuleCreateOrConnectWithoutUsageLogsInput = {
+    where: DiscountRuleWhereUniqueInput
+    create: XOR<DiscountRuleCreateWithoutUsageLogsInput, DiscountRuleUncheckedCreateWithoutUsageLogsInput>
+  }
+
+  export type DiscountRuleUpsertWithoutUsageLogsInput = {
+    update: XOR<DiscountRuleUpdateWithoutUsageLogsInput, DiscountRuleUncheckedUpdateWithoutUsageLogsInput>
+    create: XOR<DiscountRuleCreateWithoutUsageLogsInput, DiscountRuleUncheckedCreateWithoutUsageLogsInput>
+    where?: DiscountRuleWhereInput
+  }
+
+  export type DiscountRuleUpdateToOneWithWhereWithoutUsageLogsInput = {
+    where?: DiscountRuleWhereInput
+    data: XOR<DiscountRuleUpdateWithoutUsageLogsInput, DiscountRuleUncheckedUpdateWithoutUsageLogsInput>
+  }
+
+  export type DiscountRuleUpdateWithoutUsageLogsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    discountType?: EnumDiscountTypeFieldUpdateOperationsInput | $Enums.DiscountType
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    scope?: EnumDiscountScopeFieldUpdateOperationsInput | $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleUpdateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleUpdatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: BoolFieldUpdateOperationsInput | boolean
+    minBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    maxBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    minBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleUpdateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    maxRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    applicablePaymentPlans?: DiscountRuleUpdateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: BoolFieldUpdateOperationsInput | boolean
+    minAdvanceAfterDiscount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: BoolFieldUpdateOperationsInput | boolean
+    allowPostInvoice?: BoolFieldUpdateOperationsInput | boolean
+    totalUsageLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perUserLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perBranchLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perDayLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    stackable?: BoolFieldUpdateOperationsInput | boolean
+    priority?: IntFieldUpdateOperationsInput | number
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    endDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdBy?: UserUpdateOneRequiredWithoutDiscountRulesCreatedNestedInput
+    bookings?: BookingUpdateManyWithoutDiscountRuleNestedInput
+    applications?: DiscountApplicationUpdateManyWithoutDiscountRuleNestedInput
+  }
+
+  export type DiscountRuleUncheckedUpdateWithoutUsageLogsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    discountType?: EnumDiscountTypeFieldUpdateOperationsInput | $Enums.DiscountType
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    scope?: EnumDiscountScopeFieldUpdateOperationsInput | $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleUpdateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleUpdatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: BoolFieldUpdateOperationsInput | boolean
+    minBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    maxBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    minBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleUpdateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    maxRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    applicablePaymentPlans?: DiscountRuleUpdateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: BoolFieldUpdateOperationsInput | boolean
+    minAdvanceAfterDiscount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: BoolFieldUpdateOperationsInput | boolean
+    allowPostInvoice?: BoolFieldUpdateOperationsInput | boolean
+    totalUsageLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perUserLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perBranchLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perDayLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    stackable?: BoolFieldUpdateOperationsInput | boolean
+    priority?: IntFieldUpdateOperationsInput | number
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    endDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdById?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    bookings?: BookingUncheckedUpdateManyWithoutDiscountRuleNestedInput
+    applications?: DiscountApplicationUncheckedUpdateManyWithoutDiscountRuleNestedInput
+  }
+
+  export type UserCreateWithoutManualDiscountsIssuedInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+  }
+
+  export type UserUncheckedCreateWithoutManualDiscountsIssuedInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+  }
+
+  export type UserCreateOrConnectWithoutManualDiscountsIssuedInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutManualDiscountsIssuedInput, UserUncheckedCreateWithoutManualDiscountsIssuedInput>
+  }
+
+  export type UserCreateWithoutManualDiscountsApprovedInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+  }
+
+  export type UserUncheckedCreateWithoutManualDiscountsApprovedInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+  }
+
+  export type UserCreateOrConnectWithoutManualDiscountsApprovedInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutManualDiscountsApprovedInput, UserUncheckedCreateWithoutManualDiscountsApprovedInput>
+  }
+
+  export type BookingCreateWithoutManualDiscountInput = {
+    publicId: string
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
+    customer: CustomerCreateNestedOneWithoutBookingsInput
+    branch: BranchCreateNestedOneWithoutBookingsInput
+    createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
+    photos?: BookingPhotoCreateNestedManyWithoutBookingInput
+    damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
+    deposit?: DepositCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingUncheckedCreateWithoutManualDiscountInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
+    damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
+    deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingCreateOrConnectWithoutManualDiscountInput = {
+    where: BookingWhereUniqueInput
+    create: XOR<BookingCreateWithoutManualDiscountInput, BookingUncheckedCreateWithoutManualDiscountInput>
+  }
+
+  export type DiscountApplicationCreateWithoutManualDiscountInput = {
+    publicId: string
+    originalAmount: Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: Decimal | DecimalJsLike | number | string
+    durationSlabId?: number | null
+    couponDiscountAmount?: Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: Decimal | DecimalJsLike | number | string
+    manualDiscountAmount?: Decimal | DecimalJsLike | number | string
+    totalDiscountAmount: Decimal | DecimalJsLike | number | string
+    finalAmount: Decimal | DecimalJsLike | number | string
+    paymentPlan: string
+    adjustmentType?: $Enums.AdjustmentType
+    createdAt?: Date | string
+    booking: BookingCreateNestedOneWithoutDiscountApplicationInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutApplicationsInput
+  }
+
+  export type DiscountApplicationUncheckedCreateWithoutManualDiscountInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    originalAmount: Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: Decimal | DecimalJsLike | number | string
+    durationSlabId?: number | null
+    couponDiscountAmount?: Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: Decimal | DecimalJsLike | number | string
+    discountRuleId?: number | null
+    manualDiscountAmount?: Decimal | DecimalJsLike | number | string
+    totalDiscountAmount: Decimal | DecimalJsLike | number | string
+    finalAmount: Decimal | DecimalJsLike | number | string
+    paymentPlan: string
+    adjustmentType?: $Enums.AdjustmentType
+    createdAt?: Date | string
+  }
+
+  export type DiscountApplicationCreateOrConnectWithoutManualDiscountInput = {
+    where: DiscountApplicationWhereUniqueInput
+    create: XOR<DiscountApplicationCreateWithoutManualDiscountInput, DiscountApplicationUncheckedCreateWithoutManualDiscountInput>
+  }
+
+  export type UserUpsertWithoutManualDiscountsIssuedInput = {
+    update: XOR<UserUpdateWithoutManualDiscountsIssuedInput, UserUncheckedUpdateWithoutManualDiscountsIssuedInput>
+    create: XOR<UserCreateWithoutManualDiscountsIssuedInput, UserUncheckedCreateWithoutManualDiscountsIssuedInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutManualDiscountsIssuedInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutManualDiscountsIssuedInput, UserUncheckedUpdateWithoutManualDiscountsIssuedInput>
+  }
+
+  export type UserUpdateWithoutManualDiscountsIssuedInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutManualDiscountsIssuedInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+  }
+
+  export type UserUpsertWithoutManualDiscountsApprovedInput = {
+    update: XOR<UserUpdateWithoutManualDiscountsApprovedInput, UserUncheckedUpdateWithoutManualDiscountsApprovedInput>
+    create: XOR<UserCreateWithoutManualDiscountsApprovedInput, UserUncheckedCreateWithoutManualDiscountsApprovedInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutManualDiscountsApprovedInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutManualDiscountsApprovedInput, UserUncheckedUpdateWithoutManualDiscountsApprovedInput>
+  }
+
+  export type UserUpdateWithoutManualDiscountsApprovedInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutManualDiscountsApprovedInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+  }
+
+  export type BookingUpsertWithoutManualDiscountInput = {
+    update: XOR<BookingUpdateWithoutManualDiscountInput, BookingUncheckedUpdateWithoutManualDiscountInput>
+    create: XOR<BookingCreateWithoutManualDiscountInput, BookingUncheckedCreateWithoutManualDiscountInput>
+    where?: BookingWhereInput
+  }
+
+  export type BookingUpdateToOneWithWhereWithoutManualDiscountInput = {
+    where?: BookingWhereInput
+    data: XOR<BookingUpdateWithoutManualDiscountInput, BookingUncheckedUpdateWithoutManualDiscountInput>
+  }
+
+  export type BookingUpdateWithoutManualDiscountInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
+    customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
+    photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateWithoutManualDiscountInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+  }
+
+  export type DiscountApplicationUpsertWithoutManualDiscountInput = {
+    update: XOR<DiscountApplicationUpdateWithoutManualDiscountInput, DiscountApplicationUncheckedUpdateWithoutManualDiscountInput>
+    create: XOR<DiscountApplicationCreateWithoutManualDiscountInput, DiscountApplicationUncheckedCreateWithoutManualDiscountInput>
+    where?: DiscountApplicationWhereInput
+  }
+
+  export type DiscountApplicationUpdateToOneWithWhereWithoutManualDiscountInput = {
+    where?: DiscountApplicationWhereInput
+    data: XOR<DiscountApplicationUpdateWithoutManualDiscountInput, DiscountApplicationUncheckedUpdateWithoutManualDiscountInput>
+  }
+
+  export type DiscountApplicationUpdateWithoutManualDiscountInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationSlabId?: NullableIntFieldUpdateOperationsInput | number | null
+    couponDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    manualDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paymentPlan?: StringFieldUpdateOperationsInput | string
+    adjustmentType?: EnumAdjustmentTypeFieldUpdateOperationsInput | $Enums.AdjustmentType
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutDiscountApplicationNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutApplicationsNestedInput
+  }
+
+  export type DiscountApplicationUncheckedUpdateWithoutManualDiscountInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationSlabId?: NullableIntFieldUpdateOperationsInput | number | null
+    couponDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    manualDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paymentPlan?: StringFieldUpdateOperationsInput | string
+    adjustmentType?: EnumAdjustmentTypeFieldUpdateOperationsInput | $Enums.AdjustmentType
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type EmailVerificationOtpCreateManyUserInput = {
@@ -73669,6 +87731,8 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -73700,6 +87764,76 @@ export namespace Prisma {
     originalVehicleStatus?: $Enums.VehicleStatus | null
     originalVehicleNotes?: string | null
     swappedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type DiscountRuleCreateManyCreatedByInput = {
+    id?: number
+    publicId: string
+    code: string
+    name: string
+    description?: string | null
+    discountType: $Enums.DiscountType
+    value: Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: Decimal | DecimalJsLike | number | string | null
+    scope?: $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleCreateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleCreatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: boolean
+    minBookingCount?: number | null
+    maxBookingCount?: number | null
+    minBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleCreateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: number | null
+    maxRentalDays?: number | null
+    applicablePaymentPlans?: DiscountRuleCreateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: boolean
+    minAdvanceAfterDiscount?: Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: boolean
+    allowPostInvoice?: boolean
+    totalUsageLimit?: number | null
+    perUserLimit?: number | null
+    perBranchLimit?: number | null
+    perDayLimit?: number | null
+    stackable?: boolean
+    priority?: number
+    startDate: Date | string
+    endDate: Date | string
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ManualDiscountCreateManyIssuedByInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    approvedById?: number | null
+    status?: $Enums.ManualDiscountStatus
+    requiresApproval?: boolean
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ManualDiscountCreateManyApprovedByInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    issuedById: number
+    status?: $Enums.ManualDiscountStatus
+    requiresApproval?: boolean
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -73959,6 +88093,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -73972,6 +88107,9 @@ export namespace Prisma {
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCreatedByInput = {
@@ -74021,6 +88159,8 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74031,6 +88171,8 @@ export namespace Prisma {
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutCreatedByInput = {
@@ -74080,6 +88222,8 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74175,6 +88319,223 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type DiscountRuleUpdateWithoutCreatedByInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    discountType?: EnumDiscountTypeFieldUpdateOperationsInput | $Enums.DiscountType
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    scope?: EnumDiscountScopeFieldUpdateOperationsInput | $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleUpdateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleUpdatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: BoolFieldUpdateOperationsInput | boolean
+    minBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    maxBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    minBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleUpdateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    maxRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    applicablePaymentPlans?: DiscountRuleUpdateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: BoolFieldUpdateOperationsInput | boolean
+    minAdvanceAfterDiscount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: BoolFieldUpdateOperationsInput | boolean
+    allowPostInvoice?: BoolFieldUpdateOperationsInput | boolean
+    totalUsageLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perUserLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perBranchLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perDayLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    stackable?: BoolFieldUpdateOperationsInput | boolean
+    priority?: IntFieldUpdateOperationsInput | number
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    endDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    usageLogs?: CouponUsageLogUpdateManyWithoutDiscountRuleNestedInput
+    bookings?: BookingUpdateManyWithoutDiscountRuleNestedInput
+    applications?: DiscountApplicationUpdateManyWithoutDiscountRuleNestedInput
+  }
+
+  export type DiscountRuleUncheckedUpdateWithoutCreatedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    discountType?: EnumDiscountTypeFieldUpdateOperationsInput | $Enums.DiscountType
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    scope?: EnumDiscountScopeFieldUpdateOperationsInput | $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleUpdateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleUpdatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: BoolFieldUpdateOperationsInput | boolean
+    minBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    maxBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    minBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleUpdateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    maxRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    applicablePaymentPlans?: DiscountRuleUpdateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: BoolFieldUpdateOperationsInput | boolean
+    minAdvanceAfterDiscount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: BoolFieldUpdateOperationsInput | boolean
+    allowPostInvoice?: BoolFieldUpdateOperationsInput | boolean
+    totalUsageLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perUserLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perBranchLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perDayLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    stackable?: BoolFieldUpdateOperationsInput | boolean
+    priority?: IntFieldUpdateOperationsInput | number
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    endDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    usageLogs?: CouponUsageLogUncheckedUpdateManyWithoutDiscountRuleNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutDiscountRuleNestedInput
+    applications?: DiscountApplicationUncheckedUpdateManyWithoutDiscountRuleNestedInput
+  }
+
+  export type DiscountRuleUncheckedUpdateManyWithoutCreatedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    discountType?: EnumDiscountTypeFieldUpdateOperationsInput | $Enums.DiscountType
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    maxDiscountCap?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    scope?: EnumDiscountScopeFieldUpdateOperationsInput | $Enums.DiscountScope
+    applicableBranchIds?: DiscountRuleUpdateapplicableBranchIdsInput | number[]
+    targetCustomerIds?: DiscountRuleUpdatetargetCustomerIdsInput | number[]
+    newCustomersOnly?: BoolFieldUpdateOperationsInput | boolean
+    minBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    maxBookingCount?: NullableIntFieldUpdateOperationsInput | number | null
+    minBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    maxBookingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    applicableVehicleCategoryIds?: DiscountRuleUpdateapplicableVehicleCategoryIdsInput | number[]
+    minRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    maxRentalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    applicablePaymentPlans?: DiscountRuleUpdateapplicablePaymentPlansInput | string[]
+    allowPartialPayment?: BoolFieldUpdateOperationsInput | boolean
+    minAdvanceAfterDiscount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    allowPostBooking?: BoolFieldUpdateOperationsInput | boolean
+    allowPostInvoice?: BoolFieldUpdateOperationsInput | boolean
+    totalUsageLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perUserLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perBranchLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    perDayLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    stackable?: BoolFieldUpdateOperationsInput | boolean
+    priority?: IntFieldUpdateOperationsInput | number
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    endDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ManualDiscountUpdateWithoutIssuedByInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumManualDiscountStatusFieldUpdateOperationsInput | $Enums.ManualDiscountStatus
+    requiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    approvedBy?: UserUpdateOneWithoutManualDiscountsApprovedNestedInput
+    booking?: BookingUpdateOneRequiredWithoutManualDiscountNestedInput
+    application?: DiscountApplicationUpdateOneWithoutManualDiscountNestedInput
+  }
+
+  export type ManualDiscountUncheckedUpdateWithoutIssuedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    status?: EnumManualDiscountStatusFieldUpdateOperationsInput | $Enums.ManualDiscountStatus
+    requiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    application?: DiscountApplicationUncheckedUpdateOneWithoutManualDiscountNestedInput
+  }
+
+  export type ManualDiscountUncheckedUpdateManyWithoutIssuedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    status?: EnumManualDiscountStatusFieldUpdateOperationsInput | $Enums.ManualDiscountStatus
+    requiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ManualDiscountUpdateWithoutApprovedByInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumManualDiscountStatusFieldUpdateOperationsInput | $Enums.ManualDiscountStatus
+    requiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    issuedBy?: UserUpdateOneRequiredWithoutManualDiscountsIssuedNestedInput
+    booking?: BookingUpdateOneRequiredWithoutManualDiscountNestedInput
+    application?: DiscountApplicationUpdateOneWithoutManualDiscountNestedInput
+  }
+
+  export type ManualDiscountUncheckedUpdateWithoutApprovedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    issuedById?: IntFieldUpdateOperationsInput | number
+    status?: EnumManualDiscountStatusFieldUpdateOperationsInput | $Enums.ManualDiscountStatus
+    requiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    application?: DiscountApplicationUncheckedUpdateOneWithoutManualDiscountNestedInput
+  }
+
+  export type ManualDiscountUncheckedUpdateManyWithoutApprovedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    issuedById?: IntFieldUpdateOperationsInput | number
+    status?: EnumManualDiscountStatusFieldUpdateOperationsInput | $Enums.ManualDiscountStatus
+    requiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type CustomerKycCreateManyCustomerInput = {
     id?: number
     publicId: string
@@ -74231,6 +88592,8 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -74322,6 +88685,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74335,6 +88699,9 @@ export namespace Prisma {
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCustomerInput = {
@@ -74384,6 +88751,8 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74394,6 +88763,8 @@ export namespace Prisma {
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutCustomerInput = {
@@ -74443,6 +88814,8 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74564,6 +88937,8 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -74707,6 +89082,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74720,6 +89096,9 @@ export namespace Prisma {
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutKycFileInput = {
@@ -74769,6 +89148,8 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74779,6 +89160,8 @@ export namespace Prisma {
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutKycFileInput = {
@@ -74828,6 +89211,8 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -75033,6 +89418,8 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancellationReason?: string | null
     requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -75127,6 +89514,17 @@ export namespace Prisma {
     createdAt?: Date | string
   }
 
+  export type DurationDiscountSlabCreateManyBranchInput = {
+    id?: number
+    minDays: number
+    maxDays?: number | null
+    discountType: $Enums.DiscountType
+    value: Decimal | DecimalJsLike | number | string
+    label?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type UserUpdateWithoutBranchInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
@@ -75147,6 +89545,9 @@ export namespace Prisma {
     bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutBranchInput = {
@@ -75170,6 +89571,9 @@ export namespace Prisma {
     bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
     approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateManyWithoutBranchInput = {
@@ -75300,6 +89704,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -75313,6 +89718,9 @@ export namespace Prisma {
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutBranchInput = {
@@ -75362,6 +89770,8 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -75372,6 +89782,8 @@ export namespace Prisma {
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutBranchInput = {
@@ -75421,6 +89833,8 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -75684,6 +90098,38 @@ export namespace Prisma {
     description?: StringFieldUpdateOperationsInput | string
     metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DurationDiscountSlabUpdateWithoutBranchInput = {
+    minDays?: IntFieldUpdateOperationsInput | number
+    maxDays?: NullableIntFieldUpdateOperationsInput | number | null
+    discountType?: EnumDiscountTypeFieldUpdateOperationsInput | $Enums.DiscountType
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    label?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DurationDiscountSlabUncheckedUpdateWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    minDays?: IntFieldUpdateOperationsInput | number
+    maxDays?: NullableIntFieldUpdateOperationsInput | number | null
+    discountType?: EnumDiscountTypeFieldUpdateOperationsInput | $Enums.DiscountType
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    label?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DurationDiscountSlabUncheckedUpdateManyWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    minDays?: IntFieldUpdateOperationsInput | number
+    maxDays?: NullableIntFieldUpdateOperationsInput | number | null
+    discountType?: EnumDiscountTypeFieldUpdateOperationsInput | $Enums.DiscountType
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    label?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type PricingDiscountSlabCreateManyCategoryInput = {
@@ -76719,6 +91165,349 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type CouponUsageLogCreateManyDiscountRuleInput = {
+    id?: number
+    bookingId: number
+    customerId: number
+    branchId: number
+    discountedAmount: Decimal | DecimalJsLike | number | string
+    appliedAt?: Date | string
+  }
+
+  export type BookingCreateManyDiscountRuleInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+  }
+
+  export type DiscountApplicationCreateManyDiscountRuleInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    originalAmount: Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: Decimal | DecimalJsLike | number | string
+    durationSlabId?: number | null
+    couponDiscountAmount?: Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: Decimal | DecimalJsLike | number | string
+    manualDiscountAmount?: Decimal | DecimalJsLike | number | string
+    manualDiscountId?: number | null
+    totalDiscountAmount: Decimal | DecimalJsLike | number | string
+    finalAmount: Decimal | DecimalJsLike | number | string
+    paymentPlan: string
+    adjustmentType?: $Enums.AdjustmentType
+    createdAt?: Date | string
+  }
+
+  export type CouponUsageLogUpdateWithoutDiscountRuleInput = {
+    bookingId?: IntFieldUpdateOperationsInput | number
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    discountedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    appliedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CouponUsageLogUncheckedUpdateWithoutDiscountRuleInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    bookingId?: IntFieldUpdateOperationsInput | number
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    discountedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    appliedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CouponUsageLogUncheckedUpdateManyWithoutDiscountRuleInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    bookingId?: IntFieldUpdateOperationsInput | number
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    discountedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    appliedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BookingUpdateWithoutDiscountRuleInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
+    customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
+    photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateWithoutDiscountRuleInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateManyWithoutDiscountRuleInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type DiscountApplicationUpdateWithoutDiscountRuleInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationSlabId?: NullableIntFieldUpdateOperationsInput | number | null
+    couponDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    manualDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paymentPlan?: StringFieldUpdateOperationsInput | string
+    adjustmentType?: EnumAdjustmentTypeFieldUpdateOperationsInput | $Enums.AdjustmentType
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutDiscountApplicationNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutApplicationNestedInput
+  }
+
+  export type DiscountApplicationUncheckedUpdateWithoutDiscountRuleInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationSlabId?: NullableIntFieldUpdateOperationsInput | number | null
+    couponDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    manualDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    manualDiscountId?: NullableIntFieldUpdateOperationsInput | number | null
+    totalDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paymentPlan?: StringFieldUpdateOperationsInput | string
+    adjustmentType?: EnumAdjustmentTypeFieldUpdateOperationsInput | $Enums.AdjustmentType
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DiscountApplicationUncheckedUpdateManyWithoutDiscountRuleInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    durationSlabId?: NullableIntFieldUpdateOperationsInput | number | null
+    couponDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    couponDiscountPercent?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    manualDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    manualDiscountId?: NullableIntFieldUpdateOperationsInput | number | null
+    totalDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paymentPlan?: StringFieldUpdateOperationsInput | string
+    adjustmentType?: EnumAdjustmentTypeFieldUpdateOperationsInput | $Enums.AdjustmentType
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
 
 
   /**
@@ -76764,6 +91553,10 @@ export namespace Prisma {
      * @deprecated Use FeatureFlagCountOutputTypeDefaultArgs instead
      */
     export type FeatureFlagCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = FeatureFlagCountOutputTypeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use DiscountRuleCountOutputTypeDefaultArgs instead
+     */
+    export type DiscountRuleCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = DiscountRuleCountOutputTypeDefaultArgs<ExtArgs>
     /**
      * @deprecated Use UserDefaultArgs instead
      */
@@ -76920,6 +91713,30 @@ export namespace Prisma {
      * @deprecated Use VehicleSwapDefaultArgs instead
      */
     export type VehicleSwapArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = VehicleSwapDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use DiscountRuleDefaultArgs instead
+     */
+    export type DiscountRuleArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = DiscountRuleDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use DurationDiscountSlabDefaultArgs instead
+     */
+    export type DurationDiscountSlabArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = DurationDiscountSlabDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use BranchDiscountConfigDefaultArgs instead
+     */
+    export type BranchDiscountConfigArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = BranchDiscountConfigDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use DiscountApplicationDefaultArgs instead
+     */
+    export type DiscountApplicationArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = DiscountApplicationDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use CouponUsageLogDefaultArgs instead
+     */
+    export type CouponUsageLogArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CouponUsageLogDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ManualDiscountDefaultArgs instead
+     */
+    export type ManualDiscountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ManualDiscountDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

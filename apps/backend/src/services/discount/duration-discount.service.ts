@@ -1,0 +1,89 @@
+import { prisma } from "@repo/database/client";
+import Decimal from "decimal.js";
+
+export interface DurationDiscountResult {
+  applied: boolean;
+  slabId: number | null;
+  discountType: "PERCENTAGE" | "FLAT" | null;
+  value: Decimal;
+  discountAmount: Decimal;
+  discountPercent: Decimal;
+  postDiscountAmount: Decimal;
+  label: string | null;
+}
+
+const ZERO = new Decimal(0);
+
+class DurationDiscountService {
+  /**
+   * Evaluate the best-matching duration slab for a branch+days combination.
+   * Returns zero-discount result when:
+   *   - branch has durationDiscountEnabled = false
+   *   - no slab matches the booking duration
+   */
+  async evaluate(
+    branchId: number,
+    days: number,
+    baseAmount: Decimal,
+  ): Promise<DurationDiscountResult> {
+    const noDiscount: DurationDiscountResult = {
+      applied: false,
+      slabId: null,
+      discountType: null,
+      value: ZERO,
+      discountAmount: ZERO,
+      discountPercent: ZERO,
+      postDiscountAmount: baseAmount,
+      label: null,
+    };
+
+    // Check branch config — feature must be enabled
+    const config = await prisma.branchDiscountConfig.findUnique({
+      where: { branchId },
+      select: { durationDiscountEnabled: true },
+    });
+
+    if (!config || !config.durationDiscountEnabled) return noDiscount;
+
+    // Find highest minDays slab where booking days falls within [minDays, maxDays]
+    const slab = await prisma.durationDiscountSlab.findFirst({
+      where: {
+        branchId,
+        minDays: { lte: days },
+        OR: [{ maxDays: null }, { maxDays: { gte: days } }],
+      },
+      orderBy: { minDays: "desc" },
+    });
+
+    if (!slab) return noDiscount;
+
+    const value = new Decimal(slab.value.toString());
+    let discountAmount: Decimal;
+    let discountPercent: Decimal;
+    let postDiscountAmount: Decimal;
+
+    if (slab.discountType === "PERCENTAGE") {
+      discountAmount = baseAmount.mul(value).div(100).toDecimalPlaces(2);
+      discountPercent = value;
+      postDiscountAmount = baseAmount.sub(discountAmount);
+    } else {
+      // FLAT
+      discountAmount = Decimal.min(value, baseAmount).toDecimalPlaces(2);
+      discountPercent = discountAmount.div(baseAmount).mul(100).toDecimalPlaces(4);
+      postDiscountAmount = baseAmount.sub(discountAmount);
+    }
+
+    return {
+      applied: true,
+      slabId: slab.id,
+      discountType: slab.discountType,
+      value,
+      discountAmount,
+      discountPercent,
+      postDiscountAmount,
+      label: slab.label,
+    };
+  }
+}
+
+export const durationDiscountService = new DurationDiscountService();

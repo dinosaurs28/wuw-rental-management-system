@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep \"\\\\.ts$\")"
+      "Bash(grep \"\\\\.ts$\")",
+      "Bash(grep -E \"\\\\.\\(prisma|ts\\)$\")",
+      "Bash(grep -r \"class\\\\|interface\\\\|enum\" /c/Freelance/vrms/apps/backend/src/types/*.ts)"
     ]
   }
 }

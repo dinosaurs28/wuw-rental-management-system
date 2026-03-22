@@ -28,6 +28,7 @@ import { GetAllVehicles } from "../../controller/admin/vehicle.controller.js";
 import featureFlagRouter from "./feature-flag.routes.js";
 import auditRouter from "./audit.routes.js";
 import staffActivityRouter from "./staffActivity.routes.js";
+import discountRouter from "./discount.routes.js";
 
 const router: Router = Router();
 
@@ -88,5 +89,8 @@ router.use("/audit", auditRouter);
 
 // Staff Activity Logs
 router.use("/staff-activity", staffActivityRouter);
+
+// Discount Rules
+router.use("/discount-rules", discountRouter);
 
 export default router;

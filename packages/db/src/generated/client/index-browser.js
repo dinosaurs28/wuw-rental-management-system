@@ -420,6 +420,8 @@ exports.Prisma.BookingScalarFieldEnum = {
   cancelledAt: 'cancelledAt',
   cancellationReason: 'cancellationReason',
   requiresManagerConfirmation: 'requiresManagerConfirmation',
+  couponCode: 'couponCode',
+  discountRuleId: 'discountRuleId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   deletedAt: 'deletedAt'
@@ -648,6 +650,122 @@ exports.Prisma.VehicleSwapScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.DiscountRuleScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  code: 'code',
+  name: 'name',
+  description: 'description',
+  discountType: 'discountType',
+  value: 'value',
+  maxDiscountCap: 'maxDiscountCap',
+  scope: 'scope',
+  applicableBranchIds: 'applicableBranchIds',
+  targetCustomerIds: 'targetCustomerIds',
+  newCustomersOnly: 'newCustomersOnly',
+  minBookingCount: 'minBookingCount',
+  maxBookingCount: 'maxBookingCount',
+  minBookingAmount: 'minBookingAmount',
+  maxBookingAmount: 'maxBookingAmount',
+  applicableVehicleCategoryIds: 'applicableVehicleCategoryIds',
+  minRentalDays: 'minRentalDays',
+  maxRentalDays: 'maxRentalDays',
+  applicablePaymentPlans: 'applicablePaymentPlans',
+  allowPartialPayment: 'allowPartialPayment',
+  minAdvanceAfterDiscount: 'minAdvanceAfterDiscount',
+  allowPostBooking: 'allowPostBooking',
+  allowPostInvoice: 'allowPostInvoice',
+  totalUsageLimit: 'totalUsageLimit',
+  perUserLimit: 'perUserLimit',
+  perBranchLimit: 'perBranchLimit',
+  perDayLimit: 'perDayLimit',
+  stackable: 'stackable',
+  priority: 'priority',
+  startDate: 'startDate',
+  endDate: 'endDate',
+  isActive: 'isActive',
+  createdById: 'createdById',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.DurationDiscountSlabScalarFieldEnum = {
+  id: 'id',
+  branchId: 'branchId',
+  minDays: 'minDays',
+  maxDays: 'maxDays',
+  discountType: 'discountType',
+  value: 'value',
+  label: 'label',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.BranchDiscountConfigScalarFieldEnum = {
+  id: 'id',
+  branchId: 'branchId',
+  durationDiscountEnabled: 'durationDiscountEnabled',
+  stackWithCoupon: 'stackWithCoupon',
+  maxCombinedDiscountPercent: 'maxCombinedDiscountPercent',
+  managerApprovalThreshold: 'managerApprovalThreshold',
+  maxManualDiscountsPerEmployeePerDay: 'maxManualDiscountsPerEmployeePerDay',
+  managerCouponCreationEnabled: 'managerCouponCreationEnabled',
+  maxManagerCouponDiscountPercent: 'maxManagerCouponDiscountPercent',
+  maxManagerCouponFlatAmount: 'maxManagerCouponFlatAmount',
+  maxManagerCouponValidityDays: 'maxManagerCouponValidityDays',
+  maxManagerCouponUsageLimit: 'maxManagerCouponUsageLimit',
+  maxManagerCouponsPerDay: 'maxManagerCouponsPerDay',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.DiscountApplicationScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  bookingId: 'bookingId',
+  originalAmount: 'originalAmount',
+  durationDiscountAmount: 'durationDiscountAmount',
+  durationDiscountPercent: 'durationDiscountPercent',
+  durationSlabId: 'durationSlabId',
+  couponDiscountAmount: 'couponDiscountAmount',
+  couponDiscountPercent: 'couponDiscountPercent',
+  discountRuleId: 'discountRuleId',
+  manualDiscountAmount: 'manualDiscountAmount',
+  manualDiscountId: 'manualDiscountId',
+  totalDiscountAmount: 'totalDiscountAmount',
+  finalAmount: 'finalAmount',
+  paymentPlan: 'paymentPlan',
+  adjustmentType: 'adjustmentType',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.CouponUsageLogScalarFieldEnum = {
+  id: 'id',
+  discountRuleId: 'discountRuleId',
+  bookingId: 'bookingId',
+  customerId: 'customerId',
+  branchId: 'branchId',
+  discountedAmount: 'discountedAmount',
+  appliedAt: 'appliedAt'
+};
+
+exports.Prisma.ManualDiscountScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  bookingId: 'bookingId',
+  amount: 'amount',
+  reason: 'reason',
+  issuedById: 'issuedById',
+  approvedById: 'approvedById',
+  status: 'status',
+  requiresApproval: 'requiresApproval',
+  approvedAt: 'approvedAt',
+  rejectedAt: 'rejectedAt',
+  rejectionReason: 'rejectionReason',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -715,7 +833,11 @@ exports.StaffActionType = exports.$Enums.StaffActionType = {
   REFUNDED: 'REFUNDED',
   ASSESSED: 'ASSESSED',
   INITIATED: 'INITIATED',
-  COMPLETED: 'COMPLETED'
+  COMPLETED: 'COMPLETED',
+  APPLIED: 'APPLIED',
+  OVERRIDDEN: 'OVERRIDDEN',
+  RECALCULATED: 'RECALCULATED',
+  FLAGGED: 'FLAGGED'
 };
 
 exports.StaffEntityType = exports.$Enums.StaffEntityType = {
@@ -729,7 +851,10 @@ exports.StaffEntityType = exports.$Enums.StaffEntityType = {
   DEPOSIT: 'DEPOSIT',
   EMPLOYEE: 'EMPLOYEE',
   PRICING: 'PRICING',
-  CAPTURE_CONFIG: 'CAPTURE_CONFIG'
+  CAPTURE_CONFIG: 'CAPTURE_CONFIG',
+  DISCOUNT_RULE: 'DISCOUNT_RULE',
+  DISCOUNT_APPLICATION: 'DISCOUNT_APPLICATION',
+  MANUAL_DISCOUNT: 'MANUAL_DISCOUNT'
 };
 
 exports.VehicleStatus = exports.$Enums.VehicleStatus = {
@@ -815,7 +940,8 @@ exports.AuditCategory = exports.$Enums.AuditCategory = {
   EMPLOYEE: 'EMPLOYEE',
   BRANCH: 'BRANCH',
   AUTH: 'AUTH',
-  SYSTEM: 'SYSTEM'
+  SYSTEM: 'SYSTEM',
+  DISCOUNT: 'DISCOUNT'
 };
 
 exports.AuditSeverity = exports.$Enums.AuditSeverity = {
@@ -837,6 +963,31 @@ exports.SwapReason = exports.$Enums.SwapReason = {
   DOWNGRADE: 'DOWNGRADE',
   DAMAGE: 'DAMAGE',
   OTHER: 'OTHER'
+};
+
+exports.DiscountType = exports.$Enums.DiscountType = {
+  PERCENTAGE: 'PERCENTAGE',
+  FLAT: 'FLAT'
+};
+
+exports.DiscountScope = exports.$Enums.DiscountScope = {
+  GLOBAL: 'GLOBAL',
+  BRANCH: 'BRANCH',
+  USER: 'USER'
+};
+
+exports.AdjustmentType = exports.$Enums.AdjustmentType = {
+  NONE: 'NONE',
+  PENDING_REFUND: 'PENDING_REFUND',
+  REFUNDED: 'REFUNDED',
+  WALLET_CREDITED: 'WALLET_CREDITED',
+  CASH_HANDLED: 'CASH_HANDLED'
+};
+
+exports.ManualDiscountStatus = exports.$Enums.ManualDiscountStatus = {
+  PENDING_APPROVAL: 'PENDING_APPROVAL',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED'
 };
 
 exports.Prisma.ModelName = {
@@ -878,7 +1029,13 @@ exports.Prisma.ModelName = {
   FeatureFlag: 'FeatureFlag',
   BranchFeatureFlag: 'BranchFeatureFlag',
   VehicleFeatureFlag: 'VehicleFeatureFlag',
-  VehicleSwap: 'VehicleSwap'
+  VehicleSwap: 'VehicleSwap',
+  DiscountRule: 'DiscountRule',
+  DurationDiscountSlab: 'DurationDiscountSlab',
+  BranchDiscountConfig: 'BranchDiscountConfig',
+  DiscountApplication: 'DiscountApplication',
+  CouponUsageLog: 'CouponUsageLog',
+  ManualDiscount: 'ManualDiscount'
 };
 
 /**
