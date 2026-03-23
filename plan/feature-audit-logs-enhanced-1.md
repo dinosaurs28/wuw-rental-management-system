@@ -2,15 +2,15 @@
 goal: Enhanced Audit Logs System for VRMS — Full Actor, Action, Context, Data & Metadata Capture
 version: 1.0
 date_created: 2026-03-22
-last_updated: 2026-03-22
+last_updated: 2026-03-24
 owner: Backend Team
-status: 'In progress'
+status: 'Completed'
 tags: [feature, audit, backend, database, migration, security]
 ---
 
 # Introduction
 
-![Status: In progress](https://img.shields.io/badge/status-In%20progress-yellow)
+![Status: Completed](https://img.shields.io/badge/status-Completed-brightgreen)
 
 The current audit log system in VRMS captures only a minimal snapshot of activity — actor ID, action name, entity type, entity ID, and optional before/after JSON. It was built as a stopgap when the project had no formal audit requirements. Now that admins and branch managers need to inspect both customer and employee activity with accountability, the system must be redesigned.
 
@@ -52,13 +52,13 @@ This plan upgrades the `AuditLog` model and its surrounding infrastructure to ca
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-001 | Add `AuditCategory` enum to `packages/db/prisma/schema.prisma` with values: `BOOKING`, `PAYMENT`, `VEHICLE`, `CUSTOMER`, `EMPLOYEE`, `BRANCH`, `AUTH`, `SYSTEM` | | |
-| TASK-002 | Add `AuditSeverity` enum to `packages/db/prisma/schema.prisma` with values: `INFO`, `WARNING`, `CRITICAL` | | |
-| TASK-003 | Replace the existing `AuditLog` model in `schema.prisma` with the new model (see schema below). Keep `before`, `after` as nullable `Json`. Add new fields: `actorId`, `actorName`, `actorRole`, `actorBranchId`, `approverId`, `approverName`, `approverRole`, `category`, `severity`, `description`, `entityLabel`, `ipAddress`, `userAgent`, `requestId`, `changedFields`. Remove old `userId` field and replace with `actorId`. | | |
-| TASK-004 | Update `User` model in `schema.prisma` to add two named relations for the new `AuditLog` relations: `actorAuditLogs AuditLog[] @relation("ActorAuditLogs")` and `approverAuditLogs AuditLog[] @relation("ApproverAuditLogs")`. Remove the old unnamed `auditLogs` relation. | | |
-| TASK-005 | Update `Branch` model in `schema.prisma` to add relation: `auditLogs AuditLog[]` | | |
-| TASK-006 | Run `npx prisma migrate dev --name enhance_audit_logs` from `packages/db/` to generate and apply the migration. Verify migration file is created in `packages/db/prisma/migrations/`. | | |
-| TASK-007 | Run `npx prisma generate` to regenerate the Prisma client with updated types. | | |
+| TASK-001 | Add `AuditCategory` enum to `packages/db/prisma/schema.prisma` with values: `BOOKING`, `PAYMENT`, `VEHICLE`, `CUSTOMER`, `EMPLOYEE`, `BRANCH`, `AUTH`, `SYSTEM` | ✅ | 2026-03-24 |
+| TASK-002 | Add `AuditSeverity` enum to `packages/db/prisma/schema.prisma` with values: `INFO`, `WARNING`, `CRITICAL` | ✅ | 2026-03-24 |
+| TASK-003 | Replace the existing `AuditLog` model in `schema.prisma` with the new model (see schema below). Keep `before`, `after` as nullable `Json`. Add new fields: `actorId`, `actorName`, `actorRole`, `actorBranchId`, `approverId`, `approverName`, `approverRole`, `category`, `severity`, `description`, `entityLabel`, `ipAddress`, `userAgent`, `requestId`, `changedFields`. Remove old `userId` field and replace with `actorId`. | ✅ | 2026-03-24 |
+| TASK-004 | Update `User` model in `schema.prisma` to add two named relations for the new `AuditLog` relations: `actorAuditLogs AuditLog[] @relation("ActorAuditLogs")` and `approverAuditLogs AuditLog[] @relation("ApproverAuditLogs")`. Remove the old unnamed `auditLogs` relation. | ✅ | 2026-03-24 |
+| TASK-005 | Update `Branch` model in `schema.prisma` to add relation: `auditLogs AuditLog[]` | ✅ | 2026-03-24 |
+| TASK-006 | Run `npx prisma migrate dev --name enhance_audit_logs` from `packages/db/` to generate and apply the migration. Verify migration file is created in `packages/db/prisma/migrations/`. | ✅ | 2026-03-24 |
+| TASK-007 | Run `npx prisma generate` to regenerate the Prisma client with updated types. | ✅ | 2026-03-24 |
 
 **New AuditLog schema block:**
 ```prisma
@@ -135,10 +135,10 @@ model AuditLog {
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-008 | Create `apps/backend/src/services/audit/audit.types.ts`. Define and export: `CreateAuditLogInput` interface (all fields from the schema), `AuditCategory` re-export from `@prisma/client`, `AuditSeverity` re-export from `@prisma/client`. | | |
-| TASK-009 | Create `apps/backend/src/services/audit/audit.service.ts`. Implement class `AuditService` with: (1) `async log(input: CreateAuditLogInput, tx?: PrismaTransactionClient): Promise<void>` — creates one audit log using `tx ?? prisma`; (2) `async logBatch(inputs: CreateAuditLogInput[], tx?: PrismaTransactionClient): Promise<void>` — creates many using `createMany`; (3) `private computeChangedFields(before?: Record<string,any>, after?: Record<string,any>): string[]` — returns keys where values differ between before and after objects. Export singleton: `export const auditService = new AuditService()`. | | |
-| TASK-010 | In `audit.service.ts`, auto-compute `changedFields` inside `log()`: if caller does not supply `changedFields` but supplies both `before` and `after`, call `computeChangedFields(before, after)` and set it. | | |
-| TASK-011 | In `audit.service.ts`, generate `publicId` using `createID()` inside `log()` so callers never need to supply it. | | |
+| TASK-008 | Create `apps/backend/src/services/audit/audit.types.ts`. Define and export: `CreateAuditLogInput` interface (all fields from the schema), `AuditCategory` re-export from `@prisma/client`, `AuditSeverity` re-export from `@prisma/client`. | ✅ | 2026-03-24 |
+| TASK-009 | Create `apps/backend/src/services/audit/audit.service.ts`. Implement class `AuditService` with: (1) `async log(input: CreateAuditLogInput, tx?: PrismaTransactionClient): Promise<void>` — creates one audit log using `tx ?? prisma`; (2) `async logBatch(inputs: CreateAuditLogInput[], tx?: PrismaTransactionClient): Promise<void>` — creates many using `createMany`; (3) `private computeChangedFields(before?: Record<string,any>, after?: Record<string,any>): string[]` — returns keys where values differ between before and after objects. Export singleton: `export const auditService = new AuditService()`. | ✅ | 2026-03-24 |
+| TASK-010 | In `audit.service.ts`, auto-compute `changedFields` inside `log()`: if caller does not supply `changedFields` but supplies both `before` and `after`, call `computeChangedFields(before, after)` and set it. | ✅ | 2026-03-24 |
+| TASK-011 | In `audit.service.ts`, generate `publicId` using `createID()` inside `log()` so callers never need to supply it. | ✅ | 2026-03-24 |
 
 **AuditService interface reference:**
 ```typescript
@@ -176,12 +176,12 @@ export interface CreateAuditLogInput {
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-012 | Update `apps/backend/src/services/booking/advance-deposit.service.ts` — replace `RECORD_ADVANCE_PAYMENT` audit call. Add: `actorName`, `actorRole`, `actorBranchId`, `category: AuditCategory.PAYMENT`, `description: "Advance payment of ₹{amount} recorded for booking {bookingId}"`, `after: { advanceAmount, advancePaidAt, status }`. Fetch actor user details from DB before creating the log. | | |
-| TASK-013 | Update `apps/backend/src/services/booking/advance-deposit.service.ts` — replace `RECORD_SAFETY_DEPOSIT`, `REFUND_SAFETY_DEPOSIT`, `CANCEL_BOOKING_NO_SHOW`, `REMAINING_PAYMENT_COLLECTED_AT_PICKUP`, `REMAINING_PAYMENT_COLLECTED_AT_RETURN` audit calls using `AuditCategory.PAYMENT` or `AuditCategory.BOOKING` as appropriate. | | |
-| TASK-014 | Update `apps/backend/src/controller/payment/checkPayment.controller.ts` — replace `BOOKING_CONFIRMED` and `BOOKING_CONFIRMED_ADVANCE` audit calls. Category: `PAYMENT`. Add `ipAddress: req.ip`, `userAgent: req.headers['user-agent']`. | | |
-| TASK-015 | Update `apps/backend/src/controller/payment/checkPaymentForCash.controller.ts` — replace audit calls. Category: `PAYMENT`. Add IP and user agent from `req`. | | |
-| TASK-016 | Update `apps/backend/src/services/vehicle-swap/vehicle-swap.service.ts` — replace `VEHICLE_SWAP` audit call. Category: `AuditCategory.VEHICLE`. Keep `metadata: { originalVehicleId, newVehicleId, reason, markOriginalForMaintenance }`. Add `description: "Vehicle swapped from {originalVehicleId} to {newVehicleId} for booking {bookingId}"`. | | |
-| TASK-017 | Update `apps/backend/src/jobs/bookingExpiry.worker.ts` — replace `HOLD_EXPIRED` audit call. Category: `AuditCategory.SYSTEM`. Actor: use a system user ID (define `SYSTEM_USER_ID` constant) or the booking's `createdById`. Set `severity: AuditSeverity.WARNING`. | | |
+| TASK-012 | Update `apps/backend/src/services/booking/advance-deposit.service.ts` — replace `RECORD_ADVANCE_PAYMENT` audit call. Add: `actorName`, `actorRole`, `actorBranchId`, `category: AuditCategory.PAYMENT`, `description: "Advance payment of ₹{amount} recorded for booking {bookingId}"`, `after: { advanceAmount, advancePaidAt, status }`. Fetch actor user details from DB before creating the log. | ✅ | 2026-03-24 |
+| TASK-013 | Update `apps/backend/src/services/booking/advance-deposit.service.ts` — replace `RECORD_SAFETY_DEPOSIT`, `REFUND_SAFETY_DEPOSIT`, `CANCEL_BOOKING_NO_SHOW`, `REMAINING_PAYMENT_COLLECTED_AT_PICKUP`, `REMAINING_PAYMENT_COLLECTED_AT_RETURN` audit calls using `AuditCategory.PAYMENT` or `AuditCategory.BOOKING` as appropriate. | ✅ | 2026-03-24 |
+| TASK-014 | Update `apps/backend/src/controller/payment/checkPayment.controller.ts` — replace `BOOKING_CONFIRMED` and `BOOKING_CONFIRMED_ADVANCE` audit calls. Category: `PAYMENT`. Add `ipAddress: req.ip`, `userAgent: req.headers['user-agent']`. | ✅ | 2026-03-24 |
+| TASK-015 | Update `apps/backend/src/controller/payment/checkPaymentForCash.controller.ts` — replace audit calls. Category: `PAYMENT`. Add IP and user agent from `req`. | ✅ | 2026-03-24 |
+| TASK-016 | Update `apps/backend/src/services/vehicle-swap/vehicle-swap.service.ts` — replace `VEHICLE_SWAP` audit call. Category: `AuditCategory.VEHICLE`. Keep `metadata: { originalVehicleId, newVehicleId, reason, markOriginalForMaintenance }`. Add `description: "Vehicle swapped from {originalVehicleId} to {newVehicleId} for booking {bookingId}"`. | ✅ | 2026-03-24 |
+| TASK-017 | Update `apps/backend/src/jobs/bookingExpiry.worker.ts` — replace `HOLD_EXPIRED` audit call. Category: `AuditCategory.SYSTEM`. Actor: use a system user ID (define `SYSTEM_USER_ID` constant) or the booking's `createdById`. Set `severity: AuditSeverity.WARNING`. | ✅ | 2026-03-24 |
 
 ---
 
@@ -191,14 +191,14 @@ export interface CreateAuditLogInput {
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-018 | Add `BOOKING_CREATED` audit log in the booking creation controller/service. Category: `BOOKING`. Actor: customer. Description: "Booking created for vehicle {vehicleId} from {startDate} to {endDate}". | | |
-| TASK-019 | Add `BOOKING_CHECKED_IN` audit log when vehicle is handed over to customer at pickup. Category: `BOOKING`. Actor: staff who performed check-in. Severity: `INFO`. | | |
-| TASK-020 | Add `BOOKING_CHECKED_OUT` audit log when vehicle is returned by customer. Category: `BOOKING`. Actor: staff who processed return. Include `metadata: { odometerReturn, fuelLevelReturn }` if available. | | |
-| TASK-021 | Add `BOOKING_CANCELLED` audit log wherever booking cancellation is handled. Category: `BOOKING`. Include `metadata: { reason, cancelledBy }`. Severity: `WARNING`. | | |
-| TASK-022 | Add `DAMAGE_COST_ASSESSED` audit log in the damage cost service/controller. Category: `PAYMENT`. Include `metadata: { damageDescription, amount }`. Severity: `WARNING`. | | |
-| TASK-023 | Add `LOGIN_SUCCESS` and `LOGIN_FAILED` audit logs in the auth controller. Category: `AUTH`. `LOGIN_FAILED` severity: `WARNING`. For `LOGIN_FAILED`, set `actorId` to 0 or a system placeholder if user not found; include `metadata: { attemptedEmail }`. | | |
-| TASK-024 | Add `CUSTOMER_DOCUMENT_VERIFIED` audit log wherever KYC documents are approved or rejected. Category: `CUSTOMER`. Actor: staff. Include `metadata: { documentType, status: 'APPROVED'|'REJECTED' }`. | | |
-| TASK-025 | Add `EMPLOYEE_CREATED` and `EMPLOYEE_ROLE_CHANGED` audit logs in employee management controllers. Category: `EMPLOYEE`. | | |
+| TASK-018 | Add `BOOKING_CREATED` audit log in the booking creation controller/service. Category: `BOOKING`. Actor: customer. Description: "Booking created for vehicle {vehicleId} from {startDate} to {endDate}". | ✅ | 2026-03-24 |
+| TASK-019 | Add `BOOKING_CHECKED_IN` audit log when vehicle is handed over to customer at pickup. Category: `BOOKING`. Actor: staff who performed check-in. Severity: `INFO`. | ✅ | 2026-03-24 |
+| TASK-020 | Add `BOOKING_CHECKED_OUT` audit log when vehicle is returned by customer. Category: `BOOKING`. Actor: staff who processed return. Include `metadata: { odometerReturn, fuelLevelReturn }` if available. | ✅ | 2026-03-24 |
+| TASK-021 | Add `BOOKING_CANCELLED` audit log wherever booking cancellation is handled. Category: `BOOKING`. Include `metadata: { reason, cancelledBy }`. Severity: `WARNING`. | ✅ | 2026-03-24 |
+| TASK-022 | Add `DAMAGE_COST_ASSESSED` audit log in the damage cost service/controller. Category: `PAYMENT`. Include `metadata: { damageDescription, amount }`. Severity: `WARNING`. | ✅ | 2026-03-24 |
+| TASK-023 | Add `LOGIN_SUCCESS` and `LOGIN_FAILED` audit logs in the auth controller. Category: `AUTH`. `LOGIN_FAILED` severity: `WARNING`. For `LOGIN_FAILED`, set `actorId` to 0 or a system placeholder if user not found; include `metadata: { attemptedEmail }`. | ✅ | 2026-03-24 |
+| TASK-024 | Add `CUSTOMER_DOCUMENT_VERIFIED` audit log wherever KYC documents are approved or rejected. Category: `CUSTOMER`. Actor: staff. Include `metadata: { documentType, status: 'APPROVED'|'REJECTED' }`. | ✅ | 2026-03-24 |
+| TASK-025 | Add `EMPLOYEE_CREATED` and `EMPLOYEE_ROLE_CHANGED` audit logs in employee management controllers. Category: `EMPLOYEE`. | ✅ | 2026-03-24 |
 
 ---
 

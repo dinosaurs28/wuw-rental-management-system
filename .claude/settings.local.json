@@ -9,7 +9,8 @@
       "Bash(npx tsc:*)",
       "Bash(grep -l ExtensionStatus /c/Freelance/vrms/packages/db/src/generated/client/*.ts)",
       "Bash(npm run:*)",
-      "Bash(pnpm -F backend tsc --noEmit)"
+      "Bash(pnpm -F backend tsc --noEmit)",
+      "Bash(grep:*)"
     ]
   }
 }
