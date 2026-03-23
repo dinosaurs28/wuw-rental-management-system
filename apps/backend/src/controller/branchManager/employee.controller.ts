@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { prisma, Role, User } from "@repo/database/client";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
+import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
 import { StatusCode } from "../../types/statusCode.js";
 import { createEmployeeSchema, updateEmployeeSchema } from "@repo/schemas";
 import { hashSync } from "bcrypt";
@@ -165,6 +166,26 @@ export const CreateEmployee = async (req: Request, res: Response) => {
             entityType: StaffEntityType.EMPLOYEE,
             entityRef: newUser.publicId,
             description: `Employee account created for ${newUser.name}`,
+        });
+
+        const manager = await prisma.user.findUnique({
+            where: { publicId: req.public_Id },
+            select: { id: true, name: true, role: true },
+        });
+        auditService.log({
+            actorId: manager?.id,
+            actorName: manager?.name ?? "Unknown",
+            actorRole: manager?.role ?? Role.MANAGER,
+            actorBranchId: branchId,
+            action: "EMPLOYEE_CREATED",
+            category: AuditCategory.EMPLOYEE,
+            description: `Employee account created for ${newUser.name} (${newUser.email})`,
+            entity: "User",
+            entityId: newUser.publicId,
+            entityLabel: newUser.name,
+            ipAddress: req.ip,
+            userAgent: req.headers["user-agent"],
+            after: { name: newUser.name, email: newUser.email, role: newUser.role },
         });
 
         return res.status(StatusCode.CREATED).json({

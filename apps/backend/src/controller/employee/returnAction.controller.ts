@@ -9,6 +9,7 @@ import {
 import { createID } from "../../utils/nanoID.js";
 import { fileCleanupQueue } from "../../lib/queue.client.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
+import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
 import { r2 } from "../../lib/r2.client.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs/promises";
@@ -124,7 +125,7 @@ export const CompleteReturn = async (req: Request, res: Response) => {
     const actingUserPublicId = req.public_Id;
     const actingUser = await prisma.user.findUnique({
       where: { publicId: actingUserPublicId },
-      select: { id: true },
+      select: { id: true, name: true, role: true, branchId: true },
     });
 
     if (!actingUser) {
@@ -192,6 +193,22 @@ export const CompleteReturn = async (req: Request, res: Response) => {
           ? `Return approval requested for booking ${booking.publicId}`
           : `Vehicle return completed for booking ${booking.publicId}`,
       }, tx);
+
+      if (!requireManagerConfirmation) {
+        await auditService.log({
+          actorId: actingUser.id,
+          actorName: actingUser.name,
+          actorRole: actingUser.role,
+          actorBranchId: actingUser.branchId ?? undefined,
+          action: "BOOKING_CHECKED_OUT",
+          category: AuditCategory.BOOKING,
+          description: `Vehicle returned by customer for booking ${booking.publicId}`,
+          entity: "Booking",
+          entityId: booking.publicId,
+          ipAddress: req.ip,
+          userAgent: req.headers["user-agent"],
+        }, tx);
+      }
     });
 
     // Invalidate public vehicle cache only if actual return occurred

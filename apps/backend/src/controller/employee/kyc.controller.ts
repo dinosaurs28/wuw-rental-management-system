@@ -3,6 +3,7 @@ import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
 import { createID } from "../../utils/nanoID.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
+import { auditService, AuditCategory, AuditSeverity } from "../../services/audit/audit.service.js";
 
 export const GetBookingKyc = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
@@ -108,7 +109,7 @@ export const VerifyKyc = async (req: Request, res: Response) => {
     const actingUserPublicId = req.public_Id;
     const actingUser = await prisma.user.findUnique({
       where: { publicId: actingUserPublicId },
-      select: { id: true },
+      select: { id: true, name: true, role: true, branchId: true },
     });
 
     if (!actingUser) {
@@ -138,6 +139,22 @@ export const VerifyKyc = async (req: Request, res: Response) => {
         entityType: StaffEntityType.KYC,
         entityRef: kyc.publicId,
         description: `KYC document ${kyc.publicId} ${status.toLowerCase()} for booking`,
+      }, tx);
+
+      await auditService.log({
+        actorId: actingUser.id,
+        actorName: actingUser.name,
+        actorRole: actingUser.role,
+        actorBranchId: actingUser.branchId ?? undefined,
+        action: "CUSTOMER_DOCUMENT_VERIFIED",
+        category: AuditCategory.CUSTOMER,
+        severity: status === "REJECTED" ? AuditSeverity.WARNING : AuditSeverity.INFO,
+        description: `KYC document ${kyc.publicId} ${status.toLowerCase()} by ${actingUser.name}`,
+        entity: "CustomerKyc",
+        entityId: kyc.publicId,
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
+        metadata: { documentType: kyc.type, status },
       }, tx);
 
       return updated;

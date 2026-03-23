@@ -11,6 +11,7 @@ import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.
 import { createID } from "../../utils/nanoID.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
+import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
 
 export const BookingController = async (req: Request, res: Response) => {
   try {
@@ -159,7 +160,7 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
 
     const staff = await prisma.user.findUnique({
       where: { publicId: req.public_Id },
-      select: { id: true },
+      select: { id: true, name: true, role: true, branchId: true },
     });
 
     if (!staff) {
@@ -407,6 +408,22 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         entityType: StaffEntityType.BOOKING,
         entityRef: newBooking.publicId,
         description: `Booking ${newBooking.publicId} created`,
+      }, tx);
+
+      await auditService.log({
+        actorId: staff.id,
+        actorName: staff.name,
+        actorRole: staff.role,
+        actorBranchId: staff.branchId ?? undefined,
+        action: "BOOKING_CREATED",
+        category: AuditCategory.BOOKING,
+        description: `Booking created for customer ${customer.name} from ${startDate.toISOString()} to ${endDate.toISOString()}`,
+        entity: "Booking",
+        entityId: newBooking.publicId,
+        entityLabel: newBooking.publicId,
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
+        after: { status: newBooking.status, totalFinal: grandFinalTotal, vehicles },
       }, tx);
 
       return newBooking;

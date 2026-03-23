@@ -14,6 +14,7 @@ import { redis } from "../../lib/redisconfig.js";
 import { createID } from "../../utils/nanoID.js";
 import { damageChargeService } from "../../services/damage/damage-charge.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
+import { auditService, AuditCategory, AuditSeverity } from "../../services/audit/audit.service.js";
 import { closeDamageReportSchema } from "@repo/schemas";
 import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
 import { checkPhonePeStatus } from "../../utils/payment/paymentStatus.utils.js";
@@ -405,7 +406,7 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
 
     const managerUser = await prisma.user.findUnique({
       where: { publicId: managerId },
-      select: { id: true },
+      select: { id: true, name: true, role: true },
     });
 
     if (!managerUser)
@@ -573,6 +574,23 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
         entityType: StaffEntityType.DAMAGE_REPORT,
         entityRef: damageReport.publicId,
         description: `Damage report ${damageReport.publicId} closed`,
+      }, tx);
+
+      await auditService.log({
+        actorId: managerUser.id,
+        actorName: managerUser.name,
+        actorRole: managerUser.role,
+        actorBranchId: branchId,
+        action: "DAMAGE_COST_ASSESSED",
+        category: AuditCategory.PAYMENT,
+        severity: AuditSeverity.WARNING,
+        description: `Damage cost of ₹${finalCost} assessed for vehicle ${damageReport.vehicle.regNo} (booking ${booking.publicId})`,
+        entity: "DamageReport",
+        entityId: damageReport.publicId,
+        entityLabel: damageReport.vehicle.regNo,
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
+        metadata: { damageDescription: damageReport.notes, amount: finalCost, disposition, chargeType: activeChargeType },
       }, tx);
     });
 

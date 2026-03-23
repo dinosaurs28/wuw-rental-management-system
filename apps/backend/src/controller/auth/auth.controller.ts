@@ -8,6 +8,7 @@ import {
 import { createID } from "../../utils/nanoID.js";
 import { AuthProvider, prisma, Role } from "@repo/database/client";
 import { jwtsign } from "../../utils/token/tokensign.utlis.js";
+import { auditService, AuditCategory, AuditSeverity } from "../../services/audit/audit.service.js";
 
 export const emailAuthController = async (req: Request, res: Response) => {
   try {
@@ -86,12 +87,39 @@ export const emailAuthControllerSignin = async (
       },
     });
     if (!response || !response.passwordHash) {
+      auditService.log({
+        actorName: "Unknown",
+        actorRole: Role.CUSTOMER,
+        action: "LOGIN_FAILED",
+        category: AuditCategory.AUTH,
+        severity: AuditSeverity.WARNING,
+        description: `Customer login failed — email not registered`,
+        entity: "User",
+        entityId: "unknown",
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
+        metadata: { attemptedEmail: emailower },
+      });
       return res.status(StatusCode.NOT_FOUND).json({
         message: "This email address is not registered.",
       });
     }
     const hashcomparpass = await comparehash(password, response?.passwordHash);
     if (!hashcomparpass) {
+      auditService.log({
+        actorId: response.id,
+        actorName: response.name,
+        actorRole: response.role,
+        action: "LOGIN_FAILED",
+        category: AuditCategory.AUTH,
+        severity: AuditSeverity.WARNING,
+        description: `Customer login failed — invalid password for ${response.email}`,
+        entity: "User",
+        entityId: response.publicId,
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
+        metadata: { attemptedEmail: emailower },
+      });
       return res.status(StatusCode.UNAUTHORIZED).json({
         message: "Invalid credentials.",
       });
@@ -120,6 +148,18 @@ export const emailAuthControllerSignin = async (
         role: response.role,
         verified: true,
         provider: response.authProvider,
+      });
+      auditService.log({
+        actorId: response.id,
+        actorName: response.name,
+        actorRole: response.role,
+        action: "LOGIN_SUCCESS",
+        category: AuditCategory.AUTH,
+        description: `Customer ${response.name} logged in successfully`,
+        entity: "User",
+        entityId: response.publicId,
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
       });
       return res
         .status(StatusCode.OK)

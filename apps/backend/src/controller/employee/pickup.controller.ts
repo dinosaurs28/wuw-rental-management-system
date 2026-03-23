@@ -9,6 +9,7 @@ import {
   BookingPhotoType,
 } from "@repo/database/client";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
+import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
 import { createID } from "../../utils/nanoID.js";
 import { pickUpVehicleSchema } from "@repo/schemas";
 
@@ -76,7 +77,7 @@ export const PickupController = async (req: Request, res: Response) => {
     const actingUserPublicId = req.public_Id;
     const actingUser = await prisma.user.findUnique({
       where: { publicId: actingUserPublicId },
-      select: { id: true },
+      select: { id: true, name: true, role: true, branchId: true },
     });
 
     if (!actingUser) {
@@ -177,6 +178,23 @@ export const PickupController = async (req: Request, res: Response) => {
           ? `Pickup approval requested for booking ${booking.publicId}`
           : `Vehicle pickup confirmed for booking ${booking.publicId}`,
       }, tx);
+
+      if (!parsedVehicleDetails.requireManagerConfirmation) {
+        await auditService.log({
+          actorId: actingUser.id,
+          actorName: actingUser.name,
+          actorRole: actingUser.role,
+          actorBranchId: actingUser.branchId ?? undefined,
+          action: "BOOKING_CHECKED_IN",
+          category: AuditCategory.BOOKING,
+          description: `Vehicle handed over to customer for booking ${booking.publicId}`,
+          entity: "Booking",
+          entityId: booking.publicId,
+          ipAddress: req.ip,
+          userAgent: req.headers["user-agent"],
+          metadata: { odo: parsedVehicleDetails.odo, fuelLevel: parsedVehicleDetails.fuelLevel },
+        }, tx);
+      }
     });
 
     return res.status(StatusCode.OK).json({
