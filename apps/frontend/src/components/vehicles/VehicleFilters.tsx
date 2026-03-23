@@ -28,6 +28,8 @@ import { cn } from "@/lib/utils";
 interface VehicleFiltersProps {
   branches: { publicId: string; name: string }[];
   branchesLoading: boolean;
+  categories?: { publicId: string; name: string }[];
+  categoriesLoading?: boolean;
   selectedBranch: string;
   pickupDate: Date | null;
   returnDate: Date | null;
@@ -48,12 +50,6 @@ interface VehicleFiltersProps {
   onReturnTimeChange?: (time: string) => void;
 }
 
-const CATEGORIES = [
-  { value: "all", label: "All Categories" },
-  { value: "oqhrdkffow94mxs3", label: "Two Wheeler" },
-  { value: "a3kk9u5pbc3j4sjv", label: "Four Wheeler" },
-];
-
 const SORT_OPTIONS = [
   { value: "default", label: "Default" },
   { value: "price_low_to_high", label: "Price: Low to High" },
@@ -63,6 +59,8 @@ const SORT_OPTIONS = [
 export const VehicleFilters = ({
   branches,
   branchesLoading,
+  categories = [],
+  categoriesLoading = false,
   selectedBranch,
   pickupDate,
   returnDate,
@@ -100,6 +98,14 @@ export const VehicleFilters = ({
 
     return () => clearTimeout(timer);
   }, [localSearch, onSearchChange, searchQuery]);
+
+  const categoryOptions = [
+    { value: "all", label: "All Categories" },
+    ...categories.map((category) => ({
+      value: category.publicId,
+      label: category.name,
+    })),
+  ];
 
   return (
     <div className="bg-zinc-900/40 backdrop-blur-2xl rounded-[2rem] border border-white/5 shadow-2xl p-6 md:p-8 relative overflow-hidden">
@@ -253,7 +259,11 @@ export const VehicleFilters = ({
           <label className="block text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase mb-3 ml-2">
             Category
           </label>
-          <Select value={category} onValueChange={onCategoryChange}>
+          <Select
+            value={category}
+            onValueChange={onCategoryChange}
+            disabled={categoriesLoading}
+          >
             <SelectTrigger className="h-14 w-full bg-black/40 border-white/10 text-white rounded-full hover:bg-black/60 hover:border-white/20 transition-all px-5">
               <div className="flex items-center gap-3 overflow-hidden">
                 <Grid3X3 className="size-4 text-zinc-400 shrink-0" />
@@ -261,7 +271,7 @@ export const VehicleFilters = ({
               </div>
             </SelectTrigger>
             <SelectContent className="rounded-2xl border-white/10 bg-zinc-900/95 backdrop-blur-xl text-zinc-50 shadow-2xl">
-              {CATEGORIES.map((cat) => (
+              {categoryOptions.map((cat) => (
                 <SelectItem
                   key={cat.value}
                   value={cat.value}

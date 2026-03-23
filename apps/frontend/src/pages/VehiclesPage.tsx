@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { useBranches } from "@/hooks/useBranches";
 import { useVehicles } from "@/hooks/useVehicles";
+import { usePublicVehicleCategories } from "@/hooks/usePublicVehicleCategories";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSearchStore } from "@/store/search.store";
 import type { VehicleFilters as VehicleFiltersType } from "@/services/vehicle.service";
@@ -24,6 +25,7 @@ export const VehiclesPage = () => {
   // State from landing page (if coming from search)
   const {
     branchPublicId,
+    categoryPublicId,
     pickupDate,
     returnDate,
     pickupTime: storePickupTime,
@@ -34,6 +36,8 @@ export const VehiclesPage = () => {
 
   // Branches data
   const { data: branches = [], isLoading: branchesLoading } = useBranches();
+  const { data: categories = [], isLoading: categoriesLoading } =
+    usePublicVehicleCategories();
 
   // Local filter state
   const [selectedBranch, setSelectedBranch] = useState<string>(
@@ -51,7 +55,7 @@ export const VehiclesPage = () => {
   const [returnTime, setReturnTime] = useState<string>(
     storeReturnTime || "10:00",
   );
-  const [category, setCategory] = useState<string>("all");
+  const [category, setCategory] = useState<string>(categoryPublicId || "all");
   const [sortBy, setSortBy] = useState<string>("default");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -87,6 +91,10 @@ export const VehiclesPage = () => {
       setSearchCriteria({ returnDate: nextDay });
     }
   }, [pickupDate, returnDate, setSearchCriteria]);
+
+  useEffect(() => {
+    setCategory(categoryPublicId || "all");
+  }, [categoryPublicId]);
 
   // Build filters for API with pagination
   const filters: VehicleFiltersType = useMemo(() => {
@@ -196,7 +204,8 @@ export const VehiclesPage = () => {
 
   const handleCategoryChange = useCallback((cat: string) => {
     setCategory(cat);
-  }, []);
+    setSearchCriteria({ categoryPublicId: cat });
+  }, [setSearchCriteria]);
 
   const handleSortChange = useCallback((sort: string) => {
     setSortBy(sort);
@@ -219,7 +228,7 @@ export const VehiclesPage = () => {
     setCurrentPage(1);
     resetSearch();
     if (defaultBranch) {
-      setSearchCriteria({ branchPublicId: defaultBranch });
+      setSearchCriteria({ branchPublicId: defaultBranch, categoryPublicId: "all" });
     }
   }, [branches, resetSearch, setSearchCriteria]);
 
@@ -297,6 +306,8 @@ export const VehiclesPage = () => {
           <VehicleFilters
             branches={branches}
             branchesLoading={branchesLoading}
+            categories={categories}
+            categoriesLoading={categoriesLoading}
             selectedBranch={selectedBranch}
             pickupDate={selectedPickupDate}
             returnDate={selectedReturnDate}

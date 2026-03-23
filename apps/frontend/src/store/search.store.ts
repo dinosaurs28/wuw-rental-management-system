@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 interface SearchState {
   branchPublicId: string | null;
+  categoryPublicId: string;
   pickupDate: Date | null;
   returnDate: Date | null;
   pickupTime: string;
@@ -14,6 +15,7 @@ interface SearchState {
 
 export const useSearchStore = create<SearchState>((set) => ({
   branchPublicId: null,
+  categoryPublicId: "all",
   pickupDate: new Date(),
   returnDate: null,
   pickupTime: "10:00",
@@ -22,6 +24,7 @@ export const useSearchStore = create<SearchState>((set) => ({
   resetSearch: () =>
     set({
       branchPublicId: null,
+      categoryPublicId: "all",
       pickupDate: new Date(),
       returnDate: null,
       pickupTime: "10:00",

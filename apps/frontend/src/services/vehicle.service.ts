@@ -372,3 +372,18 @@ export const fetchVehicleCategories = async (): Promise<Category[]> => {
     return [];
   }
 };
+
+export const fetchPublicVehicleCategories = async (): Promise<Category[]> => {
+  try {
+    const response = await axios.get<CategoriesResponse>(
+      `${API_URL}/public/categories`,
+      {
+        withCredentials: true,
+      },
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error("Error fetching public categories:", error);
+    return [];
+  }
+};

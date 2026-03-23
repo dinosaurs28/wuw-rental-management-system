@@ -8,8 +8,10 @@ import { createBookingSummary } from "../../controller/booking/getBookInfo.contr
 import { authCheckJwt } from "../../middlewares/authCheck.middlewares.js";
 import { checkProfileCompletion } from "../../middlewares/profileCheck.middleware.js";
 import { getPublicBranches } from "../../controller/public/getPublicBranches.controller.js";
+import { getPublicCategories } from "../../controller/public/categories.controller.js";
 const router: Router = Router();
 router.get("/branches", getPublicBranches);
+router.get("/categories", getPublicCategories);
 router.get("/vehicles", getPublicVehicles);
 router.get("/vehicles/:id", getPublicVehiclesDetails);
 router
