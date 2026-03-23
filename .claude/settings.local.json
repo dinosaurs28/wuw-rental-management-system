@@ -17,7 +17,8 @@
       "Bash(pnpm --filter backend tsc --noEmit)",
       "Bash(pnpm --filter frontend tsc --noEmit)",
       "Bash(pnpm --filter @repo/backend tsc --noEmit)",
-      "Bash(pnpm --filter backend exec tsc --noEmit)"
+      "Bash(pnpm --filter backend exec tsc --noEmit)",
+      "Bash(grep:*)"
     ]
   }
 }
