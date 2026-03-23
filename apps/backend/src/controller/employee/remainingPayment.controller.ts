@@ -68,7 +68,7 @@ export const InitiateRemainingPayment = async (req: Request, res: Response) => {
       const transactionId = `CASH_REM_${createID()}`;
 
       await advanceDepositService.recordRemainingPayment(
-        bookingId,
+        bookingId as string,
         depositMethod,
         transactionId,
         paidDuring as "PICKUP" | "RETURN",
@@ -281,7 +281,7 @@ export const CheckRemainingPaymentStatus = async (req: Request, res: Response) =
 
     if (paymentStatus.code === "PAYMENT_SUCCESS") {
       await advanceDepositService.recordRemainingPayment(
-        bookingId,
+        bookingId as string,
         DepositMethod.ONLINE_RAZORPAY,
         booking.remainingPaymentId,
         paidDuring as "PICKUP" | "RETURN",

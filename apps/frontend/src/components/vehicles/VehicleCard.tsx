@@ -35,7 +35,7 @@ export const VehicleCard = ({
     }
     return "pricing" in vehicle
       ? vehicle.pricing.daily
-      : vehicle.baseDailyPrice;
+      : vehicle.customPricing;
   };
 
   // Helper to get price label based on pricing type
@@ -114,7 +114,7 @@ export const VehicleCard = ({
         <div className="flex items-center justify-between pt-4 border-t border-white/5">
           <div>
             <span className="text-3xl font-bold text-white tracking-tight">
-              ₹{getDisplayPrice()}
+              ₹{getDisplayPrice() as number}
             </span>
             <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-2">
               {getPriceLabel()}

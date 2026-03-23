@@ -1,5 +1,5 @@
 import React from "react";
-import { VehicleSwap } from "@/types/vehicleSwap";
+import type { VehicleSwap } from "@/types/vehicleSwap";
 import {
   Table,
   TableBody,

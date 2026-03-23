@@ -263,6 +263,31 @@ export type CashShift = $Result.DefaultSelection<Prisma.$CashShiftPayload>
  * 
  */
 export type BookingExtension = $Result.DefaultSelection<Prisma.$BookingExtensionPayload>
+/**
+ * Model BranchChargeConfig
+ * 
+ */
+export type BranchChargeConfig = $Result.DefaultSelection<Prisma.$BranchChargeConfigPayload>
+/**
+ * Model ChargeEntry
+ * 
+ */
+export type ChargeEntry = $Result.DefaultSelection<Prisma.$ChargeEntryPayload>
+/**
+ * Model ChargeOverride
+ * 
+ */
+export type ChargeOverride = $Result.DefaultSelection<Prisma.$ChargeOverridePayload>
+/**
+ * Model FuelRecord
+ * 
+ */
+export type FuelRecord = $Result.DefaultSelection<Prisma.$FuelRecordPayload>
+/**
+ * Model SafetyDepositRequest
+ * 
+ */
+export type SafetyDepositRequest = $Result.DefaultSelection<Prisma.$SafetyDepositRequestPayload>
 
 /**
  * Enums
@@ -351,7 +376,12 @@ export const StaffEntityType: {
   PAYMENT_TRANSACTION: 'PAYMENT_TRANSACTION',
   CASH_SHIFT: 'CASH_SHIFT',
   REFUND_REQUEST: 'REFUND_REQUEST',
-  BOOKING_EXTENSION: 'BOOKING_EXTENSION'
+  BOOKING_EXTENSION: 'BOOKING_EXTENSION',
+  CHARGE_ENTRY: 'CHARGE_ENTRY',
+  CHARGE_OVERRIDE: 'CHARGE_OVERRIDE',
+  FUEL_RECORD: 'FUEL_RECORD',
+  SAFETY_DEPOSIT_REQUEST: 'SAFETY_DEPOSIT_REQUEST',
+  BRANCH_CHARGE_CONFIG: 'BRANCH_CHARGE_CONFIG'
 };
 
 export type StaffEntityType = (typeof StaffEntityType)[keyof typeof StaffEntityType]
@@ -474,7 +504,8 @@ export const AuditCategory: {
   BRANCH: 'BRANCH',
   AUTH: 'AUTH',
   SYSTEM: 'SYSTEM',
-  DISCOUNT: 'DISCOUNT'
+  DISCOUNT: 'DISCOUNT',
+  CHARGE: 'CHARGE'
 };
 
 export type AuditCategory = (typeof AuditCategory)[keyof typeof AuditCategory]
@@ -632,6 +663,60 @@ export const ExtensionResolutionType: {
 
 export type ExtensionResolutionType = (typeof ExtensionResolutionType)[keyof typeof ExtensionResolutionType]
 
+
+export const GraceType: {
+  AUTOMATIC: 'AUTOMATIC',
+  MANUAL: 'MANUAL'
+};
+
+export type GraceType = (typeof GraceType)[keyof typeof GraceType]
+
+
+export const ChargeType: {
+  BASE: 'BASE',
+  EXTRA_KM: 'EXTRA_KM',
+  EXTRA_TIME: 'EXTRA_TIME',
+  FUEL_DEFICIT: 'FUEL_DEFICIT',
+  FASTAG: 'FASTAG',
+  DAMAGE: 'DAMAGE',
+  GRACE_ADJUSTMENT: 'GRACE_ADJUSTMENT',
+  SAFETY_DEPOSIT: 'SAFETY_DEPOSIT'
+};
+
+export type ChargeType = (typeof ChargeType)[keyof typeof ChargeType]
+
+
+export const OverrideStatus: {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  AUTO_APPROVED: 'AUTO_APPROVED',
+  REJECTED: 'REJECTED'
+};
+
+export type OverrideStatus = (typeof OverrideStatus)[keyof typeof OverrideStatus]
+
+
+export const FuelLevel: {
+  EMPTY: 'EMPTY',
+  QUARTER: 'QUARTER',
+  HALF: 'HALF',
+  THREE_QUARTER: 'THREE_QUARTER',
+  FULL: 'FULL'
+};
+
+export type FuelLevel = (typeof FuelLevel)[keyof typeof FuelLevel]
+
+
+export const SafetyDepositStatus: {
+  PENDING_APPROVAL: 'PENDING_APPROVAL',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CHARGED: 'CHARGED',
+  REFUNDED: 'REFUNDED'
+};
+
+export type SafetyDepositStatus = (typeof SafetyDepositStatus)[keyof typeof SafetyDepositStatus]
+
 }
 
 export type AuthProvider = $Enums.AuthProvider
@@ -765,6 +850,26 @@ export const ExtensionStatus: typeof $Enums.ExtensionStatus
 export type ExtensionResolutionType = $Enums.ExtensionResolutionType
 
 export const ExtensionResolutionType: typeof $Enums.ExtensionResolutionType
+
+export type GraceType = $Enums.GraceType
+
+export const GraceType: typeof $Enums.GraceType
+
+export type ChargeType = $Enums.ChargeType
+
+export const ChargeType: typeof $Enums.ChargeType
+
+export type OverrideStatus = $Enums.OverrideStatus
+
+export const OverrideStatus: typeof $Enums.OverrideStatus
+
+export type FuelLevel = $Enums.FuelLevel
+
+export const FuelLevel: typeof $Enums.FuelLevel
+
+export type SafetyDepositStatus = $Enums.SafetyDepositStatus
+
+export const SafetyDepositStatus: typeof $Enums.SafetyDepositStatus
 
 /**
  * ##  Prisma Client ʲˢ
@@ -1388,6 +1493,56 @@ export class PrismaClient<
     * ```
     */
   get bookingExtension(): Prisma.BookingExtensionDelegate<ExtArgs>;
+
+  /**
+   * `prisma.branchChargeConfig`: Exposes CRUD operations for the **BranchChargeConfig** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more BranchChargeConfigs
+    * const branchChargeConfigs = await prisma.branchChargeConfig.findMany()
+    * ```
+    */
+  get branchChargeConfig(): Prisma.BranchChargeConfigDelegate<ExtArgs>;
+
+  /**
+   * `prisma.chargeEntry`: Exposes CRUD operations for the **ChargeEntry** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ChargeEntries
+    * const chargeEntries = await prisma.chargeEntry.findMany()
+    * ```
+    */
+  get chargeEntry(): Prisma.ChargeEntryDelegate<ExtArgs>;
+
+  /**
+   * `prisma.chargeOverride`: Exposes CRUD operations for the **ChargeOverride** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ChargeOverrides
+    * const chargeOverrides = await prisma.chargeOverride.findMany()
+    * ```
+    */
+  get chargeOverride(): Prisma.ChargeOverrideDelegate<ExtArgs>;
+
+  /**
+   * `prisma.fuelRecord`: Exposes CRUD operations for the **FuelRecord** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more FuelRecords
+    * const fuelRecords = await prisma.fuelRecord.findMany()
+    * ```
+    */
+  get fuelRecord(): Prisma.FuelRecordDelegate<ExtArgs>;
+
+  /**
+   * `prisma.safetyDepositRequest`: Exposes CRUD operations for the **SafetyDepositRequest** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more SafetyDepositRequests
+    * const safetyDepositRequests = await prisma.safetyDepositRequest.findMany()
+    * ```
+    */
+  get safetyDepositRequest(): Prisma.SafetyDepositRequestDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -1878,7 +2033,12 @@ export namespace Prisma {
     PaymentTransaction: 'PaymentTransaction',
     RefundRequest: 'RefundRequest',
     CashShift: 'CashShift',
-    BookingExtension: 'BookingExtension'
+    BookingExtension: 'BookingExtension',
+    BranchChargeConfig: 'BranchChargeConfig',
+    ChargeEntry: 'ChargeEntry',
+    ChargeOverride: 'ChargeOverride',
+    FuelRecord: 'FuelRecord',
+    SafetyDepositRequest: 'SafetyDepositRequest'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1894,7 +2054,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehiclePhotoCaptureConfig" | "vehicle" | "vehiclePricingOverride" | "vehicleCustomPricing" | "branchPricingDefaults" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "gSTRule" | "timezoneSetting" | "cancellationInvoice" | "featureFlag" | "branchFeatureFlag" | "vehicleFeatureFlag" | "vehicleSwap" | "discountRule" | "durationDiscountSlab" | "branchDiscountConfig" | "discountApplication" | "couponUsageLog" | "manualDiscount" | "branchPaymentConfig" | "paymentTransaction" | "refundRequest" | "cashShift" | "bookingExtension"
+      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehiclePhotoCaptureConfig" | "vehicle" | "vehiclePricingOverride" | "vehicleCustomPricing" | "branchPricingDefaults" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "gSTRule" | "timezoneSetting" | "cancellationInvoice" | "featureFlag" | "branchFeatureFlag" | "vehicleFeatureFlag" | "vehicleSwap" | "discountRule" | "durationDiscountSlab" | "branchDiscountConfig" | "discountApplication" | "couponUsageLog" | "manualDiscount" | "branchPaymentConfig" | "paymentTransaction" | "refundRequest" | "cashShift" | "bookingExtension" | "branchChargeConfig" | "chargeEntry" | "chargeOverride" | "fuelRecord" | "safetyDepositRequest"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -5398,6 +5558,356 @@ export namespace Prisma {
           }
         }
       }
+      BranchChargeConfig: {
+        payload: Prisma.$BranchChargeConfigPayload<ExtArgs>
+        fields: Prisma.BranchChargeConfigFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.BranchChargeConfigFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchChargeConfigPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.BranchChargeConfigFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchChargeConfigPayload>
+          }
+          findFirst: {
+            args: Prisma.BranchChargeConfigFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchChargeConfigPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.BranchChargeConfigFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchChargeConfigPayload>
+          }
+          findMany: {
+            args: Prisma.BranchChargeConfigFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchChargeConfigPayload>[]
+          }
+          create: {
+            args: Prisma.BranchChargeConfigCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchChargeConfigPayload>
+          }
+          createMany: {
+            args: Prisma.BranchChargeConfigCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.BranchChargeConfigCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchChargeConfigPayload>[]
+          }
+          delete: {
+            args: Prisma.BranchChargeConfigDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchChargeConfigPayload>
+          }
+          update: {
+            args: Prisma.BranchChargeConfigUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchChargeConfigPayload>
+          }
+          deleteMany: {
+            args: Prisma.BranchChargeConfigDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.BranchChargeConfigUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.BranchChargeConfigUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BranchChargeConfigPayload>
+          }
+          aggregate: {
+            args: Prisma.BranchChargeConfigAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateBranchChargeConfig>
+          }
+          groupBy: {
+            args: Prisma.BranchChargeConfigGroupByArgs<ExtArgs>
+            result: $Utils.Optional<BranchChargeConfigGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.BranchChargeConfigCountArgs<ExtArgs>
+            result: $Utils.Optional<BranchChargeConfigCountAggregateOutputType> | number
+          }
+        }
+      }
+      ChargeEntry: {
+        payload: Prisma.$ChargeEntryPayload<ExtArgs>
+        fields: Prisma.ChargeEntryFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ChargeEntryFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ChargeEntryPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ChargeEntryFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ChargeEntryPayload>
+          }
+          findFirst: {
+            args: Prisma.ChargeEntryFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ChargeEntryPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ChargeEntryFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ChargeEntryPayload>
+          }
+          findMany: {
+            args: Prisma.ChargeEntryFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ChargeEntryPayload>[]
+          }
+          create: {
+            args: Prisma.ChargeEntryCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ChargeEntryPayload>
+          }
+          createMany: {
+            args: Prisma.ChargeEntryCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ChargeEntryCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ChargeEntryPayload>[]
+          }
+          delete: {
+            args: Prisma.ChargeEntryDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ChargeEntryPayload>
+          }
+          update: {
+            args: Prisma.ChargeEntryUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ChargeEntryPayload>
+          }
+          deleteMany: {
+            args: Prisma.ChargeEntryDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ChargeEntryUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ChargeEntryUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ChargeEntryPayload>
+          }
+          aggregate: {
+            args: Prisma.ChargeEntryAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateChargeEntry>
+          }
+          groupBy: {
+            args: Prisma.ChargeEntryGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ChargeEntryGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ChargeEntryCountArgs<ExtArgs>
+            result: $Utils.Optional<ChargeEntryCountAggregateOutputType> | number
+          }
+        }
+      }
+      ChargeOverride: {
+        payload: Prisma.$ChargeOverridePayload<ExtArgs>
+        fields: Prisma.ChargeOverrideFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ChargeOverrideFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ChargeOverridePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ChargeOverrideFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ChargeOverridePayload>
+          }
+          findFirst: {
+            args: Prisma.ChargeOverrideFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ChargeOverridePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ChargeOverrideFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ChargeOverridePayload>
+          }
+          findMany: {
+            args: Prisma.ChargeOverrideFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ChargeOverridePayload>[]
+          }
+          create: {
+            args: Prisma.ChargeOverrideCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ChargeOverridePayload>
+          }
+          createMany: {
+            args: Prisma.ChargeOverrideCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ChargeOverrideCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ChargeOverridePayload>[]
+          }
+          delete: {
+            args: Prisma.ChargeOverrideDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ChargeOverridePayload>
+          }
+          update: {
+            args: Prisma.ChargeOverrideUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ChargeOverridePayload>
+          }
+          deleteMany: {
+            args: Prisma.ChargeOverrideDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ChargeOverrideUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ChargeOverrideUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ChargeOverridePayload>
+          }
+          aggregate: {
+            args: Prisma.ChargeOverrideAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateChargeOverride>
+          }
+          groupBy: {
+            args: Prisma.ChargeOverrideGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ChargeOverrideGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ChargeOverrideCountArgs<ExtArgs>
+            result: $Utils.Optional<ChargeOverrideCountAggregateOutputType> | number
+          }
+        }
+      }
+      FuelRecord: {
+        payload: Prisma.$FuelRecordPayload<ExtArgs>
+        fields: Prisma.FuelRecordFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.FuelRecordFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FuelRecordPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.FuelRecordFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FuelRecordPayload>
+          }
+          findFirst: {
+            args: Prisma.FuelRecordFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FuelRecordPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.FuelRecordFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FuelRecordPayload>
+          }
+          findMany: {
+            args: Prisma.FuelRecordFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FuelRecordPayload>[]
+          }
+          create: {
+            args: Prisma.FuelRecordCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FuelRecordPayload>
+          }
+          createMany: {
+            args: Prisma.FuelRecordCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.FuelRecordCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FuelRecordPayload>[]
+          }
+          delete: {
+            args: Prisma.FuelRecordDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FuelRecordPayload>
+          }
+          update: {
+            args: Prisma.FuelRecordUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FuelRecordPayload>
+          }
+          deleteMany: {
+            args: Prisma.FuelRecordDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.FuelRecordUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.FuelRecordUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FuelRecordPayload>
+          }
+          aggregate: {
+            args: Prisma.FuelRecordAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateFuelRecord>
+          }
+          groupBy: {
+            args: Prisma.FuelRecordGroupByArgs<ExtArgs>
+            result: $Utils.Optional<FuelRecordGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.FuelRecordCountArgs<ExtArgs>
+            result: $Utils.Optional<FuelRecordCountAggregateOutputType> | number
+          }
+        }
+      }
+      SafetyDepositRequest: {
+        payload: Prisma.$SafetyDepositRequestPayload<ExtArgs>
+        fields: Prisma.SafetyDepositRequestFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SafetyDepositRequestFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SafetyDepositRequestPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SafetyDepositRequestFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SafetyDepositRequestPayload>
+          }
+          findFirst: {
+            args: Prisma.SafetyDepositRequestFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SafetyDepositRequestPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SafetyDepositRequestFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SafetyDepositRequestPayload>
+          }
+          findMany: {
+            args: Prisma.SafetyDepositRequestFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SafetyDepositRequestPayload>[]
+          }
+          create: {
+            args: Prisma.SafetyDepositRequestCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SafetyDepositRequestPayload>
+          }
+          createMany: {
+            args: Prisma.SafetyDepositRequestCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.SafetyDepositRequestCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SafetyDepositRequestPayload>[]
+          }
+          delete: {
+            args: Prisma.SafetyDepositRequestDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SafetyDepositRequestPayload>
+          }
+          update: {
+            args: Prisma.SafetyDepositRequestUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SafetyDepositRequestPayload>
+          }
+          deleteMany: {
+            args: Prisma.SafetyDepositRequestDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SafetyDepositRequestUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.SafetyDepositRequestUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SafetyDepositRequestPayload>
+          }
+          aggregate: {
+            args: Prisma.SafetyDepositRequestAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSafetyDepositRequest>
+          }
+          groupBy: {
+            args: Prisma.SafetyDepositRequestGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SafetyDepositRequestGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.SafetyDepositRequestCountArgs<ExtArgs>
+            result: $Utils.Optional<SafetyDepositRequestCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -5578,6 +6088,13 @@ export namespace Prisma {
     refundRequestsApproved: number
     refundRequestsCompleted: number
     initiatedExtensions: number
+    chargeEntriesCreated: number
+    overridesActed: number
+    overridesApproved: number
+    fuelPickupCaptures: number
+    fuelReturnCaptures: number
+    safetyDepositRequests: number
+    safetyDepositApprovals: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -5600,6 +6117,13 @@ export namespace Prisma {
     refundRequestsApproved?: boolean | UserCountOutputTypeCountRefundRequestsApprovedArgs
     refundRequestsCompleted?: boolean | UserCountOutputTypeCountRefundRequestsCompletedArgs
     initiatedExtensions?: boolean | UserCountOutputTypeCountInitiatedExtensionsArgs
+    chargeEntriesCreated?: boolean | UserCountOutputTypeCountChargeEntriesCreatedArgs
+    overridesActed?: boolean | UserCountOutputTypeCountOverridesActedArgs
+    overridesApproved?: boolean | UserCountOutputTypeCountOverridesApprovedArgs
+    fuelPickupCaptures?: boolean | UserCountOutputTypeCountFuelPickupCapturesArgs
+    fuelReturnCaptures?: boolean | UserCountOutputTypeCountFuelReturnCapturesArgs
+    safetyDepositRequests?: boolean | UserCountOutputTypeCountSafetyDepositRequestsArgs
+    safetyDepositApprovals?: boolean | UserCountOutputTypeCountSafetyDepositApprovalsArgs
   }
 
   // Custom InputTypes
@@ -5744,6 +6268,55 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountInitiatedExtensionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: BookingExtensionWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountChargeEntriesCreatedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ChargeEntryWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountOverridesActedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ChargeOverrideWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountOverridesApprovedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ChargeOverrideWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountFuelPickupCapturesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: FuelRecordWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountFuelReturnCapturesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: FuelRecordWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountSafetyDepositRequestsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SafetyDepositRequestWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountSafetyDepositApprovalsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SafetyDepositRequestWhereInput
   }
 
 
@@ -6220,6 +6793,8 @@ export namespace Prisma {
     paymentTransactions: number
     refundRequests: number
     extensions: number
+    chargeEntries: number
+    chargeOverrides: number
   }
 
   export type BookingCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6230,6 +6805,8 @@ export namespace Prisma {
     paymentTransactions?: boolean | BookingCountOutputTypeCountPaymentTransactionsArgs
     refundRequests?: boolean | BookingCountOutputTypeCountRefundRequestsArgs
     extensions?: boolean | BookingCountOutputTypeCountExtensionsArgs
+    chargeEntries?: boolean | BookingCountOutputTypeCountChargeEntriesArgs
+    chargeOverrides?: boolean | BookingCountOutputTypeCountChargeOverridesArgs
   }
 
   // Custom InputTypes
@@ -6290,6 +6867,20 @@ export namespace Prisma {
    */
   export type BookingCountOutputTypeCountExtensionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: BookingExtensionWhereInput
+  }
+
+  /**
+   * BookingCountOutputType without action
+   */
+  export type BookingCountOutputTypeCountChargeEntriesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ChargeEntryWhereInput
+  }
+
+  /**
+   * BookingCountOutputType without action
+   */
+  export type BookingCountOutputTypeCountChargeOverridesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ChargeOverrideWhereInput
   }
 
 
@@ -6806,6 +7397,13 @@ export namespace Prisma {
     refundRequestsApproved?: boolean | User$refundRequestsApprovedArgs<ExtArgs>
     refundRequestsCompleted?: boolean | User$refundRequestsCompletedArgs<ExtArgs>
     initiatedExtensions?: boolean | User$initiatedExtensionsArgs<ExtArgs>
+    chargeEntriesCreated?: boolean | User$chargeEntriesCreatedArgs<ExtArgs>
+    overridesActed?: boolean | User$overridesActedArgs<ExtArgs>
+    overridesApproved?: boolean | User$overridesApprovedArgs<ExtArgs>
+    fuelPickupCaptures?: boolean | User$fuelPickupCapturesArgs<ExtArgs>
+    fuelReturnCaptures?: boolean | User$fuelReturnCapturesArgs<ExtArgs>
+    safetyDepositRequests?: boolean | User$safetyDepositRequestsArgs<ExtArgs>
+    safetyDepositApprovals?: boolean | User$safetyDepositApprovalsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -6864,6 +7462,13 @@ export namespace Prisma {
     refundRequestsApproved?: boolean | User$refundRequestsApprovedArgs<ExtArgs>
     refundRequestsCompleted?: boolean | User$refundRequestsCompletedArgs<ExtArgs>
     initiatedExtensions?: boolean | User$initiatedExtensionsArgs<ExtArgs>
+    chargeEntriesCreated?: boolean | User$chargeEntriesCreatedArgs<ExtArgs>
+    overridesActed?: boolean | User$overridesActedArgs<ExtArgs>
+    overridesApproved?: boolean | User$overridesApprovedArgs<ExtArgs>
+    fuelPickupCaptures?: boolean | User$fuelPickupCapturesArgs<ExtArgs>
+    fuelReturnCaptures?: boolean | User$fuelReturnCapturesArgs<ExtArgs>
+    safetyDepositRequests?: boolean | User$safetyDepositRequestsArgs<ExtArgs>
+    safetyDepositApprovals?: boolean | User$safetyDepositApprovalsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type UserIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6894,6 +7499,13 @@ export namespace Prisma {
       refundRequestsApproved: Prisma.$RefundRequestPayload<ExtArgs>[]
       refundRequestsCompleted: Prisma.$RefundRequestPayload<ExtArgs>[]
       initiatedExtensions: Prisma.$BookingExtensionPayload<ExtArgs>[]
+      chargeEntriesCreated: Prisma.$ChargeEntryPayload<ExtArgs>[]
+      overridesActed: Prisma.$ChargeOverridePayload<ExtArgs>[]
+      overridesApproved: Prisma.$ChargeOverridePayload<ExtArgs>[]
+      fuelPickupCaptures: Prisma.$FuelRecordPayload<ExtArgs>[]
+      fuelReturnCaptures: Prisma.$FuelRecordPayload<ExtArgs>[]
+      safetyDepositRequests: Prisma.$SafetyDepositRequestPayload<ExtArgs>[]
+      safetyDepositApprovals: Prisma.$SafetyDepositRequestPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -7294,6 +7906,13 @@ export namespace Prisma {
     refundRequestsApproved<T extends User$refundRequestsApprovedArgs<ExtArgs> = {}>(args?: Subset<T, User$refundRequestsApprovedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "findMany"> | Null>
     refundRequestsCompleted<T extends User$refundRequestsCompletedArgs<ExtArgs> = {}>(args?: Subset<T, User$refundRequestsCompletedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "findMany"> | Null>
     initiatedExtensions<T extends User$initiatedExtensionsArgs<ExtArgs> = {}>(args?: Subset<T, User$initiatedExtensionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingExtensionPayload<ExtArgs>, T, "findMany"> | Null>
+    chargeEntriesCreated<T extends User$chargeEntriesCreatedArgs<ExtArgs> = {}>(args?: Subset<T, User$chargeEntriesCreatedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ChargeEntryPayload<ExtArgs>, T, "findMany"> | Null>
+    overridesActed<T extends User$overridesActedArgs<ExtArgs> = {}>(args?: Subset<T, User$overridesActedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ChargeOverridePayload<ExtArgs>, T, "findMany"> | Null>
+    overridesApproved<T extends User$overridesApprovedArgs<ExtArgs> = {}>(args?: Subset<T, User$overridesApprovedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ChargeOverridePayload<ExtArgs>, T, "findMany"> | Null>
+    fuelPickupCaptures<T extends User$fuelPickupCapturesArgs<ExtArgs> = {}>(args?: Subset<T, User$fuelPickupCapturesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$FuelRecordPayload<ExtArgs>, T, "findMany"> | Null>
+    fuelReturnCaptures<T extends User$fuelReturnCapturesArgs<ExtArgs> = {}>(args?: Subset<T, User$fuelReturnCapturesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$FuelRecordPayload<ExtArgs>, T, "findMany"> | Null>
+    safetyDepositRequests<T extends User$safetyDepositRequestsArgs<ExtArgs> = {}>(args?: Subset<T, User$safetyDepositRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SafetyDepositRequestPayload<ExtArgs>, T, "findMany"> | Null>
+    safetyDepositApprovals<T extends User$safetyDepositApprovalsArgs<ExtArgs> = {}>(args?: Subset<T, User$safetyDepositApprovalsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SafetyDepositRequestPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -8070,6 +8689,146 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: BookingExtensionScalarFieldEnum | BookingExtensionScalarFieldEnum[]
+  }
+
+  /**
+   * User.chargeEntriesCreated
+   */
+  export type User$chargeEntriesCreatedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeEntry
+     */
+    select?: ChargeEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeEntryInclude<ExtArgs> | null
+    where?: ChargeEntryWhereInput
+    orderBy?: ChargeEntryOrderByWithRelationInput | ChargeEntryOrderByWithRelationInput[]
+    cursor?: ChargeEntryWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ChargeEntryScalarFieldEnum | ChargeEntryScalarFieldEnum[]
+  }
+
+  /**
+   * User.overridesActed
+   */
+  export type User$overridesActedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeOverride
+     */
+    select?: ChargeOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeOverrideInclude<ExtArgs> | null
+    where?: ChargeOverrideWhereInput
+    orderBy?: ChargeOverrideOrderByWithRelationInput | ChargeOverrideOrderByWithRelationInput[]
+    cursor?: ChargeOverrideWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ChargeOverrideScalarFieldEnum | ChargeOverrideScalarFieldEnum[]
+  }
+
+  /**
+   * User.overridesApproved
+   */
+  export type User$overridesApprovedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeOverride
+     */
+    select?: ChargeOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeOverrideInclude<ExtArgs> | null
+    where?: ChargeOverrideWhereInput
+    orderBy?: ChargeOverrideOrderByWithRelationInput | ChargeOverrideOrderByWithRelationInput[]
+    cursor?: ChargeOverrideWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ChargeOverrideScalarFieldEnum | ChargeOverrideScalarFieldEnum[]
+  }
+
+  /**
+   * User.fuelPickupCaptures
+   */
+  export type User$fuelPickupCapturesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FuelRecord
+     */
+    select?: FuelRecordSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FuelRecordInclude<ExtArgs> | null
+    where?: FuelRecordWhereInput
+    orderBy?: FuelRecordOrderByWithRelationInput | FuelRecordOrderByWithRelationInput[]
+    cursor?: FuelRecordWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: FuelRecordScalarFieldEnum | FuelRecordScalarFieldEnum[]
+  }
+
+  /**
+   * User.fuelReturnCaptures
+   */
+  export type User$fuelReturnCapturesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FuelRecord
+     */
+    select?: FuelRecordSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FuelRecordInclude<ExtArgs> | null
+    where?: FuelRecordWhereInput
+    orderBy?: FuelRecordOrderByWithRelationInput | FuelRecordOrderByWithRelationInput[]
+    cursor?: FuelRecordWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: FuelRecordScalarFieldEnum | FuelRecordScalarFieldEnum[]
+  }
+
+  /**
+   * User.safetyDepositRequests
+   */
+  export type User$safetyDepositRequestsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SafetyDepositRequest
+     */
+    select?: SafetyDepositRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SafetyDepositRequestInclude<ExtArgs> | null
+    where?: SafetyDepositRequestWhereInput
+    orderBy?: SafetyDepositRequestOrderByWithRelationInput | SafetyDepositRequestOrderByWithRelationInput[]
+    cursor?: SafetyDepositRequestWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SafetyDepositRequestScalarFieldEnum | SafetyDepositRequestScalarFieldEnum[]
+  }
+
+  /**
+   * User.safetyDepositApprovals
+   */
+  export type User$safetyDepositApprovalsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SafetyDepositRequest
+     */
+    select?: SafetyDepositRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SafetyDepositRequestInclude<ExtArgs> | null
+    where?: SafetyDepositRequestWhereInput
+    orderBy?: SafetyDepositRequestOrderByWithRelationInput | SafetyDepositRequestOrderByWithRelationInput[]
+    cursor?: SafetyDepositRequestWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SafetyDepositRequestScalarFieldEnum | SafetyDepositRequestScalarFieldEnum[]
   }
 
   /**
@@ -13663,6 +14422,7 @@ export namespace Prisma {
     durationDiscountSlabs?: boolean | Branch$durationDiscountSlabsArgs<ExtArgs>
     discountConfig?: boolean | Branch$discountConfigArgs<ExtArgs>
     paymentConfig?: boolean | Branch$paymentConfigArgs<ExtArgs>
+    chargeConfig?: boolean | Branch$chargeConfigArgs<ExtArgs>
     paymentTransactions?: boolean | Branch$paymentTransactionsArgs<ExtArgs>
     cashShifts?: boolean | Branch$cashShiftsArgs<ExtArgs>
     refundRequests?: boolean | Branch$refundRequestsArgs<ExtArgs>
@@ -13706,6 +14466,7 @@ export namespace Prisma {
     durationDiscountSlabs?: boolean | Branch$durationDiscountSlabsArgs<ExtArgs>
     discountConfig?: boolean | Branch$discountConfigArgs<ExtArgs>
     paymentConfig?: boolean | Branch$paymentConfigArgs<ExtArgs>
+    chargeConfig?: boolean | Branch$chargeConfigArgs<ExtArgs>
     paymentTransactions?: boolean | Branch$paymentTransactionsArgs<ExtArgs>
     cashShifts?: boolean | Branch$cashShiftsArgs<ExtArgs>
     refundRequests?: boolean | Branch$refundRequestsArgs<ExtArgs>
@@ -13732,6 +14493,7 @@ export namespace Prisma {
       durationDiscountSlabs: Prisma.$DurationDiscountSlabPayload<ExtArgs>[]
       discountConfig: Prisma.$BranchDiscountConfigPayload<ExtArgs> | null
       paymentConfig: Prisma.$BranchPaymentConfigPayload<ExtArgs> | null
+      chargeConfig: Prisma.$BranchChargeConfigPayload<ExtArgs> | null
       paymentTransactions: Prisma.$PaymentTransactionPayload<ExtArgs>[]
       cashShifts: Prisma.$CashShiftPayload<ExtArgs>[]
       refundRequests: Prisma.$RefundRequestPayload<ExtArgs>[]
@@ -14124,6 +14886,7 @@ export namespace Prisma {
     durationDiscountSlabs<T extends Branch$durationDiscountSlabsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$durationDiscountSlabsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DurationDiscountSlabPayload<ExtArgs>, T, "findMany"> | Null>
     discountConfig<T extends Branch$discountConfigArgs<ExtArgs> = {}>(args?: Subset<T, Branch$discountConfigArgs<ExtArgs>>): Prisma__BranchDiscountConfigClient<$Result.GetResult<Prisma.$BranchDiscountConfigPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     paymentConfig<T extends Branch$paymentConfigArgs<ExtArgs> = {}>(args?: Subset<T, Branch$paymentConfigArgs<ExtArgs>>): Prisma__BranchPaymentConfigClient<$Result.GetResult<Prisma.$BranchPaymentConfigPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    chargeConfig<T extends Branch$chargeConfigArgs<ExtArgs> = {}>(args?: Subset<T, Branch$chargeConfigArgs<ExtArgs>>): Prisma__BranchChargeConfigClient<$Result.GetResult<Prisma.$BranchChargeConfigPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     paymentTransactions<T extends Branch$paymentTransactionsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$paymentTransactionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentTransactionPayload<ExtArgs>, T, "findMany"> | Null>
     cashShifts<T extends Branch$cashShiftsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$cashShiftsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CashShiftPayload<ExtArgs>, T, "findMany"> | Null>
     refundRequests<T extends Branch$refundRequestsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$refundRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "findMany"> | Null>
@@ -14764,6 +15527,21 @@ export namespace Prisma {
      */
     include?: BranchPaymentConfigInclude<ExtArgs> | null
     where?: BranchPaymentConfigWhereInput
+  }
+
+  /**
+   * Branch.chargeConfig
+   */
+  export type Branch$chargeConfigArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchChargeConfig
+     */
+    select?: BranchChargeConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchChargeConfigInclude<ExtArgs> | null
+    where?: BranchChargeConfigWhereInput
   }
 
   /**
@@ -19153,6 +19931,8 @@ export namespace Prisma {
     advancePayAmount: Decimal | null
     insuranceExpiry: Date | null
     status: $Enums.VehicleStatus | null
+    fastagNumber: string | null
+    hasFastag: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
     deletedAt: Date | null
@@ -19171,6 +19951,8 @@ export namespace Prisma {
     advancePayAmount: Decimal | null
     insuranceExpiry: Date | null
     status: $Enums.VehicleStatus | null
+    fastagNumber: string | null
+    hasFastag: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
     deletedAt: Date | null
@@ -19189,6 +19971,8 @@ export namespace Prisma {
     advancePayAmount: number
     insuranceExpiry: number
     status: number
+    fastagNumber: number
+    hasFastag: number
     createdAt: number
     updatedAt: number
     deletedAt: number
@@ -19227,6 +20011,8 @@ export namespace Prisma {
     advancePayAmount?: true
     insuranceExpiry?: true
     status?: true
+    fastagNumber?: true
+    hasFastag?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -19245,6 +20031,8 @@ export namespace Prisma {
     advancePayAmount?: true
     insuranceExpiry?: true
     status?: true
+    fastagNumber?: true
+    hasFastag?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -19263,6 +20051,8 @@ export namespace Prisma {
     advancePayAmount?: true
     insuranceExpiry?: true
     status?: true
+    fastagNumber?: true
+    hasFastag?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -19368,6 +20158,8 @@ export namespace Prisma {
     advancePayAmount: Decimal
     insuranceExpiry: Date
     status: $Enums.VehicleStatus
+    fastagNumber: string | null
+    hasFastag: boolean
     createdAt: Date
     updatedAt: Date
     deletedAt: Date | null
@@ -19405,6 +20197,8 @@ export namespace Prisma {
     advancePayAmount?: boolean
     insuranceExpiry?: boolean
     status?: boolean
+    fastagNumber?: boolean
+    hasFastag?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -19437,6 +20231,8 @@ export namespace Prisma {
     advancePayAmount?: boolean
     insuranceExpiry?: boolean
     status?: boolean
+    fastagNumber?: boolean
+    hasFastag?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -19457,6 +20253,8 @@ export namespace Prisma {
     advancePayAmount?: boolean
     insuranceExpiry?: boolean
     status?: boolean
+    fastagNumber?: boolean
+    hasFastag?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -19513,6 +20311,8 @@ export namespace Prisma {
       advancePayAmount: Prisma.Decimal
       insuranceExpiry: Date
       status: $Enums.VehicleStatus
+      fastagNumber: string | null
+      hasFastag: boolean
       createdAt: Date
       updatedAt: Date
       deletedAt: Date | null
@@ -19934,6 +20734,8 @@ export namespace Prisma {
     readonly advancePayAmount: FieldRef<"Vehicle", 'Decimal'>
     readonly insuranceExpiry: FieldRef<"Vehicle", 'DateTime'>
     readonly status: FieldRef<"Vehicle", 'VehicleStatus'>
+    readonly fastagNumber: FieldRef<"Vehicle", 'String'>
+    readonly hasFastag: FieldRef<"Vehicle", 'Boolean'>
     readonly createdAt: FieldRef<"Vehicle", 'DateTime'>
     readonly updatedAt: FieldRef<"Vehicle", 'DateTime'>
     readonly deletedAt: FieldRef<"Vehicle", 'DateTime'>
@@ -29807,6 +30609,7 @@ export namespace Prisma {
     extensionCount: number | null
     activeExtensionId: number | null
     displacedByExtensionId: number | null
+    chargeConfigVersion: number | null
   }
 
   export type BookingSumAggregateOutputType = {
@@ -29835,6 +30638,7 @@ export namespace Prisma {
     extensionCount: number | null
     activeExtensionId: number | null
     displacedByExtensionId: number | null
+    chargeConfigVersion: number | null
   }
 
   export type BookingMinAggregateOutputType = {
@@ -29892,6 +30696,7 @@ export namespace Prisma {
     activeExtensionId: number | null
     displacedByExtensionId: number | null
     extensionDisplacedAt: Date | null
+    chargeConfigVersion: number | null
     createdAt: Date | null
     updatedAt: Date | null
     deletedAt: Date | null
@@ -29952,6 +30757,7 @@ export namespace Prisma {
     activeExtensionId: number | null
     displacedByExtensionId: number | null
     extensionDisplacedAt: Date | null
+    chargeConfigVersion: number | null
     createdAt: Date | null
     updatedAt: Date | null
     deletedAt: Date | null
@@ -30013,6 +30819,8 @@ export namespace Prisma {
     activeExtensionId: number
     displacedByExtensionId: number
     extensionDisplacedAt: number
+    frozenChargeConfig: number
+    chargeConfigVersion: number
     createdAt: number
     updatedAt: number
     deletedAt: number
@@ -30046,6 +30854,7 @@ export namespace Prisma {
     extensionCount?: true
     activeExtensionId?: true
     displacedByExtensionId?: true
+    chargeConfigVersion?: true
   }
 
   export type BookingSumAggregateInputType = {
@@ -30074,6 +30883,7 @@ export namespace Prisma {
     extensionCount?: true
     activeExtensionId?: true
     displacedByExtensionId?: true
+    chargeConfigVersion?: true
   }
 
   export type BookingMinAggregateInputType = {
@@ -30131,6 +30941,7 @@ export namespace Prisma {
     activeExtensionId?: true
     displacedByExtensionId?: true
     extensionDisplacedAt?: true
+    chargeConfigVersion?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -30191,6 +31002,7 @@ export namespace Prisma {
     activeExtensionId?: true
     displacedByExtensionId?: true
     extensionDisplacedAt?: true
+    chargeConfigVersion?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -30252,6 +31064,8 @@ export namespace Prisma {
     activeExtensionId?: true
     displacedByExtensionId?: true
     extensionDisplacedAt?: true
+    frozenChargeConfig?: true
+    chargeConfigVersion?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -30400,6 +31214,8 @@ export namespace Prisma {
     activeExtensionId: number | null
     displacedByExtensionId: number | null
     extensionDisplacedAt: Date | null
+    frozenChargeConfig: JsonValue | null
+    chargeConfigVersion: number
     createdAt: Date
     updatedAt: Date
     deletedAt: Date | null
@@ -30480,6 +31296,8 @@ export namespace Prisma {
     activeExtensionId?: boolean
     displacedByExtensionId?: boolean
     extensionDisplacedAt?: boolean
+    frozenChargeConfig?: boolean
+    chargeConfigVersion?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -30501,6 +31319,10 @@ export namespace Prisma {
     refundRequests?: boolean | Booking$refundRequestsArgs<ExtArgs>
     activeExtension?: boolean | Booking$activeExtensionArgs<ExtArgs>
     extensions?: boolean | Booking$extensionsArgs<ExtArgs>
+    chargeEntries?: boolean | Booking$chargeEntriesArgs<ExtArgs>
+    chargeOverrides?: boolean | Booking$chargeOverridesArgs<ExtArgs>
+    fuelRecord?: boolean | Booking$fuelRecordArgs<ExtArgs>
+    safetyDepositRequest?: boolean | Booking$safetyDepositRequestArgs<ExtArgs>
     _count?: boolean | BookingCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["booking"]>
 
@@ -30560,6 +31382,8 @@ export namespace Prisma {
     activeExtensionId?: boolean
     displacedByExtensionId?: boolean
     extensionDisplacedAt?: boolean
+    frozenChargeConfig?: boolean
+    chargeConfigVersion?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -30627,6 +31451,8 @@ export namespace Prisma {
     activeExtensionId?: boolean
     displacedByExtensionId?: boolean
     extensionDisplacedAt?: boolean
+    frozenChargeConfig?: boolean
+    chargeConfigVersion?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -30651,6 +31477,10 @@ export namespace Prisma {
     refundRequests?: boolean | Booking$refundRequestsArgs<ExtArgs>
     activeExtension?: boolean | Booking$activeExtensionArgs<ExtArgs>
     extensions?: boolean | Booking$extensionsArgs<ExtArgs>
+    chargeEntries?: boolean | Booking$chargeEntriesArgs<ExtArgs>
+    chargeOverrides?: boolean | Booking$chargeOverridesArgs<ExtArgs>
+    fuelRecord?: boolean | Booking$fuelRecordArgs<ExtArgs>
+    safetyDepositRequest?: boolean | Booking$safetyDepositRequestArgs<ExtArgs>
     _count?: boolean | BookingCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type BookingIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -30683,6 +31513,10 @@ export namespace Prisma {
       refundRequests: Prisma.$RefundRequestPayload<ExtArgs>[]
       activeExtension: Prisma.$BookingExtensionPayload<ExtArgs> | null
       extensions: Prisma.$BookingExtensionPayload<ExtArgs>[]
+      chargeEntries: Prisma.$ChargeEntryPayload<ExtArgs>[]
+      chargeOverrides: Prisma.$ChargeOverridePayload<ExtArgs>[]
+      fuelRecord: Prisma.$FuelRecordPayload<ExtArgs> | null
+      safetyDepositRequest: Prisma.$SafetyDepositRequestPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -30740,6 +31574,8 @@ export namespace Prisma {
       activeExtensionId: number | null
       displacedByExtensionId: number | null
       extensionDisplacedAt: Date | null
+      frozenChargeConfig: Prisma.JsonValue | null
+      chargeConfigVersion: number
       createdAt: Date
       updatedAt: Date
       deletedAt: Date | null
@@ -31125,6 +31961,10 @@ export namespace Prisma {
     refundRequests<T extends Booking$refundRequestsArgs<ExtArgs> = {}>(args?: Subset<T, Booking$refundRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "findMany"> | Null>
     activeExtension<T extends Booking$activeExtensionArgs<ExtArgs> = {}>(args?: Subset<T, Booking$activeExtensionArgs<ExtArgs>>): Prisma__BookingExtensionClient<$Result.GetResult<Prisma.$BookingExtensionPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     extensions<T extends Booking$extensionsArgs<ExtArgs> = {}>(args?: Subset<T, Booking$extensionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingExtensionPayload<ExtArgs>, T, "findMany"> | Null>
+    chargeEntries<T extends Booking$chargeEntriesArgs<ExtArgs> = {}>(args?: Subset<T, Booking$chargeEntriesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ChargeEntryPayload<ExtArgs>, T, "findMany"> | Null>
+    chargeOverrides<T extends Booking$chargeOverridesArgs<ExtArgs> = {}>(args?: Subset<T, Booking$chargeOverridesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ChargeOverridePayload<ExtArgs>, T, "findMany"> | Null>
+    fuelRecord<T extends Booking$fuelRecordArgs<ExtArgs> = {}>(args?: Subset<T, Booking$fuelRecordArgs<ExtArgs>>): Prisma__FuelRecordClient<$Result.GetResult<Prisma.$FuelRecordPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    safetyDepositRequest<T extends Booking$safetyDepositRequestArgs<ExtArgs> = {}>(args?: Subset<T, Booking$safetyDepositRequestArgs<ExtArgs>>): Prisma__SafetyDepositRequestClient<$Result.GetResult<Prisma.$SafetyDepositRequestPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -31209,6 +32049,8 @@ export namespace Prisma {
     readonly activeExtensionId: FieldRef<"Booking", 'Int'>
     readonly displacedByExtensionId: FieldRef<"Booking", 'Int'>
     readonly extensionDisplacedAt: FieldRef<"Booking", 'DateTime'>
+    readonly frozenChargeConfig: FieldRef<"Booking", 'Json'>
+    readonly chargeConfigVersion: FieldRef<"Booking", 'Int'>
     readonly createdAt: FieldRef<"Booking", 'DateTime'>
     readonly updatedAt: FieldRef<"Booking", 'DateTime'>
     readonly deletedAt: FieldRef<"Booking", 'DateTime'>
@@ -31796,6 +32638,76 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: BookingExtensionScalarFieldEnum | BookingExtensionScalarFieldEnum[]
+  }
+
+  /**
+   * Booking.chargeEntries
+   */
+  export type Booking$chargeEntriesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeEntry
+     */
+    select?: ChargeEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeEntryInclude<ExtArgs> | null
+    where?: ChargeEntryWhereInput
+    orderBy?: ChargeEntryOrderByWithRelationInput | ChargeEntryOrderByWithRelationInput[]
+    cursor?: ChargeEntryWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ChargeEntryScalarFieldEnum | ChargeEntryScalarFieldEnum[]
+  }
+
+  /**
+   * Booking.chargeOverrides
+   */
+  export type Booking$chargeOverridesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeOverride
+     */
+    select?: ChargeOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeOverrideInclude<ExtArgs> | null
+    where?: ChargeOverrideWhereInput
+    orderBy?: ChargeOverrideOrderByWithRelationInput | ChargeOverrideOrderByWithRelationInput[]
+    cursor?: ChargeOverrideWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ChargeOverrideScalarFieldEnum | ChargeOverrideScalarFieldEnum[]
+  }
+
+  /**
+   * Booking.fuelRecord
+   */
+  export type Booking$fuelRecordArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FuelRecord
+     */
+    select?: FuelRecordSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FuelRecordInclude<ExtArgs> | null
+    where?: FuelRecordWhereInput
+  }
+
+  /**
+   * Booking.safetyDepositRequest
+   */
+  export type Booking$safetyDepositRequestArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SafetyDepositRequest
+     */
+    select?: SafetyDepositRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SafetyDepositRequestInclude<ExtArgs> | null
+    where?: SafetyDepositRequestWhereInput
   }
 
   /**
@@ -39325,6 +40237,8 @@ export namespace Prisma {
     invoiceId: number | null
     label: string | null
     amount: Decimal | null
+    isTaxable: boolean | null
+    chargeType: string | null
   }
 
   export type InvoiceItemMaxAggregateOutputType = {
@@ -39333,6 +40247,8 @@ export namespace Prisma {
     invoiceId: number | null
     label: string | null
     amount: Decimal | null
+    isTaxable: boolean | null
+    chargeType: string | null
   }
 
   export type InvoiceItemCountAggregateOutputType = {
@@ -39341,6 +40257,8 @@ export namespace Prisma {
     invoiceId: number
     label: number
     amount: number
+    isTaxable: number
+    chargeType: number
     _all: number
   }
 
@@ -39363,6 +40281,8 @@ export namespace Prisma {
     invoiceId?: true
     label?: true
     amount?: true
+    isTaxable?: true
+    chargeType?: true
   }
 
   export type InvoiceItemMaxAggregateInputType = {
@@ -39371,6 +40291,8 @@ export namespace Prisma {
     invoiceId?: true
     label?: true
     amount?: true
+    isTaxable?: true
+    chargeType?: true
   }
 
   export type InvoiceItemCountAggregateInputType = {
@@ -39379,6 +40301,8 @@ export namespace Prisma {
     invoiceId?: true
     label?: true
     amount?: true
+    isTaxable?: true
+    chargeType?: true
     _all?: true
   }
 
@@ -39474,6 +40398,8 @@ export namespace Prisma {
     invoiceId: number
     label: string
     amount: Decimal
+    isTaxable: boolean
+    chargeType: string | null
     _count: InvoiceItemCountAggregateOutputType | null
     _avg: InvoiceItemAvgAggregateOutputType | null
     _sum: InvoiceItemSumAggregateOutputType | null
@@ -39501,6 +40427,8 @@ export namespace Prisma {
     invoiceId?: boolean
     label?: boolean
     amount?: boolean
+    isTaxable?: boolean
+    chargeType?: boolean
     invoice?: boolean | InvoiceDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["invoiceItem"]>
 
@@ -39510,6 +40438,8 @@ export namespace Prisma {
     invoiceId?: boolean
     label?: boolean
     amount?: boolean
+    isTaxable?: boolean
+    chargeType?: boolean
     invoice?: boolean | InvoiceDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["invoiceItem"]>
 
@@ -39519,6 +40449,8 @@ export namespace Prisma {
     invoiceId?: boolean
     label?: boolean
     amount?: boolean
+    isTaxable?: boolean
+    chargeType?: boolean
   }
 
   export type InvoiceItemInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -39539,6 +40471,8 @@ export namespace Prisma {
       invoiceId: number
       label: string
       amount: Prisma.Decimal
+      isTaxable: boolean
+      chargeType: string | null
     }, ExtArgs["result"]["invoiceItem"]>
     composites: {}
   }
@@ -39938,6 +40872,8 @@ export namespace Prisma {
     readonly invoiceId: FieldRef<"InvoiceItem", 'Int'>
     readonly label: FieldRef<"InvoiceItem", 'String'>
     readonly amount: FieldRef<"InvoiceItem", 'Decimal'>
+    readonly isTaxable: FieldRef<"InvoiceItem", 'Boolean'>
+    readonly chargeType: FieldRef<"InvoiceItem", 'String'>
   }
     
 
@@ -62953,6 +63889,5750 @@ export namespace Prisma {
 
 
   /**
+   * Model BranchChargeConfig
+   */
+
+  export type AggregateBranchChargeConfig = {
+    _count: BranchChargeConfigCountAggregateOutputType | null
+    _avg: BranchChargeConfigAvgAggregateOutputType | null
+    _sum: BranchChargeConfigSumAggregateOutputType | null
+    _min: BranchChargeConfigMinAggregateOutputType | null
+    _max: BranchChargeConfigMaxAggregateOutputType | null
+  }
+
+  export type BranchChargeConfigAvgAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    graceMinutes: number | null
+    maxOverridePercent: Decimal | null
+    overrideApprovalThreshold: Decimal | null
+  }
+
+  export type BranchChargeConfigSumAggregateOutputType = {
+    id: number | null
+    branchId: number | null
+    graceMinutes: number | null
+    maxOverridePercent: Decimal | null
+    overrideApprovalThreshold: Decimal | null
+  }
+
+  export type BranchChargeConfigMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    branchId: number | null
+    extraKmEnabled: boolean | null
+    extraTimeEnabled: boolean | null
+    fuelModuleEnabled: boolean | null
+    fastagModuleEnabled: boolean | null
+    gracePolicyEnabled: boolean | null
+    damageModuleEnabled: boolean | null
+    graceType: $Enums.GraceType | null
+    graceMinutes: number | null
+    employeeOverrideEnabled: boolean | null
+    maxOverridePercent: Decimal | null
+    overrideRequiresApproval: boolean | null
+    overrideApprovalThreshold: Decimal | null
+    safetyDepositEnabled: boolean | null
+    safetyDepositRequiresApproval: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type BranchChargeConfigMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    branchId: number | null
+    extraKmEnabled: boolean | null
+    extraTimeEnabled: boolean | null
+    fuelModuleEnabled: boolean | null
+    fastagModuleEnabled: boolean | null
+    gracePolicyEnabled: boolean | null
+    damageModuleEnabled: boolean | null
+    graceType: $Enums.GraceType | null
+    graceMinutes: number | null
+    employeeOverrideEnabled: boolean | null
+    maxOverridePercent: Decimal | null
+    overrideRequiresApproval: boolean | null
+    overrideApprovalThreshold: Decimal | null
+    safetyDepositEnabled: boolean | null
+    safetyDepositRequiresApproval: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type BranchChargeConfigCountAggregateOutputType = {
+    id: number
+    publicId: number
+    branchId: number
+    extraKmEnabled: number
+    extraTimeEnabled: number
+    fuelModuleEnabled: number
+    fastagModuleEnabled: number
+    gracePolicyEnabled: number
+    damageModuleEnabled: number
+    graceType: number
+    graceMinutes: number
+    employeeOverrideEnabled: number
+    maxOverridePercent: number
+    overrideRequiresApproval: number
+    overrideApprovalThreshold: number
+    safetyDepositEnabled: number
+    safetyDepositRequiresApproval: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type BranchChargeConfigAvgAggregateInputType = {
+    id?: true
+    branchId?: true
+    graceMinutes?: true
+    maxOverridePercent?: true
+    overrideApprovalThreshold?: true
+  }
+
+  export type BranchChargeConfigSumAggregateInputType = {
+    id?: true
+    branchId?: true
+    graceMinutes?: true
+    maxOverridePercent?: true
+    overrideApprovalThreshold?: true
+  }
+
+  export type BranchChargeConfigMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    branchId?: true
+    extraKmEnabled?: true
+    extraTimeEnabled?: true
+    fuelModuleEnabled?: true
+    fastagModuleEnabled?: true
+    gracePolicyEnabled?: true
+    damageModuleEnabled?: true
+    graceType?: true
+    graceMinutes?: true
+    employeeOverrideEnabled?: true
+    maxOverridePercent?: true
+    overrideRequiresApproval?: true
+    overrideApprovalThreshold?: true
+    safetyDepositEnabled?: true
+    safetyDepositRequiresApproval?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type BranchChargeConfigMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    branchId?: true
+    extraKmEnabled?: true
+    extraTimeEnabled?: true
+    fuelModuleEnabled?: true
+    fastagModuleEnabled?: true
+    gracePolicyEnabled?: true
+    damageModuleEnabled?: true
+    graceType?: true
+    graceMinutes?: true
+    employeeOverrideEnabled?: true
+    maxOverridePercent?: true
+    overrideRequiresApproval?: true
+    overrideApprovalThreshold?: true
+    safetyDepositEnabled?: true
+    safetyDepositRequiresApproval?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type BranchChargeConfigCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    branchId?: true
+    extraKmEnabled?: true
+    extraTimeEnabled?: true
+    fuelModuleEnabled?: true
+    fastagModuleEnabled?: true
+    gracePolicyEnabled?: true
+    damageModuleEnabled?: true
+    graceType?: true
+    graceMinutes?: true
+    employeeOverrideEnabled?: true
+    maxOverridePercent?: true
+    overrideRequiresApproval?: true
+    overrideApprovalThreshold?: true
+    safetyDepositEnabled?: true
+    safetyDepositRequiresApproval?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type BranchChargeConfigAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which BranchChargeConfig to aggregate.
+     */
+    where?: BranchChargeConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchChargeConfigs to fetch.
+     */
+    orderBy?: BranchChargeConfigOrderByWithRelationInput | BranchChargeConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: BranchChargeConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchChargeConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchChargeConfigs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned BranchChargeConfigs
+    **/
+    _count?: true | BranchChargeConfigCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: BranchChargeConfigAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: BranchChargeConfigSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: BranchChargeConfigMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: BranchChargeConfigMaxAggregateInputType
+  }
+
+  export type GetBranchChargeConfigAggregateType<T extends BranchChargeConfigAggregateArgs> = {
+        [P in keyof T & keyof AggregateBranchChargeConfig]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateBranchChargeConfig[P]>
+      : GetScalarType<T[P], AggregateBranchChargeConfig[P]>
+  }
+
+
+
+
+  export type BranchChargeConfigGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BranchChargeConfigWhereInput
+    orderBy?: BranchChargeConfigOrderByWithAggregationInput | BranchChargeConfigOrderByWithAggregationInput[]
+    by: BranchChargeConfigScalarFieldEnum[] | BranchChargeConfigScalarFieldEnum
+    having?: BranchChargeConfigScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: BranchChargeConfigCountAggregateInputType | true
+    _avg?: BranchChargeConfigAvgAggregateInputType
+    _sum?: BranchChargeConfigSumAggregateInputType
+    _min?: BranchChargeConfigMinAggregateInputType
+    _max?: BranchChargeConfigMaxAggregateInputType
+  }
+
+  export type BranchChargeConfigGroupByOutputType = {
+    id: number
+    publicId: string
+    branchId: number
+    extraKmEnabled: boolean
+    extraTimeEnabled: boolean
+    fuelModuleEnabled: boolean
+    fastagModuleEnabled: boolean
+    gracePolicyEnabled: boolean
+    damageModuleEnabled: boolean
+    graceType: $Enums.GraceType
+    graceMinutes: number
+    employeeOverrideEnabled: boolean
+    maxOverridePercent: Decimal | null
+    overrideRequiresApproval: boolean
+    overrideApprovalThreshold: Decimal | null
+    safetyDepositEnabled: boolean
+    safetyDepositRequiresApproval: boolean
+    createdAt: Date
+    updatedAt: Date
+    _count: BranchChargeConfigCountAggregateOutputType | null
+    _avg: BranchChargeConfigAvgAggregateOutputType | null
+    _sum: BranchChargeConfigSumAggregateOutputType | null
+    _min: BranchChargeConfigMinAggregateOutputType | null
+    _max: BranchChargeConfigMaxAggregateOutputType | null
+  }
+
+  type GetBranchChargeConfigGroupByPayload<T extends BranchChargeConfigGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<BranchChargeConfigGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof BranchChargeConfigGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], BranchChargeConfigGroupByOutputType[P]>
+            : GetScalarType<T[P], BranchChargeConfigGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type BranchChargeConfigSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    branchId?: boolean
+    extraKmEnabled?: boolean
+    extraTimeEnabled?: boolean
+    fuelModuleEnabled?: boolean
+    fastagModuleEnabled?: boolean
+    gracePolicyEnabled?: boolean
+    damageModuleEnabled?: boolean
+    graceType?: boolean
+    graceMinutes?: boolean
+    employeeOverrideEnabled?: boolean
+    maxOverridePercent?: boolean
+    overrideRequiresApproval?: boolean
+    overrideApprovalThreshold?: boolean
+    safetyDepositEnabled?: boolean
+    safetyDepositRequiresApproval?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["branchChargeConfig"]>
+
+  export type BranchChargeConfigSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    branchId?: boolean
+    extraKmEnabled?: boolean
+    extraTimeEnabled?: boolean
+    fuelModuleEnabled?: boolean
+    fastagModuleEnabled?: boolean
+    gracePolicyEnabled?: boolean
+    damageModuleEnabled?: boolean
+    graceType?: boolean
+    graceMinutes?: boolean
+    employeeOverrideEnabled?: boolean
+    maxOverridePercent?: boolean
+    overrideRequiresApproval?: boolean
+    overrideApprovalThreshold?: boolean
+    safetyDepositEnabled?: boolean
+    safetyDepositRequiresApproval?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["branchChargeConfig"]>
+
+  export type BranchChargeConfigSelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    branchId?: boolean
+    extraKmEnabled?: boolean
+    extraTimeEnabled?: boolean
+    fuelModuleEnabled?: boolean
+    fastagModuleEnabled?: boolean
+    gracePolicyEnabled?: boolean
+    damageModuleEnabled?: boolean
+    graceType?: boolean
+    graceMinutes?: boolean
+    employeeOverrideEnabled?: boolean
+    maxOverridePercent?: boolean
+    overrideRequiresApproval?: boolean
+    overrideApprovalThreshold?: boolean
+    safetyDepositEnabled?: boolean
+    safetyDepositRequiresApproval?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type BranchChargeConfigInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }
+  export type BranchChargeConfigIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+  }
+
+  export type $BranchChargeConfigPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "BranchChargeConfig"
+    objects: {
+      branch: Prisma.$BranchPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      branchId: number
+      extraKmEnabled: boolean
+      extraTimeEnabled: boolean
+      fuelModuleEnabled: boolean
+      fastagModuleEnabled: boolean
+      gracePolicyEnabled: boolean
+      damageModuleEnabled: boolean
+      graceType: $Enums.GraceType
+      graceMinutes: number
+      employeeOverrideEnabled: boolean
+      maxOverridePercent: Prisma.Decimal | null
+      overrideRequiresApproval: boolean
+      overrideApprovalThreshold: Prisma.Decimal | null
+      safetyDepositEnabled: boolean
+      safetyDepositRequiresApproval: boolean
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["branchChargeConfig"]>
+    composites: {}
+  }
+
+  type BranchChargeConfigGetPayload<S extends boolean | null | undefined | BranchChargeConfigDefaultArgs> = $Result.GetResult<Prisma.$BranchChargeConfigPayload, S>
+
+  type BranchChargeConfigCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<BranchChargeConfigFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: BranchChargeConfigCountAggregateInputType | true
+    }
+
+  export interface BranchChargeConfigDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['BranchChargeConfig'], meta: { name: 'BranchChargeConfig' } }
+    /**
+     * Find zero or one BranchChargeConfig that matches the filter.
+     * @param {BranchChargeConfigFindUniqueArgs} args - Arguments to find a BranchChargeConfig
+     * @example
+     * // Get one BranchChargeConfig
+     * const branchChargeConfig = await prisma.branchChargeConfig.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends BranchChargeConfigFindUniqueArgs>(args: SelectSubset<T, BranchChargeConfigFindUniqueArgs<ExtArgs>>): Prisma__BranchChargeConfigClient<$Result.GetResult<Prisma.$BranchChargeConfigPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one BranchChargeConfig that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {BranchChargeConfigFindUniqueOrThrowArgs} args - Arguments to find a BranchChargeConfig
+     * @example
+     * // Get one BranchChargeConfig
+     * const branchChargeConfig = await prisma.branchChargeConfig.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends BranchChargeConfigFindUniqueOrThrowArgs>(args: SelectSubset<T, BranchChargeConfigFindUniqueOrThrowArgs<ExtArgs>>): Prisma__BranchChargeConfigClient<$Result.GetResult<Prisma.$BranchChargeConfigPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first BranchChargeConfig that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchChargeConfigFindFirstArgs} args - Arguments to find a BranchChargeConfig
+     * @example
+     * // Get one BranchChargeConfig
+     * const branchChargeConfig = await prisma.branchChargeConfig.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends BranchChargeConfigFindFirstArgs>(args?: SelectSubset<T, BranchChargeConfigFindFirstArgs<ExtArgs>>): Prisma__BranchChargeConfigClient<$Result.GetResult<Prisma.$BranchChargeConfigPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first BranchChargeConfig that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchChargeConfigFindFirstOrThrowArgs} args - Arguments to find a BranchChargeConfig
+     * @example
+     * // Get one BranchChargeConfig
+     * const branchChargeConfig = await prisma.branchChargeConfig.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends BranchChargeConfigFindFirstOrThrowArgs>(args?: SelectSubset<T, BranchChargeConfigFindFirstOrThrowArgs<ExtArgs>>): Prisma__BranchChargeConfigClient<$Result.GetResult<Prisma.$BranchChargeConfigPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more BranchChargeConfigs that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchChargeConfigFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all BranchChargeConfigs
+     * const branchChargeConfigs = await prisma.branchChargeConfig.findMany()
+     * 
+     * // Get first 10 BranchChargeConfigs
+     * const branchChargeConfigs = await prisma.branchChargeConfig.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const branchChargeConfigWithIdOnly = await prisma.branchChargeConfig.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends BranchChargeConfigFindManyArgs>(args?: SelectSubset<T, BranchChargeConfigFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BranchChargeConfigPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a BranchChargeConfig.
+     * @param {BranchChargeConfigCreateArgs} args - Arguments to create a BranchChargeConfig.
+     * @example
+     * // Create one BranchChargeConfig
+     * const BranchChargeConfig = await prisma.branchChargeConfig.create({
+     *   data: {
+     *     // ... data to create a BranchChargeConfig
+     *   }
+     * })
+     * 
+     */
+    create<T extends BranchChargeConfigCreateArgs>(args: SelectSubset<T, BranchChargeConfigCreateArgs<ExtArgs>>): Prisma__BranchChargeConfigClient<$Result.GetResult<Prisma.$BranchChargeConfigPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many BranchChargeConfigs.
+     * @param {BranchChargeConfigCreateManyArgs} args - Arguments to create many BranchChargeConfigs.
+     * @example
+     * // Create many BranchChargeConfigs
+     * const branchChargeConfig = await prisma.branchChargeConfig.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends BranchChargeConfigCreateManyArgs>(args?: SelectSubset<T, BranchChargeConfigCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many BranchChargeConfigs and returns the data saved in the database.
+     * @param {BranchChargeConfigCreateManyAndReturnArgs} args - Arguments to create many BranchChargeConfigs.
+     * @example
+     * // Create many BranchChargeConfigs
+     * const branchChargeConfig = await prisma.branchChargeConfig.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many BranchChargeConfigs and only return the `id`
+     * const branchChargeConfigWithIdOnly = await prisma.branchChargeConfig.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends BranchChargeConfigCreateManyAndReturnArgs>(args?: SelectSubset<T, BranchChargeConfigCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BranchChargeConfigPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a BranchChargeConfig.
+     * @param {BranchChargeConfigDeleteArgs} args - Arguments to delete one BranchChargeConfig.
+     * @example
+     * // Delete one BranchChargeConfig
+     * const BranchChargeConfig = await prisma.branchChargeConfig.delete({
+     *   where: {
+     *     // ... filter to delete one BranchChargeConfig
+     *   }
+     * })
+     * 
+     */
+    delete<T extends BranchChargeConfigDeleteArgs>(args: SelectSubset<T, BranchChargeConfigDeleteArgs<ExtArgs>>): Prisma__BranchChargeConfigClient<$Result.GetResult<Prisma.$BranchChargeConfigPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one BranchChargeConfig.
+     * @param {BranchChargeConfigUpdateArgs} args - Arguments to update one BranchChargeConfig.
+     * @example
+     * // Update one BranchChargeConfig
+     * const branchChargeConfig = await prisma.branchChargeConfig.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends BranchChargeConfigUpdateArgs>(args: SelectSubset<T, BranchChargeConfigUpdateArgs<ExtArgs>>): Prisma__BranchChargeConfigClient<$Result.GetResult<Prisma.$BranchChargeConfigPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more BranchChargeConfigs.
+     * @param {BranchChargeConfigDeleteManyArgs} args - Arguments to filter BranchChargeConfigs to delete.
+     * @example
+     * // Delete a few BranchChargeConfigs
+     * const { count } = await prisma.branchChargeConfig.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends BranchChargeConfigDeleteManyArgs>(args?: SelectSubset<T, BranchChargeConfigDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more BranchChargeConfigs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchChargeConfigUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many BranchChargeConfigs
+     * const branchChargeConfig = await prisma.branchChargeConfig.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends BranchChargeConfigUpdateManyArgs>(args: SelectSubset<T, BranchChargeConfigUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one BranchChargeConfig.
+     * @param {BranchChargeConfigUpsertArgs} args - Arguments to update or create a BranchChargeConfig.
+     * @example
+     * // Update or create a BranchChargeConfig
+     * const branchChargeConfig = await prisma.branchChargeConfig.upsert({
+     *   create: {
+     *     // ... data to create a BranchChargeConfig
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the BranchChargeConfig we want to update
+     *   }
+     * })
+     */
+    upsert<T extends BranchChargeConfigUpsertArgs>(args: SelectSubset<T, BranchChargeConfigUpsertArgs<ExtArgs>>): Prisma__BranchChargeConfigClient<$Result.GetResult<Prisma.$BranchChargeConfigPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of BranchChargeConfigs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchChargeConfigCountArgs} args - Arguments to filter BranchChargeConfigs to count.
+     * @example
+     * // Count the number of BranchChargeConfigs
+     * const count = await prisma.branchChargeConfig.count({
+     *   where: {
+     *     // ... the filter for the BranchChargeConfigs we want to count
+     *   }
+     * })
+    **/
+    count<T extends BranchChargeConfigCountArgs>(
+      args?: Subset<T, BranchChargeConfigCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], BranchChargeConfigCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a BranchChargeConfig.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchChargeConfigAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends BranchChargeConfigAggregateArgs>(args: Subset<T, BranchChargeConfigAggregateArgs>): Prisma.PrismaPromise<GetBranchChargeConfigAggregateType<T>>
+
+    /**
+     * Group by BranchChargeConfig.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BranchChargeConfigGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends BranchChargeConfigGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: BranchChargeConfigGroupByArgs['orderBy'] }
+        : { orderBy?: BranchChargeConfigGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, BranchChargeConfigGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetBranchChargeConfigGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the BranchChargeConfig model
+   */
+  readonly fields: BranchChargeConfigFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for BranchChargeConfig.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__BranchChargeConfigClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    branch<T extends BranchDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BranchDefaultArgs<ExtArgs>>): Prisma__BranchClient<$Result.GetResult<Prisma.$BranchPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the BranchChargeConfig model
+   */ 
+  interface BranchChargeConfigFieldRefs {
+    readonly id: FieldRef<"BranchChargeConfig", 'Int'>
+    readonly publicId: FieldRef<"BranchChargeConfig", 'String'>
+    readonly branchId: FieldRef<"BranchChargeConfig", 'Int'>
+    readonly extraKmEnabled: FieldRef<"BranchChargeConfig", 'Boolean'>
+    readonly extraTimeEnabled: FieldRef<"BranchChargeConfig", 'Boolean'>
+    readonly fuelModuleEnabled: FieldRef<"BranchChargeConfig", 'Boolean'>
+    readonly fastagModuleEnabled: FieldRef<"BranchChargeConfig", 'Boolean'>
+    readonly gracePolicyEnabled: FieldRef<"BranchChargeConfig", 'Boolean'>
+    readonly damageModuleEnabled: FieldRef<"BranchChargeConfig", 'Boolean'>
+    readonly graceType: FieldRef<"BranchChargeConfig", 'GraceType'>
+    readonly graceMinutes: FieldRef<"BranchChargeConfig", 'Int'>
+    readonly employeeOverrideEnabled: FieldRef<"BranchChargeConfig", 'Boolean'>
+    readonly maxOverridePercent: FieldRef<"BranchChargeConfig", 'Decimal'>
+    readonly overrideRequiresApproval: FieldRef<"BranchChargeConfig", 'Boolean'>
+    readonly overrideApprovalThreshold: FieldRef<"BranchChargeConfig", 'Decimal'>
+    readonly safetyDepositEnabled: FieldRef<"BranchChargeConfig", 'Boolean'>
+    readonly safetyDepositRequiresApproval: FieldRef<"BranchChargeConfig", 'Boolean'>
+    readonly createdAt: FieldRef<"BranchChargeConfig", 'DateTime'>
+    readonly updatedAt: FieldRef<"BranchChargeConfig", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * BranchChargeConfig findUnique
+   */
+  export type BranchChargeConfigFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchChargeConfig
+     */
+    select?: BranchChargeConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchChargeConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchChargeConfig to fetch.
+     */
+    where: BranchChargeConfigWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchChargeConfig findUniqueOrThrow
+   */
+  export type BranchChargeConfigFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchChargeConfig
+     */
+    select?: BranchChargeConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchChargeConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchChargeConfig to fetch.
+     */
+    where: BranchChargeConfigWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchChargeConfig findFirst
+   */
+  export type BranchChargeConfigFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchChargeConfig
+     */
+    select?: BranchChargeConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchChargeConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchChargeConfig to fetch.
+     */
+    where?: BranchChargeConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchChargeConfigs to fetch.
+     */
+    orderBy?: BranchChargeConfigOrderByWithRelationInput | BranchChargeConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for BranchChargeConfigs.
+     */
+    cursor?: BranchChargeConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchChargeConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchChargeConfigs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of BranchChargeConfigs.
+     */
+    distinct?: BranchChargeConfigScalarFieldEnum | BranchChargeConfigScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchChargeConfig findFirstOrThrow
+   */
+  export type BranchChargeConfigFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchChargeConfig
+     */
+    select?: BranchChargeConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchChargeConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchChargeConfig to fetch.
+     */
+    where?: BranchChargeConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchChargeConfigs to fetch.
+     */
+    orderBy?: BranchChargeConfigOrderByWithRelationInput | BranchChargeConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for BranchChargeConfigs.
+     */
+    cursor?: BranchChargeConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchChargeConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchChargeConfigs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of BranchChargeConfigs.
+     */
+    distinct?: BranchChargeConfigScalarFieldEnum | BranchChargeConfigScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchChargeConfig findMany
+   */
+  export type BranchChargeConfigFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchChargeConfig
+     */
+    select?: BranchChargeConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchChargeConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which BranchChargeConfigs to fetch.
+     */
+    where?: BranchChargeConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BranchChargeConfigs to fetch.
+     */
+    orderBy?: BranchChargeConfigOrderByWithRelationInput | BranchChargeConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing BranchChargeConfigs.
+     */
+    cursor?: BranchChargeConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BranchChargeConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BranchChargeConfigs.
+     */
+    skip?: number
+    distinct?: BranchChargeConfigScalarFieldEnum | BranchChargeConfigScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchChargeConfig create
+   */
+  export type BranchChargeConfigCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchChargeConfig
+     */
+    select?: BranchChargeConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchChargeConfigInclude<ExtArgs> | null
+    /**
+     * The data needed to create a BranchChargeConfig.
+     */
+    data: XOR<BranchChargeConfigCreateInput, BranchChargeConfigUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchChargeConfig createMany
+   */
+  export type BranchChargeConfigCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many BranchChargeConfigs.
+     */
+    data: BranchChargeConfigCreateManyInput | BranchChargeConfigCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * BranchChargeConfig createManyAndReturn
+   */
+  export type BranchChargeConfigCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchChargeConfig
+     */
+    select?: BranchChargeConfigSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many BranchChargeConfigs.
+     */
+    data: BranchChargeConfigCreateManyInput | BranchChargeConfigCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchChargeConfigIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * BranchChargeConfig update
+   */
+  export type BranchChargeConfigUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchChargeConfig
+     */
+    select?: BranchChargeConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchChargeConfigInclude<ExtArgs> | null
+    /**
+     * The data needed to update a BranchChargeConfig.
+     */
+    data: XOR<BranchChargeConfigUpdateInput, BranchChargeConfigUncheckedUpdateInput>
+    /**
+     * Choose, which BranchChargeConfig to update.
+     */
+    where: BranchChargeConfigWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchChargeConfig updateMany
+   */
+  export type BranchChargeConfigUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update BranchChargeConfigs.
+     */
+    data: XOR<BranchChargeConfigUpdateManyMutationInput, BranchChargeConfigUncheckedUpdateManyInput>
+    /**
+     * Filter which BranchChargeConfigs to update
+     */
+    where?: BranchChargeConfigWhereInput
+  }
+
+  /**
+   * BranchChargeConfig upsert
+   */
+  export type BranchChargeConfigUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchChargeConfig
+     */
+    select?: BranchChargeConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchChargeConfigInclude<ExtArgs> | null
+    /**
+     * The filter to search for the BranchChargeConfig to update in case it exists.
+     */
+    where: BranchChargeConfigWhereUniqueInput
+    /**
+     * In case the BranchChargeConfig found by the `where` argument doesn't exist, create a new BranchChargeConfig with this data.
+     */
+    create: XOR<BranchChargeConfigCreateInput, BranchChargeConfigUncheckedCreateInput>
+    /**
+     * In case the BranchChargeConfig was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<BranchChargeConfigUpdateInput, BranchChargeConfigUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchChargeConfig delete
+   */
+  export type BranchChargeConfigDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchChargeConfig
+     */
+    select?: BranchChargeConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchChargeConfigInclude<ExtArgs> | null
+    /**
+     * Filter which BranchChargeConfig to delete.
+     */
+    where: BranchChargeConfigWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * BranchChargeConfig deleteMany
+   */
+  export type BranchChargeConfigDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which BranchChargeConfigs to delete
+     */
+    where?: BranchChargeConfigWhereInput
+  }
+
+  /**
+   * BranchChargeConfig without action
+   */
+  export type BranchChargeConfigDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BranchChargeConfig
+     */
+    select?: BranchChargeConfigSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BranchChargeConfigInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ChargeEntry
+   */
+
+  export type AggregateChargeEntry = {
+    _count: ChargeEntryCountAggregateOutputType | null
+    _avg: ChargeEntryAvgAggregateOutputType | null
+    _sum: ChargeEntrySumAggregateOutputType | null
+    _min: ChargeEntryMinAggregateOutputType | null
+    _max: ChargeEntryMaxAggregateOutputType | null
+  }
+
+  export type ChargeEntryAvgAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    originalAmount: Decimal | null
+    finalAmount: Decimal | null
+    quantity: Decimal | null
+    unitRate: Decimal | null
+    createdById: number | null
+  }
+
+  export type ChargeEntrySumAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    originalAmount: Decimal | null
+    finalAmount: Decimal | null
+    quantity: Decimal | null
+    unitRate: Decimal | null
+    createdById: number | null
+  }
+
+  export type ChargeEntryMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    bookingId: number | null
+    chargeType: $Enums.ChargeType | null
+    moduleKey: string | null
+    label: string | null
+    originalAmount: Decimal | null
+    finalAmount: Decimal | null
+    quantity: Decimal | null
+    unitRate: Decimal | null
+    notes: string | null
+    isOverridden: boolean | null
+    createdById: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ChargeEntryMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    bookingId: number | null
+    chargeType: $Enums.ChargeType | null
+    moduleKey: string | null
+    label: string | null
+    originalAmount: Decimal | null
+    finalAmount: Decimal | null
+    quantity: Decimal | null
+    unitRate: Decimal | null
+    notes: string | null
+    isOverridden: boolean | null
+    createdById: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ChargeEntryCountAggregateOutputType = {
+    id: number
+    publicId: number
+    bookingId: number
+    chargeType: number
+    moduleKey: number
+    label: number
+    originalAmount: number
+    finalAmount: number
+    quantity: number
+    unitRate: number
+    notes: number
+    isOverridden: number
+    createdById: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type ChargeEntryAvgAggregateInputType = {
+    id?: true
+    bookingId?: true
+    originalAmount?: true
+    finalAmount?: true
+    quantity?: true
+    unitRate?: true
+    createdById?: true
+  }
+
+  export type ChargeEntrySumAggregateInputType = {
+    id?: true
+    bookingId?: true
+    originalAmount?: true
+    finalAmount?: true
+    quantity?: true
+    unitRate?: true
+    createdById?: true
+  }
+
+  export type ChargeEntryMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    chargeType?: true
+    moduleKey?: true
+    label?: true
+    originalAmount?: true
+    finalAmount?: true
+    quantity?: true
+    unitRate?: true
+    notes?: true
+    isOverridden?: true
+    createdById?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ChargeEntryMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    chargeType?: true
+    moduleKey?: true
+    label?: true
+    originalAmount?: true
+    finalAmount?: true
+    quantity?: true
+    unitRate?: true
+    notes?: true
+    isOverridden?: true
+    createdById?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ChargeEntryCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    chargeType?: true
+    moduleKey?: true
+    label?: true
+    originalAmount?: true
+    finalAmount?: true
+    quantity?: true
+    unitRate?: true
+    notes?: true
+    isOverridden?: true
+    createdById?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type ChargeEntryAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ChargeEntry to aggregate.
+     */
+    where?: ChargeEntryWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ChargeEntries to fetch.
+     */
+    orderBy?: ChargeEntryOrderByWithRelationInput | ChargeEntryOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ChargeEntryWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ChargeEntries from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ChargeEntries.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ChargeEntries
+    **/
+    _count?: true | ChargeEntryCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ChargeEntryAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ChargeEntrySumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ChargeEntryMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ChargeEntryMaxAggregateInputType
+  }
+
+  export type GetChargeEntryAggregateType<T extends ChargeEntryAggregateArgs> = {
+        [P in keyof T & keyof AggregateChargeEntry]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateChargeEntry[P]>
+      : GetScalarType<T[P], AggregateChargeEntry[P]>
+  }
+
+
+
+
+  export type ChargeEntryGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ChargeEntryWhereInput
+    orderBy?: ChargeEntryOrderByWithAggregationInput | ChargeEntryOrderByWithAggregationInput[]
+    by: ChargeEntryScalarFieldEnum[] | ChargeEntryScalarFieldEnum
+    having?: ChargeEntryScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ChargeEntryCountAggregateInputType | true
+    _avg?: ChargeEntryAvgAggregateInputType
+    _sum?: ChargeEntrySumAggregateInputType
+    _min?: ChargeEntryMinAggregateInputType
+    _max?: ChargeEntryMaxAggregateInputType
+  }
+
+  export type ChargeEntryGroupByOutputType = {
+    id: number
+    publicId: string
+    bookingId: number
+    chargeType: $Enums.ChargeType
+    moduleKey: string
+    label: string
+    originalAmount: Decimal
+    finalAmount: Decimal
+    quantity: Decimal | null
+    unitRate: Decimal | null
+    notes: string | null
+    isOverridden: boolean
+    createdById: number
+    createdAt: Date
+    updatedAt: Date
+    _count: ChargeEntryCountAggregateOutputType | null
+    _avg: ChargeEntryAvgAggregateOutputType | null
+    _sum: ChargeEntrySumAggregateOutputType | null
+    _min: ChargeEntryMinAggregateOutputType | null
+    _max: ChargeEntryMaxAggregateOutputType | null
+  }
+
+  type GetChargeEntryGroupByPayload<T extends ChargeEntryGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ChargeEntryGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ChargeEntryGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ChargeEntryGroupByOutputType[P]>
+            : GetScalarType<T[P], ChargeEntryGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ChargeEntrySelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    chargeType?: boolean
+    moduleKey?: boolean
+    label?: boolean
+    originalAmount?: boolean
+    finalAmount?: boolean
+    quantity?: boolean
+    unitRate?: boolean
+    notes?: boolean
+    isOverridden?: boolean
+    createdById?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    createdBy?: boolean | UserDefaultArgs<ExtArgs>
+    override?: boolean | ChargeEntry$overrideArgs<ExtArgs>
+  }, ExtArgs["result"]["chargeEntry"]>
+
+  export type ChargeEntrySelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    chargeType?: boolean
+    moduleKey?: boolean
+    label?: boolean
+    originalAmount?: boolean
+    finalAmount?: boolean
+    quantity?: boolean
+    unitRate?: boolean
+    notes?: boolean
+    isOverridden?: boolean
+    createdById?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    createdBy?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["chargeEntry"]>
+
+  export type ChargeEntrySelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    chargeType?: boolean
+    moduleKey?: boolean
+    label?: boolean
+    originalAmount?: boolean
+    finalAmount?: boolean
+    quantity?: boolean
+    unitRate?: boolean
+    notes?: boolean
+    isOverridden?: boolean
+    createdById?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type ChargeEntryInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    createdBy?: boolean | UserDefaultArgs<ExtArgs>
+    override?: boolean | ChargeEntry$overrideArgs<ExtArgs>
+  }
+  export type ChargeEntryIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    createdBy?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $ChargeEntryPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ChargeEntry"
+    objects: {
+      booking: Prisma.$BookingPayload<ExtArgs>
+      createdBy: Prisma.$UserPayload<ExtArgs>
+      override: Prisma.$ChargeOverridePayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      bookingId: number
+      chargeType: $Enums.ChargeType
+      moduleKey: string
+      label: string
+      originalAmount: Prisma.Decimal
+      finalAmount: Prisma.Decimal
+      quantity: Prisma.Decimal | null
+      unitRate: Prisma.Decimal | null
+      notes: string | null
+      isOverridden: boolean
+      createdById: number
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["chargeEntry"]>
+    composites: {}
+  }
+
+  type ChargeEntryGetPayload<S extends boolean | null | undefined | ChargeEntryDefaultArgs> = $Result.GetResult<Prisma.$ChargeEntryPayload, S>
+
+  type ChargeEntryCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<ChargeEntryFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: ChargeEntryCountAggregateInputType | true
+    }
+
+  export interface ChargeEntryDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ChargeEntry'], meta: { name: 'ChargeEntry' } }
+    /**
+     * Find zero or one ChargeEntry that matches the filter.
+     * @param {ChargeEntryFindUniqueArgs} args - Arguments to find a ChargeEntry
+     * @example
+     * // Get one ChargeEntry
+     * const chargeEntry = await prisma.chargeEntry.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ChargeEntryFindUniqueArgs>(args: SelectSubset<T, ChargeEntryFindUniqueArgs<ExtArgs>>): Prisma__ChargeEntryClient<$Result.GetResult<Prisma.$ChargeEntryPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one ChargeEntry that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {ChargeEntryFindUniqueOrThrowArgs} args - Arguments to find a ChargeEntry
+     * @example
+     * // Get one ChargeEntry
+     * const chargeEntry = await prisma.chargeEntry.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ChargeEntryFindUniqueOrThrowArgs>(args: SelectSubset<T, ChargeEntryFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ChargeEntryClient<$Result.GetResult<Prisma.$ChargeEntryPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first ChargeEntry that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ChargeEntryFindFirstArgs} args - Arguments to find a ChargeEntry
+     * @example
+     * // Get one ChargeEntry
+     * const chargeEntry = await prisma.chargeEntry.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ChargeEntryFindFirstArgs>(args?: SelectSubset<T, ChargeEntryFindFirstArgs<ExtArgs>>): Prisma__ChargeEntryClient<$Result.GetResult<Prisma.$ChargeEntryPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first ChargeEntry that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ChargeEntryFindFirstOrThrowArgs} args - Arguments to find a ChargeEntry
+     * @example
+     * // Get one ChargeEntry
+     * const chargeEntry = await prisma.chargeEntry.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ChargeEntryFindFirstOrThrowArgs>(args?: SelectSubset<T, ChargeEntryFindFirstOrThrowArgs<ExtArgs>>): Prisma__ChargeEntryClient<$Result.GetResult<Prisma.$ChargeEntryPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more ChargeEntries that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ChargeEntryFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ChargeEntries
+     * const chargeEntries = await prisma.chargeEntry.findMany()
+     * 
+     * // Get first 10 ChargeEntries
+     * const chargeEntries = await prisma.chargeEntry.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const chargeEntryWithIdOnly = await prisma.chargeEntry.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ChargeEntryFindManyArgs>(args?: SelectSubset<T, ChargeEntryFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ChargeEntryPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a ChargeEntry.
+     * @param {ChargeEntryCreateArgs} args - Arguments to create a ChargeEntry.
+     * @example
+     * // Create one ChargeEntry
+     * const ChargeEntry = await prisma.chargeEntry.create({
+     *   data: {
+     *     // ... data to create a ChargeEntry
+     *   }
+     * })
+     * 
+     */
+    create<T extends ChargeEntryCreateArgs>(args: SelectSubset<T, ChargeEntryCreateArgs<ExtArgs>>): Prisma__ChargeEntryClient<$Result.GetResult<Prisma.$ChargeEntryPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many ChargeEntries.
+     * @param {ChargeEntryCreateManyArgs} args - Arguments to create many ChargeEntries.
+     * @example
+     * // Create many ChargeEntries
+     * const chargeEntry = await prisma.chargeEntry.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ChargeEntryCreateManyArgs>(args?: SelectSubset<T, ChargeEntryCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ChargeEntries and returns the data saved in the database.
+     * @param {ChargeEntryCreateManyAndReturnArgs} args - Arguments to create many ChargeEntries.
+     * @example
+     * // Create many ChargeEntries
+     * const chargeEntry = await prisma.chargeEntry.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many ChargeEntries and only return the `id`
+     * const chargeEntryWithIdOnly = await prisma.chargeEntry.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends ChargeEntryCreateManyAndReturnArgs>(args?: SelectSubset<T, ChargeEntryCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ChargeEntryPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a ChargeEntry.
+     * @param {ChargeEntryDeleteArgs} args - Arguments to delete one ChargeEntry.
+     * @example
+     * // Delete one ChargeEntry
+     * const ChargeEntry = await prisma.chargeEntry.delete({
+     *   where: {
+     *     // ... filter to delete one ChargeEntry
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ChargeEntryDeleteArgs>(args: SelectSubset<T, ChargeEntryDeleteArgs<ExtArgs>>): Prisma__ChargeEntryClient<$Result.GetResult<Prisma.$ChargeEntryPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one ChargeEntry.
+     * @param {ChargeEntryUpdateArgs} args - Arguments to update one ChargeEntry.
+     * @example
+     * // Update one ChargeEntry
+     * const chargeEntry = await prisma.chargeEntry.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ChargeEntryUpdateArgs>(args: SelectSubset<T, ChargeEntryUpdateArgs<ExtArgs>>): Prisma__ChargeEntryClient<$Result.GetResult<Prisma.$ChargeEntryPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more ChargeEntries.
+     * @param {ChargeEntryDeleteManyArgs} args - Arguments to filter ChargeEntries to delete.
+     * @example
+     * // Delete a few ChargeEntries
+     * const { count } = await prisma.chargeEntry.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ChargeEntryDeleteManyArgs>(args?: SelectSubset<T, ChargeEntryDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ChargeEntries.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ChargeEntryUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ChargeEntries
+     * const chargeEntry = await prisma.chargeEntry.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ChargeEntryUpdateManyArgs>(args: SelectSubset<T, ChargeEntryUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ChargeEntry.
+     * @param {ChargeEntryUpsertArgs} args - Arguments to update or create a ChargeEntry.
+     * @example
+     * // Update or create a ChargeEntry
+     * const chargeEntry = await prisma.chargeEntry.upsert({
+     *   create: {
+     *     // ... data to create a ChargeEntry
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ChargeEntry we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ChargeEntryUpsertArgs>(args: SelectSubset<T, ChargeEntryUpsertArgs<ExtArgs>>): Prisma__ChargeEntryClient<$Result.GetResult<Prisma.$ChargeEntryPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of ChargeEntries.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ChargeEntryCountArgs} args - Arguments to filter ChargeEntries to count.
+     * @example
+     * // Count the number of ChargeEntries
+     * const count = await prisma.chargeEntry.count({
+     *   where: {
+     *     // ... the filter for the ChargeEntries we want to count
+     *   }
+     * })
+    **/
+    count<T extends ChargeEntryCountArgs>(
+      args?: Subset<T, ChargeEntryCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ChargeEntryCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ChargeEntry.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ChargeEntryAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ChargeEntryAggregateArgs>(args: Subset<T, ChargeEntryAggregateArgs>): Prisma.PrismaPromise<GetChargeEntryAggregateType<T>>
+
+    /**
+     * Group by ChargeEntry.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ChargeEntryGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ChargeEntryGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ChargeEntryGroupByArgs['orderBy'] }
+        : { orderBy?: ChargeEntryGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ChargeEntryGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetChargeEntryGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ChargeEntry model
+   */
+  readonly fields: ChargeEntryFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ChargeEntry.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ChargeEntryClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    booking<T extends BookingDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BookingDefaultArgs<ExtArgs>>): Prisma__BookingClient<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    createdBy<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    override<T extends ChargeEntry$overrideArgs<ExtArgs> = {}>(args?: Subset<T, ChargeEntry$overrideArgs<ExtArgs>>): Prisma__ChargeOverrideClient<$Result.GetResult<Prisma.$ChargeOverridePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ChargeEntry model
+   */ 
+  interface ChargeEntryFieldRefs {
+    readonly id: FieldRef<"ChargeEntry", 'Int'>
+    readonly publicId: FieldRef<"ChargeEntry", 'String'>
+    readonly bookingId: FieldRef<"ChargeEntry", 'Int'>
+    readonly chargeType: FieldRef<"ChargeEntry", 'ChargeType'>
+    readonly moduleKey: FieldRef<"ChargeEntry", 'String'>
+    readonly label: FieldRef<"ChargeEntry", 'String'>
+    readonly originalAmount: FieldRef<"ChargeEntry", 'Decimal'>
+    readonly finalAmount: FieldRef<"ChargeEntry", 'Decimal'>
+    readonly quantity: FieldRef<"ChargeEntry", 'Decimal'>
+    readonly unitRate: FieldRef<"ChargeEntry", 'Decimal'>
+    readonly notes: FieldRef<"ChargeEntry", 'String'>
+    readonly isOverridden: FieldRef<"ChargeEntry", 'Boolean'>
+    readonly createdById: FieldRef<"ChargeEntry", 'Int'>
+    readonly createdAt: FieldRef<"ChargeEntry", 'DateTime'>
+    readonly updatedAt: FieldRef<"ChargeEntry", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ChargeEntry findUnique
+   */
+  export type ChargeEntryFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeEntry
+     */
+    select?: ChargeEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeEntryInclude<ExtArgs> | null
+    /**
+     * Filter, which ChargeEntry to fetch.
+     */
+    where: ChargeEntryWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ChargeEntry findUniqueOrThrow
+   */
+  export type ChargeEntryFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeEntry
+     */
+    select?: ChargeEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeEntryInclude<ExtArgs> | null
+    /**
+     * Filter, which ChargeEntry to fetch.
+     */
+    where: ChargeEntryWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ChargeEntry findFirst
+   */
+  export type ChargeEntryFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeEntry
+     */
+    select?: ChargeEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeEntryInclude<ExtArgs> | null
+    /**
+     * Filter, which ChargeEntry to fetch.
+     */
+    where?: ChargeEntryWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ChargeEntries to fetch.
+     */
+    orderBy?: ChargeEntryOrderByWithRelationInput | ChargeEntryOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ChargeEntries.
+     */
+    cursor?: ChargeEntryWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ChargeEntries from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ChargeEntries.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ChargeEntries.
+     */
+    distinct?: ChargeEntryScalarFieldEnum | ChargeEntryScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ChargeEntry findFirstOrThrow
+   */
+  export type ChargeEntryFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeEntry
+     */
+    select?: ChargeEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeEntryInclude<ExtArgs> | null
+    /**
+     * Filter, which ChargeEntry to fetch.
+     */
+    where?: ChargeEntryWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ChargeEntries to fetch.
+     */
+    orderBy?: ChargeEntryOrderByWithRelationInput | ChargeEntryOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ChargeEntries.
+     */
+    cursor?: ChargeEntryWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ChargeEntries from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ChargeEntries.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ChargeEntries.
+     */
+    distinct?: ChargeEntryScalarFieldEnum | ChargeEntryScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ChargeEntry findMany
+   */
+  export type ChargeEntryFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeEntry
+     */
+    select?: ChargeEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeEntryInclude<ExtArgs> | null
+    /**
+     * Filter, which ChargeEntries to fetch.
+     */
+    where?: ChargeEntryWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ChargeEntries to fetch.
+     */
+    orderBy?: ChargeEntryOrderByWithRelationInput | ChargeEntryOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ChargeEntries.
+     */
+    cursor?: ChargeEntryWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ChargeEntries from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ChargeEntries.
+     */
+    skip?: number
+    distinct?: ChargeEntryScalarFieldEnum | ChargeEntryScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ChargeEntry create
+   */
+  export type ChargeEntryCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeEntry
+     */
+    select?: ChargeEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeEntryInclude<ExtArgs> | null
+    /**
+     * The data needed to create a ChargeEntry.
+     */
+    data: XOR<ChargeEntryCreateInput, ChargeEntryUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ChargeEntry createMany
+   */
+  export type ChargeEntryCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ChargeEntries.
+     */
+    data: ChargeEntryCreateManyInput | ChargeEntryCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ChargeEntry createManyAndReturn
+   */
+  export type ChargeEntryCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeEntry
+     */
+    select?: ChargeEntrySelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many ChargeEntries.
+     */
+    data: ChargeEntryCreateManyInput | ChargeEntryCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeEntryIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * ChargeEntry update
+   */
+  export type ChargeEntryUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeEntry
+     */
+    select?: ChargeEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeEntryInclude<ExtArgs> | null
+    /**
+     * The data needed to update a ChargeEntry.
+     */
+    data: XOR<ChargeEntryUpdateInput, ChargeEntryUncheckedUpdateInput>
+    /**
+     * Choose, which ChargeEntry to update.
+     */
+    where: ChargeEntryWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ChargeEntry updateMany
+   */
+  export type ChargeEntryUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ChargeEntries.
+     */
+    data: XOR<ChargeEntryUpdateManyMutationInput, ChargeEntryUncheckedUpdateManyInput>
+    /**
+     * Filter which ChargeEntries to update
+     */
+    where?: ChargeEntryWhereInput
+  }
+
+  /**
+   * ChargeEntry upsert
+   */
+  export type ChargeEntryUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeEntry
+     */
+    select?: ChargeEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeEntryInclude<ExtArgs> | null
+    /**
+     * The filter to search for the ChargeEntry to update in case it exists.
+     */
+    where: ChargeEntryWhereUniqueInput
+    /**
+     * In case the ChargeEntry found by the `where` argument doesn't exist, create a new ChargeEntry with this data.
+     */
+    create: XOR<ChargeEntryCreateInput, ChargeEntryUncheckedCreateInput>
+    /**
+     * In case the ChargeEntry was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ChargeEntryUpdateInput, ChargeEntryUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ChargeEntry delete
+   */
+  export type ChargeEntryDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeEntry
+     */
+    select?: ChargeEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeEntryInclude<ExtArgs> | null
+    /**
+     * Filter which ChargeEntry to delete.
+     */
+    where: ChargeEntryWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ChargeEntry deleteMany
+   */
+  export type ChargeEntryDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ChargeEntries to delete
+     */
+    where?: ChargeEntryWhereInput
+  }
+
+  /**
+   * ChargeEntry.override
+   */
+  export type ChargeEntry$overrideArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeOverride
+     */
+    select?: ChargeOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeOverrideInclude<ExtArgs> | null
+    where?: ChargeOverrideWhereInput
+  }
+
+  /**
+   * ChargeEntry without action
+   */
+  export type ChargeEntryDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeEntry
+     */
+    select?: ChargeEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeEntryInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ChargeOverride
+   */
+
+  export type AggregateChargeOverride = {
+    _count: ChargeOverrideCountAggregateOutputType | null
+    _avg: ChargeOverrideAvgAggregateOutputType | null
+    _sum: ChargeOverrideSumAggregateOutputType | null
+    _min: ChargeOverrideMinAggregateOutputType | null
+    _max: ChargeOverrideMaxAggregateOutputType | null
+  }
+
+  export type ChargeOverrideAvgAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    chargeEntryId: number | null
+    originalAmount: Decimal | null
+    overriddenAmount: Decimal | null
+    waivedAmount: Decimal | null
+    actorId: number | null
+    approverId: number | null
+  }
+
+  export type ChargeOverrideSumAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    chargeEntryId: number | null
+    originalAmount: Decimal | null
+    overriddenAmount: Decimal | null
+    waivedAmount: Decimal | null
+    actorId: number | null
+    approverId: number | null
+  }
+
+  export type ChargeOverrideMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    bookingId: number | null
+    chargeEntryId: number | null
+    originalAmount: Decimal | null
+    overriddenAmount: Decimal | null
+    waivedAmount: Decimal | null
+    reason: string | null
+    status: $Enums.OverrideStatus | null
+    actorId: number | null
+    actorRole: $Enums.Role | null
+    approverId: number | null
+    approvedAt: Date | null
+    rejectedAt: Date | null
+    rejectionReason: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ChargeOverrideMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    bookingId: number | null
+    chargeEntryId: number | null
+    originalAmount: Decimal | null
+    overriddenAmount: Decimal | null
+    waivedAmount: Decimal | null
+    reason: string | null
+    status: $Enums.OverrideStatus | null
+    actorId: number | null
+    actorRole: $Enums.Role | null
+    approverId: number | null
+    approvedAt: Date | null
+    rejectedAt: Date | null
+    rejectionReason: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ChargeOverrideCountAggregateOutputType = {
+    id: number
+    publicId: number
+    bookingId: number
+    chargeEntryId: number
+    originalAmount: number
+    overriddenAmount: number
+    waivedAmount: number
+    reason: number
+    status: number
+    actorId: number
+    actorRole: number
+    approverId: number
+    approvedAt: number
+    rejectedAt: number
+    rejectionReason: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type ChargeOverrideAvgAggregateInputType = {
+    id?: true
+    bookingId?: true
+    chargeEntryId?: true
+    originalAmount?: true
+    overriddenAmount?: true
+    waivedAmount?: true
+    actorId?: true
+    approverId?: true
+  }
+
+  export type ChargeOverrideSumAggregateInputType = {
+    id?: true
+    bookingId?: true
+    chargeEntryId?: true
+    originalAmount?: true
+    overriddenAmount?: true
+    waivedAmount?: true
+    actorId?: true
+    approverId?: true
+  }
+
+  export type ChargeOverrideMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    chargeEntryId?: true
+    originalAmount?: true
+    overriddenAmount?: true
+    waivedAmount?: true
+    reason?: true
+    status?: true
+    actorId?: true
+    actorRole?: true
+    approverId?: true
+    approvedAt?: true
+    rejectedAt?: true
+    rejectionReason?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ChargeOverrideMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    chargeEntryId?: true
+    originalAmount?: true
+    overriddenAmount?: true
+    waivedAmount?: true
+    reason?: true
+    status?: true
+    actorId?: true
+    actorRole?: true
+    approverId?: true
+    approvedAt?: true
+    rejectedAt?: true
+    rejectionReason?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ChargeOverrideCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    chargeEntryId?: true
+    originalAmount?: true
+    overriddenAmount?: true
+    waivedAmount?: true
+    reason?: true
+    status?: true
+    actorId?: true
+    actorRole?: true
+    approverId?: true
+    approvedAt?: true
+    rejectedAt?: true
+    rejectionReason?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type ChargeOverrideAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ChargeOverride to aggregate.
+     */
+    where?: ChargeOverrideWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ChargeOverrides to fetch.
+     */
+    orderBy?: ChargeOverrideOrderByWithRelationInput | ChargeOverrideOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ChargeOverrideWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ChargeOverrides from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ChargeOverrides.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ChargeOverrides
+    **/
+    _count?: true | ChargeOverrideCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ChargeOverrideAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ChargeOverrideSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ChargeOverrideMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ChargeOverrideMaxAggregateInputType
+  }
+
+  export type GetChargeOverrideAggregateType<T extends ChargeOverrideAggregateArgs> = {
+        [P in keyof T & keyof AggregateChargeOverride]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateChargeOverride[P]>
+      : GetScalarType<T[P], AggregateChargeOverride[P]>
+  }
+
+
+
+
+  export type ChargeOverrideGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ChargeOverrideWhereInput
+    orderBy?: ChargeOverrideOrderByWithAggregationInput | ChargeOverrideOrderByWithAggregationInput[]
+    by: ChargeOverrideScalarFieldEnum[] | ChargeOverrideScalarFieldEnum
+    having?: ChargeOverrideScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ChargeOverrideCountAggregateInputType | true
+    _avg?: ChargeOverrideAvgAggregateInputType
+    _sum?: ChargeOverrideSumAggregateInputType
+    _min?: ChargeOverrideMinAggregateInputType
+    _max?: ChargeOverrideMaxAggregateInputType
+  }
+
+  export type ChargeOverrideGroupByOutputType = {
+    id: number
+    publicId: string
+    bookingId: number
+    chargeEntryId: number
+    originalAmount: Decimal
+    overriddenAmount: Decimal
+    waivedAmount: Decimal
+    reason: string
+    status: $Enums.OverrideStatus
+    actorId: number
+    actorRole: $Enums.Role
+    approverId: number | null
+    approvedAt: Date | null
+    rejectedAt: Date | null
+    rejectionReason: string | null
+    createdAt: Date
+    updatedAt: Date
+    _count: ChargeOverrideCountAggregateOutputType | null
+    _avg: ChargeOverrideAvgAggregateOutputType | null
+    _sum: ChargeOverrideSumAggregateOutputType | null
+    _min: ChargeOverrideMinAggregateOutputType | null
+    _max: ChargeOverrideMaxAggregateOutputType | null
+  }
+
+  type GetChargeOverrideGroupByPayload<T extends ChargeOverrideGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ChargeOverrideGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ChargeOverrideGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ChargeOverrideGroupByOutputType[P]>
+            : GetScalarType<T[P], ChargeOverrideGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ChargeOverrideSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    chargeEntryId?: boolean
+    originalAmount?: boolean
+    overriddenAmount?: boolean
+    waivedAmount?: boolean
+    reason?: boolean
+    status?: boolean
+    actorId?: boolean
+    actorRole?: boolean
+    approverId?: boolean
+    approvedAt?: boolean
+    rejectedAt?: boolean
+    rejectionReason?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    chargeEntry?: boolean | ChargeEntryDefaultArgs<ExtArgs>
+    actor?: boolean | UserDefaultArgs<ExtArgs>
+    approver?: boolean | ChargeOverride$approverArgs<ExtArgs>
+  }, ExtArgs["result"]["chargeOverride"]>
+
+  export type ChargeOverrideSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    chargeEntryId?: boolean
+    originalAmount?: boolean
+    overriddenAmount?: boolean
+    waivedAmount?: boolean
+    reason?: boolean
+    status?: boolean
+    actorId?: boolean
+    actorRole?: boolean
+    approverId?: boolean
+    approvedAt?: boolean
+    rejectedAt?: boolean
+    rejectionReason?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    chargeEntry?: boolean | ChargeEntryDefaultArgs<ExtArgs>
+    actor?: boolean | UserDefaultArgs<ExtArgs>
+    approver?: boolean | ChargeOverride$approverArgs<ExtArgs>
+  }, ExtArgs["result"]["chargeOverride"]>
+
+  export type ChargeOverrideSelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    chargeEntryId?: boolean
+    originalAmount?: boolean
+    overriddenAmount?: boolean
+    waivedAmount?: boolean
+    reason?: boolean
+    status?: boolean
+    actorId?: boolean
+    actorRole?: boolean
+    approverId?: boolean
+    approvedAt?: boolean
+    rejectedAt?: boolean
+    rejectionReason?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type ChargeOverrideInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    chargeEntry?: boolean | ChargeEntryDefaultArgs<ExtArgs>
+    actor?: boolean | UserDefaultArgs<ExtArgs>
+    approver?: boolean | ChargeOverride$approverArgs<ExtArgs>
+  }
+  export type ChargeOverrideIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    chargeEntry?: boolean | ChargeEntryDefaultArgs<ExtArgs>
+    actor?: boolean | UserDefaultArgs<ExtArgs>
+    approver?: boolean | ChargeOverride$approverArgs<ExtArgs>
+  }
+
+  export type $ChargeOverridePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ChargeOverride"
+    objects: {
+      booking: Prisma.$BookingPayload<ExtArgs>
+      chargeEntry: Prisma.$ChargeEntryPayload<ExtArgs>
+      actor: Prisma.$UserPayload<ExtArgs>
+      approver: Prisma.$UserPayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      bookingId: number
+      chargeEntryId: number
+      originalAmount: Prisma.Decimal
+      overriddenAmount: Prisma.Decimal
+      waivedAmount: Prisma.Decimal
+      reason: string
+      status: $Enums.OverrideStatus
+      actorId: number
+      actorRole: $Enums.Role
+      approverId: number | null
+      approvedAt: Date | null
+      rejectedAt: Date | null
+      rejectionReason: string | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["chargeOverride"]>
+    composites: {}
+  }
+
+  type ChargeOverrideGetPayload<S extends boolean | null | undefined | ChargeOverrideDefaultArgs> = $Result.GetResult<Prisma.$ChargeOverridePayload, S>
+
+  type ChargeOverrideCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<ChargeOverrideFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: ChargeOverrideCountAggregateInputType | true
+    }
+
+  export interface ChargeOverrideDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ChargeOverride'], meta: { name: 'ChargeOverride' } }
+    /**
+     * Find zero or one ChargeOverride that matches the filter.
+     * @param {ChargeOverrideFindUniqueArgs} args - Arguments to find a ChargeOverride
+     * @example
+     * // Get one ChargeOverride
+     * const chargeOverride = await prisma.chargeOverride.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ChargeOverrideFindUniqueArgs>(args: SelectSubset<T, ChargeOverrideFindUniqueArgs<ExtArgs>>): Prisma__ChargeOverrideClient<$Result.GetResult<Prisma.$ChargeOverridePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one ChargeOverride that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {ChargeOverrideFindUniqueOrThrowArgs} args - Arguments to find a ChargeOverride
+     * @example
+     * // Get one ChargeOverride
+     * const chargeOverride = await prisma.chargeOverride.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ChargeOverrideFindUniqueOrThrowArgs>(args: SelectSubset<T, ChargeOverrideFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ChargeOverrideClient<$Result.GetResult<Prisma.$ChargeOverridePayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first ChargeOverride that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ChargeOverrideFindFirstArgs} args - Arguments to find a ChargeOverride
+     * @example
+     * // Get one ChargeOverride
+     * const chargeOverride = await prisma.chargeOverride.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ChargeOverrideFindFirstArgs>(args?: SelectSubset<T, ChargeOverrideFindFirstArgs<ExtArgs>>): Prisma__ChargeOverrideClient<$Result.GetResult<Prisma.$ChargeOverridePayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first ChargeOverride that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ChargeOverrideFindFirstOrThrowArgs} args - Arguments to find a ChargeOverride
+     * @example
+     * // Get one ChargeOverride
+     * const chargeOverride = await prisma.chargeOverride.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ChargeOverrideFindFirstOrThrowArgs>(args?: SelectSubset<T, ChargeOverrideFindFirstOrThrowArgs<ExtArgs>>): Prisma__ChargeOverrideClient<$Result.GetResult<Prisma.$ChargeOverridePayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more ChargeOverrides that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ChargeOverrideFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ChargeOverrides
+     * const chargeOverrides = await prisma.chargeOverride.findMany()
+     * 
+     * // Get first 10 ChargeOverrides
+     * const chargeOverrides = await prisma.chargeOverride.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const chargeOverrideWithIdOnly = await prisma.chargeOverride.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ChargeOverrideFindManyArgs>(args?: SelectSubset<T, ChargeOverrideFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ChargeOverridePayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a ChargeOverride.
+     * @param {ChargeOverrideCreateArgs} args - Arguments to create a ChargeOverride.
+     * @example
+     * // Create one ChargeOverride
+     * const ChargeOverride = await prisma.chargeOverride.create({
+     *   data: {
+     *     // ... data to create a ChargeOverride
+     *   }
+     * })
+     * 
+     */
+    create<T extends ChargeOverrideCreateArgs>(args: SelectSubset<T, ChargeOverrideCreateArgs<ExtArgs>>): Prisma__ChargeOverrideClient<$Result.GetResult<Prisma.$ChargeOverridePayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many ChargeOverrides.
+     * @param {ChargeOverrideCreateManyArgs} args - Arguments to create many ChargeOverrides.
+     * @example
+     * // Create many ChargeOverrides
+     * const chargeOverride = await prisma.chargeOverride.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ChargeOverrideCreateManyArgs>(args?: SelectSubset<T, ChargeOverrideCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ChargeOverrides and returns the data saved in the database.
+     * @param {ChargeOverrideCreateManyAndReturnArgs} args - Arguments to create many ChargeOverrides.
+     * @example
+     * // Create many ChargeOverrides
+     * const chargeOverride = await prisma.chargeOverride.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many ChargeOverrides and only return the `id`
+     * const chargeOverrideWithIdOnly = await prisma.chargeOverride.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends ChargeOverrideCreateManyAndReturnArgs>(args?: SelectSubset<T, ChargeOverrideCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ChargeOverridePayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a ChargeOverride.
+     * @param {ChargeOverrideDeleteArgs} args - Arguments to delete one ChargeOverride.
+     * @example
+     * // Delete one ChargeOverride
+     * const ChargeOverride = await prisma.chargeOverride.delete({
+     *   where: {
+     *     // ... filter to delete one ChargeOverride
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ChargeOverrideDeleteArgs>(args: SelectSubset<T, ChargeOverrideDeleteArgs<ExtArgs>>): Prisma__ChargeOverrideClient<$Result.GetResult<Prisma.$ChargeOverridePayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one ChargeOverride.
+     * @param {ChargeOverrideUpdateArgs} args - Arguments to update one ChargeOverride.
+     * @example
+     * // Update one ChargeOverride
+     * const chargeOverride = await prisma.chargeOverride.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ChargeOverrideUpdateArgs>(args: SelectSubset<T, ChargeOverrideUpdateArgs<ExtArgs>>): Prisma__ChargeOverrideClient<$Result.GetResult<Prisma.$ChargeOverridePayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more ChargeOverrides.
+     * @param {ChargeOverrideDeleteManyArgs} args - Arguments to filter ChargeOverrides to delete.
+     * @example
+     * // Delete a few ChargeOverrides
+     * const { count } = await prisma.chargeOverride.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ChargeOverrideDeleteManyArgs>(args?: SelectSubset<T, ChargeOverrideDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ChargeOverrides.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ChargeOverrideUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ChargeOverrides
+     * const chargeOverride = await prisma.chargeOverride.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ChargeOverrideUpdateManyArgs>(args: SelectSubset<T, ChargeOverrideUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ChargeOverride.
+     * @param {ChargeOverrideUpsertArgs} args - Arguments to update or create a ChargeOverride.
+     * @example
+     * // Update or create a ChargeOverride
+     * const chargeOverride = await prisma.chargeOverride.upsert({
+     *   create: {
+     *     // ... data to create a ChargeOverride
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ChargeOverride we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ChargeOverrideUpsertArgs>(args: SelectSubset<T, ChargeOverrideUpsertArgs<ExtArgs>>): Prisma__ChargeOverrideClient<$Result.GetResult<Prisma.$ChargeOverridePayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of ChargeOverrides.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ChargeOverrideCountArgs} args - Arguments to filter ChargeOverrides to count.
+     * @example
+     * // Count the number of ChargeOverrides
+     * const count = await prisma.chargeOverride.count({
+     *   where: {
+     *     // ... the filter for the ChargeOverrides we want to count
+     *   }
+     * })
+    **/
+    count<T extends ChargeOverrideCountArgs>(
+      args?: Subset<T, ChargeOverrideCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ChargeOverrideCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ChargeOverride.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ChargeOverrideAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ChargeOverrideAggregateArgs>(args: Subset<T, ChargeOverrideAggregateArgs>): Prisma.PrismaPromise<GetChargeOverrideAggregateType<T>>
+
+    /**
+     * Group by ChargeOverride.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ChargeOverrideGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ChargeOverrideGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ChargeOverrideGroupByArgs['orderBy'] }
+        : { orderBy?: ChargeOverrideGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ChargeOverrideGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetChargeOverrideGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ChargeOverride model
+   */
+  readonly fields: ChargeOverrideFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ChargeOverride.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ChargeOverrideClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    booking<T extends BookingDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BookingDefaultArgs<ExtArgs>>): Prisma__BookingClient<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    chargeEntry<T extends ChargeEntryDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ChargeEntryDefaultArgs<ExtArgs>>): Prisma__ChargeEntryClient<$Result.GetResult<Prisma.$ChargeEntryPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    actor<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    approver<T extends ChargeOverride$approverArgs<ExtArgs> = {}>(args?: Subset<T, ChargeOverride$approverArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ChargeOverride model
+   */ 
+  interface ChargeOverrideFieldRefs {
+    readonly id: FieldRef<"ChargeOverride", 'Int'>
+    readonly publicId: FieldRef<"ChargeOverride", 'String'>
+    readonly bookingId: FieldRef<"ChargeOverride", 'Int'>
+    readonly chargeEntryId: FieldRef<"ChargeOverride", 'Int'>
+    readonly originalAmount: FieldRef<"ChargeOverride", 'Decimal'>
+    readonly overriddenAmount: FieldRef<"ChargeOverride", 'Decimal'>
+    readonly waivedAmount: FieldRef<"ChargeOverride", 'Decimal'>
+    readonly reason: FieldRef<"ChargeOverride", 'String'>
+    readonly status: FieldRef<"ChargeOverride", 'OverrideStatus'>
+    readonly actorId: FieldRef<"ChargeOverride", 'Int'>
+    readonly actorRole: FieldRef<"ChargeOverride", 'Role'>
+    readonly approverId: FieldRef<"ChargeOverride", 'Int'>
+    readonly approvedAt: FieldRef<"ChargeOverride", 'DateTime'>
+    readonly rejectedAt: FieldRef<"ChargeOverride", 'DateTime'>
+    readonly rejectionReason: FieldRef<"ChargeOverride", 'String'>
+    readonly createdAt: FieldRef<"ChargeOverride", 'DateTime'>
+    readonly updatedAt: FieldRef<"ChargeOverride", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ChargeOverride findUnique
+   */
+  export type ChargeOverrideFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeOverride
+     */
+    select?: ChargeOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeOverrideInclude<ExtArgs> | null
+    /**
+     * Filter, which ChargeOverride to fetch.
+     */
+    where: ChargeOverrideWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ChargeOverride findUniqueOrThrow
+   */
+  export type ChargeOverrideFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeOverride
+     */
+    select?: ChargeOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeOverrideInclude<ExtArgs> | null
+    /**
+     * Filter, which ChargeOverride to fetch.
+     */
+    where: ChargeOverrideWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ChargeOverride findFirst
+   */
+  export type ChargeOverrideFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeOverride
+     */
+    select?: ChargeOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeOverrideInclude<ExtArgs> | null
+    /**
+     * Filter, which ChargeOverride to fetch.
+     */
+    where?: ChargeOverrideWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ChargeOverrides to fetch.
+     */
+    orderBy?: ChargeOverrideOrderByWithRelationInput | ChargeOverrideOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ChargeOverrides.
+     */
+    cursor?: ChargeOverrideWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ChargeOverrides from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ChargeOverrides.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ChargeOverrides.
+     */
+    distinct?: ChargeOverrideScalarFieldEnum | ChargeOverrideScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ChargeOverride findFirstOrThrow
+   */
+  export type ChargeOverrideFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeOverride
+     */
+    select?: ChargeOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeOverrideInclude<ExtArgs> | null
+    /**
+     * Filter, which ChargeOverride to fetch.
+     */
+    where?: ChargeOverrideWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ChargeOverrides to fetch.
+     */
+    orderBy?: ChargeOverrideOrderByWithRelationInput | ChargeOverrideOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ChargeOverrides.
+     */
+    cursor?: ChargeOverrideWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ChargeOverrides from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ChargeOverrides.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ChargeOverrides.
+     */
+    distinct?: ChargeOverrideScalarFieldEnum | ChargeOverrideScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ChargeOverride findMany
+   */
+  export type ChargeOverrideFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeOverride
+     */
+    select?: ChargeOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeOverrideInclude<ExtArgs> | null
+    /**
+     * Filter, which ChargeOverrides to fetch.
+     */
+    where?: ChargeOverrideWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ChargeOverrides to fetch.
+     */
+    orderBy?: ChargeOverrideOrderByWithRelationInput | ChargeOverrideOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ChargeOverrides.
+     */
+    cursor?: ChargeOverrideWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ChargeOverrides from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ChargeOverrides.
+     */
+    skip?: number
+    distinct?: ChargeOverrideScalarFieldEnum | ChargeOverrideScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ChargeOverride create
+   */
+  export type ChargeOverrideCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeOverride
+     */
+    select?: ChargeOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeOverrideInclude<ExtArgs> | null
+    /**
+     * The data needed to create a ChargeOverride.
+     */
+    data: XOR<ChargeOverrideCreateInput, ChargeOverrideUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ChargeOverride createMany
+   */
+  export type ChargeOverrideCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ChargeOverrides.
+     */
+    data: ChargeOverrideCreateManyInput | ChargeOverrideCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ChargeOverride createManyAndReturn
+   */
+  export type ChargeOverrideCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeOverride
+     */
+    select?: ChargeOverrideSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many ChargeOverrides.
+     */
+    data: ChargeOverrideCreateManyInput | ChargeOverrideCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeOverrideIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * ChargeOverride update
+   */
+  export type ChargeOverrideUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeOverride
+     */
+    select?: ChargeOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeOverrideInclude<ExtArgs> | null
+    /**
+     * The data needed to update a ChargeOverride.
+     */
+    data: XOR<ChargeOverrideUpdateInput, ChargeOverrideUncheckedUpdateInput>
+    /**
+     * Choose, which ChargeOverride to update.
+     */
+    where: ChargeOverrideWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ChargeOverride updateMany
+   */
+  export type ChargeOverrideUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ChargeOverrides.
+     */
+    data: XOR<ChargeOverrideUpdateManyMutationInput, ChargeOverrideUncheckedUpdateManyInput>
+    /**
+     * Filter which ChargeOverrides to update
+     */
+    where?: ChargeOverrideWhereInput
+  }
+
+  /**
+   * ChargeOverride upsert
+   */
+  export type ChargeOverrideUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeOverride
+     */
+    select?: ChargeOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeOverrideInclude<ExtArgs> | null
+    /**
+     * The filter to search for the ChargeOverride to update in case it exists.
+     */
+    where: ChargeOverrideWhereUniqueInput
+    /**
+     * In case the ChargeOverride found by the `where` argument doesn't exist, create a new ChargeOverride with this data.
+     */
+    create: XOR<ChargeOverrideCreateInput, ChargeOverrideUncheckedCreateInput>
+    /**
+     * In case the ChargeOverride was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ChargeOverrideUpdateInput, ChargeOverrideUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ChargeOverride delete
+   */
+  export type ChargeOverrideDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeOverride
+     */
+    select?: ChargeOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeOverrideInclude<ExtArgs> | null
+    /**
+     * Filter which ChargeOverride to delete.
+     */
+    where: ChargeOverrideWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ChargeOverride deleteMany
+   */
+  export type ChargeOverrideDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ChargeOverrides to delete
+     */
+    where?: ChargeOverrideWhereInput
+  }
+
+  /**
+   * ChargeOverride.approver
+   */
+  export type ChargeOverride$approverArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the User
+     */
+    select?: UserSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    where?: UserWhereInput
+  }
+
+  /**
+   * ChargeOverride without action
+   */
+  export type ChargeOverrideDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ChargeOverride
+     */
+    select?: ChargeOverrideSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ChargeOverrideInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model FuelRecord
+   */
+
+  export type AggregateFuelRecord = {
+    _count: FuelRecordCountAggregateOutputType | null
+    _avg: FuelRecordAvgAggregateOutputType | null
+    _sum: FuelRecordSumAggregateOutputType | null
+    _min: FuelRecordMinAggregateOutputType | null
+    _max: FuelRecordMaxAggregateOutputType | null
+  }
+
+  export type FuelRecordAvgAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    fuelDeficitCharge: Decimal | null
+    capturedByPickupId: number | null
+    capturedByReturnId: number | null
+  }
+
+  export type FuelRecordSumAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    fuelDeficitCharge: Decimal | null
+    capturedByPickupId: number | null
+    capturedByReturnId: number | null
+  }
+
+  export type FuelRecordMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    bookingId: number | null
+    pickupFuelLevel: $Enums.FuelLevel | null
+    returnFuelLevel: $Enums.FuelLevel | null
+    fuelDeficit: boolean | null
+    fuelDeficitCharge: Decimal | null
+    skipReason: string | null
+    capturedByPickupId: number | null
+    capturedByReturnId: number | null
+    pickupAt: Date | null
+    returnAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type FuelRecordMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    bookingId: number | null
+    pickupFuelLevel: $Enums.FuelLevel | null
+    returnFuelLevel: $Enums.FuelLevel | null
+    fuelDeficit: boolean | null
+    fuelDeficitCharge: Decimal | null
+    skipReason: string | null
+    capturedByPickupId: number | null
+    capturedByReturnId: number | null
+    pickupAt: Date | null
+    returnAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type FuelRecordCountAggregateOutputType = {
+    id: number
+    publicId: number
+    bookingId: number
+    pickupFuelLevel: number
+    returnFuelLevel: number
+    fuelDeficit: number
+    fuelDeficitCharge: number
+    skipReason: number
+    capturedByPickupId: number
+    capturedByReturnId: number
+    pickupAt: number
+    returnAt: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type FuelRecordAvgAggregateInputType = {
+    id?: true
+    bookingId?: true
+    fuelDeficitCharge?: true
+    capturedByPickupId?: true
+    capturedByReturnId?: true
+  }
+
+  export type FuelRecordSumAggregateInputType = {
+    id?: true
+    bookingId?: true
+    fuelDeficitCharge?: true
+    capturedByPickupId?: true
+    capturedByReturnId?: true
+  }
+
+  export type FuelRecordMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    pickupFuelLevel?: true
+    returnFuelLevel?: true
+    fuelDeficit?: true
+    fuelDeficitCharge?: true
+    skipReason?: true
+    capturedByPickupId?: true
+    capturedByReturnId?: true
+    pickupAt?: true
+    returnAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type FuelRecordMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    pickupFuelLevel?: true
+    returnFuelLevel?: true
+    fuelDeficit?: true
+    fuelDeficitCharge?: true
+    skipReason?: true
+    capturedByPickupId?: true
+    capturedByReturnId?: true
+    pickupAt?: true
+    returnAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type FuelRecordCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    pickupFuelLevel?: true
+    returnFuelLevel?: true
+    fuelDeficit?: true
+    fuelDeficitCharge?: true
+    skipReason?: true
+    capturedByPickupId?: true
+    capturedByReturnId?: true
+    pickupAt?: true
+    returnAt?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type FuelRecordAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which FuelRecord to aggregate.
+     */
+    where?: FuelRecordWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of FuelRecords to fetch.
+     */
+    orderBy?: FuelRecordOrderByWithRelationInput | FuelRecordOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: FuelRecordWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` FuelRecords from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` FuelRecords.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned FuelRecords
+    **/
+    _count?: true | FuelRecordCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: FuelRecordAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: FuelRecordSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: FuelRecordMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: FuelRecordMaxAggregateInputType
+  }
+
+  export type GetFuelRecordAggregateType<T extends FuelRecordAggregateArgs> = {
+        [P in keyof T & keyof AggregateFuelRecord]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateFuelRecord[P]>
+      : GetScalarType<T[P], AggregateFuelRecord[P]>
+  }
+
+
+
+
+  export type FuelRecordGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: FuelRecordWhereInput
+    orderBy?: FuelRecordOrderByWithAggregationInput | FuelRecordOrderByWithAggregationInput[]
+    by: FuelRecordScalarFieldEnum[] | FuelRecordScalarFieldEnum
+    having?: FuelRecordScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: FuelRecordCountAggregateInputType | true
+    _avg?: FuelRecordAvgAggregateInputType
+    _sum?: FuelRecordSumAggregateInputType
+    _min?: FuelRecordMinAggregateInputType
+    _max?: FuelRecordMaxAggregateInputType
+  }
+
+  export type FuelRecordGroupByOutputType = {
+    id: number
+    publicId: string
+    bookingId: number
+    pickupFuelLevel: $Enums.FuelLevel
+    returnFuelLevel: $Enums.FuelLevel | null
+    fuelDeficit: boolean
+    fuelDeficitCharge: Decimal | null
+    skipReason: string | null
+    capturedByPickupId: number
+    capturedByReturnId: number | null
+    pickupAt: Date
+    returnAt: Date | null
+    createdAt: Date
+    updatedAt: Date
+    _count: FuelRecordCountAggregateOutputType | null
+    _avg: FuelRecordAvgAggregateOutputType | null
+    _sum: FuelRecordSumAggregateOutputType | null
+    _min: FuelRecordMinAggregateOutputType | null
+    _max: FuelRecordMaxAggregateOutputType | null
+  }
+
+  type GetFuelRecordGroupByPayload<T extends FuelRecordGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<FuelRecordGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof FuelRecordGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], FuelRecordGroupByOutputType[P]>
+            : GetScalarType<T[P], FuelRecordGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type FuelRecordSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    pickupFuelLevel?: boolean
+    returnFuelLevel?: boolean
+    fuelDeficit?: boolean
+    fuelDeficitCharge?: boolean
+    skipReason?: boolean
+    capturedByPickupId?: boolean
+    capturedByReturnId?: boolean
+    pickupAt?: boolean
+    returnAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    capturedByPickup?: boolean | UserDefaultArgs<ExtArgs>
+    capturedByReturn?: boolean | FuelRecord$capturedByReturnArgs<ExtArgs>
+  }, ExtArgs["result"]["fuelRecord"]>
+
+  export type FuelRecordSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    pickupFuelLevel?: boolean
+    returnFuelLevel?: boolean
+    fuelDeficit?: boolean
+    fuelDeficitCharge?: boolean
+    skipReason?: boolean
+    capturedByPickupId?: boolean
+    capturedByReturnId?: boolean
+    pickupAt?: boolean
+    returnAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    capturedByPickup?: boolean | UserDefaultArgs<ExtArgs>
+    capturedByReturn?: boolean | FuelRecord$capturedByReturnArgs<ExtArgs>
+  }, ExtArgs["result"]["fuelRecord"]>
+
+  export type FuelRecordSelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    pickupFuelLevel?: boolean
+    returnFuelLevel?: boolean
+    fuelDeficit?: boolean
+    fuelDeficitCharge?: boolean
+    skipReason?: boolean
+    capturedByPickupId?: boolean
+    capturedByReturnId?: boolean
+    pickupAt?: boolean
+    returnAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type FuelRecordInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    capturedByPickup?: boolean | UserDefaultArgs<ExtArgs>
+    capturedByReturn?: boolean | FuelRecord$capturedByReturnArgs<ExtArgs>
+  }
+  export type FuelRecordIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    capturedByPickup?: boolean | UserDefaultArgs<ExtArgs>
+    capturedByReturn?: boolean | FuelRecord$capturedByReturnArgs<ExtArgs>
+  }
+
+  export type $FuelRecordPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "FuelRecord"
+    objects: {
+      booking: Prisma.$BookingPayload<ExtArgs>
+      capturedByPickup: Prisma.$UserPayload<ExtArgs>
+      capturedByReturn: Prisma.$UserPayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      bookingId: number
+      pickupFuelLevel: $Enums.FuelLevel
+      returnFuelLevel: $Enums.FuelLevel | null
+      fuelDeficit: boolean
+      fuelDeficitCharge: Prisma.Decimal | null
+      skipReason: string | null
+      capturedByPickupId: number
+      capturedByReturnId: number | null
+      pickupAt: Date
+      returnAt: Date | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["fuelRecord"]>
+    composites: {}
+  }
+
+  type FuelRecordGetPayload<S extends boolean | null | undefined | FuelRecordDefaultArgs> = $Result.GetResult<Prisma.$FuelRecordPayload, S>
+
+  type FuelRecordCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<FuelRecordFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: FuelRecordCountAggregateInputType | true
+    }
+
+  export interface FuelRecordDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['FuelRecord'], meta: { name: 'FuelRecord' } }
+    /**
+     * Find zero or one FuelRecord that matches the filter.
+     * @param {FuelRecordFindUniqueArgs} args - Arguments to find a FuelRecord
+     * @example
+     * // Get one FuelRecord
+     * const fuelRecord = await prisma.fuelRecord.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends FuelRecordFindUniqueArgs>(args: SelectSubset<T, FuelRecordFindUniqueArgs<ExtArgs>>): Prisma__FuelRecordClient<$Result.GetResult<Prisma.$FuelRecordPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one FuelRecord that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {FuelRecordFindUniqueOrThrowArgs} args - Arguments to find a FuelRecord
+     * @example
+     * // Get one FuelRecord
+     * const fuelRecord = await prisma.fuelRecord.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends FuelRecordFindUniqueOrThrowArgs>(args: SelectSubset<T, FuelRecordFindUniqueOrThrowArgs<ExtArgs>>): Prisma__FuelRecordClient<$Result.GetResult<Prisma.$FuelRecordPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first FuelRecord that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {FuelRecordFindFirstArgs} args - Arguments to find a FuelRecord
+     * @example
+     * // Get one FuelRecord
+     * const fuelRecord = await prisma.fuelRecord.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends FuelRecordFindFirstArgs>(args?: SelectSubset<T, FuelRecordFindFirstArgs<ExtArgs>>): Prisma__FuelRecordClient<$Result.GetResult<Prisma.$FuelRecordPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first FuelRecord that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {FuelRecordFindFirstOrThrowArgs} args - Arguments to find a FuelRecord
+     * @example
+     * // Get one FuelRecord
+     * const fuelRecord = await prisma.fuelRecord.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends FuelRecordFindFirstOrThrowArgs>(args?: SelectSubset<T, FuelRecordFindFirstOrThrowArgs<ExtArgs>>): Prisma__FuelRecordClient<$Result.GetResult<Prisma.$FuelRecordPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more FuelRecords that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {FuelRecordFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all FuelRecords
+     * const fuelRecords = await prisma.fuelRecord.findMany()
+     * 
+     * // Get first 10 FuelRecords
+     * const fuelRecords = await prisma.fuelRecord.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const fuelRecordWithIdOnly = await prisma.fuelRecord.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends FuelRecordFindManyArgs>(args?: SelectSubset<T, FuelRecordFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$FuelRecordPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a FuelRecord.
+     * @param {FuelRecordCreateArgs} args - Arguments to create a FuelRecord.
+     * @example
+     * // Create one FuelRecord
+     * const FuelRecord = await prisma.fuelRecord.create({
+     *   data: {
+     *     // ... data to create a FuelRecord
+     *   }
+     * })
+     * 
+     */
+    create<T extends FuelRecordCreateArgs>(args: SelectSubset<T, FuelRecordCreateArgs<ExtArgs>>): Prisma__FuelRecordClient<$Result.GetResult<Prisma.$FuelRecordPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many FuelRecords.
+     * @param {FuelRecordCreateManyArgs} args - Arguments to create many FuelRecords.
+     * @example
+     * // Create many FuelRecords
+     * const fuelRecord = await prisma.fuelRecord.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends FuelRecordCreateManyArgs>(args?: SelectSubset<T, FuelRecordCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many FuelRecords and returns the data saved in the database.
+     * @param {FuelRecordCreateManyAndReturnArgs} args - Arguments to create many FuelRecords.
+     * @example
+     * // Create many FuelRecords
+     * const fuelRecord = await prisma.fuelRecord.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many FuelRecords and only return the `id`
+     * const fuelRecordWithIdOnly = await prisma.fuelRecord.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends FuelRecordCreateManyAndReturnArgs>(args?: SelectSubset<T, FuelRecordCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$FuelRecordPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a FuelRecord.
+     * @param {FuelRecordDeleteArgs} args - Arguments to delete one FuelRecord.
+     * @example
+     * // Delete one FuelRecord
+     * const FuelRecord = await prisma.fuelRecord.delete({
+     *   where: {
+     *     // ... filter to delete one FuelRecord
+     *   }
+     * })
+     * 
+     */
+    delete<T extends FuelRecordDeleteArgs>(args: SelectSubset<T, FuelRecordDeleteArgs<ExtArgs>>): Prisma__FuelRecordClient<$Result.GetResult<Prisma.$FuelRecordPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one FuelRecord.
+     * @param {FuelRecordUpdateArgs} args - Arguments to update one FuelRecord.
+     * @example
+     * // Update one FuelRecord
+     * const fuelRecord = await prisma.fuelRecord.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends FuelRecordUpdateArgs>(args: SelectSubset<T, FuelRecordUpdateArgs<ExtArgs>>): Prisma__FuelRecordClient<$Result.GetResult<Prisma.$FuelRecordPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more FuelRecords.
+     * @param {FuelRecordDeleteManyArgs} args - Arguments to filter FuelRecords to delete.
+     * @example
+     * // Delete a few FuelRecords
+     * const { count } = await prisma.fuelRecord.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends FuelRecordDeleteManyArgs>(args?: SelectSubset<T, FuelRecordDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more FuelRecords.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {FuelRecordUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many FuelRecords
+     * const fuelRecord = await prisma.fuelRecord.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends FuelRecordUpdateManyArgs>(args: SelectSubset<T, FuelRecordUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one FuelRecord.
+     * @param {FuelRecordUpsertArgs} args - Arguments to update or create a FuelRecord.
+     * @example
+     * // Update or create a FuelRecord
+     * const fuelRecord = await prisma.fuelRecord.upsert({
+     *   create: {
+     *     // ... data to create a FuelRecord
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the FuelRecord we want to update
+     *   }
+     * })
+     */
+    upsert<T extends FuelRecordUpsertArgs>(args: SelectSubset<T, FuelRecordUpsertArgs<ExtArgs>>): Prisma__FuelRecordClient<$Result.GetResult<Prisma.$FuelRecordPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of FuelRecords.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {FuelRecordCountArgs} args - Arguments to filter FuelRecords to count.
+     * @example
+     * // Count the number of FuelRecords
+     * const count = await prisma.fuelRecord.count({
+     *   where: {
+     *     // ... the filter for the FuelRecords we want to count
+     *   }
+     * })
+    **/
+    count<T extends FuelRecordCountArgs>(
+      args?: Subset<T, FuelRecordCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], FuelRecordCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a FuelRecord.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {FuelRecordAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends FuelRecordAggregateArgs>(args: Subset<T, FuelRecordAggregateArgs>): Prisma.PrismaPromise<GetFuelRecordAggregateType<T>>
+
+    /**
+     * Group by FuelRecord.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {FuelRecordGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends FuelRecordGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: FuelRecordGroupByArgs['orderBy'] }
+        : { orderBy?: FuelRecordGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, FuelRecordGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetFuelRecordGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the FuelRecord model
+   */
+  readonly fields: FuelRecordFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for FuelRecord.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__FuelRecordClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    booking<T extends BookingDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BookingDefaultArgs<ExtArgs>>): Prisma__BookingClient<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    capturedByPickup<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    capturedByReturn<T extends FuelRecord$capturedByReturnArgs<ExtArgs> = {}>(args?: Subset<T, FuelRecord$capturedByReturnArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the FuelRecord model
+   */ 
+  interface FuelRecordFieldRefs {
+    readonly id: FieldRef<"FuelRecord", 'Int'>
+    readonly publicId: FieldRef<"FuelRecord", 'String'>
+    readonly bookingId: FieldRef<"FuelRecord", 'Int'>
+    readonly pickupFuelLevel: FieldRef<"FuelRecord", 'FuelLevel'>
+    readonly returnFuelLevel: FieldRef<"FuelRecord", 'FuelLevel'>
+    readonly fuelDeficit: FieldRef<"FuelRecord", 'Boolean'>
+    readonly fuelDeficitCharge: FieldRef<"FuelRecord", 'Decimal'>
+    readonly skipReason: FieldRef<"FuelRecord", 'String'>
+    readonly capturedByPickupId: FieldRef<"FuelRecord", 'Int'>
+    readonly capturedByReturnId: FieldRef<"FuelRecord", 'Int'>
+    readonly pickupAt: FieldRef<"FuelRecord", 'DateTime'>
+    readonly returnAt: FieldRef<"FuelRecord", 'DateTime'>
+    readonly createdAt: FieldRef<"FuelRecord", 'DateTime'>
+    readonly updatedAt: FieldRef<"FuelRecord", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * FuelRecord findUnique
+   */
+  export type FuelRecordFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FuelRecord
+     */
+    select?: FuelRecordSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FuelRecordInclude<ExtArgs> | null
+    /**
+     * Filter, which FuelRecord to fetch.
+     */
+    where: FuelRecordWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * FuelRecord findUniqueOrThrow
+   */
+  export type FuelRecordFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FuelRecord
+     */
+    select?: FuelRecordSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FuelRecordInclude<ExtArgs> | null
+    /**
+     * Filter, which FuelRecord to fetch.
+     */
+    where: FuelRecordWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * FuelRecord findFirst
+   */
+  export type FuelRecordFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FuelRecord
+     */
+    select?: FuelRecordSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FuelRecordInclude<ExtArgs> | null
+    /**
+     * Filter, which FuelRecord to fetch.
+     */
+    where?: FuelRecordWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of FuelRecords to fetch.
+     */
+    orderBy?: FuelRecordOrderByWithRelationInput | FuelRecordOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for FuelRecords.
+     */
+    cursor?: FuelRecordWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` FuelRecords from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` FuelRecords.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of FuelRecords.
+     */
+    distinct?: FuelRecordScalarFieldEnum | FuelRecordScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * FuelRecord findFirstOrThrow
+   */
+  export type FuelRecordFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FuelRecord
+     */
+    select?: FuelRecordSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FuelRecordInclude<ExtArgs> | null
+    /**
+     * Filter, which FuelRecord to fetch.
+     */
+    where?: FuelRecordWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of FuelRecords to fetch.
+     */
+    orderBy?: FuelRecordOrderByWithRelationInput | FuelRecordOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for FuelRecords.
+     */
+    cursor?: FuelRecordWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` FuelRecords from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` FuelRecords.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of FuelRecords.
+     */
+    distinct?: FuelRecordScalarFieldEnum | FuelRecordScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * FuelRecord findMany
+   */
+  export type FuelRecordFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FuelRecord
+     */
+    select?: FuelRecordSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FuelRecordInclude<ExtArgs> | null
+    /**
+     * Filter, which FuelRecords to fetch.
+     */
+    where?: FuelRecordWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of FuelRecords to fetch.
+     */
+    orderBy?: FuelRecordOrderByWithRelationInput | FuelRecordOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing FuelRecords.
+     */
+    cursor?: FuelRecordWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` FuelRecords from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` FuelRecords.
+     */
+    skip?: number
+    distinct?: FuelRecordScalarFieldEnum | FuelRecordScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * FuelRecord create
+   */
+  export type FuelRecordCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FuelRecord
+     */
+    select?: FuelRecordSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FuelRecordInclude<ExtArgs> | null
+    /**
+     * The data needed to create a FuelRecord.
+     */
+    data: XOR<FuelRecordCreateInput, FuelRecordUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * FuelRecord createMany
+   */
+  export type FuelRecordCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many FuelRecords.
+     */
+    data: FuelRecordCreateManyInput | FuelRecordCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * FuelRecord createManyAndReturn
+   */
+  export type FuelRecordCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FuelRecord
+     */
+    select?: FuelRecordSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many FuelRecords.
+     */
+    data: FuelRecordCreateManyInput | FuelRecordCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FuelRecordIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * FuelRecord update
+   */
+  export type FuelRecordUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FuelRecord
+     */
+    select?: FuelRecordSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FuelRecordInclude<ExtArgs> | null
+    /**
+     * The data needed to update a FuelRecord.
+     */
+    data: XOR<FuelRecordUpdateInput, FuelRecordUncheckedUpdateInput>
+    /**
+     * Choose, which FuelRecord to update.
+     */
+    where: FuelRecordWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * FuelRecord updateMany
+   */
+  export type FuelRecordUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update FuelRecords.
+     */
+    data: XOR<FuelRecordUpdateManyMutationInput, FuelRecordUncheckedUpdateManyInput>
+    /**
+     * Filter which FuelRecords to update
+     */
+    where?: FuelRecordWhereInput
+  }
+
+  /**
+   * FuelRecord upsert
+   */
+  export type FuelRecordUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FuelRecord
+     */
+    select?: FuelRecordSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FuelRecordInclude<ExtArgs> | null
+    /**
+     * The filter to search for the FuelRecord to update in case it exists.
+     */
+    where: FuelRecordWhereUniqueInput
+    /**
+     * In case the FuelRecord found by the `where` argument doesn't exist, create a new FuelRecord with this data.
+     */
+    create: XOR<FuelRecordCreateInput, FuelRecordUncheckedCreateInput>
+    /**
+     * In case the FuelRecord was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<FuelRecordUpdateInput, FuelRecordUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * FuelRecord delete
+   */
+  export type FuelRecordDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FuelRecord
+     */
+    select?: FuelRecordSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FuelRecordInclude<ExtArgs> | null
+    /**
+     * Filter which FuelRecord to delete.
+     */
+    where: FuelRecordWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * FuelRecord deleteMany
+   */
+  export type FuelRecordDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which FuelRecords to delete
+     */
+    where?: FuelRecordWhereInput
+  }
+
+  /**
+   * FuelRecord.capturedByReturn
+   */
+  export type FuelRecord$capturedByReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the User
+     */
+    select?: UserSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    where?: UserWhereInput
+  }
+
+  /**
+   * FuelRecord without action
+   */
+  export type FuelRecordDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FuelRecord
+     */
+    select?: FuelRecordSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FuelRecordInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model SafetyDepositRequest
+   */
+
+  export type AggregateSafetyDepositRequest = {
+    _count: SafetyDepositRequestCountAggregateOutputType | null
+    _avg: SafetyDepositRequestAvgAggregateOutputType | null
+    _sum: SafetyDepositRequestSumAggregateOutputType | null
+    _min: SafetyDepositRequestMinAggregateOutputType | null
+    _max: SafetyDepositRequestMaxAggregateOutputType | null
+  }
+
+  export type SafetyDepositRequestAvgAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    requestedAmount: Decimal | null
+    requestedById: number | null
+    approvedById: number | null
+    approvedAmount: Decimal | null
+  }
+
+  export type SafetyDepositRequestSumAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    requestedAmount: Decimal | null
+    requestedById: number | null
+    approvedById: number | null
+    approvedAmount: Decimal | null
+  }
+
+  export type SafetyDepositRequestMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    bookingId: number | null
+    requestedAmount: Decimal | null
+    reason: string | null
+    status: $Enums.SafetyDepositStatus | null
+    requestedById: number | null
+    approvedById: number | null
+    approvedAmount: Decimal | null
+    approvedAt: Date | null
+    rejectedAt: Date | null
+    rejectionReason: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type SafetyDepositRequestMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    bookingId: number | null
+    requestedAmount: Decimal | null
+    reason: string | null
+    status: $Enums.SafetyDepositStatus | null
+    requestedById: number | null
+    approvedById: number | null
+    approvedAmount: Decimal | null
+    approvedAt: Date | null
+    rejectedAt: Date | null
+    rejectionReason: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type SafetyDepositRequestCountAggregateOutputType = {
+    id: number
+    publicId: number
+    bookingId: number
+    requestedAmount: number
+    reason: number
+    status: number
+    requestedById: number
+    approvedById: number
+    approvedAmount: number
+    approvedAt: number
+    rejectedAt: number
+    rejectionReason: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type SafetyDepositRequestAvgAggregateInputType = {
+    id?: true
+    bookingId?: true
+    requestedAmount?: true
+    requestedById?: true
+    approvedById?: true
+    approvedAmount?: true
+  }
+
+  export type SafetyDepositRequestSumAggregateInputType = {
+    id?: true
+    bookingId?: true
+    requestedAmount?: true
+    requestedById?: true
+    approvedById?: true
+    approvedAmount?: true
+  }
+
+  export type SafetyDepositRequestMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    requestedAmount?: true
+    reason?: true
+    status?: true
+    requestedById?: true
+    approvedById?: true
+    approvedAmount?: true
+    approvedAt?: true
+    rejectedAt?: true
+    rejectionReason?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type SafetyDepositRequestMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    requestedAmount?: true
+    reason?: true
+    status?: true
+    requestedById?: true
+    approvedById?: true
+    approvedAmount?: true
+    approvedAt?: true
+    rejectedAt?: true
+    rejectionReason?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type SafetyDepositRequestCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    requestedAmount?: true
+    reason?: true
+    status?: true
+    requestedById?: true
+    approvedById?: true
+    approvedAmount?: true
+    approvedAt?: true
+    rejectedAt?: true
+    rejectionReason?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type SafetyDepositRequestAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SafetyDepositRequest to aggregate.
+     */
+    where?: SafetyDepositRequestWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SafetyDepositRequests to fetch.
+     */
+    orderBy?: SafetyDepositRequestOrderByWithRelationInput | SafetyDepositRequestOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SafetyDepositRequestWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SafetyDepositRequests from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SafetyDepositRequests.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned SafetyDepositRequests
+    **/
+    _count?: true | SafetyDepositRequestCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: SafetyDepositRequestAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: SafetyDepositRequestSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SafetyDepositRequestMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SafetyDepositRequestMaxAggregateInputType
+  }
+
+  export type GetSafetyDepositRequestAggregateType<T extends SafetyDepositRequestAggregateArgs> = {
+        [P in keyof T & keyof AggregateSafetyDepositRequest]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSafetyDepositRequest[P]>
+      : GetScalarType<T[P], AggregateSafetyDepositRequest[P]>
+  }
+
+
+
+
+  export type SafetyDepositRequestGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SafetyDepositRequestWhereInput
+    orderBy?: SafetyDepositRequestOrderByWithAggregationInput | SafetyDepositRequestOrderByWithAggregationInput[]
+    by: SafetyDepositRequestScalarFieldEnum[] | SafetyDepositRequestScalarFieldEnum
+    having?: SafetyDepositRequestScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SafetyDepositRequestCountAggregateInputType | true
+    _avg?: SafetyDepositRequestAvgAggregateInputType
+    _sum?: SafetyDepositRequestSumAggregateInputType
+    _min?: SafetyDepositRequestMinAggregateInputType
+    _max?: SafetyDepositRequestMaxAggregateInputType
+  }
+
+  export type SafetyDepositRequestGroupByOutputType = {
+    id: number
+    publicId: string
+    bookingId: number
+    requestedAmount: Decimal
+    reason: string
+    status: $Enums.SafetyDepositStatus
+    requestedById: number
+    approvedById: number | null
+    approvedAmount: Decimal | null
+    approvedAt: Date | null
+    rejectedAt: Date | null
+    rejectionReason: string | null
+    createdAt: Date
+    updatedAt: Date
+    _count: SafetyDepositRequestCountAggregateOutputType | null
+    _avg: SafetyDepositRequestAvgAggregateOutputType | null
+    _sum: SafetyDepositRequestSumAggregateOutputType | null
+    _min: SafetyDepositRequestMinAggregateOutputType | null
+    _max: SafetyDepositRequestMaxAggregateOutputType | null
+  }
+
+  type GetSafetyDepositRequestGroupByPayload<T extends SafetyDepositRequestGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SafetyDepositRequestGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SafetyDepositRequestGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SafetyDepositRequestGroupByOutputType[P]>
+            : GetScalarType<T[P], SafetyDepositRequestGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SafetyDepositRequestSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    requestedAmount?: boolean
+    reason?: boolean
+    status?: boolean
+    requestedById?: boolean
+    approvedById?: boolean
+    approvedAmount?: boolean
+    approvedAt?: boolean
+    rejectedAt?: boolean
+    rejectionReason?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    requestedBy?: boolean | UserDefaultArgs<ExtArgs>
+    approvedBy?: boolean | SafetyDepositRequest$approvedByArgs<ExtArgs>
+  }, ExtArgs["result"]["safetyDepositRequest"]>
+
+  export type SafetyDepositRequestSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    requestedAmount?: boolean
+    reason?: boolean
+    status?: boolean
+    requestedById?: boolean
+    approvedById?: boolean
+    approvedAmount?: boolean
+    approvedAt?: boolean
+    rejectedAt?: boolean
+    rejectionReason?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    requestedBy?: boolean | UserDefaultArgs<ExtArgs>
+    approvedBy?: boolean | SafetyDepositRequest$approvedByArgs<ExtArgs>
+  }, ExtArgs["result"]["safetyDepositRequest"]>
+
+  export type SafetyDepositRequestSelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    requestedAmount?: boolean
+    reason?: boolean
+    status?: boolean
+    requestedById?: boolean
+    approvedById?: boolean
+    approvedAmount?: boolean
+    approvedAt?: boolean
+    rejectedAt?: boolean
+    rejectionReason?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type SafetyDepositRequestInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    requestedBy?: boolean | UserDefaultArgs<ExtArgs>
+    approvedBy?: boolean | SafetyDepositRequest$approvedByArgs<ExtArgs>
+  }
+  export type SafetyDepositRequestIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    requestedBy?: boolean | UserDefaultArgs<ExtArgs>
+    approvedBy?: boolean | SafetyDepositRequest$approvedByArgs<ExtArgs>
+  }
+
+  export type $SafetyDepositRequestPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "SafetyDepositRequest"
+    objects: {
+      booking: Prisma.$BookingPayload<ExtArgs>
+      requestedBy: Prisma.$UserPayload<ExtArgs>
+      approvedBy: Prisma.$UserPayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      bookingId: number
+      requestedAmount: Prisma.Decimal
+      reason: string
+      status: $Enums.SafetyDepositStatus
+      requestedById: number
+      approvedById: number | null
+      approvedAmount: Prisma.Decimal | null
+      approvedAt: Date | null
+      rejectedAt: Date | null
+      rejectionReason: string | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["safetyDepositRequest"]>
+    composites: {}
+  }
+
+  type SafetyDepositRequestGetPayload<S extends boolean | null | undefined | SafetyDepositRequestDefaultArgs> = $Result.GetResult<Prisma.$SafetyDepositRequestPayload, S>
+
+  type SafetyDepositRequestCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<SafetyDepositRequestFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: SafetyDepositRequestCountAggregateInputType | true
+    }
+
+  export interface SafetyDepositRequestDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SafetyDepositRequest'], meta: { name: 'SafetyDepositRequest' } }
+    /**
+     * Find zero or one SafetyDepositRequest that matches the filter.
+     * @param {SafetyDepositRequestFindUniqueArgs} args - Arguments to find a SafetyDepositRequest
+     * @example
+     * // Get one SafetyDepositRequest
+     * const safetyDepositRequest = await prisma.safetyDepositRequest.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SafetyDepositRequestFindUniqueArgs>(args: SelectSubset<T, SafetyDepositRequestFindUniqueArgs<ExtArgs>>): Prisma__SafetyDepositRequestClient<$Result.GetResult<Prisma.$SafetyDepositRequestPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one SafetyDepositRequest that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {SafetyDepositRequestFindUniqueOrThrowArgs} args - Arguments to find a SafetyDepositRequest
+     * @example
+     * // Get one SafetyDepositRequest
+     * const safetyDepositRequest = await prisma.safetyDepositRequest.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SafetyDepositRequestFindUniqueOrThrowArgs>(args: SelectSubset<T, SafetyDepositRequestFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SafetyDepositRequestClient<$Result.GetResult<Prisma.$SafetyDepositRequestPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first SafetyDepositRequest that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SafetyDepositRequestFindFirstArgs} args - Arguments to find a SafetyDepositRequest
+     * @example
+     * // Get one SafetyDepositRequest
+     * const safetyDepositRequest = await prisma.safetyDepositRequest.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SafetyDepositRequestFindFirstArgs>(args?: SelectSubset<T, SafetyDepositRequestFindFirstArgs<ExtArgs>>): Prisma__SafetyDepositRequestClient<$Result.GetResult<Prisma.$SafetyDepositRequestPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first SafetyDepositRequest that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SafetyDepositRequestFindFirstOrThrowArgs} args - Arguments to find a SafetyDepositRequest
+     * @example
+     * // Get one SafetyDepositRequest
+     * const safetyDepositRequest = await prisma.safetyDepositRequest.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SafetyDepositRequestFindFirstOrThrowArgs>(args?: SelectSubset<T, SafetyDepositRequestFindFirstOrThrowArgs<ExtArgs>>): Prisma__SafetyDepositRequestClient<$Result.GetResult<Prisma.$SafetyDepositRequestPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more SafetyDepositRequests that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SafetyDepositRequestFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all SafetyDepositRequests
+     * const safetyDepositRequests = await prisma.safetyDepositRequest.findMany()
+     * 
+     * // Get first 10 SafetyDepositRequests
+     * const safetyDepositRequests = await prisma.safetyDepositRequest.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const safetyDepositRequestWithIdOnly = await prisma.safetyDepositRequest.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends SafetyDepositRequestFindManyArgs>(args?: SelectSubset<T, SafetyDepositRequestFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SafetyDepositRequestPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a SafetyDepositRequest.
+     * @param {SafetyDepositRequestCreateArgs} args - Arguments to create a SafetyDepositRequest.
+     * @example
+     * // Create one SafetyDepositRequest
+     * const SafetyDepositRequest = await prisma.safetyDepositRequest.create({
+     *   data: {
+     *     // ... data to create a SafetyDepositRequest
+     *   }
+     * })
+     * 
+     */
+    create<T extends SafetyDepositRequestCreateArgs>(args: SelectSubset<T, SafetyDepositRequestCreateArgs<ExtArgs>>): Prisma__SafetyDepositRequestClient<$Result.GetResult<Prisma.$SafetyDepositRequestPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many SafetyDepositRequests.
+     * @param {SafetyDepositRequestCreateManyArgs} args - Arguments to create many SafetyDepositRequests.
+     * @example
+     * // Create many SafetyDepositRequests
+     * const safetyDepositRequest = await prisma.safetyDepositRequest.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SafetyDepositRequestCreateManyArgs>(args?: SelectSubset<T, SafetyDepositRequestCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many SafetyDepositRequests and returns the data saved in the database.
+     * @param {SafetyDepositRequestCreateManyAndReturnArgs} args - Arguments to create many SafetyDepositRequests.
+     * @example
+     * // Create many SafetyDepositRequests
+     * const safetyDepositRequest = await prisma.safetyDepositRequest.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many SafetyDepositRequests and only return the `id`
+     * const safetyDepositRequestWithIdOnly = await prisma.safetyDepositRequest.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends SafetyDepositRequestCreateManyAndReturnArgs>(args?: SelectSubset<T, SafetyDepositRequestCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SafetyDepositRequestPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a SafetyDepositRequest.
+     * @param {SafetyDepositRequestDeleteArgs} args - Arguments to delete one SafetyDepositRequest.
+     * @example
+     * // Delete one SafetyDepositRequest
+     * const SafetyDepositRequest = await prisma.safetyDepositRequest.delete({
+     *   where: {
+     *     // ... filter to delete one SafetyDepositRequest
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SafetyDepositRequestDeleteArgs>(args: SelectSubset<T, SafetyDepositRequestDeleteArgs<ExtArgs>>): Prisma__SafetyDepositRequestClient<$Result.GetResult<Prisma.$SafetyDepositRequestPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one SafetyDepositRequest.
+     * @param {SafetyDepositRequestUpdateArgs} args - Arguments to update one SafetyDepositRequest.
+     * @example
+     * // Update one SafetyDepositRequest
+     * const safetyDepositRequest = await prisma.safetyDepositRequest.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SafetyDepositRequestUpdateArgs>(args: SelectSubset<T, SafetyDepositRequestUpdateArgs<ExtArgs>>): Prisma__SafetyDepositRequestClient<$Result.GetResult<Prisma.$SafetyDepositRequestPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more SafetyDepositRequests.
+     * @param {SafetyDepositRequestDeleteManyArgs} args - Arguments to filter SafetyDepositRequests to delete.
+     * @example
+     * // Delete a few SafetyDepositRequests
+     * const { count } = await prisma.safetyDepositRequest.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SafetyDepositRequestDeleteManyArgs>(args?: SelectSubset<T, SafetyDepositRequestDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SafetyDepositRequests.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SafetyDepositRequestUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many SafetyDepositRequests
+     * const safetyDepositRequest = await prisma.safetyDepositRequest.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SafetyDepositRequestUpdateManyArgs>(args: SelectSubset<T, SafetyDepositRequestUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one SafetyDepositRequest.
+     * @param {SafetyDepositRequestUpsertArgs} args - Arguments to update or create a SafetyDepositRequest.
+     * @example
+     * // Update or create a SafetyDepositRequest
+     * const safetyDepositRequest = await prisma.safetyDepositRequest.upsert({
+     *   create: {
+     *     // ... data to create a SafetyDepositRequest
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the SafetyDepositRequest we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SafetyDepositRequestUpsertArgs>(args: SelectSubset<T, SafetyDepositRequestUpsertArgs<ExtArgs>>): Prisma__SafetyDepositRequestClient<$Result.GetResult<Prisma.$SafetyDepositRequestPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of SafetyDepositRequests.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SafetyDepositRequestCountArgs} args - Arguments to filter SafetyDepositRequests to count.
+     * @example
+     * // Count the number of SafetyDepositRequests
+     * const count = await prisma.safetyDepositRequest.count({
+     *   where: {
+     *     // ... the filter for the SafetyDepositRequests we want to count
+     *   }
+     * })
+    **/
+    count<T extends SafetyDepositRequestCountArgs>(
+      args?: Subset<T, SafetyDepositRequestCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SafetyDepositRequestCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a SafetyDepositRequest.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SafetyDepositRequestAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SafetyDepositRequestAggregateArgs>(args: Subset<T, SafetyDepositRequestAggregateArgs>): Prisma.PrismaPromise<GetSafetyDepositRequestAggregateType<T>>
+
+    /**
+     * Group by SafetyDepositRequest.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SafetyDepositRequestGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SafetyDepositRequestGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SafetyDepositRequestGroupByArgs['orderBy'] }
+        : { orderBy?: SafetyDepositRequestGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SafetyDepositRequestGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSafetyDepositRequestGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the SafetyDepositRequest model
+   */
+  readonly fields: SafetyDepositRequestFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for SafetyDepositRequest.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SafetyDepositRequestClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    booking<T extends BookingDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BookingDefaultArgs<ExtArgs>>): Prisma__BookingClient<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    requestedBy<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    approvedBy<T extends SafetyDepositRequest$approvedByArgs<ExtArgs> = {}>(args?: Subset<T, SafetyDepositRequest$approvedByArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the SafetyDepositRequest model
+   */ 
+  interface SafetyDepositRequestFieldRefs {
+    readonly id: FieldRef<"SafetyDepositRequest", 'Int'>
+    readonly publicId: FieldRef<"SafetyDepositRequest", 'String'>
+    readonly bookingId: FieldRef<"SafetyDepositRequest", 'Int'>
+    readonly requestedAmount: FieldRef<"SafetyDepositRequest", 'Decimal'>
+    readonly reason: FieldRef<"SafetyDepositRequest", 'String'>
+    readonly status: FieldRef<"SafetyDepositRequest", 'SafetyDepositStatus'>
+    readonly requestedById: FieldRef<"SafetyDepositRequest", 'Int'>
+    readonly approvedById: FieldRef<"SafetyDepositRequest", 'Int'>
+    readonly approvedAmount: FieldRef<"SafetyDepositRequest", 'Decimal'>
+    readonly approvedAt: FieldRef<"SafetyDepositRequest", 'DateTime'>
+    readonly rejectedAt: FieldRef<"SafetyDepositRequest", 'DateTime'>
+    readonly rejectionReason: FieldRef<"SafetyDepositRequest", 'String'>
+    readonly createdAt: FieldRef<"SafetyDepositRequest", 'DateTime'>
+    readonly updatedAt: FieldRef<"SafetyDepositRequest", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * SafetyDepositRequest findUnique
+   */
+  export type SafetyDepositRequestFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SafetyDepositRequest
+     */
+    select?: SafetyDepositRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SafetyDepositRequestInclude<ExtArgs> | null
+    /**
+     * Filter, which SafetyDepositRequest to fetch.
+     */
+    where: SafetyDepositRequestWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * SafetyDepositRequest findUniqueOrThrow
+   */
+  export type SafetyDepositRequestFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SafetyDepositRequest
+     */
+    select?: SafetyDepositRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SafetyDepositRequestInclude<ExtArgs> | null
+    /**
+     * Filter, which SafetyDepositRequest to fetch.
+     */
+    where: SafetyDepositRequestWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * SafetyDepositRequest findFirst
+   */
+  export type SafetyDepositRequestFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SafetyDepositRequest
+     */
+    select?: SafetyDepositRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SafetyDepositRequestInclude<ExtArgs> | null
+    /**
+     * Filter, which SafetyDepositRequest to fetch.
+     */
+    where?: SafetyDepositRequestWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SafetyDepositRequests to fetch.
+     */
+    orderBy?: SafetyDepositRequestOrderByWithRelationInput | SafetyDepositRequestOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SafetyDepositRequests.
+     */
+    cursor?: SafetyDepositRequestWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SafetyDepositRequests from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SafetyDepositRequests.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SafetyDepositRequests.
+     */
+    distinct?: SafetyDepositRequestScalarFieldEnum | SafetyDepositRequestScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * SafetyDepositRequest findFirstOrThrow
+   */
+  export type SafetyDepositRequestFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SafetyDepositRequest
+     */
+    select?: SafetyDepositRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SafetyDepositRequestInclude<ExtArgs> | null
+    /**
+     * Filter, which SafetyDepositRequest to fetch.
+     */
+    where?: SafetyDepositRequestWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SafetyDepositRequests to fetch.
+     */
+    orderBy?: SafetyDepositRequestOrderByWithRelationInput | SafetyDepositRequestOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SafetyDepositRequests.
+     */
+    cursor?: SafetyDepositRequestWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SafetyDepositRequests from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SafetyDepositRequests.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SafetyDepositRequests.
+     */
+    distinct?: SafetyDepositRequestScalarFieldEnum | SafetyDepositRequestScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * SafetyDepositRequest findMany
+   */
+  export type SafetyDepositRequestFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SafetyDepositRequest
+     */
+    select?: SafetyDepositRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SafetyDepositRequestInclude<ExtArgs> | null
+    /**
+     * Filter, which SafetyDepositRequests to fetch.
+     */
+    where?: SafetyDepositRequestWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SafetyDepositRequests to fetch.
+     */
+    orderBy?: SafetyDepositRequestOrderByWithRelationInput | SafetyDepositRequestOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing SafetyDepositRequests.
+     */
+    cursor?: SafetyDepositRequestWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SafetyDepositRequests from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SafetyDepositRequests.
+     */
+    skip?: number
+    distinct?: SafetyDepositRequestScalarFieldEnum | SafetyDepositRequestScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * SafetyDepositRequest create
+   */
+  export type SafetyDepositRequestCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SafetyDepositRequest
+     */
+    select?: SafetyDepositRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SafetyDepositRequestInclude<ExtArgs> | null
+    /**
+     * The data needed to create a SafetyDepositRequest.
+     */
+    data: XOR<SafetyDepositRequestCreateInput, SafetyDepositRequestUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * SafetyDepositRequest createMany
+   */
+  export type SafetyDepositRequestCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many SafetyDepositRequests.
+     */
+    data: SafetyDepositRequestCreateManyInput | SafetyDepositRequestCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SafetyDepositRequest createManyAndReturn
+   */
+  export type SafetyDepositRequestCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SafetyDepositRequest
+     */
+    select?: SafetyDepositRequestSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many SafetyDepositRequests.
+     */
+    data: SafetyDepositRequestCreateManyInput | SafetyDepositRequestCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SafetyDepositRequestIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * SafetyDepositRequest update
+   */
+  export type SafetyDepositRequestUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SafetyDepositRequest
+     */
+    select?: SafetyDepositRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SafetyDepositRequestInclude<ExtArgs> | null
+    /**
+     * The data needed to update a SafetyDepositRequest.
+     */
+    data: XOR<SafetyDepositRequestUpdateInput, SafetyDepositRequestUncheckedUpdateInput>
+    /**
+     * Choose, which SafetyDepositRequest to update.
+     */
+    where: SafetyDepositRequestWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * SafetyDepositRequest updateMany
+   */
+  export type SafetyDepositRequestUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update SafetyDepositRequests.
+     */
+    data: XOR<SafetyDepositRequestUpdateManyMutationInput, SafetyDepositRequestUncheckedUpdateManyInput>
+    /**
+     * Filter which SafetyDepositRequests to update
+     */
+    where?: SafetyDepositRequestWhereInput
+  }
+
+  /**
+   * SafetyDepositRequest upsert
+   */
+  export type SafetyDepositRequestUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SafetyDepositRequest
+     */
+    select?: SafetyDepositRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SafetyDepositRequestInclude<ExtArgs> | null
+    /**
+     * The filter to search for the SafetyDepositRequest to update in case it exists.
+     */
+    where: SafetyDepositRequestWhereUniqueInput
+    /**
+     * In case the SafetyDepositRequest found by the `where` argument doesn't exist, create a new SafetyDepositRequest with this data.
+     */
+    create: XOR<SafetyDepositRequestCreateInput, SafetyDepositRequestUncheckedCreateInput>
+    /**
+     * In case the SafetyDepositRequest was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SafetyDepositRequestUpdateInput, SafetyDepositRequestUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * SafetyDepositRequest delete
+   */
+  export type SafetyDepositRequestDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SafetyDepositRequest
+     */
+    select?: SafetyDepositRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SafetyDepositRequestInclude<ExtArgs> | null
+    /**
+     * Filter which SafetyDepositRequest to delete.
+     */
+    where: SafetyDepositRequestWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * SafetyDepositRequest deleteMany
+   */
+  export type SafetyDepositRequestDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SafetyDepositRequests to delete
+     */
+    where?: SafetyDepositRequestWhereInput
+  }
+
+  /**
+   * SafetyDepositRequest.approvedBy
+   */
+  export type SafetyDepositRequest$approvedByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the User
+     */
+    select?: UserSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    where?: UserWhereInput
+  }
+
+  /**
+   * SafetyDepositRequest without action
+   */
+  export type SafetyDepositRequestDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SafetyDepositRequest
+     */
+    select?: SafetyDepositRequestSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SafetyDepositRequestInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -63152,6 +69832,8 @@ export namespace Prisma {
     advancePayAmount: 'advancePayAmount',
     insuranceExpiry: 'insuranceExpiry',
     status: 'status',
+    fastagNumber: 'fastagNumber',
+    hasFastag: 'hasFastag',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
     deletedAt: 'deletedAt'
@@ -63338,6 +70020,8 @@ export namespace Prisma {
     activeExtensionId: 'activeExtensionId',
     displacedByExtensionId: 'displacedByExtensionId',
     extensionDisplacedAt: 'extensionDisplacedAt',
+    frozenChargeConfig: 'frozenChargeConfig',
+    chargeConfigVersion: 'chargeConfigVersion',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
     deletedAt: 'deletedAt'
@@ -63464,7 +70148,9 @@ export namespace Prisma {
     publicId: 'publicId',
     invoiceId: 'invoiceId',
     label: 'label',
-    amount: 'amount'
+    amount: 'amount',
+    isTaxable: 'isTaxable',
+    chargeType: 'chargeType'
   };
 
   export type InvoiceItemScalarFieldEnum = (typeof InvoiceItemScalarFieldEnum)[keyof typeof InvoiceItemScalarFieldEnum]
@@ -63875,6 +70561,115 @@ export namespace Prisma {
   };
 
   export type BookingExtensionScalarFieldEnum = (typeof BookingExtensionScalarFieldEnum)[keyof typeof BookingExtensionScalarFieldEnum]
+
+
+  export const BranchChargeConfigScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    branchId: 'branchId',
+    extraKmEnabled: 'extraKmEnabled',
+    extraTimeEnabled: 'extraTimeEnabled',
+    fuelModuleEnabled: 'fuelModuleEnabled',
+    fastagModuleEnabled: 'fastagModuleEnabled',
+    gracePolicyEnabled: 'gracePolicyEnabled',
+    damageModuleEnabled: 'damageModuleEnabled',
+    graceType: 'graceType',
+    graceMinutes: 'graceMinutes',
+    employeeOverrideEnabled: 'employeeOverrideEnabled',
+    maxOverridePercent: 'maxOverridePercent',
+    overrideRequiresApproval: 'overrideRequiresApproval',
+    overrideApprovalThreshold: 'overrideApprovalThreshold',
+    safetyDepositEnabled: 'safetyDepositEnabled',
+    safetyDepositRequiresApproval: 'safetyDepositRequiresApproval',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type BranchChargeConfigScalarFieldEnum = (typeof BranchChargeConfigScalarFieldEnum)[keyof typeof BranchChargeConfigScalarFieldEnum]
+
+
+  export const ChargeEntryScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    bookingId: 'bookingId',
+    chargeType: 'chargeType',
+    moduleKey: 'moduleKey',
+    label: 'label',
+    originalAmount: 'originalAmount',
+    finalAmount: 'finalAmount',
+    quantity: 'quantity',
+    unitRate: 'unitRate',
+    notes: 'notes',
+    isOverridden: 'isOverridden',
+    createdById: 'createdById',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type ChargeEntryScalarFieldEnum = (typeof ChargeEntryScalarFieldEnum)[keyof typeof ChargeEntryScalarFieldEnum]
+
+
+  export const ChargeOverrideScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    bookingId: 'bookingId',
+    chargeEntryId: 'chargeEntryId',
+    originalAmount: 'originalAmount',
+    overriddenAmount: 'overriddenAmount',
+    waivedAmount: 'waivedAmount',
+    reason: 'reason',
+    status: 'status',
+    actorId: 'actorId',
+    actorRole: 'actorRole',
+    approverId: 'approverId',
+    approvedAt: 'approvedAt',
+    rejectedAt: 'rejectedAt',
+    rejectionReason: 'rejectionReason',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type ChargeOverrideScalarFieldEnum = (typeof ChargeOverrideScalarFieldEnum)[keyof typeof ChargeOverrideScalarFieldEnum]
+
+
+  export const FuelRecordScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    bookingId: 'bookingId',
+    pickupFuelLevel: 'pickupFuelLevel',
+    returnFuelLevel: 'returnFuelLevel',
+    fuelDeficit: 'fuelDeficit',
+    fuelDeficitCharge: 'fuelDeficitCharge',
+    skipReason: 'skipReason',
+    capturedByPickupId: 'capturedByPickupId',
+    capturedByReturnId: 'capturedByReturnId',
+    pickupAt: 'pickupAt',
+    returnAt: 'returnAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type FuelRecordScalarFieldEnum = (typeof FuelRecordScalarFieldEnum)[keyof typeof FuelRecordScalarFieldEnum]
+
+
+  export const SafetyDepositRequestScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    bookingId: 'bookingId',
+    requestedAmount: 'requestedAmount',
+    reason: 'reason',
+    status: 'status',
+    requestedById: 'requestedById',
+    approvedById: 'approvedById',
+    approvedAmount: 'approvedAmount',
+    approvedAt: 'approvedAt',
+    rejectedAt: 'rejectedAt',
+    rejectionReason: 'rejectionReason',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type SafetyDepositRequestScalarFieldEnum = (typeof SafetyDepositRequestScalarFieldEnum)[keyof typeof SafetyDepositRequestScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -64463,6 +71258,76 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'GraceType'
+   */
+  export type EnumGraceTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'GraceType'>
+    
+
+
+  /**
+   * Reference to a field of type 'GraceType[]'
+   */
+  export type ListEnumGraceTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'GraceType[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'ChargeType'
+   */
+  export type EnumChargeTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ChargeType'>
+    
+
+
+  /**
+   * Reference to a field of type 'ChargeType[]'
+   */
+  export type ListEnumChargeTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ChargeType[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'OverrideStatus'
+   */
+  export type EnumOverrideStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OverrideStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'OverrideStatus[]'
+   */
+  export type ListEnumOverrideStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OverrideStatus[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'FuelLevel'
+   */
+  export type EnumFuelLevelFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FuelLevel'>
+    
+
+
+  /**
+   * Reference to a field of type 'FuelLevel[]'
+   */
+  export type ListEnumFuelLevelFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FuelLevel[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'SafetyDepositStatus'
+   */
+  export type EnumSafetyDepositStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SafetyDepositStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'SafetyDepositStatus[]'
+   */
+  export type ListEnumSafetyDepositStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SafetyDepositStatus[]'>
+    
+
+
+  /**
    * Reference to a field of type 'Float'
    */
   export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -64517,6 +71382,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestListRelationFilter
     refundRequestsCompleted?: RefundRequestListRelationFilter
     initiatedExtensions?: BookingExtensionListRelationFilter
+    chargeEntriesCreated?: ChargeEntryListRelationFilter
+    overridesActed?: ChargeOverrideListRelationFilter
+    overridesApproved?: ChargeOverrideListRelationFilter
+    fuelPickupCaptures?: FuelRecordListRelationFilter
+    fuelReturnCaptures?: FuelRecordListRelationFilter
+    safetyDepositRequests?: SafetyDepositRequestListRelationFilter
+    safetyDepositApprovals?: SafetyDepositRequestListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -64554,6 +71426,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestOrderByRelationAggregateInput
     refundRequestsCompleted?: RefundRequestOrderByRelationAggregateInput
     initiatedExtensions?: BookingExtensionOrderByRelationAggregateInput
+    chargeEntriesCreated?: ChargeEntryOrderByRelationAggregateInput
+    overridesActed?: ChargeOverrideOrderByRelationAggregateInput
+    overridesApproved?: ChargeOverrideOrderByRelationAggregateInput
+    fuelPickupCaptures?: FuelRecordOrderByRelationAggregateInput
+    fuelReturnCaptures?: FuelRecordOrderByRelationAggregateInput
+    safetyDepositRequests?: SafetyDepositRequestOrderByRelationAggregateInput
+    safetyDepositApprovals?: SafetyDepositRequestOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -64594,6 +71473,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestListRelationFilter
     refundRequestsCompleted?: RefundRequestListRelationFilter
     initiatedExtensions?: BookingExtensionListRelationFilter
+    chargeEntriesCreated?: ChargeEntryListRelationFilter
+    overridesActed?: ChargeOverrideListRelationFilter
+    overridesApproved?: ChargeOverrideListRelationFilter
+    fuelPickupCaptures?: FuelRecordListRelationFilter
+    fuelReturnCaptures?: FuelRecordListRelationFilter
+    safetyDepositRequests?: SafetyDepositRequestListRelationFilter
+    safetyDepositApprovals?: SafetyDepositRequestListRelationFilter
   }, "id" | "publicId" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -65071,6 +71957,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabListRelationFilter
     discountConfig?: XOR<BranchDiscountConfigNullableRelationFilter, BranchDiscountConfigWhereInput> | null
     paymentConfig?: XOR<BranchPaymentConfigNullableRelationFilter, BranchPaymentConfigWhereInput> | null
+    chargeConfig?: XOR<BranchChargeConfigNullableRelationFilter, BranchChargeConfigWhereInput> | null
     paymentTransactions?: PaymentTransactionListRelationFilter
     cashShifts?: CashShiftListRelationFilter
     refundRequests?: RefundRequestListRelationFilter
@@ -65100,6 +71987,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabOrderByRelationAggregateInput
     discountConfig?: BranchDiscountConfigOrderByWithRelationInput
     paymentConfig?: BranchPaymentConfigOrderByWithRelationInput
+    chargeConfig?: BranchChargeConfigOrderByWithRelationInput
     paymentTransactions?: PaymentTransactionOrderByRelationAggregateInput
     cashShifts?: CashShiftOrderByRelationAggregateInput
     refundRequests?: RefundRequestOrderByRelationAggregateInput
@@ -65132,6 +72020,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabListRelationFilter
     discountConfig?: XOR<BranchDiscountConfigNullableRelationFilter, BranchDiscountConfigWhereInput> | null
     paymentConfig?: XOR<BranchPaymentConfigNullableRelationFilter, BranchPaymentConfigWhereInput> | null
+    chargeConfig?: XOR<BranchChargeConfigNullableRelationFilter, BranchChargeConfigWhereInput> | null
     paymentTransactions?: PaymentTransactionListRelationFilter
     cashShifts?: CashShiftListRelationFilter
     refundRequests?: RefundRequestListRelationFilter
@@ -65504,6 +72393,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFilter<"Vehicle"> | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFilter<"Vehicle"> | Date | string
     status?: EnumVehicleStatusFilter<"Vehicle"> | $Enums.VehicleStatus
+    fastagNumber?: StringNullableFilter<"Vehicle"> | string | null
+    hasFastag?: BoolFilter<"Vehicle"> | boolean
     createdAt?: DateTimeFilter<"Vehicle"> | Date | string
     updatedAt?: DateTimeFilter<"Vehicle"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Vehicle"> | Date | string | null
@@ -65535,6 +72426,8 @@ export namespace Prisma {
     advancePayAmount?: SortOrder
     insuranceExpiry?: SortOrder
     status?: SortOrder
+    fastagNumber?: SortOrderInput | SortOrder
+    hasFastag?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrderInput | SortOrder
@@ -65569,6 +72462,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFilter<"Vehicle"> | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFilter<"Vehicle"> | Date | string
     status?: EnumVehicleStatusFilter<"Vehicle"> | $Enums.VehicleStatus
+    fastagNumber?: StringNullableFilter<"Vehicle"> | string | null
+    hasFastag?: BoolFilter<"Vehicle"> | boolean
     createdAt?: DateTimeFilter<"Vehicle"> | Date | string
     updatedAt?: DateTimeFilter<"Vehicle"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Vehicle"> | Date | string | null
@@ -65600,6 +72495,8 @@ export namespace Prisma {
     advancePayAmount?: SortOrder
     insuranceExpiry?: SortOrder
     status?: SortOrder
+    fastagNumber?: SortOrderInput | SortOrder
+    hasFastag?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrderInput | SortOrder
@@ -65626,6 +72523,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalWithAggregatesFilter<"Vehicle"> | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeWithAggregatesFilter<"Vehicle"> | Date | string
     status?: EnumVehicleStatusWithAggregatesFilter<"Vehicle"> | $Enums.VehicleStatus
+    fastagNumber?: StringNullableWithAggregatesFilter<"Vehicle"> | string | null
+    hasFastag?: BoolWithAggregatesFilter<"Vehicle"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"Vehicle"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Vehicle"> | Date | string
     deletedAt?: DateTimeNullableWithAggregatesFilter<"Vehicle"> | Date | string | null
@@ -66332,6 +73231,8 @@ export namespace Prisma {
     activeExtensionId?: IntNullableFilter<"Booking"> | number | null
     displacedByExtensionId?: IntNullableFilter<"Booking"> | number | null
     extensionDisplacedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
+    frozenChargeConfig?: JsonNullableFilter<"Booking">
+    chargeConfigVersion?: IntFilter<"Booking"> | number
     createdAt?: DateTimeFilter<"Booking"> | Date | string
     updatedAt?: DateTimeFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
@@ -66353,6 +73254,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestListRelationFilter
     activeExtension?: XOR<BookingExtensionNullableRelationFilter, BookingExtensionWhereInput> | null
     extensions?: BookingExtensionListRelationFilter
+    chargeEntries?: ChargeEntryListRelationFilter
+    chargeOverrides?: ChargeOverrideListRelationFilter
+    fuelRecord?: XOR<FuelRecordNullableRelationFilter, FuelRecordWhereInput> | null
+    safetyDepositRequest?: XOR<SafetyDepositRequestNullableRelationFilter, SafetyDepositRequestWhereInput> | null
   }
 
   export type BookingOrderByWithRelationInput = {
@@ -66411,6 +73316,8 @@ export namespace Prisma {
     activeExtensionId?: SortOrderInput | SortOrder
     displacedByExtensionId?: SortOrderInput | SortOrder
     extensionDisplacedAt?: SortOrderInput | SortOrder
+    frozenChargeConfig?: SortOrderInput | SortOrder
+    chargeConfigVersion?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrderInput | SortOrder
@@ -66432,6 +73339,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestOrderByRelationAggregateInput
     activeExtension?: BookingExtensionOrderByWithRelationInput
     extensions?: BookingExtensionOrderByRelationAggregateInput
+    chargeEntries?: ChargeEntryOrderByRelationAggregateInput
+    chargeOverrides?: ChargeOverrideOrderByRelationAggregateInput
+    fuelRecord?: FuelRecordOrderByWithRelationInput
+    safetyDepositRequest?: SafetyDepositRequestOrderByWithRelationInput
   }
 
   export type BookingWhereUniqueInput = Prisma.AtLeast<{
@@ -66493,6 +73404,8 @@ export namespace Prisma {
     activeExtensionId?: IntNullableFilter<"Booking"> | number | null
     displacedByExtensionId?: IntNullableFilter<"Booking"> | number | null
     extensionDisplacedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
+    frozenChargeConfig?: JsonNullableFilter<"Booking">
+    chargeConfigVersion?: IntFilter<"Booking"> | number
     createdAt?: DateTimeFilter<"Booking"> | Date | string
     updatedAt?: DateTimeFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
@@ -66514,6 +73427,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestListRelationFilter
     activeExtension?: XOR<BookingExtensionNullableRelationFilter, BookingExtensionWhereInput> | null
     extensions?: BookingExtensionListRelationFilter
+    chargeEntries?: ChargeEntryListRelationFilter
+    chargeOverrides?: ChargeOverrideListRelationFilter
+    fuelRecord?: XOR<FuelRecordNullableRelationFilter, FuelRecordWhereInput> | null
+    safetyDepositRequest?: XOR<SafetyDepositRequestNullableRelationFilter, SafetyDepositRequestWhereInput> | null
   }, "id" | "publicId" | "transactionId" | "remainingPaymentId">
 
   export type BookingOrderByWithAggregationInput = {
@@ -66572,6 +73489,8 @@ export namespace Prisma {
     activeExtensionId?: SortOrderInput | SortOrder
     displacedByExtensionId?: SortOrderInput | SortOrder
     extensionDisplacedAt?: SortOrderInput | SortOrder
+    frozenChargeConfig?: SortOrderInput | SortOrder
+    chargeConfigVersion?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrderInput | SortOrder
@@ -66641,6 +73560,8 @@ export namespace Prisma {
     activeExtensionId?: IntNullableWithAggregatesFilter<"Booking"> | number | null
     displacedByExtensionId?: IntNullableWithAggregatesFilter<"Booking"> | number | null
     extensionDisplacedAt?: DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
+    frozenChargeConfig?: JsonNullableWithAggregatesFilter<"Booking">
+    chargeConfigVersion?: IntWithAggregatesFilter<"Booking"> | number
     createdAt?: DateTimeWithAggregatesFilter<"Booking"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
@@ -67258,6 +74179,8 @@ export namespace Prisma {
     invoiceId?: IntFilter<"InvoiceItem"> | number
     label?: StringFilter<"InvoiceItem"> | string
     amount?: DecimalFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
+    isTaxable?: BoolFilter<"InvoiceItem"> | boolean
+    chargeType?: StringNullableFilter<"InvoiceItem"> | string | null
     invoice?: XOR<InvoiceRelationFilter, InvoiceWhereInput>
   }
 
@@ -67267,6 +74190,8 @@ export namespace Prisma {
     invoiceId?: SortOrder
     label?: SortOrder
     amount?: SortOrder
+    isTaxable?: SortOrder
+    chargeType?: SortOrderInput | SortOrder
     invoice?: InvoiceOrderByWithRelationInput
   }
 
@@ -67279,6 +74204,8 @@ export namespace Prisma {
     invoiceId?: IntFilter<"InvoiceItem"> | number
     label?: StringFilter<"InvoiceItem"> | string
     amount?: DecimalFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
+    isTaxable?: BoolFilter<"InvoiceItem"> | boolean
+    chargeType?: StringNullableFilter<"InvoiceItem"> | string | null
     invoice?: XOR<InvoiceRelationFilter, InvoiceWhereInput>
   }, "id" | "publicId">
 
@@ -67288,6 +74215,8 @@ export namespace Prisma {
     invoiceId?: SortOrder
     label?: SortOrder
     amount?: SortOrder
+    isTaxable?: SortOrder
+    chargeType?: SortOrderInput | SortOrder
     _count?: InvoiceItemCountOrderByAggregateInput
     _avg?: InvoiceItemAvgOrderByAggregateInput
     _max?: InvoiceItemMaxOrderByAggregateInput
@@ -67304,6 +74233,8 @@ export namespace Prisma {
     invoiceId?: IntWithAggregatesFilter<"InvoiceItem"> | number
     label?: StringWithAggregatesFilter<"InvoiceItem"> | string
     amount?: DecimalWithAggregatesFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
+    isTaxable?: BoolWithAggregatesFilter<"InvoiceItem"> | boolean
+    chargeType?: StringNullableWithAggregatesFilter<"InvoiceItem"> | string | null
   }
 
   export type AuditLogWhereInput = {
@@ -69491,6 +76422,589 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"BookingExtension"> | Date | string
   }
 
+  export type BranchChargeConfigWhereInput = {
+    AND?: BranchChargeConfigWhereInput | BranchChargeConfigWhereInput[]
+    OR?: BranchChargeConfigWhereInput[]
+    NOT?: BranchChargeConfigWhereInput | BranchChargeConfigWhereInput[]
+    id?: IntFilter<"BranchChargeConfig"> | number
+    publicId?: StringFilter<"BranchChargeConfig"> | string
+    branchId?: IntFilter<"BranchChargeConfig"> | number
+    extraKmEnabled?: BoolFilter<"BranchChargeConfig"> | boolean
+    extraTimeEnabled?: BoolFilter<"BranchChargeConfig"> | boolean
+    fuelModuleEnabled?: BoolFilter<"BranchChargeConfig"> | boolean
+    fastagModuleEnabled?: BoolFilter<"BranchChargeConfig"> | boolean
+    gracePolicyEnabled?: BoolFilter<"BranchChargeConfig"> | boolean
+    damageModuleEnabled?: BoolFilter<"BranchChargeConfig"> | boolean
+    graceType?: EnumGraceTypeFilter<"BranchChargeConfig"> | $Enums.GraceType
+    graceMinutes?: IntFilter<"BranchChargeConfig"> | number
+    employeeOverrideEnabled?: BoolFilter<"BranchChargeConfig"> | boolean
+    maxOverridePercent?: DecimalNullableFilter<"BranchChargeConfig"> | Decimal | DecimalJsLike | number | string | null
+    overrideRequiresApproval?: BoolFilter<"BranchChargeConfig"> | boolean
+    overrideApprovalThreshold?: DecimalNullableFilter<"BranchChargeConfig"> | Decimal | DecimalJsLike | number | string | null
+    safetyDepositEnabled?: BoolFilter<"BranchChargeConfig"> | boolean
+    safetyDepositRequiresApproval?: BoolFilter<"BranchChargeConfig"> | boolean
+    createdAt?: DateTimeFilter<"BranchChargeConfig"> | Date | string
+    updatedAt?: DateTimeFilter<"BranchChargeConfig"> | Date | string
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+  }
+
+  export type BranchChargeConfigOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    branchId?: SortOrder
+    extraKmEnabled?: SortOrder
+    extraTimeEnabled?: SortOrder
+    fuelModuleEnabled?: SortOrder
+    fastagModuleEnabled?: SortOrder
+    gracePolicyEnabled?: SortOrder
+    damageModuleEnabled?: SortOrder
+    graceType?: SortOrder
+    graceMinutes?: SortOrder
+    employeeOverrideEnabled?: SortOrder
+    maxOverridePercent?: SortOrderInput | SortOrder
+    overrideRequiresApproval?: SortOrder
+    overrideApprovalThreshold?: SortOrderInput | SortOrder
+    safetyDepositEnabled?: SortOrder
+    safetyDepositRequiresApproval?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    branch?: BranchOrderByWithRelationInput
+  }
+
+  export type BranchChargeConfigWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    branchId?: number
+    AND?: BranchChargeConfigWhereInput | BranchChargeConfigWhereInput[]
+    OR?: BranchChargeConfigWhereInput[]
+    NOT?: BranchChargeConfigWhereInput | BranchChargeConfigWhereInput[]
+    extraKmEnabled?: BoolFilter<"BranchChargeConfig"> | boolean
+    extraTimeEnabled?: BoolFilter<"BranchChargeConfig"> | boolean
+    fuelModuleEnabled?: BoolFilter<"BranchChargeConfig"> | boolean
+    fastagModuleEnabled?: BoolFilter<"BranchChargeConfig"> | boolean
+    gracePolicyEnabled?: BoolFilter<"BranchChargeConfig"> | boolean
+    damageModuleEnabled?: BoolFilter<"BranchChargeConfig"> | boolean
+    graceType?: EnumGraceTypeFilter<"BranchChargeConfig"> | $Enums.GraceType
+    graceMinutes?: IntFilter<"BranchChargeConfig"> | number
+    employeeOverrideEnabled?: BoolFilter<"BranchChargeConfig"> | boolean
+    maxOverridePercent?: DecimalNullableFilter<"BranchChargeConfig"> | Decimal | DecimalJsLike | number | string | null
+    overrideRequiresApproval?: BoolFilter<"BranchChargeConfig"> | boolean
+    overrideApprovalThreshold?: DecimalNullableFilter<"BranchChargeConfig"> | Decimal | DecimalJsLike | number | string | null
+    safetyDepositEnabled?: BoolFilter<"BranchChargeConfig"> | boolean
+    safetyDepositRequiresApproval?: BoolFilter<"BranchChargeConfig"> | boolean
+    createdAt?: DateTimeFilter<"BranchChargeConfig"> | Date | string
+    updatedAt?: DateTimeFilter<"BranchChargeConfig"> | Date | string
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+  }, "id" | "publicId" | "branchId">
+
+  export type BranchChargeConfigOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    branchId?: SortOrder
+    extraKmEnabled?: SortOrder
+    extraTimeEnabled?: SortOrder
+    fuelModuleEnabled?: SortOrder
+    fastagModuleEnabled?: SortOrder
+    gracePolicyEnabled?: SortOrder
+    damageModuleEnabled?: SortOrder
+    graceType?: SortOrder
+    graceMinutes?: SortOrder
+    employeeOverrideEnabled?: SortOrder
+    maxOverridePercent?: SortOrderInput | SortOrder
+    overrideRequiresApproval?: SortOrder
+    overrideApprovalThreshold?: SortOrderInput | SortOrder
+    safetyDepositEnabled?: SortOrder
+    safetyDepositRequiresApproval?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: BranchChargeConfigCountOrderByAggregateInput
+    _avg?: BranchChargeConfigAvgOrderByAggregateInput
+    _max?: BranchChargeConfigMaxOrderByAggregateInput
+    _min?: BranchChargeConfigMinOrderByAggregateInput
+    _sum?: BranchChargeConfigSumOrderByAggregateInput
+  }
+
+  export type BranchChargeConfigScalarWhereWithAggregatesInput = {
+    AND?: BranchChargeConfigScalarWhereWithAggregatesInput | BranchChargeConfigScalarWhereWithAggregatesInput[]
+    OR?: BranchChargeConfigScalarWhereWithAggregatesInput[]
+    NOT?: BranchChargeConfigScalarWhereWithAggregatesInput | BranchChargeConfigScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"BranchChargeConfig"> | number
+    publicId?: StringWithAggregatesFilter<"BranchChargeConfig"> | string
+    branchId?: IntWithAggregatesFilter<"BranchChargeConfig"> | number
+    extraKmEnabled?: BoolWithAggregatesFilter<"BranchChargeConfig"> | boolean
+    extraTimeEnabled?: BoolWithAggregatesFilter<"BranchChargeConfig"> | boolean
+    fuelModuleEnabled?: BoolWithAggregatesFilter<"BranchChargeConfig"> | boolean
+    fastagModuleEnabled?: BoolWithAggregatesFilter<"BranchChargeConfig"> | boolean
+    gracePolicyEnabled?: BoolWithAggregatesFilter<"BranchChargeConfig"> | boolean
+    damageModuleEnabled?: BoolWithAggregatesFilter<"BranchChargeConfig"> | boolean
+    graceType?: EnumGraceTypeWithAggregatesFilter<"BranchChargeConfig"> | $Enums.GraceType
+    graceMinutes?: IntWithAggregatesFilter<"BranchChargeConfig"> | number
+    employeeOverrideEnabled?: BoolWithAggregatesFilter<"BranchChargeConfig"> | boolean
+    maxOverridePercent?: DecimalNullableWithAggregatesFilter<"BranchChargeConfig"> | Decimal | DecimalJsLike | number | string | null
+    overrideRequiresApproval?: BoolWithAggregatesFilter<"BranchChargeConfig"> | boolean
+    overrideApprovalThreshold?: DecimalNullableWithAggregatesFilter<"BranchChargeConfig"> | Decimal | DecimalJsLike | number | string | null
+    safetyDepositEnabled?: BoolWithAggregatesFilter<"BranchChargeConfig"> | boolean
+    safetyDepositRequiresApproval?: BoolWithAggregatesFilter<"BranchChargeConfig"> | boolean
+    createdAt?: DateTimeWithAggregatesFilter<"BranchChargeConfig"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"BranchChargeConfig"> | Date | string
+  }
+
+  export type ChargeEntryWhereInput = {
+    AND?: ChargeEntryWhereInput | ChargeEntryWhereInput[]
+    OR?: ChargeEntryWhereInput[]
+    NOT?: ChargeEntryWhereInput | ChargeEntryWhereInput[]
+    id?: IntFilter<"ChargeEntry"> | number
+    publicId?: StringFilter<"ChargeEntry"> | string
+    bookingId?: IntFilter<"ChargeEntry"> | number
+    chargeType?: EnumChargeTypeFilter<"ChargeEntry"> | $Enums.ChargeType
+    moduleKey?: StringFilter<"ChargeEntry"> | string
+    label?: StringFilter<"ChargeEntry"> | string
+    originalAmount?: DecimalFilter<"ChargeEntry"> | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFilter<"ChargeEntry"> | Decimal | DecimalJsLike | number | string
+    quantity?: DecimalNullableFilter<"ChargeEntry"> | Decimal | DecimalJsLike | number | string | null
+    unitRate?: DecimalNullableFilter<"ChargeEntry"> | Decimal | DecimalJsLike | number | string | null
+    notes?: StringNullableFilter<"ChargeEntry"> | string | null
+    isOverridden?: BoolFilter<"ChargeEntry"> | boolean
+    createdById?: IntFilter<"ChargeEntry"> | number
+    createdAt?: DateTimeFilter<"ChargeEntry"> | Date | string
+    updatedAt?: DateTimeFilter<"ChargeEntry"> | Date | string
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    createdBy?: XOR<UserRelationFilter, UserWhereInput>
+    override?: XOR<ChargeOverrideNullableRelationFilter, ChargeOverrideWhereInput> | null
+  }
+
+  export type ChargeEntryOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    chargeType?: SortOrder
+    moduleKey?: SortOrder
+    label?: SortOrder
+    originalAmount?: SortOrder
+    finalAmount?: SortOrder
+    quantity?: SortOrderInput | SortOrder
+    unitRate?: SortOrderInput | SortOrder
+    notes?: SortOrderInput | SortOrder
+    isOverridden?: SortOrder
+    createdById?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    booking?: BookingOrderByWithRelationInput
+    createdBy?: UserOrderByWithRelationInput
+    override?: ChargeOverrideOrderByWithRelationInput
+  }
+
+  export type ChargeEntryWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    bookingId_moduleKey?: ChargeEntryBookingIdModuleKeyCompoundUniqueInput
+    AND?: ChargeEntryWhereInput | ChargeEntryWhereInput[]
+    OR?: ChargeEntryWhereInput[]
+    NOT?: ChargeEntryWhereInput | ChargeEntryWhereInput[]
+    bookingId?: IntFilter<"ChargeEntry"> | number
+    chargeType?: EnumChargeTypeFilter<"ChargeEntry"> | $Enums.ChargeType
+    moduleKey?: StringFilter<"ChargeEntry"> | string
+    label?: StringFilter<"ChargeEntry"> | string
+    originalAmount?: DecimalFilter<"ChargeEntry"> | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFilter<"ChargeEntry"> | Decimal | DecimalJsLike | number | string
+    quantity?: DecimalNullableFilter<"ChargeEntry"> | Decimal | DecimalJsLike | number | string | null
+    unitRate?: DecimalNullableFilter<"ChargeEntry"> | Decimal | DecimalJsLike | number | string | null
+    notes?: StringNullableFilter<"ChargeEntry"> | string | null
+    isOverridden?: BoolFilter<"ChargeEntry"> | boolean
+    createdById?: IntFilter<"ChargeEntry"> | number
+    createdAt?: DateTimeFilter<"ChargeEntry"> | Date | string
+    updatedAt?: DateTimeFilter<"ChargeEntry"> | Date | string
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    createdBy?: XOR<UserRelationFilter, UserWhereInput>
+    override?: XOR<ChargeOverrideNullableRelationFilter, ChargeOverrideWhereInput> | null
+  }, "id" | "publicId" | "bookingId_moduleKey">
+
+  export type ChargeEntryOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    chargeType?: SortOrder
+    moduleKey?: SortOrder
+    label?: SortOrder
+    originalAmount?: SortOrder
+    finalAmount?: SortOrder
+    quantity?: SortOrderInput | SortOrder
+    unitRate?: SortOrderInput | SortOrder
+    notes?: SortOrderInput | SortOrder
+    isOverridden?: SortOrder
+    createdById?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: ChargeEntryCountOrderByAggregateInput
+    _avg?: ChargeEntryAvgOrderByAggregateInput
+    _max?: ChargeEntryMaxOrderByAggregateInput
+    _min?: ChargeEntryMinOrderByAggregateInput
+    _sum?: ChargeEntrySumOrderByAggregateInput
+  }
+
+  export type ChargeEntryScalarWhereWithAggregatesInput = {
+    AND?: ChargeEntryScalarWhereWithAggregatesInput | ChargeEntryScalarWhereWithAggregatesInput[]
+    OR?: ChargeEntryScalarWhereWithAggregatesInput[]
+    NOT?: ChargeEntryScalarWhereWithAggregatesInput | ChargeEntryScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"ChargeEntry"> | number
+    publicId?: StringWithAggregatesFilter<"ChargeEntry"> | string
+    bookingId?: IntWithAggregatesFilter<"ChargeEntry"> | number
+    chargeType?: EnumChargeTypeWithAggregatesFilter<"ChargeEntry"> | $Enums.ChargeType
+    moduleKey?: StringWithAggregatesFilter<"ChargeEntry"> | string
+    label?: StringWithAggregatesFilter<"ChargeEntry"> | string
+    originalAmount?: DecimalWithAggregatesFilter<"ChargeEntry"> | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalWithAggregatesFilter<"ChargeEntry"> | Decimal | DecimalJsLike | number | string
+    quantity?: DecimalNullableWithAggregatesFilter<"ChargeEntry"> | Decimal | DecimalJsLike | number | string | null
+    unitRate?: DecimalNullableWithAggregatesFilter<"ChargeEntry"> | Decimal | DecimalJsLike | number | string | null
+    notes?: StringNullableWithAggregatesFilter<"ChargeEntry"> | string | null
+    isOverridden?: BoolWithAggregatesFilter<"ChargeEntry"> | boolean
+    createdById?: IntWithAggregatesFilter<"ChargeEntry"> | number
+    createdAt?: DateTimeWithAggregatesFilter<"ChargeEntry"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"ChargeEntry"> | Date | string
+  }
+
+  export type ChargeOverrideWhereInput = {
+    AND?: ChargeOverrideWhereInput | ChargeOverrideWhereInput[]
+    OR?: ChargeOverrideWhereInput[]
+    NOT?: ChargeOverrideWhereInput | ChargeOverrideWhereInput[]
+    id?: IntFilter<"ChargeOverride"> | number
+    publicId?: StringFilter<"ChargeOverride"> | string
+    bookingId?: IntFilter<"ChargeOverride"> | number
+    chargeEntryId?: IntFilter<"ChargeOverride"> | number
+    originalAmount?: DecimalFilter<"ChargeOverride"> | Decimal | DecimalJsLike | number | string
+    overriddenAmount?: DecimalFilter<"ChargeOverride"> | Decimal | DecimalJsLike | number | string
+    waivedAmount?: DecimalFilter<"ChargeOverride"> | Decimal | DecimalJsLike | number | string
+    reason?: StringFilter<"ChargeOverride"> | string
+    status?: EnumOverrideStatusFilter<"ChargeOverride"> | $Enums.OverrideStatus
+    actorId?: IntFilter<"ChargeOverride"> | number
+    actorRole?: EnumRoleFilter<"ChargeOverride"> | $Enums.Role
+    approverId?: IntNullableFilter<"ChargeOverride"> | number | null
+    approvedAt?: DateTimeNullableFilter<"ChargeOverride"> | Date | string | null
+    rejectedAt?: DateTimeNullableFilter<"ChargeOverride"> | Date | string | null
+    rejectionReason?: StringNullableFilter<"ChargeOverride"> | string | null
+    createdAt?: DateTimeFilter<"ChargeOverride"> | Date | string
+    updatedAt?: DateTimeFilter<"ChargeOverride"> | Date | string
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    chargeEntry?: XOR<ChargeEntryRelationFilter, ChargeEntryWhereInput>
+    actor?: XOR<UserRelationFilter, UserWhereInput>
+    approver?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+  }
+
+  export type ChargeOverrideOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    chargeEntryId?: SortOrder
+    originalAmount?: SortOrder
+    overriddenAmount?: SortOrder
+    waivedAmount?: SortOrder
+    reason?: SortOrder
+    status?: SortOrder
+    actorId?: SortOrder
+    actorRole?: SortOrder
+    approverId?: SortOrderInput | SortOrder
+    approvedAt?: SortOrderInput | SortOrder
+    rejectedAt?: SortOrderInput | SortOrder
+    rejectionReason?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    booking?: BookingOrderByWithRelationInput
+    chargeEntry?: ChargeEntryOrderByWithRelationInput
+    actor?: UserOrderByWithRelationInput
+    approver?: UserOrderByWithRelationInput
+  }
+
+  export type ChargeOverrideWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    chargeEntryId?: number
+    AND?: ChargeOverrideWhereInput | ChargeOverrideWhereInput[]
+    OR?: ChargeOverrideWhereInput[]
+    NOT?: ChargeOverrideWhereInput | ChargeOverrideWhereInput[]
+    bookingId?: IntFilter<"ChargeOverride"> | number
+    originalAmount?: DecimalFilter<"ChargeOverride"> | Decimal | DecimalJsLike | number | string
+    overriddenAmount?: DecimalFilter<"ChargeOverride"> | Decimal | DecimalJsLike | number | string
+    waivedAmount?: DecimalFilter<"ChargeOverride"> | Decimal | DecimalJsLike | number | string
+    reason?: StringFilter<"ChargeOverride"> | string
+    status?: EnumOverrideStatusFilter<"ChargeOverride"> | $Enums.OverrideStatus
+    actorId?: IntFilter<"ChargeOverride"> | number
+    actorRole?: EnumRoleFilter<"ChargeOverride"> | $Enums.Role
+    approverId?: IntNullableFilter<"ChargeOverride"> | number | null
+    approvedAt?: DateTimeNullableFilter<"ChargeOverride"> | Date | string | null
+    rejectedAt?: DateTimeNullableFilter<"ChargeOverride"> | Date | string | null
+    rejectionReason?: StringNullableFilter<"ChargeOverride"> | string | null
+    createdAt?: DateTimeFilter<"ChargeOverride"> | Date | string
+    updatedAt?: DateTimeFilter<"ChargeOverride"> | Date | string
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    chargeEntry?: XOR<ChargeEntryRelationFilter, ChargeEntryWhereInput>
+    actor?: XOR<UserRelationFilter, UserWhereInput>
+    approver?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+  }, "id" | "publicId" | "chargeEntryId">
+
+  export type ChargeOverrideOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    chargeEntryId?: SortOrder
+    originalAmount?: SortOrder
+    overriddenAmount?: SortOrder
+    waivedAmount?: SortOrder
+    reason?: SortOrder
+    status?: SortOrder
+    actorId?: SortOrder
+    actorRole?: SortOrder
+    approverId?: SortOrderInput | SortOrder
+    approvedAt?: SortOrderInput | SortOrder
+    rejectedAt?: SortOrderInput | SortOrder
+    rejectionReason?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: ChargeOverrideCountOrderByAggregateInput
+    _avg?: ChargeOverrideAvgOrderByAggregateInput
+    _max?: ChargeOverrideMaxOrderByAggregateInput
+    _min?: ChargeOverrideMinOrderByAggregateInput
+    _sum?: ChargeOverrideSumOrderByAggregateInput
+  }
+
+  export type ChargeOverrideScalarWhereWithAggregatesInput = {
+    AND?: ChargeOverrideScalarWhereWithAggregatesInput | ChargeOverrideScalarWhereWithAggregatesInput[]
+    OR?: ChargeOverrideScalarWhereWithAggregatesInput[]
+    NOT?: ChargeOverrideScalarWhereWithAggregatesInput | ChargeOverrideScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"ChargeOverride"> | number
+    publicId?: StringWithAggregatesFilter<"ChargeOverride"> | string
+    bookingId?: IntWithAggregatesFilter<"ChargeOverride"> | number
+    chargeEntryId?: IntWithAggregatesFilter<"ChargeOverride"> | number
+    originalAmount?: DecimalWithAggregatesFilter<"ChargeOverride"> | Decimal | DecimalJsLike | number | string
+    overriddenAmount?: DecimalWithAggregatesFilter<"ChargeOverride"> | Decimal | DecimalJsLike | number | string
+    waivedAmount?: DecimalWithAggregatesFilter<"ChargeOverride"> | Decimal | DecimalJsLike | number | string
+    reason?: StringWithAggregatesFilter<"ChargeOverride"> | string
+    status?: EnumOverrideStatusWithAggregatesFilter<"ChargeOverride"> | $Enums.OverrideStatus
+    actorId?: IntWithAggregatesFilter<"ChargeOverride"> | number
+    actorRole?: EnumRoleWithAggregatesFilter<"ChargeOverride"> | $Enums.Role
+    approverId?: IntNullableWithAggregatesFilter<"ChargeOverride"> | number | null
+    approvedAt?: DateTimeNullableWithAggregatesFilter<"ChargeOverride"> | Date | string | null
+    rejectedAt?: DateTimeNullableWithAggregatesFilter<"ChargeOverride"> | Date | string | null
+    rejectionReason?: StringNullableWithAggregatesFilter<"ChargeOverride"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"ChargeOverride"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"ChargeOverride"> | Date | string
+  }
+
+  export type FuelRecordWhereInput = {
+    AND?: FuelRecordWhereInput | FuelRecordWhereInput[]
+    OR?: FuelRecordWhereInput[]
+    NOT?: FuelRecordWhereInput | FuelRecordWhereInput[]
+    id?: IntFilter<"FuelRecord"> | number
+    publicId?: StringFilter<"FuelRecord"> | string
+    bookingId?: IntFilter<"FuelRecord"> | number
+    pickupFuelLevel?: EnumFuelLevelFilter<"FuelRecord"> | $Enums.FuelLevel
+    returnFuelLevel?: EnumFuelLevelNullableFilter<"FuelRecord"> | $Enums.FuelLevel | null
+    fuelDeficit?: BoolFilter<"FuelRecord"> | boolean
+    fuelDeficitCharge?: DecimalNullableFilter<"FuelRecord"> | Decimal | DecimalJsLike | number | string | null
+    skipReason?: StringNullableFilter<"FuelRecord"> | string | null
+    capturedByPickupId?: IntFilter<"FuelRecord"> | number
+    capturedByReturnId?: IntNullableFilter<"FuelRecord"> | number | null
+    pickupAt?: DateTimeFilter<"FuelRecord"> | Date | string
+    returnAt?: DateTimeNullableFilter<"FuelRecord"> | Date | string | null
+    createdAt?: DateTimeFilter<"FuelRecord"> | Date | string
+    updatedAt?: DateTimeFilter<"FuelRecord"> | Date | string
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    capturedByPickup?: XOR<UserRelationFilter, UserWhereInput>
+    capturedByReturn?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+  }
+
+  export type FuelRecordOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    pickupFuelLevel?: SortOrder
+    returnFuelLevel?: SortOrderInput | SortOrder
+    fuelDeficit?: SortOrder
+    fuelDeficitCharge?: SortOrderInput | SortOrder
+    skipReason?: SortOrderInput | SortOrder
+    capturedByPickupId?: SortOrder
+    capturedByReturnId?: SortOrderInput | SortOrder
+    pickupAt?: SortOrder
+    returnAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    booking?: BookingOrderByWithRelationInput
+    capturedByPickup?: UserOrderByWithRelationInput
+    capturedByReturn?: UserOrderByWithRelationInput
+  }
+
+  export type FuelRecordWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    bookingId?: number
+    AND?: FuelRecordWhereInput | FuelRecordWhereInput[]
+    OR?: FuelRecordWhereInput[]
+    NOT?: FuelRecordWhereInput | FuelRecordWhereInput[]
+    pickupFuelLevel?: EnumFuelLevelFilter<"FuelRecord"> | $Enums.FuelLevel
+    returnFuelLevel?: EnumFuelLevelNullableFilter<"FuelRecord"> | $Enums.FuelLevel | null
+    fuelDeficit?: BoolFilter<"FuelRecord"> | boolean
+    fuelDeficitCharge?: DecimalNullableFilter<"FuelRecord"> | Decimal | DecimalJsLike | number | string | null
+    skipReason?: StringNullableFilter<"FuelRecord"> | string | null
+    capturedByPickupId?: IntFilter<"FuelRecord"> | number
+    capturedByReturnId?: IntNullableFilter<"FuelRecord"> | number | null
+    pickupAt?: DateTimeFilter<"FuelRecord"> | Date | string
+    returnAt?: DateTimeNullableFilter<"FuelRecord"> | Date | string | null
+    createdAt?: DateTimeFilter<"FuelRecord"> | Date | string
+    updatedAt?: DateTimeFilter<"FuelRecord"> | Date | string
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    capturedByPickup?: XOR<UserRelationFilter, UserWhereInput>
+    capturedByReturn?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+  }, "id" | "publicId" | "bookingId">
+
+  export type FuelRecordOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    pickupFuelLevel?: SortOrder
+    returnFuelLevel?: SortOrderInput | SortOrder
+    fuelDeficit?: SortOrder
+    fuelDeficitCharge?: SortOrderInput | SortOrder
+    skipReason?: SortOrderInput | SortOrder
+    capturedByPickupId?: SortOrder
+    capturedByReturnId?: SortOrderInput | SortOrder
+    pickupAt?: SortOrder
+    returnAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: FuelRecordCountOrderByAggregateInput
+    _avg?: FuelRecordAvgOrderByAggregateInput
+    _max?: FuelRecordMaxOrderByAggregateInput
+    _min?: FuelRecordMinOrderByAggregateInput
+    _sum?: FuelRecordSumOrderByAggregateInput
+  }
+
+  export type FuelRecordScalarWhereWithAggregatesInput = {
+    AND?: FuelRecordScalarWhereWithAggregatesInput | FuelRecordScalarWhereWithAggregatesInput[]
+    OR?: FuelRecordScalarWhereWithAggregatesInput[]
+    NOT?: FuelRecordScalarWhereWithAggregatesInput | FuelRecordScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"FuelRecord"> | number
+    publicId?: StringWithAggregatesFilter<"FuelRecord"> | string
+    bookingId?: IntWithAggregatesFilter<"FuelRecord"> | number
+    pickupFuelLevel?: EnumFuelLevelWithAggregatesFilter<"FuelRecord"> | $Enums.FuelLevel
+    returnFuelLevel?: EnumFuelLevelNullableWithAggregatesFilter<"FuelRecord"> | $Enums.FuelLevel | null
+    fuelDeficit?: BoolWithAggregatesFilter<"FuelRecord"> | boolean
+    fuelDeficitCharge?: DecimalNullableWithAggregatesFilter<"FuelRecord"> | Decimal | DecimalJsLike | number | string | null
+    skipReason?: StringNullableWithAggregatesFilter<"FuelRecord"> | string | null
+    capturedByPickupId?: IntWithAggregatesFilter<"FuelRecord"> | number
+    capturedByReturnId?: IntNullableWithAggregatesFilter<"FuelRecord"> | number | null
+    pickupAt?: DateTimeWithAggregatesFilter<"FuelRecord"> | Date | string
+    returnAt?: DateTimeNullableWithAggregatesFilter<"FuelRecord"> | Date | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"FuelRecord"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"FuelRecord"> | Date | string
+  }
+
+  export type SafetyDepositRequestWhereInput = {
+    AND?: SafetyDepositRequestWhereInput | SafetyDepositRequestWhereInput[]
+    OR?: SafetyDepositRequestWhereInput[]
+    NOT?: SafetyDepositRequestWhereInput | SafetyDepositRequestWhereInput[]
+    id?: IntFilter<"SafetyDepositRequest"> | number
+    publicId?: StringFilter<"SafetyDepositRequest"> | string
+    bookingId?: IntFilter<"SafetyDepositRequest"> | number
+    requestedAmount?: DecimalFilter<"SafetyDepositRequest"> | Decimal | DecimalJsLike | number | string
+    reason?: StringFilter<"SafetyDepositRequest"> | string
+    status?: EnumSafetyDepositStatusFilter<"SafetyDepositRequest"> | $Enums.SafetyDepositStatus
+    requestedById?: IntFilter<"SafetyDepositRequest"> | number
+    approvedById?: IntNullableFilter<"SafetyDepositRequest"> | number | null
+    approvedAmount?: DecimalNullableFilter<"SafetyDepositRequest"> | Decimal | DecimalJsLike | number | string | null
+    approvedAt?: DateTimeNullableFilter<"SafetyDepositRequest"> | Date | string | null
+    rejectedAt?: DateTimeNullableFilter<"SafetyDepositRequest"> | Date | string | null
+    rejectionReason?: StringNullableFilter<"SafetyDepositRequest"> | string | null
+    createdAt?: DateTimeFilter<"SafetyDepositRequest"> | Date | string
+    updatedAt?: DateTimeFilter<"SafetyDepositRequest"> | Date | string
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    requestedBy?: XOR<UserRelationFilter, UserWhereInput>
+    approvedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+  }
+
+  export type SafetyDepositRequestOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    requestedAmount?: SortOrder
+    reason?: SortOrder
+    status?: SortOrder
+    requestedById?: SortOrder
+    approvedById?: SortOrderInput | SortOrder
+    approvedAmount?: SortOrderInput | SortOrder
+    approvedAt?: SortOrderInput | SortOrder
+    rejectedAt?: SortOrderInput | SortOrder
+    rejectionReason?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    booking?: BookingOrderByWithRelationInput
+    requestedBy?: UserOrderByWithRelationInput
+    approvedBy?: UserOrderByWithRelationInput
+  }
+
+  export type SafetyDepositRequestWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    bookingId?: number
+    AND?: SafetyDepositRequestWhereInput | SafetyDepositRequestWhereInput[]
+    OR?: SafetyDepositRequestWhereInput[]
+    NOT?: SafetyDepositRequestWhereInput | SafetyDepositRequestWhereInput[]
+    requestedAmount?: DecimalFilter<"SafetyDepositRequest"> | Decimal | DecimalJsLike | number | string
+    reason?: StringFilter<"SafetyDepositRequest"> | string
+    status?: EnumSafetyDepositStatusFilter<"SafetyDepositRequest"> | $Enums.SafetyDepositStatus
+    requestedById?: IntFilter<"SafetyDepositRequest"> | number
+    approvedById?: IntNullableFilter<"SafetyDepositRequest"> | number | null
+    approvedAmount?: DecimalNullableFilter<"SafetyDepositRequest"> | Decimal | DecimalJsLike | number | string | null
+    approvedAt?: DateTimeNullableFilter<"SafetyDepositRequest"> | Date | string | null
+    rejectedAt?: DateTimeNullableFilter<"SafetyDepositRequest"> | Date | string | null
+    rejectionReason?: StringNullableFilter<"SafetyDepositRequest"> | string | null
+    createdAt?: DateTimeFilter<"SafetyDepositRequest"> | Date | string
+    updatedAt?: DateTimeFilter<"SafetyDepositRequest"> | Date | string
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    requestedBy?: XOR<UserRelationFilter, UserWhereInput>
+    approvedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+  }, "id" | "publicId" | "bookingId">
+
+  export type SafetyDepositRequestOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    requestedAmount?: SortOrder
+    reason?: SortOrder
+    status?: SortOrder
+    requestedById?: SortOrder
+    approvedById?: SortOrderInput | SortOrder
+    approvedAmount?: SortOrderInput | SortOrder
+    approvedAt?: SortOrderInput | SortOrder
+    rejectedAt?: SortOrderInput | SortOrder
+    rejectionReason?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: SafetyDepositRequestCountOrderByAggregateInput
+    _avg?: SafetyDepositRequestAvgOrderByAggregateInput
+    _max?: SafetyDepositRequestMaxOrderByAggregateInput
+    _min?: SafetyDepositRequestMinOrderByAggregateInput
+    _sum?: SafetyDepositRequestSumOrderByAggregateInput
+  }
+
+  export type SafetyDepositRequestScalarWhereWithAggregatesInput = {
+    AND?: SafetyDepositRequestScalarWhereWithAggregatesInput | SafetyDepositRequestScalarWhereWithAggregatesInput[]
+    OR?: SafetyDepositRequestScalarWhereWithAggregatesInput[]
+    NOT?: SafetyDepositRequestScalarWhereWithAggregatesInput | SafetyDepositRequestScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"SafetyDepositRequest"> | number
+    publicId?: StringWithAggregatesFilter<"SafetyDepositRequest"> | string
+    bookingId?: IntWithAggregatesFilter<"SafetyDepositRequest"> | number
+    requestedAmount?: DecimalWithAggregatesFilter<"SafetyDepositRequest"> | Decimal | DecimalJsLike | number | string
+    reason?: StringWithAggregatesFilter<"SafetyDepositRequest"> | string
+    status?: EnumSafetyDepositStatusWithAggregatesFilter<"SafetyDepositRequest"> | $Enums.SafetyDepositStatus
+    requestedById?: IntWithAggregatesFilter<"SafetyDepositRequest"> | number
+    approvedById?: IntNullableWithAggregatesFilter<"SafetyDepositRequest"> | number | null
+    approvedAmount?: DecimalNullableWithAggregatesFilter<"SafetyDepositRequest"> | Decimal | DecimalJsLike | number | string | null
+    approvedAt?: DateTimeNullableWithAggregatesFilter<"SafetyDepositRequest"> | Date | string | null
+    rejectedAt?: DateTimeNullableWithAggregatesFilter<"SafetyDepositRequest"> | Date | string | null
+    rejectionReason?: StringNullableWithAggregatesFilter<"SafetyDepositRequest"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"SafetyDepositRequest"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"SafetyDepositRequest"> | Date | string
+  }
+
   export type UserCreateInput = {
     publicId: string
     name: string
@@ -69524,6 +77038,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -69560,6 +77081,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUpdateInput = {
@@ -69595,6 +77123,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -69631,6 +77166,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -70130,6 +77672,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
@@ -70159,6 +77702,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
@@ -70187,6 +77731,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
@@ -70216,6 +77761,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
@@ -70598,6 +78144,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -70629,6 +78177,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -70655,6 +78205,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -70686,6 +78238,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -70715,6 +78269,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -70730,6 +78286,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -70748,6 +78306,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -71427,6 +78987,8 @@ export namespace Prisma {
     lastExtendedAt?: Date | string | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -71448,6 +79010,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
     activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
     extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateInput = {
@@ -71506,6 +79072,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -71521,6 +79089,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUpdateInput = {
@@ -71572,6 +79144,8 @@ export namespace Prisma {
     lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -71593,6 +79167,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
     activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateInput = {
@@ -71651,6 +79229,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -71666,6 +79246,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingCreateManyInput = {
@@ -71724,6 +79308,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -71778,6 +79364,8 @@ export namespace Prisma {
     lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -71839,6 +79427,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -72471,6 +80061,8 @@ export namespace Prisma {
     publicId: string
     label: string
     amount: Decimal | DecimalJsLike | number | string
+    isTaxable?: boolean
+    chargeType?: string | null
     invoice: InvoiceCreateNestedOneWithoutItemsInput
   }
 
@@ -72480,12 +80072,16 @@ export namespace Prisma {
     invoiceId: number
     label: string
     amount: Decimal | DecimalJsLike | number | string
+    isTaxable?: boolean
+    chargeType?: string | null
   }
 
   export type InvoiceItemUpdateInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     label?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isTaxable?: BoolFieldUpdateOperationsInput | boolean
+    chargeType?: NullableStringFieldUpdateOperationsInput | string | null
     invoice?: InvoiceUpdateOneRequiredWithoutItemsNestedInput
   }
 
@@ -72495,6 +80091,8 @@ export namespace Prisma {
     invoiceId?: IntFieldUpdateOperationsInput | number
     label?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isTaxable?: BoolFieldUpdateOperationsInput | boolean
+    chargeType?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type InvoiceItemCreateManyInput = {
@@ -72503,12 +80101,16 @@ export namespace Prisma {
     invoiceId: number
     label: string
     amount: Decimal | DecimalJsLike | number | string
+    isTaxable?: boolean
+    chargeType?: string | null
   }
 
   export type InvoiceItemUpdateManyMutationInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     label?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isTaxable?: BoolFieldUpdateOperationsInput | boolean
+    chargeType?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type InvoiceItemUncheckedUpdateManyInput = {
@@ -72517,6 +80119,8 @@ export namespace Prisma {
     invoiceId?: IntFieldUpdateOperationsInput | number
     label?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isTaxable?: BoolFieldUpdateOperationsInput | boolean
+    chargeType?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type AuditLogCreateInput = {
@@ -74882,6 +82486,640 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type BranchChargeConfigCreateInput = {
+    publicId: string
+    extraKmEnabled?: boolean
+    extraTimeEnabled?: boolean
+    fuelModuleEnabled?: boolean
+    fastagModuleEnabled?: boolean
+    gracePolicyEnabled?: boolean
+    damageModuleEnabled?: boolean
+    graceType?: $Enums.GraceType
+    graceMinutes?: number
+    employeeOverrideEnabled?: boolean
+    maxOverridePercent?: Decimal | DecimalJsLike | number | string | null
+    overrideRequiresApproval?: boolean
+    overrideApprovalThreshold?: Decimal | DecimalJsLike | number | string | null
+    safetyDepositEnabled?: boolean
+    safetyDepositRequiresApproval?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    branch: BranchCreateNestedOneWithoutChargeConfigInput
+  }
+
+  export type BranchChargeConfigUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    extraKmEnabled?: boolean
+    extraTimeEnabled?: boolean
+    fuelModuleEnabled?: boolean
+    fastagModuleEnabled?: boolean
+    gracePolicyEnabled?: boolean
+    damageModuleEnabled?: boolean
+    graceType?: $Enums.GraceType
+    graceMinutes?: number
+    employeeOverrideEnabled?: boolean
+    maxOverridePercent?: Decimal | DecimalJsLike | number | string | null
+    overrideRequiresApproval?: boolean
+    overrideApprovalThreshold?: Decimal | DecimalJsLike | number | string | null
+    safetyDepositEnabled?: boolean
+    safetyDepositRequiresApproval?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchChargeConfigUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    extraKmEnabled?: BoolFieldUpdateOperationsInput | boolean
+    extraTimeEnabled?: BoolFieldUpdateOperationsInput | boolean
+    fuelModuleEnabled?: BoolFieldUpdateOperationsInput | boolean
+    fastagModuleEnabled?: BoolFieldUpdateOperationsInput | boolean
+    gracePolicyEnabled?: BoolFieldUpdateOperationsInput | boolean
+    damageModuleEnabled?: BoolFieldUpdateOperationsInput | boolean
+    graceType?: EnumGraceTypeFieldUpdateOperationsInput | $Enums.GraceType
+    graceMinutes?: IntFieldUpdateOperationsInput | number
+    employeeOverrideEnabled?: BoolFieldUpdateOperationsInput | boolean
+    maxOverridePercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    overrideRequiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    overrideApprovalThreshold?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    safetyDepositEnabled?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRequiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    branch?: BranchUpdateOneRequiredWithoutChargeConfigNestedInput
+  }
+
+  export type BranchChargeConfigUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    extraKmEnabled?: BoolFieldUpdateOperationsInput | boolean
+    extraTimeEnabled?: BoolFieldUpdateOperationsInput | boolean
+    fuelModuleEnabled?: BoolFieldUpdateOperationsInput | boolean
+    fastagModuleEnabled?: BoolFieldUpdateOperationsInput | boolean
+    gracePolicyEnabled?: BoolFieldUpdateOperationsInput | boolean
+    damageModuleEnabled?: BoolFieldUpdateOperationsInput | boolean
+    graceType?: EnumGraceTypeFieldUpdateOperationsInput | $Enums.GraceType
+    graceMinutes?: IntFieldUpdateOperationsInput | number
+    employeeOverrideEnabled?: BoolFieldUpdateOperationsInput | boolean
+    maxOverridePercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    overrideRequiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    overrideApprovalThreshold?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    safetyDepositEnabled?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRequiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchChargeConfigCreateManyInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    extraKmEnabled?: boolean
+    extraTimeEnabled?: boolean
+    fuelModuleEnabled?: boolean
+    fastagModuleEnabled?: boolean
+    gracePolicyEnabled?: boolean
+    damageModuleEnabled?: boolean
+    graceType?: $Enums.GraceType
+    graceMinutes?: number
+    employeeOverrideEnabled?: boolean
+    maxOverridePercent?: Decimal | DecimalJsLike | number | string | null
+    overrideRequiresApproval?: boolean
+    overrideApprovalThreshold?: Decimal | DecimalJsLike | number | string | null
+    safetyDepositEnabled?: boolean
+    safetyDepositRequiresApproval?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchChargeConfigUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    extraKmEnabled?: BoolFieldUpdateOperationsInput | boolean
+    extraTimeEnabled?: BoolFieldUpdateOperationsInput | boolean
+    fuelModuleEnabled?: BoolFieldUpdateOperationsInput | boolean
+    fastagModuleEnabled?: BoolFieldUpdateOperationsInput | boolean
+    gracePolicyEnabled?: BoolFieldUpdateOperationsInput | boolean
+    damageModuleEnabled?: BoolFieldUpdateOperationsInput | boolean
+    graceType?: EnumGraceTypeFieldUpdateOperationsInput | $Enums.GraceType
+    graceMinutes?: IntFieldUpdateOperationsInput | number
+    employeeOverrideEnabled?: BoolFieldUpdateOperationsInput | boolean
+    maxOverridePercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    overrideRequiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    overrideApprovalThreshold?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    safetyDepositEnabled?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRequiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchChargeConfigUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    extraKmEnabled?: BoolFieldUpdateOperationsInput | boolean
+    extraTimeEnabled?: BoolFieldUpdateOperationsInput | boolean
+    fuelModuleEnabled?: BoolFieldUpdateOperationsInput | boolean
+    fastagModuleEnabled?: BoolFieldUpdateOperationsInput | boolean
+    gracePolicyEnabled?: BoolFieldUpdateOperationsInput | boolean
+    damageModuleEnabled?: BoolFieldUpdateOperationsInput | boolean
+    graceType?: EnumGraceTypeFieldUpdateOperationsInput | $Enums.GraceType
+    graceMinutes?: IntFieldUpdateOperationsInput | number
+    employeeOverrideEnabled?: BoolFieldUpdateOperationsInput | boolean
+    maxOverridePercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    overrideRequiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    overrideApprovalThreshold?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    safetyDepositEnabled?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRequiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ChargeEntryCreateInput = {
+    publicId: string
+    chargeType: $Enums.ChargeType
+    moduleKey: string
+    label: string
+    originalAmount: Decimal | DecimalJsLike | number | string
+    finalAmount: Decimal | DecimalJsLike | number | string
+    quantity?: Decimal | DecimalJsLike | number | string | null
+    unitRate?: Decimal | DecimalJsLike | number | string | null
+    notes?: string | null
+    isOverridden?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutChargeEntriesInput
+    createdBy: UserCreateNestedOneWithoutChargeEntriesCreatedInput
+    override?: ChargeOverrideCreateNestedOneWithoutChargeEntryInput
+  }
+
+  export type ChargeEntryUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    chargeType: $Enums.ChargeType
+    moduleKey: string
+    label: string
+    originalAmount: Decimal | DecimalJsLike | number | string
+    finalAmount: Decimal | DecimalJsLike | number | string
+    quantity?: Decimal | DecimalJsLike | number | string | null
+    unitRate?: Decimal | DecimalJsLike | number | string | null
+    notes?: string | null
+    isOverridden?: boolean
+    createdById: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    override?: ChargeOverrideUncheckedCreateNestedOneWithoutChargeEntryInput
+  }
+
+  export type ChargeEntryUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
+    moduleKey?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    isOverridden?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutChargeEntriesNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutChargeEntriesCreatedNestedInput
+    override?: ChargeOverrideUpdateOneWithoutChargeEntryNestedInput
+  }
+
+  export type ChargeEntryUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
+    moduleKey?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    isOverridden?: BoolFieldUpdateOperationsInput | boolean
+    createdById?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    override?: ChargeOverrideUncheckedUpdateOneWithoutChargeEntryNestedInput
+  }
+
+  export type ChargeEntryCreateManyInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    chargeType: $Enums.ChargeType
+    moduleKey: string
+    label: string
+    originalAmount: Decimal | DecimalJsLike | number | string
+    finalAmount: Decimal | DecimalJsLike | number | string
+    quantity?: Decimal | DecimalJsLike | number | string | null
+    unitRate?: Decimal | DecimalJsLike | number | string | null
+    notes?: string | null
+    isOverridden?: boolean
+    createdById: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ChargeEntryUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
+    moduleKey?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    isOverridden?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ChargeEntryUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
+    moduleKey?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    isOverridden?: BoolFieldUpdateOperationsInput | boolean
+    createdById?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ChargeOverrideCreateInput = {
+    publicId: string
+    originalAmount: Decimal | DecimalJsLike | number | string
+    overriddenAmount: Decimal | DecimalJsLike | number | string
+    waivedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.OverrideStatus
+    actorRole: $Enums.Role
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutChargeOverridesInput
+    chargeEntry: ChargeEntryCreateNestedOneWithoutOverrideInput
+    actor: UserCreateNestedOneWithoutOverridesActedInput
+    approver?: UserCreateNestedOneWithoutOverridesApprovedInput
+  }
+
+  export type ChargeOverrideUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    chargeEntryId: number
+    originalAmount: Decimal | DecimalJsLike | number | string
+    overriddenAmount: Decimal | DecimalJsLike | number | string
+    waivedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.OverrideStatus
+    actorId: number
+    actorRole: $Enums.Role
+    approverId?: number | null
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ChargeOverrideUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    overriddenAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    waivedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumOverrideStatusFieldUpdateOperationsInput | $Enums.OverrideStatus
+    actorRole?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutChargeOverridesNestedInput
+    chargeEntry?: ChargeEntryUpdateOneRequiredWithoutOverrideNestedInput
+    actor?: UserUpdateOneRequiredWithoutOverridesActedNestedInput
+    approver?: UserUpdateOneWithoutOverridesApprovedNestedInput
+  }
+
+  export type ChargeOverrideUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    chargeEntryId?: IntFieldUpdateOperationsInput | number
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    overriddenAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    waivedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumOverrideStatusFieldUpdateOperationsInput | $Enums.OverrideStatus
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorRole?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    approverId?: NullableIntFieldUpdateOperationsInput | number | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ChargeOverrideCreateManyInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    chargeEntryId: number
+    originalAmount: Decimal | DecimalJsLike | number | string
+    overriddenAmount: Decimal | DecimalJsLike | number | string
+    waivedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.OverrideStatus
+    actorId: number
+    actorRole: $Enums.Role
+    approverId?: number | null
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ChargeOverrideUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    overriddenAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    waivedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumOverrideStatusFieldUpdateOperationsInput | $Enums.OverrideStatus
+    actorRole?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ChargeOverrideUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    chargeEntryId?: IntFieldUpdateOperationsInput | number
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    overriddenAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    waivedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumOverrideStatusFieldUpdateOperationsInput | $Enums.OverrideStatus
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorRole?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    approverId?: NullableIntFieldUpdateOperationsInput | number | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type FuelRecordCreateInput = {
+    publicId: string
+    pickupFuelLevel: $Enums.FuelLevel
+    returnFuelLevel?: $Enums.FuelLevel | null
+    fuelDeficit?: boolean
+    fuelDeficitCharge?: Decimal | DecimalJsLike | number | string | null
+    skipReason?: string | null
+    pickupAt: Date | string
+    returnAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutFuelRecordInput
+    capturedByPickup: UserCreateNestedOneWithoutFuelPickupCapturesInput
+    capturedByReturn?: UserCreateNestedOneWithoutFuelReturnCapturesInput
+  }
+
+  export type FuelRecordUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    pickupFuelLevel: $Enums.FuelLevel
+    returnFuelLevel?: $Enums.FuelLevel | null
+    fuelDeficit?: boolean
+    fuelDeficitCharge?: Decimal | DecimalJsLike | number | string | null
+    skipReason?: string | null
+    capturedByPickupId: number
+    capturedByReturnId?: number | null
+    pickupAt: Date | string
+    returnAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type FuelRecordUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    pickupFuelLevel?: EnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel
+    returnFuelLevel?: NullableEnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel | null
+    fuelDeficit?: BoolFieldUpdateOperationsInput | boolean
+    fuelDeficitCharge?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    skipReason?: NullableStringFieldUpdateOperationsInput | string | null
+    pickupAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    returnAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutFuelRecordNestedInput
+    capturedByPickup?: UserUpdateOneRequiredWithoutFuelPickupCapturesNestedInput
+    capturedByReturn?: UserUpdateOneWithoutFuelReturnCapturesNestedInput
+  }
+
+  export type FuelRecordUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    pickupFuelLevel?: EnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel
+    returnFuelLevel?: NullableEnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel | null
+    fuelDeficit?: BoolFieldUpdateOperationsInput | boolean
+    fuelDeficitCharge?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    skipReason?: NullableStringFieldUpdateOperationsInput | string | null
+    capturedByPickupId?: IntFieldUpdateOperationsInput | number
+    capturedByReturnId?: NullableIntFieldUpdateOperationsInput | number | null
+    pickupAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    returnAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type FuelRecordCreateManyInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    pickupFuelLevel: $Enums.FuelLevel
+    returnFuelLevel?: $Enums.FuelLevel | null
+    fuelDeficit?: boolean
+    fuelDeficitCharge?: Decimal | DecimalJsLike | number | string | null
+    skipReason?: string | null
+    capturedByPickupId: number
+    capturedByReturnId?: number | null
+    pickupAt: Date | string
+    returnAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type FuelRecordUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    pickupFuelLevel?: EnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel
+    returnFuelLevel?: NullableEnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel | null
+    fuelDeficit?: BoolFieldUpdateOperationsInput | boolean
+    fuelDeficitCharge?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    skipReason?: NullableStringFieldUpdateOperationsInput | string | null
+    pickupAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    returnAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type FuelRecordUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    pickupFuelLevel?: EnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel
+    returnFuelLevel?: NullableEnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel | null
+    fuelDeficit?: BoolFieldUpdateOperationsInput | boolean
+    fuelDeficitCharge?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    skipReason?: NullableStringFieldUpdateOperationsInput | string | null
+    capturedByPickupId?: IntFieldUpdateOperationsInput | number
+    capturedByReturnId?: NullableIntFieldUpdateOperationsInput | number | null
+    pickupAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    returnAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SafetyDepositRequestCreateInput = {
+    publicId: string
+    requestedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.SafetyDepositStatus
+    approvedAmount?: Decimal | DecimalJsLike | number | string | null
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutSafetyDepositRequestInput
+    requestedBy: UserCreateNestedOneWithoutSafetyDepositRequestsInput
+    approvedBy?: UserCreateNestedOneWithoutSafetyDepositApprovalsInput
+  }
+
+  export type SafetyDepositRequestUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    requestedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.SafetyDepositStatus
+    requestedById: number
+    approvedById?: number | null
+    approvedAmount?: Decimal | DecimalJsLike | number | string | null
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type SafetyDepositRequestUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    requestedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumSafetyDepositStatusFieldUpdateOperationsInput | $Enums.SafetyDepositStatus
+    approvedAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutSafetyDepositRequestNestedInput
+    requestedBy?: UserUpdateOneRequiredWithoutSafetyDepositRequestsNestedInput
+    approvedBy?: UserUpdateOneWithoutSafetyDepositApprovalsNestedInput
+  }
+
+  export type SafetyDepositRequestUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    requestedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumSafetyDepositStatusFieldUpdateOperationsInput | $Enums.SafetyDepositStatus
+    requestedById?: IntFieldUpdateOperationsInput | number
+    approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    approvedAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SafetyDepositRequestCreateManyInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    requestedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.SafetyDepositStatus
+    requestedById: number
+    approvedById?: number | null
+    approvedAmount?: Decimal | DecimalJsLike | number | string | null
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type SafetyDepositRequestUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    requestedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumSafetyDepositStatusFieldUpdateOperationsInput | $Enums.SafetyDepositStatus
+    approvedAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SafetyDepositRequestUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    requestedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumSafetyDepositStatusFieldUpdateOperationsInput | $Enums.SafetyDepositStatus
+    requestedById?: IntFieldUpdateOperationsInput | number
+    approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    approvedAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type IntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -75052,6 +83290,30 @@ export namespace Prisma {
     none?: BookingExtensionWhereInput
   }
 
+  export type ChargeEntryListRelationFilter = {
+    every?: ChargeEntryWhereInput
+    some?: ChargeEntryWhereInput
+    none?: ChargeEntryWhereInput
+  }
+
+  export type ChargeOverrideListRelationFilter = {
+    every?: ChargeOverrideWhereInput
+    some?: ChargeOverrideWhereInput
+    none?: ChargeOverrideWhereInput
+  }
+
+  export type FuelRecordListRelationFilter = {
+    every?: FuelRecordWhereInput
+    some?: FuelRecordWhereInput
+    none?: FuelRecordWhereInput
+  }
+
+  export type SafetyDepositRequestListRelationFilter = {
+    every?: SafetyDepositRequestWhereInput
+    some?: SafetyDepositRequestWhereInput
+    none?: SafetyDepositRequestWhereInput
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -75102,6 +83364,22 @@ export namespace Prisma {
   }
 
   export type BookingExtensionOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type ChargeEntryOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type ChargeOverrideOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type FuelRecordOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type SafetyDepositRequestOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -75704,6 +83982,11 @@ export namespace Prisma {
     isNot?: BranchPaymentConfigWhereInput | null
   }
 
+  export type BranchChargeConfigNullableRelationFilter = {
+    is?: BranchChargeConfigWhereInput | null
+    isNot?: BranchChargeConfigWhereInput | null
+  }
+
   export type UserOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -76213,6 +84496,8 @@ export namespace Prisma {
     advancePayAmount?: SortOrder
     insuranceExpiry?: SortOrder
     status?: SortOrder
+    fastagNumber?: SortOrder
+    hasFastag?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -76240,6 +84525,8 @@ export namespace Prisma {
     advancePayAmount?: SortOrder
     insuranceExpiry?: SortOrder
     status?: SortOrder
+    fastagNumber?: SortOrder
+    hasFastag?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -76258,6 +84545,8 @@ export namespace Prisma {
     advancePayAmount?: SortOrder
     insuranceExpiry?: SortOrder
     status?: SortOrder
+    fastagNumber?: SortOrder
+    hasFastag?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -76847,6 +85136,16 @@ export namespace Prisma {
     isNot?: BookingExtensionWhereInput | null
   }
 
+  export type FuelRecordNullableRelationFilter = {
+    is?: FuelRecordWhereInput | null
+    isNot?: FuelRecordWhereInput | null
+  }
+
+  export type SafetyDepositRequestNullableRelationFilter = {
+    is?: SafetyDepositRequestWhereInput | null
+    isNot?: SafetyDepositRequestWhereInput | null
+  }
+
   export type BookingCountOrderByAggregateInput = {
     id?: SortOrder
     publicId?: SortOrder
@@ -76903,6 +85202,8 @@ export namespace Prisma {
     activeExtensionId?: SortOrder
     displacedByExtensionId?: SortOrder
     extensionDisplacedAt?: SortOrder
+    frozenChargeConfig?: SortOrder
+    chargeConfigVersion?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -76934,6 +85235,7 @@ export namespace Prisma {
     extensionCount?: SortOrder
     activeExtensionId?: SortOrder
     displacedByExtensionId?: SortOrder
+    chargeConfigVersion?: SortOrder
   }
 
   export type BookingMaxOrderByAggregateInput = {
@@ -76991,6 +85293,7 @@ export namespace Prisma {
     activeExtensionId?: SortOrder
     displacedByExtensionId?: SortOrder
     extensionDisplacedAt?: SortOrder
+    chargeConfigVersion?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -77051,6 +85354,7 @@ export namespace Prisma {
     activeExtensionId?: SortOrder
     displacedByExtensionId?: SortOrder
     extensionDisplacedAt?: SortOrder
+    chargeConfigVersion?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -77082,6 +85386,7 @@ export namespace Prisma {
     extensionCount?: SortOrder
     activeExtensionId?: SortOrder
     displacedByExtensionId?: SortOrder
+    chargeConfigVersion?: SortOrder
   }
 
   export type EnumRentalPeriodTypeNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -77662,6 +85967,8 @@ export namespace Prisma {
     invoiceId?: SortOrder
     label?: SortOrder
     amount?: SortOrder
+    isTaxable?: SortOrder
+    chargeType?: SortOrder
   }
 
   export type InvoiceItemAvgOrderByAggregateInput = {
@@ -77676,6 +85983,8 @@ export namespace Prisma {
     invoiceId?: SortOrder
     label?: SortOrder
     amount?: SortOrder
+    isTaxable?: SortOrder
+    chargeType?: SortOrder
   }
 
   export type InvoiceItemMinOrderByAggregateInput = {
@@ -77684,6 +85993,8 @@ export namespace Prisma {
     invoiceId?: SortOrder
     label?: SortOrder
     amount?: SortOrder
+    isTaxable?: SortOrder
+    chargeType?: SortOrder
   }
 
   export type InvoiceItemSumOrderByAggregateInput = {
@@ -79459,6 +87770,497 @@ export namespace Prisma {
     _max?: NestedEnumExtensionResolutionTypeNullableFilter<$PrismaModel>
   }
 
+  export type EnumGraceTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.GraceType | EnumGraceTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.GraceType[] | ListEnumGraceTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.GraceType[] | ListEnumGraceTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumGraceTypeFilter<$PrismaModel> | $Enums.GraceType
+  }
+
+  export type BranchChargeConfigCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    branchId?: SortOrder
+    extraKmEnabled?: SortOrder
+    extraTimeEnabled?: SortOrder
+    fuelModuleEnabled?: SortOrder
+    fastagModuleEnabled?: SortOrder
+    gracePolicyEnabled?: SortOrder
+    damageModuleEnabled?: SortOrder
+    graceType?: SortOrder
+    graceMinutes?: SortOrder
+    employeeOverrideEnabled?: SortOrder
+    maxOverridePercent?: SortOrder
+    overrideRequiresApproval?: SortOrder
+    overrideApprovalThreshold?: SortOrder
+    safetyDepositEnabled?: SortOrder
+    safetyDepositRequiresApproval?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BranchChargeConfigAvgOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    graceMinutes?: SortOrder
+    maxOverridePercent?: SortOrder
+    overrideApprovalThreshold?: SortOrder
+  }
+
+  export type BranchChargeConfigMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    branchId?: SortOrder
+    extraKmEnabled?: SortOrder
+    extraTimeEnabled?: SortOrder
+    fuelModuleEnabled?: SortOrder
+    fastagModuleEnabled?: SortOrder
+    gracePolicyEnabled?: SortOrder
+    damageModuleEnabled?: SortOrder
+    graceType?: SortOrder
+    graceMinutes?: SortOrder
+    employeeOverrideEnabled?: SortOrder
+    maxOverridePercent?: SortOrder
+    overrideRequiresApproval?: SortOrder
+    overrideApprovalThreshold?: SortOrder
+    safetyDepositEnabled?: SortOrder
+    safetyDepositRequiresApproval?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BranchChargeConfigMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    branchId?: SortOrder
+    extraKmEnabled?: SortOrder
+    extraTimeEnabled?: SortOrder
+    fuelModuleEnabled?: SortOrder
+    fastagModuleEnabled?: SortOrder
+    gracePolicyEnabled?: SortOrder
+    damageModuleEnabled?: SortOrder
+    graceType?: SortOrder
+    graceMinutes?: SortOrder
+    employeeOverrideEnabled?: SortOrder
+    maxOverridePercent?: SortOrder
+    overrideRequiresApproval?: SortOrder
+    overrideApprovalThreshold?: SortOrder
+    safetyDepositEnabled?: SortOrder
+    safetyDepositRequiresApproval?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BranchChargeConfigSumOrderByAggregateInput = {
+    id?: SortOrder
+    branchId?: SortOrder
+    graceMinutes?: SortOrder
+    maxOverridePercent?: SortOrder
+    overrideApprovalThreshold?: SortOrder
+  }
+
+  export type EnumGraceTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.GraceType | EnumGraceTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.GraceType[] | ListEnumGraceTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.GraceType[] | ListEnumGraceTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumGraceTypeWithAggregatesFilter<$PrismaModel> | $Enums.GraceType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumGraceTypeFilter<$PrismaModel>
+    _max?: NestedEnumGraceTypeFilter<$PrismaModel>
+  }
+
+  export type EnumChargeTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.ChargeType | EnumChargeTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumChargeTypeFilter<$PrismaModel> | $Enums.ChargeType
+  }
+
+  export type ChargeOverrideNullableRelationFilter = {
+    is?: ChargeOverrideWhereInput | null
+    isNot?: ChargeOverrideWhereInput | null
+  }
+
+  export type ChargeEntryBookingIdModuleKeyCompoundUniqueInput = {
+    bookingId: number
+    moduleKey: string
+  }
+
+  export type ChargeEntryCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    chargeType?: SortOrder
+    moduleKey?: SortOrder
+    label?: SortOrder
+    originalAmount?: SortOrder
+    finalAmount?: SortOrder
+    quantity?: SortOrder
+    unitRate?: SortOrder
+    notes?: SortOrder
+    isOverridden?: SortOrder
+    createdById?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ChargeEntryAvgOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    originalAmount?: SortOrder
+    finalAmount?: SortOrder
+    quantity?: SortOrder
+    unitRate?: SortOrder
+    createdById?: SortOrder
+  }
+
+  export type ChargeEntryMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    chargeType?: SortOrder
+    moduleKey?: SortOrder
+    label?: SortOrder
+    originalAmount?: SortOrder
+    finalAmount?: SortOrder
+    quantity?: SortOrder
+    unitRate?: SortOrder
+    notes?: SortOrder
+    isOverridden?: SortOrder
+    createdById?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ChargeEntryMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    chargeType?: SortOrder
+    moduleKey?: SortOrder
+    label?: SortOrder
+    originalAmount?: SortOrder
+    finalAmount?: SortOrder
+    quantity?: SortOrder
+    unitRate?: SortOrder
+    notes?: SortOrder
+    isOverridden?: SortOrder
+    createdById?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ChargeEntrySumOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    originalAmount?: SortOrder
+    finalAmount?: SortOrder
+    quantity?: SortOrder
+    unitRate?: SortOrder
+    createdById?: SortOrder
+  }
+
+  export type EnumChargeTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.ChargeType | EnumChargeTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumChargeTypeWithAggregatesFilter<$PrismaModel> | $Enums.ChargeType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumChargeTypeFilter<$PrismaModel>
+    _max?: NestedEnumChargeTypeFilter<$PrismaModel>
+  }
+
+  export type EnumOverrideStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.OverrideStatus | EnumOverrideStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.OverrideStatus[] | ListEnumOverrideStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.OverrideStatus[] | ListEnumOverrideStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumOverrideStatusFilter<$PrismaModel> | $Enums.OverrideStatus
+  }
+
+  export type ChargeEntryRelationFilter = {
+    is?: ChargeEntryWhereInput
+    isNot?: ChargeEntryWhereInput
+  }
+
+  export type ChargeOverrideCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    chargeEntryId?: SortOrder
+    originalAmount?: SortOrder
+    overriddenAmount?: SortOrder
+    waivedAmount?: SortOrder
+    reason?: SortOrder
+    status?: SortOrder
+    actorId?: SortOrder
+    actorRole?: SortOrder
+    approverId?: SortOrder
+    approvedAt?: SortOrder
+    rejectedAt?: SortOrder
+    rejectionReason?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ChargeOverrideAvgOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    chargeEntryId?: SortOrder
+    originalAmount?: SortOrder
+    overriddenAmount?: SortOrder
+    waivedAmount?: SortOrder
+    actorId?: SortOrder
+    approverId?: SortOrder
+  }
+
+  export type ChargeOverrideMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    chargeEntryId?: SortOrder
+    originalAmount?: SortOrder
+    overriddenAmount?: SortOrder
+    waivedAmount?: SortOrder
+    reason?: SortOrder
+    status?: SortOrder
+    actorId?: SortOrder
+    actorRole?: SortOrder
+    approverId?: SortOrder
+    approvedAt?: SortOrder
+    rejectedAt?: SortOrder
+    rejectionReason?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ChargeOverrideMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    chargeEntryId?: SortOrder
+    originalAmount?: SortOrder
+    overriddenAmount?: SortOrder
+    waivedAmount?: SortOrder
+    reason?: SortOrder
+    status?: SortOrder
+    actorId?: SortOrder
+    actorRole?: SortOrder
+    approverId?: SortOrder
+    approvedAt?: SortOrder
+    rejectedAt?: SortOrder
+    rejectionReason?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ChargeOverrideSumOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    chargeEntryId?: SortOrder
+    originalAmount?: SortOrder
+    overriddenAmount?: SortOrder
+    waivedAmount?: SortOrder
+    actorId?: SortOrder
+    approverId?: SortOrder
+  }
+
+  export type EnumOverrideStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.OverrideStatus | EnumOverrideStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.OverrideStatus[] | ListEnumOverrideStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.OverrideStatus[] | ListEnumOverrideStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumOverrideStatusWithAggregatesFilter<$PrismaModel> | $Enums.OverrideStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumOverrideStatusFilter<$PrismaModel>
+    _max?: NestedEnumOverrideStatusFilter<$PrismaModel>
+  }
+
+  export type EnumFuelLevelFilter<$PrismaModel = never> = {
+    equals?: $Enums.FuelLevel | EnumFuelLevelFieldRefInput<$PrismaModel>
+    in?: $Enums.FuelLevel[] | ListEnumFuelLevelFieldRefInput<$PrismaModel>
+    notIn?: $Enums.FuelLevel[] | ListEnumFuelLevelFieldRefInput<$PrismaModel>
+    not?: NestedEnumFuelLevelFilter<$PrismaModel> | $Enums.FuelLevel
+  }
+
+  export type EnumFuelLevelNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.FuelLevel | EnumFuelLevelFieldRefInput<$PrismaModel> | null
+    in?: $Enums.FuelLevel[] | ListEnumFuelLevelFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.FuelLevel[] | ListEnumFuelLevelFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumFuelLevelNullableFilter<$PrismaModel> | $Enums.FuelLevel | null
+  }
+
+  export type FuelRecordCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    pickupFuelLevel?: SortOrder
+    returnFuelLevel?: SortOrder
+    fuelDeficit?: SortOrder
+    fuelDeficitCharge?: SortOrder
+    skipReason?: SortOrder
+    capturedByPickupId?: SortOrder
+    capturedByReturnId?: SortOrder
+    pickupAt?: SortOrder
+    returnAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type FuelRecordAvgOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    fuelDeficitCharge?: SortOrder
+    capturedByPickupId?: SortOrder
+    capturedByReturnId?: SortOrder
+  }
+
+  export type FuelRecordMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    pickupFuelLevel?: SortOrder
+    returnFuelLevel?: SortOrder
+    fuelDeficit?: SortOrder
+    fuelDeficitCharge?: SortOrder
+    skipReason?: SortOrder
+    capturedByPickupId?: SortOrder
+    capturedByReturnId?: SortOrder
+    pickupAt?: SortOrder
+    returnAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type FuelRecordMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    pickupFuelLevel?: SortOrder
+    returnFuelLevel?: SortOrder
+    fuelDeficit?: SortOrder
+    fuelDeficitCharge?: SortOrder
+    skipReason?: SortOrder
+    capturedByPickupId?: SortOrder
+    capturedByReturnId?: SortOrder
+    pickupAt?: SortOrder
+    returnAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type FuelRecordSumOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    fuelDeficitCharge?: SortOrder
+    capturedByPickupId?: SortOrder
+    capturedByReturnId?: SortOrder
+  }
+
+  export type EnumFuelLevelWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.FuelLevel | EnumFuelLevelFieldRefInput<$PrismaModel>
+    in?: $Enums.FuelLevel[] | ListEnumFuelLevelFieldRefInput<$PrismaModel>
+    notIn?: $Enums.FuelLevel[] | ListEnumFuelLevelFieldRefInput<$PrismaModel>
+    not?: NestedEnumFuelLevelWithAggregatesFilter<$PrismaModel> | $Enums.FuelLevel
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumFuelLevelFilter<$PrismaModel>
+    _max?: NestedEnumFuelLevelFilter<$PrismaModel>
+  }
+
+  export type EnumFuelLevelNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.FuelLevel | EnumFuelLevelFieldRefInput<$PrismaModel> | null
+    in?: $Enums.FuelLevel[] | ListEnumFuelLevelFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.FuelLevel[] | ListEnumFuelLevelFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumFuelLevelNullableWithAggregatesFilter<$PrismaModel> | $Enums.FuelLevel | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumFuelLevelNullableFilter<$PrismaModel>
+    _max?: NestedEnumFuelLevelNullableFilter<$PrismaModel>
+  }
+
+  export type EnumSafetyDepositStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.SafetyDepositStatus | EnumSafetyDepositStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.SafetyDepositStatus[] | ListEnumSafetyDepositStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.SafetyDepositStatus[] | ListEnumSafetyDepositStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumSafetyDepositStatusFilter<$PrismaModel> | $Enums.SafetyDepositStatus
+  }
+
+  export type SafetyDepositRequestCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    requestedAmount?: SortOrder
+    reason?: SortOrder
+    status?: SortOrder
+    requestedById?: SortOrder
+    approvedById?: SortOrder
+    approvedAmount?: SortOrder
+    approvedAt?: SortOrder
+    rejectedAt?: SortOrder
+    rejectionReason?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SafetyDepositRequestAvgOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    requestedAmount?: SortOrder
+    requestedById?: SortOrder
+    approvedById?: SortOrder
+    approvedAmount?: SortOrder
+  }
+
+  export type SafetyDepositRequestMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    requestedAmount?: SortOrder
+    reason?: SortOrder
+    status?: SortOrder
+    requestedById?: SortOrder
+    approvedById?: SortOrder
+    approvedAmount?: SortOrder
+    approvedAt?: SortOrder
+    rejectedAt?: SortOrder
+    rejectionReason?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SafetyDepositRequestMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    requestedAmount?: SortOrder
+    reason?: SortOrder
+    status?: SortOrder
+    requestedById?: SortOrder
+    approvedById?: SortOrder
+    approvedAmount?: SortOrder
+    approvedAt?: SortOrder
+    rejectedAt?: SortOrder
+    rejectionReason?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SafetyDepositRequestSumOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    requestedAmount?: SortOrder
+    requestedById?: SortOrder
+    approvedById?: SortOrder
+    approvedAmount?: SortOrder
+  }
+
+  export type EnumSafetyDepositStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.SafetyDepositStatus | EnumSafetyDepositStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.SafetyDepositStatus[] | ListEnumSafetyDepositStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.SafetyDepositStatus[] | ListEnumSafetyDepositStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumSafetyDepositStatusWithAggregatesFilter<$PrismaModel> | $Enums.SafetyDepositStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumSafetyDepositStatusFilter<$PrismaModel>
+    _max?: NestedEnumSafetyDepositStatusFilter<$PrismaModel>
+  }
+
   export type BranchCreateNestedOneWithoutUsersInput = {
     create?: XOR<BranchCreateWithoutUsersInput, BranchUncheckedCreateWithoutUsersInput>
     connectOrCreate?: BranchCreateOrConnectWithoutUsersInput
@@ -79604,6 +88406,55 @@ export namespace Prisma {
     connect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
   }
 
+  export type ChargeEntryCreateNestedManyWithoutCreatedByInput = {
+    create?: XOR<ChargeEntryCreateWithoutCreatedByInput, ChargeEntryUncheckedCreateWithoutCreatedByInput> | ChargeEntryCreateWithoutCreatedByInput[] | ChargeEntryUncheckedCreateWithoutCreatedByInput[]
+    connectOrCreate?: ChargeEntryCreateOrConnectWithoutCreatedByInput | ChargeEntryCreateOrConnectWithoutCreatedByInput[]
+    createMany?: ChargeEntryCreateManyCreatedByInputEnvelope
+    connect?: ChargeEntryWhereUniqueInput | ChargeEntryWhereUniqueInput[]
+  }
+
+  export type ChargeOverrideCreateNestedManyWithoutActorInput = {
+    create?: XOR<ChargeOverrideCreateWithoutActorInput, ChargeOverrideUncheckedCreateWithoutActorInput> | ChargeOverrideCreateWithoutActorInput[] | ChargeOverrideUncheckedCreateWithoutActorInput[]
+    connectOrCreate?: ChargeOverrideCreateOrConnectWithoutActorInput | ChargeOverrideCreateOrConnectWithoutActorInput[]
+    createMany?: ChargeOverrideCreateManyActorInputEnvelope
+    connect?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+  }
+
+  export type ChargeOverrideCreateNestedManyWithoutApproverInput = {
+    create?: XOR<ChargeOverrideCreateWithoutApproverInput, ChargeOverrideUncheckedCreateWithoutApproverInput> | ChargeOverrideCreateWithoutApproverInput[] | ChargeOverrideUncheckedCreateWithoutApproverInput[]
+    connectOrCreate?: ChargeOverrideCreateOrConnectWithoutApproverInput | ChargeOverrideCreateOrConnectWithoutApproverInput[]
+    createMany?: ChargeOverrideCreateManyApproverInputEnvelope
+    connect?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+  }
+
+  export type FuelRecordCreateNestedManyWithoutCapturedByPickupInput = {
+    create?: XOR<FuelRecordCreateWithoutCapturedByPickupInput, FuelRecordUncheckedCreateWithoutCapturedByPickupInput> | FuelRecordCreateWithoutCapturedByPickupInput[] | FuelRecordUncheckedCreateWithoutCapturedByPickupInput[]
+    connectOrCreate?: FuelRecordCreateOrConnectWithoutCapturedByPickupInput | FuelRecordCreateOrConnectWithoutCapturedByPickupInput[]
+    createMany?: FuelRecordCreateManyCapturedByPickupInputEnvelope
+    connect?: FuelRecordWhereUniqueInput | FuelRecordWhereUniqueInput[]
+  }
+
+  export type FuelRecordCreateNestedManyWithoutCapturedByReturnInput = {
+    create?: XOR<FuelRecordCreateWithoutCapturedByReturnInput, FuelRecordUncheckedCreateWithoutCapturedByReturnInput> | FuelRecordCreateWithoutCapturedByReturnInput[] | FuelRecordUncheckedCreateWithoutCapturedByReturnInput[]
+    connectOrCreate?: FuelRecordCreateOrConnectWithoutCapturedByReturnInput | FuelRecordCreateOrConnectWithoutCapturedByReturnInput[]
+    createMany?: FuelRecordCreateManyCapturedByReturnInputEnvelope
+    connect?: FuelRecordWhereUniqueInput | FuelRecordWhereUniqueInput[]
+  }
+
+  export type SafetyDepositRequestCreateNestedManyWithoutRequestedByInput = {
+    create?: XOR<SafetyDepositRequestCreateWithoutRequestedByInput, SafetyDepositRequestUncheckedCreateWithoutRequestedByInput> | SafetyDepositRequestCreateWithoutRequestedByInput[] | SafetyDepositRequestUncheckedCreateWithoutRequestedByInput[]
+    connectOrCreate?: SafetyDepositRequestCreateOrConnectWithoutRequestedByInput | SafetyDepositRequestCreateOrConnectWithoutRequestedByInput[]
+    createMany?: SafetyDepositRequestCreateManyRequestedByInputEnvelope
+    connect?: SafetyDepositRequestWhereUniqueInput | SafetyDepositRequestWhereUniqueInput[]
+  }
+
+  export type SafetyDepositRequestCreateNestedManyWithoutApprovedByInput = {
+    create?: XOR<SafetyDepositRequestCreateWithoutApprovedByInput, SafetyDepositRequestUncheckedCreateWithoutApprovedByInput> | SafetyDepositRequestCreateWithoutApprovedByInput[] | SafetyDepositRequestUncheckedCreateWithoutApprovedByInput[]
+    connectOrCreate?: SafetyDepositRequestCreateOrConnectWithoutApprovedByInput | SafetyDepositRequestCreateOrConnectWithoutApprovedByInput[]
+    createMany?: SafetyDepositRequestCreateManyApprovedByInputEnvelope
+    connect?: SafetyDepositRequestWhereUniqueInput | SafetyDepositRequestWhereUniqueInput[]
+  }
+
   export type EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput = {
     create?: XOR<EmailVerificationOtpCreateWithoutUserInput, EmailVerificationOtpUncheckedCreateWithoutUserInput> | EmailVerificationOtpCreateWithoutUserInput[] | EmailVerificationOtpUncheckedCreateWithoutUserInput[]
     connectOrCreate?: EmailVerificationOtpCreateOrConnectWithoutUserInput | EmailVerificationOtpCreateOrConnectWithoutUserInput[]
@@ -79741,6 +88592,55 @@ export namespace Prisma {
     connectOrCreate?: BookingExtensionCreateOrConnectWithoutActorInput | BookingExtensionCreateOrConnectWithoutActorInput[]
     createMany?: BookingExtensionCreateManyActorInputEnvelope
     connect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+  }
+
+  export type ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput = {
+    create?: XOR<ChargeEntryCreateWithoutCreatedByInput, ChargeEntryUncheckedCreateWithoutCreatedByInput> | ChargeEntryCreateWithoutCreatedByInput[] | ChargeEntryUncheckedCreateWithoutCreatedByInput[]
+    connectOrCreate?: ChargeEntryCreateOrConnectWithoutCreatedByInput | ChargeEntryCreateOrConnectWithoutCreatedByInput[]
+    createMany?: ChargeEntryCreateManyCreatedByInputEnvelope
+    connect?: ChargeEntryWhereUniqueInput | ChargeEntryWhereUniqueInput[]
+  }
+
+  export type ChargeOverrideUncheckedCreateNestedManyWithoutActorInput = {
+    create?: XOR<ChargeOverrideCreateWithoutActorInput, ChargeOverrideUncheckedCreateWithoutActorInput> | ChargeOverrideCreateWithoutActorInput[] | ChargeOverrideUncheckedCreateWithoutActorInput[]
+    connectOrCreate?: ChargeOverrideCreateOrConnectWithoutActorInput | ChargeOverrideCreateOrConnectWithoutActorInput[]
+    createMany?: ChargeOverrideCreateManyActorInputEnvelope
+    connect?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+  }
+
+  export type ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput = {
+    create?: XOR<ChargeOverrideCreateWithoutApproverInput, ChargeOverrideUncheckedCreateWithoutApproverInput> | ChargeOverrideCreateWithoutApproverInput[] | ChargeOverrideUncheckedCreateWithoutApproverInput[]
+    connectOrCreate?: ChargeOverrideCreateOrConnectWithoutApproverInput | ChargeOverrideCreateOrConnectWithoutApproverInput[]
+    createMany?: ChargeOverrideCreateManyApproverInputEnvelope
+    connect?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+  }
+
+  export type FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput = {
+    create?: XOR<FuelRecordCreateWithoutCapturedByPickupInput, FuelRecordUncheckedCreateWithoutCapturedByPickupInput> | FuelRecordCreateWithoutCapturedByPickupInput[] | FuelRecordUncheckedCreateWithoutCapturedByPickupInput[]
+    connectOrCreate?: FuelRecordCreateOrConnectWithoutCapturedByPickupInput | FuelRecordCreateOrConnectWithoutCapturedByPickupInput[]
+    createMany?: FuelRecordCreateManyCapturedByPickupInputEnvelope
+    connect?: FuelRecordWhereUniqueInput | FuelRecordWhereUniqueInput[]
+  }
+
+  export type FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput = {
+    create?: XOR<FuelRecordCreateWithoutCapturedByReturnInput, FuelRecordUncheckedCreateWithoutCapturedByReturnInput> | FuelRecordCreateWithoutCapturedByReturnInput[] | FuelRecordUncheckedCreateWithoutCapturedByReturnInput[]
+    connectOrCreate?: FuelRecordCreateOrConnectWithoutCapturedByReturnInput | FuelRecordCreateOrConnectWithoutCapturedByReturnInput[]
+    createMany?: FuelRecordCreateManyCapturedByReturnInputEnvelope
+    connect?: FuelRecordWhereUniqueInput | FuelRecordWhereUniqueInput[]
+  }
+
+  export type SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput = {
+    create?: XOR<SafetyDepositRequestCreateWithoutRequestedByInput, SafetyDepositRequestUncheckedCreateWithoutRequestedByInput> | SafetyDepositRequestCreateWithoutRequestedByInput[] | SafetyDepositRequestUncheckedCreateWithoutRequestedByInput[]
+    connectOrCreate?: SafetyDepositRequestCreateOrConnectWithoutRequestedByInput | SafetyDepositRequestCreateOrConnectWithoutRequestedByInput[]
+    createMany?: SafetyDepositRequestCreateManyRequestedByInputEnvelope
+    connect?: SafetyDepositRequestWhereUniqueInput | SafetyDepositRequestWhereUniqueInput[]
+  }
+
+  export type SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput = {
+    create?: XOR<SafetyDepositRequestCreateWithoutApprovedByInput, SafetyDepositRequestUncheckedCreateWithoutApprovedByInput> | SafetyDepositRequestCreateWithoutApprovedByInput[] | SafetyDepositRequestUncheckedCreateWithoutApprovedByInput[]
+    connectOrCreate?: SafetyDepositRequestCreateOrConnectWithoutApprovedByInput | SafetyDepositRequestCreateOrConnectWithoutApprovedByInput[]
+    createMany?: SafetyDepositRequestCreateManyApprovedByInputEnvelope
+    connect?: SafetyDepositRequestWhereUniqueInput | SafetyDepositRequestWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -80053,6 +88953,104 @@ export namespace Prisma {
     deleteMany?: BookingExtensionScalarWhereInput | BookingExtensionScalarWhereInput[]
   }
 
+  export type ChargeEntryUpdateManyWithoutCreatedByNestedInput = {
+    create?: XOR<ChargeEntryCreateWithoutCreatedByInput, ChargeEntryUncheckedCreateWithoutCreatedByInput> | ChargeEntryCreateWithoutCreatedByInput[] | ChargeEntryUncheckedCreateWithoutCreatedByInput[]
+    connectOrCreate?: ChargeEntryCreateOrConnectWithoutCreatedByInput | ChargeEntryCreateOrConnectWithoutCreatedByInput[]
+    upsert?: ChargeEntryUpsertWithWhereUniqueWithoutCreatedByInput | ChargeEntryUpsertWithWhereUniqueWithoutCreatedByInput[]
+    createMany?: ChargeEntryCreateManyCreatedByInputEnvelope
+    set?: ChargeEntryWhereUniqueInput | ChargeEntryWhereUniqueInput[]
+    disconnect?: ChargeEntryWhereUniqueInput | ChargeEntryWhereUniqueInput[]
+    delete?: ChargeEntryWhereUniqueInput | ChargeEntryWhereUniqueInput[]
+    connect?: ChargeEntryWhereUniqueInput | ChargeEntryWhereUniqueInput[]
+    update?: ChargeEntryUpdateWithWhereUniqueWithoutCreatedByInput | ChargeEntryUpdateWithWhereUniqueWithoutCreatedByInput[]
+    updateMany?: ChargeEntryUpdateManyWithWhereWithoutCreatedByInput | ChargeEntryUpdateManyWithWhereWithoutCreatedByInput[]
+    deleteMany?: ChargeEntryScalarWhereInput | ChargeEntryScalarWhereInput[]
+  }
+
+  export type ChargeOverrideUpdateManyWithoutActorNestedInput = {
+    create?: XOR<ChargeOverrideCreateWithoutActorInput, ChargeOverrideUncheckedCreateWithoutActorInput> | ChargeOverrideCreateWithoutActorInput[] | ChargeOverrideUncheckedCreateWithoutActorInput[]
+    connectOrCreate?: ChargeOverrideCreateOrConnectWithoutActorInput | ChargeOverrideCreateOrConnectWithoutActorInput[]
+    upsert?: ChargeOverrideUpsertWithWhereUniqueWithoutActorInput | ChargeOverrideUpsertWithWhereUniqueWithoutActorInput[]
+    createMany?: ChargeOverrideCreateManyActorInputEnvelope
+    set?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    disconnect?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    delete?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    connect?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    update?: ChargeOverrideUpdateWithWhereUniqueWithoutActorInput | ChargeOverrideUpdateWithWhereUniqueWithoutActorInput[]
+    updateMany?: ChargeOverrideUpdateManyWithWhereWithoutActorInput | ChargeOverrideUpdateManyWithWhereWithoutActorInput[]
+    deleteMany?: ChargeOverrideScalarWhereInput | ChargeOverrideScalarWhereInput[]
+  }
+
+  export type ChargeOverrideUpdateManyWithoutApproverNestedInput = {
+    create?: XOR<ChargeOverrideCreateWithoutApproverInput, ChargeOverrideUncheckedCreateWithoutApproverInput> | ChargeOverrideCreateWithoutApproverInput[] | ChargeOverrideUncheckedCreateWithoutApproverInput[]
+    connectOrCreate?: ChargeOverrideCreateOrConnectWithoutApproverInput | ChargeOverrideCreateOrConnectWithoutApproverInput[]
+    upsert?: ChargeOverrideUpsertWithWhereUniqueWithoutApproverInput | ChargeOverrideUpsertWithWhereUniqueWithoutApproverInput[]
+    createMany?: ChargeOverrideCreateManyApproverInputEnvelope
+    set?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    disconnect?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    delete?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    connect?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    update?: ChargeOverrideUpdateWithWhereUniqueWithoutApproverInput | ChargeOverrideUpdateWithWhereUniqueWithoutApproverInput[]
+    updateMany?: ChargeOverrideUpdateManyWithWhereWithoutApproverInput | ChargeOverrideUpdateManyWithWhereWithoutApproverInput[]
+    deleteMany?: ChargeOverrideScalarWhereInput | ChargeOverrideScalarWhereInput[]
+  }
+
+  export type FuelRecordUpdateManyWithoutCapturedByPickupNestedInput = {
+    create?: XOR<FuelRecordCreateWithoutCapturedByPickupInput, FuelRecordUncheckedCreateWithoutCapturedByPickupInput> | FuelRecordCreateWithoutCapturedByPickupInput[] | FuelRecordUncheckedCreateWithoutCapturedByPickupInput[]
+    connectOrCreate?: FuelRecordCreateOrConnectWithoutCapturedByPickupInput | FuelRecordCreateOrConnectWithoutCapturedByPickupInput[]
+    upsert?: FuelRecordUpsertWithWhereUniqueWithoutCapturedByPickupInput | FuelRecordUpsertWithWhereUniqueWithoutCapturedByPickupInput[]
+    createMany?: FuelRecordCreateManyCapturedByPickupInputEnvelope
+    set?: FuelRecordWhereUniqueInput | FuelRecordWhereUniqueInput[]
+    disconnect?: FuelRecordWhereUniqueInput | FuelRecordWhereUniqueInput[]
+    delete?: FuelRecordWhereUniqueInput | FuelRecordWhereUniqueInput[]
+    connect?: FuelRecordWhereUniqueInput | FuelRecordWhereUniqueInput[]
+    update?: FuelRecordUpdateWithWhereUniqueWithoutCapturedByPickupInput | FuelRecordUpdateWithWhereUniqueWithoutCapturedByPickupInput[]
+    updateMany?: FuelRecordUpdateManyWithWhereWithoutCapturedByPickupInput | FuelRecordUpdateManyWithWhereWithoutCapturedByPickupInput[]
+    deleteMany?: FuelRecordScalarWhereInput | FuelRecordScalarWhereInput[]
+  }
+
+  export type FuelRecordUpdateManyWithoutCapturedByReturnNestedInput = {
+    create?: XOR<FuelRecordCreateWithoutCapturedByReturnInput, FuelRecordUncheckedCreateWithoutCapturedByReturnInput> | FuelRecordCreateWithoutCapturedByReturnInput[] | FuelRecordUncheckedCreateWithoutCapturedByReturnInput[]
+    connectOrCreate?: FuelRecordCreateOrConnectWithoutCapturedByReturnInput | FuelRecordCreateOrConnectWithoutCapturedByReturnInput[]
+    upsert?: FuelRecordUpsertWithWhereUniqueWithoutCapturedByReturnInput | FuelRecordUpsertWithWhereUniqueWithoutCapturedByReturnInput[]
+    createMany?: FuelRecordCreateManyCapturedByReturnInputEnvelope
+    set?: FuelRecordWhereUniqueInput | FuelRecordWhereUniqueInput[]
+    disconnect?: FuelRecordWhereUniqueInput | FuelRecordWhereUniqueInput[]
+    delete?: FuelRecordWhereUniqueInput | FuelRecordWhereUniqueInput[]
+    connect?: FuelRecordWhereUniqueInput | FuelRecordWhereUniqueInput[]
+    update?: FuelRecordUpdateWithWhereUniqueWithoutCapturedByReturnInput | FuelRecordUpdateWithWhereUniqueWithoutCapturedByReturnInput[]
+    updateMany?: FuelRecordUpdateManyWithWhereWithoutCapturedByReturnInput | FuelRecordUpdateManyWithWhereWithoutCapturedByReturnInput[]
+    deleteMany?: FuelRecordScalarWhereInput | FuelRecordScalarWhereInput[]
+  }
+
+  export type SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput = {
+    create?: XOR<SafetyDepositRequestCreateWithoutRequestedByInput, SafetyDepositRequestUncheckedCreateWithoutRequestedByInput> | SafetyDepositRequestCreateWithoutRequestedByInput[] | SafetyDepositRequestUncheckedCreateWithoutRequestedByInput[]
+    connectOrCreate?: SafetyDepositRequestCreateOrConnectWithoutRequestedByInput | SafetyDepositRequestCreateOrConnectWithoutRequestedByInput[]
+    upsert?: SafetyDepositRequestUpsertWithWhereUniqueWithoutRequestedByInput | SafetyDepositRequestUpsertWithWhereUniqueWithoutRequestedByInput[]
+    createMany?: SafetyDepositRequestCreateManyRequestedByInputEnvelope
+    set?: SafetyDepositRequestWhereUniqueInput | SafetyDepositRequestWhereUniqueInput[]
+    disconnect?: SafetyDepositRequestWhereUniqueInput | SafetyDepositRequestWhereUniqueInput[]
+    delete?: SafetyDepositRequestWhereUniqueInput | SafetyDepositRequestWhereUniqueInput[]
+    connect?: SafetyDepositRequestWhereUniqueInput | SafetyDepositRequestWhereUniqueInput[]
+    update?: SafetyDepositRequestUpdateWithWhereUniqueWithoutRequestedByInput | SafetyDepositRequestUpdateWithWhereUniqueWithoutRequestedByInput[]
+    updateMany?: SafetyDepositRequestUpdateManyWithWhereWithoutRequestedByInput | SafetyDepositRequestUpdateManyWithWhereWithoutRequestedByInput[]
+    deleteMany?: SafetyDepositRequestScalarWhereInput | SafetyDepositRequestScalarWhereInput[]
+  }
+
+  export type SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput = {
+    create?: XOR<SafetyDepositRequestCreateWithoutApprovedByInput, SafetyDepositRequestUncheckedCreateWithoutApprovedByInput> | SafetyDepositRequestCreateWithoutApprovedByInput[] | SafetyDepositRequestUncheckedCreateWithoutApprovedByInput[]
+    connectOrCreate?: SafetyDepositRequestCreateOrConnectWithoutApprovedByInput | SafetyDepositRequestCreateOrConnectWithoutApprovedByInput[]
+    upsert?: SafetyDepositRequestUpsertWithWhereUniqueWithoutApprovedByInput | SafetyDepositRequestUpsertWithWhereUniqueWithoutApprovedByInput[]
+    createMany?: SafetyDepositRequestCreateManyApprovedByInputEnvelope
+    set?: SafetyDepositRequestWhereUniqueInput | SafetyDepositRequestWhereUniqueInput[]
+    disconnect?: SafetyDepositRequestWhereUniqueInput | SafetyDepositRequestWhereUniqueInput[]
+    delete?: SafetyDepositRequestWhereUniqueInput | SafetyDepositRequestWhereUniqueInput[]
+    connect?: SafetyDepositRequestWhereUniqueInput | SafetyDepositRequestWhereUniqueInput[]
+    update?: SafetyDepositRequestUpdateWithWhereUniqueWithoutApprovedByInput | SafetyDepositRequestUpdateWithWhereUniqueWithoutApprovedByInput[]
+    updateMany?: SafetyDepositRequestUpdateManyWithWhereWithoutApprovedByInput | SafetyDepositRequestUpdateManyWithWhereWithoutApprovedByInput[]
+    deleteMany?: SafetyDepositRequestScalarWhereInput | SafetyDepositRequestScalarWhereInput[]
+  }
+
   export type IntFieldUpdateOperationsInput = {
     set?: number
     increment?: number
@@ -80343,6 +89341,104 @@ export namespace Prisma {
     update?: BookingExtensionUpdateWithWhereUniqueWithoutActorInput | BookingExtensionUpdateWithWhereUniqueWithoutActorInput[]
     updateMany?: BookingExtensionUpdateManyWithWhereWithoutActorInput | BookingExtensionUpdateManyWithWhereWithoutActorInput[]
     deleteMany?: BookingExtensionScalarWhereInput | BookingExtensionScalarWhereInput[]
+  }
+
+  export type ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput = {
+    create?: XOR<ChargeEntryCreateWithoutCreatedByInput, ChargeEntryUncheckedCreateWithoutCreatedByInput> | ChargeEntryCreateWithoutCreatedByInput[] | ChargeEntryUncheckedCreateWithoutCreatedByInput[]
+    connectOrCreate?: ChargeEntryCreateOrConnectWithoutCreatedByInput | ChargeEntryCreateOrConnectWithoutCreatedByInput[]
+    upsert?: ChargeEntryUpsertWithWhereUniqueWithoutCreatedByInput | ChargeEntryUpsertWithWhereUniqueWithoutCreatedByInput[]
+    createMany?: ChargeEntryCreateManyCreatedByInputEnvelope
+    set?: ChargeEntryWhereUniqueInput | ChargeEntryWhereUniqueInput[]
+    disconnect?: ChargeEntryWhereUniqueInput | ChargeEntryWhereUniqueInput[]
+    delete?: ChargeEntryWhereUniqueInput | ChargeEntryWhereUniqueInput[]
+    connect?: ChargeEntryWhereUniqueInput | ChargeEntryWhereUniqueInput[]
+    update?: ChargeEntryUpdateWithWhereUniqueWithoutCreatedByInput | ChargeEntryUpdateWithWhereUniqueWithoutCreatedByInput[]
+    updateMany?: ChargeEntryUpdateManyWithWhereWithoutCreatedByInput | ChargeEntryUpdateManyWithWhereWithoutCreatedByInput[]
+    deleteMany?: ChargeEntryScalarWhereInput | ChargeEntryScalarWhereInput[]
+  }
+
+  export type ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput = {
+    create?: XOR<ChargeOverrideCreateWithoutActorInput, ChargeOverrideUncheckedCreateWithoutActorInput> | ChargeOverrideCreateWithoutActorInput[] | ChargeOverrideUncheckedCreateWithoutActorInput[]
+    connectOrCreate?: ChargeOverrideCreateOrConnectWithoutActorInput | ChargeOverrideCreateOrConnectWithoutActorInput[]
+    upsert?: ChargeOverrideUpsertWithWhereUniqueWithoutActorInput | ChargeOverrideUpsertWithWhereUniqueWithoutActorInput[]
+    createMany?: ChargeOverrideCreateManyActorInputEnvelope
+    set?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    disconnect?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    delete?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    connect?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    update?: ChargeOverrideUpdateWithWhereUniqueWithoutActorInput | ChargeOverrideUpdateWithWhereUniqueWithoutActorInput[]
+    updateMany?: ChargeOverrideUpdateManyWithWhereWithoutActorInput | ChargeOverrideUpdateManyWithWhereWithoutActorInput[]
+    deleteMany?: ChargeOverrideScalarWhereInput | ChargeOverrideScalarWhereInput[]
+  }
+
+  export type ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput = {
+    create?: XOR<ChargeOverrideCreateWithoutApproverInput, ChargeOverrideUncheckedCreateWithoutApproverInput> | ChargeOverrideCreateWithoutApproverInput[] | ChargeOverrideUncheckedCreateWithoutApproverInput[]
+    connectOrCreate?: ChargeOverrideCreateOrConnectWithoutApproverInput | ChargeOverrideCreateOrConnectWithoutApproverInput[]
+    upsert?: ChargeOverrideUpsertWithWhereUniqueWithoutApproverInput | ChargeOverrideUpsertWithWhereUniqueWithoutApproverInput[]
+    createMany?: ChargeOverrideCreateManyApproverInputEnvelope
+    set?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    disconnect?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    delete?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    connect?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    update?: ChargeOverrideUpdateWithWhereUniqueWithoutApproverInput | ChargeOverrideUpdateWithWhereUniqueWithoutApproverInput[]
+    updateMany?: ChargeOverrideUpdateManyWithWhereWithoutApproverInput | ChargeOverrideUpdateManyWithWhereWithoutApproverInput[]
+    deleteMany?: ChargeOverrideScalarWhereInput | ChargeOverrideScalarWhereInput[]
+  }
+
+  export type FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput = {
+    create?: XOR<FuelRecordCreateWithoutCapturedByPickupInput, FuelRecordUncheckedCreateWithoutCapturedByPickupInput> | FuelRecordCreateWithoutCapturedByPickupInput[] | FuelRecordUncheckedCreateWithoutCapturedByPickupInput[]
+    connectOrCreate?: FuelRecordCreateOrConnectWithoutCapturedByPickupInput | FuelRecordCreateOrConnectWithoutCapturedByPickupInput[]
+    upsert?: FuelRecordUpsertWithWhereUniqueWithoutCapturedByPickupInput | FuelRecordUpsertWithWhereUniqueWithoutCapturedByPickupInput[]
+    createMany?: FuelRecordCreateManyCapturedByPickupInputEnvelope
+    set?: FuelRecordWhereUniqueInput | FuelRecordWhereUniqueInput[]
+    disconnect?: FuelRecordWhereUniqueInput | FuelRecordWhereUniqueInput[]
+    delete?: FuelRecordWhereUniqueInput | FuelRecordWhereUniqueInput[]
+    connect?: FuelRecordWhereUniqueInput | FuelRecordWhereUniqueInput[]
+    update?: FuelRecordUpdateWithWhereUniqueWithoutCapturedByPickupInput | FuelRecordUpdateWithWhereUniqueWithoutCapturedByPickupInput[]
+    updateMany?: FuelRecordUpdateManyWithWhereWithoutCapturedByPickupInput | FuelRecordUpdateManyWithWhereWithoutCapturedByPickupInput[]
+    deleteMany?: FuelRecordScalarWhereInput | FuelRecordScalarWhereInput[]
+  }
+
+  export type FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput = {
+    create?: XOR<FuelRecordCreateWithoutCapturedByReturnInput, FuelRecordUncheckedCreateWithoutCapturedByReturnInput> | FuelRecordCreateWithoutCapturedByReturnInput[] | FuelRecordUncheckedCreateWithoutCapturedByReturnInput[]
+    connectOrCreate?: FuelRecordCreateOrConnectWithoutCapturedByReturnInput | FuelRecordCreateOrConnectWithoutCapturedByReturnInput[]
+    upsert?: FuelRecordUpsertWithWhereUniqueWithoutCapturedByReturnInput | FuelRecordUpsertWithWhereUniqueWithoutCapturedByReturnInput[]
+    createMany?: FuelRecordCreateManyCapturedByReturnInputEnvelope
+    set?: FuelRecordWhereUniqueInput | FuelRecordWhereUniqueInput[]
+    disconnect?: FuelRecordWhereUniqueInput | FuelRecordWhereUniqueInput[]
+    delete?: FuelRecordWhereUniqueInput | FuelRecordWhereUniqueInput[]
+    connect?: FuelRecordWhereUniqueInput | FuelRecordWhereUniqueInput[]
+    update?: FuelRecordUpdateWithWhereUniqueWithoutCapturedByReturnInput | FuelRecordUpdateWithWhereUniqueWithoutCapturedByReturnInput[]
+    updateMany?: FuelRecordUpdateManyWithWhereWithoutCapturedByReturnInput | FuelRecordUpdateManyWithWhereWithoutCapturedByReturnInput[]
+    deleteMany?: FuelRecordScalarWhereInput | FuelRecordScalarWhereInput[]
+  }
+
+  export type SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput = {
+    create?: XOR<SafetyDepositRequestCreateWithoutRequestedByInput, SafetyDepositRequestUncheckedCreateWithoutRequestedByInput> | SafetyDepositRequestCreateWithoutRequestedByInput[] | SafetyDepositRequestUncheckedCreateWithoutRequestedByInput[]
+    connectOrCreate?: SafetyDepositRequestCreateOrConnectWithoutRequestedByInput | SafetyDepositRequestCreateOrConnectWithoutRequestedByInput[]
+    upsert?: SafetyDepositRequestUpsertWithWhereUniqueWithoutRequestedByInput | SafetyDepositRequestUpsertWithWhereUniqueWithoutRequestedByInput[]
+    createMany?: SafetyDepositRequestCreateManyRequestedByInputEnvelope
+    set?: SafetyDepositRequestWhereUniqueInput | SafetyDepositRequestWhereUniqueInput[]
+    disconnect?: SafetyDepositRequestWhereUniqueInput | SafetyDepositRequestWhereUniqueInput[]
+    delete?: SafetyDepositRequestWhereUniqueInput | SafetyDepositRequestWhereUniqueInput[]
+    connect?: SafetyDepositRequestWhereUniqueInput | SafetyDepositRequestWhereUniqueInput[]
+    update?: SafetyDepositRequestUpdateWithWhereUniqueWithoutRequestedByInput | SafetyDepositRequestUpdateWithWhereUniqueWithoutRequestedByInput[]
+    updateMany?: SafetyDepositRequestUpdateManyWithWhereWithoutRequestedByInput | SafetyDepositRequestUpdateManyWithWhereWithoutRequestedByInput[]
+    deleteMany?: SafetyDepositRequestScalarWhereInput | SafetyDepositRequestScalarWhereInput[]
+  }
+
+  export type SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput = {
+    create?: XOR<SafetyDepositRequestCreateWithoutApprovedByInput, SafetyDepositRequestUncheckedCreateWithoutApprovedByInput> | SafetyDepositRequestCreateWithoutApprovedByInput[] | SafetyDepositRequestUncheckedCreateWithoutApprovedByInput[]
+    connectOrCreate?: SafetyDepositRequestCreateOrConnectWithoutApprovedByInput | SafetyDepositRequestCreateOrConnectWithoutApprovedByInput[]
+    upsert?: SafetyDepositRequestUpsertWithWhereUniqueWithoutApprovedByInput | SafetyDepositRequestUpsertWithWhereUniqueWithoutApprovedByInput[]
+    createMany?: SafetyDepositRequestCreateManyApprovedByInputEnvelope
+    set?: SafetyDepositRequestWhereUniqueInput | SafetyDepositRequestWhereUniqueInput[]
+    disconnect?: SafetyDepositRequestWhereUniqueInput | SafetyDepositRequestWhereUniqueInput[]
+    delete?: SafetyDepositRequestWhereUniqueInput | SafetyDepositRequestWhereUniqueInput[]
+    connect?: SafetyDepositRequestWhereUniqueInput | SafetyDepositRequestWhereUniqueInput[]
+    update?: SafetyDepositRequestUpdateWithWhereUniqueWithoutApprovedByInput | SafetyDepositRequestUpdateWithWhereUniqueWithoutApprovedByInput[]
+    updateMany?: SafetyDepositRequestUpdateManyWithWhereWithoutApprovedByInput | SafetyDepositRequestUpdateManyWithWhereWithoutApprovedByInput[]
+    deleteMany?: SafetyDepositRequestScalarWhereInput | SafetyDepositRequestScalarWhereInput[]
   }
 
   export type UserCreateNestedOneWithoutProvidersInput = {
@@ -80906,6 +90002,12 @@ export namespace Prisma {
     connect?: BranchPaymentConfigWhereUniqueInput
   }
 
+  export type BranchChargeConfigCreateNestedOneWithoutBranchInput = {
+    create?: XOR<BranchChargeConfigCreateWithoutBranchInput, BranchChargeConfigUncheckedCreateWithoutBranchInput>
+    connectOrCreate?: BranchChargeConfigCreateOrConnectWithoutBranchInput
+    connect?: BranchChargeConfigWhereUniqueInput
+  }
+
   export type PaymentTransactionCreateNestedManyWithoutBranchInput = {
     create?: XOR<PaymentTransactionCreateWithoutBranchInput, PaymentTransactionUncheckedCreateWithoutBranchInput> | PaymentTransactionCreateWithoutBranchInput[] | PaymentTransactionUncheckedCreateWithoutBranchInput[]
     connectOrCreate?: PaymentTransactionCreateOrConnectWithoutBranchInput | PaymentTransactionCreateOrConnectWithoutBranchInput[]
@@ -81033,6 +90135,12 @@ export namespace Prisma {
     create?: XOR<BranchPaymentConfigCreateWithoutBranchInput, BranchPaymentConfigUncheckedCreateWithoutBranchInput>
     connectOrCreate?: BranchPaymentConfigCreateOrConnectWithoutBranchInput
     connect?: BranchPaymentConfigWhereUniqueInput
+  }
+
+  export type BranchChargeConfigUncheckedCreateNestedOneWithoutBranchInput = {
+    create?: XOR<BranchChargeConfigCreateWithoutBranchInput, BranchChargeConfigUncheckedCreateWithoutBranchInput>
+    connectOrCreate?: BranchChargeConfigCreateOrConnectWithoutBranchInput
+    connect?: BranchChargeConfigWhereUniqueInput
   }
 
   export type PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput = {
@@ -81255,6 +90363,16 @@ export namespace Prisma {
     delete?: BranchPaymentConfigWhereInput | boolean
     connect?: BranchPaymentConfigWhereUniqueInput
     update?: XOR<XOR<BranchPaymentConfigUpdateToOneWithWhereWithoutBranchInput, BranchPaymentConfigUpdateWithoutBranchInput>, BranchPaymentConfigUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type BranchChargeConfigUpdateOneWithoutBranchNestedInput = {
+    create?: XOR<BranchChargeConfigCreateWithoutBranchInput, BranchChargeConfigUncheckedCreateWithoutBranchInput>
+    connectOrCreate?: BranchChargeConfigCreateOrConnectWithoutBranchInput
+    upsert?: BranchChargeConfigUpsertWithoutBranchInput
+    disconnect?: BranchChargeConfigWhereInput | boolean
+    delete?: BranchChargeConfigWhereInput | boolean
+    connect?: BranchChargeConfigWhereUniqueInput
+    update?: XOR<XOR<BranchChargeConfigUpdateToOneWithWhereWithoutBranchInput, BranchChargeConfigUpdateWithoutBranchInput>, BranchChargeConfigUncheckedUpdateWithoutBranchInput>
   }
 
   export type PaymentTransactionUpdateManyWithoutBranchNestedInput = {
@@ -81505,6 +90623,16 @@ export namespace Prisma {
     delete?: BranchPaymentConfigWhereInput | boolean
     connect?: BranchPaymentConfigWhereUniqueInput
     update?: XOR<XOR<BranchPaymentConfigUpdateToOneWithWhereWithoutBranchInput, BranchPaymentConfigUpdateWithoutBranchInput>, BranchPaymentConfigUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type BranchChargeConfigUncheckedUpdateOneWithoutBranchNestedInput = {
+    create?: XOR<BranchChargeConfigCreateWithoutBranchInput, BranchChargeConfigUncheckedCreateWithoutBranchInput>
+    connectOrCreate?: BranchChargeConfigCreateOrConnectWithoutBranchInput
+    upsert?: BranchChargeConfigUpsertWithoutBranchInput
+    disconnect?: BranchChargeConfigWhereInput | boolean
+    delete?: BranchChargeConfigWhereInput | boolean
+    connect?: BranchChargeConfigWhereUniqueInput
+    update?: XOR<XOR<BranchChargeConfigUpdateToOneWithWhereWithoutBranchInput, BranchChargeConfigUpdateWithoutBranchInput>, BranchChargeConfigUncheckedUpdateWithoutBranchInput>
   }
 
   export type PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput = {
@@ -82676,6 +91804,32 @@ export namespace Prisma {
     connect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
   }
 
+  export type ChargeEntryCreateNestedManyWithoutBookingInput = {
+    create?: XOR<ChargeEntryCreateWithoutBookingInput, ChargeEntryUncheckedCreateWithoutBookingInput> | ChargeEntryCreateWithoutBookingInput[] | ChargeEntryUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: ChargeEntryCreateOrConnectWithoutBookingInput | ChargeEntryCreateOrConnectWithoutBookingInput[]
+    createMany?: ChargeEntryCreateManyBookingInputEnvelope
+    connect?: ChargeEntryWhereUniqueInput | ChargeEntryWhereUniqueInput[]
+  }
+
+  export type ChargeOverrideCreateNestedManyWithoutBookingInput = {
+    create?: XOR<ChargeOverrideCreateWithoutBookingInput, ChargeOverrideUncheckedCreateWithoutBookingInput> | ChargeOverrideCreateWithoutBookingInput[] | ChargeOverrideUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: ChargeOverrideCreateOrConnectWithoutBookingInput | ChargeOverrideCreateOrConnectWithoutBookingInput[]
+    createMany?: ChargeOverrideCreateManyBookingInputEnvelope
+    connect?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+  }
+
+  export type FuelRecordCreateNestedOneWithoutBookingInput = {
+    create?: XOR<FuelRecordCreateWithoutBookingInput, FuelRecordUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: FuelRecordCreateOrConnectWithoutBookingInput
+    connect?: FuelRecordWhereUniqueInput
+  }
+
+  export type SafetyDepositRequestCreateNestedOneWithoutBookingInput = {
+    create?: XOR<SafetyDepositRequestCreateWithoutBookingInput, SafetyDepositRequestUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: SafetyDepositRequestCreateOrConnectWithoutBookingInput
+    connect?: SafetyDepositRequestWhereUniqueInput
+  }
+
   export type BookingPhotoUncheckedCreateNestedManyWithoutBookingInput = {
     create?: XOR<BookingPhotoCreateWithoutBookingInput, BookingPhotoUncheckedCreateWithoutBookingInput> | BookingPhotoCreateWithoutBookingInput[] | BookingPhotoUncheckedCreateWithoutBookingInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutBookingInput | BookingPhotoCreateOrConnectWithoutBookingInput[]
@@ -82753,6 +91907,32 @@ export namespace Prisma {
     connectOrCreate?: BookingExtensionCreateOrConnectWithoutBookingInput | BookingExtensionCreateOrConnectWithoutBookingInput[]
     createMany?: BookingExtensionCreateManyBookingInputEnvelope
     connect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+  }
+
+  export type ChargeEntryUncheckedCreateNestedManyWithoutBookingInput = {
+    create?: XOR<ChargeEntryCreateWithoutBookingInput, ChargeEntryUncheckedCreateWithoutBookingInput> | ChargeEntryCreateWithoutBookingInput[] | ChargeEntryUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: ChargeEntryCreateOrConnectWithoutBookingInput | ChargeEntryCreateOrConnectWithoutBookingInput[]
+    createMany?: ChargeEntryCreateManyBookingInputEnvelope
+    connect?: ChargeEntryWhereUniqueInput | ChargeEntryWhereUniqueInput[]
+  }
+
+  export type ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput = {
+    create?: XOR<ChargeOverrideCreateWithoutBookingInput, ChargeOverrideUncheckedCreateWithoutBookingInput> | ChargeOverrideCreateWithoutBookingInput[] | ChargeOverrideUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: ChargeOverrideCreateOrConnectWithoutBookingInput | ChargeOverrideCreateOrConnectWithoutBookingInput[]
+    createMany?: ChargeOverrideCreateManyBookingInputEnvelope
+    connect?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+  }
+
+  export type FuelRecordUncheckedCreateNestedOneWithoutBookingInput = {
+    create?: XOR<FuelRecordCreateWithoutBookingInput, FuelRecordUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: FuelRecordCreateOrConnectWithoutBookingInput
+    connect?: FuelRecordWhereUniqueInput
+  }
+
+  export type SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput = {
+    create?: XOR<SafetyDepositRequestCreateWithoutBookingInput, SafetyDepositRequestUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: SafetyDepositRequestCreateOrConnectWithoutBookingInput
+    connect?: SafetyDepositRequestWhereUniqueInput
   }
 
   export type NullableEnumRentalPeriodTypeFieldUpdateOperationsInput = {
@@ -82973,6 +92153,54 @@ export namespace Prisma {
     deleteMany?: BookingExtensionScalarWhereInput | BookingExtensionScalarWhereInput[]
   }
 
+  export type ChargeEntryUpdateManyWithoutBookingNestedInput = {
+    create?: XOR<ChargeEntryCreateWithoutBookingInput, ChargeEntryUncheckedCreateWithoutBookingInput> | ChargeEntryCreateWithoutBookingInput[] | ChargeEntryUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: ChargeEntryCreateOrConnectWithoutBookingInput | ChargeEntryCreateOrConnectWithoutBookingInput[]
+    upsert?: ChargeEntryUpsertWithWhereUniqueWithoutBookingInput | ChargeEntryUpsertWithWhereUniqueWithoutBookingInput[]
+    createMany?: ChargeEntryCreateManyBookingInputEnvelope
+    set?: ChargeEntryWhereUniqueInput | ChargeEntryWhereUniqueInput[]
+    disconnect?: ChargeEntryWhereUniqueInput | ChargeEntryWhereUniqueInput[]
+    delete?: ChargeEntryWhereUniqueInput | ChargeEntryWhereUniqueInput[]
+    connect?: ChargeEntryWhereUniqueInput | ChargeEntryWhereUniqueInput[]
+    update?: ChargeEntryUpdateWithWhereUniqueWithoutBookingInput | ChargeEntryUpdateWithWhereUniqueWithoutBookingInput[]
+    updateMany?: ChargeEntryUpdateManyWithWhereWithoutBookingInput | ChargeEntryUpdateManyWithWhereWithoutBookingInput[]
+    deleteMany?: ChargeEntryScalarWhereInput | ChargeEntryScalarWhereInput[]
+  }
+
+  export type ChargeOverrideUpdateManyWithoutBookingNestedInput = {
+    create?: XOR<ChargeOverrideCreateWithoutBookingInput, ChargeOverrideUncheckedCreateWithoutBookingInput> | ChargeOverrideCreateWithoutBookingInput[] | ChargeOverrideUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: ChargeOverrideCreateOrConnectWithoutBookingInput | ChargeOverrideCreateOrConnectWithoutBookingInput[]
+    upsert?: ChargeOverrideUpsertWithWhereUniqueWithoutBookingInput | ChargeOverrideUpsertWithWhereUniqueWithoutBookingInput[]
+    createMany?: ChargeOverrideCreateManyBookingInputEnvelope
+    set?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    disconnect?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    delete?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    connect?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    update?: ChargeOverrideUpdateWithWhereUniqueWithoutBookingInput | ChargeOverrideUpdateWithWhereUniqueWithoutBookingInput[]
+    updateMany?: ChargeOverrideUpdateManyWithWhereWithoutBookingInput | ChargeOverrideUpdateManyWithWhereWithoutBookingInput[]
+    deleteMany?: ChargeOverrideScalarWhereInput | ChargeOverrideScalarWhereInput[]
+  }
+
+  export type FuelRecordUpdateOneWithoutBookingNestedInput = {
+    create?: XOR<FuelRecordCreateWithoutBookingInput, FuelRecordUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: FuelRecordCreateOrConnectWithoutBookingInput
+    upsert?: FuelRecordUpsertWithoutBookingInput
+    disconnect?: FuelRecordWhereInput | boolean
+    delete?: FuelRecordWhereInput | boolean
+    connect?: FuelRecordWhereUniqueInput
+    update?: XOR<XOR<FuelRecordUpdateToOneWithWhereWithoutBookingInput, FuelRecordUpdateWithoutBookingInput>, FuelRecordUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type SafetyDepositRequestUpdateOneWithoutBookingNestedInput = {
+    create?: XOR<SafetyDepositRequestCreateWithoutBookingInput, SafetyDepositRequestUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: SafetyDepositRequestCreateOrConnectWithoutBookingInput
+    upsert?: SafetyDepositRequestUpsertWithoutBookingInput
+    disconnect?: SafetyDepositRequestWhereInput | boolean
+    delete?: SafetyDepositRequestWhereInput | boolean
+    connect?: SafetyDepositRequestWhereUniqueInput
+    update?: XOR<XOR<SafetyDepositRequestUpdateToOneWithWhereWithoutBookingInput, SafetyDepositRequestUpdateWithoutBookingInput>, SafetyDepositRequestUncheckedUpdateWithoutBookingInput>
+  }
+
   export type BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput = {
     create?: XOR<BookingPhotoCreateWithoutBookingInput, BookingPhotoUncheckedCreateWithoutBookingInput> | BookingPhotoCreateWithoutBookingInput[] | BookingPhotoUncheckedCreateWithoutBookingInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutBookingInput | BookingPhotoCreateOrConnectWithoutBookingInput[]
@@ -83119,6 +92347,54 @@ export namespace Prisma {
     update?: BookingExtensionUpdateWithWhereUniqueWithoutBookingInput | BookingExtensionUpdateWithWhereUniqueWithoutBookingInput[]
     updateMany?: BookingExtensionUpdateManyWithWhereWithoutBookingInput | BookingExtensionUpdateManyWithWhereWithoutBookingInput[]
     deleteMany?: BookingExtensionScalarWhereInput | BookingExtensionScalarWhereInput[]
+  }
+
+  export type ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput = {
+    create?: XOR<ChargeEntryCreateWithoutBookingInput, ChargeEntryUncheckedCreateWithoutBookingInput> | ChargeEntryCreateWithoutBookingInput[] | ChargeEntryUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: ChargeEntryCreateOrConnectWithoutBookingInput | ChargeEntryCreateOrConnectWithoutBookingInput[]
+    upsert?: ChargeEntryUpsertWithWhereUniqueWithoutBookingInput | ChargeEntryUpsertWithWhereUniqueWithoutBookingInput[]
+    createMany?: ChargeEntryCreateManyBookingInputEnvelope
+    set?: ChargeEntryWhereUniqueInput | ChargeEntryWhereUniqueInput[]
+    disconnect?: ChargeEntryWhereUniqueInput | ChargeEntryWhereUniqueInput[]
+    delete?: ChargeEntryWhereUniqueInput | ChargeEntryWhereUniqueInput[]
+    connect?: ChargeEntryWhereUniqueInput | ChargeEntryWhereUniqueInput[]
+    update?: ChargeEntryUpdateWithWhereUniqueWithoutBookingInput | ChargeEntryUpdateWithWhereUniqueWithoutBookingInput[]
+    updateMany?: ChargeEntryUpdateManyWithWhereWithoutBookingInput | ChargeEntryUpdateManyWithWhereWithoutBookingInput[]
+    deleteMany?: ChargeEntryScalarWhereInput | ChargeEntryScalarWhereInput[]
+  }
+
+  export type ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput = {
+    create?: XOR<ChargeOverrideCreateWithoutBookingInput, ChargeOverrideUncheckedCreateWithoutBookingInput> | ChargeOverrideCreateWithoutBookingInput[] | ChargeOverrideUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: ChargeOverrideCreateOrConnectWithoutBookingInput | ChargeOverrideCreateOrConnectWithoutBookingInput[]
+    upsert?: ChargeOverrideUpsertWithWhereUniqueWithoutBookingInput | ChargeOverrideUpsertWithWhereUniqueWithoutBookingInput[]
+    createMany?: ChargeOverrideCreateManyBookingInputEnvelope
+    set?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    disconnect?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    delete?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    connect?: ChargeOverrideWhereUniqueInput | ChargeOverrideWhereUniqueInput[]
+    update?: ChargeOverrideUpdateWithWhereUniqueWithoutBookingInput | ChargeOverrideUpdateWithWhereUniqueWithoutBookingInput[]
+    updateMany?: ChargeOverrideUpdateManyWithWhereWithoutBookingInput | ChargeOverrideUpdateManyWithWhereWithoutBookingInput[]
+    deleteMany?: ChargeOverrideScalarWhereInput | ChargeOverrideScalarWhereInput[]
+  }
+
+  export type FuelRecordUncheckedUpdateOneWithoutBookingNestedInput = {
+    create?: XOR<FuelRecordCreateWithoutBookingInput, FuelRecordUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: FuelRecordCreateOrConnectWithoutBookingInput
+    upsert?: FuelRecordUpsertWithoutBookingInput
+    disconnect?: FuelRecordWhereInput | boolean
+    delete?: FuelRecordWhereInput | boolean
+    connect?: FuelRecordWhereUniqueInput
+    update?: XOR<XOR<FuelRecordUpdateToOneWithWhereWithoutBookingInput, FuelRecordUpdateWithoutBookingInput>, FuelRecordUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput = {
+    create?: XOR<SafetyDepositRequestCreateWithoutBookingInput, SafetyDepositRequestUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: SafetyDepositRequestCreateOrConnectWithoutBookingInput
+    upsert?: SafetyDepositRequestUpsertWithoutBookingInput
+    disconnect?: SafetyDepositRequestWhereInput | boolean
+    delete?: SafetyDepositRequestWhereInput | boolean
+    connect?: SafetyDepositRequestWhereUniqueInput
+    update?: XOR<XOR<SafetyDepositRequestUpdateToOneWithWhereWithoutBookingInput, SafetyDepositRequestUpdateWithoutBookingInput>, SafetyDepositRequestUncheckedUpdateWithoutBookingInput>
   }
 
   export type VehicleCreateNestedOneWithoutBookingItemsInput = {
@@ -84653,6 +93929,250 @@ export namespace Prisma {
     deleteMany?: BookingScalarWhereInput | BookingScalarWhereInput[]
   }
 
+  export type BranchCreateNestedOneWithoutChargeConfigInput = {
+    create?: XOR<BranchCreateWithoutChargeConfigInput, BranchUncheckedCreateWithoutChargeConfigInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutChargeConfigInput
+    connect?: BranchWhereUniqueInput
+  }
+
+  export type EnumGraceTypeFieldUpdateOperationsInput = {
+    set?: $Enums.GraceType
+  }
+
+  export type BranchUpdateOneRequiredWithoutChargeConfigNestedInput = {
+    create?: XOR<BranchCreateWithoutChargeConfigInput, BranchUncheckedCreateWithoutChargeConfigInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutChargeConfigInput
+    upsert?: BranchUpsertWithoutChargeConfigInput
+    connect?: BranchWhereUniqueInput
+    update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutChargeConfigInput, BranchUpdateWithoutChargeConfigInput>, BranchUncheckedUpdateWithoutChargeConfigInput>
+  }
+
+  export type BookingCreateNestedOneWithoutChargeEntriesInput = {
+    create?: XOR<BookingCreateWithoutChargeEntriesInput, BookingUncheckedCreateWithoutChargeEntriesInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutChargeEntriesInput
+    connect?: BookingWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutChargeEntriesCreatedInput = {
+    create?: XOR<UserCreateWithoutChargeEntriesCreatedInput, UserUncheckedCreateWithoutChargeEntriesCreatedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutChargeEntriesCreatedInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type ChargeOverrideCreateNestedOneWithoutChargeEntryInput = {
+    create?: XOR<ChargeOverrideCreateWithoutChargeEntryInput, ChargeOverrideUncheckedCreateWithoutChargeEntryInput>
+    connectOrCreate?: ChargeOverrideCreateOrConnectWithoutChargeEntryInput
+    connect?: ChargeOverrideWhereUniqueInput
+  }
+
+  export type ChargeOverrideUncheckedCreateNestedOneWithoutChargeEntryInput = {
+    create?: XOR<ChargeOverrideCreateWithoutChargeEntryInput, ChargeOverrideUncheckedCreateWithoutChargeEntryInput>
+    connectOrCreate?: ChargeOverrideCreateOrConnectWithoutChargeEntryInput
+    connect?: ChargeOverrideWhereUniqueInput
+  }
+
+  export type EnumChargeTypeFieldUpdateOperationsInput = {
+    set?: $Enums.ChargeType
+  }
+
+  export type BookingUpdateOneRequiredWithoutChargeEntriesNestedInput = {
+    create?: XOR<BookingCreateWithoutChargeEntriesInput, BookingUncheckedCreateWithoutChargeEntriesInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutChargeEntriesInput
+    upsert?: BookingUpsertWithoutChargeEntriesInput
+    connect?: BookingWhereUniqueInput
+    update?: XOR<XOR<BookingUpdateToOneWithWhereWithoutChargeEntriesInput, BookingUpdateWithoutChargeEntriesInput>, BookingUncheckedUpdateWithoutChargeEntriesInput>
+  }
+
+  export type UserUpdateOneRequiredWithoutChargeEntriesCreatedNestedInput = {
+    create?: XOR<UserCreateWithoutChargeEntriesCreatedInput, UserUncheckedCreateWithoutChargeEntriesCreatedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutChargeEntriesCreatedInput
+    upsert?: UserUpsertWithoutChargeEntriesCreatedInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutChargeEntriesCreatedInput, UserUpdateWithoutChargeEntriesCreatedInput>, UserUncheckedUpdateWithoutChargeEntriesCreatedInput>
+  }
+
+  export type ChargeOverrideUpdateOneWithoutChargeEntryNestedInput = {
+    create?: XOR<ChargeOverrideCreateWithoutChargeEntryInput, ChargeOverrideUncheckedCreateWithoutChargeEntryInput>
+    connectOrCreate?: ChargeOverrideCreateOrConnectWithoutChargeEntryInput
+    upsert?: ChargeOverrideUpsertWithoutChargeEntryInput
+    disconnect?: ChargeOverrideWhereInput | boolean
+    delete?: ChargeOverrideWhereInput | boolean
+    connect?: ChargeOverrideWhereUniqueInput
+    update?: XOR<XOR<ChargeOverrideUpdateToOneWithWhereWithoutChargeEntryInput, ChargeOverrideUpdateWithoutChargeEntryInput>, ChargeOverrideUncheckedUpdateWithoutChargeEntryInput>
+  }
+
+  export type ChargeOverrideUncheckedUpdateOneWithoutChargeEntryNestedInput = {
+    create?: XOR<ChargeOverrideCreateWithoutChargeEntryInput, ChargeOverrideUncheckedCreateWithoutChargeEntryInput>
+    connectOrCreate?: ChargeOverrideCreateOrConnectWithoutChargeEntryInput
+    upsert?: ChargeOverrideUpsertWithoutChargeEntryInput
+    disconnect?: ChargeOverrideWhereInput | boolean
+    delete?: ChargeOverrideWhereInput | boolean
+    connect?: ChargeOverrideWhereUniqueInput
+    update?: XOR<XOR<ChargeOverrideUpdateToOneWithWhereWithoutChargeEntryInput, ChargeOverrideUpdateWithoutChargeEntryInput>, ChargeOverrideUncheckedUpdateWithoutChargeEntryInput>
+  }
+
+  export type BookingCreateNestedOneWithoutChargeOverridesInput = {
+    create?: XOR<BookingCreateWithoutChargeOverridesInput, BookingUncheckedCreateWithoutChargeOverridesInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutChargeOverridesInput
+    connect?: BookingWhereUniqueInput
+  }
+
+  export type ChargeEntryCreateNestedOneWithoutOverrideInput = {
+    create?: XOR<ChargeEntryCreateWithoutOverrideInput, ChargeEntryUncheckedCreateWithoutOverrideInput>
+    connectOrCreate?: ChargeEntryCreateOrConnectWithoutOverrideInput
+    connect?: ChargeEntryWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutOverridesActedInput = {
+    create?: XOR<UserCreateWithoutOverridesActedInput, UserUncheckedCreateWithoutOverridesActedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutOverridesActedInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutOverridesApprovedInput = {
+    create?: XOR<UserCreateWithoutOverridesApprovedInput, UserUncheckedCreateWithoutOverridesApprovedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutOverridesApprovedInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type EnumOverrideStatusFieldUpdateOperationsInput = {
+    set?: $Enums.OverrideStatus
+  }
+
+  export type BookingUpdateOneRequiredWithoutChargeOverridesNestedInput = {
+    create?: XOR<BookingCreateWithoutChargeOverridesInput, BookingUncheckedCreateWithoutChargeOverridesInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutChargeOverridesInput
+    upsert?: BookingUpsertWithoutChargeOverridesInput
+    connect?: BookingWhereUniqueInput
+    update?: XOR<XOR<BookingUpdateToOneWithWhereWithoutChargeOverridesInput, BookingUpdateWithoutChargeOverridesInput>, BookingUncheckedUpdateWithoutChargeOverridesInput>
+  }
+
+  export type ChargeEntryUpdateOneRequiredWithoutOverrideNestedInput = {
+    create?: XOR<ChargeEntryCreateWithoutOverrideInput, ChargeEntryUncheckedCreateWithoutOverrideInput>
+    connectOrCreate?: ChargeEntryCreateOrConnectWithoutOverrideInput
+    upsert?: ChargeEntryUpsertWithoutOverrideInput
+    connect?: ChargeEntryWhereUniqueInput
+    update?: XOR<XOR<ChargeEntryUpdateToOneWithWhereWithoutOverrideInput, ChargeEntryUpdateWithoutOverrideInput>, ChargeEntryUncheckedUpdateWithoutOverrideInput>
+  }
+
+  export type UserUpdateOneRequiredWithoutOverridesActedNestedInput = {
+    create?: XOR<UserCreateWithoutOverridesActedInput, UserUncheckedCreateWithoutOverridesActedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutOverridesActedInput
+    upsert?: UserUpsertWithoutOverridesActedInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutOverridesActedInput, UserUpdateWithoutOverridesActedInput>, UserUncheckedUpdateWithoutOverridesActedInput>
+  }
+
+  export type UserUpdateOneWithoutOverridesApprovedNestedInput = {
+    create?: XOR<UserCreateWithoutOverridesApprovedInput, UserUncheckedCreateWithoutOverridesApprovedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutOverridesApprovedInput
+    upsert?: UserUpsertWithoutOverridesApprovedInput
+    disconnect?: UserWhereInput | boolean
+    delete?: UserWhereInput | boolean
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutOverridesApprovedInput, UserUpdateWithoutOverridesApprovedInput>, UserUncheckedUpdateWithoutOverridesApprovedInput>
+  }
+
+  export type BookingCreateNestedOneWithoutFuelRecordInput = {
+    create?: XOR<BookingCreateWithoutFuelRecordInput, BookingUncheckedCreateWithoutFuelRecordInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutFuelRecordInput
+    connect?: BookingWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutFuelPickupCapturesInput = {
+    create?: XOR<UserCreateWithoutFuelPickupCapturesInput, UserUncheckedCreateWithoutFuelPickupCapturesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutFuelPickupCapturesInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutFuelReturnCapturesInput = {
+    create?: XOR<UserCreateWithoutFuelReturnCapturesInput, UserUncheckedCreateWithoutFuelReturnCapturesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutFuelReturnCapturesInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type EnumFuelLevelFieldUpdateOperationsInput = {
+    set?: $Enums.FuelLevel
+  }
+
+  export type NullableEnumFuelLevelFieldUpdateOperationsInput = {
+    set?: $Enums.FuelLevel | null
+  }
+
+  export type BookingUpdateOneRequiredWithoutFuelRecordNestedInput = {
+    create?: XOR<BookingCreateWithoutFuelRecordInput, BookingUncheckedCreateWithoutFuelRecordInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutFuelRecordInput
+    upsert?: BookingUpsertWithoutFuelRecordInput
+    connect?: BookingWhereUniqueInput
+    update?: XOR<XOR<BookingUpdateToOneWithWhereWithoutFuelRecordInput, BookingUpdateWithoutFuelRecordInput>, BookingUncheckedUpdateWithoutFuelRecordInput>
+  }
+
+  export type UserUpdateOneRequiredWithoutFuelPickupCapturesNestedInput = {
+    create?: XOR<UserCreateWithoutFuelPickupCapturesInput, UserUncheckedCreateWithoutFuelPickupCapturesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutFuelPickupCapturesInput
+    upsert?: UserUpsertWithoutFuelPickupCapturesInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutFuelPickupCapturesInput, UserUpdateWithoutFuelPickupCapturesInput>, UserUncheckedUpdateWithoutFuelPickupCapturesInput>
+  }
+
+  export type UserUpdateOneWithoutFuelReturnCapturesNestedInput = {
+    create?: XOR<UserCreateWithoutFuelReturnCapturesInput, UserUncheckedCreateWithoutFuelReturnCapturesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutFuelReturnCapturesInput
+    upsert?: UserUpsertWithoutFuelReturnCapturesInput
+    disconnect?: UserWhereInput | boolean
+    delete?: UserWhereInput | boolean
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutFuelReturnCapturesInput, UserUpdateWithoutFuelReturnCapturesInput>, UserUncheckedUpdateWithoutFuelReturnCapturesInput>
+  }
+
+  export type BookingCreateNestedOneWithoutSafetyDepositRequestInput = {
+    create?: XOR<BookingCreateWithoutSafetyDepositRequestInput, BookingUncheckedCreateWithoutSafetyDepositRequestInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutSafetyDepositRequestInput
+    connect?: BookingWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutSafetyDepositRequestsInput = {
+    create?: XOR<UserCreateWithoutSafetyDepositRequestsInput, UserUncheckedCreateWithoutSafetyDepositRequestsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutSafetyDepositRequestsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutSafetyDepositApprovalsInput = {
+    create?: XOR<UserCreateWithoutSafetyDepositApprovalsInput, UserUncheckedCreateWithoutSafetyDepositApprovalsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutSafetyDepositApprovalsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type EnumSafetyDepositStatusFieldUpdateOperationsInput = {
+    set?: $Enums.SafetyDepositStatus
+  }
+
+  export type BookingUpdateOneRequiredWithoutSafetyDepositRequestNestedInput = {
+    create?: XOR<BookingCreateWithoutSafetyDepositRequestInput, BookingUncheckedCreateWithoutSafetyDepositRequestInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutSafetyDepositRequestInput
+    upsert?: BookingUpsertWithoutSafetyDepositRequestInput
+    connect?: BookingWhereUniqueInput
+    update?: XOR<XOR<BookingUpdateToOneWithWhereWithoutSafetyDepositRequestInput, BookingUpdateWithoutSafetyDepositRequestInput>, BookingUncheckedUpdateWithoutSafetyDepositRequestInput>
+  }
+
+  export type UserUpdateOneRequiredWithoutSafetyDepositRequestsNestedInput = {
+    create?: XOR<UserCreateWithoutSafetyDepositRequestsInput, UserUncheckedCreateWithoutSafetyDepositRequestsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutSafetyDepositRequestsInput
+    upsert?: UserUpsertWithoutSafetyDepositRequestsInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutSafetyDepositRequestsInput, UserUpdateWithoutSafetyDepositRequestsInput>, UserUncheckedUpdateWithoutSafetyDepositRequestsInput>
+  }
+
+  export type UserUpdateOneWithoutSafetyDepositApprovalsNestedInput = {
+    create?: XOR<UserCreateWithoutSafetyDepositApprovalsInput, UserUncheckedCreateWithoutSafetyDepositApprovalsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutSafetyDepositApprovalsInput
+    upsert?: UserUpsertWithoutSafetyDepositApprovalsInput
+    disconnect?: UserWhereInput | boolean
+    delete?: UserWhereInput | boolean
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutSafetyDepositApprovalsInput, UserUpdateWithoutSafetyDepositApprovalsInput>, UserUncheckedUpdateWithoutSafetyDepositApprovalsInput>
+  }
+
   export type NestedIntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -85564,6 +95084,108 @@ export namespace Prisma {
     _max?: NestedEnumExtensionResolutionTypeNullableFilter<$PrismaModel>
   }
 
+  export type NestedEnumGraceTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.GraceType | EnumGraceTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.GraceType[] | ListEnumGraceTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.GraceType[] | ListEnumGraceTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumGraceTypeFilter<$PrismaModel> | $Enums.GraceType
+  }
+
+  export type NestedEnumGraceTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.GraceType | EnumGraceTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.GraceType[] | ListEnumGraceTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.GraceType[] | ListEnumGraceTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumGraceTypeWithAggregatesFilter<$PrismaModel> | $Enums.GraceType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumGraceTypeFilter<$PrismaModel>
+    _max?: NestedEnumGraceTypeFilter<$PrismaModel>
+  }
+
+  export type NestedEnumChargeTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.ChargeType | EnumChargeTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumChargeTypeFilter<$PrismaModel> | $Enums.ChargeType
+  }
+
+  export type NestedEnumChargeTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.ChargeType | EnumChargeTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ChargeType[] | ListEnumChargeTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumChargeTypeWithAggregatesFilter<$PrismaModel> | $Enums.ChargeType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumChargeTypeFilter<$PrismaModel>
+    _max?: NestedEnumChargeTypeFilter<$PrismaModel>
+  }
+
+  export type NestedEnumOverrideStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.OverrideStatus | EnumOverrideStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.OverrideStatus[] | ListEnumOverrideStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.OverrideStatus[] | ListEnumOverrideStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumOverrideStatusFilter<$PrismaModel> | $Enums.OverrideStatus
+  }
+
+  export type NestedEnumOverrideStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.OverrideStatus | EnumOverrideStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.OverrideStatus[] | ListEnumOverrideStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.OverrideStatus[] | ListEnumOverrideStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumOverrideStatusWithAggregatesFilter<$PrismaModel> | $Enums.OverrideStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumOverrideStatusFilter<$PrismaModel>
+    _max?: NestedEnumOverrideStatusFilter<$PrismaModel>
+  }
+
+  export type NestedEnumFuelLevelFilter<$PrismaModel = never> = {
+    equals?: $Enums.FuelLevel | EnumFuelLevelFieldRefInput<$PrismaModel>
+    in?: $Enums.FuelLevel[] | ListEnumFuelLevelFieldRefInput<$PrismaModel>
+    notIn?: $Enums.FuelLevel[] | ListEnumFuelLevelFieldRefInput<$PrismaModel>
+    not?: NestedEnumFuelLevelFilter<$PrismaModel> | $Enums.FuelLevel
+  }
+
+  export type NestedEnumFuelLevelNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.FuelLevel | EnumFuelLevelFieldRefInput<$PrismaModel> | null
+    in?: $Enums.FuelLevel[] | ListEnumFuelLevelFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.FuelLevel[] | ListEnumFuelLevelFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumFuelLevelNullableFilter<$PrismaModel> | $Enums.FuelLevel | null
+  }
+
+  export type NestedEnumFuelLevelWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.FuelLevel | EnumFuelLevelFieldRefInput<$PrismaModel>
+    in?: $Enums.FuelLevel[] | ListEnumFuelLevelFieldRefInput<$PrismaModel>
+    notIn?: $Enums.FuelLevel[] | ListEnumFuelLevelFieldRefInput<$PrismaModel>
+    not?: NestedEnumFuelLevelWithAggregatesFilter<$PrismaModel> | $Enums.FuelLevel
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumFuelLevelFilter<$PrismaModel>
+    _max?: NestedEnumFuelLevelFilter<$PrismaModel>
+  }
+
+  export type NestedEnumFuelLevelNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.FuelLevel | EnumFuelLevelFieldRefInput<$PrismaModel> | null
+    in?: $Enums.FuelLevel[] | ListEnumFuelLevelFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.FuelLevel[] | ListEnumFuelLevelFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumFuelLevelNullableWithAggregatesFilter<$PrismaModel> | $Enums.FuelLevel | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumFuelLevelNullableFilter<$PrismaModel>
+    _max?: NestedEnumFuelLevelNullableFilter<$PrismaModel>
+  }
+
+  export type NestedEnumSafetyDepositStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.SafetyDepositStatus | EnumSafetyDepositStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.SafetyDepositStatus[] | ListEnumSafetyDepositStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.SafetyDepositStatus[] | ListEnumSafetyDepositStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumSafetyDepositStatusFilter<$PrismaModel> | $Enums.SafetyDepositStatus
+  }
+
+  export type NestedEnumSafetyDepositStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.SafetyDepositStatus | EnumSafetyDepositStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.SafetyDepositStatus[] | ListEnumSafetyDepositStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.SafetyDepositStatus[] | ListEnumSafetyDepositStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumSafetyDepositStatusWithAggregatesFilter<$PrismaModel> | $Enums.SafetyDepositStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumSafetyDepositStatusFilter<$PrismaModel>
+    _max?: NestedEnumSafetyDepositStatusFilter<$PrismaModel>
+  }
+
   export type BranchCreateWithoutUsersInput = {
     publicId: string
     name: string
@@ -85585,6 +95207,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
@@ -85613,6 +95236,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
@@ -85895,6 +95519,8 @@ export namespace Prisma {
     lastExtendedAt?: Date | string | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -85915,6 +95541,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
     activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
     extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCreatedByInput = {
@@ -85972,6 +95602,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -85987,6 +95619,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCreatedByInput = {
@@ -86741,6 +96377,309 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type ChargeEntryCreateWithoutCreatedByInput = {
+    publicId: string
+    chargeType: $Enums.ChargeType
+    moduleKey: string
+    label: string
+    originalAmount: Decimal | DecimalJsLike | number | string
+    finalAmount: Decimal | DecimalJsLike | number | string
+    quantity?: Decimal | DecimalJsLike | number | string | null
+    unitRate?: Decimal | DecimalJsLike | number | string | null
+    notes?: string | null
+    isOverridden?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutChargeEntriesInput
+    override?: ChargeOverrideCreateNestedOneWithoutChargeEntryInput
+  }
+
+  export type ChargeEntryUncheckedCreateWithoutCreatedByInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    chargeType: $Enums.ChargeType
+    moduleKey: string
+    label: string
+    originalAmount: Decimal | DecimalJsLike | number | string
+    finalAmount: Decimal | DecimalJsLike | number | string
+    quantity?: Decimal | DecimalJsLike | number | string | null
+    unitRate?: Decimal | DecimalJsLike | number | string | null
+    notes?: string | null
+    isOverridden?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    override?: ChargeOverrideUncheckedCreateNestedOneWithoutChargeEntryInput
+  }
+
+  export type ChargeEntryCreateOrConnectWithoutCreatedByInput = {
+    where: ChargeEntryWhereUniqueInput
+    create: XOR<ChargeEntryCreateWithoutCreatedByInput, ChargeEntryUncheckedCreateWithoutCreatedByInput>
+  }
+
+  export type ChargeEntryCreateManyCreatedByInputEnvelope = {
+    data: ChargeEntryCreateManyCreatedByInput | ChargeEntryCreateManyCreatedByInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type ChargeOverrideCreateWithoutActorInput = {
+    publicId: string
+    originalAmount: Decimal | DecimalJsLike | number | string
+    overriddenAmount: Decimal | DecimalJsLike | number | string
+    waivedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.OverrideStatus
+    actorRole: $Enums.Role
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutChargeOverridesInput
+    chargeEntry: ChargeEntryCreateNestedOneWithoutOverrideInput
+    approver?: UserCreateNestedOneWithoutOverridesApprovedInput
+  }
+
+  export type ChargeOverrideUncheckedCreateWithoutActorInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    chargeEntryId: number
+    originalAmount: Decimal | DecimalJsLike | number | string
+    overriddenAmount: Decimal | DecimalJsLike | number | string
+    waivedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.OverrideStatus
+    actorRole: $Enums.Role
+    approverId?: number | null
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ChargeOverrideCreateOrConnectWithoutActorInput = {
+    where: ChargeOverrideWhereUniqueInput
+    create: XOR<ChargeOverrideCreateWithoutActorInput, ChargeOverrideUncheckedCreateWithoutActorInput>
+  }
+
+  export type ChargeOverrideCreateManyActorInputEnvelope = {
+    data: ChargeOverrideCreateManyActorInput | ChargeOverrideCreateManyActorInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type ChargeOverrideCreateWithoutApproverInput = {
+    publicId: string
+    originalAmount: Decimal | DecimalJsLike | number | string
+    overriddenAmount: Decimal | DecimalJsLike | number | string
+    waivedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.OverrideStatus
+    actorRole: $Enums.Role
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutChargeOverridesInput
+    chargeEntry: ChargeEntryCreateNestedOneWithoutOverrideInput
+    actor: UserCreateNestedOneWithoutOverridesActedInput
+  }
+
+  export type ChargeOverrideUncheckedCreateWithoutApproverInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    chargeEntryId: number
+    originalAmount: Decimal | DecimalJsLike | number | string
+    overriddenAmount: Decimal | DecimalJsLike | number | string
+    waivedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.OverrideStatus
+    actorId: number
+    actorRole: $Enums.Role
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ChargeOverrideCreateOrConnectWithoutApproverInput = {
+    where: ChargeOverrideWhereUniqueInput
+    create: XOR<ChargeOverrideCreateWithoutApproverInput, ChargeOverrideUncheckedCreateWithoutApproverInput>
+  }
+
+  export type ChargeOverrideCreateManyApproverInputEnvelope = {
+    data: ChargeOverrideCreateManyApproverInput | ChargeOverrideCreateManyApproverInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type FuelRecordCreateWithoutCapturedByPickupInput = {
+    publicId: string
+    pickupFuelLevel: $Enums.FuelLevel
+    returnFuelLevel?: $Enums.FuelLevel | null
+    fuelDeficit?: boolean
+    fuelDeficitCharge?: Decimal | DecimalJsLike | number | string | null
+    skipReason?: string | null
+    pickupAt: Date | string
+    returnAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutFuelRecordInput
+    capturedByReturn?: UserCreateNestedOneWithoutFuelReturnCapturesInput
+  }
+
+  export type FuelRecordUncheckedCreateWithoutCapturedByPickupInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    pickupFuelLevel: $Enums.FuelLevel
+    returnFuelLevel?: $Enums.FuelLevel | null
+    fuelDeficit?: boolean
+    fuelDeficitCharge?: Decimal | DecimalJsLike | number | string | null
+    skipReason?: string | null
+    capturedByReturnId?: number | null
+    pickupAt: Date | string
+    returnAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type FuelRecordCreateOrConnectWithoutCapturedByPickupInput = {
+    where: FuelRecordWhereUniqueInput
+    create: XOR<FuelRecordCreateWithoutCapturedByPickupInput, FuelRecordUncheckedCreateWithoutCapturedByPickupInput>
+  }
+
+  export type FuelRecordCreateManyCapturedByPickupInputEnvelope = {
+    data: FuelRecordCreateManyCapturedByPickupInput | FuelRecordCreateManyCapturedByPickupInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type FuelRecordCreateWithoutCapturedByReturnInput = {
+    publicId: string
+    pickupFuelLevel: $Enums.FuelLevel
+    returnFuelLevel?: $Enums.FuelLevel | null
+    fuelDeficit?: boolean
+    fuelDeficitCharge?: Decimal | DecimalJsLike | number | string | null
+    skipReason?: string | null
+    pickupAt: Date | string
+    returnAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutFuelRecordInput
+    capturedByPickup: UserCreateNestedOneWithoutFuelPickupCapturesInput
+  }
+
+  export type FuelRecordUncheckedCreateWithoutCapturedByReturnInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    pickupFuelLevel: $Enums.FuelLevel
+    returnFuelLevel?: $Enums.FuelLevel | null
+    fuelDeficit?: boolean
+    fuelDeficitCharge?: Decimal | DecimalJsLike | number | string | null
+    skipReason?: string | null
+    capturedByPickupId: number
+    pickupAt: Date | string
+    returnAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type FuelRecordCreateOrConnectWithoutCapturedByReturnInput = {
+    where: FuelRecordWhereUniqueInput
+    create: XOR<FuelRecordCreateWithoutCapturedByReturnInput, FuelRecordUncheckedCreateWithoutCapturedByReturnInput>
+  }
+
+  export type FuelRecordCreateManyCapturedByReturnInputEnvelope = {
+    data: FuelRecordCreateManyCapturedByReturnInput | FuelRecordCreateManyCapturedByReturnInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type SafetyDepositRequestCreateWithoutRequestedByInput = {
+    publicId: string
+    requestedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.SafetyDepositStatus
+    approvedAmount?: Decimal | DecimalJsLike | number | string | null
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutSafetyDepositRequestInput
+    approvedBy?: UserCreateNestedOneWithoutSafetyDepositApprovalsInput
+  }
+
+  export type SafetyDepositRequestUncheckedCreateWithoutRequestedByInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    requestedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.SafetyDepositStatus
+    approvedById?: number | null
+    approvedAmount?: Decimal | DecimalJsLike | number | string | null
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type SafetyDepositRequestCreateOrConnectWithoutRequestedByInput = {
+    where: SafetyDepositRequestWhereUniqueInput
+    create: XOR<SafetyDepositRequestCreateWithoutRequestedByInput, SafetyDepositRequestUncheckedCreateWithoutRequestedByInput>
+  }
+
+  export type SafetyDepositRequestCreateManyRequestedByInputEnvelope = {
+    data: SafetyDepositRequestCreateManyRequestedByInput | SafetyDepositRequestCreateManyRequestedByInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type SafetyDepositRequestCreateWithoutApprovedByInput = {
+    publicId: string
+    requestedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.SafetyDepositStatus
+    approvedAmount?: Decimal | DecimalJsLike | number | string | null
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutSafetyDepositRequestInput
+    requestedBy: UserCreateNestedOneWithoutSafetyDepositRequestsInput
+  }
+
+  export type SafetyDepositRequestUncheckedCreateWithoutApprovedByInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    requestedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.SafetyDepositStatus
+    requestedById: number
+    approvedAmount?: Decimal | DecimalJsLike | number | string | null
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type SafetyDepositRequestCreateOrConnectWithoutApprovedByInput = {
+    where: SafetyDepositRequestWhereUniqueInput
+    create: XOR<SafetyDepositRequestCreateWithoutApprovedByInput, SafetyDepositRequestUncheckedCreateWithoutApprovedByInput>
+  }
+
+  export type SafetyDepositRequestCreateManyApprovedByInputEnvelope = {
+    data: SafetyDepositRequestCreateManyApprovedByInput | SafetyDepositRequestCreateManyApprovedByInput[]
+    skipDuplicates?: boolean
+  }
+
   export type BranchUpsertWithoutUsersInput = {
     update: XOR<BranchUpdateWithoutUsersInput, BranchUncheckedUpdateWithoutUsersInput>
     create: XOR<BranchCreateWithoutUsersInput, BranchUncheckedCreateWithoutUsersInput>
@@ -86773,6 +96712,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
@@ -86801,6 +96741,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
@@ -87052,6 +96993,8 @@ export namespace Prisma {
     activeExtensionId?: IntNullableFilter<"Booking"> | number | null
     displacedByExtensionId?: IntNullableFilter<"Booking"> | number | null
     extensionDisplacedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
+    frozenChargeConfig?: JsonNullableFilter<"Booking">
+    chargeConfigVersion?: IntFilter<"Booking"> | number
     createdAt?: DateTimeFilter<"Booking"> | Date | string
     updatedAt?: DateTimeFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
@@ -87485,6 +97428,202 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"BookingExtension"> | Date | string
   }
 
+  export type ChargeEntryUpsertWithWhereUniqueWithoutCreatedByInput = {
+    where: ChargeEntryWhereUniqueInput
+    update: XOR<ChargeEntryUpdateWithoutCreatedByInput, ChargeEntryUncheckedUpdateWithoutCreatedByInput>
+    create: XOR<ChargeEntryCreateWithoutCreatedByInput, ChargeEntryUncheckedCreateWithoutCreatedByInput>
+  }
+
+  export type ChargeEntryUpdateWithWhereUniqueWithoutCreatedByInput = {
+    where: ChargeEntryWhereUniqueInput
+    data: XOR<ChargeEntryUpdateWithoutCreatedByInput, ChargeEntryUncheckedUpdateWithoutCreatedByInput>
+  }
+
+  export type ChargeEntryUpdateManyWithWhereWithoutCreatedByInput = {
+    where: ChargeEntryScalarWhereInput
+    data: XOR<ChargeEntryUpdateManyMutationInput, ChargeEntryUncheckedUpdateManyWithoutCreatedByInput>
+  }
+
+  export type ChargeEntryScalarWhereInput = {
+    AND?: ChargeEntryScalarWhereInput | ChargeEntryScalarWhereInput[]
+    OR?: ChargeEntryScalarWhereInput[]
+    NOT?: ChargeEntryScalarWhereInput | ChargeEntryScalarWhereInput[]
+    id?: IntFilter<"ChargeEntry"> | number
+    publicId?: StringFilter<"ChargeEntry"> | string
+    bookingId?: IntFilter<"ChargeEntry"> | number
+    chargeType?: EnumChargeTypeFilter<"ChargeEntry"> | $Enums.ChargeType
+    moduleKey?: StringFilter<"ChargeEntry"> | string
+    label?: StringFilter<"ChargeEntry"> | string
+    originalAmount?: DecimalFilter<"ChargeEntry"> | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFilter<"ChargeEntry"> | Decimal | DecimalJsLike | number | string
+    quantity?: DecimalNullableFilter<"ChargeEntry"> | Decimal | DecimalJsLike | number | string | null
+    unitRate?: DecimalNullableFilter<"ChargeEntry"> | Decimal | DecimalJsLike | number | string | null
+    notes?: StringNullableFilter<"ChargeEntry"> | string | null
+    isOverridden?: BoolFilter<"ChargeEntry"> | boolean
+    createdById?: IntFilter<"ChargeEntry"> | number
+    createdAt?: DateTimeFilter<"ChargeEntry"> | Date | string
+    updatedAt?: DateTimeFilter<"ChargeEntry"> | Date | string
+  }
+
+  export type ChargeOverrideUpsertWithWhereUniqueWithoutActorInput = {
+    where: ChargeOverrideWhereUniqueInput
+    update: XOR<ChargeOverrideUpdateWithoutActorInput, ChargeOverrideUncheckedUpdateWithoutActorInput>
+    create: XOR<ChargeOverrideCreateWithoutActorInput, ChargeOverrideUncheckedCreateWithoutActorInput>
+  }
+
+  export type ChargeOverrideUpdateWithWhereUniqueWithoutActorInput = {
+    where: ChargeOverrideWhereUniqueInput
+    data: XOR<ChargeOverrideUpdateWithoutActorInput, ChargeOverrideUncheckedUpdateWithoutActorInput>
+  }
+
+  export type ChargeOverrideUpdateManyWithWhereWithoutActorInput = {
+    where: ChargeOverrideScalarWhereInput
+    data: XOR<ChargeOverrideUpdateManyMutationInput, ChargeOverrideUncheckedUpdateManyWithoutActorInput>
+  }
+
+  export type ChargeOverrideScalarWhereInput = {
+    AND?: ChargeOverrideScalarWhereInput | ChargeOverrideScalarWhereInput[]
+    OR?: ChargeOverrideScalarWhereInput[]
+    NOT?: ChargeOverrideScalarWhereInput | ChargeOverrideScalarWhereInput[]
+    id?: IntFilter<"ChargeOverride"> | number
+    publicId?: StringFilter<"ChargeOverride"> | string
+    bookingId?: IntFilter<"ChargeOverride"> | number
+    chargeEntryId?: IntFilter<"ChargeOverride"> | number
+    originalAmount?: DecimalFilter<"ChargeOverride"> | Decimal | DecimalJsLike | number | string
+    overriddenAmount?: DecimalFilter<"ChargeOverride"> | Decimal | DecimalJsLike | number | string
+    waivedAmount?: DecimalFilter<"ChargeOverride"> | Decimal | DecimalJsLike | number | string
+    reason?: StringFilter<"ChargeOverride"> | string
+    status?: EnumOverrideStatusFilter<"ChargeOverride"> | $Enums.OverrideStatus
+    actorId?: IntFilter<"ChargeOverride"> | number
+    actorRole?: EnumRoleFilter<"ChargeOverride"> | $Enums.Role
+    approverId?: IntNullableFilter<"ChargeOverride"> | number | null
+    approvedAt?: DateTimeNullableFilter<"ChargeOverride"> | Date | string | null
+    rejectedAt?: DateTimeNullableFilter<"ChargeOverride"> | Date | string | null
+    rejectionReason?: StringNullableFilter<"ChargeOverride"> | string | null
+    createdAt?: DateTimeFilter<"ChargeOverride"> | Date | string
+    updatedAt?: DateTimeFilter<"ChargeOverride"> | Date | string
+  }
+
+  export type ChargeOverrideUpsertWithWhereUniqueWithoutApproverInput = {
+    where: ChargeOverrideWhereUniqueInput
+    update: XOR<ChargeOverrideUpdateWithoutApproverInput, ChargeOverrideUncheckedUpdateWithoutApproverInput>
+    create: XOR<ChargeOverrideCreateWithoutApproverInput, ChargeOverrideUncheckedCreateWithoutApproverInput>
+  }
+
+  export type ChargeOverrideUpdateWithWhereUniqueWithoutApproverInput = {
+    where: ChargeOverrideWhereUniqueInput
+    data: XOR<ChargeOverrideUpdateWithoutApproverInput, ChargeOverrideUncheckedUpdateWithoutApproverInput>
+  }
+
+  export type ChargeOverrideUpdateManyWithWhereWithoutApproverInput = {
+    where: ChargeOverrideScalarWhereInput
+    data: XOR<ChargeOverrideUpdateManyMutationInput, ChargeOverrideUncheckedUpdateManyWithoutApproverInput>
+  }
+
+  export type FuelRecordUpsertWithWhereUniqueWithoutCapturedByPickupInput = {
+    where: FuelRecordWhereUniqueInput
+    update: XOR<FuelRecordUpdateWithoutCapturedByPickupInput, FuelRecordUncheckedUpdateWithoutCapturedByPickupInput>
+    create: XOR<FuelRecordCreateWithoutCapturedByPickupInput, FuelRecordUncheckedCreateWithoutCapturedByPickupInput>
+  }
+
+  export type FuelRecordUpdateWithWhereUniqueWithoutCapturedByPickupInput = {
+    where: FuelRecordWhereUniqueInput
+    data: XOR<FuelRecordUpdateWithoutCapturedByPickupInput, FuelRecordUncheckedUpdateWithoutCapturedByPickupInput>
+  }
+
+  export type FuelRecordUpdateManyWithWhereWithoutCapturedByPickupInput = {
+    where: FuelRecordScalarWhereInput
+    data: XOR<FuelRecordUpdateManyMutationInput, FuelRecordUncheckedUpdateManyWithoutCapturedByPickupInput>
+  }
+
+  export type FuelRecordScalarWhereInput = {
+    AND?: FuelRecordScalarWhereInput | FuelRecordScalarWhereInput[]
+    OR?: FuelRecordScalarWhereInput[]
+    NOT?: FuelRecordScalarWhereInput | FuelRecordScalarWhereInput[]
+    id?: IntFilter<"FuelRecord"> | number
+    publicId?: StringFilter<"FuelRecord"> | string
+    bookingId?: IntFilter<"FuelRecord"> | number
+    pickupFuelLevel?: EnumFuelLevelFilter<"FuelRecord"> | $Enums.FuelLevel
+    returnFuelLevel?: EnumFuelLevelNullableFilter<"FuelRecord"> | $Enums.FuelLevel | null
+    fuelDeficit?: BoolFilter<"FuelRecord"> | boolean
+    fuelDeficitCharge?: DecimalNullableFilter<"FuelRecord"> | Decimal | DecimalJsLike | number | string | null
+    skipReason?: StringNullableFilter<"FuelRecord"> | string | null
+    capturedByPickupId?: IntFilter<"FuelRecord"> | number
+    capturedByReturnId?: IntNullableFilter<"FuelRecord"> | number | null
+    pickupAt?: DateTimeFilter<"FuelRecord"> | Date | string
+    returnAt?: DateTimeNullableFilter<"FuelRecord"> | Date | string | null
+    createdAt?: DateTimeFilter<"FuelRecord"> | Date | string
+    updatedAt?: DateTimeFilter<"FuelRecord"> | Date | string
+  }
+
+  export type FuelRecordUpsertWithWhereUniqueWithoutCapturedByReturnInput = {
+    where: FuelRecordWhereUniqueInput
+    update: XOR<FuelRecordUpdateWithoutCapturedByReturnInput, FuelRecordUncheckedUpdateWithoutCapturedByReturnInput>
+    create: XOR<FuelRecordCreateWithoutCapturedByReturnInput, FuelRecordUncheckedCreateWithoutCapturedByReturnInput>
+  }
+
+  export type FuelRecordUpdateWithWhereUniqueWithoutCapturedByReturnInput = {
+    where: FuelRecordWhereUniqueInput
+    data: XOR<FuelRecordUpdateWithoutCapturedByReturnInput, FuelRecordUncheckedUpdateWithoutCapturedByReturnInput>
+  }
+
+  export type FuelRecordUpdateManyWithWhereWithoutCapturedByReturnInput = {
+    where: FuelRecordScalarWhereInput
+    data: XOR<FuelRecordUpdateManyMutationInput, FuelRecordUncheckedUpdateManyWithoutCapturedByReturnInput>
+  }
+
+  export type SafetyDepositRequestUpsertWithWhereUniqueWithoutRequestedByInput = {
+    where: SafetyDepositRequestWhereUniqueInput
+    update: XOR<SafetyDepositRequestUpdateWithoutRequestedByInput, SafetyDepositRequestUncheckedUpdateWithoutRequestedByInput>
+    create: XOR<SafetyDepositRequestCreateWithoutRequestedByInput, SafetyDepositRequestUncheckedCreateWithoutRequestedByInput>
+  }
+
+  export type SafetyDepositRequestUpdateWithWhereUniqueWithoutRequestedByInput = {
+    where: SafetyDepositRequestWhereUniqueInput
+    data: XOR<SafetyDepositRequestUpdateWithoutRequestedByInput, SafetyDepositRequestUncheckedUpdateWithoutRequestedByInput>
+  }
+
+  export type SafetyDepositRequestUpdateManyWithWhereWithoutRequestedByInput = {
+    where: SafetyDepositRequestScalarWhereInput
+    data: XOR<SafetyDepositRequestUpdateManyMutationInput, SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByInput>
+  }
+
+  export type SafetyDepositRequestScalarWhereInput = {
+    AND?: SafetyDepositRequestScalarWhereInput | SafetyDepositRequestScalarWhereInput[]
+    OR?: SafetyDepositRequestScalarWhereInput[]
+    NOT?: SafetyDepositRequestScalarWhereInput | SafetyDepositRequestScalarWhereInput[]
+    id?: IntFilter<"SafetyDepositRequest"> | number
+    publicId?: StringFilter<"SafetyDepositRequest"> | string
+    bookingId?: IntFilter<"SafetyDepositRequest"> | number
+    requestedAmount?: DecimalFilter<"SafetyDepositRequest"> | Decimal | DecimalJsLike | number | string
+    reason?: StringFilter<"SafetyDepositRequest"> | string
+    status?: EnumSafetyDepositStatusFilter<"SafetyDepositRequest"> | $Enums.SafetyDepositStatus
+    requestedById?: IntFilter<"SafetyDepositRequest"> | number
+    approvedById?: IntNullableFilter<"SafetyDepositRequest"> | number | null
+    approvedAmount?: DecimalNullableFilter<"SafetyDepositRequest"> | Decimal | DecimalJsLike | number | string | null
+    approvedAt?: DateTimeNullableFilter<"SafetyDepositRequest"> | Date | string | null
+    rejectedAt?: DateTimeNullableFilter<"SafetyDepositRequest"> | Date | string | null
+    rejectionReason?: StringNullableFilter<"SafetyDepositRequest"> | string | null
+    createdAt?: DateTimeFilter<"SafetyDepositRequest"> | Date | string
+    updatedAt?: DateTimeFilter<"SafetyDepositRequest"> | Date | string
+  }
+
+  export type SafetyDepositRequestUpsertWithWhereUniqueWithoutApprovedByInput = {
+    where: SafetyDepositRequestWhereUniqueInput
+    update: XOR<SafetyDepositRequestUpdateWithoutApprovedByInput, SafetyDepositRequestUncheckedUpdateWithoutApprovedByInput>
+    create: XOR<SafetyDepositRequestCreateWithoutApprovedByInput, SafetyDepositRequestUncheckedCreateWithoutApprovedByInput>
+  }
+
+  export type SafetyDepositRequestUpdateWithWhereUniqueWithoutApprovedByInput = {
+    where: SafetyDepositRequestWhereUniqueInput
+    data: XOR<SafetyDepositRequestUpdateWithoutApprovedByInput, SafetyDepositRequestUncheckedUpdateWithoutApprovedByInput>
+  }
+
+  export type SafetyDepositRequestUpdateManyWithWhereWithoutApprovedByInput = {
+    where: SafetyDepositRequestScalarWhereInput
+    data: XOR<SafetyDepositRequestUpdateManyMutationInput, SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByInput>
+  }
+
   export type UserCreateWithoutProvidersInput = {
     publicId: string
     name: string
@@ -87517,6 +97656,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutProvidersInput = {
@@ -87552,6 +97698,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutProvidersInput = {
@@ -87602,6 +97755,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutProvidersInput = {
@@ -87637,6 +97797,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserCreateWithoutEmailOtpsInput = {
@@ -87671,6 +97838,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutEmailOtpsInput = {
@@ -87706,6 +97880,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutEmailOtpsInput = {
@@ -87756,6 +97937,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutEmailOtpsInput = {
@@ -87791,6 +97979,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserCreateWithoutCustomerProfileInput = {
@@ -87825,6 +98020,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutCustomerProfileInput = {
@@ -87860,6 +98062,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutCustomerProfileInput = {
@@ -87943,6 +98152,8 @@ export namespace Prisma {
     lastExtendedAt?: Date | string | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -87963,6 +98174,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
     activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
     extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCustomerInput = {
@@ -88020,6 +98235,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -88035,6 +98252,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCustomerInput = {
@@ -88133,6 +98354,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutCustomerProfileInput = {
@@ -88168,6 +98396,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type CustomerKycUpsertWithWhereUniqueWithoutCustomerInput = {
@@ -88521,6 +98756,8 @@ export namespace Prisma {
     lastExtendedAt?: Date | string | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -88541,6 +98778,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
     activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
     extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutKycFileInput = {
@@ -88598,6 +98839,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -88613,6 +98856,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutKycFileInput = {
@@ -88909,6 +99156,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutBranchInput = {
@@ -88944,6 +99198,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutBranchInput = {
@@ -88966,6 +99227,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -88995,6 +99258,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -89070,6 +99335,8 @@ export namespace Prisma {
     lastExtendedAt?: Date | string | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -89090,6 +99357,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
     activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
     extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutBranchInput = {
@@ -89147,6 +99418,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -89162,6 +99435,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutBranchInput = {
@@ -89572,6 +99849,52 @@ export namespace Prisma {
     create: XOR<BranchPaymentConfigCreateWithoutBranchInput, BranchPaymentConfigUncheckedCreateWithoutBranchInput>
   }
 
+  export type BranchChargeConfigCreateWithoutBranchInput = {
+    publicId: string
+    extraKmEnabled?: boolean
+    extraTimeEnabled?: boolean
+    fuelModuleEnabled?: boolean
+    fastagModuleEnabled?: boolean
+    gracePolicyEnabled?: boolean
+    damageModuleEnabled?: boolean
+    graceType?: $Enums.GraceType
+    graceMinutes?: number
+    employeeOverrideEnabled?: boolean
+    maxOverridePercent?: Decimal | DecimalJsLike | number | string | null
+    overrideRequiresApproval?: boolean
+    overrideApprovalThreshold?: Decimal | DecimalJsLike | number | string | null
+    safetyDepositEnabled?: boolean
+    safetyDepositRequiresApproval?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchChargeConfigUncheckedCreateWithoutBranchInput = {
+    id?: number
+    publicId: string
+    extraKmEnabled?: boolean
+    extraTimeEnabled?: boolean
+    fuelModuleEnabled?: boolean
+    fastagModuleEnabled?: boolean
+    gracePolicyEnabled?: boolean
+    damageModuleEnabled?: boolean
+    graceType?: $Enums.GraceType
+    graceMinutes?: number
+    employeeOverrideEnabled?: boolean
+    maxOverridePercent?: Decimal | DecimalJsLike | number | string | null
+    overrideRequiresApproval?: boolean
+    overrideApprovalThreshold?: Decimal | DecimalJsLike | number | string | null
+    safetyDepositEnabled?: boolean
+    safetyDepositRequiresApproval?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BranchChargeConfigCreateOrConnectWithoutBranchInput = {
+    where: BranchChargeConfigWhereUniqueInput
+    create: XOR<BranchChargeConfigCreateWithoutBranchInput, BranchChargeConfigUncheckedCreateWithoutBranchInput>
+  }
+
   export type PaymentTransactionCreateWithoutBranchInput = {
     publicId: string
     idempotencyKey: string
@@ -89857,6 +100180,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFilter<"Vehicle"> | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFilter<"Vehicle"> | Date | string
     status?: EnumVehicleStatusFilter<"Vehicle"> | $Enums.VehicleStatus
+    fastagNumber?: StringNullableFilter<"Vehicle"> | string | null
+    hasFastag?: BoolFilter<"Vehicle"> | boolean
     createdAt?: DateTimeFilter<"Vehicle"> | Date | string
     updatedAt?: DateTimeFilter<"Vehicle"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Vehicle"> | Date | string | null
@@ -90258,6 +100583,58 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type BranchChargeConfigUpsertWithoutBranchInput = {
+    update: XOR<BranchChargeConfigUpdateWithoutBranchInput, BranchChargeConfigUncheckedUpdateWithoutBranchInput>
+    create: XOR<BranchChargeConfigCreateWithoutBranchInput, BranchChargeConfigUncheckedCreateWithoutBranchInput>
+    where?: BranchChargeConfigWhereInput
+  }
+
+  export type BranchChargeConfigUpdateToOneWithWhereWithoutBranchInput = {
+    where?: BranchChargeConfigWhereInput
+    data: XOR<BranchChargeConfigUpdateWithoutBranchInput, BranchChargeConfigUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type BranchChargeConfigUpdateWithoutBranchInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    extraKmEnabled?: BoolFieldUpdateOperationsInput | boolean
+    extraTimeEnabled?: BoolFieldUpdateOperationsInput | boolean
+    fuelModuleEnabled?: BoolFieldUpdateOperationsInput | boolean
+    fastagModuleEnabled?: BoolFieldUpdateOperationsInput | boolean
+    gracePolicyEnabled?: BoolFieldUpdateOperationsInput | boolean
+    damageModuleEnabled?: BoolFieldUpdateOperationsInput | boolean
+    graceType?: EnumGraceTypeFieldUpdateOperationsInput | $Enums.GraceType
+    graceMinutes?: IntFieldUpdateOperationsInput | number
+    employeeOverrideEnabled?: BoolFieldUpdateOperationsInput | boolean
+    maxOverridePercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    overrideRequiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    overrideApprovalThreshold?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    safetyDepositEnabled?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRequiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BranchChargeConfigUncheckedUpdateWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    extraKmEnabled?: BoolFieldUpdateOperationsInput | boolean
+    extraTimeEnabled?: BoolFieldUpdateOperationsInput | boolean
+    fuelModuleEnabled?: BoolFieldUpdateOperationsInput | boolean
+    fastagModuleEnabled?: BoolFieldUpdateOperationsInput | boolean
+    gracePolicyEnabled?: BoolFieldUpdateOperationsInput | boolean
+    damageModuleEnabled?: BoolFieldUpdateOperationsInput | boolean
+    graceType?: EnumGraceTypeFieldUpdateOperationsInput | $Enums.GraceType
+    graceMinutes?: IntFieldUpdateOperationsInput | number
+    employeeOverrideEnabled?: BoolFieldUpdateOperationsInput | boolean
+    maxOverridePercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    overrideRequiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    overrideApprovalThreshold?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    safetyDepositEnabled?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRequiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type PaymentTransactionUpsertWithWhereUniqueWithoutBranchInput = {
     where: PaymentTransactionWhereUniqueInput
     update: XOR<PaymentTransactionUpdateWithoutBranchInput, PaymentTransactionUncheckedUpdateWithoutBranchInput>
@@ -90343,6 +100720,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
@@ -90371,6 +100749,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
@@ -90414,6 +100793,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
@@ -90442,6 +100822,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
@@ -90469,6 +100850,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
@@ -90497,6 +100879,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
@@ -90540,6 +100923,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
@@ -90568,6 +100952,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
@@ -90628,6 +101013,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -90657,6 +101044,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -90907,6 +101296,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
@@ -90935,6 +101325,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
@@ -91008,6 +101399,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
@@ -91036,6 +101428,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
@@ -91099,6 +101492,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
@@ -91127,6 +101521,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
@@ -91583,6 +101978,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
@@ -91611,6 +102007,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
@@ -91931,6 +102328,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -91961,6 +102360,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -92002,6 +102403,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -92032,6 +102435,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -92057,6 +102462,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -92087,6 +102494,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -92128,6 +102537,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -92158,6 +102569,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -92194,6 +102607,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
@@ -92222,6 +102636,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
@@ -92295,6 +102710,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
@@ -92323,6 +102739,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
@@ -92375,6 +102792,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -92405,6 +102824,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -92446,6 +102867,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -92476,6 +102899,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -92501,6 +102926,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -92531,6 +102958,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -92572,6 +103001,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -92602,6 +103033,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -92627,6 +103060,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -92657,6 +103092,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -92732,6 +103169,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -92762,6 +103201,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -92904,6 +103345,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
@@ -92932,6 +103374,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
@@ -93005,6 +103448,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
@@ -93033,6 +103477,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
@@ -93096,6 +103541,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
@@ -93124,6 +103570,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
@@ -93197,6 +103644,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
@@ -93225,6 +103673,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
@@ -93364,6 +103813,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
@@ -93392,6 +103842,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
@@ -93435,6 +103886,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutBookingsCreatedInput = {
@@ -93470,6 +103928,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutBookingsCreatedInput = {
@@ -94126,6 +104591,170 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type ChargeEntryCreateWithoutBookingInput = {
+    publicId: string
+    chargeType: $Enums.ChargeType
+    moduleKey: string
+    label: string
+    originalAmount: Decimal | DecimalJsLike | number | string
+    finalAmount: Decimal | DecimalJsLike | number | string
+    quantity?: Decimal | DecimalJsLike | number | string | null
+    unitRate?: Decimal | DecimalJsLike | number | string | null
+    notes?: string | null
+    isOverridden?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    createdBy: UserCreateNestedOneWithoutChargeEntriesCreatedInput
+    override?: ChargeOverrideCreateNestedOneWithoutChargeEntryInput
+  }
+
+  export type ChargeEntryUncheckedCreateWithoutBookingInput = {
+    id?: number
+    publicId: string
+    chargeType: $Enums.ChargeType
+    moduleKey: string
+    label: string
+    originalAmount: Decimal | DecimalJsLike | number | string
+    finalAmount: Decimal | DecimalJsLike | number | string
+    quantity?: Decimal | DecimalJsLike | number | string | null
+    unitRate?: Decimal | DecimalJsLike | number | string | null
+    notes?: string | null
+    isOverridden?: boolean
+    createdById: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    override?: ChargeOverrideUncheckedCreateNestedOneWithoutChargeEntryInput
+  }
+
+  export type ChargeEntryCreateOrConnectWithoutBookingInput = {
+    where: ChargeEntryWhereUniqueInput
+    create: XOR<ChargeEntryCreateWithoutBookingInput, ChargeEntryUncheckedCreateWithoutBookingInput>
+  }
+
+  export type ChargeEntryCreateManyBookingInputEnvelope = {
+    data: ChargeEntryCreateManyBookingInput | ChargeEntryCreateManyBookingInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type ChargeOverrideCreateWithoutBookingInput = {
+    publicId: string
+    originalAmount: Decimal | DecimalJsLike | number | string
+    overriddenAmount: Decimal | DecimalJsLike | number | string
+    waivedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.OverrideStatus
+    actorRole: $Enums.Role
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    chargeEntry: ChargeEntryCreateNestedOneWithoutOverrideInput
+    actor: UserCreateNestedOneWithoutOverridesActedInput
+    approver?: UserCreateNestedOneWithoutOverridesApprovedInput
+  }
+
+  export type ChargeOverrideUncheckedCreateWithoutBookingInput = {
+    id?: number
+    publicId: string
+    chargeEntryId: number
+    originalAmount: Decimal | DecimalJsLike | number | string
+    overriddenAmount: Decimal | DecimalJsLike | number | string
+    waivedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.OverrideStatus
+    actorId: number
+    actorRole: $Enums.Role
+    approverId?: number | null
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ChargeOverrideCreateOrConnectWithoutBookingInput = {
+    where: ChargeOverrideWhereUniqueInput
+    create: XOR<ChargeOverrideCreateWithoutBookingInput, ChargeOverrideUncheckedCreateWithoutBookingInput>
+  }
+
+  export type ChargeOverrideCreateManyBookingInputEnvelope = {
+    data: ChargeOverrideCreateManyBookingInput | ChargeOverrideCreateManyBookingInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type FuelRecordCreateWithoutBookingInput = {
+    publicId: string
+    pickupFuelLevel: $Enums.FuelLevel
+    returnFuelLevel?: $Enums.FuelLevel | null
+    fuelDeficit?: boolean
+    fuelDeficitCharge?: Decimal | DecimalJsLike | number | string | null
+    skipReason?: string | null
+    pickupAt: Date | string
+    returnAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    capturedByPickup: UserCreateNestedOneWithoutFuelPickupCapturesInput
+    capturedByReturn?: UserCreateNestedOneWithoutFuelReturnCapturesInput
+  }
+
+  export type FuelRecordUncheckedCreateWithoutBookingInput = {
+    id?: number
+    publicId: string
+    pickupFuelLevel: $Enums.FuelLevel
+    returnFuelLevel?: $Enums.FuelLevel | null
+    fuelDeficit?: boolean
+    fuelDeficitCharge?: Decimal | DecimalJsLike | number | string | null
+    skipReason?: string | null
+    capturedByPickupId: number
+    capturedByReturnId?: number | null
+    pickupAt: Date | string
+    returnAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type FuelRecordCreateOrConnectWithoutBookingInput = {
+    where: FuelRecordWhereUniqueInput
+    create: XOR<FuelRecordCreateWithoutBookingInput, FuelRecordUncheckedCreateWithoutBookingInput>
+  }
+
+  export type SafetyDepositRequestCreateWithoutBookingInput = {
+    publicId: string
+    requestedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.SafetyDepositStatus
+    approvedAmount?: Decimal | DecimalJsLike | number | string | null
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    requestedBy: UserCreateNestedOneWithoutSafetyDepositRequestsInput
+    approvedBy?: UserCreateNestedOneWithoutSafetyDepositApprovalsInput
+  }
+
+  export type SafetyDepositRequestUncheckedCreateWithoutBookingInput = {
+    id?: number
+    publicId: string
+    requestedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.SafetyDepositStatus
+    requestedById: number
+    approvedById?: number | null
+    approvedAmount?: Decimal | DecimalJsLike | number | string | null
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type SafetyDepositRequestCreateOrConnectWithoutBookingInput = {
+    where: SafetyDepositRequestWhereUniqueInput
+    create: XOR<SafetyDepositRequestCreateWithoutBookingInput, SafetyDepositRequestUncheckedCreateWithoutBookingInput>
+  }
+
   export type FileObjectUpsertWithoutBookingKycsInput = {
     update: XOR<FileObjectUpdateWithoutBookingKycsInput, FileObjectUncheckedUpdateWithoutBookingKycsInput>
     create: XOR<FileObjectCreateWithoutBookingKycsInput, FileObjectUncheckedCreateWithoutBookingKycsInput>
@@ -94246,6 +104875,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
@@ -94274,6 +104904,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
@@ -94323,6 +104954,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutBookingsCreatedInput = {
@@ -94358,6 +104996,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type BookingPhotoUpsertWithWhereUniqueWithoutBookingInput = {
@@ -94840,6 +105485,122 @@ export namespace Prisma {
     data: XOR<BookingExtensionUpdateManyMutationInput, BookingExtensionUncheckedUpdateManyWithoutBookingInput>
   }
 
+  export type ChargeEntryUpsertWithWhereUniqueWithoutBookingInput = {
+    where: ChargeEntryWhereUniqueInput
+    update: XOR<ChargeEntryUpdateWithoutBookingInput, ChargeEntryUncheckedUpdateWithoutBookingInput>
+    create: XOR<ChargeEntryCreateWithoutBookingInput, ChargeEntryUncheckedCreateWithoutBookingInput>
+  }
+
+  export type ChargeEntryUpdateWithWhereUniqueWithoutBookingInput = {
+    where: ChargeEntryWhereUniqueInput
+    data: XOR<ChargeEntryUpdateWithoutBookingInput, ChargeEntryUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type ChargeEntryUpdateManyWithWhereWithoutBookingInput = {
+    where: ChargeEntryScalarWhereInput
+    data: XOR<ChargeEntryUpdateManyMutationInput, ChargeEntryUncheckedUpdateManyWithoutBookingInput>
+  }
+
+  export type ChargeOverrideUpsertWithWhereUniqueWithoutBookingInput = {
+    where: ChargeOverrideWhereUniqueInput
+    update: XOR<ChargeOverrideUpdateWithoutBookingInput, ChargeOverrideUncheckedUpdateWithoutBookingInput>
+    create: XOR<ChargeOverrideCreateWithoutBookingInput, ChargeOverrideUncheckedCreateWithoutBookingInput>
+  }
+
+  export type ChargeOverrideUpdateWithWhereUniqueWithoutBookingInput = {
+    where: ChargeOverrideWhereUniqueInput
+    data: XOR<ChargeOverrideUpdateWithoutBookingInput, ChargeOverrideUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type ChargeOverrideUpdateManyWithWhereWithoutBookingInput = {
+    where: ChargeOverrideScalarWhereInput
+    data: XOR<ChargeOverrideUpdateManyMutationInput, ChargeOverrideUncheckedUpdateManyWithoutBookingInput>
+  }
+
+  export type FuelRecordUpsertWithoutBookingInput = {
+    update: XOR<FuelRecordUpdateWithoutBookingInput, FuelRecordUncheckedUpdateWithoutBookingInput>
+    create: XOR<FuelRecordCreateWithoutBookingInput, FuelRecordUncheckedCreateWithoutBookingInput>
+    where?: FuelRecordWhereInput
+  }
+
+  export type FuelRecordUpdateToOneWithWhereWithoutBookingInput = {
+    where?: FuelRecordWhereInput
+    data: XOR<FuelRecordUpdateWithoutBookingInput, FuelRecordUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type FuelRecordUpdateWithoutBookingInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    pickupFuelLevel?: EnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel
+    returnFuelLevel?: NullableEnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel | null
+    fuelDeficit?: BoolFieldUpdateOperationsInput | boolean
+    fuelDeficitCharge?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    skipReason?: NullableStringFieldUpdateOperationsInput | string | null
+    pickupAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    returnAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    capturedByPickup?: UserUpdateOneRequiredWithoutFuelPickupCapturesNestedInput
+    capturedByReturn?: UserUpdateOneWithoutFuelReturnCapturesNestedInput
+  }
+
+  export type FuelRecordUncheckedUpdateWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    pickupFuelLevel?: EnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel
+    returnFuelLevel?: NullableEnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel | null
+    fuelDeficit?: BoolFieldUpdateOperationsInput | boolean
+    fuelDeficitCharge?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    skipReason?: NullableStringFieldUpdateOperationsInput | string | null
+    capturedByPickupId?: IntFieldUpdateOperationsInput | number
+    capturedByReturnId?: NullableIntFieldUpdateOperationsInput | number | null
+    pickupAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    returnAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SafetyDepositRequestUpsertWithoutBookingInput = {
+    update: XOR<SafetyDepositRequestUpdateWithoutBookingInput, SafetyDepositRequestUncheckedUpdateWithoutBookingInput>
+    create: XOR<SafetyDepositRequestCreateWithoutBookingInput, SafetyDepositRequestUncheckedCreateWithoutBookingInput>
+    where?: SafetyDepositRequestWhereInput
+  }
+
+  export type SafetyDepositRequestUpdateToOneWithWhereWithoutBookingInput = {
+    where?: SafetyDepositRequestWhereInput
+    data: XOR<SafetyDepositRequestUpdateWithoutBookingInput, SafetyDepositRequestUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type SafetyDepositRequestUpdateWithoutBookingInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    requestedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumSafetyDepositStatusFieldUpdateOperationsInput | $Enums.SafetyDepositStatus
+    approvedAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestedBy?: UserUpdateOneRequiredWithoutSafetyDepositRequestsNestedInput
+    approvedBy?: UserUpdateOneWithoutSafetyDepositApprovalsNestedInput
+  }
+
+  export type SafetyDepositRequestUncheckedUpdateWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    requestedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumSafetyDepositStatusFieldUpdateOperationsInput | $Enums.SafetyDepositStatus
+    requestedById?: IntFieldUpdateOperationsInput | number
+    approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    approvedAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type VehicleCreateWithoutBookingItemsInput = {
     publicId: string
     make: string
@@ -94850,6 +105611,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -94880,6 +105643,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -94949,6 +105714,8 @@ export namespace Prisma {
     lastExtendedAt?: Date | string | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -94969,6 +105736,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
     activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
     extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutItemsInput = {
@@ -95027,6 +105798,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -95041,6 +105814,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutItemsInput = {
@@ -95069,6 +105846,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -95099,6 +105878,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -95174,6 +105955,8 @@ export namespace Prisma {
     lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -95194,6 +105977,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
     activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutItemsInput = {
@@ -95252,6 +106039,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -95266,6 +106055,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingCreateWithoutPhotosInput = {
@@ -95317,6 +106110,8 @@ export namespace Prisma {
     lastExtendedAt?: Date | string | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -95337,6 +106132,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
     activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
     extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutPhotosInput = {
@@ -95395,6 +106194,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -95409,6 +106210,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutPhotosInput = {
@@ -95546,6 +106351,8 @@ export namespace Prisma {
     lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -95566,6 +106373,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
     activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutPhotosInput = {
@@ -95624,6 +106435,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -95638,6 +106451,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type FileObjectUpsertWithoutBookingPhotosInput = {
@@ -95771,6 +106588,8 @@ export namespace Prisma {
     lastExtendedAt?: Date | string | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -95791,6 +106610,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
     activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
     extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDamagesInput = {
@@ -95849,6 +106672,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -95863,6 +106688,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDamagesInput = {
@@ -95880,6 +106709,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -95910,6 +106741,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -95962,6 +106795,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutApprovedDamageReportsInput = {
@@ -95997,6 +106837,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutApprovedDamageReportsInput = {
@@ -96093,6 +106940,8 @@ export namespace Prisma {
     lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -96113,6 +106962,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
     activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDamagesInput = {
@@ -96171,6 +107024,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -96185,6 +107040,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type VehicleUpsertWithoutDamageReportsInput = {
@@ -96208,6 +107067,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -96238,6 +107099,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -96296,6 +107159,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutApprovedDamageReportsInput = {
@@ -96331,6 +107201,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type BookingPhotoUpsertWithWhereUniqueWithoutDamageReportInput = {
@@ -96398,6 +107275,8 @@ export namespace Prisma {
     lastExtendedAt?: Date | string | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -96418,6 +107297,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
     activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
     extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDepositInput = {
@@ -96476,6 +107359,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -96490,6 +107375,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDepositInput = {
@@ -96557,6 +107446,8 @@ export namespace Prisma {
     lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -96577,6 +107468,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
     activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDepositInput = {
@@ -96635,6 +107530,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -96649,6 +107546,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type InvoiceCreateWithoutPaymentsInput = {
@@ -96816,6 +107717,8 @@ export namespace Prisma {
     lastExtendedAt?: Date | string | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -96836,6 +107739,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
     activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
     extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutInvoiceInput = {
@@ -96894,6 +107801,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -96908,6 +107817,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutInvoiceInput = {
@@ -96919,6 +107832,8 @@ export namespace Prisma {
     publicId: string
     label: string
     amount: Decimal | DecimalJsLike | number | string
+    isTaxable?: boolean
+    chargeType?: string | null
   }
 
   export type InvoiceItemUncheckedCreateWithoutInvoiceInput = {
@@ -96926,6 +107841,8 @@ export namespace Prisma {
     publicId: string
     label: string
     amount: Decimal | DecimalJsLike | number | string
+    isTaxable?: boolean
+    chargeType?: string | null
   }
 
   export type InvoiceItemCreateOrConnectWithoutInvoiceInput = {
@@ -97069,6 +107986,8 @@ export namespace Prisma {
     lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -97089,6 +108008,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
     activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutInvoiceInput = {
@@ -97147,6 +108070,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -97161,6 +108086,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type InvoiceItemUpsertWithWhereUniqueWithoutInvoiceInput = {
@@ -97188,6 +108117,8 @@ export namespace Prisma {
     invoiceId?: IntFilter<"InvoiceItem"> | number
     label?: StringFilter<"InvoiceItem"> | string
     amount?: DecimalFilter<"InvoiceItem"> | Decimal | DecimalJsLike | number | string
+    isTaxable?: BoolFilter<"InvoiceItem"> | boolean
+    chargeType?: StringNullableFilter<"InvoiceItem"> | string | null
   }
 
   export type PaymentUpsertWithWhereUniqueWithoutInvoiceInput = {
@@ -97335,6 +108266,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutActorAuditLogsInput = {
@@ -97370,6 +108308,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutActorAuditLogsInput = {
@@ -97409,6 +108354,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutApproverAuditLogsInput = {
@@ -97444,6 +108396,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutApproverAuditLogsInput = {
@@ -97472,6 +108431,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
@@ -97500,6 +108460,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
@@ -97554,6 +108515,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutActorAuditLogsInput = {
@@ -97589,6 +108557,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUpsertWithoutApproverAuditLogsInput = {
@@ -97634,6 +108609,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutApproverAuditLogsInput = {
@@ -97669,6 +108651,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type BranchUpsertWithoutAuditLogsInput = {
@@ -97703,6 +108692,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
@@ -97731,6 +108721,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
@@ -97758,6 +108749,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
@@ -97786,6 +108778,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
@@ -97829,6 +108822,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
@@ -97857,6 +108851,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
@@ -97912,6 +108907,8 @@ export namespace Prisma {
     lastExtendedAt?: Date | string | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -97932,6 +108929,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
     activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
     extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCancellationInvoiceInput = {
@@ -97990,6 +108991,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -98004,6 +109007,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCancellationInvoiceInput = {
@@ -98147,6 +109154,8 @@ export namespace Prisma {
     lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -98167,6 +109176,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
     activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCancellationInvoiceInput = {
@@ -98225,6 +109238,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -98239,6 +109254,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type CustomerUpsertWithoutCancellationInvoicesInput = {
@@ -98436,6 +109455,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
@@ -98464,6 +109484,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
@@ -98539,6 +109560,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
@@ -98567,6 +109589,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
@@ -98621,6 +109644,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -98651,6 +109676,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -98724,6 +109751,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -98754,6 +109783,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -98856,6 +109887,8 @@ export namespace Prisma {
     lastExtendedAt?: Date | string | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -98876,6 +109909,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
     activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
     extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutVehicleSwapsInput = {
@@ -98934,6 +109971,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -98948,6 +109987,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutVehicleSwapsInput = {
@@ -98965,6 +110008,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -98995,6 +110040,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -99025,6 +110072,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -99055,6 +110104,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -99107,6 +110158,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutVehicleSwapsInput = {
@@ -99142,6 +110200,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutVehicleSwapsInput = {
@@ -99267,6 +110332,8 @@ export namespace Prisma {
     lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -99287,6 +110354,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
     activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutVehicleSwapsInput = {
@@ -99345,6 +110416,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -99359,6 +110432,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type VehicleUpsertWithoutSwapsAsOriginalInput = {
@@ -99382,6 +110459,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -99412,6 +110491,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -99448,6 +110529,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -99478,6 +110561,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -99536,6 +110621,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutVehicleSwapsInput = {
@@ -99571,6 +110663,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type BookingExtensionUpsertWithoutVehicleSwapInput = {
@@ -99669,6 +110768,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutDiscountRulesCreatedInput = {
@@ -99704,6 +110810,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutDiscountRulesCreatedInput = {
@@ -99787,6 +110900,8 @@ export namespace Prisma {
     lastExtendedAt?: Date | string | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -99807,6 +110922,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
     activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
     extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDiscountRuleInput = {
@@ -99864,6 +110983,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -99879,6 +111000,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDiscountRuleInput = {
@@ -99981,6 +111106,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutDiscountRulesCreatedInput = {
@@ -100016,6 +111148,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type CouponUsageLogUpsertWithWhereUniqueWithoutDiscountRuleInput = {
@@ -100123,6 +111262,7 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
@@ -100151,6 +111291,7 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
@@ -100194,6 +111335,7 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
@@ -100222,6 +111364,7 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
@@ -100249,6 +111392,7 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
@@ -100277,6 +111421,7 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
@@ -100320,6 +111465,7 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
@@ -100348,6 +111494,7 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
@@ -100403,6 +111550,8 @@ export namespace Prisma {
     lastExtendedAt?: Date | string | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -100423,6 +111572,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
     activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
     extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDiscountApplicationInput = {
@@ -100481,6 +111634,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -100495,6 +111650,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDiscountApplicationInput = {
@@ -100686,6 +111845,8 @@ export namespace Prisma {
     lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -100706,6 +111867,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
     activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDiscountApplicationInput = {
@@ -100764,6 +111929,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -100778,6 +111945,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type DiscountRuleUpsertWithoutApplicationsInput = {
@@ -101126,6 +112297,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutManualDiscountsIssuedInput = {
@@ -101161,6 +112339,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutManualDiscountsIssuedInput = {
@@ -101200,6 +112385,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutManualDiscountsApprovedInput = {
@@ -101235,6 +112427,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutManualDiscountsApprovedInput = {
@@ -101291,6 +112490,8 @@ export namespace Prisma {
     lastExtendedAt?: Date | string | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -101311,6 +112512,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
     activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
     extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutManualDiscountInput = {
@@ -101369,6 +112574,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -101383,6 +112590,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutManualDiscountInput = {
@@ -101475,6 +112686,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutManualDiscountsIssuedInput = {
@@ -101510,6 +112728,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUpsertWithoutManualDiscountsApprovedInput = {
@@ -101555,6 +112780,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutManualDiscountsApprovedInput = {
@@ -101590,6 +112822,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type BookingUpsertWithoutManualDiscountInput = {
@@ -101652,6 +112891,8 @@ export namespace Prisma {
     lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -101672,6 +112913,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
     activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutManualDiscountInput = {
@@ -101730,6 +112975,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -101744,6 +112991,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type DiscountApplicationUpsertWithoutManualDiscountInput = {
@@ -101815,6 +113066,7 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
@@ -101843,6 +113095,7 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
@@ -101886,6 +113139,7 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
@@ -101914,6 +113168,7 @@ export namespace Prisma {
     staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
@@ -101969,6 +113224,8 @@ export namespace Prisma {
     lastExtendedAt?: Date | string | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -101989,6 +113246,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
     activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
     extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutPaymentTransactionsInput = {
@@ -102047,6 +113308,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -102061,6 +113324,10 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutPaymentTransactionsInput = {
@@ -102090,6 +113357,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigCreateNestedOneWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
@@ -102118,6 +113386,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigUncheckedCreateNestedOneWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
@@ -102160,6 +113429,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutCollectedPaymentsInput = {
@@ -102195,6 +113471,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutCollectedPaymentsInput = {
@@ -102234,6 +113517,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutConfirmedPaymentsInput = {
@@ -102269,6 +113559,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutConfirmedPaymentsInput = {
@@ -102308,6 +113605,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutRejectedPaymentsInput = {
@@ -102343,6 +113647,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutRejectedPaymentsInput = {
@@ -102508,6 +113819,8 @@ export namespace Prisma {
     lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -102528,6 +113841,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
     activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutPaymentTransactionsInput = {
@@ -102586,6 +113903,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -102600,6 +113919,10 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BranchUpsertWithoutPaymentTransactionsInput = {
@@ -102635,6 +113958,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUpdateOneWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
@@ -102663,6 +113987,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUncheckedUpdateOneWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
@@ -102711,6 +114036,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutCollectedPaymentsInput = {
@@ -102746,6 +114078,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUpsertWithoutConfirmedPaymentsInput = {
@@ -102791,6 +114130,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutConfirmedPaymentsInput = {
@@ -102826,6 +114172,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUpsertWithoutRejectedPaymentsInput = {
@@ -102871,6 +114224,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRejectedPaymentsInput = {
@@ -102906,6 +114266,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type CashShiftUpsertWithoutTransactionsInput = {
@@ -103067,6 +114434,8 @@ export namespace Prisma {
     lastExtendedAt?: Date | string | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -103087,6 +114456,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
     activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
     extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutRefundRequestsInput = {
@@ -103145,6 +114518,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -103159,6 +114534,10 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutRefundRequestsInput = {
@@ -103188,6 +114567,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
@@ -103216,6 +114596,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
@@ -103258,6 +114639,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutRefundRequestsMadeInput = {
@@ -103293,6 +114681,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutRefundRequestsMadeInput = {
@@ -103332,6 +114727,13 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutRefundRequestsApprovedInput = {
@@ -103367,6 +114769,13 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutRefundRequestsApprovedInput = {
@@ -103406,6 +114815,13 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutRefundRequestsCompletedInput = {
@@ -103441,6 +114857,13 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutRefundRequestsCompletedInput = {
@@ -103508,6 +114931,8 @@ export namespace Prisma {
     lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -103528,6 +114953,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
     activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutRefundRequestsInput = {
@@ -103586,6 +115015,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -103600,6 +115031,10 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BranchUpsertWithoutRefundRequestsInput = {
@@ -103635,6 +115070,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
@@ -103663,6 +115099,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
@@ -103711,6 +115148,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRefundRequestsMadeInput = {
@@ -103746,6 +115190,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUpsertWithoutRefundRequestsApprovedInput = {
@@ -103791,6 +115242,13 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRefundRequestsApprovedInput = {
@@ -103826,6 +115284,13 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUpsertWithoutRefundRequestsCompletedInput = {
@@ -103871,6 +115336,13 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRefundRequestsCompletedInput = {
@@ -103906,6 +115378,13 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserCreateWithoutOpenShiftsInput = {
@@ -103940,6 +115419,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutOpenShiftsInput = {
@@ -103975,6 +115461,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutOpenShiftsInput = {
@@ -104004,6 +115497,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
@@ -104032,6 +115526,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
@@ -104074,6 +115569,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutReconciledShiftsInput = {
@@ -104109,6 +115611,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
     initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutReconciledShiftsInput = {
@@ -104220,6 +115729,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutOpenShiftsInput = {
@@ -104255,6 +115771,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type BranchUpsertWithoutCashShiftsInput = {
@@ -104290,6 +115813,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
@@ -104318,6 +115842,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
@@ -104366,6 +115891,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutReconciledShiftsInput = {
@@ -104401,6 +115933,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type PaymentTransactionUpsertWithWhereUniqueWithoutCashShiftInput = {
@@ -104468,6 +116007,8 @@ export namespace Prisma {
     lastExtendedAt?: Date | string | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -104488,6 +116029,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
     activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutExtensionsInput = {
@@ -104546,6 +116091,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -104560,6 +116107,10 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutExtensionsInput = {
@@ -104589,6 +116140,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
@@ -104617,6 +116169,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
     discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigUncheckedCreateNestedOneWithoutBranchInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
@@ -104659,6 +116212,13 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserUncheckedCreateWithoutInitiatedExtensionsInput = {
@@ -104694,6 +116254,13 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
     refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
     refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
   }
 
   export type UserCreateOrConnectWithoutInitiatedExtensionsInput = {
@@ -104711,6 +116278,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -104741,6 +116310,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -104902,6 +116473,8 @@ export namespace Prisma {
     lastExtendedAt?: Date | string | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -104922,6 +116495,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
     extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutActiveExtensionInput = {
@@ -104979,6 +116556,8 @@ export namespace Prisma {
     lastExtendedAt?: Date | string | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -104994,6 +116573,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutActiveExtensionInput = {
@@ -105066,6 +116649,8 @@ export namespace Prisma {
     lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -105086,6 +116671,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
     activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutExtensionsInput = {
@@ -105144,6 +116733,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -105158,6 +116749,10 @@ export namespace Prisma {
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BranchUpsertWithoutExtensionsInput = {
@@ -105193,6 +116788,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
@@ -105221,6 +116817,7 @@ export namespace Prisma {
     durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
     discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUncheckedUpdateOneWithoutBranchNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
@@ -105269,6 +116866,13 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutInitiatedExtensionsInput = {
@@ -105304,6 +116908,13 @@ export namespace Prisma {
     refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type VehicleUpsertWithoutExtensionSwapsInput = {
@@ -105327,6 +116938,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -105357,6 +116970,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -105492,6 +117107,2890 @@ export namespace Prisma {
     data: XOR<BookingUpdateManyMutationInput, BookingUncheckedUpdateManyWithoutActiveExtensionInput>
   }
 
+  export type BranchCreateWithoutChargeConfigInput = {
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleCreateNestedManyWithoutBranchInput
+    bookings?: BookingCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
+    auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchUncheckedCreateWithoutChargeConfigInput = {
+    id?: number
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserUncheckedCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchCreateOrConnectWithoutChargeConfigInput = {
+    where: BranchWhereUniqueInput
+    create: XOR<BranchCreateWithoutChargeConfigInput, BranchUncheckedCreateWithoutChargeConfigInput>
+  }
+
+  export type BranchUpsertWithoutChargeConfigInput = {
+    update: XOR<BranchUpdateWithoutChargeConfigInput, BranchUncheckedUpdateWithoutChargeConfigInput>
+    create: XOR<BranchCreateWithoutChargeConfigInput, BranchUncheckedCreateWithoutChargeConfigInput>
+    where?: BranchWhereInput
+  }
+
+  export type BranchUpdateToOneWithWhereWithoutChargeConfigInput = {
+    where?: BranchWhereInput
+    data: XOR<BranchUpdateWithoutChargeConfigInput, BranchUncheckedUpdateWithoutChargeConfigInput>
+  }
+
+  export type BranchUpdateWithoutChargeConfigInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+  }
+
+  export type BranchUncheckedUpdateWithoutChargeConfigInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUncheckedUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+  }
+
+  export type BookingCreateWithoutChargeEntriesInput = {
+    publicId: string
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
+    customer: CustomerCreateNestedOneWithoutBookingsInput
+    branch: BranchCreateNestedOneWithoutBookingsInput
+    createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
+    photos?: BookingPhotoCreateNestedManyWithoutBookingInput
+    damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
+    deposit?: DepositCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingUncheckedCreateWithoutChargeEntriesInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
+    damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
+    deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingCreateOrConnectWithoutChargeEntriesInput = {
+    where: BookingWhereUniqueInput
+    create: XOR<BookingCreateWithoutChargeEntriesInput, BookingUncheckedCreateWithoutChargeEntriesInput>
+  }
+
+  export type UserCreateWithoutChargeEntriesCreatedInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+  }
+
+  export type UserUncheckedCreateWithoutChargeEntriesCreatedInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+  }
+
+  export type UserCreateOrConnectWithoutChargeEntriesCreatedInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutChargeEntriesCreatedInput, UserUncheckedCreateWithoutChargeEntriesCreatedInput>
+  }
+
+  export type ChargeOverrideCreateWithoutChargeEntryInput = {
+    publicId: string
+    originalAmount: Decimal | DecimalJsLike | number | string
+    overriddenAmount: Decimal | DecimalJsLike | number | string
+    waivedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.OverrideStatus
+    actorRole: $Enums.Role
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutChargeOverridesInput
+    actor: UserCreateNestedOneWithoutOverridesActedInput
+    approver?: UserCreateNestedOneWithoutOverridesApprovedInput
+  }
+
+  export type ChargeOverrideUncheckedCreateWithoutChargeEntryInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    originalAmount: Decimal | DecimalJsLike | number | string
+    overriddenAmount: Decimal | DecimalJsLike | number | string
+    waivedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.OverrideStatus
+    actorId: number
+    actorRole: $Enums.Role
+    approverId?: number | null
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ChargeOverrideCreateOrConnectWithoutChargeEntryInput = {
+    where: ChargeOverrideWhereUniqueInput
+    create: XOR<ChargeOverrideCreateWithoutChargeEntryInput, ChargeOverrideUncheckedCreateWithoutChargeEntryInput>
+  }
+
+  export type BookingUpsertWithoutChargeEntriesInput = {
+    update: XOR<BookingUpdateWithoutChargeEntriesInput, BookingUncheckedUpdateWithoutChargeEntriesInput>
+    create: XOR<BookingCreateWithoutChargeEntriesInput, BookingUncheckedCreateWithoutChargeEntriesInput>
+    where?: BookingWhereInput
+  }
+
+  export type BookingUpdateToOneWithWhereWithoutChargeEntriesInput = {
+    where?: BookingWhereInput
+    data: XOR<BookingUpdateWithoutChargeEntriesInput, BookingUncheckedUpdateWithoutChargeEntriesInput>
+  }
+
+  export type BookingUpdateWithoutChargeEntriesInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
+    customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
+    photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateWithoutChargeEntriesInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+  }
+
+  export type UserUpsertWithoutChargeEntriesCreatedInput = {
+    update: XOR<UserUpdateWithoutChargeEntriesCreatedInput, UserUncheckedUpdateWithoutChargeEntriesCreatedInput>
+    create: XOR<UserCreateWithoutChargeEntriesCreatedInput, UserUncheckedCreateWithoutChargeEntriesCreatedInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutChargeEntriesCreatedInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutChargeEntriesCreatedInput, UserUncheckedUpdateWithoutChargeEntriesCreatedInput>
+  }
+
+  export type UserUpdateWithoutChargeEntriesCreatedInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutChargeEntriesCreatedInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+  }
+
+  export type ChargeOverrideUpsertWithoutChargeEntryInput = {
+    update: XOR<ChargeOverrideUpdateWithoutChargeEntryInput, ChargeOverrideUncheckedUpdateWithoutChargeEntryInput>
+    create: XOR<ChargeOverrideCreateWithoutChargeEntryInput, ChargeOverrideUncheckedCreateWithoutChargeEntryInput>
+    where?: ChargeOverrideWhereInput
+  }
+
+  export type ChargeOverrideUpdateToOneWithWhereWithoutChargeEntryInput = {
+    where?: ChargeOverrideWhereInput
+    data: XOR<ChargeOverrideUpdateWithoutChargeEntryInput, ChargeOverrideUncheckedUpdateWithoutChargeEntryInput>
+  }
+
+  export type ChargeOverrideUpdateWithoutChargeEntryInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    overriddenAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    waivedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumOverrideStatusFieldUpdateOperationsInput | $Enums.OverrideStatus
+    actorRole?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutChargeOverridesNestedInput
+    actor?: UserUpdateOneRequiredWithoutOverridesActedNestedInput
+    approver?: UserUpdateOneWithoutOverridesApprovedNestedInput
+  }
+
+  export type ChargeOverrideUncheckedUpdateWithoutChargeEntryInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    overriddenAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    waivedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumOverrideStatusFieldUpdateOperationsInput | $Enums.OverrideStatus
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorRole?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    approverId?: NullableIntFieldUpdateOperationsInput | number | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BookingCreateWithoutChargeOverridesInput = {
+    publicId: string
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
+    customer: CustomerCreateNestedOneWithoutBookingsInput
+    branch: BranchCreateNestedOneWithoutBookingsInput
+    createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
+    photos?: BookingPhotoCreateNestedManyWithoutBookingInput
+    damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
+    deposit?: DepositCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingUncheckedCreateWithoutChargeOverridesInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
+    damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
+    deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingCreateOrConnectWithoutChargeOverridesInput = {
+    where: BookingWhereUniqueInput
+    create: XOR<BookingCreateWithoutChargeOverridesInput, BookingUncheckedCreateWithoutChargeOverridesInput>
+  }
+
+  export type ChargeEntryCreateWithoutOverrideInput = {
+    publicId: string
+    chargeType: $Enums.ChargeType
+    moduleKey: string
+    label: string
+    originalAmount: Decimal | DecimalJsLike | number | string
+    finalAmount: Decimal | DecimalJsLike | number | string
+    quantity?: Decimal | DecimalJsLike | number | string | null
+    unitRate?: Decimal | DecimalJsLike | number | string | null
+    notes?: string | null
+    isOverridden?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutChargeEntriesInput
+    createdBy: UserCreateNestedOneWithoutChargeEntriesCreatedInput
+  }
+
+  export type ChargeEntryUncheckedCreateWithoutOverrideInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    chargeType: $Enums.ChargeType
+    moduleKey: string
+    label: string
+    originalAmount: Decimal | DecimalJsLike | number | string
+    finalAmount: Decimal | DecimalJsLike | number | string
+    quantity?: Decimal | DecimalJsLike | number | string | null
+    unitRate?: Decimal | DecimalJsLike | number | string | null
+    notes?: string | null
+    isOverridden?: boolean
+    createdById: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ChargeEntryCreateOrConnectWithoutOverrideInput = {
+    where: ChargeEntryWhereUniqueInput
+    create: XOR<ChargeEntryCreateWithoutOverrideInput, ChargeEntryUncheckedCreateWithoutOverrideInput>
+  }
+
+  export type UserCreateWithoutOverridesActedInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+  }
+
+  export type UserUncheckedCreateWithoutOverridesActedInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+  }
+
+  export type UserCreateOrConnectWithoutOverridesActedInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutOverridesActedInput, UserUncheckedCreateWithoutOverridesActedInput>
+  }
+
+  export type UserCreateWithoutOverridesApprovedInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+  }
+
+  export type UserUncheckedCreateWithoutOverridesApprovedInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+  }
+
+  export type UserCreateOrConnectWithoutOverridesApprovedInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutOverridesApprovedInput, UserUncheckedCreateWithoutOverridesApprovedInput>
+  }
+
+  export type BookingUpsertWithoutChargeOverridesInput = {
+    update: XOR<BookingUpdateWithoutChargeOverridesInput, BookingUncheckedUpdateWithoutChargeOverridesInput>
+    create: XOR<BookingCreateWithoutChargeOverridesInput, BookingUncheckedCreateWithoutChargeOverridesInput>
+    where?: BookingWhereInput
+  }
+
+  export type BookingUpdateToOneWithWhereWithoutChargeOverridesInput = {
+    where?: BookingWhereInput
+    data: XOR<BookingUpdateWithoutChargeOverridesInput, BookingUncheckedUpdateWithoutChargeOverridesInput>
+  }
+
+  export type BookingUpdateWithoutChargeOverridesInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
+    customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
+    photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateWithoutChargeOverridesInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+  }
+
+  export type ChargeEntryUpsertWithoutOverrideInput = {
+    update: XOR<ChargeEntryUpdateWithoutOverrideInput, ChargeEntryUncheckedUpdateWithoutOverrideInput>
+    create: XOR<ChargeEntryCreateWithoutOverrideInput, ChargeEntryUncheckedCreateWithoutOverrideInput>
+    where?: ChargeEntryWhereInput
+  }
+
+  export type ChargeEntryUpdateToOneWithWhereWithoutOverrideInput = {
+    where?: ChargeEntryWhereInput
+    data: XOR<ChargeEntryUpdateWithoutOverrideInput, ChargeEntryUncheckedUpdateWithoutOverrideInput>
+  }
+
+  export type ChargeEntryUpdateWithoutOverrideInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
+    moduleKey?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    isOverridden?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutChargeEntriesNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutChargeEntriesCreatedNestedInput
+  }
+
+  export type ChargeEntryUncheckedUpdateWithoutOverrideInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
+    moduleKey?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    isOverridden?: BoolFieldUpdateOperationsInput | boolean
+    createdById?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type UserUpsertWithoutOverridesActedInput = {
+    update: XOR<UserUpdateWithoutOverridesActedInput, UserUncheckedUpdateWithoutOverridesActedInput>
+    create: XOR<UserCreateWithoutOverridesActedInput, UserUncheckedCreateWithoutOverridesActedInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutOverridesActedInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutOverridesActedInput, UserUncheckedUpdateWithoutOverridesActedInput>
+  }
+
+  export type UserUpdateWithoutOverridesActedInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutOverridesActedInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+  }
+
+  export type UserUpsertWithoutOverridesApprovedInput = {
+    update: XOR<UserUpdateWithoutOverridesApprovedInput, UserUncheckedUpdateWithoutOverridesApprovedInput>
+    create: XOR<UserCreateWithoutOverridesApprovedInput, UserUncheckedCreateWithoutOverridesApprovedInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutOverridesApprovedInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutOverridesApprovedInput, UserUncheckedUpdateWithoutOverridesApprovedInput>
+  }
+
+  export type UserUpdateWithoutOverridesApprovedInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutOverridesApprovedInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+  }
+
+  export type BookingCreateWithoutFuelRecordInput = {
+    publicId: string
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
+    customer: CustomerCreateNestedOneWithoutBookingsInput
+    branch: BranchCreateNestedOneWithoutBookingsInput
+    createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
+    photos?: BookingPhotoCreateNestedManyWithoutBookingInput
+    damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
+    deposit?: DepositCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingUncheckedCreateWithoutFuelRecordInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
+    damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
+    deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingCreateOrConnectWithoutFuelRecordInput = {
+    where: BookingWhereUniqueInput
+    create: XOR<BookingCreateWithoutFuelRecordInput, BookingUncheckedCreateWithoutFuelRecordInput>
+  }
+
+  export type UserCreateWithoutFuelPickupCapturesInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+  }
+
+  export type UserUncheckedCreateWithoutFuelPickupCapturesInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+  }
+
+  export type UserCreateOrConnectWithoutFuelPickupCapturesInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutFuelPickupCapturesInput, UserUncheckedCreateWithoutFuelPickupCapturesInput>
+  }
+
+  export type UserCreateWithoutFuelReturnCapturesInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+  }
+
+  export type UserUncheckedCreateWithoutFuelReturnCapturesInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+  }
+
+  export type UserCreateOrConnectWithoutFuelReturnCapturesInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutFuelReturnCapturesInput, UserUncheckedCreateWithoutFuelReturnCapturesInput>
+  }
+
+  export type BookingUpsertWithoutFuelRecordInput = {
+    update: XOR<BookingUpdateWithoutFuelRecordInput, BookingUncheckedUpdateWithoutFuelRecordInput>
+    create: XOR<BookingCreateWithoutFuelRecordInput, BookingUncheckedCreateWithoutFuelRecordInput>
+    where?: BookingWhereInput
+  }
+
+  export type BookingUpdateToOneWithWhereWithoutFuelRecordInput = {
+    where?: BookingWhereInput
+    data: XOR<BookingUpdateWithoutFuelRecordInput, BookingUncheckedUpdateWithoutFuelRecordInput>
+  }
+
+  export type BookingUpdateWithoutFuelRecordInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
+    customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
+    photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateWithoutFuelRecordInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+  }
+
+  export type UserUpsertWithoutFuelPickupCapturesInput = {
+    update: XOR<UserUpdateWithoutFuelPickupCapturesInput, UserUncheckedUpdateWithoutFuelPickupCapturesInput>
+    create: XOR<UserCreateWithoutFuelPickupCapturesInput, UserUncheckedCreateWithoutFuelPickupCapturesInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutFuelPickupCapturesInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutFuelPickupCapturesInput, UserUncheckedUpdateWithoutFuelPickupCapturesInput>
+  }
+
+  export type UserUpdateWithoutFuelPickupCapturesInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutFuelPickupCapturesInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+  }
+
+  export type UserUpsertWithoutFuelReturnCapturesInput = {
+    update: XOR<UserUpdateWithoutFuelReturnCapturesInput, UserUncheckedUpdateWithoutFuelReturnCapturesInput>
+    create: XOR<UserCreateWithoutFuelReturnCapturesInput, UserUncheckedCreateWithoutFuelReturnCapturesInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutFuelReturnCapturesInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutFuelReturnCapturesInput, UserUncheckedUpdateWithoutFuelReturnCapturesInput>
+  }
+
+  export type UserUpdateWithoutFuelReturnCapturesInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutFuelReturnCapturesInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+  }
+
+  export type BookingCreateWithoutSafetyDepositRequestInput = {
+    publicId: string
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
+    customer: CustomerCreateNestedOneWithoutBookingsInput
+    branch: BranchCreateNestedOneWithoutBookingsInput
+    createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
+    photos?: BookingPhotoCreateNestedManyWithoutBookingInput
+    damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
+    deposit?: DepositCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingUncheckedCreateWithoutSafetyDepositRequestInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
+    damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
+    deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingCreateOrConnectWithoutSafetyDepositRequestInput = {
+    where: BookingWhereUniqueInput
+    create: XOR<BookingCreateWithoutSafetyDepositRequestInput, BookingUncheckedCreateWithoutSafetyDepositRequestInput>
+  }
+
+  export type UserCreateWithoutSafetyDepositRequestsInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+  }
+
+  export type UserUncheckedCreateWithoutSafetyDepositRequestsInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+  }
+
+  export type UserCreateOrConnectWithoutSafetyDepositRequestsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutSafetyDepositRequestsInput, UserUncheckedCreateWithoutSafetyDepositRequestsInput>
+  }
+
+  export type UserCreateWithoutSafetyDepositApprovalsInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+  }
+
+  export type UserUncheckedCreateWithoutSafetyDepositApprovalsInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+  }
+
+  export type UserCreateOrConnectWithoutSafetyDepositApprovalsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutSafetyDepositApprovalsInput, UserUncheckedCreateWithoutSafetyDepositApprovalsInput>
+  }
+
+  export type BookingUpsertWithoutSafetyDepositRequestInput = {
+    update: XOR<BookingUpdateWithoutSafetyDepositRequestInput, BookingUncheckedUpdateWithoutSafetyDepositRequestInput>
+    create: XOR<BookingCreateWithoutSafetyDepositRequestInput, BookingUncheckedCreateWithoutSafetyDepositRequestInput>
+    where?: BookingWhereInput
+  }
+
+  export type BookingUpdateToOneWithWhereWithoutSafetyDepositRequestInput = {
+    where?: BookingWhereInput
+    data: XOR<BookingUpdateWithoutSafetyDepositRequestInput, BookingUncheckedUpdateWithoutSafetyDepositRequestInput>
+  }
+
+  export type BookingUpdateWithoutSafetyDepositRequestInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
+    customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
+    photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateWithoutSafetyDepositRequestInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+  }
+
+  export type UserUpsertWithoutSafetyDepositRequestsInput = {
+    update: XOR<UserUpdateWithoutSafetyDepositRequestsInput, UserUncheckedUpdateWithoutSafetyDepositRequestsInput>
+    create: XOR<UserCreateWithoutSafetyDepositRequestsInput, UserUncheckedCreateWithoutSafetyDepositRequestsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutSafetyDepositRequestsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutSafetyDepositRequestsInput, UserUncheckedUpdateWithoutSafetyDepositRequestsInput>
+  }
+
+  export type UserUpdateWithoutSafetyDepositRequestsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutSafetyDepositRequestsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+  }
+
+  export type UserUpsertWithoutSafetyDepositApprovalsInput = {
+    update: XOR<UserUpdateWithoutSafetyDepositApprovalsInput, UserUncheckedUpdateWithoutSafetyDepositApprovalsInput>
+    create: XOR<UserCreateWithoutSafetyDepositApprovalsInput, UserUncheckedCreateWithoutSafetyDepositApprovalsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutSafetyDepositApprovalsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutSafetyDepositApprovalsInput, UserUncheckedUpdateWithoutSafetyDepositApprovalsInput>
+  }
+
+  export type UserUpdateWithoutSafetyDepositApprovalsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutSafetyDepositApprovalsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+  }
+
   export type EmailVerificationOtpCreateManyUserInput = {
     id?: number
     phone: string
@@ -105619,6 +120118,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -105919,6 +120420,125 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type ChargeEntryCreateManyCreatedByInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    chargeType: $Enums.ChargeType
+    moduleKey: string
+    label: string
+    originalAmount: Decimal | DecimalJsLike | number | string
+    finalAmount: Decimal | DecimalJsLike | number | string
+    quantity?: Decimal | DecimalJsLike | number | string | null
+    unitRate?: Decimal | DecimalJsLike | number | string | null
+    notes?: string | null
+    isOverridden?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ChargeOverrideCreateManyActorInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    chargeEntryId: number
+    originalAmount: Decimal | DecimalJsLike | number | string
+    overriddenAmount: Decimal | DecimalJsLike | number | string
+    waivedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.OverrideStatus
+    actorRole: $Enums.Role
+    approverId?: number | null
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ChargeOverrideCreateManyApproverInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    chargeEntryId: number
+    originalAmount: Decimal | DecimalJsLike | number | string
+    overriddenAmount: Decimal | DecimalJsLike | number | string
+    waivedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.OverrideStatus
+    actorId: number
+    actorRole: $Enums.Role
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type FuelRecordCreateManyCapturedByPickupInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    pickupFuelLevel: $Enums.FuelLevel
+    returnFuelLevel?: $Enums.FuelLevel | null
+    fuelDeficit?: boolean
+    fuelDeficitCharge?: Decimal | DecimalJsLike | number | string | null
+    skipReason?: string | null
+    capturedByReturnId?: number | null
+    pickupAt: Date | string
+    returnAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type FuelRecordCreateManyCapturedByReturnInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    pickupFuelLevel: $Enums.FuelLevel
+    returnFuelLevel?: $Enums.FuelLevel | null
+    fuelDeficit?: boolean
+    fuelDeficitCharge?: Decimal | DecimalJsLike | number | string | null
+    skipReason?: string | null
+    capturedByPickupId: number
+    pickupAt: Date | string
+    returnAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type SafetyDepositRequestCreateManyRequestedByInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    requestedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.SafetyDepositStatus
+    approvedById?: number | null
+    approvedAmount?: Decimal | DecimalJsLike | number | string | null
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type SafetyDepositRequestCreateManyApprovedByInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    requestedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.SafetyDepositStatus
+    requestedById: number
+    approvedAmount?: Decimal | DecimalJsLike | number | string | null
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type EmailVerificationOtpUpdateWithoutUserInput = {
     phone?: StringFieldUpdateOperationsInput | string
     otpHash?: StringFieldUpdateOperationsInput | string
@@ -106180,6 +120800,8 @@ export namespace Prisma {
     lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -106200,6 +120822,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
     activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCreatedByInput = {
@@ -106257,6 +120883,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -106272,6 +120900,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutCreatedByInput = {
@@ -106329,6 +120961,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -107231,6 +121865,358 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type ChargeEntryUpdateWithoutCreatedByInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
+    moduleKey?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    isOverridden?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutChargeEntriesNestedInput
+    override?: ChargeOverrideUpdateOneWithoutChargeEntryNestedInput
+  }
+
+  export type ChargeEntryUncheckedUpdateWithoutCreatedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
+    moduleKey?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    isOverridden?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    override?: ChargeOverrideUncheckedUpdateOneWithoutChargeEntryNestedInput
+  }
+
+  export type ChargeEntryUncheckedUpdateManyWithoutCreatedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
+    moduleKey?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    isOverridden?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ChargeOverrideUpdateWithoutActorInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    overriddenAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    waivedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumOverrideStatusFieldUpdateOperationsInput | $Enums.OverrideStatus
+    actorRole?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutChargeOverridesNestedInput
+    chargeEntry?: ChargeEntryUpdateOneRequiredWithoutOverrideNestedInput
+    approver?: UserUpdateOneWithoutOverridesApprovedNestedInput
+  }
+
+  export type ChargeOverrideUncheckedUpdateWithoutActorInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    chargeEntryId?: IntFieldUpdateOperationsInput | number
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    overriddenAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    waivedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumOverrideStatusFieldUpdateOperationsInput | $Enums.OverrideStatus
+    actorRole?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    approverId?: NullableIntFieldUpdateOperationsInput | number | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ChargeOverrideUncheckedUpdateManyWithoutActorInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    chargeEntryId?: IntFieldUpdateOperationsInput | number
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    overriddenAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    waivedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumOverrideStatusFieldUpdateOperationsInput | $Enums.OverrideStatus
+    actorRole?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    approverId?: NullableIntFieldUpdateOperationsInput | number | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ChargeOverrideUpdateWithoutApproverInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    overriddenAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    waivedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumOverrideStatusFieldUpdateOperationsInput | $Enums.OverrideStatus
+    actorRole?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutChargeOverridesNestedInput
+    chargeEntry?: ChargeEntryUpdateOneRequiredWithoutOverrideNestedInput
+    actor?: UserUpdateOneRequiredWithoutOverridesActedNestedInput
+  }
+
+  export type ChargeOverrideUncheckedUpdateWithoutApproverInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    chargeEntryId?: IntFieldUpdateOperationsInput | number
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    overriddenAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    waivedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumOverrideStatusFieldUpdateOperationsInput | $Enums.OverrideStatus
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorRole?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ChargeOverrideUncheckedUpdateManyWithoutApproverInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    chargeEntryId?: IntFieldUpdateOperationsInput | number
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    overriddenAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    waivedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumOverrideStatusFieldUpdateOperationsInput | $Enums.OverrideStatus
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorRole?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type FuelRecordUpdateWithoutCapturedByPickupInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    pickupFuelLevel?: EnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel
+    returnFuelLevel?: NullableEnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel | null
+    fuelDeficit?: BoolFieldUpdateOperationsInput | boolean
+    fuelDeficitCharge?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    skipReason?: NullableStringFieldUpdateOperationsInput | string | null
+    pickupAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    returnAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutFuelRecordNestedInput
+    capturedByReturn?: UserUpdateOneWithoutFuelReturnCapturesNestedInput
+  }
+
+  export type FuelRecordUncheckedUpdateWithoutCapturedByPickupInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    pickupFuelLevel?: EnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel
+    returnFuelLevel?: NullableEnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel | null
+    fuelDeficit?: BoolFieldUpdateOperationsInput | boolean
+    fuelDeficitCharge?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    skipReason?: NullableStringFieldUpdateOperationsInput | string | null
+    capturedByReturnId?: NullableIntFieldUpdateOperationsInput | number | null
+    pickupAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    returnAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type FuelRecordUncheckedUpdateManyWithoutCapturedByPickupInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    pickupFuelLevel?: EnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel
+    returnFuelLevel?: NullableEnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel | null
+    fuelDeficit?: BoolFieldUpdateOperationsInput | boolean
+    fuelDeficitCharge?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    skipReason?: NullableStringFieldUpdateOperationsInput | string | null
+    capturedByReturnId?: NullableIntFieldUpdateOperationsInput | number | null
+    pickupAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    returnAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type FuelRecordUpdateWithoutCapturedByReturnInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    pickupFuelLevel?: EnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel
+    returnFuelLevel?: NullableEnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel | null
+    fuelDeficit?: BoolFieldUpdateOperationsInput | boolean
+    fuelDeficitCharge?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    skipReason?: NullableStringFieldUpdateOperationsInput | string | null
+    pickupAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    returnAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutFuelRecordNestedInput
+    capturedByPickup?: UserUpdateOneRequiredWithoutFuelPickupCapturesNestedInput
+  }
+
+  export type FuelRecordUncheckedUpdateWithoutCapturedByReturnInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    pickupFuelLevel?: EnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel
+    returnFuelLevel?: NullableEnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel | null
+    fuelDeficit?: BoolFieldUpdateOperationsInput | boolean
+    fuelDeficitCharge?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    skipReason?: NullableStringFieldUpdateOperationsInput | string | null
+    capturedByPickupId?: IntFieldUpdateOperationsInput | number
+    pickupAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    returnAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type FuelRecordUncheckedUpdateManyWithoutCapturedByReturnInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    pickupFuelLevel?: EnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel
+    returnFuelLevel?: NullableEnumFuelLevelFieldUpdateOperationsInput | $Enums.FuelLevel | null
+    fuelDeficit?: BoolFieldUpdateOperationsInput | boolean
+    fuelDeficitCharge?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    skipReason?: NullableStringFieldUpdateOperationsInput | string | null
+    capturedByPickupId?: IntFieldUpdateOperationsInput | number
+    pickupAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    returnAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SafetyDepositRequestUpdateWithoutRequestedByInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    requestedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumSafetyDepositStatusFieldUpdateOperationsInput | $Enums.SafetyDepositStatus
+    approvedAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutSafetyDepositRequestNestedInput
+    approvedBy?: UserUpdateOneWithoutSafetyDepositApprovalsNestedInput
+  }
+
+  export type SafetyDepositRequestUncheckedUpdateWithoutRequestedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    requestedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumSafetyDepositStatusFieldUpdateOperationsInput | $Enums.SafetyDepositStatus
+    approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    approvedAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    requestedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumSafetyDepositStatusFieldUpdateOperationsInput | $Enums.SafetyDepositStatus
+    approvedById?: NullableIntFieldUpdateOperationsInput | number | null
+    approvedAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SafetyDepositRequestUpdateWithoutApprovedByInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    requestedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumSafetyDepositStatusFieldUpdateOperationsInput | $Enums.SafetyDepositStatus
+    approvedAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutSafetyDepositRequestNestedInput
+    requestedBy?: UserUpdateOneRequiredWithoutSafetyDepositRequestsNestedInput
+  }
+
+  export type SafetyDepositRequestUncheckedUpdateWithoutApprovedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    requestedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumSafetyDepositStatusFieldUpdateOperationsInput | $Enums.SafetyDepositStatus
+    requestedById?: IntFieldUpdateOperationsInput | number
+    approvedAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    requestedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumSafetyDepositStatusFieldUpdateOperationsInput | $Enums.SafetyDepositStatus
+    requestedById?: IntFieldUpdateOperationsInput | number
+    approvedAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type CustomerKycCreateManyCustomerInput = {
     id?: number
     publicId: string
@@ -107295,6 +122281,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -107392,6 +122380,8 @@ export namespace Prisma {
     lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -107412,6 +122402,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
     activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCustomerInput = {
@@ -107469,6 +122463,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -107484,6 +122480,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutCustomerInput = {
@@ -107541,6 +122541,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -107670,6 +122672,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -107819,6 +122823,8 @@ export namespace Prisma {
     lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -107839,6 +122845,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
     activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutKycFileInput = {
@@ -107896,6 +122906,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -107911,6 +122923,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutKycFileInput = {
@@ -107968,6 +122984,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -108121,6 +123139,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -108181,6 +123201,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -108406,6 +123428,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutBranchInput = {
@@ -108441,6 +123470,13 @@ export namespace Prisma {
     refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
     initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
   }
 
   export type UserUncheckedUpdateManyWithoutBranchInput = {
@@ -108468,6 +123504,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -108497,6 +123535,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -108525,6 +123565,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -108579,6 +123621,8 @@ export namespace Prisma {
     lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -108599,6 +123643,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
     activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutBranchInput = {
@@ -108656,6 +123704,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -108671,6 +123721,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutBranchInput = {
@@ -108728,6 +123782,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -109316,6 +124372,8 @@ export namespace Prisma {
     advancePayAmount?: Decimal | DecimalJsLike | number | string
     insuranceExpiry: Date | string
     status?: $Enums.VehicleStatus
+    fastagNumber?: string | null
+    hasFastag?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -109402,6 +124460,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -109431,6 +124491,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -109459,6 +124521,8 @@ export namespace Prisma {
     advancePayAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     insuranceExpiry?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumVehicleStatusFieldUpdateOperationsInput | $Enums.VehicleStatus
+    fastagNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    hasFastag?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -110164,6 +125228,42 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type ChargeEntryCreateManyBookingInput = {
+    id?: number
+    publicId: string
+    chargeType: $Enums.ChargeType
+    moduleKey: string
+    label: string
+    originalAmount: Decimal | DecimalJsLike | number | string
+    finalAmount: Decimal | DecimalJsLike | number | string
+    quantity?: Decimal | DecimalJsLike | number | string | null
+    unitRate?: Decimal | DecimalJsLike | number | string | null
+    notes?: string | null
+    isOverridden?: boolean
+    createdById: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ChargeOverrideCreateManyBookingInput = {
+    id?: number
+    publicId: string
+    chargeEntryId: number
+    originalAmount: Decimal | DecimalJsLike | number | string
+    overriddenAmount: Decimal | DecimalJsLike | number | string
+    waivedAmount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.OverrideStatus
+    actorId: number
+    actorRole: $Enums.Role
+    approverId?: number | null
+    approvedAt?: Date | string | null
+    rejectedAt?: Date | string | null
+    rejectionReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type BookingPhotoUpdateWithoutBookingInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
@@ -110543,6 +125643,114 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type ChargeEntryUpdateWithoutBookingInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
+    moduleKey?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    isOverridden?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdBy?: UserUpdateOneRequiredWithoutChargeEntriesCreatedNestedInput
+    override?: ChargeOverrideUpdateOneWithoutChargeEntryNestedInput
+  }
+
+  export type ChargeEntryUncheckedUpdateWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
+    moduleKey?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    isOverridden?: BoolFieldUpdateOperationsInput | boolean
+    createdById?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    override?: ChargeOverrideUncheckedUpdateOneWithoutChargeEntryNestedInput
+  }
+
+  export type ChargeEntryUncheckedUpdateManyWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    chargeType?: EnumChargeTypeFieldUpdateOperationsInput | $Enums.ChargeType
+    moduleKey?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    finalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quantity?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    unitRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    isOverridden?: BoolFieldUpdateOperationsInput | boolean
+    createdById?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ChargeOverrideUpdateWithoutBookingInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    overriddenAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    waivedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumOverrideStatusFieldUpdateOperationsInput | $Enums.OverrideStatus
+    actorRole?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    chargeEntry?: ChargeEntryUpdateOneRequiredWithoutOverrideNestedInput
+    actor?: UserUpdateOneRequiredWithoutOverridesActedNestedInput
+    approver?: UserUpdateOneWithoutOverridesApprovedNestedInput
+  }
+
+  export type ChargeOverrideUncheckedUpdateWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    chargeEntryId?: IntFieldUpdateOperationsInput | number
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    overriddenAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    waivedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumOverrideStatusFieldUpdateOperationsInput | $Enums.OverrideStatus
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorRole?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    approverId?: NullableIntFieldUpdateOperationsInput | number | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ChargeOverrideUncheckedUpdateManyWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    chargeEntryId?: IntFieldUpdateOperationsInput | number
+    originalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    overriddenAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    waivedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumOverrideStatusFieldUpdateOperationsInput | $Enums.OverrideStatus
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorRole?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    approverId?: NullableIntFieldUpdateOperationsInput | number | null
+    approvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type BookingPhotoCreateManyDamageReportInput = {
     id?: number
     publicId: string
@@ -110587,6 +125795,8 @@ export namespace Prisma {
     publicId: string
     label: string
     amount: Decimal | DecimalJsLike | number | string
+    isTaxable?: boolean
+    chargeType?: string | null
   }
 
   export type PaymentCreateManyInvoiceInput = {
@@ -110604,6 +125814,8 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     label?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isTaxable?: BoolFieldUpdateOperationsInput | boolean
+    chargeType?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type InvoiceItemUncheckedUpdateWithoutInvoiceInput = {
@@ -110611,6 +125823,8 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     label?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isTaxable?: BoolFieldUpdateOperationsInput | boolean
+    chargeType?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type InvoiceItemUncheckedUpdateManyWithoutInvoiceInput = {
@@ -110618,6 +125832,8 @@ export namespace Prisma {
     publicId?: StringFieldUpdateOperationsInput | string
     label?: StringFieldUpdateOperationsInput | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isTaxable?: BoolFieldUpdateOperationsInput | boolean
+    chargeType?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type PaymentUpdateWithoutInvoiceInput = {
@@ -110786,6 +126002,8 @@ export namespace Prisma {
     activeExtensionId?: number | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -110885,6 +126103,8 @@ export namespace Prisma {
     lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -110905,6 +126125,10 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
     activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDiscountRuleInput = {
@@ -110962,6 +126186,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -110977,6 +126203,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutDiscountRuleInput = {
@@ -111034,6 +126264,8 @@ export namespace Prisma {
     activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -111251,6 +126483,8 @@ export namespace Prisma {
     lastExtendedAt?: Date | string | null
     displacedByExtensionId?: number | null
     extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -111305,6 +126539,8 @@ export namespace Prisma {
     lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -111325,6 +126561,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutActiveExtensionInput = {
@@ -111382,6 +126622,8 @@ export namespace Prisma {
     lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -111397,6 +126639,10 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutActiveExtensionInput = {
@@ -111454,6 +126700,8 @@ export namespace Prisma {
     lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -111716,6 +126964,26 @@ export namespace Prisma {
      * @deprecated Use BookingExtensionDefaultArgs instead
      */
     export type BookingExtensionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = BookingExtensionDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use BranchChargeConfigDefaultArgs instead
+     */
+    export type BranchChargeConfigArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = BranchChargeConfigDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ChargeEntryDefaultArgs instead
+     */
+    export type ChargeEntryArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ChargeEntryDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ChargeOverrideDefaultArgs instead
+     */
+    export type ChargeOverrideArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ChargeOverrideDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use FuelRecordDefaultArgs instead
+     */
+    export type FuelRecordArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = FuelRecordDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use SafetyDepositRequestDefaultArgs instead
+     */
+    export type SafetyDepositRequestArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = SafetyDepositRequestDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

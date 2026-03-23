@@ -6,3 +6,5 @@ export * from "./walkin.schema.js";
 export * from "./discount.schema.js";
 export * from "./payment.schema.js";
 export * from "./extension.schema.js";
+export * from "./charge-config.schema.js";
+export * from "./charge-entry.schema.js";

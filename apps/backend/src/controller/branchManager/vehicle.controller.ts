@@ -7,6 +7,63 @@ import { staffActivityService, StaffActionType, StaffEntityType } from "../../se
 import { redis } from "../../lib/redisconfig.js";
 import { VehicleStatus } from "@repo/database/client";
 import { createVehicleSchema, editVehicleSchema } from "@repo/schemas";
+import { z } from "zod";
+const updateVehicleFastagSchema = z.object({
+  fastagNumber: z.string().min(1).nullable(),
+  hasFastag: z.boolean(),
+});
+
+export const UpdateVehicleFastag = async (req: Request, res: Response) => {
+  try {
+    const { vehicleId } = req.params;
+    const branchId = req.branch_Id;
+
+    const validation = updateVehicleFastagSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        message: "Invalid input",
+        errors: validation.error.format(),
+      });
+    }
+
+    const vehicle = await prisma.vehicle.findUnique({
+      where: { publicId: vehicleId },
+      select: { id: true, branchId: true, publicId: true },
+    });
+
+    if (!vehicle || vehicle.branchId !== branchId) {
+      return res.status(StatusCode.NOT_FOUND).json({ message: "Vehicle not found or access denied" });
+    }
+
+    const { fastagNumber, hasFastag } = validation.data;
+
+    const updated = await prisma.vehicle.update({
+      where: { id: vehicle.id },
+      data: {
+        hasFastag,
+        fastagNumber: hasFastag ? fastagNumber : null,
+      },
+      select: { publicId: true, hasFastag: true, fastagNumber: true },
+    });
+
+    staffActivityService.logFromRequest(req, {
+      actionType: StaffActionType.UPDATED,
+      entityType: StaffEntityType.VEHICLE,
+      entityRef: vehicle.publicId,
+      description: `Vehicle FASTag ${hasFastag ? "configured" : "removed"}`,
+      metadata: { hasFastag, fastagNumber: hasFastag ? fastagNumber : null },
+    });
+
+    return res.status(StatusCode.OK).json({
+      message: `Vehicle FASTag ${hasFastag ? "configured" : "removed"}`,
+      data: updated,
+    });
+  } catch (error) {
+    console.error("UpdateVehicleFastag Error:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};
+
 export const AddVehicle = async (req: Request, res: Response) => {
   const branchId = req.branch_Id;
   const files = req.files as Express.Multer.File[];

@@ -11,6 +11,16 @@ import {
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { createID } from "../../utils/nanoID.js";
 import { pickUpVehicleSchema } from "@repo/schemas";
+import { z } from "zod";
+const chargePickupDataSchema = z.object({
+  pickupFuelLevel: z.enum(["EMPTY", "QUARTER", "HALF", "THREE_QUARTER", "FULL"]).optional(),
+  safetyDepositRequest: z.object({
+    requestedAmount: z.coerce.number().positive(),
+    reason: z.string().min(1),
+  }).optional(),
+});
+import type { FrozenChargeConfig } from "../../types/charge-engine.types.js";
+import { DEFAULT_FROZEN_CHARGE_CONFIG } from "../../types/charge-engine.types.js";
 
 export const PickupController = async (req: Request, res: Response) => {
   const { bookingId } = req.params;
@@ -83,6 +93,20 @@ export const PickupController = async (req: Request, res: Response) => {
       return res.status(StatusCode.UNAUTHORIZED).json({
         message: "Unauthorized: User not found",
       });
+    }
+
+    // Parse charge engine pickup data from request body
+    const chargePickupData = chargePickupDataSchema.safeParse(req.body);
+    const frozenConfig = (booking.frozenChargeConfig as FrozenChargeConfig | null)
+      ?? DEFAULT_FROZEN_CHARGE_CONFIG;
+
+    // Validate fuel level if fuel module is enabled
+    if (frozenConfig.fuelModuleEnabled) {
+      if (!chargePickupData.success || !chargePickupData.data.pickupFuelLevel) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+          message: "pickupFuelLevel is required when fuel module is enabled",
+        });
+      }
     }
 
     await prisma.$transaction(async (tx) => {
@@ -167,6 +191,67 @@ export const PickupController = async (req: Request, res: Response) => {
             captureLabel: c.label,
           })),
         });
+      }
+
+      // ── Charge Engine: Capture pickup baseline data ───────────────────────
+
+      // Record start odometer on booking
+      if (parsedVehicleDetails.odo !== undefined) {
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: { startOdometer: parsedVehicleDetails.odo },
+        });
+      }
+
+      // Create FuelRecord if fuel module is enabled
+      if (
+        frozenConfig.fuelModuleEnabled &&
+        chargePickupData.success &&
+        chargePickupData.data.pickupFuelLevel
+      ) {
+        await tx.fuelRecord.create({
+          data: {
+            publicId: createID(),
+            bookingId: booking.id,
+            pickupFuelLevel: chargePickupData.data.pickupFuelLevel,
+            capturedByPickupId: actingUser.id,
+            pickupAt: new Date(),
+          },
+        });
+      }
+
+      // Create SafetyDepositRequest if safety deposit module is enabled and requested
+      if (
+        frozenConfig.safetyDepositEnabled &&
+        chargePickupData.success &&
+        chargePickupData.data.safetyDepositRequest
+      ) {
+        const { requestedAmount, reason } = chargePickupData.data.safetyDepositRequest;
+        const requiresApproval = frozenConfig.safetyDepositRequiresApproval;
+
+        await tx.safetyDepositRequest.create({
+          data: {
+            publicId: createID(),
+            bookingId: booking.id,
+            requestedAmount: String(requestedAmount),
+            reason,
+            status: requiresApproval ? "PENDING_APPROVAL" : "APPROVED",
+            requestedById: actingUser.id,
+            approvedAmount: requiresApproval ? undefined : String(requestedAmount),
+            approvedAt: requiresApproval ? undefined : new Date(),
+          },
+        });
+
+        // If auto-approved, immediately update booking safety deposit
+        if (!requiresApproval) {
+          await tx.booking.update({
+            where: { id: booking.id },
+            data: {
+              safetyDeposit: { increment: requestedAmount },
+              safetyDepositPaidAt: new Date(),
+            },
+          });
+        }
       }
 
       await staffActivityService.logFromRequest(req, {

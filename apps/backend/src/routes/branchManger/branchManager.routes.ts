@@ -83,6 +83,21 @@ import { upload } from "../../middlewares/upload.middleware.js";
 import discountRouter from "./discount.routes.js";
 import paymentRouter from "./payment.routes.js";
 import extensionRouter from "./extension.routes.js";
+import {
+  GetBranchChargeConfig,
+  UpsertBranchChargeConfig,
+} from "../../controller/branchManager/charge-config.controller.js";
+import {
+  ListPendingOverrides,
+  ApproveOverride,
+  RejectOverride,
+} from "../../controller/branchManager/charge-override.controller.js";
+import {
+  ListPendingSafetyDepositRequests,
+  ApproveSafetyDepositRequest,
+  RejectSafetyDepositRequest,
+} from "../../controller/branchManager/safety-deposit-request.controller.js";
+import { UpdateVehicleFastag } from "../../controller/branchManager/vehicle.controller.js";
 
 const router: Router = Router();
 
@@ -235,5 +250,24 @@ router.use("/payment", paymentRouter);
 
 // Rental Extensions
 router.use("/extensions", extensionRouter);
+
+// ── Charge Engine ─────────────────────────────────────────────────────────────
+
+// Branch charge configuration
+router.get("/charge-config", ManagerCheck, GetBranchChargeConfig);
+router.put("/charge-config", ManagerCheck, UpsertBranchChargeConfig);
+
+// Employee charge override approval queue
+router.get("/charge-overrides/pending", ManagerCheck, ListPendingOverrides);
+router.post("/charge-overrides/:publicId/approve", ManagerCheck, ApproveOverride);
+router.post("/charge-overrides/:publicId/reject", ManagerCheck, RejectOverride);
+
+// Safety deposit request approval queue
+router.get("/safety-deposit-requests", ManagerCheck, ListPendingSafetyDepositRequests);
+router.post("/safety-deposit-requests/:publicId/approve", ManagerCheck, ApproveSafetyDepositRequest);
+router.post("/safety-deposit-requests/:publicId/reject", ManagerCheck, RejectSafetyDepositRequest);
+
+// Vehicle FASTag configuration
+router.patch("/vehicles/:vehicleId/fastag", ManagerCheck, UpdateVehicleFastag);
 
 export default router;

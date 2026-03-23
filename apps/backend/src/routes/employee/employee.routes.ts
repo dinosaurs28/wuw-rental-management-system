@@ -52,6 +52,15 @@ import {
   GetPickupCaptures,
 } from "../../controller/employee/captureConfig.controller.js";
 import extensionRouter from "./extension.routes.js";
+import { SubmitChargeOverride } from "../../controller/employee/charge-override.controller.js";
+import {
+  ComputeReturnCharges,
+  GetChargeBreakdown,
+} from "../../controller/employee/return-charge.controller.js";
+import {
+  InitiateSettlement,
+  ConfirmSettlement,
+} from "../../controller/employee/settlement.controller.js";
 
 const router: Router = Router();
 
@@ -111,5 +120,22 @@ router.post(
 );
 router.post("/damage/report", EmployeeCheck, CreateDamageReport);
 router.use("/extensions", extensionRouter);
+
+// ── Charge Engine ─────────────────────────────────────────────────────────────
+
+// Return charge computation
+router.post("/bookings/:bookingId/return-charges", EmployeeCheck, ComputeReturnCharges);
+router.get("/bookings/:bookingId/charges", EmployeeCheck, GetChargeBreakdown);
+
+// Employee charge overrides
+router.post(
+  "/bookings/:bookingPublicId/charges/:chargeEntryPublicId/override",
+  EmployeeCheck,
+  SubmitChargeOverride,
+);
+
+// Settlement
+router.get("/bookings/:bookingId/settlement", EmployeeCheck, InitiateSettlement);
+router.post("/bookings/:bookingId/settlement/confirm", EmployeeCheck, ConfirmSettlement);
 
 export default router;

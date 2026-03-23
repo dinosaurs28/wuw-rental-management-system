@@ -46,7 +46,7 @@ export const CreateCaptureConfig = async (req: Request, res: Response) => {
   const branchId = req.branch_Id;
   const parsed = createCaptureConfigSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid input", errors: parsed.error.errors });
+    return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid input", errors: parsed.error.issues });
   }
 
   const { categoryId, fields } = parsed.data;
@@ -98,7 +98,7 @@ export const UpdateCaptureConfig = async (req: Request, res: Response) => {
   const { publicId } = req.params;
   const parsed = updateCaptureConfigSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid input", errors: parsed.error.errors });
+    return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid input", errors: parsed.error.issues });
   }
 
   try {

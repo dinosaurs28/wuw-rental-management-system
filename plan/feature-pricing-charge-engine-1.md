@@ -4,13 +4,13 @@ version: 1.0
 date_created: 2026-03-23
 last_updated: 2026-03-23
 owner: VRMS Engineering
-status: 'Planned'
+status: 'In progress'
 tags: [feature, architecture, pricing, charge-engine, settlement, audit]
 ---
 
 # Introduction
 
-![Status: Planned](https://img.shields.io/badge/status-Planned-blue)
+![Status: In progress](https://img.shields.io/badge/status-In%20progress-yellow)
 
 This plan implements a **Modular Charge Engine** for the vehicle rental platform. All charge types — base pricing, extra kilometers, extra time, fuel deficit, fastag, damage, and safety deposits — are controlled via branch-level feature toggles and executed through a deterministic, unified settlement pipeline. Pricing plans are auto-derived from booking configuration; employees view computed plan details but never manually select pricing plans. All charge calculations, overrides, and settlement outcomes are fully audited.
 
@@ -67,24 +67,24 @@ This plan implements a **Modular Charge Engine** for the vehicle rental platform
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-001 | Add `fastagNumber String?` and `hasFastag Boolean @default(false)` fields to the `Vehicle` model in `packages/db/prisma/schema.prisma` | | |
-| TASK-002 | Add `frozenChargeConfig Json?` and `chargeConfigVersion Int @default(1)` fields to the `Booking` model | | |
-| TASK-003 | Create `BranchChargeConfig` model: `id`, `publicId`, `branchId @unique`, `extraKmEnabled Boolean @default(true)`, `extraTimeEnabled Boolean @default(true)`, `fuelModuleEnabled Boolean @default(false)`, `fastagModuleEnabled Boolean @default(false)`, `gracePolicyEnabled Boolean @default(false)`, `damageModuleEnabled Boolean @default(true)`, `graceType GraceType @default(AUTOMATIC)`, `graceMinutes Int @default(15)`, `employeeOverrideEnabled Boolean @default(false)`, `maxOverridePercent Decimal?`, `overrideRequiresApproval Boolean @default(false)`, `overrideApprovalThreshold Decimal?`, `safetyDepositEnabled Boolean @default(false)`, `safetyDepositRequiresApproval Boolean @default(true)`, `createdAt`, `updatedAt`, relation to `Branch` | | |
-| TASK-004 | Create `GraceType` enum: `AUTOMATIC`, `MANUAL` | | |
-| TASK-005 | Create `ChargeType` enum: `BASE`, `EXTRA_KM`, `EXTRA_TIME`, `FUEL_DEFICIT`, `FASTAG`, `DAMAGE`, `GRACE_ADJUSTMENT`, `SAFETY_DEPOSIT` | | |
-| TASK-006 | Create `ChargeEntry` model: `id`, `publicId`, `bookingId`, `chargeType ChargeType`, `moduleKey String`, `label String`, `originalAmount Decimal @db.Decimal(10,2)`, `finalAmount Decimal @db.Decimal(10,2)`, `quantity Decimal?`, `unitRate Decimal?`, `notes String?`, `isOverridden Boolean @default(false)`, `overrideId Int?`, `createdById`, `createdAt`, `updatedAt`; relations to `Booking`, `ChargeOverride`, `User` | | |
-| TASK-007 | Create `OverrideStatus` enum: `PENDING`, `APPROVED`, `AUTO_APPROVED`, `REJECTED` | | |
-| TASK-008 | Create `ChargeOverride` model: `id`, `publicId`, `bookingId`, `chargeEntryId Int? @unique`, `originalAmount Decimal`, `overriddenAmount Decimal`, `waivedAmount Decimal`, `reason String`, `status OverrideStatus @default(PENDING)`, `actorId`, `actorRole UserRole`, `approverId Int?`, `approvedAt DateTime?`, `rejectedAt DateTime?`, `rejectionReason String?`, `createdAt`, `updatedAt`; relations to `Booking`, `ChargeEntry`, `User` (actor + approver) | | |
-| TASK-009 | Create `FuelLevel` enum: `EMPTY`, `QUARTER`, `HALF`, `THREE_QUARTER`, `FULL` | | |
-| TASK-010 | Create `FuelRecord` model: `id`, `publicId`, `bookingId Int @unique`, `pickupFuelLevel FuelLevel`, `returnFuelLevel FuelLevel?`, `fuelDeficit Boolean @default(false)`, `fuelDeficitCharge Decimal?`, `skipReason String?`, `capturedByPickupId`, `capturedByReturnId Int?`, `pickupAt DateTime`, `returnAt DateTime?`, `createdAt`, `updatedAt`; relations to `Booking`, `User` (pickup + return captors) | | |
-| TASK-011 | Create `SafetyDepositStatus` enum: `PENDING_APPROVAL`, `APPROVED`, `REJECTED`, `CHARGED`, `REFUNDED` | | |
-| TASK-012 | Create `SafetyDepositRequest` model: `id`, `publicId`, `bookingId`, `requestedAmount Decimal`, `reason String`, `status SafetyDepositStatus @default(PENDING_APPROVAL)`, `requestedById`, `approvedById Int?`, `approvedAmount Decimal?`, `approvedAt DateTime?`, `rejectedAt DateTime?`, `rejectionReason String?`, `createdAt`, `updatedAt`; relations to `Booking`, `User` (requester + approver) | | |
-| TASK-013 | Add relations to `Booking` model: `chargeEntries ChargeEntry[]`, `chargeOverrides ChargeOverride[]`, `fuelRecord FuelRecord?`, `safetyDepositRequest SafetyDepositRequest?` | | |
-| TASK-014 | Add relation to `Branch` model: `chargeConfig BranchChargeConfig?` | | |
-| TASK-015 | Extend `StaffActivityLog.entityType` enum with new values: `CHARGE_ENTRY`, `CHARGE_OVERRIDE`, `FUEL_RECORD`, `SAFETY_DEPOSIT_REQUEST`, `BRANCH_CHARGE_CONFIG` | | |
-| TASK-016 | Extend `AuditLog.category` enum with `CHARGE` category | | |
-| TASK-017 | Run `pnpm --filter @vrms/db db:migrate dev --name "add_charge_engine"` and verify migration output | | |
-| TASK-018 | Run `pnpm --filter @vrms/db db:generate` to regenerate Prisma client | | |
+| TASK-001 | Add `fastagNumber String?` and `hasFastag Boolean @default(false)` fields to the `Vehicle` model in `packages/db/prisma/schema.prisma` | ✅ | 2026-03-23 |
+| TASK-002 | Add `frozenChargeConfig Json?` and `chargeConfigVersion Int @default(1)` fields to the `Booking` model | ✅ | 2026-03-23 |
+| TASK-003 | Create `BranchChargeConfig` model | ✅ | 2026-03-23 |
+| TASK-004 | Create `GraceType` enum: `AUTOMATIC`, `MANUAL` | ✅ | 2026-03-23 |
+| TASK-005 | Create `ChargeType` enum: `BASE`, `EXTRA_KM`, `EXTRA_TIME`, `FUEL_DEFICIT`, `FASTAG`, `DAMAGE`, `GRACE_ADJUSTMENT`, `SAFETY_DEPOSIT` | ✅ | 2026-03-23 |
+| TASK-006 | Create `ChargeEntry` model | ✅ | 2026-03-23 |
+| TASK-007 | Create `OverrideStatus` enum: `PENDING`, `APPROVED`, `AUTO_APPROVED`, `REJECTED` | ✅ | 2026-03-23 |
+| TASK-008 | Create `ChargeOverride` model | ✅ | 2026-03-23 |
+| TASK-009 | Create `FuelLevel` enum: `EMPTY`, `QUARTER`, `HALF`, `THREE_QUARTER`, `FULL` | ✅ | 2026-03-23 |
+| TASK-010 | Create `FuelRecord` model | ✅ | 2026-03-23 |
+| TASK-011 | Create `SafetyDepositStatus` enum: `PENDING_APPROVAL`, `APPROVED`, `REJECTED`, `CHARGED`, `REFUNDED` | ✅ | 2026-03-23 |
+| TASK-012 | Create `SafetyDepositRequest` model | ✅ | 2026-03-23 |
+| TASK-013 | Add relations to `Booking` model: `chargeEntries`, `chargeOverrides`, `fuelRecord`, `safetyDepositRequest` | ✅ | 2026-03-23 |
+| TASK-014 | Add relation to `Branch` model: `chargeConfig BranchChargeConfig?` | ✅ | 2026-03-23 |
+| TASK-015 | Extend `StaffEntityType` enum with: `CHARGE_ENTRY`, `CHARGE_OVERRIDE`, `FUEL_RECORD`, `SAFETY_DEPOSIT_REQUEST`, `BRANCH_CHARGE_CONFIG` | ✅ | 2026-03-23 |
+| TASK-016 | Extend `AuditCategory` enum with `CHARGE` category | ✅ | 2026-03-23 |
+| TASK-017 | Run Prisma migration `add_charge_engine` | ✅ | 2026-03-23 |
+| TASK-018 | Run `db:generate` to regenerate Prisma client | ✅ | 2026-03-23 |
 
 ---
 
@@ -94,10 +94,10 @@ This plan implements a **Modular Charge Engine** for the vehicle rental platform
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-019 | Create `/apps/backend/src/types/charge-engine.types.ts` defining: `ChargeContext` (booking snapshot, vehicle, frozenConfig, pickup data), `ChargeResult` (chargeType, moduleKey, label, originalAmount, finalAmount, quantity, unitRate), `ChargeBreakdown` (array of `ChargeResult` + totals: subtotal, overrideTotal, waivedTotal, finalTotal), `ChargeModuleInterface` (isApplicable, compute methods) | | |
-| TASK-020 | Create `/packages/schemas/src/charge-config.schema.ts` with Zod schemas: `branchChargeConfigSchema` (all toggle fields + constraints), `updateBranchChargeConfigSchema` (partial), `frozenChargeConfigSchema` (readonly snapshot) | | |
-| TASK-021 | Create `/packages/schemas/src/charge-entry.schema.ts` with: `chargeOverrideInputSchema` (chargeEntryPublicId, overriddenAmount, reason), `fuelRecordPickupSchema` (pickupFuelLevel), `fuelRecordReturnSchema` (returnFuelLevel, fuelDeficitCharge?, skipReason?), `safetyDepositRequestSchema` (requestedAmount, reason), `fastagChargeInputSchema` (amount, notes?) | | |
-| TASK-022 | Add `fastagNumber`, `hasFastag` to vehicle schemas in `/packages/schemas/src/vehicle.schema.ts` | | |
+| TASK-019 | Create `/apps/backend/src/types/charge-engine.types.ts` defining: `ChargeContext` (booking snapshot, vehicle, frozenConfig, pickup data), `ChargeResult` (chargeType, moduleKey, label, originalAmount, finalAmount, quantity, unitRate), `ChargeBreakdown` (array of `ChargeResult` + totals: subtotal, overrideTotal, waivedTotal, finalTotal), `ChargeModuleInterface` (isApplicable, compute methods) | ✅ | 2026-03-23 |
+| TASK-020 | Create `/packages/schemas/src/charge-config.schema.ts` with Zod schemas: `branchChargeConfigSchema` (all toggle fields + constraints), `updateBranchChargeConfigSchema` (partial), `frozenChargeConfigSchema` (readonly snapshot) | ✅ | 2026-03-23 |
+| TASK-021 | Create `/packages/schemas/src/charge-entry.schema.ts` with: `chargeOverrideInputSchema` (chargeEntryPublicId, overriddenAmount, reason), `fuelRecordPickupSchema` (pickupFuelLevel), `fuelRecordReturnSchema` (returnFuelLevel, fuelDeficitCharge?, skipReason?), `safetyDepositRequestSchema` (requestedAmount, reason), `fastagChargeInputSchema` (amount, notes?) | ✅ | 2026-03-23 |
+| TASK-022 | Add `fastagNumber`, `hasFastag` to vehicle schemas in `/packages/schemas/src/vehicle.schema.ts` | ✅ | 2026-03-23 |
 
 ---
 
@@ -107,14 +107,14 @@ This plan implements a **Modular Charge Engine** for the vehicle rental platform
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-023 | Create `/services/charges/modules/base-pricing.module.ts`: reads `VehicleCustomPricing` for the vehicle, derives the correct plan (hourly/12h/24h/monthly) from `booking.startAt`/`endAt`, computes `baseTotal`. Always enabled — not togglable. Returns `ChargeResult` with `chargeType: BASE` | | |
-| TASK-024 | Create `/services/charges/modules/extra-km.module.ts`: `isApplicable` checks `frozenConfig.extraKmEnabled`. Computes `(totalKmDriven - freeKmLimit) * extraKmRate` if positive, else 0. Returns `ChargeResult` with `chargeType: EXTRA_KM`, `quantity: excessKm`, `unitRate: extraKmRate` | | |
-| TASK-025 | Create `/services/charges/modules/extra-time.module.ts`: `isApplicable` checks `frozenConfig.extraTimeEnabled`. Computes billable extra hours beyond plan using `booking.actualHours` vs `booking.billableHours`. Applies `extraHourRate` from `VehicleCustomPricing`. Returns `ChargeResult` with `chargeType: EXTRA_TIME` | | |
-| TASK-026 | Create `/services/charges/modules/grace-policy.module.ts`: `isApplicable` checks `frozenConfig.gracePolicyEnabled`. If enabled, subtracts `graceMinutes` from late-return duration before passing to extra-time module. If `graceType = AUTOMATIC`, applies without input. If `graceType = MANUAL`, requires employee trigger flag in context. Returns `ChargeResult` with `chargeType: GRACE_ADJUSTMENT` (negative amount) | | |
-| TASK-027 | Create `/services/charges/modules/fuel-deficit.module.ts`: `isApplicable` checks `frozenConfig.fuelModuleEnabled`. Computes deficit if `returnFuelLevel < pickupFuelLevel`. Employee inputs custom `fuelDeficitCharge` or provides `skipReason`. Returns `ChargeResult` with `chargeType: FUEL_DEFICIT` | | |
-| TASK-028 | Create `/services/charges/modules/fastag.module.ts`: `isApplicable` checks `frozenConfig.fastagModuleEnabled AND vehicle.hasFastag`. If applicable, employee inputs fastag expense amount. Returns `ChargeResult` with `chargeType: FASTAG` | | |
-| TASK-029 | Create `/services/charges/modules/damage.module.ts`: `isApplicable` checks `frozenConfig.damageModuleEnabled`. Reads all `DamageReport` records for the booking with `status = APPROVED`. Sums `finalCost` values. Returns `ChargeResult` with `chargeType: DAMAGE`. If no approved damage reports, returns 0. | | |
-| TASK-030 | Create `/services/charges/modules/override-adjuster.module.ts`: `isApplicable` checks `frozenConfig.employeeOverrideEnabled`. Reads all `ChargeOverride` records with `status IN [APPROVED, AUTO_APPROVED]` for the booking. Applies waived amounts as negative adjustments against matching `ChargeEntry` records. Returns adjusted `ChargeResult[]` with `isOverridden = true` | | |
+| TASK-023 | Create `/services/charges/modules/base-pricing.module.ts`: reads `VehicleCustomPricing` for the vehicle, derives the correct plan (hourly/12h/24h/monthly) from `booking.startAt`/`endAt`, computes `baseTotal`. Always enabled — not togglable. Returns `ChargeResult` with `chargeType: BASE` | ✅ | 2026-03-23 |
+| TASK-024 | Create `/services/charges/modules/extra-km.module.ts`: `isApplicable` checks `frozenConfig.extraKmEnabled`. Computes `(totalKmDriven - freeKmLimit) * extraKmRate` if positive, else 0. Returns `ChargeResult` with `chargeType: EXTRA_KM`, `quantity: excessKm`, `unitRate: extraKmRate` | ✅ | 2026-03-23 |
+| TASK-025 | Create `/services/charges/modules/extra-time.module.ts`: `isApplicable` checks `frozenConfig.extraTimeEnabled`. Computes billable extra hours beyond plan using `booking.actualHours` vs `booking.billableHours`. Applies `extraHourRate` from `VehicleCustomPricing`. Returns `ChargeResult` with `chargeType: EXTRA_TIME` | ✅ | 2026-03-23 |
+| TASK-026 | Create `/services/charges/modules/grace-policy.module.ts`: `isApplicable` checks `frozenConfig.gracePolicyEnabled`. If enabled, subtracts `graceMinutes` from late-return duration before passing to extra-time module. If `graceType = AUTOMATIC`, applies without input. If `graceType = MANUAL`, requires employee trigger flag in context. Returns `ChargeResult` with `chargeType: GRACE_ADJUSTMENT` (negative amount) | ✅ | 2026-03-23 |
+| TASK-027 | Create `/services/charges/modules/fuel-deficit.module.ts`: `isApplicable` checks `frozenConfig.fuelModuleEnabled`. Computes deficit if `returnFuelLevel < pickupFuelLevel`. Employee inputs custom `fuelDeficitCharge` or provides `skipReason`. Returns `ChargeResult` with `chargeType: FUEL_DEFICIT` | ✅ | 2026-03-23 |
+| TASK-028 | Create `/services/charges/modules/fastag.module.ts`: `isApplicable` checks `frozenConfig.fastagModuleEnabled AND vehicle.hasFastag`. If applicable, employee inputs fastag expense amount. Returns `ChargeResult` with `chargeType: FASTAG` | ✅ | 2026-03-23 |
+| TASK-029 | Create `/services/charges/modules/damage.module.ts`: `isApplicable` checks `frozenConfig.damageModuleEnabled`. Reads all `DamageReport` records for the booking with `status = APPROVED`. Sums `finalCost` values. Returns `ChargeResult` with `chargeType: DAMAGE`. If no approved damage reports, returns 0. | ✅ | 2026-03-23 |
+| TASK-030 | Create `/services/charges/modules/override-adjuster.module.ts`: `isApplicable` checks `frozenConfig.employeeOverrideEnabled`. Reads all `ChargeOverride` records with `status IN [APPROVED, AUTO_APPROVED]` for the booking. Applies waived amounts as negative adjustments against matching `ChargeEntry` records. Returns adjusted `ChargeResult[]` with `isOverridden = true` | ✅ | 2026-03-23 |
 
 ---
 
@@ -124,12 +124,12 @@ This plan implements a **Modular Charge Engine** for the vehicle rental platform
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-031 | Create `/services/charges/charge-engine.service.ts` with method `computeCharges(context: ChargeContext): Promise<ChargeBreakdown>`. Execution order: (1) BasePricingModule, (2) ExtraKmModule, (3) ExtraTimeModule, (4) GracePolicyModule (applied before extra-time finalization), (5) FuelDeficitModule, (6) FastagModule, (7) DamageModule, (8) OverrideAdjusterModule. Collect all `ChargeResult[]`, compute `subtotal`, `waivedTotal`, `finalTotal`. | | |
-| TASK-032 | Add `persistChargeEntries(bookingId: number, breakdown: ChargeBreakdown, actorId: number, tx: PrismaTransaction): Promise<ChargeEntry[]>` method to `charge-engine.service.ts`. Upserts `ChargeEntry` records — one per non-zero charge result. Uses `moduleKey` as upsert key per booking. | | |
-| TASK-033 | Add `freezeChargeConfig(branchId: number): Promise<FrozenChargeConfig>` method to `/services/charges/charge-config.service.ts` (new file). Reads `BranchChargeConfig` for the branch and returns a plain JSON snapshot. Returns defaults (all safe defaults) if no config exists yet for the branch. | | |
-| TASK-034 | Create `/services/charges/charge-config.service.ts` with full CRUD: `getChargeConfig(branchId)`, `upsertChargeConfig(branchId, data)`, `freezeChargeConfig(branchId)` | | |
-| TASK-035 | Refactor existing `/services/pricing/pricing-engine.service.ts`: remove any settlement/extra-charge logic that now belongs to the Charge Engine. Retain only `computeBasePrice(vehicleId, startAt, endAt)` and `derivePricingPlan(startAt, endAt)` as utility functions consumed by `BasePricingModule`. | | |
-| TASK-036 | Refactor existing `/services/payment/settlement-engine.service.ts`: remove any charge-computation logic. Retain only settlement math: `computeSettlement(breakdown: ChargeBreakdown, depositTotal: Decimal, safetyDeposit: Decimal): SettlementOutcome`. `SettlementOutcome` must have: `outcomeType: FULL_REFUND | PARTIAL_REFUND | ADDITIONAL_PAYMENT_REQUIRED`, `amountDue: Decimal`, `refundAmount: Decimal`, `breakdown: ChargeBreakdown`. | | |
+| TASK-031 | Create `/services/charges/charge-engine.service.ts` with method `computeCharges(context: ChargeContext): Promise<ChargeBreakdown>`. Execution order: (1) BasePricingModule, (2) ExtraKmModule, (3) ExtraTimeModule, (4) GracePolicyModule (applied before extra-time finalization), (5) FuelDeficitModule, (6) FastagModule, (7) DamageModule, (8) OverrideAdjusterModule. Collect all `ChargeResult[]`, compute `subtotal`, `waivedTotal`, `finalTotal`. | ✅ | 2026-03-23 |
+| TASK-032 | Add `persistChargeEntries(bookingId: number, breakdown: ChargeBreakdown, actorId: number, tx: PrismaTransaction): Promise<ChargeEntry[]>` method to `charge-engine.service.ts`. Upserts `ChargeEntry` records — one per non-zero charge result. Uses `moduleKey` as upsert key per booking. | ✅ | 2026-03-23 |
+| TASK-033 | Add `freezeChargeConfig(branchId: number): Promise<FrozenChargeConfig>` method to `/services/charges/charge-config.service.ts` (new file). Reads `BranchChargeConfig` for the branch and returns a plain JSON snapshot. Returns defaults (all safe defaults) if no config exists yet for the branch. | ✅ | 2026-03-23 |
+| TASK-034 | Create `/services/charges/charge-config.service.ts` with full CRUD: `getChargeConfig(branchId)`, `upsertChargeConfig(branchId, data)`, `freezeChargeConfig(branchId)` | ✅ | 2026-03-23 |
+| TASK-035 | Refactor existing `/services/pricing/pricing-engine.service.ts`: remove any settlement/extra-charge logic that now belongs to the Charge Engine. Retain only `computeBasePrice(vehicleId, startAt, endAt)` and `derivePricingPlan(startAt, endAt)` as utility functions consumed by `BasePricingModule`. | ✅ | 2026-03-23 |
+| TASK-036 | Refactor existing `/services/payment/settlement-engine.service.ts`: remove any charge-computation logic. Retain only settlement math: `computeSettlement(breakdown: ChargeBreakdown, depositTotal: Decimal, safetyDeposit: Decimal): SettlementOutcome`. `SettlementOutcome` must have: `outcomeType: FULL_REFUND | PARTIAL_REFUND | ADDITIONAL_PAYMENT_REQUIRED`, `amountDue: Decimal`, `refundAmount: Decimal`, `breakdown: ChargeBreakdown`. | ✅ | 2026-03-23 |
 
 ---
 
@@ -139,11 +139,11 @@ This plan implements a **Modular Charge Engine** for the vehicle rental platform
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-037 | Create `/apps/backend/src/controller/branchManager/charge-config.controller.ts` with handlers: `getChargeConfig(req, res)` — GET own branch config; `upsertChargeConfig(req, res)` — PUT with `branchChargeConfigSchema` validation | | |
-| TASK-038 | Create `/apps/backend/src/controller/admin/charge-config.controller.ts` with handlers: `getChargeConfigForBranch(req, res)` — GET any branch; `upsertChargeConfigForBranch(req, res)` — PUT any branch | | |
-| TASK-039 | Add routes to `/apps/backend/src/routes/branchManager/branchManager.routes.ts`: `GET /charge-config` → `getChargeConfig`; `PUT /charge-config` → `upsertChargeConfig` | | |
-| TASK-040 | Add routes to `/apps/backend/src/routes/admin/admin.routes.ts`: `GET /branches/:branchId/charge-config` → `getChargeConfigForBranch`; `PUT /branches/:branchId/charge-config` → `upsertChargeConfigForBranch` | | |
-| TASK-041 | Log all charge config changes to `AuditLog` (category: `CHARGE`, action: `CHARGE_CONFIG_UPDATED`, before/after JSON) and `StaffActivityLog` (entityType: `BRANCH_CHARGE_CONFIG`, actionType: `UPDATED`) | | |
+| TASK-037 | Create `/apps/backend/src/controller/branchManager/charge-config.controller.ts` with handlers: `getChargeConfig(req, res)` — GET own branch config; `upsertChargeConfig(req, res)` — PUT with `branchChargeConfigSchema` validation | ✅ | 2026-03-23 |
+| TASK-038 | Create `/apps/backend/src/controller/admin/charge-config.controller.ts` with handlers: `getChargeConfigForBranch(req, res)` — GET any branch; `upsertChargeConfigForBranch(req, res)` — PUT any branch | ✅ | 2026-03-23 |
+| TASK-039 | Add routes to `/apps/backend/src/routes/branchManager/branchManager.routes.ts`: `GET /charge-config` → `getChargeConfig`; `PUT /charge-config` → `upsertChargeConfig` | ✅ | 2026-03-23 |
+| TASK-040 | Add routes to `/apps/backend/src/routes/admin/admin.routes.ts`: `GET /branches/:branchId/charge-config` → `getChargeConfigForBranch`; `PUT /branches/:branchId/charge-config` → `upsertChargeConfigForBranch` | ✅ | 2026-03-23 |
+| TASK-041 | Log all charge config changes to `AuditLog` (category: `CHARGE`, action: `CHARGE_CONFIG_UPDATED`, before/after JSON) and `StaffActivityLog` (entityType: `BRANCH_CHARGE_CONFIG`, actionType: `UPDATED`) | ✅ | 2026-03-23 |
 
 ---
 
@@ -153,8 +153,8 @@ This plan implements a **Modular Charge Engine** for the vehicle rental platform
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-042 | Add `PATCH /vehicles/:vehiclePublicId/fastag` route in `/routes/branchManager/branchManager.routes.ts` with body `{ fastagNumber: string, hasFastag: boolean }` | | |
-| TASK-043 | Add handler `updateVehicleFastag(req, res)` in `/controller/branchManager/vehicle.controller.ts` (or existing vehicle controller). Validates input, updates vehicle, logs to `AuditLog` (category: `VEHICLE`, action: `FASTAG_CONFIGURED`) and `StaffActivityLog` | | |
+| TASK-042 | Add `PATCH /vehicles/:vehiclePublicId/fastag` route in `/routes/branchManager/branchManager.routes.ts` with body `{ fastagNumber: string, hasFastag: boolean }` | ✅ | 2026-03-23 |
+| TASK-043 | Add handler `updateVehicleFastag(req, res)` in `/controller/branchManager/vehicle.controller.ts` (or existing vehicle controller). Validates input, updates vehicle, logs to `AuditLog` (category: `VEHICLE`, action: `FASTAG_CONFIGURED`) and `StaffActivityLog` | ✅ | 2026-03-23 |
 
 ---
 

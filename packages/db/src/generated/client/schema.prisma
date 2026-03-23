@@ -42,6 +42,47 @@ enum VehicleStatus {
   MANAGER_REPORTED
 }
 
+// ── Charge Engine Enums ───────────────────────────────────────────────────────
+
+enum GraceType {
+  AUTOMATIC
+  MANUAL
+}
+
+enum ChargeType {
+  BASE
+  EXTRA_KM
+  EXTRA_TIME
+  FUEL_DEFICIT
+  FASTAG
+  DAMAGE
+  GRACE_ADJUSTMENT
+  SAFETY_DEPOSIT
+}
+
+enum OverrideStatus {
+  PENDING
+  APPROVED
+  AUTO_APPROVED
+  REJECTED
+}
+
+enum FuelLevel {
+  EMPTY
+  QUARTER
+  HALF
+  THREE_QUARTER
+  FULL
+}
+
+enum SafetyDepositStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  CHARGED
+  REFUNDED
+}
+
 enum BookingStatus {
   HOLD
   CONFIRMED
@@ -153,6 +194,13 @@ model User {
   refundRequestsApproved  RefundRequest[]        @relation("RefundApprover")
   refundRequestsCompleted RefundRequest[]        @relation("RefundCompleter")
   initiatedExtensions     BookingExtension[]     @relation("ExtensionActor")
+  chargeEntriesCreated    ChargeEntry[]          @relation("ChargeEntryCreator")
+  overridesActed          ChargeOverride[]       @relation("OverrideActor")
+  overridesApproved       ChargeOverride[]       @relation("OverrideApprover")
+  fuelPickupCaptures      FuelRecord[]           @relation("FuelPickupCapture")
+  fuelReturnCaptures      FuelRecord[]           @relation("FuelReturnCapture")
+  safetyDepositRequests   SafetyDepositRequest[] @relation("DepositRequester")
+  safetyDepositApprovals  SafetyDepositRequest[] @relation("DepositApprover")
   createdAt               DateTime               @default(now())
   updatedAt               DateTime               @updatedAt
   deletedAt               DateTime?
@@ -274,6 +322,7 @@ model Branch {
   durationDiscountSlabs   DurationDiscountSlab[]
   discountConfig          BranchDiscountConfig?
   paymentConfig           BranchPaymentConfig?
+  chargeConfig            BranchChargeConfig?
   paymentTransactions     PaymentTransaction[]
   cashShifts              CashShift[]
   refundRequests          RefundRequest[]
@@ -326,6 +375,11 @@ enum StaffEntityType {
   CASH_SHIFT
   REFUND_REQUEST
   BOOKING_EXTENSION
+  CHARGE_ENTRY
+  CHARGE_OVERRIDE
+  FUEL_RECORD
+  SAFETY_DEPOSIT_REQUEST
+  BRANCH_CHARGE_CONFIG
 }
 
 // ── Rental Extension Enums ────────────────────────────────────────────────────
@@ -493,6 +547,8 @@ model Vehicle {
   advancePayAmount Decimal                    @default(0)
   insuranceExpiry  DateTime
   status           VehicleStatus              @default(AVAILABLE)
+  fastagNumber     String?
+  hasFastag        Boolean                    @default(false)
   branch           Branch                     @relation(fields: [branchId], references: [id])
   category         VehicleCategory            @relation(fields: [categoryId], references: [id])
   insuranceRecords VehicleInsurance[]
@@ -751,6 +807,16 @@ model Booking {
   displacedByExtensionId Int?
   extensionDisplacedAt   DateTime?
 
+  // Charge Engine — config frozen at booking creation (immutable snapshot)
+  frozenChargeConfig  Json?
+  chargeConfigVersion Int   @default(1)
+
+  // Charge Engine relations
+  chargeEntries        ChargeEntry[]
+  chargeOverrides      ChargeOverride[]
+  fuelRecord           FuelRecord?
+  safetyDepositRequest SafetyDepositRequest?
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -907,11 +973,13 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id        Int     @id @default(autoincrement())
-  publicId  String  @unique
-  invoiceId Int
-  label     String
-  amount    Decimal
+  id         Int     @id @default(autoincrement())
+  publicId   String  @unique
+  invoiceId  Int
+  label      String
+  amount     Decimal
+  isTaxable  Boolean @default(true)
+  chargeType String?
 
   invoice Invoice @relation(fields: [invoiceId], references: [id])
 }
@@ -928,6 +996,7 @@ enum AuditCategory {
   AUTH
   SYSTEM
   DISCOUNT
+  CHARGE
 }
 
 enum AuditSeverity {
@@ -1601,4 +1670,177 @@ model BookingExtension {
   @@index([actorId])
   @@index([createdAt])
   @@index([extensionTrigger])
+}
+
+// ── Charge Engine ────────────────────────────────────────────────────────────
+
+// Per-branch charge module configuration. Controls which charge modules are
+// active and their sub-options. Frozen as JSON snapshot on each booking.
+model BranchChargeConfig {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique
+  branchId Int    @unique
+
+  // Module toggles
+  extraKmEnabled      Boolean @default(true)
+  extraTimeEnabled    Boolean @default(true)
+  fuelModuleEnabled   Boolean @default(false)
+  fastagModuleEnabled Boolean @default(false)
+  gracePolicyEnabled  Boolean @default(false)
+  damageModuleEnabled Boolean @default(true)
+
+  // Grace policy sub-options (only used when gracePolicyEnabled = true)
+  graceType    GraceType @default(AUTOMATIC)
+  graceMinutes Int       @default(15)
+
+  // Override config
+  employeeOverrideEnabled   Boolean  @default(false)
+  maxOverridePercent        Decimal? @db.Decimal(5, 2)
+  overrideRequiresApproval  Boolean  @default(false)
+  overrideApprovalThreshold Decimal? @db.Decimal(10, 2)
+
+  // Safety deposit config
+  safetyDepositEnabled          Boolean @default(false)
+  safetyDepositRequiresApproval Boolean @default(true)
+
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([branchId])
+}
+
+// One record per charge type per booking. Created by the Charge Engine only.
+// Both originalAmount (computed) and finalAmount (after overrides) are stored.
+model ChargeEntry {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique
+
+  bookingId  Int
+  chargeType ChargeType
+  moduleKey  String // "base", "extra_km", "extra_time", etc.
+  label      String // Human-readable label for invoice line
+
+  originalAmount Decimal @db.Decimal(10, 2)
+  finalAmount    Decimal @db.Decimal(10, 2)
+
+  // Calculation metadata
+  quantity Decimal? @db.Decimal(10, 4) // e.g. excess km, extra hours
+  unitRate Decimal? @db.Decimal(10, 2) // e.g. rate per extra km
+
+  notes        String?
+  isOverridden Boolean @default(false)
+
+  createdById Int
+
+  booking   Booking         @relation(fields: [bookingId], references: [id])
+  createdBy User            @relation("ChargeEntryCreator", fields: [createdById], references: [id])
+  override  ChargeOverride?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([bookingId, moduleKey])
+  @@index([bookingId])
+  @@index([chargeType])
+}
+
+// Immutable record of an employee override on a ChargeEntry.
+// Captures before/after amounts and mandatory justification.
+model ChargeOverride {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique
+
+  bookingId     Int
+  chargeEntryId Int @unique
+
+  originalAmount   Decimal @db.Decimal(10, 2)
+  overriddenAmount Decimal @db.Decimal(10, 2)
+  waivedAmount     Decimal @db.Decimal(10, 2) // = originalAmount - overriddenAmount
+
+  reason String // mandatory
+
+  status    OverrideStatus @default(PENDING)
+  actorId   Int
+  actorRole Role
+
+  approverId      Int?
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  rejectionReason String?
+
+  booking     Booking     @relation(fields: [bookingId], references: [id])
+  chargeEntry ChargeEntry @relation(fields: [chargeEntryId], references: [id])
+  actor       User        @relation("OverrideActor", fields: [actorId], references: [id])
+  approver    User?       @relation("OverrideApprover", fields: [approverId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bookingId])
+  @@index([actorId, createdAt])
+  @@index([status])
+}
+
+// Captures fuel level at pickup and return. One record per booking.
+// Created at pickup; return fields populated at return time.
+model FuelRecord {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique
+
+  bookingId Int @unique
+
+  pickupFuelLevel FuelLevel
+  returnFuelLevel FuelLevel?
+
+  fuelDeficit       Boolean  @default(false)
+  fuelDeficitCharge Decimal? @db.Decimal(10, 2)
+  skipReason        String? // mandatory if deficit detected but charge skipped
+
+  capturedByPickupId Int
+  capturedByReturnId Int?
+
+  pickupAt DateTime
+  returnAt DateTime?
+
+  booking          Booking @relation(fields: [bookingId], references: [id])
+  capturedByPickup User    @relation("FuelPickupCapture", fields: [capturedByPickupId], references: [id])
+  capturedByReturn User?   @relation("FuelReturnCapture", fields: [capturedByReturnId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bookingId])
+}
+
+// Safety deposit request raised by employee during pickup.
+// Requires manager approval when safetyDepositRequiresApproval = true.
+model SafetyDepositRequest {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique
+
+  bookingId Int @unique
+
+  requestedAmount Decimal @db.Decimal(10, 2)
+  reason          String
+
+  status SafetyDepositStatus @default(PENDING_APPROVAL)
+
+  requestedById   Int
+  approvedById    Int?
+  approvedAmount  Decimal?  @db.Decimal(10, 2)
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  rejectionReason String?
+
+  booking     Booking @relation(fields: [bookingId], references: [id])
+  requestedBy User    @relation("DepositRequester", fields: [requestedById], references: [id])
+  approvedBy  User?   @relation("DepositApprover", fields: [approvedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bookingId])
+  @@index([status])
+  @@index([requestedById])
 }

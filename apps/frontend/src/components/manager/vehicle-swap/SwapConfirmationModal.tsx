@@ -29,7 +29,7 @@ interface SwapConfirmationModalProps {
     make: string;
     model: string;
     regNo: string;
-    image?: string;
+    image?: string | null;
   };
   newVehicle: AvailableVehicle;
   onConfirm: (data: {
