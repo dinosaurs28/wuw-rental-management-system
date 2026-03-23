@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
-import { prisma, BookingStatus, DepositMethod } from "@repo/database/client";
+import { prisma, BookingStatus, DepositMethod, AuditCategory } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
 import { checkVehicleAvailability } from "../../utils/availability/checkAvailability.js";
 import { calculatePricingForVehicleFromRecord } from "../../utils/pricing/calcPricingInd.js";
@@ -13,6 +13,7 @@ import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
 import { chargeConfigService } from "../../services/charges/charge-config.service.js";
+import { auditService } from "../../services/audit/audit.service.js";
 
 export const BookingController = async (req: Request, res: Response) => {
   try {
