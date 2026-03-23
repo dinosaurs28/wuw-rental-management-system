@@ -8,6 +8,7 @@
  */
 
 import { prisma } from "@repo/database/client";
+import type { FeatureFlag, BranchFeatureFlag, VehicleFeatureFlag } from "@repo/database/client";
 import { FeatureFlagKey } from "../../config/feature-flags.config.js";
 import { flagCache as cache } from "../../utils/flag-cache.util.js";
 
@@ -175,7 +176,7 @@ class FeatureFlagService {
   // ──────────────────────────────────────────
 
   /** Get all feature flags. */
-  async getAllFlags() {
+  async getAllFlags(): Promise<FeatureFlag[]> {
     return prisma.featureFlag.findMany({
       orderBy: [{ scope: "asc" }, { key: "asc" }],
     });
@@ -186,7 +187,7 @@ class FeatureFlagService {
     flagKey: FeatureFlagKey,
     enabled: boolean,
     config?: any
-  ) {
+  ): Promise<FeatureFlag> {
     const updated = await prisma.featureFlag.update({
       where: { key: flagKey },
       data: {
@@ -208,7 +209,7 @@ class FeatureFlagService {
     flagKey: FeatureFlagKey,
     enabled: boolean,
     config?: any
-  ) {
+  ): Promise<BranchFeatureFlag> {
     const flag = await prisma.featureFlag.findUnique({
       where: { key: flagKey },
     });
@@ -232,7 +233,7 @@ class FeatureFlagService {
     flagKey: FeatureFlagKey,
     enabled: boolean,
     config?: any
-  ) {
+  ): Promise<VehicleFeatureFlag> {
     const flag = await prisma.featureFlag.findUnique({
       where: { key: flagKey },
     });
@@ -249,7 +250,7 @@ class FeatureFlagService {
   }
 
   /** Remove branch-level override (reverts to system default). */
-  async removeBranchFlag(branchId: number, flagKey: FeatureFlagKey) {
+  async removeBranchFlag(branchId: number, flagKey: FeatureFlagKey): Promise<void> {
     const flag = await prisma.featureFlag.findUnique({
       where: { key: flagKey },
     });
@@ -264,7 +265,7 @@ class FeatureFlagService {
   }
 
   /** Remove vehicle-level override. */
-  async removeVehicleFlag(vehicleId: number, flagKey: FeatureFlagKey) {
+  async removeVehicleFlag(vehicleId: number, flagKey: FeatureFlagKey): Promise<void> {
     const flag = await prisma.featureFlag.findUnique({
       where: { key: flagKey },
     });

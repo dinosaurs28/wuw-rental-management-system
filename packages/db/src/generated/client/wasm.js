@@ -272,6 +272,8 @@ exports.Prisma.VehicleScalarFieldEnum = {
   advancePayAmount: 'advancePayAmount',
   insuranceExpiry: 'insuranceExpiry',
   status: 'status',
+  fastagNumber: 'fastagNumber',
+  hasFastag: 'hasFastag',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   deletedAt: 'deletedAt'
@@ -428,6 +430,8 @@ exports.Prisma.BookingScalarFieldEnum = {
   activeExtensionId: 'activeExtensionId',
   displacedByExtensionId: 'displacedByExtensionId',
   extensionDisplacedAt: 'extensionDisplacedAt',
+  frozenChargeConfig: 'frozenChargeConfig',
+  chargeConfigVersion: 'chargeConfigVersion',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   deletedAt: 'deletedAt'
@@ -530,7 +534,9 @@ exports.Prisma.InvoiceItemScalarFieldEnum = {
   publicId: 'publicId',
   invoiceId: 'invoiceId',
   label: 'label',
-  amount: 'amount'
+  amount: 'amount',
+  isTaxable: 'isTaxable',
+  chargeType: 'chargeType'
 };
 
 exports.Prisma.AuditLogScalarFieldEnum = {
@@ -880,6 +886,100 @@ exports.Prisma.BookingExtensionScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.BranchChargeConfigScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  branchId: 'branchId',
+  extraKmEnabled: 'extraKmEnabled',
+  extraTimeEnabled: 'extraTimeEnabled',
+  fuelModuleEnabled: 'fuelModuleEnabled',
+  fastagModuleEnabled: 'fastagModuleEnabled',
+  gracePolicyEnabled: 'gracePolicyEnabled',
+  damageModuleEnabled: 'damageModuleEnabled',
+  graceType: 'graceType',
+  graceMinutes: 'graceMinutes',
+  employeeOverrideEnabled: 'employeeOverrideEnabled',
+  maxOverridePercent: 'maxOverridePercent',
+  overrideRequiresApproval: 'overrideRequiresApproval',
+  overrideApprovalThreshold: 'overrideApprovalThreshold',
+  safetyDepositEnabled: 'safetyDepositEnabled',
+  safetyDepositRequiresApproval: 'safetyDepositRequiresApproval',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ChargeEntryScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  bookingId: 'bookingId',
+  chargeType: 'chargeType',
+  moduleKey: 'moduleKey',
+  label: 'label',
+  originalAmount: 'originalAmount',
+  finalAmount: 'finalAmount',
+  quantity: 'quantity',
+  unitRate: 'unitRate',
+  notes: 'notes',
+  isOverridden: 'isOverridden',
+  createdById: 'createdById',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ChargeOverrideScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  bookingId: 'bookingId',
+  chargeEntryId: 'chargeEntryId',
+  originalAmount: 'originalAmount',
+  overriddenAmount: 'overriddenAmount',
+  waivedAmount: 'waivedAmount',
+  reason: 'reason',
+  status: 'status',
+  actorId: 'actorId',
+  actorRole: 'actorRole',
+  approverId: 'approverId',
+  approvedAt: 'approvedAt',
+  rejectedAt: 'rejectedAt',
+  rejectionReason: 'rejectionReason',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.FuelRecordScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  bookingId: 'bookingId',
+  pickupFuelLevel: 'pickupFuelLevel',
+  returnFuelLevel: 'returnFuelLevel',
+  fuelDeficit: 'fuelDeficit',
+  fuelDeficitCharge: 'fuelDeficitCharge',
+  skipReason: 'skipReason',
+  capturedByPickupId: 'capturedByPickupId',
+  capturedByReturnId: 'capturedByReturnId',
+  pickupAt: 'pickupAt',
+  returnAt: 'returnAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.SafetyDepositRequestScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  bookingId: 'bookingId',
+  requestedAmount: 'requestedAmount',
+  reason: 'reason',
+  status: 'status',
+  requestedById: 'requestedById',
+  approvedById: 'approvedById',
+  approvedAmount: 'approvedAmount',
+  approvedAt: 'approvedAt',
+  rejectedAt: 'rejectedAt',
+  rejectionReason: 'rejectionReason',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -977,7 +1077,12 @@ exports.StaffEntityType = exports.$Enums.StaffEntityType = {
   PAYMENT_TRANSACTION: 'PAYMENT_TRANSACTION',
   CASH_SHIFT: 'CASH_SHIFT',
   REFUND_REQUEST: 'REFUND_REQUEST',
-  BOOKING_EXTENSION: 'BOOKING_EXTENSION'
+  BOOKING_EXTENSION: 'BOOKING_EXTENSION',
+  CHARGE_ENTRY: 'CHARGE_ENTRY',
+  CHARGE_OVERRIDE: 'CHARGE_OVERRIDE',
+  FUEL_RECORD: 'FUEL_RECORD',
+  SAFETY_DEPOSIT_REQUEST: 'SAFETY_DEPOSIT_REQUEST',
+  BRANCH_CHARGE_CONFIG: 'BRANCH_CHARGE_CONFIG'
 };
 
 exports.VehicleStatus = exports.$Enums.VehicleStatus = {
@@ -1064,7 +1169,8 @@ exports.AuditCategory = exports.$Enums.AuditCategory = {
   BRANCH: 'BRANCH',
   AUTH: 'AUTH',
   SYSTEM: 'SYSTEM',
-  DISCOUNT: 'DISCOUNT'
+  DISCOUNT: 'DISCOUNT',
+  CHARGE: 'CHARGE'
 };
 
 exports.AuditSeverity = exports.$Enums.AuditSeverity = {
@@ -1175,6 +1281,45 @@ exports.ExtensionResolutionType = exports.$Enums.ExtensionResolutionType = {
   NO_RESOLUTION: 'NO_RESOLUTION'
 };
 
+exports.GraceType = exports.$Enums.GraceType = {
+  AUTOMATIC: 'AUTOMATIC',
+  MANUAL: 'MANUAL'
+};
+
+exports.ChargeType = exports.$Enums.ChargeType = {
+  BASE: 'BASE',
+  EXTRA_KM: 'EXTRA_KM',
+  EXTRA_TIME: 'EXTRA_TIME',
+  FUEL_DEFICIT: 'FUEL_DEFICIT',
+  FASTAG: 'FASTAG',
+  DAMAGE: 'DAMAGE',
+  GRACE_ADJUSTMENT: 'GRACE_ADJUSTMENT',
+  SAFETY_DEPOSIT: 'SAFETY_DEPOSIT'
+};
+
+exports.OverrideStatus = exports.$Enums.OverrideStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  AUTO_APPROVED: 'AUTO_APPROVED',
+  REJECTED: 'REJECTED'
+};
+
+exports.FuelLevel = exports.$Enums.FuelLevel = {
+  EMPTY: 'EMPTY',
+  QUARTER: 'QUARTER',
+  HALF: 'HALF',
+  THREE_QUARTER: 'THREE_QUARTER',
+  FULL: 'FULL'
+};
+
+exports.SafetyDepositStatus = exports.$Enums.SafetyDepositStatus = {
+  PENDING_APPROVAL: 'PENDING_APPROVAL',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CHARGED: 'CHARGED',
+  REFUNDED: 'REFUNDED'
+};
+
 exports.Prisma.ModelName = {
   User: 'User',
   UserProvider: 'UserProvider',
@@ -1225,7 +1370,12 @@ exports.Prisma.ModelName = {
   PaymentTransaction: 'PaymentTransaction',
   RefundRequest: 'RefundRequest',
   CashShift: 'CashShift',
-  BookingExtension: 'BookingExtension'
+  BookingExtension: 'BookingExtension',
+  BranchChargeConfig: 'BranchChargeConfig',
+  ChargeEntry: 'ChargeEntry',
+  ChargeOverride: 'ChargeOverride',
+  FuelRecord: 'FuelRecord',
+  SafetyDepositRequest: 'SafetyDepositRequest'
 };
 
 /**

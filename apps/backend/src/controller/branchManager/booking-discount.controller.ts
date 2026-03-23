@@ -48,6 +48,7 @@ export const ApplyCoupon = async (req: Request, res: Response) => {
         items: { include: { vehicle: { select: { id: true, categoryId: true } } } },
         customer: { select: { id: true } },
         branch: { select: { id: true } },
+        invoice: { select: { id: true } },
       },
     });
 

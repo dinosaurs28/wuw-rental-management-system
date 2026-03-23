@@ -11,7 +11,7 @@ import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.
 import { createID } from "../../utils/nanoID.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
-import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
+import { chargeConfigService } from "../../services/charges/charge-config.service.js";
 
 export const BookingController = async (req: Request, res: Response) => {
   try {
@@ -347,6 +347,11 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       transactionId = `CASH_${createID()}`;
     }
 
+    // Freeze branch charge config snapshot for this booking (immutable after creation)
+    const frozenChargeConfig = await chargeConfigService.freezeChargeConfig(
+      vehiclesData[0]!.branchId,
+    );
+
     const booking = await prisma.$transaction(async (tx) => {
       const newBooking = await tx.booking.create({
         data: {
@@ -369,6 +374,7 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
           totalTax: grandTaxTotal,
           totalFinal: grandFinalTotal,
           transactionId,
+          frozenChargeConfig: frozenChargeConfig as any,
           pricingSnapshot: {
             items,
             totals: {

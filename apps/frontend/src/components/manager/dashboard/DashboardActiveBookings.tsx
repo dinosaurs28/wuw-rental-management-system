@@ -24,7 +24,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ArrowUpRight, RefreshCw, CalendarIcon } from "lucide-react";
+import {  RefreshCw, CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { managerDashboardService } from "@/services/managerDashboard.service";

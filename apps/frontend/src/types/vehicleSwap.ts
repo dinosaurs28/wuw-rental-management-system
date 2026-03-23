@@ -1,11 +1,13 @@
-export enum SwapReason {
-  CUSTOMER_REQUEST = 'CUSTOMER_REQUEST',
-  MAINTENANCE = 'MAINTENANCE',
-  UPGRADE = 'UPGRADE',
-  DOWNGRADE = 'DOWNGRADE',
-  DAMAGE = 'DAMAGE',
-  OTHER = 'OTHER',
-}
+export const SwapReason = {
+  CUSTOMER_REQUEST: 'CUSTOMER_REQUEST',
+  MAINTENANCE: 'MAINTENANCE',
+  UPGRADE: 'UPGRADE',
+  DOWNGRADE: 'DOWNGRADE',
+  DAMAGE: 'DAMAGE',
+  OTHER: 'OTHER',
+} as const;
+
+export type SwapReason = typeof SwapReason[keyof typeof SwapReason];
 
 export interface AvailableVehicle {
   id: number;
