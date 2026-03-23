@@ -45,6 +45,8 @@ app.use(
     origin: [
       "http://localhost:5173",
       "https://WUWrentals-staging.office-09d.workers.dev",
+      "https://whatuwantrentals.com",
+      "https://www.whatuwantrentals.com",
     ],
     credentials: true,
   }),
