@@ -51,17 +51,17 @@ function Calendar({
         ),
         month: cn("flex flex-col w-full gap-4", defaultClassNames.month),
         nav: cn(
-          "flex items-center gap-1 w-full absolute top-0 inset-x-0 justify-between z-10",
+          "flex items-center gap-1 w-full absolute top-0 inset-x-0 justify-between z-10 pointer-events-none",
           defaultClassNames.nav,
         ),
         button_previous: cn(
           buttonVariants({ variant: buttonVariant }),
-          "size-(--cell-size) bg-white/5 hover:bg-white/10 border border-white/5 text-white rounded-full transition-all aria-disabled:opacity-50 p-0 select-none shadow-xl",
+          "pointer-events-auto size-(--cell-size) bg-white/5 hover:bg-white/10 border border-white/5 text-white rounded-full transition-all aria-disabled:opacity-50 p-0 select-none shadow-xl",
           defaultClassNames.button_previous,
         ),
         button_next: cn(
           buttonVariants({ variant: buttonVariant }),
-          "size-(--cell-size) bg-white/5 hover:bg-white/10 border border-white/5 text-white rounded-full transition-all aria-disabled:opacity-50 p-0 select-none shadow-xl",
+          "pointer-events-auto size-(--cell-size) bg-white/5 hover:bg-white/10 border border-white/5 text-white rounded-full transition-all aria-disabled:opacity-50 p-0 select-none shadow-xl",
           defaultClassNames.button_next,
         ),
         month_caption: cn(
@@ -73,10 +73,13 @@ function Calendar({
           defaultClassNames.dropdowns,
         ),
         dropdown_root: cn(
-          "relative border border-white/10 bg-black/40 rounded-xl",
+          "relative flex items-center border border-white/10 bg-black/40 rounded-md px-2 py-0.5",
           defaultClassNames.dropdown_root,
         ),
-        dropdown: cn("absolute inset-0 opacity-0", defaultClassNames.dropdown),
+        dropdown: cn(
+          "absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer", 
+          defaultClassNames.dropdown
+        ),
         caption_label: cn(
           "select-none font-bold text-lg text-white tracking-wide",
           defaultClassNames.caption_label,

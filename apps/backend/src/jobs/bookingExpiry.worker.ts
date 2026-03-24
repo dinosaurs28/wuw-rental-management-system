@@ -206,22 +206,15 @@ async function handleBookingExpiry(bookingPublicId: string): Promise<void> {
       }
     }
 
-    // Invalidate public vehicle cache
-    let cursor = "0";
-    do {
-      const reply = await redis.scan(
-        cursor,
-        "MATCH",
-        "public:vehicles:*",
-        "COUNT",
-        100,
-      );
-      cursor = reply[0];
-      const keys = reply[1];
-      if (keys.length > 0) {
-        await redis.del(keys);
+    // Targeted availability cache invalidation for expired booking vehicles (TASK-019)
+    try {
+      const vehicleIds = booking.items.map((item) => item.vehicle.id);
+      if (vehicleIds.length > 0) {
+        await redis.del(...vehicleIds.map((id) => `vehicle:${id}:availability`));
       }
-    } while (cursor !== "0");
+    } catch (redisErr) {
+      console.warn("[BookingExpiry] Cache invalidation failed (non-fatal):", redisErr);
+    }
 
     console.log(
       `[BookingExpiry] Successfully cancelled expired booking: ${bookingPublicId}`,

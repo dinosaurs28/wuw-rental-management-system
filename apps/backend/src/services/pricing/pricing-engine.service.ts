@@ -301,12 +301,33 @@ export class PricingEngineService {
     let basePrice: Decimal;
     let freeKmLimit: number;
 
+    /**
+     * Hourly-first rule:
+     * If an hourlyRate is configured and > 0, use granular per-hour billing for
+     * ALL durations (including HALF_DAY, FULL_DAY, MULTI_DAY, MONTHLY).
+     * This is the intended behaviour when a business wants pure hourly billing.
+     *
+     * When hourlyRate is 0 or null, fall through to slab-based billing
+     * (HALF_DAY / FULL_DAY / MULTI_DAY / MONTHLY), rounding up to the
+     * nearest configured slab.
+     *
+     * Example: 29 hours, hourlyRate = ₹100 → 29 × 100 = ₹2900
+     * Example: 29 hours, hourlyRate = null → MULTI_DAY, 2 days × daily = ₹X
+     */
+    if (pricing.hourlyRate && pricing.hourlyRate.gt(0)) {
+      const billableHours = Math.max(1, Math.ceil(duration.actualDuration));
+      return {
+        basePrice:   pricing.hourlyRate.mul(billableHours),
+        freeKmLimit: Math.floor(billableHours * 8),
+        priceSource: pricing.source,
+      };
+    }
+
+    // Hourly not configured — use slab-based billing
     switch (duration.periodType) {
       case RentalPeriodType.HOURLY:
-        if (!pricing.hourlyRate) throw new Error("Hourly rental not available for this vehicle");
-        basePrice = pricing.hourlyRate.mul(duration.billableDuration);
-        freeKmLimit = Math.floor(duration.billableDuration * 8);
-        break;
+        // Fallback: theoretically unreachable if hourlyRate is null, but kept for safety
+        throw new Error("Hourly rental not available for this vehicle (hourlyRate not configured)");
 
       case RentalPeriodType.HALF_DAY:
         if (!pricing.price12Hour) throw new Error("12-hour rental not available for this vehicle");

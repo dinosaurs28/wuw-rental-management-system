@@ -1,19 +1,20 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
-import { prisma, BookingStatus, DepositMethod, AuditCategory } from "@repo/database/client";
+import { prisma, BookingStatus, DepositMethod } from "@repo/database/client";
 import { redis } from "../../lib/redisconfig.js";
-import { checkVehicleAvailability } from "../../utils/availability/checkAvailability.js";
-import { calculatePricingForVehicleFromRecord } from "../../utils/pricing/calcPricingInd.js";
-import { calculateMultiDayTotalPrice } from "../../utils/pricing/calcMultiDayPrice.js";
-import { getDiscountForDays } from "../../utils/pricing/getDiscountForDays.js";
-import { getDepositAmount } from "../../utils/pricing/getDepositAmount.js";
-import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
+import { getUnavailableVehicleIds } from "../../utils/availability/availabilityBatch.js";
 import { createID } from "../../utils/nanoID.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { auditService, AuditCategory } from "../../services/audit/audit.service.js";
 import { chargeConfigService } from "../../services/charges/charge-config.service.js";
-import { auditService } from "../../services/audit/audit.service.js";
+import { PricingEngineService } from "../../services/pricing/pricing-engine.service.js";
+import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
+import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
+
+const pricingEngine = new PricingEngineService();
+
+// ── Booking list (GET /bookings) ──────────────────────────────────────────────
 
 export const BookingController = async (req: Request, res: Response) => {
   try {
@@ -37,20 +38,15 @@ export const BookingController = async (req: Request, res: Response) => {
       }
     }
 
-    // Default behavior: Upcoming bookings from today if no valid date is provided
     if (Object.keys(dateFilter).length === 0) {
       const nowDt = TimezoneService.getCurrentTime();
       const startOfDayDt = TimezoneService.startOfDay(nowDt);
-
-      dateFilter = {
-        gte: TimezoneService.toPrisma(startOfDayDt),
-      };
+      dateFilter = { gte: TimezoneService.toPrisma(startOfDayDt) };
       cacheKeySuffix = `upcoming:${nowDt.toFormat("yyyy-MM-dd")}`;
     }
 
     const cacheKey = `bookings:${branchId}:${cacheKeySuffix}`;
     const cachedData = await redis.get(cacheKey);
-
     if (cachedData) {
       return res.status(StatusCode.OK).json({
         message: "Bookings fetched successfully",
@@ -60,7 +56,7 @@ export const BookingController = async (req: Request, res: Response) => {
 
     const bookings = await prisma.booking.findMany({
       where: {
-        branchId: branchId,
+        branchId,
         startAt: dateFilter,
         status: BookingStatus.CONFIRMED,
       },
@@ -78,11 +74,7 @@ export const BookingController = async (req: Request, res: Response) => {
         customer: {
           select: {
             user: {
-              select: {
-                publicId: true,
-                name: true,
-                phone: true, // Assuming phone is on User, otherwise check Schema
-              },
+              select: { publicId: true, name: true, phone: true },
             },
           },
         },
@@ -96,26 +88,16 @@ export const BookingController = async (req: Request, res: Response) => {
                 regNo: true,
                 status: true,
                 images: {
-                  where: {
-                    isThumbnail: true,
-                  },
+                  where: { isThumbnail: true },
                   take: 1,
-                  select: {
-                    file: {
-                      select: {
-                        url: true,
-                      },
-                    },
-                  },
+                  select: { file: { select: { url: true } } },
                 },
               },
             },
           },
         },
       },
-      orderBy: {
-        startAt: "asc",
-      },
+      orderBy: { startAt: "asc" },
     });
 
     if (bookings.length === 0) {
@@ -123,8 +105,8 @@ export const BookingController = async (req: Request, res: Response) => {
         message: "No Upcoming Bookings Found",
       });
     }
-    await redis.setex(cacheKey, 60, JSON.stringify(bookings));
 
+    await redis.setex(cacheKey, 60, JSON.stringify(bookings));
     return res.status(StatusCode.OK).json({
       message: "Upcoming bookings fetched successfully",
       data: bookings,
@@ -137,6 +119,8 @@ export const BookingController = async (req: Request, res: Response) => {
   }
 };
 
+// ── Create booking ────────────────────────────────────────────────────────────
+
 export const createEmployeeBooking = async (req: Request, res: Response) => {
   try {
     const {
@@ -147,6 +131,7 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       end,
       payment_type,
     } = req.body;
+
     if (
       !Array.isArray(vehicles) ||
       !customer_public_id ||
@@ -164,22 +149,16 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       where: { publicId: req.public_Id },
       select: { id: true, name: true, role: true, branchId: true },
     });
-
     if (!staff) {
-      return res
-        .status(StatusCode.FORBIDDEN)
-        .json({ message: "Invalid staff user" });
+      return res.status(StatusCode.FORBIDDEN).json({ message: "Invalid staff user" });
     }
 
-    // Verify Customer
     const customer = await prisma.user.findUnique({
       where: { publicId: customer_public_id },
       include: { customerProfile: true },
     });
     if (!customer || !customer.customerProfile) {
-      return res
-        .status(StatusCode.NOT_FOUND)
-        .json({ message: "Customer not found" });
+      return res.status(StatusCode.NOT_FOUND).json({ message: "Customer not found" });
     }
 
     const kycRecord = await prisma.customerKyc.findUnique({
@@ -192,105 +171,87 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         .json({ message: "Invalid KYC ID or Document missing" });
     }
 
+    // Parse dates (IST) — used as Luxon DateTime for pricing engine
     const startDateDt = TimezoneService.parseISO(start);
     const endDateDt = TimezoneService.parseISO(end);
-    if (!startDateDt.isValid || !endDateDt.isValid)
-      return res
-        .status(StatusCode.BAD_REQUEST)
-        .json({ message: "Invalid dates" });
+    if (!startDateDt.isValid || !endDateDt.isValid) {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid dates" });
+    }
     const startDate = TimezoneService.toPrisma(startDateDt);
     const endDate = TimezoneService.toPrisma(endDateDt);
+
     const vehiclesData = await prisma.vehicle.findMany({
       where: { publicId: { in: vehicles } },
       include: {
         category: true,
         branch: { include: { pricingSetting: true } },
-        images: {
-          include: { file: true },
-          take: 1,
-        },
+        images: { include: { file: true }, take: 1 },
       },
     });
 
-    if (vehiclesData.length !== vehicles.length)
-      return res
-        .status(StatusCode.NOT_FOUND)
-        .json({ message: "Some vehicles not found" });
+    if (vehiclesData.length !== vehicles.length) {
+      return res.status(StatusCode.NOT_FOUND).json({ message: "Some vehicles not found" });
+    }
 
-    // GST Rule Fetching
-    const branchId = vehiclesData[0]?.branchId;
-    let cgstRate = 0;
-    let sgstRate = 0;
+    // ── Initial availability check (batch) ────────────────────────────────────
 
-    if (branchId) {
-      const gstRule = await prisma.gSTRule.findUnique({
-        where: { branchId },
-      });
-      if (gstRule) {
-        cgstRate = Number(gstRule.cgstRate);
-        sgstRate = Number(gstRule.sgstRate);
+    const vehicleIdToPublicId = new Map(vehiclesData.map((v) => [v.id, v.publicId]));
+    const initialUnavailable = await getUnavailableVehicleIds(
+      vehiclesData.map((v) => v.id),
+      startDate,
+      endDate,
+      vehicleIdToPublicId,
+    );
+    for (const v of vehiclesData) {
+      if (initialUnavailable.has(v.id)) {
+        return res.status(StatusCode.CONFLICT).json({
+          message: `Vehicle ${v.make} ${v.model} unavailable for the selected dates`,
+        });
       }
     }
-    const totalTaxRate = cgstRate + sgstRate;
+
+    // ── Pricing via PricingEngineService (TASK-010 / TASK-011) ───────────────
+    // Fixes the 13-hour bug: PricingEngineService uses DurationCalculatorService
+    // which correctly classifies 13 hours as FULL_DAY (not 2 calendar days).
 
     const items: any[] = [];
-    let grandBaseTotal = 0;
+    let grandBaseTotal    = 0;
     let grandDiscountTotal = 0;
-    let grandTaxTotal = 0;
-    let grandCGSTTotal = 0;
-    let grandSGSTTotal = 0;
-    let grandDeposit = 0;
-    let grandFinalTotal = 0;
+    let grandTaxTotal      = 0;
+    let grandCGSTTotal     = 0;
+    let grandSGSTTotal     = 0;
+    let grandDeposit       = 0;
+    let grandFinalTotal    = 0;
 
     for (const v of vehiclesData) {
-      const availability = await checkVehicleAvailability(
+      const pricingResult = await pricingEngine.calculateBookingPrice(
         v.id,
-        startDate,
-        endDate,
-      );
-      if (!availability)
-        return res
-          .status(StatusCode.CONFLICT)
-          .json({ message: `Vehicle ${v.make} ${v.model} unavailable` });
-
-      const pricing = await calculatePricingForVehicleFromRecord(v);
-      const multi = calculateMultiDayTotalPrice(
-        startDate,
-        endDate,
-        pricing.daily,
-      );
-      const days = multi.days;
-      const discountPercent =
-        (await getDiscountForDays(v.branchId, v.categoryId, days)) || 0;
-      const baseTotal = multi.total;
-      const discountedTotal = Number(
-        (baseTotal * (1 - discountPercent)).toFixed(2),
-      );
-      const discountAmount = Number((baseTotal - discountedTotal).toFixed(2));
-      const deposit = (await getDepositAmount(v.branchId, v.categoryId)) || 0;
-
-      // Calculate Tax
-      const taxAmount = Number(
-        (discountedTotal * (totalTaxRate / 100)).toFixed(2),
-      );
-      const cgstAmount = Number(
-        (discountedTotal * (cgstRate / 100)).toFixed(2),
-      );
-      const sgstAmount = Number(
-        (discountedTotal * (sgstRate / 100)).toFixed(2),
+        startDateDt,
+        endDateDt,
+        v.branchId,
+        customer.customerProfile!.id,
       );
 
-      const finalTotal = Number(
-        (discountedTotal + taxAmount + deposit).toFixed(2),
-      );
+      const baseTotal      = Number(pricingResult.basePrice);
+      const discountAmount = Number(pricingResult.discountAmount);
+      const discountPercent = Number(pricingResult.discountPercent);
+      const deposit        = Number(pricingResult.deposit);
+      const taxAmount      = Number(pricingResult.taxAmount);
+      const cgstAmount     = Number(pricingResult.cgstAmount);
+      const sgstAmount     = Number(pricingResult.sgstAmount);
+      const taxRate        = Number(pricingResult.taxRate);
+      const days           = pricingResult.pricingBreakdown.duration.days;
+      // finalTotal from engine = post-discount base + tax (no deposit).
+      // Add deposit to match the existing field semantics for totalFinal.
+      const finalTotal     = Number(pricingResult.finalTotal) + deposit;
 
       items.push({
         vehicleId: v.id,
-        make: v.make,
-        model: v.model,
-        category: v.category?.name,
-        image: v.images[0]?.file?.url,
-        regNo: v.regNo,
+        make:      v.make,
+        model:     v.model,
+        category:  v.category?.name,
+        image:     v.images[0]?.file?.url,
+        regNo:     v.regNo,
         payment_type,
         days,
         baseTotal,
@@ -300,34 +261,56 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         taxAmount,
         cgstAmount,
         sgstAmount,
-        taxRate: totalTaxRate,
+        taxRate,
         finalTotal,
       });
 
-      grandBaseTotal += baseTotal;
+      grandBaseTotal    += baseTotal;
       grandDiscountTotal += discountAmount;
-      grandTaxTotal += taxAmount;
-      grandCGSTTotal += cgstAmount;
-      grandSGSTTotal += sgstAmount;
-      grandDeposit += deposit;
-      grandFinalTotal += finalTotal;
+      grandTaxTotal      += taxAmount;
+      grandCGSTTotal     += cgstAmount;
+      grandSGSTTotal     += sgstAmount;
+      grandDeposit       += deposit;
+      grandFinalTotal    += finalTotal;
     }
 
-    grandBaseTotal = Number(grandBaseTotal.toFixed(2));
+    grandBaseTotal     = Number(grandBaseTotal.toFixed(2));
     grandDiscountTotal = Number(grandDiscountTotal.toFixed(2));
-    grandTaxTotal = Number(grandTaxTotal.toFixed(2));
-    grandCGSTTotal = Number(grandCGSTTotal.toFixed(2));
-    grandSGSTTotal = Number(grandSGSTTotal.toFixed(2));
-    grandDeposit = Number(grandDeposit.toFixed(2));
-    grandFinalTotal = Number(grandFinalTotal.toFixed(2));
+    grandTaxTotal      = Number(grandTaxTotal.toFixed(2));
+    grandCGSTTotal     = Number(grandCGSTTotal.toFixed(2));
+    grandSGSTTotal     = Number(grandSGSTTotal.toFixed(2));
+    grandDeposit       = Number(grandDeposit.toFixed(2));
+    grandFinalTotal    = Number(grandFinalTotal.toFixed(2));
 
-    let transactionId = null;
-    let paymentURL = null;
+    // ── Final revalidation before DB write (TASK-012) ─────────────────────────
+    // Prevents race conditions: re-check availability immediately before persisting.
+
+    const finalUnavailable = await getUnavailableVehicleIds(
+      vehiclesData.map((v) => v.id),
+      startDate,
+      endDate,
+      vehicleIdToPublicId,
+    );
+    for (const v of vehiclesData) {
+      if (finalUnavailable.has(v.id)) {
+        console.log(`[booking] revalidation conflict: vehicle ${v.id} (${v.publicId})`);
+        return res.status(StatusCode.CONFLICT).json({
+          message: `Vehicle ${v.make} ${v.model} was just booked. Please select different dates or vehicle.`,
+        });
+      }
+    }
+    console.log(
+      `[booking] revalidation passed: ${vehiclesData.length} vehicles clear before DB write`,
+    );
+
+    // ── Payment initiation ────────────────────────────────────────────────────
+
+    let transactionId: string | null = null;
+    let paymentURL: string | null = null;
 
     if (payment_type === "ONLINE") {
       const frontendUrl = process.env.REDIRECT_URL_PAY;
       const employeeRedirectBase = `${frontendUrl}/employee/booking/status`;
-
       try {
         const paymentDetails = await initiatePhonePePayment(
           grandFinalTotal,
@@ -349,32 +332,37 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       transactionId = `CASH_${createID()}`;
     }
 
-    // Freeze branch charge config snapshot for this booking (immutable after creation)
+    // ── Freeze charge config snapshot ─────────────────────────────────────────
+
     const frozenChargeConfig = await chargeConfigService.freezeChargeConfig(
       vehiclesData[0]!.branchId,
     );
 
+    // ── DB transaction ────────────────────────────────────────────────────────
+
+    const totalTaxRate = items[0]?.taxRate ?? 0;
+
     const booking = await prisma.$transaction(async (tx) => {
       const newBooking = await tx.booking.create({
         data: {
-          publicId: createID(),
-          customerId: customer.customerProfile!.id,
-          kycFileId: kycRecord.fileId!,
-          branchId: vehiclesData[0]!.branchId,
-          startAt: startDate,
-          endAt: endDate,
-          days: items[0]!.days,
-          status: BookingStatus.HOLD,
+          publicId:     createID(),
+          customerId:   customer.customerProfile!.id,
+          kycFileId:    kycRecord.fileId!,
+          branchId:     vehiclesData[0]!.branchId,
+          startAt:      startDate,
+          endAt:        endDate,
+          days:         items[0]!.days,
+          status:       BookingStatus.HOLD,
           paymentStatus: "CREATED",
           depositMethod:
             payment_type === "CASH"
               ? DepositMethod.CASH
               : DepositMethod.ONLINE_RAZORPAY,
-          totalBase: grandBaseTotal,
+          totalBase:    grandBaseTotal,
           totalDiscount: grandDiscountTotal,
-          totalDeposit: grandDeposit,
-          totalTax: grandTaxTotal,
-          totalFinal: grandFinalTotal,
+          totalDeposit:  grandDeposit,
+          totalTax:      grandTaxTotal,
+          totalFinal:    grandFinalTotal,
           transactionId,
           frozenChargeConfig: frozenChargeConfig as any,
           pricingSnapshot: {
@@ -396,27 +384,31 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
 
       await tx.bookingItem.createMany({
         data: items.map((i) => ({
-          bookingId: newBooking.id,
-          vehicleId: i.vehicleId,
-          days: i.days,
-          baseTotal: i.baseTotal,
-          discountAmount: i.discountAmount,
+          bookingId:       newBooking.id,
+          vehicleId:       i.vehicleId,
+          days:            i.days,
+          baseTotal:       i.baseTotal,
+          discountAmount:  i.discountAmount,
           discountPercent: i.discountPercent,
-          deposit: i.deposit,
-          taxAmount: i.taxAmount,
-          cgstAmount: i.cgstAmount,
-          sgstAmount: i.sgstAmount,
-          taxRate: i.taxRate,
-          finalTotal: i.finalTotal,
+          deposit:         i.deposit,
+          taxAmount:       i.taxAmount,
+          cgstAmount:      i.cgstAmount,
+          sgstAmount:      i.sgstAmount,
+          taxRate:         i.taxRate,
+          finalTotal:      i.finalTotal,
         })),
       });
 
-      await staffActivityService.logFromRequest(req, {
-        actionType: StaffActionType.CREATED,
-        entityType: StaffEntityType.BOOKING,
-        entityRef: newBooking.publicId,
-        description: `Booking ${newBooking.publicId} created`,
-      }, tx);
+      await staffActivityService.logFromRequest(
+        req,
+        {
+          actionType:  StaffActionType.CREATED,
+          entityType:  StaffEntityType.BOOKING,
+          entityRef:   newBooking.publicId,
+          description: `Booking ${newBooking.publicId} created`,
+        },
+        tx,
+      );
 
       await auditService.log({
         actorId: staff.id,
@@ -437,36 +429,28 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       return newBooking;
     });
 
-    const snapshot = booking.pricingSnapshot as any;
+    // ── Targeted cache invalidation (TASK-019) ────────────────────────────────
+    // Replaces SCAN/DEL of all public:vehicles:* with per-vehicle key deletion.
 
-    // Invalidate public vehicle cache
-    let cursor = "0";
-    do {
-      const reply = await redis.scan(
-        cursor,
-        "MATCH",
-        "public:vehicles:*",
-        "COUNT",
-        100,
-      );
-      cursor = reply[0];
-      const keys = reply[1];
-      if (keys.length > 0) {
-        await redis.del(keys);
-      }
-    } while (cursor !== "0");
+    try {
+      await invalidateVehicleAvailability(redis, vehiclesData.map((v) => v.id));
+    } catch (redisErr) {
+      console.warn("[booking] Cache invalidation failed (non-fatal):", redisErr);
+    }
+
+    const snapshot = booking.pricingSnapshot as any;
 
     return res.status(StatusCode.OK).json({
       message: "Booking Created Successfully",
       data: {
-        bookingId: booking.publicId,
+        bookingId:     booking.publicId,
         paymentURL,
-        status: booking.status,
-        startDate: booking.startAt,
-        endDate: booking.endAt,
+        status:        booking.status,
+        startDate:     booking.startAt,
+        endDate:       booking.endAt,
         transactionId: booking.transactionId,
-        totals: snapshot?.totals,
-        items: snapshot?.items,
+        totals:        snapshot?.totals,
+        items:         snapshot?.items,
       },
     });
   } catch (error) {
@@ -476,6 +460,8 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
       .json({ message: "Internal Error" });
   }
 };
+
+// ── Booking detail ────────────────────────────────────────────────────────────
 
 export const GetBookingDetails = async (req: Request, res: Response) => {
   try {
@@ -499,11 +485,7 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
         customer: {
           select: {
             user: {
-              select: {
-                publicId: true,
-                name: true,
-                phone: true, // Assuming phone is on User, otherwise check Schema
-              },
+              select: { publicId: true, name: true, phone: true },
             },
           },
         },
@@ -518,17 +500,9 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
                 status: true,
                 odo: true,
                 images: {
-                  where: {
-                    isThumbnail: true,
-                  },
+                  where: { isThumbnail: true },
                   take: 1,
-                  select: {
-                    file: {
-                      select: {
-                        url: true,
-                      },
-                    },
-                  },
+                  select: { file: { select: { url: true } } },
                 },
               },
             },
@@ -538,9 +512,7 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
     });
 
     if (!booking) {
-      return res
-        .status(StatusCode.NOT_FOUND)
-        .json({ message: "Booking not found" });
+      return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
     }
 
     return res.status(StatusCode.OK).json({
@@ -549,31 +521,21 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error fetching booking details:", error);
-    return res
-      .status(StatusCode.INTERNAL_SERVER_ERROR)
-      .json({
-        message: "Internal Server Error While Fetching Booking Details",
-      });
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+      message: "Internal Server Error While Fetching Booking Details",
+    });
   }
 };
 
+// ── Debug endpoint ────────────────────────────────────────────────────────────
+
 export const DebugBookings = async (req: Request, res: Response) => {
   const bookings = await prisma.booking.findMany({
-    where: {
-      status: { in: ["CONFIRMED", "PICKED_UP", "HOLD"] },
-    },
-    include: {
-      items: {
-        include: {
-          vehicle: true,
-        },
-      },
-    },
+    where: { status: { in: ["CONFIRMED", "PICKED_UP"] } },
+    include: { items: { include: { vehicle: true } } },
   });
 
-  const start = TimezoneService.toPrisma(
-    TimezoneService.parseISO("2026-02-14"),
-  );
+  const start = TimezoneService.toPrisma(TimezoneService.parseISO("2026-02-14"));
   const end = TimezoneService.toPrisma(
     TimezoneService.endOfDay(TimezoneService.parseISO("2026-02-15")),
   );
@@ -587,14 +549,11 @@ export const DebugBookings = async (req: Request, res: Response) => {
       (i) => `${i.vehicle.make} ${i.vehicle.model} (${i.vehicle.publicId})`,
     ),
     overlapCheck: {
-      startLteSearchEnd: b.startAt <= end,
-      endGteSearchStart: b.endAt >= start,
-      overlaps: b.startAt <= end && b.endAt >= start,
+      startLtSearchEnd: b.startAt < end,
+      endGtSearchStart: b.endAt > start,
+      overlaps: b.startAt < end && b.endAt > start,
     },
   }));
 
-  return res.json({
-    searchRange: { start, end },
-    bookings: result,
-  });
+  return res.json({ searchRange: { start, end }, bookings: result });
 };
