@@ -2,15 +2,17 @@ import { Request, Response } from "express";
 import { prisma } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { redis } from "../../lib/redisconfig.js";
-import { calculatePricingForVehicle } from "../../utils/pricing/calcPricing.js";
 import { getVehicleDetailsSchema } from "@repo/schemas";
-import { calculatePricingForVehicleFromRecord } from "../../utils/pricing/calcPricingInd.js";
-import { calculateMultiDayTotalPrice } from "../../utils/pricing/calcMultiDayPrice.js";
 import { checkVehicleAvailability } from "../../utils/availability/checkAvailability.js";
+import { getUnavailableVehicleIds } from "../../utils/availability/availabilityBatch.js";
 import { getDepositAmount } from "../../utils/pricing/getDepositAmount.js";
-import { getDiscountForDays } from "../../utils/pricing/getDiscountForDays.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { PricingEngineService } from "../../services/pricing/pricing-engine.service.js";
+import { DurationCalculatorService } from "../../services/pricing/duration-calculator.service.js";
+import {
+  getBatchListingPrices,
+  getBatchFallbackPrices,
+} from "../../utils/pricing/batchListingPrice.js";
 import { DateTime } from "luxon";
 
 const pricingEngine = new PricingEngineService();
@@ -123,49 +125,51 @@ export const searchVehicles = async (req: Request, res: Response) => {
 
     const total = await prisma.vehicle.count({ where });
 
+    // Batch pricing — same approach as public listing (TASK-025 consistency)
+    let durationInfo: ReturnType<typeof DurationCalculatorService.calculate> | null = null;
+    let durationPriceMap: Map<number, number> | null = null;
+    let fallbackPriceMap: Map<number, { daily: number; hourly: number; halfDay: number }> | null = null;
+
+    if (startDate && endDate) {
+      durationInfo = DurationCalculatorService.calculate(startDate, endDate);
+      durationPriceMap = await getBatchListingPrices(vehicles, durationInfo);
+    } else {
+      fallbackPriceMap = await getBatchFallbackPrices(vehicles);
+    }
+
     const formatted = [];
     for (const v of vehicles) {
-      let pricingDetails: any = undefined;
-
-      if (startDate && endDate) {
-        const pricingResult = await pricingEngine.calculateListingPrice(
-          v.id,
-          startDate,
-          endDate,
-          v.branchId,
-        );
-
-        pricingDetails = {
-          price: Number(pricingResult.price),
-          finalPrice: Number(pricingResult.finalPrice),
-          type: pricingResult.type,
-        };
+      if (durationPriceMap && durationInfo) {
+        const price = durationPriceMap.get(v.id) ?? 0;
+        formatted.push({
+          publicId: v.publicId,
+          make: v.make,
+          model: v.model,
+          category: v.category.name,
+          branch: v.branch.name,
+          imageUrl: v.images,
+          pricing: { daily: price },
+          pricingDetails: { price, finalPrice: price, type: durationInfo.periodType },
+          status: v.status,
+        });
+      } else {
+        const fp = fallbackPriceMap?.get(v.id);
+        formatted.push({
+          publicId: v.publicId,
+          make: v.make,
+          model: v.model,
+          category: v.category.name,
+          branch: v.branch.name,
+          imageUrl: v.images,
+          pricing: {
+            daily:   fp?.daily   ?? 0,
+            hourly:  fp?.hourly  ?? 0,
+            halfDay: fp?.halfDay ?? 0,
+          },
+          pricingDetails: undefined,
+          status: v.status,
+        });
       }
-
-      let fallbackPricing: any = null;
-      if (!pricingDetails) {
-        fallbackPricing = await calculatePricingForVehicle(v.id);
-      }
-
-      formatted.push({
-        publicId: v.publicId,
-        make: v.make,
-        model: v.model,
-        category: v.category.name,
-        branch: v.branch.name,
-        imageUrl: v.images, // Structure matching public controller response for consistency
-        pricing: pricingDetails
-          ? {
-              daily: pricingDetails.price,
-            }
-          : {
-              daily: fallbackPricing.daily,
-              hourly: fallbackPricing.hourly,
-              halfDay: fallbackPricing.halfDay,
-            },
-        pricingDetails,
-        status: v.status,
-      });
     }
 
     const response = {
@@ -299,9 +303,12 @@ export const getEmployeeVehicleDetails = async (
 
     const imageUrls = vehicleData.images.map((img) => img.file.url);
 
-    let fallbackPricing: any = null;
+    let fallbackPricing: { daily: number; hourly: number; halfDay: number } | null = null;
     if (!pricingDetails) {
-      fallbackPricing = await calculatePricingForVehicle(vehicleData.id);
+      const fp = await getBatchFallbackPrices([
+        { id: vehicleData.id, branchId: vehicleData.branchId, categoryId: vehicleData.categoryId },
+      ]);
+      fallbackPricing = fp.get(vehicleData.id) ?? { daily: 0, hourly: 0, halfDay: 0 };
     }
 
     return res.status(StatusCode.OK).json({
@@ -315,13 +322,11 @@ export const getEmployeeVehicleDetails = async (
         branch: vehicleData.branch.name,
         images: imageUrls,
         pricing: pricingDetails
-          ? {
-              daily: pricingDetails.pricingBreakdown.applicablePrice,
-            }
+          ? { daily: pricingDetails.pricingBreakdown.applicablePrice }
           : {
-              daily: fallbackPricing.daily,
-              hourly: fallbackPricing.hourly,
-              halfDay: fallbackPricing.halfDay,
+              daily:   fallbackPricing!.daily,
+              hourly:  fallbackPricing!.hourly,
+              halfDay: fallbackPricing!.halfDay,
             },
         pricingDetails,
         deposit,

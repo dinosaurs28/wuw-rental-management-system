@@ -1,3 +1,11 @@
+/**
+ * @deprecated Use getBatchFallbackPrices from batchListingPrice.ts for listing,
+ * or PricingEngineService.calculateBookingPrice for booking/detail APIs.
+ * This function creates a new PricingEngineService instance on every call
+ * and runs a full booking price calculation with a synthetic 24-hour window.
+ *
+ * TASK-027: Kept for reference; remove once all callers are migrated.
+ */
 import { PricingEngineService } from "../../services/pricing/pricing-engine.service.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { prisma } from "@repo/database/client";

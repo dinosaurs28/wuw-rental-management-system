@@ -14,6 +14,7 @@ import { redis } from "../../lib/redisconfig.js";
 import { createID } from "../../utils/nanoID.js";
 import { auditService } from "../../services/audit/audit.service.js";
 import { AuditCategory } from "@repo/database/client";
+import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
 
 export const checkPayment = async (req: Request, res: Response) => {
   try {
@@ -179,22 +180,13 @@ export const checkPayment = async (req: Request, res: Response) => {
       });
     }
 
-    // Invalidate vehicle cache
-    let cursor = "0";
-    do {
-      const reply = await redis.scan(
-        cursor,
-        "MATCH",
-        "public:vehicles:*",
-        "COUNT",
-        100,
-      );
-      cursor = reply[0];
-      const keys = reply[1];
-      if (keys.length > 0) {
-        await redis.del(keys);
-      }
-    } while (cursor !== "0");
+    // Targeted availability cache invalidation (TASK-019)
+    try {
+      const vehicleIds = booking.items.map((item) => item.vehicle.id);
+      await invalidateVehicleAvailability(redis, vehicleIds);
+    } catch (redisErr) {
+      console.warn("[payment] Cache invalidation failed (non-fatal):", redisErr);
+    }
 
     if (isOnlinePending) {
       return res.status(StatusCode.OK).json({

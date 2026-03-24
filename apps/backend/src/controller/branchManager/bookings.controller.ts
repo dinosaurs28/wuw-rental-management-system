@@ -4,6 +4,7 @@ import { prisma, BookingStatus, VehicleStatus } from "@repo/database/client";
 import { managerConfirmPickupSchema } from "@repo/schemas";
 import { createID } from "../../utils/nanoID.js";
 import { redis } from "../../lib/redisconfig.js";
+import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { AdvanceDepositService } from "../../services/booking/advance-deposit.service.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
@@ -658,22 +659,12 @@ export const ConfirmReturnByManager = async (req: Request, res: Response) => {
       }, tx);
     });
 
-    // Invalidate public vehicle cache
-    let cursor = "0";
-    do {
-      const reply = await redis.scan(
-        cursor,
-        "MATCH",
-        "public:vehicles:*",
-        "COUNT",
-        100,
-      );
-      cursor = reply[0];
-      const keys = reply[1];
-      if (keys.length > 0) {
-        await redis.del(keys);
-      }
-    } while (cursor !== "0");
+    // Targeted availability cache invalidation (TASK-019)
+    try {
+      await invalidateVehicleAvailability(redis, vehicleIds);
+    } catch (redisErr) {
+      console.warn("[manager] Cache invalidation failed (non-fatal):", redisErr);
+    }
 
     return res.status(StatusCode.OK).json({
       success: true,

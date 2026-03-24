@@ -3,7 +3,8 @@ import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
 import { bookingSummarySchema } from "@repo/schemas";
 import { redis } from "../../lib/redisconfig.js";
-import { checkVehicleAvailability } from "../../utils/availability/checkAvailability.js";
+import { getUnavailableVehicleIds } from "../../utils/availability/availabilityBatch.js";
+import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
 import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
 import { createID } from "../../utils/nanoID.js";
 import jwt from "jsonwebtoken";
@@ -138,24 +139,23 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       endDateDt,
     );
 
+    // Batch availability check (DB + Redis holds) — single call for all vehicles
+    const vehicleIdToPublicId = new Map(vehiclesData.map((v) => [v.id, v.publicId]));
+    const unavailableIds = await getUnavailableVehicleIds(
+      vehiclesData.map((v) => v.id),
+      startDate,
+      endDate,
+      vehicleIdToPublicId,
+    );
     for (const v of vehiclesData) {
-      const availability = await checkVehicleAvailability(
-        v.id,
-        startDate,
-        endDate,
-      );
+      if (unavailableIds.has(v.id)) {
+        return res.status(StatusCode.CONFLICT).json({
+          message: `Vehicle ${v.make} ${v.model} is not available for the selected dates`,
+        });
+      }
+    }
 
-      if (!availability) {
-        return res.status(StatusCode.CONFLICT).json({
-          message: `Vehicle ${v.make} ${v.model} is not available for selected dates`,
-        });
-      }
-      const vehicleHolds = await redis.smembers(`vehicle_holds:${v.publicId}`);
-      if (vehicleHolds && vehicleHolds.length > 0) {
-        return res.status(StatusCode.CONFLICT).json({
-          message: `Vehicle ${v.make} ${v.model} is currently being booked by another user. Please try again in a few minutes.`,
-        });
-      }
+    for (const v of vehiclesData) {
 
       // Calculate pricing via Phase 2 Pricing Engine
       const pricingResult = await pricingEngine.calculateBookingPrice(
@@ -373,22 +373,12 @@ export const createBookingSummary = async (req: Request, res: Response) => {
     }
     await pipeline.exec();
 
-    // Invalidate public vehicle cache
-    let cursor = "0";
-    do {
-      const reply = await redis.scan(
-        cursor,
-        "MATCH",
-        "public:vehicles:*",
-        "COUNT",
-        100,
-      );
-      cursor = reply[0];
-      const keys = reply[1];
-      if (keys.length > 0) {
-        await redis.del(keys);
-      }
-    } while (cursor !== "0");
+    // Targeted availability cache invalidation (TASK-019)
+    try {
+      await invalidateVehicleAvailability(redis, vehiclesData.map((v) => v.id));
+    } catch (redisErr) {
+      console.warn("[booking] Cache invalidation failed (non-fatal):", redisErr);
+    }
 
     return res.status(StatusCode.OK).json({
       message: "Summary created successfully",

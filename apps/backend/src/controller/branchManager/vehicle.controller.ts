@@ -5,6 +5,7 @@ import { createID } from "../../utils/nanoID.js";
 import { imageQueue } from "../../lib/queue.client.js";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import { redis } from "../../lib/redisconfig.js";
+import { invalidateVehicleAvailability, invalidateVehiclePricing } from "../../utils/cache/vehicleCacheKeys.js";
 import { VehicleStatus } from "@repo/database/client";
 import { createVehicleSchema, editVehicleSchema } from "@repo/schemas";
 import { z } from "zod";
@@ -165,22 +166,15 @@ export const AddVehicle = async (req: Request, res: Response) => {
       await redis.del(keys);
     }
 
-    // Invalidate public vehicle cache
-    let cursor = "0";
-    do {
-      const reply = await redis.scan(
-        cursor,
-        "MATCH",
-        "public:vehicles:*",
-        "COUNT",
-        100,
-      );
-      cursor = reply[0];
-      const publicKeys = reply[1];
-      if (publicKeys.length > 0) {
-        await redis.del(publicKeys);
-      }
-    } while (cursor !== "0");
+    // Targeted cache invalidation for new vehicle (TASK-021)
+    try {
+      await Promise.all([
+        invalidateVehicleAvailability(redis, [vehicle.id]),
+        invalidateVehiclePricing(redis, [vehicle.id]),
+      ]);
+    } catch (redisErr) {
+      console.warn("[vehicle] Cache invalidation failed (non-fatal):", redisErr);
+    }
 
     staffActivityService.logFromRequest(req, {
       actionType: StaffActionType.CREATED,
@@ -416,22 +410,15 @@ export const EditVehicle = async (req: Request, res: Response) => {
       await redis.del(keys);
     }
 
-    // Invalidate public vehicle cache
-    let cursor = "0";
-    do {
-      const reply = await redis.scan(
-        cursor,
-        "MATCH",
-        "public:vehicles:*",
-        "COUNT",
-        100,
-      );
-      cursor = reply[0];
-      const publicKeys = reply[1];
-      if (publicKeys.length > 0) {
-        await redis.del(publicKeys);
-      }
-    } while (cursor !== "0");
+    // Targeted cache invalidation for edited vehicle (TASK-021)
+    try {
+      await Promise.all([
+        invalidateVehicleAvailability(redis, [vehicle.id]),
+        invalidateVehiclePricing(redis, [vehicle.id]),
+      ]);
+    } catch (redisErr) {
+      console.warn("[vehicle] Cache invalidation failed (non-fatal):", redisErr);
+    }
 
     staffActivityService.logFromRequest(req, {
       actionType: StaffActionType.UPDATED,
@@ -677,22 +664,15 @@ export const DeleteVehicle = async (req: Request, res: Response) => {
       await redis.del(keys);
     }
 
-    // Invalidate public vehicle cache
-    let cursor = "0";
-    do {
-      const reply = await redis.scan(
-        cursor,
-        "MATCH",
-        "public:vehicles:*",
-        "COUNT",
-        100,
-      );
-      cursor = reply[0];
-      const publicKeys = reply[1];
-      if (publicKeys.length > 0) {
-        await redis.del(publicKeys);
-      }
-    } while (cursor !== "0");
+    // Targeted cache invalidation for deleted vehicle (TASK-021)
+    try {
+      await Promise.all([
+        invalidateVehicleAvailability(redis, [vehicle.id]),
+        invalidateVehiclePricing(redis, [vehicle.id]),
+      ]);
+    } catch (redisErr) {
+      console.warn("[vehicle] Cache invalidation failed (non-fatal):", redisErr);
+    }
 
     staffActivityService.logFromRequest(req, {
       actionType: StaffActionType.DELETED,

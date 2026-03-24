@@ -47,9 +47,6 @@ export const PersonalInformationPage = () => {
 
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [originalData, setOriginalData] = useState<UpdateProfileInput | null>(
-    null,
-  );
   const [userEmail, setUserEmail] = useState<string>("");
 
   const form = useForm<UpdateProfileInput>({
@@ -66,13 +63,6 @@ export const PersonalInformationPage = () => {
       alternatePhone: "",
     },
   });
-
-  const watchedValues = form.watch();
-
-  // Check if form has changes
-  const hasChanges = originalData
-    ? JSON.stringify(watchedValues) !== JSON.stringify(originalData)
-    : false;
 
   // Check auth and redirect if not authenticated
   useEffect(() => {
@@ -100,7 +90,6 @@ export const PersonalInformationPage = () => {
           alternatePhone: profile.alternatePhone || "",
         };
         form.reset(formData);
-        setOriginalData(formData);
         setUserEmail(profile.email || "");
       } catch (error) {
         if (axios.isAxiosError(error)) {
@@ -126,7 +115,6 @@ export const PersonalInformationPage = () => {
     setIsSubmitting(true);
     try {
       await userService.updateProfile(data);
-      setOriginalData(data);
       toast.success("Profile updated successfully");
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -454,9 +442,7 @@ export const PersonalInformationPage = () => {
                       type="submit"
                       size="lg"
                       className="min-w-[180px]"
-                      disabled={
-                        !hasChanges || !form.formState.isValid || isSubmitting
-                      }
+                      disabled={isSubmitting}
                     >
                       {isSubmitting && (
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
