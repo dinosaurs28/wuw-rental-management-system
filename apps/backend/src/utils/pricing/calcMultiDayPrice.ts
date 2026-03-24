@@ -1,3 +1,11 @@
+/**
+ * @deprecated Use PricingEngineService.calculateBookingPrice instead.
+ * This function uses UTC calendar-day math which causes incorrect pricing for
+ * durations like 13 hours (maps to 2 calendar days instead of FULL_DAY).
+ * PricingEngineService correctly uses hour-based duration via DurationCalculatorService.
+ *
+ * TASK-026: Kept for reference; remove once all callers are migrated.
+ */
 export function calculateMultiDayTotalPrice(
   startDate: Date,
   endDate: Date,

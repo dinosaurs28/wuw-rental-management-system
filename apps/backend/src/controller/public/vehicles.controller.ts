@@ -2,17 +2,22 @@ import { Request, Response } from "express";
 import { prisma } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { redis } from "../../lib/redisconfig.js";
-import { calculatePricingForVehicle } from "../../utils/pricing/calcPricing.js";
 import { getVehicleDetailsSchema } from "@repo/schemas";
-import { calculatePricingForVehicleFromRecord } from "../../utils/pricing/calcPricingInd.js";
-import { checkVehicleAvailability } from "../../utils/availability/checkAvailability.js";
 import { getDepositAmount } from "../../utils/pricing/getDepositAmount.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
 import { PricingEngineService } from "../../services/pricing/pricing-engine.service.js";
 import { DurationCalculatorService } from "../../services/pricing/duration-calculator.service.js";
 import { DateTime } from "luxon";
+import { getUnavailableVehicleIds } from "../../utils/availability/availabilityBatch.js";
+import { checkVehicleAvailability } from "../../utils/availability/checkAvailability.js";
+import {
+  getBatchListingPrices,
+  getBatchFallbackPrices,
+} from "../../utils/pricing/batchListingPrice.js";
 
 const pricingEngine = new PricingEngineService();
+
+// ── Listing ───────────────────────────────────────────────────────────────────
 
 export const getPublicVehicles = async (req: Request, res: Response) => {
   try {
@@ -29,7 +34,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       offset = "0",
     } = req.query as any;
 
-    // Parse and validate dates if provided
+    // Parse and validate dates
     let startDate: DateTime | null = null;
     let endDate: DateTime | null = null;
 
@@ -39,12 +44,10 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       if (end) {
         endDate = TimezoneService.parseISO(end);
       } else {
-        // Fallback: Default to 24 hours if end date missing
         endDate = startDate.plus({ hours: 24 });
       }
 
       if (startDate.toMillis() === endDate.toMillis()) {
-        // Fallback: Default to 24 hours if same exact time
         endDate = startDate.plus({ hours: 24 });
       }
 
@@ -59,21 +62,21 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       search || "all"
     }:${make || "all"}:${model || "all"}:${sort || "none"}:${start || "all"}:${end || "all"}:${limit}:${offset}`;
 
-    let cachedData = null;
     try {
-      cachedData = await redis.get(cacheKey);
+      const cachedData = await redis.get(cacheKey);
+      if (cachedData) {
+        return res.status(StatusCode.OK).json(JSON.parse(cachedData));
+      }
     } catch (redisErr) {
-      console.warn("Redis get error:", redisErr);
+      console.warn("[listing] Redis get error:", redisErr);
     }
-    if (cachedData) {
-      return res.status(StatusCode.OK).json(JSON.parse(cachedData));
-    }
+
+    // ── Resolve category/branch filters ──────────────────────────────────────
+
     const filters: any = {
       status: "AVAILABLE",
       deletedAt: null,
-      insuranceExpiry: {
-        gt: new Date(), // Only show vehicles with valid insurance
-      },
+      insuranceExpiry: { gt: new Date() },
     };
 
     if (category) {
@@ -81,13 +84,12 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
         where: { publicId: category },
         select: { id: true },
       });
-
       if (!categoryObj) {
         return res.status(404).json({ message: "Invalid category" });
       }
-
       filters.categoryId = categoryObj.id;
     }
+
     if (branch) {
       const branchObj = await prisma.branch.findFirst({
         where: {
@@ -98,14 +100,15 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
         },
         select: { id: true },
       });
-
       if (!branchObj) {
         return res.status(404).json({ message: "Invalid branch" });
       }
-
       filters.branchId = branchObj.id;
     }
 
+    // ── Fetch vehicles (single query) ─────────────────────────────────────────
+
+    console.time("[perf] listing:vehicles-query");
     const vehicles = await prisma.vehicle.findMany({
       where: filters,
       skip: Number(offset),
@@ -114,27 +117,22 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
         category: true,
         branch: true,
         images: {
-          where: {
-            isThumbnail: true,
-          },
-          select: {
-            file: {
-              select: { url: true },
-            },
-          },
+          where: { isThumbnail: true },
+          select: { file: { select: { url: true } } },
         },
       },
       orderBy:
-        sort === "price_low_to_high"
-          ? { id: "asc" }
-          : sort === "price_high_to_low"
-            ? { id: "desc" }
-            : { createdAt: "desc" },
+        sort === "price_low_to_high" || sort === "price_high_to_low"
+          ? { createdAt: "desc" } // price sort applied in-memory below
+          : { createdAt: "desc" },
     });
+    console.timeEnd("[perf] listing:vehicles-query");
 
     if (vehicles.length === 0) {
       return res.status(StatusCode.OK).json({ count: 0, data: [] });
     }
+
+    // ── In-memory search/make/model filters ───────────────────────────────────
 
     let filteredVehicles = vehicles;
 
@@ -145,14 +143,12 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
           v.make.toLowerCase().includes(t) || v.model.toLowerCase().includes(t),
       );
     }
-
     if (make) {
       const t = make.toLowerCase();
       filteredVehicles = filteredVehicles.filter((v) =>
         v.make.toLowerCase().includes(t),
       );
     }
-
     if (model) {
       const t = model.toLowerCase();
       filteredVehicles = filteredVehicles.filter((v) =>
@@ -160,76 +156,109 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       );
     }
 
-    const finalResponse = [];
-    for (const v of filteredVehicles) {
-      let pricingDetails: any = undefined;
+    // ── Batch availability check (TASK-006): 1 query for all vehicles ─────────
 
-      if (startDate && endDate) {
-        const isAvailable = await checkVehicleAvailability(
-          v.id,
-          TimezoneService.toPrisma(startDate),
-          TimezoneService.toPrisma(endDate),
-        );
-        if (!isAvailable) {
-          continue; // Skip vehicles that are not available for the selected dates
-        }
+    let availableVehicles = filteredVehicles;
 
-        const pricingResult = await pricingEngine.calculateListingPrice(
-          v.id,
-          startDate,
-          endDate,
-          v.branchId,
-        );
+    if (startDate && endDate) {
+      const startPrisma = TimezoneService.toPrisma(startDate);
+      const endPrisma = TimezoneService.toPrisma(endDate);
 
-        pricingDetails = {
-          price: Number(pricingResult.price),
-          finalPrice: Number(pricingResult.finalPrice),
-          type: pricingResult.type,
-        };
-      }
+      // Pre-build publicId map so availabilityBatch skips the extra DB lookup
+      const vehicleIdToPublicId = new Map(
+        filteredVehicles.map((v) => [v.id, v.publicId]),
+      );
 
-      let fallbackPricing: any = null;
-      if (!pricingDetails) {
-        fallbackPricing = await calculatePricingForVehicle(v.id);
-      }
+      console.time("[perf] listing:availability-check");
+      const unavailableIds = await getUnavailableVehicleIds(
+        filteredVehicles.map((v) => v.id),
+        startPrisma,
+        endPrisma,
+        vehicleIdToPublicId,
+      );
+      console.timeEnd("[perf] listing:availability-check");
 
-      finalResponse.push({
-        publicId: v.publicId,
-        make: v.make,
-        model: v.model,
-        category: v.category.name,
-        branch: v.branch.name,
-        imageUrl: v.images,
-        pricing: pricingDetails
-          ? {
-              daily: pricingDetails.price,
-            }
-          : {
-              daily: fallbackPricing.daily,
-              hourly: fallbackPricing.hourly,
-              halfDay: fallbackPricing.halfDay,
-            },
-        pricingDetails,
-      });
+      availableVehicles = filteredVehicles.filter(
+        (v) => !unavailableIds.has(v.id),
+      );
     }
+
+    if (availableVehicles.length === 0) {
+      return res.status(StatusCode.OK).json({ count: 0, data: [] });
+    }
+
+    // ── Batch pricing (TASK-007 / TASK-009): at most 2 queries for all vehicles
+
+    console.time("[perf] listing:pricing");
+    let durationPriceMap: Map<number, number> | null = null;
+    let fallbackPriceMap: Map<
+      number,
+      { daily: number; hourly: number; halfDay: number }
+    > | null = null;
+    let durationInfo: ReturnType<typeof DurationCalculatorService.calculate> | null = null;
+
+    if (startDate && endDate) {
+      durationInfo = DurationCalculatorService.calculate(startDate, endDate);
+      durationPriceMap = await getBatchListingPrices(availableVehicles, durationInfo);
+    } else {
+      fallbackPriceMap = await getBatchFallbackPrices(availableVehicles);
+    }
+    console.timeEnd("[perf] listing:pricing");
+
+    // ── Build response (no async in loop) ─────────────────────────────────────
+
+    const finalResponse = [];
+    for (const v of availableVehicles) {
+      if (durationPriceMap && durationInfo) {
+        const price = durationPriceMap.get(v.id) ?? 0;
+        finalResponse.push({
+          publicId: v.publicId,
+          make: v.make,
+          model: v.model,
+          category: v.category.name,
+          branch: v.branch.name,
+          imageUrl: v.images,
+          pricing: { daily: price },
+          pricingDetails: {
+            price,
+            finalPrice: price, // base price; discounts shown in detail view
+            type: durationInfo.periodType,
+          },
+        });
+      } else {
+        const fp = fallbackPriceMap?.get(v.id);
+        finalResponse.push({
+          publicId: v.publicId,
+          make: v.make,
+          model: v.model,
+          category: v.category.name,
+          branch: v.branch.name,
+          imageUrl: v.images,
+          pricing: {
+            daily:   fp?.daily   ?? 0,
+            hourly:  fp?.hourly  ?? 0,
+            halfDay: fp?.halfDay ?? 0,
+          },
+          pricingDetails: undefined,
+        });
+      }
+    }
+
+    // ── Price sorting (in-memory on pre-computed prices) ──────────────────────
 
     if (sort === "price_low_to_high") {
       finalResponse.sort((a, b) => a.pricing.daily - b.pricing.daily);
-    }
-
-    if (sort === "price_high_to_low") {
+    } else if (sort === "price_high_to_low") {
       finalResponse.sort((a, b) => b.pricing.daily - a.pricing.daily);
     }
 
-    const result = {
-      count: finalResponse.length,
-      data: finalResponse,
-    };
+    const result = { count: finalResponse.length, data: finalResponse };
 
+    // Cache with 30-second TTL (TASK-022)
     try {
-      await redis.set(cacheKey, JSON.stringify(result), "EX", 60);
+      await redis.set(cacheKey, JSON.stringify(result), "EX", 30);
     } catch (redisErr) {
-      console.warn("Redis set error:", redisErr);
+      console.warn("[listing] Redis set error:", redisErr);
     }
 
     return res.status(StatusCode.OK).json(result);
@@ -241,21 +270,23 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
   }
 };
 
+// ── Detail ────────────────────────────────────────────────────────────────────
+
 export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
   try {
-    const parasedData = getVehicleDetailsSchema.safeParse(req.params);
-    if (!parasedData.success) {
+    const parsedData = getVehicleDetailsSchema.safeParse(req.params);
+    if (!parsedData.success) {
       return res.status(StatusCode.BAD_REQUEST).json({
-        message: parasedData.error.flatten(),
+        message: parsedData.error.flatten(),
       });
     }
+
     const { start, end } = req.query as { start?: string; end?: string };
 
     let startDate: DateTime | null = null;
     let endDate: DateTime | null = null;
 
     if (start) {
-      // Fix: Use parseISO instead of parseUserDateTime since query params are typically full ISO strings from frontend
       startDate = TimezoneService.parseISO(start);
 
       if (end) {
@@ -274,8 +305,9 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
         });
       }
     }
+
     const vehicleData = await prisma.vehicle.findUnique({
-      where: { publicId: parasedData.data.id },
+      where: { publicId: parsedData.data.id },
       select: {
         id: true,
         publicId: true,
@@ -292,36 +324,30 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
         createdAt: true,
         updatedAt: true,
         category: true,
-        branch: {
-          include: { pricingSetting: true },
-        },
-        images: {
-          include: { file: true },
-        },
+        branch: { include: { pricingSetting: true } },
+        images: { include: { file: true } },
         pricingOverride: true,
         customPricing: true,
       },
     });
+
     if (!vehicleData) {
       return res.status(StatusCode.NOT_FOUND).json({
         message: "Vehicle details could not be found for the provided ID.",
       });
     }
 
-    let deposit = await getDepositAmount(
-      vehicleData.branchId,
-      vehicleData.categoryId,
-    );
+    let deposit = await getDepositAmount(vehicleData.branchId, vehicleData.categoryId);
     let availability: boolean | null = null;
     let pricingDetails: any = null;
 
-    // Check insurance expiry
     const isInsuranceValid = new Date(vehicleData.insuranceExpiry) > new Date();
 
     if (startDate && endDate) {
       if (!isInsuranceValid) {
-        availability = false; // Not available if insurance expired
+        availability = false;
       } else {
+        // TASK-023: uses checkVehicleAvailability which delegates to getUnavailableVehicleIds
         availability = await checkVehicleAvailability(
           vehicleData.id,
           TimezoneService.toPrisma(startDate),
@@ -329,7 +355,7 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
         );
       }
 
-      // Calculate pricing via Phase 2 Pricing Engine
+      // Full pricing calculation — same engine as booking API (TASK-023)
       const pricingResult = await pricingEngine.calculateBookingPrice(
         vehicleData.id,
         startDate,
@@ -338,56 +364,49 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
       );
 
       pricingDetails = {
-        basePrice: Number(pricingResult.basePrice),
-        discountAmount: Number(pricingResult.discountAmount),
+        basePrice:       Number(pricingResult.basePrice),
+        discountAmount:  Number(pricingResult.discountAmount),
         discountPercent: Number(pricingResult.discountPercent),
-        deposit: Number(pricingResult.deposit),
-        taxAmount: Number(pricingResult.taxAmount),
-        cgstAmount: Number(pricingResult.cgstAmount),
-        sgstAmount: Number(pricingResult.sgstAmount),
-        taxRate: Number(pricingResult.taxRate),
-        finalTotal: Number(pricingResult.finalTotal),
-        freeKmLimit: pricingResult.freeKmLimit,
-        extraKmRate: Number(pricingResult.extraKmRate),
+        deposit:         Number(pricingResult.deposit),
+        taxAmount:       Number(pricingResult.taxAmount),
+        cgstAmount:      Number(pricingResult.cgstAmount),
+        sgstAmount:      Number(pricingResult.sgstAmount),
+        taxRate:         Number(pricingResult.taxRate),
+        finalTotal:      Number(pricingResult.finalTotal),
+        freeKmLimit:     pricingResult.freeKmLimit,
+        extraKmRate:     Number(pricingResult.extraKmRate),
         pricingBreakdown: {
-          periodType: pricingResult.pricingBreakdown.periodType,
-          duration: pricingResult.pricingBreakdown.duration,
-          applicablePrice: Number(
-            pricingResult.pricingBreakdown.applicablePrice,
-          ),
-          priceSource: pricingResult.pricingBreakdown.priceSource,
+          periodType:      pricingResult.pricingBreakdown.periodType,
+          duration:        pricingResult.pricingBreakdown.duration,
+          applicablePrice: Number(pricingResult.pricingBreakdown.applicablePrice),
+          priceSource:     pricingResult.pricingBreakdown.priceSource,
         },
       };
 
       deposit = pricingDetails.deposit;
     } else if (!isInsuranceValid) {
-      // If no dates provided but insurance expired, mark as explicitly unavailable
       availability = false;
     }
+
     const imageUrls = vehicleData.images.map((img) => img.file.url);
     const response = {
-      publicId: vehicleData.publicId,
-      make: vehicleData.make,
-      model: vehicleData.model,
-      status: vehicleData.status,
-      category: vehicleData.category.name,
-      branch: vehicleData.branch.name,
+      publicId:         vehicleData.publicId,
+      make:             vehicleData.make,
+      model:            vehicleData.model,
+      status:           vehicleData.status,
+      category:         vehicleData.category.name,
+      branch:           vehicleData.branch.name,
       advancePayAmount: vehicleData.advancePayAmount,
-      images: imageUrls,
-      pricing: {
-        daily: pricingDetails?.pricingBreakdown?.applicablePrice,
-      },
+      images:           imageUrls,
+      pricing:          { daily: pricingDetails?.pricingBreakdown?.applicablePrice },
       deposit,
       availability,
       pricingDetails,
     };
 
-    return res.status(StatusCode.OK).json({
-      message: "Success",
-      data: response,
-    });
+    return res.status(StatusCode.OK).json({ message: "Success", data: response });
   } catch (e: any) {
-    console.log("Internal Error While Fetching the Vehicle Details", e);
+    console.error("Internal Error While Fetching the Vehicle Details", e);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
       message: "Internal Error While Fetching the Vehicle Details",
     });

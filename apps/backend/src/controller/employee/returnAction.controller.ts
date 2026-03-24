@@ -14,6 +14,7 @@ import { r2 } from "../../lib/r2.client.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs/promises";
 import { redis } from "../../lib/redisconfig.js";
+import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
 import path from "path";
 import { processImage } from "../../utils/image-processor.js";
 
@@ -211,23 +212,13 @@ export const CompleteReturn = async (req: Request, res: Response) => {
       }
     });
 
-    // Invalidate public vehicle cache only if actual return occurred
+    // Targeted availability cache invalidation only if actual return occurred (TASK-019)
     if (!requireManagerConfirmation) {
-      let cursor = "0";
-      do {
-        const reply = await redis.scan(
-          cursor,
-          "MATCH",
-          "public:vehicles:*",
-          "COUNT",
-          100,
-        );
-        cursor = reply[0];
-        const keys = reply[1];
-        if (keys.length > 0) {
-          await redis.del(keys);
-        }
-      } while (cursor !== "0");
+      try {
+        await invalidateVehicleAvailability(redis, vehicleIds);
+      } catch (redisErr) {
+        console.warn("[return] Cache invalidation failed (non-fatal):", redisErr);
+      }
     }
 
     return res.status(StatusCode.OK).json({
