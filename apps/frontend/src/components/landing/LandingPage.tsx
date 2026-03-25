@@ -8,16 +8,16 @@ import { Link } from "react-router-dom";
 
 export const LandingPage = () => {
   return (
-    <div className="relative min-h-screen font-sans selection:bg-orange-500/30 bg-zinc-950">
+    <div className="relative min-h-screen font-sans selection:bg-orange-500/30 bg-white">
       {/* Global Fixed Background Car Image */}
       <div
-        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-30"
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-10"
         style={{
           backgroundImage:
             'url("https://images.unsplash.com/photo-1614200187524-dc4b892acf16?q=80&w=3000&auto=format&fit=crop")',
         }}
       />
-      <div className="fixed inset-0 z-0 bg-gradient-to-b from-zinc-950/50 via-zinc-950/80 to-zinc-950" />
+      <div className="fixed inset-0 z-0 bg-gradient-to-b from-white/50 via-white/80 to-white" />
 
       {/* Main Content Wrapper */}
       <div className="relative z-10 flex flex-col min-h-screen">
@@ -27,7 +27,7 @@ export const LandingPage = () => {
           {/* Interlocking Layout Wrapper */}
           <div className="relative pt-32 px-4 md:px-6 lg:px-8 pb-32">
             {/* Hero Massive Card */}
-            <div className="relative rounded-[3rem] md:rounded-[4rem] overflow-hidden bg-zinc-950 min-h-[85vh] flex flex-col items-center pt-24 pb-48 px-6 md:px-16 text-center shadow-2xl z-10 border border-zinc-800">
+            <div className="relative rounded-[3rem] md:rounded-[4rem] overflow-hidden bg-zinc-900 min-h-[85vh] flex flex-col items-center pt-24 pb-48 px-6 md:px-16 text-center shadow-2xl z-10 border border-zinc-800">
               {/* Background subtle gradient / effect */}
               <motion.div
                 initial={{ opacity: 0, scale: 1.1 }}

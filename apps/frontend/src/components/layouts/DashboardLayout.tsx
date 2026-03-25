@@ -9,7 +9,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <div className="dark min-h-screen bg-zinc-950 text-zinc-50 selection:bg-white/20">
+    <div className="min-h-screen bg-gray-50 text-zinc-900 selection:bg-orange-500/20">
       <SidebarProvider className="bg-transparent">
         <DashboardSidebar />
         <SidebarInset className="bg-transparent/0">

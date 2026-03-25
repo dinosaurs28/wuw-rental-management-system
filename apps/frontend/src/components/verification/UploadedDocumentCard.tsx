@@ -50,8 +50,8 @@ export const UploadedDocumentCard = ({
     <>
       <div
         className={cn(
-          "group relative flex flex-col bg-zinc-900/60 backdrop-blur-xl border border-white/5 rounded-[1.5rem] overflow-hidden transition-all duration-500",
-          "hover:shadow-[0_0_30px_rgba(255,255,255,0.05)] hover:border-white/10 hover:-translate-y-1",
+          "group relative flex flex-col bg-white border border-zinc-200 rounded-[1.5rem] overflow-hidden transition-all duration-500",
+          "hover:shadow-[0_0_30px_rgba(0,0,0,0.08)] hover:border-zinc-300 hover:-translate-y-1",
           isDeleting && "opacity-60 pointer-events-none scale-[0.98]",
         )}
       >
@@ -59,7 +59,7 @@ export const UploadedDocumentCard = ({
         <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
         {/* Thumbnail / Preview */}
-        <div className="relative aspect-[16/9] bg-black/40 flex items-center justify-center overflow-hidden border-b border-white/5">
+        <div className="relative aspect-[16/9] bg-zinc-100 flex items-center justify-center overflow-hidden border-b border-zinc-200">
           {/* Dark gradient overlay for image readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/80 to-transparent z-10" />
 
@@ -97,7 +97,7 @@ export const UploadedDocumentCard = ({
         {/* Info & Actions */}
         <div className="p-4 relative z-20 flex-1 flex flex-col justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <p className="text-base font-bold text-white truncate drop-shadow-sm">
+            <p className="text-base font-bold text-zinc-900 truncate drop-shadow-sm">
               {getDocumentTypeName(document.type)}
             </p>
             <p className="text-[10px] font-medium text-zinc-500 truncate flex items-center gap-1.5 mt-1">
@@ -111,19 +111,19 @@ export const UploadedDocumentCard = ({
           </div>
 
           {/* Action Icons */}
-          <div className="flex items-center gap-2 flex-shrink-0 pt-3 border-t border-white/5">
+          <div className="flex items-center gap-2 flex-shrink-0 pt-3 border-t border-zinc-200">
             {/* View Button */}
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setIsViewOpen(true)}
-              className="flex-1 h-9 rounded-xl text-zinc-400 hover:bg-white/10 hover:text-white transition-all duration-300 font-medium text-xs tracking-wide"
+              className="flex-1 h-9 rounded-xl text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 transition-all duration-300 font-medium text-xs tracking-wide"
             >
               <Eye className="w-4 h-4 mr-2" />
               View
             </Button>
 
-            <div className="w-px h-4 bg-white/10" />
+            <div className="w-px h-4 bg-zinc-200" />
 
             {/* Delete Button */}
             <Button
@@ -131,7 +131,7 @@ export const UploadedDocumentCard = ({
               size="sm"
               onClick={() => onDelete(document.publicId)}
               disabled={isDeleting}
-              className="flex-1 h-9 rounded-xl text-zinc-400 hover:bg-red-500/10 hover:text-red-400 transition-all duration-300 font-medium text-xs tracking-wide"
+              className="flex-1 h-9 rounded-xl text-zinc-500 hover:bg-red-500/10 hover:text-red-500 transition-all duration-300 font-medium text-xs tracking-wide"
             >
               {isDeleting ? (
                 <>
@@ -151,17 +151,17 @@ export const UploadedDocumentCard = ({
 
       {/* View Image Dialog */}
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-        <DialogContent className="max-w-4xl w-[95vw] p-0 overflow-hidden bg-zinc-950 border border-white/10 rounded-2xl shadow-2xl">
-          <DialogHeader className="p-4 pb-3 border-b border-white/5 bg-zinc-900/50 backdrop-blur-xl">
-            <DialogTitle className="text-lg font-serif font-bold text-white">
+        <DialogContent className="max-w-4xl w-[95vw] p-0 overflow-hidden bg-white border border-zinc-200 rounded-2xl shadow-2xl">
+          <DialogHeader className="p-4 pb-3 border-b border-zinc-200 bg-zinc-50">
+            <DialogTitle className="text-lg font-serif font-bold text-zinc-900">
               {getDocumentTypeName(document.type)}
             </DialogTitle>
-            <DialogClose className="absolute right-4 top-4 rounded-full p-1 opacity-70 transition-opacity hover:bg-white/10 hover:opacity-100 focus:outline-none">
-              <X className="h-5 w-5 text-white" />
+            <DialogClose className="absolute right-4 top-4 rounded-full p-1 opacity-70 transition-opacity hover:bg-zinc-100 hover:opacity-100 focus:outline-none">
+              <X className="h-5 w-5 text-zinc-700" />
               <span className="sr-only">Close</span>
             </DialogClose>
           </DialogHeader>
-          <div className="relative w-full max-h-[75vh] min-h-[50vh] overflow-auto bg-black/50 flex items-center justify-center p-4">
+          <div className="relative w-full max-h-[75vh] min-h-[50vh] overflow-auto bg-zinc-100 flex items-center justify-center p-4">
             {isImage ? (
               <img
                 src={document.file.url}
@@ -175,7 +175,7 @@ export const UploadedDocumentCard = ({
                 <Button
                   asChild
                   variant="outline"
-                  className="rounded-full bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white transition-all"
+                  className="rounded-full bg-zinc-50 border-zinc-200 text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-all"
                 >
                   <a
                     href={document.file.url}
@@ -188,7 +188,7 @@ export const UploadedDocumentCard = ({
               </div>
             )}
           </div>
-          <div className="p-4 bg-zinc-900/50 backdrop-blur-xl border-t border-white/5 flex items-center justify-between">
+          <div className="p-4 bg-zinc-50 border-t border-zinc-200 flex items-center justify-between">
             <p className="text-xs font-medium text-zinc-500 truncate flex-1">
               {fileName}
             </p>

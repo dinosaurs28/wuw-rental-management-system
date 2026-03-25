@@ -681,7 +681,7 @@ export default function StaffPickupsPage() {
                             </span>
 
                             {/* View Overlay Button */}
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <div className="absolute inset-0 bg-zinc-900/0 group-hover:bg-zinc-900/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                               <Button
                                 type="button"
                                 variant="secondary"
@@ -866,7 +866,7 @@ export default function StaffPickupsPage() {
                                     <button
                                       type="button"
                                       onClick={() => handleCaptureSlotDelete(field.name, slot.fileId)}
-                                      className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5 text-white hover:bg-black/80"
+                                      className="absolute top-1 right-1 bg-zinc-100/80 rounded-full p-0.5 text-zinc-700 hover:bg-zinc-200"
                                     >
                                       <X className="h-3.5 w-3.5" />
                                     </button>

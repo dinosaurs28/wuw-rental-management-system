@@ -261,7 +261,7 @@ export const VehiclesPage = () => {
     : undefined;
 
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-950 scroll-smooth">
+    <div className="min-h-screen flex flex-col bg-gray-50 scroll-smooth">
       <Navbar />
 
       <main className="flex-1 container mx-auto px-4 lg:px-8 py-6 md:py-8 mt-24">
@@ -272,7 +272,7 @@ export const VehiclesPage = () => {
               <BreadcrumbLink asChild>
                 <Link
                   to="/"
-                  className="text-zinc-500 hover:text-white transition-colors"
+                  className="text-zinc-500 hover:text-zinc-900 transition-colors"
                 >
                   Home
                 </Link>
@@ -288,15 +288,15 @@ export const VehiclesPage = () => {
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl md:text-5xl font-serif font-black text-white tracking-tight">
+            <h1 className="text-3xl md:text-5xl font-serif font-black text-zinc-900 tracking-tight">
               Select Your Vehicle
             </h1>
             <p className="text-zinc-400 font-medium mt-2">
               Find the perfect luxury companion for your journey
             </p>
           </div>
-          <div className="text-sm font-bold text-zinc-500 tracking-widest uppercase bg-white/5 px-4 py-2 rounded-full border border-white/10">
-            <span className="text-white text-lg mr-2">{vehicleCount}</span>
+          <div className="text-sm font-bold text-zinc-500 tracking-widest uppercase bg-zinc-100 px-4 py-2 rounded-full border border-zinc-200">
+            <span className="text-zinc-900 text-lg mr-2">{vehicleCount}</span>
             Results found
           </div>
         </div>

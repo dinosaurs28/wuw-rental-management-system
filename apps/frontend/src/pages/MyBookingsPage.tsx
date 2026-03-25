@@ -64,7 +64,7 @@ export function MyBookingsPage() {
         {/* Page Header */}
         <div className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-serif font-black tracking-tight text-white md:text-4xl">
+            <h1 className="text-3xl font-serif font-black tracking-tight text-zinc-900 md:text-4xl">
               Welcome back, {user?.name || "User"}
             </h1>
             <p className="mt-2 text-zinc-400 font-medium">
@@ -81,24 +81,24 @@ export function MyBookingsPage() {
         </div>
 
         {/* Filter Section */}
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-white/5 pb-6">
-          <h2 className="text-lg font-bold text-white tracking-wide">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-zinc-200 pb-6">
+          <h2 className="text-lg font-bold text-zinc-900 tracking-wide">
             {filter === "active" ? "Active Bookings" : "Past Bookings"}
           </h2>
           <Select value={filter} onValueChange={handleFilterChange}>
-            <SelectTrigger className="w-full sm:w-[200px] h-12 rounded-full bg-black/40 border-white/10 text-white font-medium hover:bg-black/60 focus:ring-1 focus:ring-white/20 transition-all px-6">
+            <SelectTrigger className="w-full sm:w-[200px] h-12 rounded-full bg-white border-zinc-200 text-zinc-900 font-medium hover:bg-zinc-100 focus:ring-1 focus:ring-zinc-300 transition-all px-6">
               <SelectValue placeholder="Filter bookings" />
             </SelectTrigger>
-            <SelectContent className="bg-zinc-900 border-white/10 text-zinc-50 rounded-2xl shadow-2xl">
+            <SelectContent className="bg-white border-zinc-200 text-zinc-900 rounded-2xl shadow-2xl">
               <SelectItem
                 value="active"
-                className="rounded-xl focus:bg-white/10 focus:text-white cursor-pointer py-2"
+                className="rounded-xl focus:bg-zinc-100 focus:text-zinc-900 cursor-pointer py-2"
               >
                 Active Trips
               </SelectItem>
               <SelectItem
                 value="past"
-                className="rounded-xl focus:bg-white/10 focus:text-white cursor-pointer py-2"
+                className="rounded-xl focus:bg-zinc-100 focus:text-zinc-900 cursor-pointer py-2"
               >
                 Past History
               </SelectItem>
@@ -112,17 +112,17 @@ export function MyBookingsPage() {
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="rounded-[2rem] border border-white/5 bg-zinc-900/40 p-6 backdrop-blur-xl"
+                className="rounded-[2rem] border border-zinc-200 bg-white p-6"
               >
                 <div className="mb-6 flex justify-between">
-                  <Skeleton className="h-5 w-24 bg-white/10 rounded-full" />
-                  <Skeleton className="h-6 w-20 bg-white/10 rounded-full" />
+                  <Skeleton className="h-5 w-24 rounded-full" />
+                  <Skeleton className="h-6 w-20 rounded-full" />
                 </div>
-                <Skeleton className="mb-4 h-8 w-48 bg-white/10 rounded-full" />
-                <Skeleton className="mb-6 h-24 w-full bg-white/10 rounded-2xl" />
-                <div className="flex justify-between items-end pt-4 border-t border-white/5">
-                  <Skeleton className="h-8 w-24 bg-white/10 rounded-full" />
-                  <Skeleton className="h-10 w-28 bg-white/10 rounded-full" />
+                <Skeleton className="mb-4 h-8 w-48 rounded-full" />
+                <Skeleton className="mb-6 h-24 w-full rounded-2xl" />
+                <div className="flex justify-between items-end pt-4 border-t border-zinc-200">
+                  <Skeleton className="h-8 w-24 rounded-full" />
+                  <Skeleton className="h-10 w-28 rounded-full" />
                 </div>
               </div>
             ))}
@@ -149,10 +149,10 @@ export function MyBookingsPage() {
             <div className="mb-6 rounded-full bg-orange-500/20 p-5 shadow-[0_0_30px_rgba(249,115,22,0.2)]">
               <Car className="h-10 w-10 text-orange-400" />
             </div>
-            <h3 className="mb-3 text-xl font-serif font-black text-white tracking-tight">
+            <h3 className="mb-3 text-xl font-serif font-black text-zinc-900 tracking-tight">
               Complete Your Profile
             </h3>
-            <p className="mb-8 max-w-sm text-sm font-medium text-orange-200/80">
+            <p className="mb-8 max-w-sm text-sm font-medium text-orange-600">
               Welcome! Before you can start booking premium vehicles, please
               complete your profile information.
             </p>
@@ -167,12 +167,12 @@ export function MyBookingsPage() {
 
         {/* Empty State */}
         {!isLoading && !error && !profileNotFound && bookings.length === 0 && (
-          <div className="flex flex-col items-center justify-center rounded-[2rem] border border-white/5 bg-zinc-900/40 p-16 text-center backdrop-blur-xl relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
-            <div className="mb-6 rounded-full bg-white/5 p-6 shadow-[0_0_40px_rgba(255,255,255,0.05)] border border-white/10 relative z-10">
+          <div className="flex flex-col items-center justify-center rounded-[2rem] border border-zinc-200 bg-white p-16 text-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-b from-zinc-50 to-transparent pointer-events-none" />
+            <div className="mb-6 rounded-full bg-zinc-100 p-6 border border-zinc-200 relative z-10">
               <CalendarX className="h-12 w-12 text-zinc-400" />
             </div>
-            <h3 className="mb-3 text-2xl font-serif font-black text-white tracking-tight relative z-10">
+            <h3 className="mb-3 text-2xl font-serif font-black text-zinc-900 tracking-tight relative z-10">
               No bookings found
             </h3>
             <p className="mb-8 max-w-md text-sm font-medium text-zinc-400 relative z-10">
