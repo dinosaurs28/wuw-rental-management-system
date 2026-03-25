@@ -6,6 +6,8 @@ import {
   updateDepositRuleSchema,
 } from "@repo/schemas";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
+import { redis } from "../../lib/redisconfig.js";
+import { depositSettingKey } from "../../utils/cache/vehicleCacheKeys.js";
 
 export const GetDepositRules = async (req: Request, res: Response) => {
   const branchId = req.branch_Id;
@@ -77,6 +79,13 @@ export const CreateDepositRule = async (req: Request, res: Response) => {
       metadata: { categoryId, amount },
     });
 
+    // TASK-012d: Invalidate deposit cache for this branch+category
+    try {
+      await redis.del(depositSettingKey(branchId, categoryId));
+    } catch (err) {
+      console.warn("[pricing-cache] Failed to invalidate deposit cache (non-fatal):", err);
+    }
+
     return res.status(StatusCode.CREATED).json({
       message: "Deposit rule created successfully",
       data: newRule,
@@ -128,6 +137,13 @@ export const UpdateDepositRule = async (req: Request, res: Response) => {
       metadata: { amount },
     });
 
+    // TASK-012d: Invalidate deposit cache for this branch+category
+    try {
+      await redis.del(depositSettingKey(existingRule.branchId, existingRule.categoryId));
+    } catch (err) {
+      console.warn("[pricing-cache] Failed to invalidate deposit cache (non-fatal):", err);
+    }
+
     return res.status(StatusCode.OK).json({
       message: "Deposit rule updated successfully",
       data: updatedRule,
@@ -165,6 +181,13 @@ export const DeleteDepositRule = async (req: Request, res: Response) => {
       entityRef: String(id),
       description: `Deposit rule ${id} deleted`,
     });
+
+    // TASK-012d: Invalidate deposit cache for this branch+category
+    try {
+      await redis.del(depositSettingKey(existingRule.branchId, existingRule.categoryId));
+    } catch (err) {
+      console.warn("[pricing-cache] Failed to invalidate deposit cache (non-fatal):", err);
+    }
 
     return res.status(StatusCode.OK).json({
       message: "Deposit rule deleted successfully",

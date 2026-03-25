@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useEmployeeAuthStore } from "@/store/employeeAuth.store";
 import { LogOut, LayoutDashboard } from "lucide-react";
+import { ShiftBanner } from "@/components/manager/payment/ShiftBanner";
 
 export function DashboardNavbar() {
   const { user, logout } = useEmployeeAuthStore();
@@ -21,7 +22,8 @@ export function DashboardNavbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div className="sticky top-0 z-50">
+    <header className="w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between gap-4">
         <div className="flex items-center gap-8">
           {/* Logo */}
@@ -86,5 +88,7 @@ export function DashboardNavbar() {
         </div>
       </div>
     </header>
+    <ShiftBanner />
+    </div>
   );
 }

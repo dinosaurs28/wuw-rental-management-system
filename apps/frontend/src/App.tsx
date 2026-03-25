@@ -43,6 +43,11 @@ import { ManagerInsuranceExpiryPage } from "./pages/manager/ManagerInsuranceExpi
 import DamageReviewPage from "./pages/manager/DamageReviewPage";
 import FinePaymentStatusPage from "./pages/manager/FinePaymentStatusPage";
 import { VehicleSwapPage } from "./pages/manager/VehicleSwapPage";
+import { CashConfirmationsPage } from "./pages/manager/payment/CashConfirmationsPage";
+import { SettlementsPage } from "./pages/manager/payment/SettlementsPage";
+import { RefundsPage } from "./pages/manager/payment/RefundsPage";
+import { CashShiftsPage } from "./pages/manager/payment/CashShiftsPage";
+import { ExtensionsPage } from "./pages/manager/payment/ExtensionsPage";
 import AdminSignInPage from "./pages/auth/AdminSignInPage";
 import { AdminProtectedRoute } from "@/components/auth/AdminProtectedRoute";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
@@ -153,6 +158,26 @@ function App() {
           <Route
             path="/manager/bookings/:bookingId/swap-vehicle"
             element={<VehicleSwapPage />}
+          />
+          <Route
+            path="/manager/payment/cash-confirmations"
+            element={<CashConfirmationsPage />}
+          />
+          <Route
+            path="/manager/payment/settlements"
+            element={<SettlementsPage />}
+          />
+          <Route
+            path="/manager/payment/refunds"
+            element={<RefundsPage />}
+          />
+          <Route
+            path="/manager/payment/cash-shifts"
+            element={<CashShiftsPage />}
+          />
+          <Route
+            path="/manager/payment/extensions"
+            element={<ExtensionsPage />}
           />
         </Route>
 

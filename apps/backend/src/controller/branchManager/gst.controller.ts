@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import { prisma } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { gstRuleSchema } from "@repo/schemas";
+import { redis } from "../../lib/redisconfig.js";
+import { gstRuleKey } from "../../utils/cache/vehicleCacheKeys.js";
 
 export const CreateOrUpdateGSTRule = async (req: Request, res: Response) => {
   try {
@@ -39,6 +41,13 @@ export const CreateOrUpdateGSTRule = async (req: Request, res: Response) => {
         igstRate,
       },
     });
+
+    // TASK-012c: Invalidate GST cache so next pricing call fetches the updated rate
+    try {
+      await redis.del(gstRuleKey(branchId));
+    } catch (err) {
+      console.warn("[pricing-cache] Failed to invalidate GST cache (non-fatal):", err);
+    }
 
     return res.status(StatusCode.OK).json({
       message: "GST Rule saved successfully",

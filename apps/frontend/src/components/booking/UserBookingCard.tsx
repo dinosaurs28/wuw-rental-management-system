@@ -3,9 +3,10 @@ import type { Booking } from "@/services/userBookings.service";
 import { BookingStatusBadge } from "./BookingStatusBadge";
 import { BookingQRModal } from "./BookingQRModal";
 import { InvoiceDownloadButton } from "@/components/InvoiceDownloadButton";
+import { CustomerExtensionModal } from "@/components/customer/CustomerExtensionModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { QrCode, Calendar, Clock, Car } from "lucide-react";
+import { QrCode, Calendar, Clock, Car, ArrowUpRight } from "lucide-react";
 import { format } from "date-fns";
 
 interface UserBookingCardProps {
@@ -14,6 +15,7 @@ interface UserBookingCardProps {
 
 export function UserBookingCard({ booking }: UserBookingCardProps) {
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
+  const [isExtendModalOpen, setIsExtendModalOpen] = useState(false);
 
   const formatDate = (dateString: string) => {
     return format(new Date(dateString), "MMM dd, yyyy");
@@ -137,6 +139,17 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
                   bookingId={booking.id}
                   bookingStatus={booking.status}
                 />
+                {booking.status === "CONFIRMED" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 rounded-full h-10 border-orange-400/30 bg-orange-500/10 hover:bg-orange-500/20 text-orange-300 font-medium px-4 transition-all"
+                    onClick={() => setIsExtendModalOpen(true)}
+                  >
+                    <ArrowUpRight className="h-4 w-4" />
+                    <span className="hidden sm:inline">Extend</span>
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
@@ -158,6 +171,16 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
         onClose={() => setIsQRModalOpen(false)}
         bookingId={booking.bookingId}
       />
+
+      {/* Extension Modal */}
+      {isExtendModalOpen && (
+        <CustomerExtensionModal
+          open={isExtendModalOpen}
+          bookingPublicId={booking.bookingId}
+          currentEndAt={booking.endAt}
+          onClose={() => setIsExtendModalOpen(false)}
+        />
+      )}
     </>
   );
 }
