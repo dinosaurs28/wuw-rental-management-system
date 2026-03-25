@@ -167,7 +167,7 @@ export function DocumentsPage() {
         {/* Page Header */}
         <div className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-serif font-black tracking-tight text-white md:text-4xl">
+            <h1 className="text-3xl font-serif font-black tracking-tight text-zinc-900 md:text-4xl">
               Documents
             </h1>
             <p className="mt-2 text-zinc-400 font-medium">
@@ -177,12 +177,12 @@ export function DocumentsPage() {
         </div>
 
         {/* Main Card */}
-        <Card className="border-0 shadow-2xl bg-zinc-900/40 backdrop-blur-2xl rounded-[2rem] overflow-hidden relative">
+        <Card className="border-0 shadow-2xl bg-white rounded-[2rem] overflow-hidden relative">
           {/* Subtle Inner Glow */}
           <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent pointer-events-none" />
 
-          <CardHeader className="pb-6 pt-8 px-8 border-b border-white/5 relative z-10">
-            <CardTitle className="text-2xl font-serif font-black tracking-tight text-white">
+          <CardHeader className="pb-6 pt-8 px-8 border-b border-zinc-200 relative z-10">
+            <CardTitle className="text-2xl font-serif font-black tracking-tight text-zinc-900">
               Identity Verification
             </CardTitle>
             <CardDescription className="text-zinc-400 font-medium text-sm">
@@ -194,7 +194,7 @@ export function DocumentsPage() {
           <CardContent className="space-y-10 pt-8 px-8 pb-8 relative z-10">
             {/* Document Type Selection */}
             <section>
-              <h2 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-white/5">
+              <h2 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-zinc-200">
                 Select Document Type
               </h2>
               <DocumentTypeSelector
@@ -221,12 +221,12 @@ export function DocumentsPage() {
 
             {/* Uploaded Documents Grid */}
             <section>
-              <h2 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-white/5">
+              <h2 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-zinc-200">
                 Uploaded Documents
               </h2>
               {isFetching ? (
                 <div className="space-y-4">
-                  <Skeleton className="h-4 w-48 bg-white/10 rounded-full" />
+                  <Skeleton className="h-4 w-48 rounded-full" />
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {[1, 2, 3].map((i) => (
                       <Skeleton

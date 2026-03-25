@@ -90,13 +90,13 @@ export const VehiclePricingCard = ({
   const canBook = isAvailable && pickupDate && returnDate && !isRefetching;
 
   return (
-    <Card className="overflow-hidden bg-zinc-900/40 backdrop-blur-xl border border-white/5 shadow-2xl rounded-[2rem]">
+    <Card className="overflow-hidden bg-white border border-zinc-200 shadow-2xl rounded-[2rem]">
       <CardContent className="p-0">
         {/* Price Header */}
-        <div className="p-8 border-b border-white/5">
+        <div className="p-8 border-b border-zinc-200">
           <div className="flex items-baseline justify-between mb-4">
             <div>
-              <span className="text-4xl lg:text-5xl font-serif font-black text-white tracking-tight">
+              <span className="text-4xl lg:text-5xl font-serif font-black text-zinc-900 tracking-tight">
                 {formatCurrency(vehicle.pricing.daily)}
               </span>
               <span className="text-sm font-bold text-zinc-500 uppercase tracking-wider ml-2">
@@ -121,7 +121,7 @@ export const VehiclePricingCard = ({
         </div>
 
         {/* Date + Time Selectors */}
-        <div className="p-8 space-y-4 border-b border-white/5">
+        <div className="p-8 space-y-4 border-b border-zinc-200">
           <div className="grid grid-cols-2 gap-4">
             {/* Pickup Date */}
             <div className="space-y-3">
@@ -133,7 +133,7 @@ export const VehiclePricingCard = ({
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal h-12 rounded-full bg-black/40 border-white/10 hover:bg-white/5 text-white hover:text-white transition-colors",
+                      "w-full justify-start text-left font-normal h-12 rounded-full bg-white border-zinc-200 hover:bg-zinc-100 text-zinc-900 hover:text-zinc-900 transition-colors",
                       !pickupDate && "text-zinc-500",
                     )}
                   >
@@ -164,7 +164,7 @@ export const VehiclePricingCard = ({
                 type="time"
                 value={startTime || "10:00"}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="h-12 w-full bg-black/40 border border-white/10 text-white rounded-full px-4 focus:outline-none focus:border-white/20 transition-all [color-scheme:dark] text-sm"
+                className="h-12 w-full bg-white border border-zinc-200 text-zinc-900 rounded-full px-4 focus:outline-none focus:border-zinc-300 transition-all text-sm"
               />
             </div>
 
@@ -178,7 +178,7 @@ export const VehiclePricingCard = ({
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal h-12 rounded-full bg-black/40 border-white/10 hover:bg-white/5 text-white hover:text-white transition-colors",
+                      "w-full justify-start text-left font-normal h-12 rounded-full bg-white border-zinc-200 hover:bg-zinc-100 text-zinc-900 hover:text-zinc-900 transition-colors",
                       !returnDate && "text-zinc-500",
                     )}
                   >
@@ -209,16 +209,16 @@ export const VehiclePricingCard = ({
                 type="time"
                 value={endTime || "10:00"}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="h-12 w-full bg-black/40 border border-white/10 text-white rounded-full px-4 focus:outline-none focus:border-white/20 transition-all [color-scheme:dark] text-sm"
+                className="h-12 w-full bg-white border border-zinc-200 text-zinc-900 rounded-full px-4 focus:outline-none focus:border-zinc-300 transition-all text-sm"
               />
             </div>
           </div>
         </div>
 
         {/* Pricing Breakdown */}
-        <div className="p-8 space-y-4 border-b border-white/5 relative">
+        <div className="p-8 space-y-4 border-b border-zinc-200 relative">
           {isRefetching && (
-            <div className="absolute inset-0 bg-zinc-950/70 backdrop-blur-sm flex items-center justify-center z-10">
+            <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center z-10">
               <Loader2 className="size-6 text-orange-500 animate-spin" />
             </div>
           )}
@@ -243,7 +243,7 @@ export const VehiclePricingCard = ({
 
               <div className="flex justify-between text-base">
                 <span className="text-zinc-400">Base Price</span>
-                <span className="text-white font-medium">
+                <span className="text-zinc-900 font-medium">
                   {formatCurrency(pd.basePrice)}
                 </span>
               </div>
@@ -263,18 +263,18 @@ export const VehiclePricingCard = ({
               {pd.taxAmount > 0 && (
                 <div className="flex justify-between text-base">
                   <span className="text-zinc-400">GST ({pd.taxRate}%)</span>
-                  <span className="text-zinc-300 font-medium">
+                  <span className="text-zinc-700 font-medium">
                     +{formatCurrency(pd.taxAmount)}
                   </span>
                 </div>
               )}
 
-              <div className="pt-4 mt-2 border-t border-white/10">
+              <div className="pt-4 mt-2 border-t border-zinc-200">
                 <div className="flex justify-between items-end">
-                  <span className="text-lg font-black text-white uppercase tracking-wider">
+                  <span className="text-lg font-black text-zinc-900 uppercase tracking-wider">
                     Total
                   </span>
-                  <span className="text-3xl font-bold text-white tracking-tight">
+                  <span className="text-3xl font-bold text-zinc-900 tracking-tight">
                     {formatCurrency(pd.finalTotal)}
                   </span>
                 </div>
@@ -290,10 +290,10 @@ export const VehiclePricingCard = ({
         </div>
 
         {/* Deposit Info */}
-        <div className="px-8 py-6 bg-black/20 border-b border-white/5">
+        <div className="px-8 py-6 bg-zinc-50 border-b border-zinc-200">
           <div className="flex justify-between text-base">
             <span className="text-zinc-400">Security Deposit</span>
-            <span className="text-white font-medium">
+            <span className="text-zinc-900 font-medium">
               {formatCurrency(vehicle.deposit)}
             </span>
           </div>
@@ -301,7 +301,7 @@ export const VehiclePricingCard = ({
 
         {/* Advance Payment Option */}
         {vehicle.advancePayAmount && vehicle.advancePayAmount > 0 && pd && (
-          <div className="px-8 py-6 border-b border-white/5 space-y-3">
+          <div className="px-8 py-6 border-b border-zinc-200 space-y-3">
             <p className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">
               Payment Plan
             </p>
@@ -313,7 +313,7 @@ export const VehiclePricingCard = ({
                   "flex flex-col items-center gap-1.5 p-4 rounded-2xl border transition-all",
                   paymentFlow === "FULL"
                     ? "bg-white text-zinc-950 border-white"
-                    : "bg-black/20 text-zinc-400 border-white/10 hover:border-white/20",
+                    : "bg-zinc-100 text-zinc-400 border-zinc-200 hover:border-zinc-300",
                 )}
               >
                 <Check className="size-4" />
@@ -331,7 +331,7 @@ export const VehiclePricingCard = ({
                   "flex flex-col items-center gap-1.5 p-4 rounded-2xl border transition-all",
                   paymentFlow === "ADVANCE"
                     ? "bg-orange-500 text-white border-orange-500"
-                    : "bg-black/20 text-zinc-400 border-white/10 hover:border-white/20",
+                    : "bg-zinc-100 text-zinc-400 border-zinc-200 hover:border-zinc-300",
                 )}
               >
                 <Wallet className="size-4" />

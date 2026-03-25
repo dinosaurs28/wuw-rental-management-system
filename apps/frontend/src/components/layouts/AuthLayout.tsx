@@ -13,7 +13,7 @@ export default function AuthLayout({
   subtitle,
 }: AuthLayoutProps) {
   return (
-    <div className="flex min-h-screen w-full bg-zinc-950 selection:bg-orange-500/30">
+    <div className="flex min-h-screen w-full bg-zinc-100 selection:bg-orange-500/30">
       {/* Left Side: Image/Branding (Hidden on mobile) */}
       <div className="hidden lg:flex w-1/2 items-center justify-center relative overflow-hidden">
         {/* Branding */}

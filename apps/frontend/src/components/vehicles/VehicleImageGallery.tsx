@@ -63,7 +63,7 @@ export const VehicleImageGallery = ({
 
   if (!normalizedImages || normalizedImages.length === 0) {
     return (
-      <div className="w-full aspect-[4/3] bg-zinc-900/40 border border-white/5 rounded-[2rem] flex items-center justify-center">
+      <div className="w-full aspect-[4/3] bg-zinc-100 border border-zinc-200 rounded-[2rem] flex items-center justify-center">
         <Car className="size-20 text-zinc-700" />
       </div>
     );
@@ -83,7 +83,7 @@ export const VehicleImageGallery = ({
           <CarouselContent>
             {normalizedImages.map((image, index) => (
               <CarouselItem key={index}>
-                <div className="aspect-[4/3] w-full overflow-hidden rounded-[2rem] bg-zinc-900/40 border border-white/5">
+                <div className="aspect-[4/3] w-full overflow-hidden rounded-[2rem] bg-zinc-100 border border-zinc-200">
                   <img
                     src={image}
                     alt={`${vehicleName} - Image ${index + 1}`}
@@ -103,14 +103,14 @@ export const VehicleImageGallery = ({
               size="icon"
               className={cn(
                 "absolute left-4 top-1/2 -translate-y-1/2 z-10",
-                "size-12 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-white hover:bg-white/20 shadow-2xl",
+                "size-12 rounded-full bg-white/90 backdrop-blur-md border border-zinc-200 text-zinc-700 hover:bg-zinc-100 shadow-2xl",
                 "opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110",
                 !canScrollPrev && "opacity-50 cursor-not-allowed hidden",
               )}
               onClick={scrollPrev}
               disabled={!canScrollPrev}
             >
-              <ChevronLeft className="size-6 text-white" />
+              <ChevronLeft className="size-6 text-zinc-700" />
               <span className="sr-only">Previous image</span>
             </Button>
             <Button
@@ -118,7 +118,7 @@ export const VehicleImageGallery = ({
               size="icon"
               className={cn(
                 "absolute right-4 top-1/2 -translate-y-1/2 z-10",
-                "size-12 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-white hover:bg-white/20 shadow-2xl",
+                "size-12 rounded-full bg-white/90 backdrop-blur-md border border-zinc-200 text-zinc-700 hover:bg-zinc-100 shadow-2xl",
                 "opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110",
                 !canScrollNext && "opacity-50 cursor-not-allowed hidden",
               )}
@@ -142,8 +142,8 @@ export const VehicleImageGallery = ({
               className={cn(
                 "flex-shrink-0 w-20 h-20 md:w-24 md:h-24 rounded-2xl overflow-hidden border-2 transition-all duration-300",
                 current === index
-                  ? "border-white ring-4 ring-white/10 scale-105"
-                  : "border-transparent opacity-50 hover:opacity-100 hover:border-white/30 hover:scale-105",
+                  ? "border-orange-500 ring-4 ring-orange-500/10 scale-105"
+                  : "border-transparent opacity-50 hover:opacity-100 hover:border-zinc-300 hover:scale-105",
               )}
             >
               <img

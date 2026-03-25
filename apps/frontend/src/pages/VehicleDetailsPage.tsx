@@ -191,22 +191,22 @@ export const VehicleDetailsPage = () => {
   // Loading state (initial load only)
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col bg-zinc-950">
+      <div className="min-h-screen flex flex-col bg-gray-50">
         <Navbar />
         <main className="flex-1 container mx-auto px-4 lg:px-8 py-6 md:py-8 mt-24">
           {/* Breadcrumb Skeleton */}
           <div className="flex items-center gap-2 mb-8">
-            <Skeleton className="h-4 w-12 bg-white/10" />
+            <Skeleton className="h-4 w-12 bg-zinc-100" />
             <Skeleton className="h-4 w-4 bg-white/5" />
-            <Skeleton className="h-4 w-16 bg-white/10" />
+            <Skeleton className="h-4 w-16 bg-zinc-100" />
             <Skeleton className="h-4 w-4 bg-white/5" />
-            <Skeleton className="h-4 w-24 bg-white/10" />
+            <Skeleton className="h-4 w-24 bg-zinc-100" />
           </div>
 
           {/* Header Skeleton */}
           <div className="mb-8 md:mb-10">
             <div className="flex flex-wrap items-center gap-4 mb-3">
-              <Skeleton className="h-10 w-64 md:h-12 md:w-96 bg-white/10 rounded-xl" />
+              <Skeleton className="h-10 w-64 md:h-12 md:w-96 bg-zinc-100 rounded-xl" />
               <div className="flex items-center gap-3">
                 <Skeleton className="h-8 w-24 rounded-full bg-white/5" />
                 <Skeleton className="h-8 w-28 rounded-full bg-white/5" />
@@ -219,7 +219,7 @@ export const VehicleDetailsPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
             {/* Image Gallery Skeleton */}
             <div className="lg:col-span-7 xl:col-span-8 space-y-4">
-              <Skeleton className="w-full aspect-video rounded-[2rem] bg-zinc-900/40 border border-white/5" />
+              <Skeleton className="w-full aspect-video rounded-[2rem] bg-zinc-100 border border-zinc-200" />
               <div className="grid grid-cols-4 gap-3 md:gap-4">
                 <Skeleton className="aspect-square rounded-2xl bg-white/5" />
                 <Skeleton className="aspect-square rounded-2xl bg-white/5" />
@@ -231,7 +231,7 @@ export const VehicleDetailsPage = () => {
             {/* Pricing Card Skeleton */}
             <div className="lg:col-span-5 xl:col-span-4">
               <div className="lg:sticky lg:top-28">
-                <Skeleton className="h-[500px] w-full rounded-[2rem] bg-zinc-900/40 border border-white/5" />
+                <Skeleton className="h-[500px] w-full rounded-[2rem] bg-zinc-100 border border-zinc-200" />
               </div>
             </div>
           </div>
@@ -244,11 +244,11 @@ export const VehicleDetailsPage = () => {
   // Error state
   if (isError || !vehicle) {
     return (
-      <div className="min-h-screen flex flex-col bg-zinc-950">
+      <div className="min-h-screen flex flex-col bg-gray-50">
         <Navbar />
         <main className="flex-1 flex items-center justify-center mt-24">
-          <div className="text-center space-y-6 max-w-md mx-auto p-8 rounded-[2rem] bg-zinc-900/40 backdrop-blur-xl border border-white/5 text-center">
-            <h2 className="text-3xl font-serif font-black text-white">
+          <div className="text-center space-y-6 max-w-md mx-auto p-8 rounded-[2rem] bg-white border border-zinc-200 text-center">
+            <h2 className="text-3xl font-serif font-black text-zinc-900">
               Vehicle Not Found
             </h2>
             <p className="text-zinc-500 font-medium">
@@ -270,7 +270,7 @@ export const VehicleDetailsPage = () => {
   const vehicleName = `${vehicle.make} ${vehicle.model}`;
 
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-950 scroll-smooth">
+    <div className="min-h-screen flex flex-col bg-gray-50 scroll-smooth">
       <Navbar />
 
       <main className="flex-1 container mx-auto px-4 lg:px-8 py-6 md:py-8 mt-24">
@@ -281,7 +281,7 @@ export const VehicleDetailsPage = () => {
               <BreadcrumbLink asChild>
                 <Link
                   to="/"
-                  className="text-zinc-500 hover:text-white transition-colors"
+                  className="text-zinc-500 hover:text-zinc-900 transition-colors"
                 >
                   Home
                 </Link>
@@ -292,7 +292,7 @@ export const VehicleDetailsPage = () => {
               <BreadcrumbLink asChild>
                 <Link
                   to="/vehicles"
-                  className="text-zinc-500 hover:text-white transition-colors"
+                  className="text-zinc-500 hover:text-zinc-900 transition-colors"
                 >
                   Vehicles
                 </Link>
@@ -300,7 +300,7 @@ export const VehicleDetailsPage = () => {
             </BreadcrumbItem>
             <BreadcrumbSeparator className="text-zinc-700" />
             <BreadcrumbItem>
-              <BreadcrumbPage className="text-white font-medium">
+              <BreadcrumbPage className="text-zinc-900 font-medium">
                 Vehicle Details
               </BreadcrumbPage>
             </BreadcrumbItem>
@@ -310,11 +310,11 @@ export const VehicleDetailsPage = () => {
         {/* Vehicle Header */}
         <div className="mb-8 md:mb-12">
           <div className="flex flex-wrap items-center gap-4 mb-3">
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-serif font-black text-white tracking-tight">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-serif font-black text-zinc-900 tracking-tight">
               {vehicleName}
             </h1>
             <div className="flex items-center gap-3">
-              <span className="px-4 py-1.5 text-xs font-black tracking-[0.2em] bg-white/10 text-white rounded-full uppercase border border-white/10">
+              <span className="px-4 py-1.5 text-xs font-black tracking-[0.2em] bg-zinc-100 text-zinc-900 rounded-full uppercase border border-zinc-200">
                 {typeof vehicle.category === "string"
                   ? vehicle.category
                   : vehicle.category?.name || "N/A"}

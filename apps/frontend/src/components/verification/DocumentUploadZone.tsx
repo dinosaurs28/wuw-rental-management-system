@@ -62,14 +62,14 @@ export const DocumentUploadZone = ({
         className={cn(
           "relative flex flex-col items-center justify-center w-full min-h-[250px] p-8 sm:p-10",
           "border-2 border-dashed rounded-[2rem] cursor-pointer transition-all duration-300 overflow-hidden group",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/20",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/40",
           isDragActive && !isDragReject
-            ? "border-white/50 bg-white/5 shadow-[0_0_50px_rgba(255,255,255,0.05)]"
+            ? "border-orange-400 bg-orange-50 shadow-[0_0_50px_rgba(249,115,22,0.1)]"
             : isDragReject
               ? "border-red-500/50 bg-red-500/5 shadow-[0_0_50px_rgba(239,68,68,0.1)]"
-              : "border-white/10 bg-black/20 hover:border-white/30 hover:bg-black/40",
+              : "border-zinc-200 bg-zinc-50 hover:border-zinc-300 hover:bg-zinc-100",
           (isUploading || disabled) &&
-            "opacity-50 cursor-not-allowed hover:border-white/10 hover:bg-black/20",
+            "opacity-50 cursor-not-allowed hover:border-zinc-200 hover:bg-zinc-50",
         )}
       >
         {/* Subtle animated background gradient */}
@@ -78,8 +78,8 @@ export const DocumentUploadZone = ({
 
         {isUploading ? (
           <div className="flex flex-col items-center gap-4 relative z-10">
-            <Spinner className="w-12 h-12 text-white" />
-            <p className="text-sm font-bold tracking-wide text-zinc-300 uppercase">
+            <Spinner className="w-12 h-12 text-zinc-700" />
+            <p className="text-sm font-bold tracking-wide text-zinc-600 uppercase">
               Securely Uploading...
             </p>
           </div>
@@ -90,10 +90,10 @@ export const DocumentUploadZone = ({
               className={cn(
                 "p-5 rounded-full mb-6 transition-all duration-300",
                 isDragActive && !isDragReject
-                  ? "bg-white text-zinc-950 shadow-[0_0_30px_rgba(255,255,255,0.3)] scale-110"
+                  ? "bg-orange-500 text-white shadow-[0_0_30px_rgba(249,115,22,0.3)] scale-110"
                   : isDragReject
                     ? "bg-red-500/20 text-red-500 scale-110"
-                    : "bg-white/5 text-zinc-400 group-hover:bg-white/10 group-hover:text-white group-hover:scale-105",
+                    : "bg-zinc-100 text-zinc-500 group-hover:bg-zinc-200 group-hover:text-zinc-700 group-hover:scale-105",
               )}
             >
               {isDragReject ? (
@@ -106,7 +106,7 @@ export const DocumentUploadZone = ({
             </div>
 
             {/* Text */}
-            <p className="text-lg font-bold text-white text-center mb-2 tracking-wide">
+            <p className="text-lg font-bold text-zinc-900 text-center mb-2 tracking-wide">
               {isDragReject
                 ? "Invalid file type detected"
                 : isDragActive
@@ -115,14 +115,14 @@ export const DocumentUploadZone = ({
             </p>
             <p className="text-sm font-medium text-zinc-500 text-center">
               Or{" "}
-              <span className="text-white hover:text-zinc-300 font-bold underline underline-offset-4 decoration-white/30 transition-colors cursor-pointer">
+              <span className="text-zinc-900 hover:text-zinc-600 font-bold underline underline-offset-4 decoration-zinc-400/30 transition-colors cursor-pointer">
                 browse files
               </span>{" "}
               from your device
             </p>
 
             {/* Format info */}
-            <div className="flex flex-wrap items-center justify-center gap-4 mt-8 pt-6 border-t border-white/5 text-[10px] font-black tracking-widest uppercase text-zinc-600 w-full max-w-xs">
+            <div className="flex flex-wrap items-center justify-center gap-4 mt-8 pt-6 border-t border-zinc-200 text-[10px] font-black tracking-widest uppercase text-zinc-500 w-full max-w-xs">
               <span className="flex items-center gap-2">
                 <FileImage className="w-3.5 h-3.5" />
                 JPG, PNG, PDF, HEIC

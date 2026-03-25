@@ -173,12 +173,12 @@ export function ProfilePage() {
         </div>
 
         {/* Main Card */}
-        <Card className="border-0 shadow-2xl bg-zinc-900/40 backdrop-blur-2xl rounded-[2rem] overflow-hidden relative">
+        <Card className="border-0 shadow-2xl bg-white rounded-[2rem] overflow-hidden relative">
           {/* Subtle Inner Glow */}
           <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent pointer-events-none" />
 
-          <CardHeader className="pb-6 pt-8 px-8 border-b border-white/5 relative z-10">
-            <CardTitle className="text-2xl font-serif font-black tracking-tight text-white">
+          <CardHeader className="pb-6 pt-8 px-8 border-b border-zinc-200 relative z-10">
+            <CardTitle className="text-2xl font-serif font-black tracking-tight text-zinc-900">
               Personal Information
             </CardTitle>
             <CardDescription className="text-zinc-400 font-medium text-sm">
@@ -191,27 +191,27 @@ export function ProfilePage() {
             {isLoadingProfile ? (
               <div className="space-y-12">
                 <section>
-                  <h3 className="text-xs font-black text-zinc-500/50 uppercase tracking-widest mb-6 pb-2 border-b border-white/5">
-                    <Skeleton className="h-3 w-24 bg-white/10 rounded-full" />
+                  <h3 className="text-xs font-black text-zinc-500/50 uppercase tracking-widest mb-6 pb-2 border-b border-zinc-200">
+                    <Skeleton className="h-3 w-24 rounded-full" />
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {[1, 2, 3, 4].map((i) => (
                       <div key={i} className="space-y-3">
-                        <Skeleton className="h-3 w-20 bg-white/10 rounded-full" />
-                        <Skeleton className="h-14 w-full bg-white/5 rounded-full" />
+                        <Skeleton className="h-3 w-20 rounded-full" />
+                        <Skeleton className="h-14 w-full rounded-full" />
                       </div>
                     ))}
                   </div>
                 </section>
                 <section>
-                  <h3 className="text-xs font-black text-zinc-500/50 uppercase tracking-widest mb-6 pb-2 border-b border-white/5">
-                    <Skeleton className="h-3 w-32 bg-white/10 rounded-full" />
+                  <h3 className="text-xs font-black text-zinc-500/50 uppercase tracking-widest mb-6 pb-2 border-b border-zinc-200">
+                    <Skeleton className="h-3 w-32 rounded-full" />
                   </h3>
                   <div className="grid grid-cols-1 gap-6">
                     {[1].map((i) => (
                       <div key={i} className="space-y-3">
-                        <Skeleton className="h-3 w-28 bg-white/10 rounded-full" />
-                        <Skeleton className="h-14 w-[50%] bg-white/5 rounded-full" />
+                        <Skeleton className="h-3 w-28 rounded-full" />
+                        <Skeleton className="h-14 w-[50%] rounded-full" />
                       </div>
                     ))}
                   </div>
@@ -225,7 +225,7 @@ export function ProfilePage() {
                 >
                   {/* Basic Info Section */}
                   <section>
-                    <h3 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-white/5">
+                    <h3 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-zinc-200">
                       Basic Info
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -241,7 +241,7 @@ export function ProfilePage() {
                             <FormControl>
                               <Input
                                 placeholder="John Doe"
-                                className="h-14 rounded-full bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:border-white/20 transition-all duration-300 px-6"
+                                className="h-14 rounded-full bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-1 focus-visible:ring-zinc-300 focus-visible:border-zinc-300 transition-all duration-300 px-6"
                                 {...field}
                               />
                             </FormControl>
@@ -263,7 +263,7 @@ export function ProfilePage() {
                           type="email"
                           value={userEmail}
                           disabled
-                          className="h-14 rounded-full bg-black/20 border-white/5 text-zinc-500 cursor-not-allowed px-6"
+                          className="h-14 rounded-full bg-zinc-100 border-zinc-200 text-zinc-500 cursor-not-allowed px-6"
                         />
                       </div>
 
@@ -279,7 +279,7 @@ export function ProfilePage() {
                             <FormControl>
                               <Input
                                 placeholder="+1 (555) 000-0000"
-                                className="h-14 rounded-full bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:border-white/20 transition-all duration-300 px-6"
+                                className="h-14 rounded-full bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-1 focus-visible:ring-zinc-300 focus-visible:border-zinc-300 transition-all duration-300 px-6"
                                 {...field}
                               />
                             </FormControl>
@@ -300,7 +300,7 @@ export function ProfilePage() {
                             <FormControl>
                               <Input
                                 placeholder="9874158750"
-                                className="h-14 rounded-full bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:border-white/20 transition-all duration-300 px-6"
+                                className="h-14 rounded-full bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-1 focus-visible:ring-zinc-300 focus-visible:border-zinc-300 transition-all duration-300 px-6"
                                 {...field}
                               />
                             </FormControl>
@@ -313,7 +313,7 @@ export function ProfilePage() {
 
                   {/* Personal Details Section */}
                   <section>
-                    <h3 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-white/5">
+                    <h3 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-zinc-200">
                       Personal Details
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -332,8 +332,8 @@ export function ProfilePage() {
                                   <Button
                                     variant="outline"
                                     className={cn(
-                                      "h-14 rounded-full bg-black/40 border-white/10 text-white px-6 w-full justify-start text-left font-medium hover:bg-black/60 hover:text-white transition-all duration-300",
-                                      !field.value && "text-zinc-600",
+                                      "h-14 rounded-full bg-white border-zinc-200 text-zinc-900 px-6 w-full justify-start text-left font-medium hover:bg-zinc-100 hover:text-zinc-900 transition-all duration-300",
+                                      !field.value && "text-zinc-400",
                                     )}
                                   >
                                     {field.value
@@ -347,7 +347,7 @@ export function ProfilePage() {
                                 </FormControl>
                               </PopoverTrigger>
                               <PopoverContent
-                                className="w-auto p-0 border-white/10 bg-zinc-900 text-zinc-50"
+                                className="w-auto p-0 border-zinc-200 bg-white text-zinc-900"
                                 align="start"
                               >
                                 <Calendar
@@ -379,7 +379,7 @@ export function ProfilePage() {
 
                   {/* Address Section */}
                   <section>
-                    <h3 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-white/5">
+                    <h3 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-zinc-200">
                       Address
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -395,7 +395,7 @@ export function ProfilePage() {
                             <FormControl>
                               <Input
                                 placeholder="Street address, City, State, ZIP"
-                                className="h-14 rounded-full bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:border-white/20 transition-all duration-300 px-6"
+                                className="h-14 rounded-full bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-1 focus-visible:ring-zinc-300 focus-visible:border-zinc-300 transition-all duration-300 px-6"
                                 {...field}
                               />
                             </FormControl>
@@ -416,7 +416,7 @@ export function ProfilePage() {
                             <FormControl>
                               <Input
                                 placeholder="Mangaluru"
-                                className="h-14 rounded-full bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:border-white/20 transition-all duration-300 px-6"
+                                className="h-14 rounded-full bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-1 focus-visible:ring-zinc-300 focus-visible:border-zinc-300 transition-all duration-300 px-6"
                                 {...field}
                               />
                             </FormControl>
@@ -437,7 +437,7 @@ export function ProfilePage() {
                             <FormControl>
                               <Input
                                 placeholder="Karnataka"
-                                className="h-14 rounded-full bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:border-white/20 transition-all duration-300 px-6"
+                                className="h-14 rounded-full bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-1 focus-visible:ring-zinc-300 focus-visible:border-zinc-300 transition-all duration-300 px-6"
                                 {...field}
                               />
                             </FormControl>
@@ -458,7 +458,7 @@ export function ProfilePage() {
                             <FormControl>
                               <Input
                                 placeholder="India"
-                                className="h-14 rounded-full bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:border-white/20 transition-all duration-300 px-6"
+                                className="h-14 rounded-full bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-1 focus-visible:ring-zinc-300 focus-visible:border-zinc-300 transition-all duration-300 px-6"
                                 {...field}
                               />
                             </FormControl>
@@ -479,7 +479,7 @@ export function ProfilePage() {
                             <FormControl>
                               <Input
                                 placeholder="575001"
-                                className="h-14 rounded-full bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:border-white/20 transition-all duration-300 px-6"
+                                className="h-14 rounded-full bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-1 focus-visible:ring-zinc-300 focus-visible:border-zinc-300 transition-all duration-300 px-6"
                                 {...field}
                               />
                             </FormControl>
@@ -491,7 +491,7 @@ export function ProfilePage() {
                   </section>
 
                   {/* Submit Button */}
-                  <div className="flex justify-end pt-8 mt-8 border-t border-white/5">
+                  <div className="flex justify-end pt-8 mt-8 border-t border-zinc-200">
                     <Button
                       type="submit"
                       size="lg"

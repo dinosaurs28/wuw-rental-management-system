@@ -53,7 +53,7 @@ export default function AdminSignInPage() {
   return (
     <div className="min-h-screen w-full lg:grid lg:grid-cols-2">
       {/* Left Side - Hero Image */}
-      <div className="hidden lg:block relative h-full w-full bg-zinc-900 overflow-hidden">
+      <div className="hidden lg:block relative h-full w-full bg-zinc-800 overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2670&auto=format&fit=crop')] bg-cover bg-center opacity-50" />
         <div className="relative z-20 flex h-full flex-col justify-between p-12 text-white">
           <div className="flex items-center gap-2 font-medium text-lg">
