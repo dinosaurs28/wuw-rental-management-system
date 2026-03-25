@@ -56,12 +56,12 @@ function Calendar({
         ),
         button_previous: cn(
           buttonVariants({ variant: buttonVariant }),
-          "pointer-events-auto size-(--cell-size) bg-white/5 hover:bg-white/10 border border-white/5 text-white rounded-full transition-all aria-disabled:opacity-50 p-0 select-none shadow-xl",
+          "pointer-events-auto size-(--cell-size) bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 text-zinc-700 rounded-full transition-all aria-disabled:opacity-50 p-0 select-none shadow-xl",
           defaultClassNames.button_previous,
         ),
         button_next: cn(
           buttonVariants({ variant: buttonVariant }),
-          "pointer-events-auto size-(--cell-size) bg-white/5 hover:bg-white/10 border border-white/5 text-white rounded-full transition-all aria-disabled:opacity-50 p-0 select-none shadow-xl",
+          "pointer-events-auto size-(--cell-size) bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 text-zinc-700 rounded-full transition-all aria-disabled:opacity-50 p-0 select-none shadow-xl",
           defaultClassNames.button_next,
         ),
         month_caption: cn(
@@ -73,7 +73,7 @@ function Calendar({
           defaultClassNames.dropdowns,
         ),
         dropdown_root: cn(
-          "relative flex items-center border border-white/10 bg-black/40 rounded-md px-2 py-0.5",
+          "relative flex items-center border border-zinc-200 bg-white rounded-md px-2 py-0.5",
           defaultClassNames.dropdown_root,
         ),
         dropdown: cn(
@@ -81,7 +81,7 @@ function Calendar({
           defaultClassNames.dropdown
         ),
         caption_label: cn(
-          "select-none font-bold text-lg text-white tracking-wide",
+          "select-none font-bold text-lg text-zinc-900 tracking-wide",
           defaultClassNames.caption_label,
         ),
         table: "w-full border-collapse mt-2",
@@ -116,11 +116,11 @@ function Calendar({
           defaultClassNames.range_end,
         ),
         today: cn(
-          "bg-white/5 text-white rounded-full data-[selected=true]:rounded-none data-[selected=true]:bg-transparent font-bold",
+          "bg-zinc-100 text-zinc-900 rounded-full data-[selected=true]:rounded-none data-[selected=true]:bg-transparent font-bold",
           defaultClassNames.today,
         ),
         outside: cn(
-          "text-zinc-700 aria-selected:text-zinc-500",
+          "text-zinc-400 aria-selected:text-zinc-400",
           defaultClassNames.outside,
         ),
         disabled: cn("text-zinc-700 opacity-50", defaultClassNames.disabled),
@@ -205,8 +205,8 @@ function CalendarDayButton({
       data-range-middle={modifiers.range_middle}
       className={cn(
         "flex outline-none size-full flex-col items-center justify-center gap-1 leading-none font-medium transition-all duration-300",
-        "text-zinc-300 hover:bg-white/10 hover:text-white rounded-full",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950",
+        "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 rounded-full",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
         "data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground data-[selected-single=true]:font-bold data-[selected-single=true]:shadow-[0_0_20px_rgba(255,95,0,0.4)]",
         "data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground data-[range-start=true]:rounded-l-full data-[range-start=true]:rounded-r-none data-[range-start=true]:font-bold data-[range-start=true]:shadow-[0_0_20px_rgba(255,95,0,0.4)]",
         "data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground data-[range-end=true]:rounded-r-full data-[range-end=true]:rounded-l-none data-[range-end=true]:font-bold data-[range-end=true]:shadow-[0_0_20px_rgba(255,95,0,0.4)]",

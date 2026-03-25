@@ -31,12 +31,12 @@ export function DashboardNavbar() {
   };
 
   return (
-    <header className="sticky top-0 z-40 flex h-20 shrink-0 items-center justify-between border-b border-white/5 bg-transparent px-4 md:px-8 backdrop-blur-md">
+    <header className="sticky top-0 z-40 flex h-20 shrink-0 items-center justify-between border-b border-zinc-200 bg-white/80 px-4 md:px-8 backdrop-blur-md">
       {/* Left side - Sidebar trigger (mobile) + Breadcrumb area */}
       <div className="flex items-center gap-4">
-        <SidebarTrigger className="md:hidden text-zinc-400 hover:text-white transition-colors" />
+        <SidebarTrigger className="md:hidden text-zinc-500 hover:text-zinc-900 transition-colors" />
         <div className="hidden md:block">
-          <h2 className="text-xl font-serif font-bold text-white tracking-tight">
+          <h2 className="text-xl font-serif font-bold text-zinc-900 tracking-tight">
             Dashboard Overview
           </h2>
         </div>
@@ -48,51 +48,50 @@ export function DashboardNavbar() {
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="flex items-center gap-3 px-2 py-1.5 h-auto rounded-full hover:bg-white/5 transition-all duration-300"
+              className="flex items-center gap-3 px-2 py-1.5 h-auto rounded-full hover:bg-zinc-100 transition-all duration-300"
             >
-              <Avatar className="h-10 w-10 border border-white/10 shadow-sm">
-                <AvatarFallback className="bg-zinc-900 text-white font-medium text-sm">
+              <Avatar className="h-10 w-10 border border-zinc-200 shadow-sm">
+                <AvatarFallback className="bg-zinc-100 text-zinc-700 font-medium text-sm">
                   {user?.name ? getInitials(user.name) : "U"}
                 </AvatarFallback>
               </Avatar>
-              <span className="hidden text-sm font-semibold text-white md:inline-block">
+              <span className="hidden text-sm font-semibold text-zinc-900 md:inline-block">
                 {user?.name || "User"}
               </span>
               <ChevronDown className="h-4 w-4 text-zinc-400" />
             </Button>
           </DropdownMenuTrigger>
-          {/* Theming the dropdown for dark mode */}
           <DropdownMenuContent
             align="end"
-            className="w-56 bg-zinc-900/95 backdrop-blur-xl border-white/10 text-zinc-50 rounded-2xl shadow-2xl p-2"
+            className="w-56 bg-white backdrop-blur-xl border-zinc-200 text-zinc-900 rounded-2xl shadow-lg p-2"
           >
             <div className="flex items-center gap-3 p-3">
-              <Avatar className="h-12 w-12 border border-white/10">
-                <AvatarFallback className="bg-zinc-800 text-white">
+              <Avatar className="h-12 w-12 border border-zinc-200">
+                <AvatarFallback className="bg-zinc-100 text-zinc-700">
                   {user?.name ? getInitials(user.name) : "U"}
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col overflow-hidden">
-                <span className="truncate text-base font-bold text-white">
+                <span className="truncate text-base font-bold text-zinc-900">
                   {user?.name || "User"}
                 </span>
-                <span className="truncate text-xs font-medium text-zinc-400">
+                <span className="truncate text-xs font-medium text-zinc-500">
                   {user?.email || ""}
                 </span>
               </div>
             </div>
-            <DropdownMenuSeparator className="bg-white/10 my-1" />
+            <DropdownMenuSeparator className="bg-zinc-100 my-1" />
             <DropdownMenuItem
               onClick={() => navigate("/profile")}
-              className="cursor-pointer rounded-xl hover:bg-white/10 focus:bg-white/10 focus:text-white p-3 transition-colors"
+              className="cursor-pointer rounded-xl hover:bg-zinc-50 focus:bg-zinc-50 focus:text-zinc-900 p-3 transition-colors"
             >
               <User className="mr-3 h-4 w-4 text-zinc-400" />
               <span className="font-medium">Profile Settings</span>
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-white/10 my-1" />
+            <DropdownMenuSeparator className="bg-zinc-100 my-1" />
             <DropdownMenuItem
               onClick={handleLogout}
-              className="cursor-pointer rounded-xl text-red-400 focus:bg-red-500/10 focus:text-red-400 p-3 transition-colors"
+              className="cursor-pointer rounded-xl text-red-500 focus:bg-red-50 focus:text-red-500 p-3 transition-colors"
             >
               <LogOut className="mr-3 h-4 w-4" />
               <span className="font-medium">Log out securely</span>

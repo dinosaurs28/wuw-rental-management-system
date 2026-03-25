@@ -54,13 +54,13 @@ export const DocumentTypeSelector = ({
             onClick={() => !isDisabled && onSelectType(docType.type)}
             disabled={isDisabled}
             className={cn(
-              "relative flex flex-col items-center p-6 sm:p-8 rounded-[1.5rem] border border-white/5 transition-all duration-300 overflow-hidden group",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/20",
+              "relative flex flex-col items-center p-6 sm:p-8 rounded-[1.5rem] border border-zinc-200 transition-all duration-300 overflow-hidden group",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/30",
               isSelected
-                ? "bg-white/10 border-white/20 shadow-[0_0_30px_rgba(255,255,255,0.1)]"
-                : "bg-black/40 hover:bg-black/60 hover:border-white/10",
+                ? "bg-orange-50 border-orange-300 shadow-[0_0_30px_rgba(249,115,22,0.1)]"
+                : "bg-zinc-50 hover:bg-zinc-100 hover:border-zinc-300",
               isDisabled &&
-                "opacity-50 cursor-not-allowed hover:border-white/5 hover:bg-black/40",
+                "opacity-50 cursor-not-allowed hover:border-zinc-200 hover:bg-zinc-50",
             )}
           >
             {/* Subtle gradient for selected state */}
@@ -79,8 +79,8 @@ export const DocumentTypeSelector = ({
               className={cn(
                 "p-4 rounded-full mb-4 transition-colors relative z-10",
                 isSelected
-                  ? "bg-white text-zinc-950 shadow-[0_0_20px_rgba(255,255,255,0.2)]"
-                  : "bg-white/5 text-zinc-400 group-hover:bg-white/10 group-hover:text-white",
+                  ? "bg-orange-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.2)]"
+                  : "bg-zinc-100 text-zinc-500 group-hover:bg-zinc-200 group-hover:text-zinc-700",
               )}
             >
               {docType.icon}
@@ -91,8 +91,8 @@ export const DocumentTypeSelector = ({
               className={cn(
                 "text-base font-bold mb-1 text-center tracking-wide relative z-10 transition-colors",
                 isSelected
-                  ? "text-white"
-                  : "text-zinc-300 group-hover:text-white",
+                  ? "text-zinc-900"
+                  : "text-zinc-700 group-hover:text-zinc-900",
               )}
             >
               {docType.label}

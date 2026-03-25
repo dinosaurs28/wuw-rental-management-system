@@ -108,7 +108,7 @@ export const VehicleFilters = ({
   ];
 
   return (
-    <div className="bg-zinc-900/40 backdrop-blur-2xl rounded-[2rem] border border-white/5 shadow-2xl p-6 md:p-8 relative overflow-hidden">
+    <div className="bg-white rounded-[2rem] border border-zinc-200 shadow-2xl p-6 md:p-8 relative overflow-hidden">
       {/* Subtle Inner Glow */}
       <div className="absolute inset-0 bg-gradient-to-r from-white/[0.02] to-transparent pointer-events-none" />
 
@@ -125,7 +125,7 @@ export const VehicleFilters = ({
               onValueChange={onBranchChange}
               disabled={branchesLoading}
             >
-              <SelectTrigger className="h-14 w-full bg-black/40 border-white/10 text-white rounded-full hover:bg-black/60 hover:border-white/20 transition-all px-5">
+              <SelectTrigger className="h-14 w-full bg-white border-zinc-200 text-zinc-900 rounded-full hover:bg-zinc-100 hover:border-zinc-300 transition-all px-5">
                 <div className="flex items-center gap-3 overflow-hidden">
                   <MapPin className="size-4 text-zinc-400 shrink-0" />
                   <SelectValue
@@ -135,12 +135,12 @@ export const VehicleFilters = ({
                   />
                 </div>
               </SelectTrigger>
-              <SelectContent className="rounded-2xl border-white/10 bg-zinc-900/95 backdrop-blur-xl text-zinc-50 shadow-2xl">
+              <SelectContent className="rounded-2xl border-zinc-200 bg-white text-zinc-900 shadow-2xl">
                 {branches.map((branch) => (
                   <SelectItem
                     key={branch.publicId}
                     value={branch.publicId}
-                    className="focus:bg-white/10 focus:text-white rounded-xl mx-1 my-1 cursor-pointer py-3"
+                    className="focus:bg-zinc-100 focus:text-zinc-900 rounded-xl mx-1 my-1 cursor-pointer py-3"
                   >
                     {branch.name}
                   </SelectItem>
@@ -160,8 +160,8 @@ export const VehicleFilters = ({
               <Button
                 variant="outline"
                 className={cn(
-                  "h-14 w-full justify-start text-left font-medium bg-black/40 border-white/10 text-white rounded-full hover:bg-black/60 hover:border-white/20 transition-all px-5",
-                  !pickupDate && "text-zinc-500 hover:text-white",
+                  "h-14 w-full justify-start text-left font-medium bg-white border-zinc-200 text-zinc-900 rounded-full hover:bg-zinc-100 hover:border-zinc-300 transition-all px-5",
+                  !pickupDate && "text-zinc-500 hover:text-zinc-900",
                 )}
               >
                 <CalendarIcon className="mr-3 size-4 text-zinc-400 shrink-0" />
@@ -173,7 +173,7 @@ export const VehicleFilters = ({
               </Button>
             </PopoverTrigger>
             <PopoverContent
-              className="w-auto p-0 rounded-2xl border-white/10 bg-zinc-900/95 backdrop-blur-xl text-zinc-50 shadow-2xl"
+              className="w-auto p-0 rounded-2xl border-zinc-200 bg-white text-zinc-900 shadow-2xl"
               align="start"
             >
               <Calendar
@@ -199,7 +199,7 @@ export const VehicleFilters = ({
             type="time"
             value={pickupTime || "10:00"}
             onChange={(e) => onPickupTimeChange?.(e.target.value)}
-            className="h-14 w-full bg-black/40 border border-white/10 text-white rounded-full px-5 focus:outline-none focus:border-white/20 transition-all [color-scheme:dark]"
+            className="h-14 w-full bg-white border border-zinc-200 text-zinc-900 rounded-full px-5 focus:outline-none focus:border-zinc-300 transition-all"
           />
         </div>
 
@@ -213,8 +213,8 @@ export const VehicleFilters = ({
               <Button
                 variant="outline"
                 className={cn(
-                  "h-14 w-full justify-start text-left font-medium bg-black/40 border-white/10 text-white rounded-full hover:bg-black/60 hover:border-white/20 transition-all px-5",
-                  !returnDate && "text-zinc-500 hover:text-white",
+                  "h-14 w-full justify-start text-left font-medium bg-white border-zinc-200 text-zinc-900 rounded-full hover:bg-zinc-100 hover:border-zinc-300 transition-all px-5",
+                  !returnDate && "text-zinc-500 hover:text-zinc-900",
                 )}
               >
                 <CalendarIcon className="mr-3 size-4 text-zinc-400 shrink-0" />
@@ -226,7 +226,7 @@ export const VehicleFilters = ({
               </Button>
             </PopoverTrigger>
             <PopoverContent
-              className="w-auto p-0 rounded-2xl border-white/10 bg-zinc-900/95 backdrop-blur-xl text-zinc-50 shadow-2xl"
+              className="w-auto p-0 rounded-2xl border-zinc-200 bg-white text-zinc-900 shadow-2xl"
               align="start"
             >
               <Calendar
@@ -250,7 +250,7 @@ export const VehicleFilters = ({
             type="time"
             value={returnTime || "10:00"}
             onChange={(e) => onReturnTimeChange?.(e.target.value)}
-            className="h-14 w-full bg-black/40 border border-white/10 text-white rounded-full px-5 focus:outline-none focus:border-white/20 transition-all [color-scheme:dark]"
+            className="h-14 w-full bg-white border border-zinc-200 text-zinc-900 rounded-full px-5 focus:outline-none focus:border-zinc-300 transition-all"
           />
         </div>
 
@@ -264,18 +264,18 @@ export const VehicleFilters = ({
             onValueChange={onCategoryChange}
             disabled={categoriesLoading}
           >
-            <SelectTrigger className="h-14 w-full bg-black/40 border-white/10 text-white rounded-full hover:bg-black/60 hover:border-white/20 transition-all px-5">
+            <SelectTrigger className="h-14 w-full bg-white border-zinc-200 text-zinc-900 rounded-full hover:bg-zinc-100 hover:border-zinc-300 transition-all px-5">
               <div className="flex items-center gap-3 overflow-hidden">
                 <Grid3X3 className="size-4 text-zinc-400 shrink-0" />
                 <SelectValue />
               </div>
             </SelectTrigger>
-            <SelectContent className="rounded-2xl border-white/10 bg-zinc-900/95 backdrop-blur-xl text-zinc-50 shadow-2xl">
+            <SelectContent className="rounded-2xl border-zinc-200 bg-white text-zinc-900 shadow-2xl">
               {categoryOptions.map((cat) => (
                 <SelectItem
                   key={cat.value}
                   value={cat.value}
-                  className="focus:bg-white/10 focus:text-white rounded-xl mx-1 my-1 cursor-pointer py-3"
+                  className="focus:bg-zinc-100 focus:text-zinc-900 rounded-xl mx-1 my-1 cursor-pointer py-3"
                 >
                   {cat.label}
                 </SelectItem>
@@ -290,18 +290,18 @@ export const VehicleFilters = ({
             Sort By
           </label>
           <Select value={sortBy} onValueChange={onSortChange}>
-            <SelectTrigger className="h-14 w-full bg-black/40 border-white/10 text-white rounded-full hover:bg-black/60 hover:border-white/20 transition-all px-5">
+            <SelectTrigger className="h-14 w-full bg-white border-zinc-200 text-zinc-900 rounded-full hover:bg-zinc-100 hover:border-zinc-300 transition-all px-5">
               <div className="flex items-center gap-3 overflow-hidden">
                 <ArrowUpDown className="size-4 text-zinc-400 shrink-0" />
                 <SelectValue />
               </div>
             </SelectTrigger>
-            <SelectContent className="rounded-2xl border-white/10 bg-zinc-900/95 backdrop-blur-xl text-zinc-50 shadow-2xl">
+            <SelectContent className="rounded-2xl border-zinc-200 bg-white text-zinc-900 shadow-2xl">
               {SORT_OPTIONS.map((opt) => (
                 <SelectItem
                   key={opt.value}
                   value={opt.value}
-                  className="focus:bg-white/10 focus:text-white rounded-xl mx-1 my-1 cursor-pointer py-3"
+                  className="focus:bg-zinc-100 focus:text-zinc-900 rounded-xl mx-1 my-1 cursor-pointer py-3"
                 >
                   {opt.label}
                 </SelectItem>
@@ -312,7 +312,7 @@ export const VehicleFilters = ({
       </div>
 
       {/* Search and Reset Row */}
-      <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-8 border-t border-white/5 relative z-10">
+      <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-8 border-t border-zinc-200 relative z-10">
         {/* Search Input */}
         <div className="flex-1 relative">
           <Search className="absolute left-6 top-1/2 -translate-y-1/2 size-5 text-zinc-400" />
@@ -321,7 +321,7 @@ export const VehicleFilters = ({
             placeholder="Search by make or model..."
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
-            className="h-14 pl-14 bg-black/40 border-white/10 text-white rounded-full focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:border-white/20 transition-all placeholder:text-zinc-600 text-base"
+            className="h-14 pl-14 bg-white border-zinc-200 text-zinc-900 rounded-full focus-visible:ring-1 focus-visible:ring-zinc-300 focus-visible:border-zinc-300 transition-all placeholder:text-zinc-400 text-base"
           />
           {localSearch && (
             <button
@@ -329,7 +329,7 @@ export const VehicleFilters = ({
                 setLocalSearch("");
                 onSearchChange("");
               }}
-              className="absolute right-5 top-1/2 -translate-y-1/2 p-1.5 bg-white/10 hover:bg-white/20 rounded-full text-zinc-400 hover:text-white transition-all"
+              className="absolute right-5 top-1/2 -translate-y-1/2 p-1.5 bg-zinc-100 hover:bg-zinc-200 rounded-full text-zinc-400 hover:text-zinc-900 transition-all"
             >
               <X className="size-4" />
             </button>
@@ -343,7 +343,7 @@ export const VehicleFilters = ({
             setLocalSearch("");
             onReset();
           }}
-          className="h-14 px-8 border-white/10 bg-transparent text-zinc-400 hover:bg-white/5 hover:text-white rounded-full font-bold tracking-wide transition-all"
+          className="h-14 px-8 border-zinc-200 bg-transparent text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 rounded-full font-bold tracking-wide transition-all"
         >
           <X className="size-4 mr-2" />
           Reset

@@ -33,7 +33,7 @@ const portalOptions = [
 
 export default function PortalPage() {
   return (
-    <div className="min-h-screen bg-[#000000] text-white flex flex-col font-sans selection:bg-orange-500/30">
+    <div className="min-h-screen bg-gray-50 text-zinc-900 flex flex-col font-sans selection:bg-orange-500/30">
       {/* Ambient Background Glow */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-orange-500/10 rounded-full blur-[120px]" />
@@ -48,7 +48,7 @@ export default function PortalPage() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16 max-w-2xl"
         >
-          <div className="inline-flex items-center space-x-2 bg-zinc-900/50 backdrop-blur-xl border border-white/5 px-4 py-1.5 rounded-full mb-6">
+          <div className="inline-flex items-center space-x-2 bg-white backdrop-blur-xl border border-zinc-200 px-4 py-1.5 rounded-full mb-6">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
@@ -58,7 +58,7 @@ export default function PortalPage() {
             </span>
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-b from-white to-zinc-500">
+          <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-b from-zinc-900 to-zinc-500">
             VRMS <span className="text-orange-500">Access</span>
           </h1>
           <p className="text-zinc-400 text-lg md:text-xl font-medium leading-relaxed">
@@ -79,7 +79,7 @@ export default function PortalPage() {
             >
               <Link to={option.link} className="block h-full">
                 <div
-                  className={`relative h-full bg-zinc-900/40 backdrop-blur-md border border-white/5 rounded-[2rem] p-8 transition-all duration-300 group-hover:bg-zinc-900/60 group-hover:border-orange-500/20 shadow-2xl ${option.shadow}`}
+                  className={`relative h-full bg-white border border-zinc-200 rounded-[2rem] p-8 transition-all duration-300 group-hover:bg-zinc-50 group-hover:border-orange-500/30 shadow-2xl ${option.shadow}`}
                 >
                   <div
                     className={`inline-flex items-center justify-center p-4 rounded-2xl bg-gradient-to-br ${option.color} mb-8 transition-transform duration-300 group-hover:scale-110 shadow-lg`}
@@ -87,7 +87,7 @@ export default function PortalPage() {
                     <option.icon className="w-8 h-8 text-white" />
                   </div>
 
-                  <h2 className="text-2xl font-bold mb-4 flex items-center group-hover:text-orange-500 transition-colors">
+                  <h2 className="text-2xl font-bold mb-4 flex items-center text-zinc-900 group-hover:text-orange-500 transition-colors">
                     {option.title}
                     <ArrowRight className="ml-2 w-5 h-5 opacity-0 -translate-x-2 transition-all group-hover:opacity-100 group-hover:translate-x-0" />
                   </h2>
@@ -97,7 +97,7 @@ export default function PortalPage() {
                   </p>
 
                   {/* Subtle decorative element */}
-                  <div className="absolute bottom-6 right-8 text-white/5 group-hover:text-orange-500/10 transition-colors">
+                  <div className="absolute bottom-6 right-8 text-zinc-200 group-hover:text-orange-500/10 transition-colors">
                     <option.icon className="w-16 h-16" />
                   </div>
                 </div>
@@ -115,7 +115,7 @@ export default function PortalPage() {
         >
           <Link
             to="/"
-            className="text-zinc-500 hover:text-white transition-colors text-sm font-semibold flex items-center gap-2"
+            className="text-zinc-500 hover:text-zinc-900 transition-colors text-sm font-semibold flex items-center gap-2"
           >
             <ArrowRight className="w-4 h-4 rotate-180" />
             Back to Customer Website

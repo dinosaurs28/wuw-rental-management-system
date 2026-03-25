@@ -709,7 +709,7 @@ export default function ReturnProcessPage() {
                   open={!!previewImage}
                   onOpenChange={(open) => !open && setPreviewImage(null)}
                 >
-                  <DialogContent className="max-w-3xl p-0 overflow-hidden bg-black/90 border-none sm:rounded-lg">
+                  <DialogContent className="max-w-3xl p-0 overflow-hidden bg-zinc-100/80 border-none sm:rounded-lg">
                     <div className="relative w-full h-[80vh] flex items-center justify-center">
                       <img
                         src={previewImage!}
@@ -719,7 +719,7 @@ export default function ReturnProcessPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="absolute top-2 right-2 text-white/50 hover:text-white hover:bg-white/10"
+                        className="absolute top-2 right-2 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100"
                         onClick={() => setPreviewImage(null)}
                       >
                         <X className="h-6 w-6" />
@@ -1032,14 +1032,14 @@ export default function ReturnProcessPage() {
             </Card>
 
             {/* 5. Actions */}
-            <Card className="bg-[#1A1A1A] text-white border-none shadow-lg">
+            <Card className="bg-white text-zinc-900 border border-zinc-200 shadow-lg">
               <CardHeader>
-                <CardTitle className="text-white">Return Summary</CardTitle>
+                <CardTitle className="text-zinc-900">Return Summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-gray-400">Base Rental</span>
-                  <span className="font-medium text-white">Paid</span>
+                  <span className="font-medium text-zinc-900">Paid</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-gray-400">Reported Damage</span>

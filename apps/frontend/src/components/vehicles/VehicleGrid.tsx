@@ -108,14 +108,14 @@ export const VehicleGrid = ({
           {Array.from({ length: 9 }).map((_, i) => (
             <div
               key={i}
-              className="flex flex-col space-y-4 bg-zinc-900/40 border border-white/5 rounded-[2rem] p-4"
+              className="flex flex-col space-y-4 bg-white border border-zinc-200 rounded-[2rem] p-4"
             >
               <Skeleton className="h-[200px] w-full rounded-[1.5rem] bg-white/5" />
               <div className="space-y-3 px-2">
                 <Skeleton className="h-4 w-3/4 bg-white/10 rounded-full" />
                 <Skeleton className="h-4 w-1/2 bg-white/5 rounded-full" />
               </div>
-              <div className="pt-4 mt-2 border-t border-white/5 flex justify-between px-2">
+              <div className="pt-4 mt-2 border-t border-zinc-200 flex justify-between px-2">
                 <Skeleton className="h-8 w-24 bg-white/10 rounded-full" />
                 <Skeleton className="h-10 w-28 bg-white/5 rounded-full" />
               </div>
@@ -150,7 +150,7 @@ export const VehicleGrid = ({
       {totalPages > 1 && (
         <div className="flex items-center justify-center pt-8 pb-12">
           <Pagination>
-            <PaginationContent className="bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-full p-2 shadow-2xl">
+            <PaginationContent className="bg-white border border-zinc-200 rounded-full p-2 shadow-2xl">
               {/* Previous Button */}
               <PaginationItem>
                 <PaginationPrevious
@@ -158,8 +158,8 @@ export const VehicleGrid = ({
                   className={cn(
                     "h-10 px-4 rounded-full font-bold tracking-wide transition-all",
                     currentPage === 1
-                      ? "pointer-events-none opacity-30 text-zinc-500"
-                      : "cursor-pointer hover:bg-white/10 text-white",
+                      ? "pointer-events-none opacity-30 text-zinc-400"
+                      : "cursor-pointer hover:bg-zinc-100 text-zinc-700",
                   )}
                 />
               </PaginationItem>
@@ -176,8 +176,8 @@ export const VehicleGrid = ({
                       className={cn(
                         "size-10 rounded-full font-bold transition-all",
                         currentPage === page
-                          ? "bg-white text-zinc-950 shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:bg-zinc-200 hover:text-zinc-950"
-                          : "cursor-pointer text-zinc-400 hover:bg-white/10 hover:text-white",
+                          ? "bg-zinc-900 text-white shadow-sm hover:bg-zinc-700"
+                          : "cursor-pointer text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900",
                       )}
                     >
                       {page}
@@ -193,8 +193,8 @@ export const VehicleGrid = ({
                   className={cn(
                     "h-10 px-4 rounded-full font-bold tracking-wide transition-all",
                     currentPage === totalPages
-                      ? "pointer-events-none opacity-30 text-zinc-500"
-                      : "cursor-pointer hover:bg-white/10 text-white",
+                      ? "pointer-events-none opacity-30 text-zinc-400"
+                      : "cursor-pointer hover:bg-zinc-100 text-zinc-700",
                   )}
                 />
               </PaginationItem>
@@ -206,10 +206,10 @@ export const VehicleGrid = ({
       {/* Page Info */}
       {totalPages > 1 && (
         <div className="text-center text-xs font-black tracking-[0.2em] text-zinc-500 uppercase pb-4">
-          Page <span className="text-white">{currentPage}</span> of{" "}
-          <span className="text-white">{totalPages}</span> • Showing{" "}
-          <span className="text-white">{vehicles.length}</span> of{" "}
-          <span className="text-white">{totalCount}</span> vehicles
+          Page <span className="text-zinc-900">{currentPage}</span> of{" "}
+          <span className="text-zinc-900">{totalPages}</span> • Showing{" "}
+          <span className="text-zinc-900">{vehicles.length}</span> of{" "}
+          <span className="text-zinc-900">{totalCount}</span> vehicles
         </div>
       )}
     </div>
