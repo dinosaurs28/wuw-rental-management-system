@@ -230,6 +230,10 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         endDateDt,
         v.branchId,
         customer.customerProfile!.id,
+        undefined,  // no coupon
+        undefined,  // no manualDiscountAmount
+        undefined,  // no manualDiscountId
+        v.categoryId,  // TASK-001: categoryId already in memory, skip DB lookup
       );
 
       const baseTotal      = Number(pricingResult.basePrice);

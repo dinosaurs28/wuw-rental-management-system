@@ -55,6 +55,9 @@ import {
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb";
 import { DashboardNavbar } from "@/components/employee/DashboardNavbar";
+import { BookingPaymentPanel } from "@/components/manager/payment/BookingPaymentPanel";
+import { ExtendBookingModal } from "@/components/employee/extension/ExtendBookingModal";
+import { ExtensionHistoryPanel } from "@/components/employee/extension/ExtensionHistoryPanel";
 
 import apiClient from "@/lib/axios";
 import { bookingService } from "@/services/booking.service";
@@ -114,6 +117,7 @@ export default function StaffPickupsPage() {
   // Labeled capture slots: { [fieldName]: UploadedImage | null }
   const [captureSlots, setCaptureSlots] = useState<Record<string, UploadedImage | null>>({});
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
+  const [showExtendModal, setShowExtendModal] = useState(false);
 
   // --- DATA FETCHING ---
   const {
@@ -558,6 +562,45 @@ export default function StaffPickupsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Payment Section */}
+        <BookingPaymentPanel bookingPublicId={booking.publicId} role="employee" />
+
+        {/* Extension Section */}
+        {(booking.status === "CONFIRMED" || booking.status === "PICKED_UP") && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-semibold text-gray-800">
+                Rental Extension
+              </h3>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 border-orange-200 text-orange-700 hover:bg-orange-50"
+                onClick={() => setShowExtendModal(true)}
+              >
+                <Clock className="h-4 w-4" />
+                Extend Booking
+              </Button>
+            </div>
+            <ExtensionHistoryPanel bookingPublicId={booking.publicId} role="employee" />
+          </div>
+        )}
+
+        {showExtendModal && (
+          <ExtendBookingModal
+            open={showExtendModal}
+            bookingPublicId={booking.publicId}
+            currentEndAt={booking.endAt}
+            role="employee"
+            onClose={() => setShowExtendModal(false)}
+            onSuccess={() => {
+              setShowExtendModal(false);
+              queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+              queryClient.invalidateQueries({ queryKey: ["extensions", booking.publicId] });
+            }}
+          />
+        )}
 
         <div className="grid lg:grid-cols-2 gap-8">
           {/* LEFT COLUMN */}

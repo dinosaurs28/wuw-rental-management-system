@@ -1,4 +1,5 @@
 import { prisma } from "@repo/database/client";
+import type { VehicleCustomPricing } from "@repo/database/client";
 import { DateTime } from "luxon";
 import Decimal from "decimal.js";
 import {
@@ -11,6 +12,16 @@ import {
   type DiscountEvaluationInput,
   type DiscountEvaluationResult,
 } from "../discount/discount-evaluation-engine.service.js";
+import { redis } from "../../lib/redisconfig.js";
+import {
+  vehiclePricingConfigKey,
+  branchPricingDefaultsKey,
+  gstRuleKey,
+  depositSettingKey,
+} from "../../utils/cache/vehicleCacheKeys.js";
+
+const PRICING_TTL = 300; // 5 minutes
+const GST_TTL = 600;     // 10 minutes
 
 /**
  * Vehicle pricing configuration
@@ -97,14 +108,16 @@ export class PricingEngineService {
   /**
    * Calculate complete booking price with optional coupon discount.
    *
-   * @param vehicleId     - ID of the vehicle
-   * @param startAt       - Rental start datetime (IST)
-   * @param endAt         - Rental end datetime (IST)
-   * @param branchId      - Branch ID
-   * @param customerId    - Customer ID (required for coupon eligibility checks)
-   * @param couponCode    - Optional coupon code to evaluate
+   * @param vehicleId            - ID of the vehicle
+   * @param startAt              - Rental start datetime (IST)
+   * @param endAt                - Rental end datetime (IST)
+   * @param branchId             - Branch ID
+   * @param customerId           - Customer ID (required for coupon eligibility checks)
+   * @param couponCode           - Optional coupon code to evaluate
    * @param manualDiscountAmount - Optional manager override amount
    * @param manualDiscountId     - FK to ManualDiscount record
+   * @param categoryId           - Optional: vehicle categoryId already in memory (skips DB lookup)
+   * @param vehicleCustomPricing - Optional: already-fetched VehicleCustomPricing (skips DB/cache)
    */
   async calculateBookingPrice(
     vehicleId: number,
@@ -115,87 +128,94 @@ export class PricingEngineService {
     couponCode?: string,
     manualDiscountAmount?: Decimal,
     manualDiscountId?: number,
+    categoryId?: number,
+    vehicleCustomPricing?: VehicleCustomPricing | null,
   ): Promise<PricingResult> {
-    // 1. Calculate rental duration
-    const duration = DurationCalculatorService.calculate(startAt, endAt);
+    console.time(`[perf] details:pricing:${vehicleId}`);
+    try {
+      // 1. Calculate rental duration
+      const duration = DurationCalculatorService.calculate(startAt, endAt);
 
-    // 2. Get vehicle pricing (custom or branch default)
-    const pricing = await this.getVehiclePricing(vehicleId, branchId);
+      // 2. Resolve categoryId once — either from caller or a single DB lookup
+      const resolvedCategoryId = categoryId ?? await this.getVehicleCategoryId(vehicleId);
 
-    // 3. Determine base price based on duration
-    const { basePrice, freeKmLimit, priceSource } =
-      await this.determineBasePrice(pricing, duration, vehicleId, branchId);
+      // 3. Parallelize independent fetches: pricing config + deposit (TASK-004)
+      const [pricing, deposit] = await Promise.all([
+        this.getVehiclePricing(vehicleId, branchId, resolvedCategoryId, vehicleCustomPricing),
+        this.getDepositAmount(vehicleId, branchId, resolvedCategoryId),
+      ]);
 
-    // 4. Get deposit amount
-    const deposit = await this.getDepositAmount(vehicleId, branchId);
+      // 4. Determine base price based on duration
+      const { basePrice, freeKmLimit, priceSource } =
+        await this.determineBasePrice(pricing, duration, vehicleId, branchId);
 
-    // 5. Get vehicle category for coupon eligibility checks
-    const vehicleCategoryId = await this.getVehicleCategoryId(vehicleId);
+      // 5. Evaluate all discounts (duration + coupon + manual) in strict order
+      const ZERO = new Decimal(0);
+      let discountEvaluation: DiscountEvaluationResult | undefined;
 
-    // 6. Evaluate all discounts (duration + coupon + manual) in strict order
-    const ZERO = new Decimal(0);
-    let discountEvaluation: DiscountEvaluationResult | undefined;
+      if (customerId) {
+        const evalInput: DiscountEvaluationInput = {
+          branchId,
+          customerId,
+          vehicleId,
+          baseAmount: basePrice,
+          rentalDays: duration.days,
+          vehicleCategoryId: resolvedCategoryId,
+          paymentPlan: "FULL", // default; caller can override via revalidateWithCoupon
+          couponCode,
+          manualDiscountAmount,
+          manualDiscountId,
+        };
+        discountEvaluation = await discountEvaluationEngine.evaluate(evalInput);
+      }
 
-    if (customerId) {
-      const evalInput: DiscountEvaluationInput = {
-        branchId,
-        customerId,
-        vehicleId,
-        baseAmount: basePrice,
-        rentalDays: duration.days,
-        vehicleCategoryId,
-        paymentPlan: "FULL", // default; caller can override via revalidateWithCoupon
-        couponCode,
-        manualDiscountAmount,
-        manualDiscountId,
+      const postDiscountBase = discountEvaluation?.finalAmount ?? basePrice;
+      const durationDiscountAmount = discountEvaluation?.durationDiscount.discountAmount ?? ZERO;
+      const durationDiscountPercent = discountEvaluation?.durationDiscount.discountPercent ?? ZERO;
+      const couponDiscountAmount = discountEvaluation?.couponDiscountAmount ?? ZERO;
+      const couponDiscountPercent = discountEvaluation?.couponDiscountPercent ?? ZERO;
+      const actualManualDiscount = discountEvaluation?.manualDiscountAmount ?? ZERO;
+      const totalDiscountAmount = discountEvaluation?.totalDiscountAmount ?? ZERO;
+      const totalDiscountPercent = basePrice.gt(0)
+        ? totalDiscountAmount.div(basePrice).mul(100).toDecimalPlaces(4)
+        : ZERO;
+
+      // 6. Calculate GST on post-discount amount (never on original base)
+      const taxResult = await this.calculateTax(postDiscountBase, branchId);
+
+      // 7. Final total
+      const finalTotal = postDiscountBase.add(taxResult.totalTax);
+
+      return {
+        basePrice,
+        durationDiscountAmount,
+        durationDiscountPercent,
+        couponDiscountAmount,
+        couponDiscountPercent,
+        appliedCouponCode: discountEvaluation?.appliedCouponCode,
+        couponRuleId: discountEvaluation?.couponRule?.id,
+        manualDiscountAmount: actualManualDiscount,
+        discountAmount: totalDiscountAmount,
+        discountPercent: totalDiscountPercent,
+        deposit,
+        taxAmount: taxResult.totalTax,
+        cgstAmount: taxResult.cgst,
+        sgstAmount: taxResult.sgst,
+        taxRate: taxResult.rate,
+        finalTotal,
+        freeKmLimit,
+        extraKmRate: pricing.extraKmRate,
+        discountEvaluation,
+        pricingBreakdown: {
+          periodType: duration.periodType,
+          duration,
+          applicablePrice: basePrice,
+          priceSource: pricing.source as any,
+        },
       };
-      discountEvaluation = await discountEvaluationEngine.evaluate(evalInput);
+    } finally {
+      console.timeEnd(`[perf] details:pricing:${vehicleId}`);
     }
-
-    const postDiscountBase = discountEvaluation?.finalAmount ?? basePrice;
-    const durationDiscountAmount = discountEvaluation?.durationDiscount.discountAmount ?? ZERO;
-    const durationDiscountPercent = discountEvaluation?.durationDiscount.discountPercent ?? ZERO;
-    const couponDiscountAmount = discountEvaluation?.couponDiscountAmount ?? ZERO;
-    const couponDiscountPercent = discountEvaluation?.couponDiscountPercent ?? ZERO;
-    const actualManualDiscount = discountEvaluation?.manualDiscountAmount ?? ZERO;
-    const totalDiscountAmount = discountEvaluation?.totalDiscountAmount ?? ZERO;
-    const totalDiscountPercent = basePrice.gt(0)
-      ? totalDiscountAmount.div(basePrice).mul(100).toDecimalPlaces(4)
-      : ZERO;
-
-    // 7. Calculate GST on post-discount amount (never on original base)
-    const taxResult = await this.calculateTax(postDiscountBase, branchId);
-
-    // 8. Final total
-    const finalTotal = postDiscountBase.add(taxResult.totalTax);
-
-    return {
-      basePrice,
-      durationDiscountAmount,
-      durationDiscountPercent,
-      couponDiscountAmount,
-      couponDiscountPercent,
-      appliedCouponCode: discountEvaluation?.appliedCouponCode,
-      couponRuleId: discountEvaluation?.couponRule?.id,
-      manualDiscountAmount: actualManualDiscount,
-      discountAmount: totalDiscountAmount,
-      discountPercent: totalDiscountPercent,
-      deposit,
-      taxAmount: taxResult.totalTax,
-      cgstAmount: taxResult.cgst,
-      sgstAmount: taxResult.sgst,
-      taxRate: taxResult.rate,
-      finalTotal,
-      freeKmLimit,
-      extraKmRate: pricing.extraKmRate,
-      discountEvaluation,
-      pricingBreakdown: {
-        periodType: duration.periodType,
-        duration,
-        applicablePrice: basePrice,
-        priceSource: pricing.source as any,
-      },
-    };
   }
 
   /**
@@ -207,9 +227,11 @@ export class PricingEngineService {
     startAt: DateTime,
     endAt: DateTime,
     branchId: number,
+    categoryId?: number,
   ): Promise<{ price: Decimal; finalPrice: Decimal; type: RentalPeriodType }> {
     const duration = DurationCalculatorService.calculate(startAt, endAt);
-    const pricing = await this.getVehiclePricing(vehicleId, branchId);
+    const resolvedCategoryId = categoryId ?? await this.getVehicleCategoryId(vehicleId);
+    const pricing = await this.getVehiclePricing(vehicleId, branchId, resolvedCategoryId);
     const { basePrice } = await this.determineBasePrice(pricing, duration, vehicleId, branchId);
 
     // Apply duration discount only (no coupon on listing)
@@ -219,7 +241,7 @@ export class PricingEngineService {
       vehicleId,
       baseAmount: basePrice,
       rentalDays: duration.days,
-      vehicleCategoryId: await this.getVehicleCategoryId(vehicleId),
+      vehicleCategoryId: resolvedCategoryId,
       paymentPlan: "FULL",
     };
     const evaluation = await discountEvaluationEngine.evaluate(evalInput);
@@ -242,13 +264,38 @@ export class PricingEngineService {
     return vehicle.categoryId;
   }
 
+  /**
+   * TASK-007: Fetch vehicle pricing with Redis caching.
+   * Cache order: provided value → Redis (vehiclePricingConfigKey) → DB
+   */
   private async getVehiclePricing(
     vehicleId: number,
     branchId: number,
+    categoryId?: number,
+    providedCustomPricing?: VehicleCustomPricing | null,
   ): Promise<VehiclePricing & { source: "vehicle_custom" | "branch_default" }> {
-    const customPricing = await prisma.vehicleCustomPricing.findUnique({
-      where: { vehicleId },
-    });
+    let customPricing: any;
+
+    if (providedCustomPricing !== undefined) {
+      // TASK-016: caller already fetched this — skip cache + DB entirely
+      customPricing = providedCustomPricing;
+    } else {
+      const configCacheKey = vehiclePricingConfigKey(vehicleId);
+      try {
+        const cached = await redis.get(configCacheKey);
+        if (cached !== null) {
+          console.log(`[pricing-cache] hit: ${configCacheKey}`);
+          customPricing = JSON.parse(cached); // null or object
+        } else {
+          console.warn(`[pricing-cache] miss: ${configCacheKey}`);
+          customPricing = await prisma.vehicleCustomPricing.findUnique({ where: { vehicleId } });
+          await redis.set(configCacheKey, JSON.stringify(customPricing), "EX", PRICING_TTL);
+        }
+      } catch (err) {
+        console.warn("[pricing-cache] Redis error, falling back to DB:", err);
+        customPricing = await prisma.vehicleCustomPricing.findUnique({ where: { vehicleId } });
+      }
+    }
 
     if (customPricing && customPricing.enabled) {
       return {
@@ -265,15 +312,31 @@ export class PricingEngineService {
       };
     }
 
-    const vehicle = await prisma.vehicle.findUnique({
-      where: { id: vehicleId },
-      select: { categoryId: true },
-    });
-    if (!vehicle) throw new Error("Vehicle not found");
+    // Resolve categoryId for branch-defaults path (TASK-002)
+    const resolvedCategoryId = categoryId ?? await this.getVehicleCategoryId(vehicleId);
 
-    const branchDefaults = await prisma.branchPricingDefaults.findUnique({
-      where: { branchId_categoryId: { branchId, categoryId: vehicle.categoryId } },
-    });
+    // TASK-007: Cache branch pricing defaults
+    const defaultsCacheKey = branchPricingDefaultsKey(branchId, resolvedCategoryId);
+    let branchDefaults: any;
+    try {
+      const cached = await redis.get(defaultsCacheKey);
+      if (cached !== null) {
+        console.log(`[pricing-cache] hit: ${defaultsCacheKey}`);
+        branchDefaults = JSON.parse(cached);
+      } else {
+        console.warn(`[pricing-cache] miss: ${defaultsCacheKey}`);
+        branchDefaults = await prisma.branchPricingDefaults.findUnique({
+          where: { branchId_categoryId: { branchId, categoryId: resolvedCategoryId } },
+        });
+        await redis.set(defaultsCacheKey, JSON.stringify(branchDefaults), "EX", PRICING_TTL);
+      }
+    } catch (err) {
+      console.warn("[pricing-cache] Redis error, falling back to DB:", err);
+      branchDefaults = await prisma.branchPricingDefaults.findUnique({
+        where: { branchId_categoryId: { branchId, categoryId: resolvedCategoryId } },
+      });
+    }
+
     if (!branchDefaults) {
       throw new Error(`No pricing configured for this vehicle category at branch ${branchId}`);
     }
@@ -340,10 +403,29 @@ export class PricingEngineService {
         freeKmLimit = pricing.freeKm24Hour;
         break;
 
-      case RentalPeriodType.MULTI_DAY:
-        basePrice = pricing.price24Hour.mul(duration.days);
-        freeKmLimit = pricing.freeKm24Hour * duration.days;
+      case RentalPeriodType.MULTI_DAY: {
+        // Split into complete 24hr periods + partial last day.
+        // Partial day slab logic (mirrors HALF_DAY / FULL_DAY behaviour):
+        //   remaining ≤ 12hrs AND price12Hour configured → half-day rate
+        //   remaining > 12hrs OR no price12Hour              → full-day rate
+        const fullDays = Math.floor(duration.actualDuration / 24);
+        const remainingHours = duration.actualDuration % 24;
+
+        if (remainingHours <= 0) {
+          // Exactly N complete days
+          basePrice = pricing.price24Hour.mul(fullDays);
+          freeKmLimit = pricing.freeKm24Hour * fullDays;
+        } else if (remainingHours <= 12 && pricing.price12Hour) {
+          // Partial day ≤ 12hrs + 12hr pricing exists → half-day rate for remainder
+          basePrice = pricing.price24Hour.mul(fullDays).add(pricing.price12Hour);
+          freeKmLimit = pricing.freeKm24Hour * fullDays + pricing.freeKm12Hour;
+        } else {
+          // Partial day > 12hrs, or no half-day pricing → round up to full day
+          basePrice = pricing.price24Hour.mul(fullDays + 1);
+          freeKmLimit = pricing.freeKm24Hour * (fullDays + 1);
+        }
         break;
+      }
 
       case RentalPeriodType.MONTHLY:
         if (pricing.priceMonthly) {
@@ -362,21 +444,61 @@ export class PricingEngineService {
     return { basePrice, freeKmLimit, priceSource: pricing.source };
   }
 
-  private async getDepositAmount(vehicleId: number, branchId: number): Promise<Decimal> {
-    const vehicle = await prisma.vehicle.findUnique({
-      where: { id: vehicleId },
-      select: { categoryId: true },
-    });
-    if (!vehicle) throw new Error("Vehicle not found");
+  /**
+   * TASK-003 + TASK-009: Get deposit amount with Redis caching.
+   * categoryId threaded through to skip redundant vehicle.findUnique calls.
+   */
+  private async getDepositAmount(vehicleId: number, branchId: number, categoryId?: number): Promise<Decimal> {
+    const resolvedCategoryId = categoryId ?? await this.getVehicleCategoryId(vehicleId);
+
+    const cacheKey = depositSettingKey(branchId, resolvedCategoryId);
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached !== null) {
+        console.log(`[pricing-cache] hit: ${cacheKey}`);
+        return new Decimal(cached);
+      }
+      console.warn(`[pricing-cache] miss: ${cacheKey}`);
+    } catch (err) {
+      console.warn("[pricing-cache] Redis error, falling back to DB:", err);
+    }
 
     const depositSetting = await prisma.categoryDepositSetting.findUnique({
-      where: { branchId_categoryId: { branchId, categoryId: vehicle.categoryId } },
+      where: { branchId_categoryId: { branchId, categoryId: resolvedCategoryId } },
     });
-    return depositSetting ? new Decimal(depositSetting.amount.toString()) : new Decimal(0);
+    const amount = depositSetting ? new Decimal(depositSetting.amount.toString()) : new Decimal(0);
+
+    try {
+      await redis.set(cacheKey, amount.toString(), "EX", PRICING_TTL);
+    } catch (err) {
+      console.warn("[pricing-cache] Redis set error (non-fatal):", err);
+    }
+
+    return amount;
   }
 
+  /**
+   * TASK-008: Calculate GST with Redis caching for the GST rule.
+   */
   private async calculateTax(amount: Decimal, branchId: number): Promise<TaxResult> {
-    const gstRule = await prisma.gSTRule.findUnique({ where: { branchId } });
+    const cacheKey = gstRuleKey(branchId);
+    let gstRule: any;
+
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached !== null) {
+        console.log(`[pricing-cache] hit: ${cacheKey}`);
+        gstRule = JSON.parse(cached);
+      } else {
+        console.warn(`[pricing-cache] miss: ${cacheKey}`);
+        gstRule = await prisma.gSTRule.findUnique({ where: { branchId } });
+        await redis.set(cacheKey, JSON.stringify(gstRule), "EX", GST_TTL);
+      }
+    } catch (err) {
+      console.warn("[pricing-cache] Redis error, falling back to DB:", err);
+      gstRule = await prisma.gSTRule.findUnique({ where: { branchId } });
+    }
+
     if (!gstRule) throw new Error("GST rules not configured for this branch");
 
     const cgstRate = new Decimal(gstRule.cgstRate.toString());

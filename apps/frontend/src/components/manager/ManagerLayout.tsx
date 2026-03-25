@@ -19,6 +19,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useBranchManagerAuthStore } from "@/store/branchManagerAuth.store";
+import { usePaymentStore } from "@/store/payment.store";
 
 interface ManagerLayoutProps {
   children: ReactNode;
@@ -26,6 +27,7 @@ interface ManagerLayoutProps {
 
 export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
   const { user, logout } = useBranchManagerAuthStore();
+  const { pendingCashCount, pendingRefundCount } = usePaymentStore();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -36,6 +38,11 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
     { label: "Vehicles", path: "/manager/vehicles" },
     { label: "Employees", path: "/manager/employees" },
     { label: "Photo Capture", path: "/manager/capture-configs" },
+    { label: "Cash Confirmations", path: "/manager/payment/cash-confirmations", badge: pendingCashCount },
+    { label: "Settlements", path: "/manager/payment/settlements" },
+    { label: "Refunds", path: "/manager/payment/refunds", badge: pendingRefundCount },
+    { label: "Cash Shifts", path: "/manager/payment/cash-shifts" },
+    { label: "Extensions", path: "/manager/payment/extensions" },
   ];
 
   const handleLogout = () => {
@@ -66,13 +73,18 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  className={`relative px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                     isActive(item.path)
                       ? "bg-orange-50 text-orange-600"
                       : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"
                   }`}
                 >
                   {item.label}
+                  {"badge" in item && item.badge > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-orange-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                      {item.badge}
+                    </span>
+                  )}
                 </Link>
               ))}
             </nav>
@@ -149,13 +161,18 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
                         <Link
                           key={item.path}
                           to={item.path}
-                          className={`flex items-center w-full px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                          className={`flex items-center justify-between w-full px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                             isActive(item.path)
                               ? "bg-orange-50 text-orange-600"
                               : "text-neutral-600 hover:bg-neutral-100"
                           }`}
                         >
-                          {item.label}
+                          <span>{item.label}</span>
+                          {"badge" in item && item.badge > 0 && (
+                            <span className="min-w-[20px] h-5 bg-orange-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1.5">
+                              {item.badge}
+                            </span>
+                          )}
                         </Link>
                       ))}
                       <div className="my-2 border-t border-neutral-100" />

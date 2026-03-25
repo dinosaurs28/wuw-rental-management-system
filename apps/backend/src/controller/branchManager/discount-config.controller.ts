@@ -4,6 +4,8 @@ import { prisma } from "@repo/database/client";
 import { updateBranchDiscountConfigSchema } from "@repo/schemas";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
 import Decimal from "decimal.js";
+import { redis } from "../../lib/redisconfig.js";
+import { branchDiscountConfigKey } from "../../utils/cache/vehicleCacheKeys.js";
 
 export const GetBranchDiscountConfig = async (req: Request, res: Response) => {
   try {
@@ -68,6 +70,13 @@ export const UpdateBranchDiscountConfig = async (req: Request, res: Response) =>
       description: `Branch discount config updated`,
       metadata: data,
     });
+
+    // TASK-012e: Invalidate discount config cache so next pricing call gets updated rules
+    try {
+      await redis.del(branchDiscountConfigKey(branchId));
+    } catch (err) {
+      console.warn("[pricing-cache] Failed to invalidate discount config cache (non-fatal):", err);
+    }
 
     return res.status(StatusCode.OK).json({ message: "Branch discount config updated", data: config });
   } catch (error) {

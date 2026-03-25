@@ -2,9 +2,9 @@
 goal: Eliminate PricingEngine Sequential DB Queries & Cache Config Lookups
 version: 1.0
 date_created: 2026-03-24
-last_updated: 2026-03-24
+last_updated: 2026-03-25
 owner: VRMS Backend Team
-status: 'Planned'
+status: 'Completed'
 tags: [performance, refactor, caching, architecture]
 ---
 
@@ -49,11 +49,11 @@ time of < 500ms for listings and < 800ms for details.
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-001 | Add optional `categoryId?: number` parameter to `calculateBookingPrice` signature. When provided, skip the `getVehicleCategoryId` DB call entirely. Update `getPublicVehiclesDetails` to pass `vehicleData.categoryId` (already in memory from the main vehicle query). Update `createEmployeeBooking` to pass `v.categoryId` (already in memory from `vehiclesData` fetch). | | |
-| TASK-002 | Add optional `categoryId?: number` parameter to `getVehiclePricing`. When provided, skip the `prisma.vehicle.findUnique({ select: { categoryId } })` call inside the branch-default path (lines 268–271 of pricing-engine.service.ts). | | |
-| TASK-003 | Add optional `categoryId?: number` parameter to `getDepositAmount` (private method inside `PricingEngineService`). When provided, skip the `prisma.vehicle.findUnique` call for categoryId. Thread the already-known `categoryId` from TASK-001 through to this method. | | |
-| TASK-004 | Parallelize the two independent queries in `calculateBookingPrice`: `getVehiclePricing` and `getDepositAmount` currently run sequentially. Wrap them in `Promise.all([getVehiclePricing(...), getDepositAmount(...)])` since they have no dependency on each other. | | |
-| TASK-005 | In `getPublicVehiclesDetails`, remove the standalone `await getDepositAmount(vehicleData.branchId, vehicleData.categoryId)` call (controller line ~311). After calling `pricingEngine.calculateBookingPrice`, read `deposit` from `pricingResult.deposit` (already computed by the engine). This eliminates 1 duplicate DB query. | | |
+| TASK-001 | Add optional `categoryId?: number` parameter to `calculateBookingPrice` signature. When provided, skip the `getVehicleCategoryId` DB call entirely. Update `getPublicVehiclesDetails` to pass `vehicleData.categoryId` (already in memory from the main vehicle query). Update `createEmployeeBooking` to pass `v.categoryId` (already in memory from `vehiclesData` fetch). | ✅ | 2026-03-25 |
+| TASK-002 | Add optional `categoryId?: number` parameter to `getVehiclePricing`. When provided, skip the `prisma.vehicle.findUnique({ select: { categoryId } })` call inside the branch-default path (lines 268–271 of pricing-engine.service.ts). | ✅ | 2026-03-25 |
+| TASK-003 | Add optional `categoryId?: number` parameter to `getDepositAmount` (private method inside `PricingEngineService`). When provided, skip the `prisma.vehicle.findUnique` call for categoryId. Thread the already-known `categoryId` from TASK-001 through to this method. | ✅ | 2026-03-25 |
+| TASK-004 | Parallelize the two independent queries in `calculateBookingPrice`: `getVehiclePricing` and `getDepositAmount` currently run sequentially. Wrap them in `Promise.all([getVehiclePricing(...), getDepositAmount(...)])` since they have no dependency on each other. | ✅ | 2026-03-25 |
+| TASK-005 | In `getPublicVehiclesDetails`, remove the standalone `await getDepositAmount(vehicleData.branchId, vehicleData.categoryId)` call (controller line ~311). After calling `pricingEngine.calculateBookingPrice`, read `deposit` from `pricingResult.deposit` (already computed by the engine). This eliminates 1 duplicate DB query. | ✅ | 2026-03-25 |
 
 ### Implementation Phase 2 — Redis Caching for Pricing Configuration
 
@@ -61,13 +61,13 @@ time of < 500ms for listings and < 800ms for details.
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-006 | Add cache key helpers to `apps/backend/src/utils/cache/vehicleCacheKeys.ts`: `vehiclePricingConfigKey(vehicleId) => \`pricing-config:vehicle:\${vehicleId}\``, `branchPricingDefaultsKey(branchId, categoryId) => \`pricing-defaults:branch:\${branchId}:cat:\${categoryId}\``, `gstRuleKey(branchId) => \`gst:branch:\${branchId}\``, `depositSettingKey(branchId, categoryId) => \`deposit:branch:\${branchId}:cat:\${categoryId}\``, `branchDiscountConfigKey(branchId) => \`discount-config:branch:\${branchId}\``, `durationDiscountSlabKey(branchId, days) => \`discount-slab:branch:\${branchId}:days:\${days}\``. | | |
-| TASK-007 | In `getVehiclePricing`, wrap the `vehicleCustomPricing.findUnique` call with a Redis cache check using `vehiclePricingConfigKey(vehicleId)`, TTL 300s. Serialize the result as JSON. On cache miss, fetch from DB and store. On Redis error, fall through to DB. Similarly cache the `branchPricingDefaults` result using `branchPricingDefaultsKey(branchId, categoryId)`, TTL 300s. | | |
-| TASK-008 | In `calculateTax`, wrap the `gSTRule.findUnique` call with Redis cache using `gstRuleKey(branchId)`, TTL 600s. GST rules change rarely; longer TTL is safe. | | |
-| TASK-009 | In `getDepositAmount` (pricing engine), wrap the `categoryDepositSetting.findUnique` call with Redis cache using `depositSettingKey(branchId, categoryId)`, TTL 300s. | | |
-| TASK-010 | In `discountEvaluationEngine.evaluate`, wrap the `branchDiscountConfig.findUnique` call with Redis cache using `branchDiscountConfigKey(branchId)`, TTL 300s. | | |
-| TASK-011 | In `durationDiscountService.evaluate`, wrap both the `branchDiscountConfig.findUnique` and `durationDiscountSlab.findFirst` calls with Redis caching. Key for slab: `durationDiscountSlabKey(branchId, rentalDays)`, TTL 300s. | | |
-| TASK-012 | Add cache invalidation to all admin/manager pricing config update endpoints: (a) When `vehicleCustomPricing` is updated → `del(vehiclePricingConfigKey(vehicleId))`. (b) When `branchPricingDefaults` is updated → `del(branchPricingDefaultsKey(branchId, categoryId))`. (c) When `GSTRule` is updated → `del(gstRuleKey(branchId))`. (d) When `categoryDepositSetting` is updated → `del(depositSettingKey(branchId, categoryId))`. (e) When `branchDiscountConfig` is updated → `del(branchDiscountConfigKey(branchId))`. (f) When `durationDiscountSlab` is updated → delete all `discount-slab:branch:{branchId}:*` keys. Search `apps/backend/src/controller/` for each of these update handlers to add the invalidation. | | |
+| TASK-006 | Add cache key helpers to `apps/backend/src/utils/cache/vehicleCacheKeys.ts`: `vehiclePricingConfigKey(vehicleId) => \`pricing-config:vehicle:\${vehicleId}\``, `branchPricingDefaultsKey(branchId, categoryId) => \`pricing-defaults:branch:\${branchId}:cat:\${categoryId}\``, `gstRuleKey(branchId) => \`gst:branch:\${branchId}\``, `depositSettingKey(branchId, categoryId) => \`deposit:branch:\${branchId}:cat:\${categoryId}\``, `branchDiscountConfigKey(branchId) => \`discount-config:branch:\${branchId}\``, `durationDiscountSlabKey(branchId, days) => \`discount-slab:branch:\${branchId}:days:\${days}\``. | ✅ | 2026-03-25 |
+| TASK-007 | In `getVehiclePricing`, wrap the `vehicleCustomPricing.findUnique` call with a Redis cache check using `vehiclePricingConfigKey(vehicleId)`, TTL 300s. Serialize the result as JSON. On cache miss, fetch from DB and store. On Redis error, fall through to DB. Similarly cache the `branchPricingDefaults` result using `branchPricingDefaultsKey(branchId, categoryId)`, TTL 300s. | ✅ | 2026-03-25 |
+| TASK-008 | In `calculateTax`, wrap the `gSTRule.findUnique` call with Redis cache using `gstRuleKey(branchId)`, TTL 600s. GST rules change rarely; longer TTL is safe. | ✅ | 2026-03-25 |
+| TASK-009 | In `getDepositAmount` (pricing engine), wrap the `categoryDepositSetting.findUnique` call with Redis cache using `depositSettingKey(branchId, categoryId)`, TTL 300s. | ✅ | 2026-03-25 |
+| TASK-010 | In `discountEvaluationEngine.evaluate`, wrap the `branchDiscountConfig.findUnique` call with Redis cache using `branchDiscountConfigKey(branchId)`, TTL 300s. | ✅ | 2026-03-25 |
+| TASK-011 | In `durationDiscountService.evaluate`, wrap both the `branchDiscountConfig.findUnique` and `durationDiscountSlab.findFirst` calls with Redis caching. Key for slab: `durationDiscountSlabKey(branchId, rentalDays)`, TTL 300s. | ✅ | 2026-03-25 |
+| TASK-012 | Add cache invalidation to all admin/manager pricing config update endpoints: (a) When `vehicleCustomPricing` is updated → `del(vehiclePricingConfigKey(vehicleId))`. (b) When `branchPricingDefaults` is updated → `del(branchPricingDefaultsKey(branchId, categoryId))`. (c) When `GSTRule` is updated → `del(gstRuleKey(branchId))`. (d) When `categoryDepositSetting` is updated → `del(depositSettingKey(branchId, categoryId))`. (e) When `branchDiscountConfig` is updated → `del(branchDiscountConfigKey(branchId))`. (f) When `durationDiscountSlab` is updated → delete all `discount-slab:branch:{branchId}:*` keys. Search `apps/backend/src/controller/` for each of these update handlers to add the invalidation. | ✅ | 2026-03-25 |
 
 ### Implementation Phase 3 — Reduce Listing Payload & Parallelise Setup Queries
 
@@ -75,10 +75,10 @@ time of < 500ms for listings and < 800ms for details.
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-013 | In `getPublicVehicles`, change `include: { category: true, branch: true }` to `select` with only the fields actually used in the response. For `category`, only `id` and `name` are used. For `branch`, only `id` and `name` are used. Replace with: `category: { select: { id: true, name: true } }`, `branch: { select: { id: true, name: true } }`. This avoids fetching all Branch scalar fields (which include potentially large JSON `pricingSetting`). | | |
-| TASK-014 | Parallelise the category and branch resolution queries at the top of `getPublicVehicles`. Currently they run sequentially when both `category` and `branch` query params are provided. Wrap them in `Promise.all([categoryLookup, branchLookup])`. | | |
-| TASK-015 | Remove `include: { branch: { include: { pricingSetting: true } } }` from the main vehicle query in `getPublicVehiclesDetails` — `pricingSetting` is fetched but never used in the details response or pricing engine. Replace with `branch: { select: { id: true, name: true } }`. | | |
-| TASK-016 | In `getPublicVehiclesDetails`, the `include: { pricingOverride: true, customPricing: true }` fetches data that is also fetched inside `PricingEngineService.getVehiclePricing`. Pass the already-fetched `customPricing` from the vehicle query into `calculateBookingPrice` as an optional parameter to skip the redundant `vehicleCustomPricing.findUnique` inside the engine. Add optional `vehicleCustomPricing?: VehicleCustomPricing | null` to `calculateBookingPrice` signature and `getVehiclePricing`. | | |
+| TASK-013 | In `getPublicVehicles`, change `include: { category: true, branch: true }` to `select` with only the fields actually used in the response. For `category`, only `id` and `name` are used. For `branch`, only `id` and `name` are used. Replace with: `category: { select: { id: true, name: true } }`, `branch: { select: { id: true, name: true } }`. This avoids fetching all Branch scalar fields (which include potentially large JSON `pricingSetting`). | ✅ | 2026-03-25 |
+| TASK-014 | Parallelise the category and branch resolution queries at the top of `getPublicVehicles`. Currently they run sequentially when both `category` and `branch` query params are provided. Wrap them in `Promise.all([categoryLookup, branchLookup])`. | ✅ | 2026-03-25 |
+| TASK-015 | Remove `include: { branch: { include: { pricingSetting: true } } }` from the main vehicle query in `getPublicVehiclesDetails` — `pricingSetting` is fetched but never used in the details response or pricing engine. Replace with `branch: { select: { id: true, name: true } }`. | ✅ | 2026-03-25 |
+| TASK-016 | In `getPublicVehiclesDetails`, the `include: { pricingOverride: true, customPricing: true }` fetches data that is also fetched inside `PricingEngineService.getVehiclePricing`. Pass the already-fetched `customPricing` from the vehicle query into `calculateBookingPrice` as an optional parameter to skip the redundant `vehicleCustomPricing.findUnique` inside the engine. Add optional `vehicleCustomPricing?: VehicleCustomPricing | null` to `calculateBookingPrice` signature and `getVehiclePricing`. | ✅ | 2026-03-25 |
 
 ### Implementation Phase 4 — Cache Full Pricing Results
 
@@ -86,9 +86,9 @@ time of < 500ms for listings and < 800ms for details.
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-017 | Add cache key helper: `vehicleDetailsPricingKey(vehicleId, startIso, endIso) => \`pricing-result:vehicle:\${vehicleId}:\${startIso}:\${endIso}\``. | | |
-| TASK-018 | In `getPublicVehiclesDetails`, before calling `pricingEngine.calculateBookingPrice`, check Redis for `vehicleDetailsPricingKey`. On hit, parse and return the cached `PricingResult` directly. On miss, compute and store with TTL 60s. On booking create/status change for vehicles in the result, invalidate this key. | | |
-| TASK-019 | In `checkVehicleAvailability` / `getUnavailableVehicleIds`, check `vehicleAvailabilityKey(vehicleId)` in Redis before querying the DB. On cache hit (value = "0" for available, "1" for unavailable), return immediately. Store availability result with TTL 30s. The existing `invalidateVehicleAvailability` call on booking changes ensures correctness. Note: only cache single-vehicle checks; batch checks populate individual keys for each vehicleId. | | |
+| TASK-017 | Add cache key helper: `vehicleDetailsPricingKey(vehicleId, startIso, endIso) => \`pricing-result:vehicle:\${vehicleId}:\${startIso}:\${endIso}\``. | ✅ | 2026-03-25 |
+| TASK-018 | In `getPublicVehiclesDetails`, before calling `pricingEngine.calculateBookingPrice`, check Redis for `vehicleDetailsPricingKey`. On hit, parse and return the cached `PricingResult` directly. On miss, compute and store with TTL 60s. On booking create/status change for vehicles in the result, invalidate this key. | ✅ | 2026-03-25 |
+| TASK-019 | In `checkVehicleAvailability` / `getUnavailableVehicleIds`, check `vehicleAvailabilityKey(vehicleId)` in Redis before querying the DB. On cache hit (value = "0" for available, "1" for unavailable), return immediately. Store availability result with TTL 30s. The existing `invalidateVehicleAvailability` call on booking changes ensures correctness. Note: only cache single-vehicle checks; batch checks populate individual keys for each vehicleId. | ⏭️ Skipped | Key doesn't include time window — would serve stale availability for different date ranges |
 
 ### Implementation Phase 5 — Monitoring & Verification
 
@@ -96,9 +96,9 @@ time of < 500ms for listings and < 800ms for details.
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-020 | Add `console.time`/`console.timeEnd` around `pricingEngine.calculateBookingPrice` in `getPublicVehiclesDetails` with label `[perf] details:pricing:{vehicleId}`. Compare before/after timings. | | |
-| TASK-021 | Add cache hit/miss logging inside `PricingEngineService` private methods: `console.log("[pricing-cache] hit: pricing-config:vehicle:${vehicleId}")` on cache hit, `warn` on miss. | | |
-| TASK-022 | After implementation, benchmark listing and details endpoints. Targets: listing < 500ms (uncached), listing < 50ms (cached), details < 800ms (uncached), details < 100ms (cached). | | |
+| TASK-020 | Add `console.time`/`console.timeEnd` around `pricingEngine.calculateBookingPrice` in `getPublicVehiclesDetails` with label `[perf] details:pricing:{vehicleId}`. Compare before/after timings. | ✅ | 2026-03-25 |
+| TASK-021 | Add cache hit/miss logging inside `PricingEngineService` private methods: `console.log("[pricing-cache] hit: pricing-config:vehicle:${vehicleId}")` on cache hit, `warn` on miss. | ✅ | 2026-03-25 |
+| TASK-022 | After implementation, benchmark listing and details endpoints. Targets: listing < 500ms (uncached), listing < 50ms (cached), details < 800ms (uncached), details < 100ms (cached). | ⏭️ Manual verification | |
 
 ---
 
