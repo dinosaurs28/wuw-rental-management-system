@@ -1,11 +1,12 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
-import { prisma, BookingStatus, ExtensionTrigger } from "@repo/database/client";
+import { prisma, BookingStatus, ExtensionTrigger, ExtensionStatus } from "@repo/database/client";
 import { extensionService } from "../../services/extension/index.js";
 import {
   evaluateExtensionSchema,
   commitExtensionSchema,
   cancelExtensionSchema,
+  listExtensionsSchema,
 } from "@repo/schemas";
 
 const buildActorContext = async (req: Request) => {
@@ -127,6 +128,39 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
       res.status(StatusCode.CONFLICT).json({ message: error.message });
       return;
     }
+    res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * GET /api/employee/extensions
+ * Employee lists extensions for their branch (optionally filtered by bookingPublicId).
+ */
+export const ListBookingExtensions = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const validation = listExtensionsSchema.safeParse(req.query);
+    if (!validation.success) {
+      res.status(StatusCode.BAD_REQUEST).json({
+        message: "Validation failed",
+        errors: validation.error.format(),
+      });
+      return;
+    }
+
+    const { page, pageSize, status, bookingPublicId } = validation.data;
+    const result = await extensionService.listForBranch(req.branch_Id, {
+      page,
+      pageSize,
+      status: status as ExtensionStatus | undefined,
+      bookingPublicId,
+    });
+
+    res.status(StatusCode.OK).json({
+      message: "Extensions fetched successfully",
+      data: result,
+    });
+  } catch (error: any) {
+    console.error("ListBookingExtensions Error:", error);
     res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };

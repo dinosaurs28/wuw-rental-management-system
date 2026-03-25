@@ -1,5 +1,9 @@
 import { prisma } from "@repo/database/client";
 import Decimal from "decimal.js";
+import { redis } from "../../lib/redisconfig.js";
+import { branchDiscountConfigKey, durationDiscountSlabKey } from "../../utils/cache/vehicleCacheKeys.js";
+
+const SLAB_TTL = 300;
 
 export interface DurationDiscountResult {
   applied: boolean;
@@ -37,23 +41,59 @@ class DurationDiscountService {
       label: null,
     };
 
-    // Check branch config — feature must be enabled
-    const config = await prisma.branchDiscountConfig.findUnique({
-      where: { branchId },
-      select: { durationDiscountEnabled: true },
-    });
+    // Check branch config — feature must be enabled (TASK-011: Redis cached, shared key with discount-evaluation-engine)
+    const configCacheKey = branchDiscountConfigKey(branchId);
+    let config: { durationDiscountEnabled: boolean } | null = null;
+    try {
+      const cached = await redis.get(configCacheKey);
+      if (cached !== null) {
+        config = JSON.parse(cached);
+      } else {
+        config = await prisma.branchDiscountConfig.findUnique({
+          where: { branchId },
+          select: { stackWithCoupon: true, maxCombinedDiscountPercent: true, durationDiscountEnabled: true },
+        });
+        await redis.set(configCacheKey, JSON.stringify(config), "EX", SLAB_TTL);
+      }
+    } catch (err) {
+      console.warn("[pricing-cache] Redis error, falling back to DB:", err);
+      config = await prisma.branchDiscountConfig.findUnique({
+        where: { branchId },
+        select: { durationDiscountEnabled: true },
+      });
+    }
 
     if (!config || !config.durationDiscountEnabled) return noDiscount;
 
-    // Find highest minDays slab where booking days falls within [minDays, maxDays]
-    const slab = await prisma.durationDiscountSlab.findFirst({
-      where: {
-        branchId,
-        minDays: { lte: days },
-        OR: [{ maxDays: null }, { maxDays: { gte: days } }],
-      },
-      orderBy: { minDays: "desc" },
-    });
+    // Find highest minDays slab where booking days falls within [minDays, maxDays] (TASK-011: cached)
+    const slabCacheKey = durationDiscountSlabKey(branchId, days);
+    let slab: any;
+    try {
+      const cached = await redis.get(slabCacheKey);
+      if (cached !== null) {
+        slab = JSON.parse(cached); // null or slab object
+      } else {
+        slab = await prisma.durationDiscountSlab.findFirst({
+          where: {
+            branchId,
+            minDays: { lte: days },
+            OR: [{ maxDays: null }, { maxDays: { gte: days } }],
+          },
+          orderBy: { minDays: "desc" },
+        });
+        await redis.set(slabCacheKey, JSON.stringify(slab), "EX", SLAB_TTL);
+      }
+    } catch (err) {
+      console.warn("[pricing-cache] Redis error, falling back to DB:", err);
+      slab = await prisma.durationDiscountSlab.findFirst({
+        where: {
+          branchId,
+          minDays: { lte: days },
+          OR: [{ maxDays: null }, { maxDays: { gte: days } }],
+        },
+        orderBy: { minDays: "desc" },
+      });
+    }
 
     if (!slab) return noDiscount;
 

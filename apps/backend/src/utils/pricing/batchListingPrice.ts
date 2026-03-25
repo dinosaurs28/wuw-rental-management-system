@@ -41,8 +41,22 @@ function selectPrice(pricing: PricingRow, duration: RentalDuration): number {
       return pricing.price12Hour ?? pricing.price24Hour;
     case RentalPeriodType.FULL_DAY:
       return pricing.price24Hour;
-    case RentalPeriodType.MULTI_DAY:
-      return pricing.price24Hour * duration.days;
+    case RentalPeriodType.MULTI_DAY: {
+      // Split complete 24hr periods from partial last day and apply slab rounding,
+      // matching PricingEngineService.determineBasePrice behaviour.
+      const fullDays = Math.floor(duration.actualDuration / 24);
+      const remainingHours = duration.actualDuration % 24;
+
+      if (remainingHours <= 0) {
+        return pricing.price24Hour * fullDays;
+      } else if (remainingHours <= 12 && pricing.price12Hour) {
+        // Partial day ≤ 12hrs → half-day rate for remainder
+        return pricing.price24Hour * fullDays + pricing.price12Hour;
+      } else {
+        // Partial day > 12hrs or no half-day pricing → round up to full day
+        return pricing.price24Hour * (fullDays + 1);
+      }
+    }
     case RentalPeriodType.MONTHLY:
       return pricing.priceMonthly ?? pricing.price24Hour * 30;
     default:

@@ -52,6 +52,7 @@ import {
   GetPickupCaptures,
 } from "../../controller/employee/captureConfig.controller.js";
 import extensionRouter from "./extension.routes.js";
+import paymentRouter from "./payment.routes.js";
 import { SubmitChargeOverride } from "../../controller/employee/charge-override.controller.js";
 import {
   ComputeReturnCharges,
@@ -120,6 +121,7 @@ router.post(
 );
 router.post("/damage/report", EmployeeCheck, CreateDamageReport);
 router.use("/extensions", extensionRouter);
+router.use("/payment", paymentRouter);
 
 // ── Charge Engine ─────────────────────────────────────────────────────────────
 

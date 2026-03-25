@@ -3,8 +3,8 @@ import { prisma } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { redis } from "../../lib/redisconfig.js";
 import { getVehicleDetailsSchema } from "@repo/schemas";
-import { getDepositAmount } from "../../utils/pricing/getDepositAmount.js";
 import { TimezoneService } from "../../services/timezone/timezone.service.js";
+import { vehicleDetailsPricingKey } from "../../utils/cache/vehicleCacheKeys.js";
 import { PricingEngineService } from "../../services/pricing/pricing-engine.service.js";
 import { DurationCalculatorService } from "../../services/pricing/duration-calculator.service.js";
 import { DateTime } from "luxon";
@@ -79,32 +79,27 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       insuranceExpiry: { gt: new Date() },
     };
 
-    if (category) {
-      const categoryObj = await prisma.vehicleCategory.findUnique({
-        where: { publicId: category },
-        select: { id: true },
-      });
-      if (!categoryObj) {
-        return res.status(404).json({ message: "Invalid category" });
-      }
-      filters.categoryId = categoryObj.id;
-    }
+    // TASK-014: Parallelise category + branch filter resolution
+    const [categoryObj, branchObj] = await Promise.all([
+      category
+        ? prisma.vehicleCategory.findUnique({ where: { publicId: category }, select: { id: true } })
+        : Promise.resolve(null),
+      branch
+        ? prisma.branch.findFirst({
+            where: { OR: [{ publicId: branch }, { name: { contains: branch, mode: "insensitive" } }] },
+            select: { id: true },
+          })
+        : Promise.resolve(null),
+    ]);
 
-    if (branch) {
-      const branchObj = await prisma.branch.findFirst({
-        where: {
-          OR: [
-            { publicId: branch },
-            { name: { contains: branch, mode: "insensitive" } },
-          ],
-        },
-        select: { id: true },
-      });
-      if (!branchObj) {
-        return res.status(404).json({ message: "Invalid branch" });
-      }
-      filters.branchId = branchObj.id;
+    if (category && !categoryObj) {
+      return res.status(404).json({ message: "Invalid category" });
     }
+    if (branch && !branchObj) {
+      return res.status(404).json({ message: "Invalid branch" });
+    }
+    if (categoryObj) filters.categoryId = categoryObj.id;
+    if (branchObj) filters.branchId = branchObj.id;
 
     // ── Fetch vehicles (single query) ─────────────────────────────────────────
 
@@ -114,8 +109,8 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       skip: Number(offset),
       take: Number(limit),
       include: {
-        category: true,
-        branch: true,
+        category: { select: { id: true, name: true } },  // TASK-013: only fetch id+name
+        branch:   { select: { id: true, name: true } },  // TASK-013: skip large pricingSetting JSON
         images: {
           where: { isThumbnail: true },
           select: { file: { select: { url: true } } },
@@ -323,8 +318,8 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
         categoryId: true,
         createdAt: true,
         updatedAt: true,
-        category: true,
-        branch: { include: { pricingSetting: true } },
+        category: { select: { id: true, name: true } },  // TASK-015: only name needed
+        branch:   { select: { id: true, name: true } },  // TASK-015: drop pricingSetting (unused)
         images: { include: { file: true } },
         pricingOverride: true,
         customPricing: true,
@@ -337,7 +332,7 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
       });
     }
 
-    let deposit = await getDepositAmount(vehicleData.branchId, vehicleData.categoryId);
+    let deposit: number = 0;
     let availability: boolean | null = null;
     let pricingDetails: any = null;
 
@@ -355,13 +350,42 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
         );
       }
 
-      // Full pricing calculation — same engine as booking API (TASK-023)
-      const pricingResult = await pricingEngine.calculateBookingPrice(
-        vehicleData.id,
-        startDate,
-        endDate,
-        vehicleData.branchId,
-      );
+      // TASK-018: Check full pricing result cache before recomputing
+      const startNorm = TimezoneService.toPrisma(startDate).toISOString();
+      const endNorm = TimezoneService.toPrisma(endDate).toISOString();
+      const pricingCacheKey = vehicleDetailsPricingKey(vehicleData.id, startNorm, endNorm);
+
+      let pricingResult: any = null;
+      try {
+        const cached = await redis.get(pricingCacheKey);
+        if (cached) {
+          console.log(`[pricing-cache] hit: ${pricingCacheKey}`);
+          pricingResult = JSON.parse(cached);
+        }
+      } catch (err) {
+        console.warn("[pricing-cache] Redis get error:", err);
+      }
+
+      if (!pricingResult) {
+        // TASK-001 + TASK-016: pass categoryId and customPricing to skip redundant DB lookups
+        pricingResult = await pricingEngine.calculateBookingPrice(
+          vehicleData.id,
+          startDate,
+          endDate,
+          vehicleData.branchId,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          vehicleData.categoryId,
+          vehicleData.customPricing,
+        );
+        try {
+          await redis.set(pricingCacheKey, JSON.stringify(pricingResult), "EX", 60);
+        } catch (err) {
+          console.warn("[pricing-cache] Redis set error:", err);
+        }
+      }
 
       pricingDetails = {
         basePrice:       Number(pricingResult.basePrice),
@@ -383,6 +407,7 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
         },
       };
 
+      // TASK-005: read deposit from pricingResult — eliminates duplicate DB fetch
       deposit = pricingDetails.deposit;
     } else if (!isInsuranceValid) {
       availability = false;

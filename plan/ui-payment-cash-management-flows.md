@@ -39,7 +39,7 @@ This document is the authoritative UI/UX design reference for the Payment & Cash
 |------|--------------------|------------------------|---------------------|---------------------|---------------------|
 | **Employee** | Yes | No | No (can request) | No | Own shifts only |
 | **Branch Manager** | Yes | Yes | Yes | Yes | All branch shifts |
-| **Admin** | No (via admin panel only) | Yes | Yes | Yes | All branches |
+| **Admin** | No (via admin panel only) | NO | NO | NO | NO |
 
 ---
 

@@ -4,6 +4,10 @@ import { durationDiscountService, type DurationDiscountResult } from "./duration
 import { couponValidationService, type CouponValidationContext } from "./coupon-validation.service.js";
 import { discountCalculationService } from "./discount-calculation.service.js";
 import type { DiscountRule } from "@repo/database/client";
+import { redis } from "../../lib/redisconfig.js";
+import { branchDiscountConfigKey } from "../../utils/cache/vehicleCacheKeys.js";
+
+const DISCOUNT_CONFIG_TTL = 300;
 
 export interface DiscountEvaluationInput {
   branchId: number;
@@ -52,15 +56,29 @@ class DiscountEvaluationEngine {
       couponCode, manualDiscountAmount, manualDiscountId,
     } = input;
 
-    // Load branch config for stacking rules
-    const config = await prisma.branchDiscountConfig.findUnique({
-      where: { branchId },
-      select: {
-        stackWithCoupon: true,
-        maxCombinedDiscountPercent: true,
-        durationDiscountEnabled: true,
-      },
-    });
+    // Load branch config for stacking rules (TASK-010: Redis cached)
+    const cacheKey = branchDiscountConfigKey(branchId);
+    let config: { stackWithCoupon: boolean; maxCombinedDiscountPercent: any; durationDiscountEnabled: boolean } | null = null;
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached !== null) {
+        console.log(`[pricing-cache] hit: ${cacheKey}`);
+        config = JSON.parse(cached);
+      } else {
+        console.warn(`[pricing-cache] miss: ${cacheKey}`);
+        config = await prisma.branchDiscountConfig.findUnique({
+          where: { branchId },
+          select: { stackWithCoupon: true, maxCombinedDiscountPercent: true, durationDiscountEnabled: true },
+        });
+        await redis.set(cacheKey, JSON.stringify(config), "EX", DISCOUNT_CONFIG_TTL);
+      }
+    } catch (err) {
+      console.warn("[pricing-cache] Redis error, falling back to DB:", err);
+      config = await prisma.branchDiscountConfig.findUnique({
+        where: { branchId },
+        select: { stackWithCoupon: true, maxCombinedDiscountPercent: true, durationDiscountEnabled: true },
+      });
+    }
 
     // ── Step 1: Duration discount ────────────────────────────────────────────
     const durationDiscount = await durationDiscountService.evaluate(branchId, rentalDays, baseAmount);

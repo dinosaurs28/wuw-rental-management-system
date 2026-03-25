@@ -341,7 +341,7 @@ Visible when `booking.status` is `CONFIRMED` or `PICKED_UP`.
 ```json
 {
   "bookingPublicId": "abc123...",
-  "newEndAt": "2026-03-28T18:00:00.000Z"
+  "newEndAt": "2026-03-28T18:00:00.000Z"("use date-fns to get the current time and date and add the extension duration to it always send in ist formaat")
 }
 ```
 

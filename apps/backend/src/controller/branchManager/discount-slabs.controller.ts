@@ -3,6 +3,7 @@ import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
 import { createDurationSlabSchema, updateDurationSlabSchema } from "@repo/schemas";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../../services/staffActivity/staffActivity.service.js";
+import { redis } from "../../lib/redisconfig.js";
 
 export const GetDurationSlabs = async (req: Request, res: Response) => {
   try {
@@ -63,6 +64,11 @@ export const CreateDurationSlab = async (req: Request, res: Response) => {
       metadata: { minDays, maxDays, discountType, value },
     });
 
+    // TASK-012f: Invalidate all cached slab lookups for this branch
+    await invalidateDurationSlabCache(branchId).catch((err) =>
+      console.warn("[pricing-cache] Failed to invalidate slab cache (non-fatal):", err),
+    );
+
     return res.status(StatusCode.CREATED).json({ message: "Duration slab created", data: slab });
   } catch (error) {
     console.error("CreateDurationSlab Error:", error);
@@ -104,6 +110,11 @@ export const UpdateDurationSlab = async (req: Request, res: Response) => {
       description: `Duration discount slab ${slabId} updated`,
     });
 
+    // TASK-012f: Invalidate all cached slab lookups for this branch
+    await invalidateDurationSlabCache(branchId).catch((err) =>
+      console.warn("[pricing-cache] Failed to invalidate slab cache (non-fatal):", err),
+    );
+
     return res.status(StatusCode.OK).json({ message: "Duration slab updated", data: updated });
   } catch (error) {
     console.error("UpdateDurationSlab Error:", error);
@@ -131,9 +142,25 @@ export const DeleteDurationSlab = async (req: Request, res: Response) => {
       description: `Duration discount slab ${slabId} deleted`,
     });
 
+    // TASK-012f: Invalidate all cached slab lookups for this branch
+    await invalidateDurationSlabCache(branchId).catch((err) =>
+      console.warn("[pricing-cache] Failed to invalidate slab cache (non-fatal):", err),
+    );
+
     return res.status(StatusCode.OK).json({ message: "Duration slab deleted" });
   } catch (error) {
     console.error("DeleteDurationSlab Error:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };
+
+// ── Cache invalidation helper (TASK-012f) ─────────────────────────────────────
+
+/** Delete all cached duration-slab lookups for a branch (pattern: discount-slab:branch:{branchId}:days:*). */
+async function invalidateDurationSlabCache(branchId: number): Promise<void> {
+  const pattern = `discount-slab:branch:${branchId}:days:*`;
+  const keys = await redis.keys(pattern);
+  if (keys.length > 0) {
+    await redis.del(...keys);
+  }
+}
