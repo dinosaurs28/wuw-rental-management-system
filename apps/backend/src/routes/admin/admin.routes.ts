@@ -30,6 +30,7 @@ import auditRouter from "./audit.routes.js";
 import staffActivityRouter from "./staffActivity.routes.js";
 import discountRouter from "./discount.routes.js";
 import paymentRouter from "./payment.routes.js";
+import whatsappConfigRouter from "./whatsapp-config.routes.js";
 
 const router: Router = Router();
 
@@ -96,5 +97,8 @@ router.use("/discount-rules", discountRouter);
 
 // Payment Config (admin)
 router.use("/payment", paymentRouter);
+
+// WhatsApp Support Config
+router.use("/whatsapp-config", whatsappConfigRouter);
 
 export default router;

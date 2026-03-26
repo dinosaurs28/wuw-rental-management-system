@@ -6,6 +6,7 @@ import { Loader2, CheckCircle, XCircle, Clock, ArrowRight } from "lucide-react";
 import { bookingService } from "@/services/booking.service";
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
 import { Button } from "@/components/ui/button";
+import { WhatsAppSupportButton } from "@/components/ui/WhatsAppSupportButton";
 
 const MAX_RETRY_COUNT = 10;
 const RETRY_DELAY_MS = 3000;
@@ -193,6 +194,10 @@ export const BookingStatusPage = () => {
               </p>
             </div>
             <CountdownMessage />
+            <WhatsAppSupportButton
+              variables={{ transactionId: transactionId ?? "" }}
+              label="Contact Support"
+            />
           </>
         )}
 
@@ -211,6 +216,10 @@ export const BookingStatusPage = () => {
               </p>
             </div>
             <CountdownMessage />
+            <WhatsAppSupportButton
+              variables={{ transactionId: transactionId ?? "" }}
+              label="Get Help on WhatsApp"
+            />
           </>
         )}
       </div>
