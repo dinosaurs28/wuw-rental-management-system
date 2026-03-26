@@ -40,9 +40,18 @@ import {
 } from "@/components/ui/breadcrumb";
 import {
   fetchManagerVehicles,
+  fetchVehicleCategories,
   deleteVehicle,
   type ManagerVehicle,
+  type Category,
 } from "@/services/vehicle.service";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PricingSlabList } from "@/components/manager/pricing/PricingSlabList";
 import { toast } from "sonner";
 
@@ -51,18 +60,28 @@ export const ManagerVehiclesPage = () => {
   const [vehicles, setVehicles] = useState<ManagerVehicle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [categories, setCategories] = useState<Category[]>([]);
 
   // Default tab
   const [activeTab, setActiveTab] = useState("vehicles");
 
   useEffect(() => {
-    loadVehicles();
+    fetchVehicleCategories().then(setCategories);
   }, []);
+
+  useEffect(() => {
+    loadVehicles();
+  }, [searchTerm, categoryFilter]);
 
   const loadVehicles = async () => {
     setIsLoading(true);
     try {
-      const response = await fetchManagerVehicles({ limit: 100 }); // Fetch all for now
+      const response = await fetchManagerVehicles({
+        limit: 100,
+        search: searchTerm || undefined,
+        category: categoryFilter !== "all" ? categoryFilter : undefined,
+      });
       setVehicles(response.data);
     } catch (error) {
       toast.error("Failed to load vehicles");
@@ -71,12 +90,7 @@ export const ManagerVehiclesPage = () => {
     }
   };
 
-  const filteredVehicles = vehicles.filter(
-    (v) =>
-      v.make.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.publicId.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const filteredVehicles = vehicles;
 
   const getStatusBadgeStyles = (status: string) => {
     switch (status) {
@@ -170,7 +184,7 @@ export const ManagerVehiclesPage = () => {
             </div>
 
             {/* Filters & Search */}
-            <div className="bg-white p-4 rounded-lg border shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="bg-white p-4 rounded-lg border shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center">
               <div className="relative w-full md:w-96">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                 <Input
@@ -180,6 +194,19 @@ export const ManagerVehiclesPage = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full md:w-52 h-12">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.publicId} value={cat.publicId}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Content */}

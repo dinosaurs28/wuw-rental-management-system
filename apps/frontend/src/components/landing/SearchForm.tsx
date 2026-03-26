@@ -107,16 +107,18 @@ export const SearchForm = () => {
                         <div className="space-y-2.5">
                             <Popover>
                                 <PopoverTrigger asChild>
-                                    <Button
-                                        variant="ghost"
-                                        className={cn(
-                                            "w-full justify-start text-left bg-transparent hover:bg-transparent border-0 shadow-none p-0 h-auto text-base",
-                                            !pickupDate ? "text-zinc-500 font-medium" : "text-zinc-900 font-semibold"
-                                        )}
-                                    >
-                                        <CalendarIcon className="size-4.5 shrink-0 text-zinc-400 mr-2" />
-                                        <span className="truncate">{pickupDate ? format(pickupDate, "MMM dd, yyyy") : "Select date"}</span>
-                                    </Button>
+                                    <div className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 cursor-pointer hover:border-zinc-300 transition-colors">
+                                        <CalendarIcon className="size-4 text-zinc-500 shrink-0" />
+                                        <Button
+                                            variant="ghost"
+                                            className={cn(
+                                                "w-full justify-start text-left bg-transparent hover:bg-transparent border-0 shadow-none p-0 h-auto text-base",
+                                                !pickupDate ? "text-zinc-500 font-medium" : "text-zinc-900 font-semibold"
+                                            )}
+                                        >
+                                            <span className="truncate">{pickupDate ? format(pickupDate, "MMM dd, yyyy") : "Select date"}</span>
+                                        </Button>
+                                    </div>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-2 rounded-2xl border-zinc-200 shadow-2xl" align="start">
                                     <Calendar
@@ -191,16 +193,18 @@ export const SearchForm = () => {
                         <div className="space-y-2.5">
                             <Popover>
                                 <PopoverTrigger asChild>
-                                    <Button
-                                        variant="ghost"
-                                        className={cn(
-                                            "w-full justify-start text-left bg-transparent hover:bg-transparent border-0 shadow-none p-0 h-auto text-base",
-                                            !returnDate ? "text-zinc-500 font-medium" : "text-zinc-900 font-semibold"
-                                        )}
-                                    >
-                                        <CalendarIcon className="size-4.5 shrink-0 text-zinc-400 mr-2" />
-                                        <span className="truncate">{returnDate ? format(returnDate, "MMM dd, yyyy") : "Select date"}</span>
-                                    </Button>
+                                    <div className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 cursor-pointer hover:border-zinc-300 transition-colors">
+                                        <CalendarIcon className="size-4 text-zinc-500 shrink-0" />
+                                        <Button
+                                            variant="ghost"
+                                            className={cn(
+                                                "w-full justify-start text-left bg-transparent hover:bg-transparent border-0 shadow-none p-0 h-auto text-base",
+                                                !returnDate ? "text-zinc-500 font-medium" : "text-zinc-900 font-semibold"
+                                            )}
+                                        >
+                                            <span className="truncate">{returnDate ? format(returnDate, "MMM dd, yyyy") : "Select date"}</span>
+                                        </Button>
+                                    </div>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-2 rounded-2xl border-zinc-200 shadow-2xl" align="start">
                                     <Calendar
