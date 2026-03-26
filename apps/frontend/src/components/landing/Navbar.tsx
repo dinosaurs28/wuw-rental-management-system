@@ -52,19 +52,13 @@ export const Navbar = () => {
               to="#"
               className={`px-5 py-2.5 text-sm font-bold tracking-wide rounded-full transition-all duration-300 ${isScrolled ? "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 hover:shadow-md" : "text-zinc-300 hover:text-white hover:bg-zinc-800 hover:shadow-[0_0_15px_rgba(255,255,255,0.05)]"}`}
             >
-              Executive
+              Luxury SUVs
             </Link>
             <Link
               to="#"
               className={`px-5 py-2.5 text-sm font-bold tracking-wide rounded-full transition-all duration-300 ${isScrolled ? "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 hover:shadow-md" : "text-zinc-300 hover:text-white hover:bg-zinc-800 hover:shadow-[0_0_15px_rgba(255,255,255,0.05)]"}`}
             >
-              Sports
-            </Link>
-            <Link
-              to="#"
-              className={`px-5 py-2.5 text-sm font-bold tracking-wide rounded-full transition-all duration-300 ${isScrolled ? "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 hover:shadow-md" : "text-zinc-300 hover:text-white hover:bg-zinc-800 hover:shadow-[0_0_15px_rgba(255,255,255,0.05)]"}`}
-            >
-              Global Access
+              Electric
             </Link>
           </nav>
 
@@ -143,19 +137,13 @@ export const Navbar = () => {
                 to="#"
                 className="font-serif text-2xl font-bold py-3 text-zinc-900"
               >
-                Executive Fleet
+                Luxury SUVs
               </Link>
               <Link
                 to="#"
                 className="font-serif text-2xl font-bold py-3 text-zinc-900"
               >
-                Sports Vehicles
-              </Link>
-              <Link
-                to="#"
-                className="font-serif text-2xl font-bold py-3 text-zinc-900"
-              >
-                Global Access
+                Electric
               </Link>
             </div>
 
