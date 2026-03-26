@@ -85,7 +85,7 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
                   }`}
                 >
                   {item.label}
-                  {"badge" in item && item.badge > 0 && (
+                  {"badge" in item && item.badge as number > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-orange-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
                       {item.badge}
                     </span>
@@ -173,7 +173,7 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
                           }`}
                         >
                           <span>{item.label}</span>
-                          {"badge" in item && item.badge > 0 && (
+                          {"badge" in item && item.badge as number > 0 && (
                             <span className="min-w-[20px] h-5 bg-orange-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1.5">
                               {item.badge}
                             </span>

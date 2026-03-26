@@ -17,6 +17,7 @@ const purposeLabels: Record<PaymentPurpose, string> = {
   ADVANCE: "Advance",
   REMAINING_BALANCE: "Remaining Balance",
   EXTENSION_FEE: "Extension Fee",
+  EXTENSION: "Extension",
   DAMAGE_FEE: "Damage Fee",
 };
 

@@ -575,6 +575,16 @@ exports.Prisma.SystemSettingScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.WhatsAppSupportConfigScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  phoneNumber: 'phoneNumber',
+  messageTemplate: 'messageTemplate',
+  isEnabled: 'isEnabled',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.GSTRuleScalarFieldEnum = {
   id: 'id',
   publicId: 'publicId',
@@ -1445,6 +1455,7 @@ exports.Prisma.ModelName = {
   InvoiceItem: 'InvoiceItem',
   AuditLog: 'AuditLog',
   SystemSetting: 'SystemSetting',
+  WhatsAppSupportConfig: 'WhatsAppSupportConfig',
   GSTRule: 'GSTRule',
   TimezoneSetting: 'TimezoneSetting',
   CancellationInvoice: 'CancellationInvoice',

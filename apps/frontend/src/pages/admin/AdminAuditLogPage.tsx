@@ -43,7 +43,8 @@ import {
   ShieldAlert,
   X,
 } from "lucide-react";
-import { adminService, type AuditLog } from "@/services/admin.service";
+import { adminService } from "@/services/admin.service";
+import type { AuditLog } from "@/services/admin.service";
 import { format, formatDistanceToNow } from "date-fns";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
