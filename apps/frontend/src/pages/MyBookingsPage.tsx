@@ -72,13 +72,16 @@ export function MyBookingsPage() {
               Manage your premium vehicle bookings and rentals
             </p>
           </div>
-          <Button
-            className="gap-2 shrink-0 h-14 rounded-full bg-white text-zinc-950 hover:bg-zinc-200 transition-all duration-300 font-bold tracking-wide px-8 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
-            onClick={() => navigate("/vehicles")}
-          >
-            <Car className="h-5 w-5" />
-            Book a Vehicle
-          </Button>
+          <div className="flex items-center gap-3 shrink-0">
+            <WhatsAppSupportButton label="Support" />
+            <Button
+              className="gap-2 h-14 rounded-full bg-white text-zinc-950 hover:bg-zinc-200 transition-all duration-300 font-bold tracking-wide px-8 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+              onClick={() => navigate("/vehicles")}
+            >
+              <Car className="h-5 w-5" />
+              Book a Vehicle
+            </Button>
+          </div>
         </div>
 
         {/* Filter Section */}
