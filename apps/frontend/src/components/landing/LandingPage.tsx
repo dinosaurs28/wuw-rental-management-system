@@ -2,7 +2,7 @@ import { Navbar } from "./Navbar";
 import { SearchForm } from "./SearchForm";
 
 import { motion } from "motion/react";
-import { Globe, Car, Headphones, Star, ArrowRight } from "lucide-react";
+import { Car, Headphones, Star, ArrowRight } from "lucide-react";
 import { Footer } from "./Footer";
 import { Link } from "react-router-dom";
 
@@ -116,47 +116,29 @@ export const LandingPage = () => {
 
               {/* Staggered Grid Layout for Features */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 max-w-6xl mx-auto">
-                {/* Feature 1 - Spans 7 columns */}
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-100px" }}
-                  transition={{ duration: 0.6, ease: "easeOut" }}
-                  className="md:col-span-7 group flex flex-col items-start bg-zinc-100 rounded-[2.5rem] p-10 lg:p-14 transition-all duration-300 border border-transparent hover:border-zinc-200"
-                >
-                  <div className="size-20 rounded-[1.5rem] bg-white flex items-center justify-center text-zinc-900 mb-10 shadow-sm border border-zinc-200 group-hover:scale-105 transition-all duration-300">
-                    <Globe className="size-10" strokeWidth={1.5} />
-                  </div>
-                  <h3 className="font-serif text-4xl mb-6 text-zinc-950 tracking-tight">
-                    Global Access.
-                  </h3>
-                  <p className="text-lg text-zinc-600 leading-relaxed font-medium max-w-md">
-                    Exclusive airport lounges and downtown hubs in over 2,000
-                    locations worldwide. Always ready when you arrive.
-                  </p>
-                </motion.div>
-
-                {/* Feature 2 - Spans 5 columns */}
+                {/* Feature 2 - Now spans 12 columns as the primary feature */}
                 <motion.div
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-100px" }}
                   transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
-                  className="md:col-span-5 group flex flex-col items-start bg-zinc-900 rounded-[2.5rem] p-10 lg:p-14 relative overflow-hidden"
+                  className="md:col-span-12 group flex flex-col md:flex-row items-center gap-10 bg-zinc-900 rounded-[3rem] p-10 lg:p-16 relative overflow-hidden"
                 >
                   <div className="absolute top-0 right-0 p-8">
                     <Star className="size-8 text-orange-500 fill-orange-500/20" />
                   </div>
-                  <div className="size-20 rounded-[1.5rem] bg-zinc-800 flex items-center justify-center text-white mb-10 shadow-lg border border-zinc-700/50 group-hover:scale-105 group-hover:bg-orange-500 group-hover:border-orange-400 group-hover:shadow-orange-500/20 transition-all duration-300">
-                    <Car className="size-10" strokeWidth={1.5} />
+                  <div className="size-24 shrink-0 rounded-[2rem] bg-zinc-800 flex items-center justify-center text-white shadow-lg border border-zinc-700/50 group-hover:scale-105 group-hover:bg-orange-500 group-hover:border-orange-400 group-hover:shadow-orange-500/20 transition-all duration-300 relative z-10">
+                    <Car className="size-12" strokeWidth={1.5} />
                   </div>
-                  <h3 className="font-serif text-4xl mb-6 text-white tracking-tight">
-                    Pristine Fleet.
-                  </h3>
-                  <p className="text-lg text-zinc-400 leading-relaxed font-medium">
-                    From Porsche to Mercedes-AMG. Every vehicle is deep-cleaned
-                    and meticulously inspected before the keys touch your hands.
-                  </p>
+                  <div className="flex-1 relative z-10 text-center md:text-left">
+                    <h3 className="font-serif text-4xl lg:text-5xl mb-6 text-white tracking-tight">
+                      Pristine Fleet.
+                    </h3>
+                    <p className="text-xl text-zinc-400 leading-relaxed font-medium max-w-3xl">
+                      From Porsche to Mercedes-AMG. Every vehicle is deep-cleaned
+                      and meticulously inspected before the keys touch your hands.
+                    </p>
+                  </div>
                 </motion.div>
 
                 {/* Feature 3 - Spans 12 columns (Full width banner style) */}
