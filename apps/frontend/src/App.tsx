@@ -70,6 +70,7 @@ import { GSTReportPage } from "./pages/admin/reports/GSTReportPage";
 import { AdminDiscountRulesPage } from "./pages/admin/AdminDiscountRulesPage";
 import { AdminBranchDetailPage } from "./pages/admin/AdminBranchDetailPage";
 import { AdminWhatsAppConfigPage } from "./pages/admin/AdminWhatsAppConfigPage";
+import { AdminAuditLogPage } from "./pages/admin/AdminAuditLogPage";
 
 function App() {
   return (
@@ -248,6 +249,7 @@ function App() {
               element={<AdminDiscountRulesPage />}
             />
             <Route path="/admin/whatsapp-config" element={<AdminWhatsAppConfigPage />} />
+            <Route path="/admin/audit-log" element={<AdminAuditLogPage />} />
           </Route>
         </Route>
 
