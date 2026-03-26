@@ -139,15 +139,15 @@ export const managerDashboardService = {
 
   getStaffActivity: async (): Promise<StaffActivity[]> => {
     const response = await apiClient.get(
-      "/branchManager/dashboard/staff/activity-logs",
+      "/branchManager/dashboard/staff/activity",
       { timeout: 10000 },
     );
     const rawLogs = response.data.data || [];
 
     return rawLogs.map((log: any) => ({
       id: log.publicId || String(log.id),
-      employeeName: "Staff Member",
-      action: log.action,
+      employeeName: log.actorName || "Staff Member",
+      action: log.description || log.actionType,
       timestamp: log.createdAt,
     }));
   },

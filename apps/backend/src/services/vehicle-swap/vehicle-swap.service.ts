@@ -71,17 +71,27 @@ export class VehicleSwapService {
       throw new Error("No vehicle found in booking");
     }
 
-    const currentCategoryRank = currentVehicle.category.rank;
-
-    // Find available vehicles in same branch with same or higher category rank
+    // Find available vehicles in same branch, same category, not booked for the same date range
     const availableVehicles = await prisma.vehicle.findMany({
       where: {
         branchId: branchId,
         status: VehicleStatus.AVAILABLE,
         deletedAt: null,
         id: { not: currentVehicle.id }, // Exclude current vehicle
-        category: {
-          rank: { gte: currentCategoryRank }
+        categoryId: currentVehicle.categoryId, // Must be same vehicle category (no cross-type swaps)
+        NOT: {
+          bookingItems: {
+            some: {
+              booking: {
+                status: { in: [BookingStatus.CONFIRMED, BookingStatus.PICKED_UP] },
+                OR: [
+                  { startAt: { lte: booking.startAt }, endAt: { gte: booking.startAt } },
+                  { startAt: { lte: booking.endAt }, endAt: { gte: booking.endAt } },
+                  { startAt: { gte: booking.startAt }, endAt: { lte: booking.endAt } }
+                ]
+              }
+            }
+          }
         }
       },
       include: {
