@@ -10,7 +10,8 @@
       "Bash(grep -l ExtensionStatus /c/Freelance/vrms/packages/db/src/generated/client/*.ts)",
       "Bash(npm run:*)",
       "Bash(pnpm -F backend tsc --noEmit)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(find /Users/sushan/Projects/freelance/wuw-rental-management-system -name *query* -o -name *Query*)"
     ]
   }
 }

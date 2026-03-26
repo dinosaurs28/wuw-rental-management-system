@@ -27,6 +27,7 @@ import {
   DollarSign,
   Users,
   Receipt,
+  MessageCircle,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAdminAuthStore } from "@/store/adminAuth.store";
@@ -56,6 +57,11 @@ const items = [
     title: "Global Reports",
     url: "/admin/reports",
     icon: BarChart3,
+  },
+  {
+    title: "WhatsApp Support",
+    url: "/admin/whatsapp-config",
+    icon: MessageCircle,
   },
 ];
 

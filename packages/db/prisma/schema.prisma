@@ -1062,6 +1062,16 @@ model SystemSetting {
   updatedAt DateTime @updatedAt
 }
 
+model WhatsAppSupportConfig {
+  id              Int      @id @default(autoincrement())
+  publicId        String   @unique
+  phoneNumber     String
+  messageTemplate String
+  isEnabled       Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
 model GSTRule {
   id        Int     @id @default(autoincrement())
   publicId  String  @unique

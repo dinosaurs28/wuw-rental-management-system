@@ -32,6 +32,7 @@ import { useVehicleRentalStore } from "@/store/vehicleRental.store";
 import { bookingService } from "@/services/booking.service";
 import { useSearchStore } from "@/store/search.store";
 import { format } from "date-fns";
+import { WhatsAppSupportButton } from "@/components/ui/WhatsAppSupportButton";
 
 // Response types from API
 interface BookingResponse {
@@ -666,6 +667,15 @@ export const BookingConfirmationPage = () => {
               <ArrowLeft className="size-4" />
               Back to Review
             </Link>
+          </div>
+
+          {/* WhatsApp Support */}
+          <div className="flex flex-col items-center gap-2 mt-6">
+            <p className="text-xs text-muted-foreground">Questions about your booking?</p>
+            <WhatsAppSupportButton
+              variables={{ vehicleName: `${make} ${model}`, bookingId: bookingData.holdId }}
+              label="Chat with Support"
+            />
           </div>
         </div>
       </main>

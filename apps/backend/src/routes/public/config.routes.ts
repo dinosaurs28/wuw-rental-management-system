@@ -10,6 +10,7 @@ import {
   GetEnabledFeatures,
   IsFeatureEnabled,
 } from "../../controller/public/config.controller.js";
+import { GetPublicWhatsAppConfig } from "../../controller/public/whatsapp-config.controller.js";
 
 const router: Router = Router();
 
@@ -18,5 +19,8 @@ router.get("/features", GetEnabledFeatures);
 
 // GET /api/config/features/:flagKey?branchId=1
 router.get("/features/:flagKey", IsFeatureEnabled);
+
+// GET /api/config/whatsapp
+router.get("/whatsapp", GetPublicWhatsAppConfig);
 
 export default router;

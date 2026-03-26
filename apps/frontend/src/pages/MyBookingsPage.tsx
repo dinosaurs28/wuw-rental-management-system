@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Car, CalendarX } from "lucide-react";
 import axios from "axios";
+import { WhatsAppSupportButton } from "@/components/ui/WhatsAppSupportButton";
 
 export function MyBookingsPage() {
   const navigate = useNavigate();
