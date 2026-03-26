@@ -30,6 +30,7 @@ import {
   Tag,
   MessageCircle,
   ScrollText,
+  Activity,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAdminAuthStore } from "@/store/adminAuth.store";
@@ -74,6 +75,11 @@ const items = [
     title: "Audit Log",
     url: "/admin/audit-log",
     icon: ScrollText,
+  },
+  {
+    title: "Staff Activity",
+    url: "/admin/staff-activity",
+    icon: Activity,
   },
 ];
 

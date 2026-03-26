@@ -47,6 +47,7 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
     { label: "Coupons", path: "/manager/payment/coupons" },
     { label: "Discount Config", path: "/manager/payment/discount-config" },
     { label: "Charge Settings", path: "/manager/charge-config" },
+    { label: "Staff Activity", path: "/manager/staff-activity" },
   ];
 
   const handleLogout = () => {

@@ -232,6 +232,106 @@ export type VehicleHistoryResponse = {
     data: VehicleHistoryData;
 };
 
+// ── Staff Activity Types ──────────────────────────────────────────────────────
+
+export type StaffActivityLog = {
+  id: number;
+  publicId: string;
+  actorPublicId: string;
+  actorName: string;
+  actorRole: string;
+  branchId: number;
+  branchName: string;
+  actionType: string;
+  entityType: string;
+  entityRef: string;
+  description: string;
+  metadata: any | null;
+  createdAt: string;
+};
+
+export type AdminStaffActivityParams = {
+  page?: number;
+  limit?: number;
+  branchId?: string;
+  actorPublicId?: string;
+  actionType?: string;
+  entityType?: string;
+  startDate?: string;
+  endDate?: string;
+};
+
+export type StaffActivityResponse = {
+  data: StaffActivityLog[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+};
+
+// ── Audit Log Types ───────────────────────────────────────────────────────────
+
+export type AuditLog = {
+    id: number;
+    publicId: string;
+    actorId: number | null;
+    actorName: string;
+    actorRole: string;
+    actorBranchId: number | null;
+    approverId: number | null;
+    approverName: string | null;
+    approverRole: string | null;
+    action: string;
+    category: string;
+    severity: string;
+    description: string;
+    entity: string;
+    entityId: string;
+    entityLabel: string | null;
+    ipAddress: string | null;
+    userAgent: string | null;
+    requestId: string | null;
+    before: any | null;
+    after: any | null;
+    changedFields: string[];
+    metadata: any | null;
+    createdAt: string;
+};
+
+export type AuditLogParams = {
+    page?: number;
+    limit?: number;
+    branchId?: string;
+    actorId?: string;
+    category?: string;
+    action?: string;
+    severity?: string;
+    startDate?: string;
+    endDate?: string;
+    entityId?: string;
+};
+
+export type AuditLogsResponse = {
+    message: string;
+    data: AuditLog[];
+    pagination: {
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    };
+};
+
+export type AuditStatsResponse = {
+    data: {
+        byCategory: { category: string; count: number }[];
+        bySeverity: { severity: string; count: number }[];
+        topActions: { action: string; count: number }[];
+    };
+};
+
 export const adminService = {
     login: async (data: SignInInput): Promise<AdminAuthResponse> => {
         const response = await apiClient.post<AdminAuthResponse>("/admin/auth/login", data);
@@ -453,5 +553,29 @@ export const adminService = {
 
     clearWhatsAppConfigCache: async (): Promise<void> => {
         await apiClient.delete('/admin/whatsapp-config/cache');
+    },
+
+    // ── Staff Activity ────────────────────────────────────────────────────────
+
+    getStaffActivity: async (params: AdminStaffActivityParams): Promise<StaffActivityResponse> => {
+        const response = await apiClient.get<StaffActivityResponse>('/admin/staff-activity', { params });
+        return response.data;
+    },
+
+    // ── Audit Logs ────────────────────────────────────────────────────────────
+
+    getAuditLogs: async (params: AuditLogParams): Promise<AuditLogsResponse> => {
+        const response = await apiClient.get<AuditLogsResponse>('/admin/audit/logs', { params });
+        return response.data;
+    },
+
+    getAuditStats: async (params: { branchId?: string; startDate?: string; endDate?: string }): Promise<AuditStatsResponse> => {
+        const response = await apiClient.get<AuditStatsResponse>('/admin/audit/logs/stats', { params });
+        return response.data;
+    },
+
+    getAuditLogById: async (publicId: string): Promise<AuditLog> => {
+        const response = await apiClient.get<{ data: AuditLog }>(`/admin/audit/logs/${publicId}`);
+        return response.data.data;
     },
 };
