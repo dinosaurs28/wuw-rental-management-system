@@ -1278,68 +1278,17 @@ export default function ReturnProcessPage() {
 
           {/* Sidebar */}
           <div className="space-y-8">
-            {/* 4. Return Metrics */}
-            <Card className="border-none shadow-sm h-fit">
-              <CardHeader className="px-6 pt-6">
-                <CardTitle className="text-xl">4. Return Metrics</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Gauge className="h-4 w-4" /> Odometer Reading (km)
-                  </Label>
-                  <Input
-                    type="text"
-                    value={odo}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (/^\d*$/.test(val)) setOdo(Number(val));
-                    }}
-                    placeholder="Enter current KM"
-                    className="text-lg font-mono"
-                    disabled={isCompleted}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Pickup: {vehicle?.odo || 0} km
-                  </p>
-                </div>
 
-                <Separator />
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label className="flex items-center gap-2">
-                      <Fuel className="h-4 w-4" /> Fuel Level
-                    </Label>
-                    <span className="text-lg font-bold">{fuel}%</span>
-                  </div>
-                  <Slider
-                    value={[fuel]}
-                    max={100}
-                    step={5}
-                    onValueChange={(v) => setFuel(v[0])}
-                    className="py-4"
-                    disabled={isCompleted}
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Empty</span>
-                    <span>Full</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
 
             {/* 5. Actions */}
-            <Card className="bg-white text-zinc-900 border border-zinc-200 shadow-lg">
-            {/* Actions */}
             <Card className="bg-[#1A1A1A] text-white border-none shadow-lg">
               <CardHeader>
-                <CardTitle className="text-zinc-900">Return Summary</CardTitle>
+                <CardTitle className="text-white">Return Summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-gray-400">Base Rental</span>
-                  <span className="font-medium text-zinc-900">Paid</span>
+                  <span className="font-medium text-white">Paid</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-gray-400">Reported Damage</span>
