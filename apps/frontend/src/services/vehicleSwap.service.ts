@@ -13,6 +13,32 @@ export interface BookingVehicleDetails {
   image: string | null;
 }
 
+export const employeeVehicleSwapService = {
+  /**
+   * Get available vehicles for swap (employee)
+   */
+  async getAvailableVehicles(bookingId: string): Promise<AvailableVehicle[]> {
+    const response = await apiClient.get(
+      `/employee/bookings/${bookingId}/available-vehicles`,
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Perform vehicle swap (employee)
+   */
+  async performSwap(
+    bookingId: string,
+    swapRequest: VehicleSwapRequest,
+  ): Promise<VehicleSwap> {
+    const response = await apiClient.post(
+      `/employee/bookings/${bookingId}/swap-vehicle`,
+      swapRequest,
+    );
+    return response.data.data;
+  },
+};
+
 export const vehicleSwapService = {
   /**
    * Get current vehicle details for a booking

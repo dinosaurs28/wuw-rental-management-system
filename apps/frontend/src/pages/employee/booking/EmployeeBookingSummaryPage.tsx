@@ -2,11 +2,13 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { ArrowLeft, Car, ArrowRight } from "lucide-react";
+import { ArrowLeft, Car, ArrowRight, Tag } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { bookingService } from "@/services/booking.service";
+import { CouponInput } from "@/components/discount/CouponInput";
+import { employeeDiscountService } from "@/services/discount.service";
 
 export const EmployeeBookingSummaryPage = () => {
   const navigate = useNavigate();
@@ -20,6 +22,7 @@ export const EmployeeBookingSummaryPage = () => {
     location.state?.bookingData || null,
   );
   const [loading, setLoading] = useState(!location.state?.bookingData);
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const bookingPayload = location.state?.bookingPayload;
 
   useEffect(() => {
@@ -205,6 +208,37 @@ export const EmployeeBookingSummaryPage = () => {
             </div>
           </div>
         </div>
+
+        {/* Coupon Code */}
+        {bookingData?.data?.publicId && (
+          <div className="bg-white p-4 rounded-xl border shadow-sm space-y-3">
+            <div className="flex items-center gap-2">
+              <Tag className="w-4 h-4 text-orange-500" />
+              <h3 className="font-semibold text-sm">Coupon Code (optional)</h3>
+            </div>
+            <CouponInput
+              appliedCode={appliedCoupon}
+              onApply={async (code) => {
+                try {
+                  await employeeDiscountService.applyCoupon(bookingData.data.publicId, code);
+                  setAppliedCoupon(code);
+                  toast.success(`Coupon ${code} applied to booking.`);
+                } catch (err: any) {
+                  toast.error(err?.response?.data?.message || "Failed to apply coupon.");
+                }
+              }}
+              onRemove={async () => {
+                try {
+                  await employeeDiscountService.removeCoupon(bookingData.data.publicId);
+                  setAppliedCoupon(null);
+                  toast.success("Coupon removed.");
+                } catch (err: any) {
+                  toast.error(err?.response?.data?.message || "Failed to remove coupon.");
+                }
+              }}
+            />
+          </div>
+        )}
 
         {/* Payment Action */}
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t">

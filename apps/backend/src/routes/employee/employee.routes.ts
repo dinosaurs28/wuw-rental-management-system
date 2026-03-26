@@ -53,6 +53,7 @@ import {
 } from "../../controller/employee/captureConfig.controller.js";
 import extensionRouter from "./extension.routes.js";
 import paymentRouter from "./payment.routes.js";
+import discountRouter from "./discount.routes.js";
 import { SubmitChargeOverride } from "../../controller/employee/charge-override.controller.js";
 import {
   ComputeReturnCharges,
@@ -62,6 +63,12 @@ import {
   InitiateSettlement,
   ConfirmSettlement,
 } from "../../controller/employee/settlement.controller.js";
+import {
+  GetAvailableVehiclesForEmployee,
+  SwapVehicleByEmployee,
+  GetPickupPricingRules,
+} from "../../controller/employee/vehicle-swap.controller.js";
+import sessionRouter from "./session.routes.js";
 
 const router: Router = Router();
 
@@ -122,6 +129,13 @@ router.post(
 router.post("/damage/report", EmployeeCheck, CreateDamageReport);
 router.use("/extensions", extensionRouter);
 router.use("/payment", paymentRouter);
+router.use("/discount", discountRouter);
+router.use("/", sessionRouter);
+
+// ── Vehicle Swap (Employee) ────────────────────────────────────────────────────
+router.get("/bookings/:bookingId/available-vehicles", EmployeeCheck, GetAvailableVehiclesForEmployee);
+router.post("/bookings/:bookingId/swap-vehicle", EmployeeCheck, SwapVehicleByEmployee);
+router.get("/pickup/:bookingId/pricing-rules", EmployeeCheck, GetPickupPricingRules);
 
 // ── Charge Engine ─────────────────────────────────────────────────────────────
 

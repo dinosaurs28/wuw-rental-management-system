@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
     Table,
     TableBody,
@@ -21,9 +22,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { adminService, type AdminBranch, type CreateBranchInput } from "@/services/admin.service";
 import { toast } from "sonner";
-import { Edit2, Trash2, Plus, Loader2 } from "lucide-react";
+import { Edit2, Trash2, Plus, Loader2, ChevronRight, Users } from "lucide-react";
 
 interface AdminBranchManagementProps {
     branches: AdminBranch[];
@@ -69,8 +71,9 @@ export function AdminBranchManagement({ branches, onRefresh }: AdminBranchManage
                 <Card className="shadow-sm">
                     <CardContent className="p-6">
                         <div className="text-sm font-medium text-neutral-500">Total Managers</div>
-                        {/* Assuming 1 manager per branch for now */}
-                        <div className="text-2xl font-bold text-neutral-900 mt-1">{branches.length}</div>
+                        <div className="text-2xl font-bold text-neutral-900 mt-1">
+                            {branches.reduce((sum, b) => sum + (b.users?.length ?? 0), 0)}
+                        </div>
                     </CardContent>
                 </Card>
             </div>
@@ -109,13 +112,14 @@ export function AdminBranchManagement({ branches, onRefresh }: AdminBranchManage
                                 <TableHead className="pl-6 h-12 font-medium text-neutral-600 whitespace-nowrap">Name</TableHead>
                                 <TableHead className="font-medium text-neutral-600 whitespace-nowrap">Address</TableHead>
                                 <TableHead className="font-medium text-neutral-600 whitespace-nowrap">Contact</TableHead>
+                                <TableHead className="font-medium text-neutral-600 whitespace-nowrap">Managers</TableHead>
                                 <TableHead className="text-right pr-6 font-medium text-neutral-600 whitespace-nowrap">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {branches.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="h-[400px] text-center">
+                                    <TableCell colSpan={5} className="h-[400px] text-center">
                                         <div className="flex flex-col items-center justify-center space-y-3">
                                             <div className="h-12 w-12 rounded-full bg-orange-50 flex items-center justify-center mb-2">
                                                 <div className="h-6 w-6 text-[#FF5F00]">📍</div>
@@ -148,6 +152,7 @@ export function AdminBranchManagement({ branches, onRefresh }: AdminBranchManage
 }
 
 function BranchCard({ branch, onRefresh }: { branch: AdminBranch; onRefresh: () => void }) {
+    const navigate = useNavigate();
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
@@ -170,6 +175,10 @@ function BranchCard({ branch, onRefresh }: { branch: AdminBranch; onRefresh: () 
                         <h4 className="font-semibold text-neutral-900">{branch.name}</h4>
                         <p className="text-sm text-neutral-500 mt-1">{branch.address}</p>
                     </div>
+                    <Badge variant="secondary" className="flex items-center gap-1 shrink-0">
+                        <Users className="h-3 w-3" />
+                        {branch.users?.length ?? 0}
+                    </Badge>
                 </div>
 
                 <div className="flex items-center text-sm text-neutral-600">
@@ -177,46 +186,57 @@ function BranchCard({ branch, onRefresh }: { branch: AdminBranch; onRefresh: () 
                     {branch.phone || "—"}
                 </div>
 
-                <div className="flex justify-end gap-2 pt-2 border-t border-neutral-100">
-                    <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                        <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" className="h-9">
-                                <Edit2 className="h-3.5 w-3.5 mr-2" />
-                                Edit
-                            </Button>
-                        </DialogTrigger>
-                        {isEditOpen && (
-                            <EditBranchDialog
-                                branch={branch}
-                                onClose={() => setIsEditOpen(false)}
-                                onSuccess={() => {
-                                    setIsEditOpen(false);
-                                    onRefresh();
-                                }}
-                            />
-                        )}
-                    </Dialog>
+                <div className="flex justify-between gap-2 pt-2 border-t border-neutral-100">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 text-[#FF5F00] border-orange-200 hover:bg-orange-50 hover:text-[#E65600]"
+                        onClick={() => navigate(`/admin/branches/${branch.publicId}`)}
+                    >
+                        <Users className="h-3.5 w-3.5 mr-2" />
+                        View Members
+                    </Button>
+                    <div className="flex gap-2">
+                        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                            <DialogTrigger asChild>
+                                <Button variant="outline" size="sm" className="h-9">
+                                    <Edit2 className="h-3.5 w-3.5 mr-2" />
+                                    Edit
+                                </Button>
+                            </DialogTrigger>
+                            {isEditOpen && (
+                                <EditBranchDialog
+                                    branch={branch}
+                                    onClose={() => setIsEditOpen(false)}
+                                    onSuccess={() => {
+                                        setIsEditOpen(false);
+                                        onRefresh();
+                                    }}
+                                />
+                            )}
+                        </Dialog>
 
-                    <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-                        <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" className="h-9 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200">
-                                <Trash2 className="h-3.5 w-3.5 mr-2" />
-                                Delete
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px]">
-                            <DialogHeader>
-                                <DialogTitle>Delete Branch</DialogTitle>
-                                <DialogDescription>
-                                    Are you sure you want to delete <strong>{branch.name}</strong>?
-                                </DialogDescription>
-                            </DialogHeader>
-                            <DialogFooter className="flex-col sm:flex-row gap-2">
-                                <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
-                                <Button className="bg-red-600 text-white" onClick={handleDelete}>Delete</Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
+                        <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+                            <DialogTrigger asChild>
+                                <Button variant="outline" size="sm" className="h-9 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200">
+                                    <Trash2 className="h-3.5 w-3.5 mr-2" />
+                                    Delete
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[425px]">
+                                <DialogHeader>
+                                    <DialogTitle>Delete Branch</DialogTitle>
+                                    <DialogDescription>
+                                        Are you sure you want to delete <strong>{branch.name}</strong>?
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <DialogFooter className="flex-col sm:flex-row gap-2">
+                                    <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
+                                    <Button className="bg-red-600 text-white" onClick={handleDelete}>Delete</Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
                 </div>
             </CardContent>
         </Card>
@@ -224,6 +244,7 @@ function BranchCard({ branch, onRefresh }: { branch: AdminBranch; onRefresh: () 
 }
 
 function BranchRow({ branch, onRefresh }: { branch: AdminBranch; onRefresh: () => void }) {
+    const navigate = useNavigate();
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
@@ -247,7 +268,23 @@ function BranchRow({ branch, onRefresh }: { branch: AdminBranch; onRefresh: () =
             <TableCell className="font-semibold text-neutral-900 pl-6 py-4 whitespace-nowrap">{branch.name}</TableCell>
             <TableCell className="text-neutral-600 max-w-[200px] sm:max-w-[300px] truncate" title={branch.address}>{branch.address}</TableCell>
             <TableCell className="text-neutral-600 font-mono text-sm whitespace-nowrap">{branch.phone || "—"}</TableCell>
+            <TableCell className="whitespace-nowrap">
+                <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                    <Users className="h-3 w-3" />
+                    {branch.users?.length ?? 0} manager{(branch.users?.length ?? 0) !== 1 ? "s" : ""}
+                </Badge>
+            </TableCell>
             <TableCell className="text-right space-x-1 pr-6 whitespace-nowrap">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-[#FF5F00] hover:text-[#E65600] hover:bg-orange-50 text-xs"
+                    onClick={() => navigate(`/admin/branches/${branch.publicId}`)}
+                >
+                    <Users className="h-3.5 w-3.5 mr-1" />
+                    Members
+                    <ChevronRight className="h-3.5 w-3.5 ml-0.5" />
+                </Button>
                 <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                     <DialogTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-neutral-500 hover:text-[#FF5F00] hover:bg-orange-50">

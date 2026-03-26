@@ -48,6 +48,10 @@ import { SettlementsPage } from "./pages/manager/payment/SettlementsPage";
 import { RefundsPage } from "./pages/manager/payment/RefundsPage";
 import { CashShiftsPage } from "./pages/manager/payment/CashShiftsPage";
 import { ExtensionsPage } from "./pages/manager/payment/ExtensionsPage";
+import { DiscountApprovalsPage } from "./pages/manager/payment/DiscountApprovalsPage";
+import { CouponsPage } from "./pages/manager/payment/CouponsPage";
+import { DiscountConfigPage } from "./pages/manager/payment/DiscountConfigPage";
+import { ChargeConfigPage } from "./pages/manager/ChargeConfigPage";
 import AdminSignInPage from "./pages/auth/AdminSignInPage";
 import { AdminProtectedRoute } from "@/components/auth/AdminProtectedRoute";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
@@ -63,6 +67,8 @@ import { InsurancePermitExpiryPage } from "./pages/admin/reports/InsurancePermit
 import { CollectionReportPage } from "./pages/admin/reports/CollectionReportPage";
 import { FleetExecutivePage } from "./pages/admin/reports/FleetExecutivePage";
 import { GSTReportPage } from "./pages/admin/reports/GSTReportPage";
+import { AdminDiscountRulesPage } from "./pages/admin/AdminDiscountRulesPage";
+import { AdminBranchDetailPage } from "./pages/admin/AdminBranchDetailPage";
 import { AdminWhatsAppConfigPage } from "./pages/admin/AdminWhatsAppConfigPage";
 
 function App() {
@@ -179,6 +185,22 @@ function App() {
             path="/manager/payment/extensions"
             element={<ExtensionsPage />}
           />
+          <Route
+            path="/manager/payment/discount-approvals"
+            element={<DiscountApprovalsPage />}
+          />
+          <Route
+            path="/manager/payment/coupons"
+            element={<CouponsPage />}
+          />
+          <Route
+            path="/manager/payment/discount-config"
+            element={<DiscountConfigPage />}
+          />
+          <Route
+            path="/manager/charge-config"
+            element={<ChargeConfigPage />}
+          />
         </Route>
 
         {/* Admin Protected Routes */}
@@ -187,6 +209,7 @@ function App() {
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
             {/* Future Admin Routes */}
             <Route path="/admin/branches" element={<AdminBranchesPage />} />
+            <Route path="/admin/branches/:branchId" element={<AdminBranchDetailPage />} />
             <Route path="/admin/reports" element={<GlobalReports />} />
             <Route
               path="/admin/vehicle-reports"
@@ -220,6 +243,10 @@ function App() {
               element={<FleetExecutivePage />}
             />
             <Route path="/admin/reports/gst" element={<GSTReportPage />} />
+            <Route
+              path="/admin/discount-rules"
+              element={<AdminDiscountRulesPage />}
+            />
             <Route path="/admin/whatsapp-config" element={<AdminWhatsAppConfigPage />} />
           </Route>
         </Route>

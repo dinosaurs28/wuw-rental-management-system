@@ -78,6 +78,7 @@ export const BookingConfirmationPage = () => {
     selectedKycFilePublicId,
     paymentType,
     paymentFlow,
+    couponCode,
     clearVehicleSelection,
   } = useVehicleRentalStore();
 
@@ -125,6 +126,7 @@ export const BookingConfirmationPage = () => {
           file_public_id: selectedKycFilePublicId,
           payment_type: paymentType,
           payment_flow: paymentFlow,
+          ...(couponCode ? { couponCode } : {}),
         });
 
         // Store the response

@@ -185,32 +185,34 @@ export const CompleteReturn = async (req: Request, res: Response) => {
           })),
         });
       }
-
-      await staffActivityService.logFromRequest(req, {
-        actionType: requireManagerConfirmation ? StaffActionType.INITIATED : StaffActionType.COMPLETED,
-        entityType: StaffEntityType.BOOKING,
-        entityRef: booking.publicId,
-        description: requireManagerConfirmation
-          ? `Return approval requested for booking ${booking.publicId}`
-          : `Vehicle return completed for booking ${booking.publicId}`,
-      }, tx);
-
-      if (!requireManagerConfirmation) {
-        await auditService.log({
-          actorId: actingUser.id,
-          actorName: actingUser.name,
-          actorRole: actingUser.role,
-          actorBranchId: actingUser.branchId ?? undefined,
-          action: "BOOKING_CHECKED_OUT",
-          category: AuditCategory.BOOKING,
-          description: `Vehicle returned by customer for booking ${booking.publicId}`,
-          entity: "Booking",
-          entityId: booking.publicId,
-          ipAddress: req.ip,
-          userAgent: req.headers["user-agent"],
-        }, tx);
-      }
     });
+
+    // Logging outside the transaction — audit/activity logs add latency that can
+    // push the transaction past Prisma's 5 s interactive timeout.
+    await staffActivityService.logFromRequest(req, {
+      actionType: requireManagerConfirmation ? StaffActionType.INITIATED : StaffActionType.COMPLETED,
+      entityType: StaffEntityType.BOOKING,
+      entityRef: booking.publicId,
+      description: requireManagerConfirmation
+        ? `Return approval requested for booking ${booking.publicId}`
+        : `Vehicle return completed for booking ${booking.publicId}`,
+    });
+
+    if (!requireManagerConfirmation) {
+      await auditService.log({
+        actorId: actingUser.id,
+        actorName: actingUser.name,
+        actorRole: actingUser.role,
+        actorBranchId: actingUser.branchId ?? undefined,
+        action: "BOOKING_CHECKED_OUT",
+        category: AuditCategory.BOOKING,
+        description: `Vehicle returned by customer for booking ${booking.publicId}`,
+        entity: "Booking",
+        entityId: booking.publicId,
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
+      });
+    }
 
     // Targeted availability cache invalidation only if actual return occurred (TASK-019)
     if (!requireManagerConfirmation) {

@@ -10,6 +10,7 @@ export interface CreateBookingSummaryRequest {
   file_public_id: string; // KYC document file public ID
   payment_type: "CASH" | "ONLINE";
   payment_flow?: "FULL" | "ADVANCE";
+  couponCode?: string; // Optional coupon code
 }
 
 // Types for booking summary response
@@ -82,6 +83,40 @@ export interface ConfirmCashPaymentResponse {
 
 // --- EMPLOYEE INTERFACES & SERVICE ---
 
+export interface FrozenChargeConfig {
+  extraKmEnabled: boolean;
+  extraTimeEnabled: boolean;
+  fuelModuleEnabled: boolean;
+  fastagModuleEnabled: boolean;
+  gracePolicyEnabled: boolean;
+  graceType: "AUTOMATIC" | "MANUAL";
+  graceMinutes: number;
+  employeeOverrideEnabled: boolean;
+  safetyDepositEnabled: boolean;
+  safetyDepositRequiresApproval: boolean;
+  damageModuleEnabled: boolean;
+}
+
+export interface ChargeEntry {
+  chargeType: string;
+  moduleKey: string;
+  label: string;
+  originalAmount: string;
+  finalAmount: string;
+  quantity: string | null;
+  unitRate: string | null;
+  isOverridden: boolean;
+  notes: string | null;
+}
+
+export interface ChargeBreakdown {
+  bookingId: string;
+  subtotal: string;
+  waivedTotal: string;
+  finalTotal: string;
+  charges: ChargeEntry[];
+}
+
 export interface EmployeeBooking {
   publicId: string;
   startAt: string;
@@ -94,6 +129,11 @@ export interface EmployeeBooking {
   remainingPaidAt?: string | null;
   remainingPaidDuring?: string | null;
   requiresManagerConfirmation?: boolean;
+  frozenChargeConfig?: FrozenChargeConfig | null;
+  startOdometer?: number | null;
+  branch?: {
+    chargeConfig?: { usePaymentSessions: boolean } | null;
+  };
   customer: {
     user: {
       publicId: string;
@@ -112,6 +152,7 @@ export interface EmployeeBooking {
       category: string;
       odo: number;
       fuelLevel: number;
+      hasFastag?: boolean;
       images: {
         file: {
           url: string;
@@ -282,6 +323,26 @@ export const bookingService = {
     return response.data;
   },
 
+  // Compute Return Charges (charge engine)
+  computeReturnCharges: async (
+    bookingId: string,
+    data: {
+      endOdometer: number;
+      returnFuelLevel?: string;
+      fuelDeficitCharge?: number;
+      fuelSkipReason?: string;
+      fastagAmount?: number;
+      fastagNotes?: string;
+      applyGrace?: boolean;
+    },
+  ): Promise<{ message: string; data: ChargeBreakdown }> => {
+    const response = await apiClient.post(
+      `/employee/bookings/${bookingId}/return-charges`,
+      data,
+    );
+    return response.data;
+  },
+
   // Upload Damage Image
   uploadDamageImage: async (formData: FormData) => {
     const response = await apiClient.post<{ fileId: string; url: string }>(
@@ -363,6 +424,25 @@ export const bookingService = {
       }[];
     }>(`/employee/customer/search?q=${encodeURIComponent(query)}`);
     return response.data;
+  },
+
+  // Get Pickup Pricing Rules (for confirmation popup)
+  getPickupPricingRules: async (bookingId: string): Promise<{
+    vehicle: { make: string; model: string; regNo: string };
+    pricing: {
+      freeKm24Hour: number;
+      freeKmMonthly: number;
+      extraKmRate: string;
+      extraHourRate: string;
+      price24Hour: string;
+    } | null;
+    frozenChargeConfig: FrozenChargeConfig | null;
+    rentalPeriod: { start: string; end: string };
+  }> => {
+    const response = await apiClient.get(
+      `/employee/pickup/${bookingId}/pricing-rules`,
+    );
+    return response.data.data;
   },
 
   // Create Booking (Employee)

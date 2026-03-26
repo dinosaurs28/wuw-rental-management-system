@@ -43,6 +43,11 @@ export {
   ExtensionStatus,
   ExtensionTrigger,
   ExtensionResolutionType,
+  // Payment session / ledger enums
+  PaymentSessionStatus,
+  PaymentSessionType,
+  LedgerEntryType,
+  LedgerEntryClassification,
   Prisma,
 } from "./generated/client/index.js";
 

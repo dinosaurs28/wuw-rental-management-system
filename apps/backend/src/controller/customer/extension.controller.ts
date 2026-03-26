@@ -181,7 +181,7 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
     // Customers can only use ONLINE payment and must choose SAME_VEHICLE or PARTIAL_EXTENSION
     const additionalAmount = extensionRecord.additionalAmount.toNumber();
 
-    const extension = await extensionService.commit(
+    const result = await extensionService.commit(
       {
         extensionPublicId,
         resolutionType: "SAME_VEHICLE",
@@ -194,6 +194,7 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
       },
       actor,
     );
+    const { extension } = result;
 
     res.status(StatusCode.OK).json({
       message: "Extension confirmed successfully",

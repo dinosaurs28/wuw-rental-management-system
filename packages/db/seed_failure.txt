@@ -1,16 +1,26 @@
 {
-  "name": "PrismaClientKnownRequestError",
-  "code": "P2002",
-  "clientVersion": "5.22.0",
-  "meta": {
-    "modelName": "FeatureFlag",
-    "target": [
-      "key"
-    ]
-  }
+  "name": "PrismaClientValidationError",
+  "clientVersion": "5.22.0"
 }
-PrismaClientKnownRequestError: 
-Invalid `prisma.featureFlag.create()` invocation:
+PrismaClientValidationError: 
+Invalid `prisma.branchFeatureFlag.create()` invocation in
+C:\Freelance\vrms\packages\db\prisma\seed.ts:598:34
 
+  595   },
+  596 });
+  597 
+→ 598 await prisma.branchFeatureFlag.create({
+        data: {
+          publicId: "ox8k4hjpy6wzqhcu",
+          branchId: 3,
+          featureFlagId: 4,
+          enabled: true,
+      +   branch: {
+      +     create: BranchCreateWithoutFeatureFlagsInput | BranchUncheckedCreateWithoutFeatureFlagsInput,
+      +     connectOrCreate: BranchCreateOrConnectWithoutFeatureFlagsInput,
+      +     connect: BranchWhereUniqueInput
+      +   }
+        }
+      })
 
-Unique constraint failed on the fields: (`key`)
+Argument `branch` is missing.

@@ -254,33 +254,36 @@ export const PickupController = async (req: Request, res: Response) => {
           });
         }
       }
-
-      await staffActivityService.logFromRequest(req, {
-        actionType: parsedVehicleDetails.requireManagerConfirmation ? StaffActionType.INITIATED : StaffActionType.CONFIRMED,
-        entityType: StaffEntityType.BOOKING,
-        entityRef: booking.publicId,
-        description: parsedVehicleDetails.requireManagerConfirmation
-          ? `Pickup approval requested for booking ${booking.publicId}`
-          : `Vehicle pickup confirmed for booking ${booking.publicId}`,
-      }, tx);
-
-      if (!parsedVehicleDetails.requireManagerConfirmation) {
-        await auditService.log({
-          actorId: actingUser.id,
-          actorName: actingUser.name,
-          actorRole: actingUser.role,
-          actorBranchId: actingUser.branchId ?? undefined,
-          action: "BOOKING_CHECKED_IN",
-          category: AuditCategory.BOOKING,
-          description: `Vehicle handed over to customer for booking ${booking.publicId}`,
-          entity: "Booking",
-          entityId: booking.publicId,
-          ipAddress: req.ip,
-          userAgent: req.headers["user-agent"],
-          metadata: { odo: parsedVehicleDetails.odo, fuelLevel: parsedVehicleDetails.fuelLevel },
-        }, tx);
-      }
     });
+
+    // Logging outside the transaction — neither audit nor activity logs need
+    // to be atomic with the booking state change, and both add enough latency
+    // to push the transaction past Prisma's 5 s interactive timeout.
+    await staffActivityService.logFromRequest(req, {
+      actionType: parsedVehicleDetails.requireManagerConfirmation ? StaffActionType.INITIATED : StaffActionType.CONFIRMED,
+      entityType: StaffEntityType.BOOKING,
+      entityRef: booking.publicId,
+      description: parsedVehicleDetails.requireManagerConfirmation
+        ? `Pickup approval requested for booking ${booking.publicId}`
+        : `Vehicle pickup confirmed for booking ${booking.publicId}`,
+    });
+
+    if (!parsedVehicleDetails.requireManagerConfirmation) {
+      await auditService.log({
+        actorId: actingUser.id,
+        actorName: actingUser.name,
+        actorRole: actingUser.role,
+        actorBranchId: actingUser.branchId ?? undefined,
+        action: "BOOKING_CHECKED_IN",
+        category: AuditCategory.BOOKING,
+        description: `Vehicle handed over to customer for booking ${booking.publicId}`,
+        entity: "Booking",
+        entityId: booking.publicId,
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
+        metadata: { odo: parsedVehicleDetails.odo, fuelLevel: parsedVehicleDetails.fuelLevel },
+      });
+    }
 
     return res.status(StatusCode.OK).json({
       message: parsedVehicleDetails.requireManagerConfirmation ? "Pickup sent to manager for confirmation." : "Vehicle Pickup Successful. Status updated to OUT_FOR_RENTAL.",
