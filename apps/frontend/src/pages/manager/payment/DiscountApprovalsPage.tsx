@@ -41,7 +41,6 @@ function ReviewModal({
   onDone: () => void;
 }) {
   const [note, setNote] = useState("");
-  const [action, setAction] = useState<"approve" | "reject" | null>(null);
   const queryClient = useQueryClient();
 
   const bookingTotal = discount.booking?.totalFinal ? parseFloat(discount.booking.totalFinal) : null;
@@ -142,7 +141,7 @@ function ReviewModal({
           <Button
             variant="outline"
             className="flex-1 border-red-200 text-red-600 hover:bg-red-50"
-            onClick={() => { setAction("reject"); rejectMutation.mutate(); }}
+            onClick={() => rejectMutation.mutate()}
             disabled={isLoading}
           >
             {rejectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4 mr-1.5" />}
@@ -150,7 +149,7 @@ function ReviewModal({
           </Button>
           <Button
             className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-            onClick={() => { setAction("approve"); approveMutation.mutate(); }}
+            onClick={() => approveMutation.mutate()}
             disabled={isLoading}
           >
             {approveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-1.5" />}

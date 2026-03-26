@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
-import { CalendarIcon, AlertTriangle, CheckCircle2, Car, ChevronDown } from "lucide-react";
+import { CalendarIcon, Car } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

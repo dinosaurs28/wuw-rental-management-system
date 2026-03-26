@@ -19,7 +19,6 @@ import {
   Image as ImageIcon,
   Banknote,
   CreditCard,
-  Wallet,
   Clock,
   Lock,
   CheckCircle,
