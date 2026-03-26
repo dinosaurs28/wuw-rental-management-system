@@ -59,23 +59,7 @@ export const Footer = () => {
                     to="#"
                     className="text-zinc-500 font-semibold hover:text-zinc-900 hover:translate-x-1 inline-flex transition-all duration-300"
                   >
-                    Executive Sedans
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#"
-                    className="text-zinc-500 font-semibold hover:text-zinc-900 hover:translate-x-1 inline-flex transition-all duration-300"
-                  >
                     Luxury SUVs
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#"
-                    className="text-zinc-500 font-semibold hover:text-zinc-900 hover:translate-x-1 inline-flex transition-all duration-300"
-                  >
-                    Sports Cars
                   </Link>
                 </li>
                 <li>
