@@ -46,21 +46,6 @@ export const Navbar = () => {
             />
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-2">
-            <Link
-              to="#"
-              className={`px-5 py-2.5 text-sm font-bold tracking-wide rounded-full transition-all duration-300 ${isScrolled ? "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 hover:shadow-md" : "text-zinc-300 hover:text-white hover:bg-zinc-800 hover:shadow-[0_0_15px_rgba(255,255,255,0.05)]"}`}
-            >
-              Luxury SUVs
-            </Link>
-            <Link
-              to="#"
-              className={`px-5 py-2.5 text-sm font-bold tracking-wide rounded-full transition-all duration-300 ${isScrolled ? "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 hover:shadow-md" : "text-zinc-300 hover:text-white hover:bg-zinc-800 hover:shadow-[0_0_15px_rgba(255,255,255,0.05)]"}`}
-            >
-              Electric
-            </Link>
-          </nav>
 
           {/* Right Side Actions */}
           <div className="hidden md:flex items-center gap-4">
@@ -132,20 +117,6 @@ export const Navbar = () => {
         {/* Mobile Navigation Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden absolute top-24 left-4 right-4 bg-white rounded-[2rem] shadow-2xl overflow-hidden p-6 border border-zinc-200 flex flex-col gap-2 origin-top animate-in slide-in-from-top-4 fade-in duration-300 pointer-events-auto">
-            <div className="flex flex-col gap-1 pb-4 mb-4 border-b border-zinc-100">
-              <Link
-                to="#"
-                className="font-serif text-2xl font-bold py-3 text-zinc-900"
-              >
-                Luxury SUVs
-              </Link>
-              <Link
-                to="#"
-                className="font-serif text-2xl font-bold py-3 text-zinc-900"
-              >
-                Electric
-              </Link>
-            </div>
 
             {isAuthenticated ? (
               <div className="flex flex-col gap-3 pt-2">

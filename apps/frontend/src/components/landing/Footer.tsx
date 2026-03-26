@@ -48,30 +48,6 @@ export const Footer = () => {
             {/* Spacer for large screens */}
             <div className="hidden lg:block lg:col-span-1"></div>
 
-            {/* Fleet Links */}
-            <div className="md:col-span-4 lg:col-span-2 text-center md:text-left">
-              <h4 className="text-xs font-black text-zinc-900 mb-8 tracking-[0.2em] uppercase">
-                The Fleet
-              </h4>
-              <ul className="space-y-5">
-                <li>
-                  <Link
-                    to="#"
-                    className="text-zinc-500 font-semibold hover:text-zinc-900 hover:translate-x-1 inline-flex transition-all duration-300"
-                  >
-                    Luxury SUVs
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#"
-                    className="text-zinc-500 font-semibold hover:text-zinc-900 hover:translate-x-1 inline-flex transition-all duration-300"
-                  >
-                    Electric
-                  </Link>
-                </li>
-              </ul>
-            </div>
 
             {/* Company Links */}
             <div className="md:col-span-4 lg:col-span-2 text-center md:text-left">
