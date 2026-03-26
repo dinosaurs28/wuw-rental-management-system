@@ -29,6 +29,7 @@ import {
   Receipt,
   Tag,
   MessageCircle,
+  ScrollText,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAdminAuthStore } from "@/store/adminAuth.store";
@@ -68,6 +69,11 @@ const items = [
     title: "WhatsApp Support",
     url: "/admin/whatsapp-config",
     icon: MessageCircle,
+  },
+  {
+    title: "Audit Log",
+    url: "/admin/audit-log",
+    icon: ScrollText,
   },
 ];
 
