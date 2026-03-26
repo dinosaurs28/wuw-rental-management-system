@@ -63,12 +63,12 @@ export const SearchForm = () => {
                 {/* Top Bar: Dynamic Category Tabs & View Booking */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-3">
                     <div className="flex items-center flex-wrap gap-1.5 p-1 bg-zinc-100/80 rounded-2xl md:rounded-full border border-zinc-200/50 max-w-full">
-                        <button 
+                        <button
                             onClick={() => setSearchCriteria({ categoryPublicId: "all" })}
                             className={cn(
                                 "flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all focus:outline-none whitespace-nowrap",
                                 (!categoryPublicId || categoryPublicId === "all")
-                                    ? "bg-zinc-900 text-white shadow-sm" 
+                                    ? "bg-zinc-900 text-white shadow-sm"
                                     : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50"
                             )}>
                             All Types
@@ -79,13 +79,13 @@ export const SearchForm = () => {
                             </div>
                         ) : (
                             categories.map(category => (
-                                <button 
+                                <button
                                     key={category.publicId}
                                     onClick={() => setSearchCriteria({ categoryPublicId: category.publicId })}
                                     className={cn(
                                         "flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all focus:outline-none whitespace-nowrap",
                                         categoryPublicId === category.publicId
-                                            ? "bg-zinc-900 text-white shadow-sm" 
+                                            ? "bg-zinc-900 text-white shadow-sm"
                                             : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50"
                                     )}>
                                     <Car className="size-4" strokeWidth={2.5} />
@@ -94,10 +94,6 @@ export const SearchForm = () => {
                             ))
                         )}
                     </div>
-                    {/* View Booking Link */}
-                    <button className="text-[13px] font-bold text-zinc-900 underline underline-offset-4 decoration-2 decoration-zinc-900 hover:text-zinc-600 hover:decoration-zinc-600 transition-colors shrink-0 self-start md:self-auto">
-                        View / edit my booking
-                    </button>
                 </div>
 
                 {/* Main Search Row */}
@@ -180,7 +176,7 @@ export const SearchForm = () => {
                                             if ('showPicker' in HTMLInputElement.prototype) {
                                                 e.currentTarget.showPicker();
                                             }
-                                        } catch (err) {}
+                                        } catch (err) { }
                                     }}
                                     value={pickupTime || "10:00"}
                                     onChange={(e) => setSearchCriteria({ pickupTime: e.target.value })}
@@ -233,7 +229,7 @@ export const SearchForm = () => {
                                             if ('showPicker' in HTMLInputElement.prototype) {
                                                 e.currentTarget.showPicker();
                                             }
-                                        } catch (err) {}
+                                        } catch (err) { }
                                     }}
                                     value={returnTime || "10:00"}
                                     onChange={(e) => setSearchCriteria({ returnTime: e.target.value })}
