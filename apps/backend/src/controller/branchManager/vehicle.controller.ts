@@ -585,15 +585,7 @@ export const GetVehicles = async (req: Request, res: Response) => {
   }
 
   if (category) {
-    // category is categoryId in DB? No, in existing AddVehicle it uses categoryId: Number(categoryId).
-    // BUT vehicle schema might have category relation.
-    // Let's check prisma schema or existing code. AddVehicle uses categoryId.
-    // The list filter in public controller (inferred) usually filters by something.
-    // If frontend passes category name, we might need to join or filter by ID.
-    // For now, let's assume category is NOT filtering in this MVP or I need to check schema.
-    // Wait, AddVehicle takes categoryId.
-    // The frontend sends category string (Two Wheeler, Four Wheeler).
-    // I should probably skip category filter for now or assume it matches categoryId if passed as number.
+    whereClause.category = { publicId: String(category) };
   }
 
   if (status) {
