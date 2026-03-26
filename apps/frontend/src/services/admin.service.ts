@@ -30,6 +30,13 @@ export interface AdminAuthResponse {
     };
 }
 
+export type BranchManager = {
+    publicId: string;
+    name: string;
+    email: string;
+    createdAt: string;
+};
+
 export type AdminBranch = {
     id: string; // Internal ID
     publicId: string; // Public ID
@@ -42,10 +49,19 @@ export type AdminBranch = {
         vehicles: number;
         bookings: number;
     };
-    users?: {
-        name: string;
-        email: string;
-    }[];
+    users?: BranchManager[];
+};
+
+export type CreateManagerInput = {
+    name: string;
+    email: string;
+    password: string;
+};
+
+export type UpdateManagerInput = {
+    name?: string;
+    email?: string;
+    password?: string;
 };
 
 export type CreateBranchInput = {
@@ -244,6 +260,24 @@ export const adminService = {
 
     deleteBranch: async (branchId: string): Promise<void> => {
         await apiClient.delete(`/admin/dashboard/branches/delete/${branchId}`);
+    },
+
+    getBranchManagers: async (branchId: string): Promise<BranchManager[]> => {
+        const response = await apiClient.get<{ data: BranchManager[] }>(`/admin/dashboard/branches/${branchId}/managers`);
+        return response.data.data;
+    },
+
+    createBranchManager: async (branchId: string, data: CreateManagerInput): Promise<BranchManager> => {
+        const response = await apiClient.post<{ data: BranchManager }>(`/admin/dashboard/branches/${branchId}/managers`, data);
+        return response.data.data;
+    },
+
+    updateBranchManager: async (branchId: string, managerId: string, data: UpdateManagerInput): Promise<void> => {
+        await apiClient.put(`/admin/dashboard/branches/${branchId}/managers/${managerId}`, data);
+    },
+
+    deleteBranchManager: async (branchId: string, managerId: string): Promise<void> => {
+        await apiClient.delete(`/admin/dashboard/branches/${branchId}/managers/${managerId}`);
     },
 
     getRevenueReport: async (params: RevenueReportParams): Promise<RevenueReportResponse> => {

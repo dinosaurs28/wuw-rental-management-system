@@ -7,6 +7,10 @@ import {
   PaymentPurpose,
   PaymentMethod,
   Role,
+  LedgerEntryType,
+  LedgerEntryClassification,
+  PaymentSessionType,
+  PaymentSessionStatus,
 } from "@repo/database/client";
 import type { BookingExtension } from "@repo/database/client";
 import Decimal from "decimal.js";
@@ -16,6 +20,8 @@ import { AuditSeverity } from "@repo/database/client";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../staffActivity/staffActivity.service.js";
 import { paymentTransactionService, type RecordPaymentInput } from "../payment/payment-transaction.service.js";
 import { branchPaymentConfigService } from "../payment/index.js";
+import { paymentSessionService } from "../payment/paymentSession.service.js";
+import { ledgerService } from "../payment/ledger.service.js";
 import { extensionAvailabilityService } from "./extension-availability.service.js";
 import { extensionPricingService, type ExtensionPricingResult } from "./extension-pricing.service.js";
 import { extensionConflictResolverService, type ConflictResolutionOptions } from "./extension-conflict-resolver.service.js";
@@ -54,6 +60,16 @@ export interface CommitExtensionInput {
   onlineGateway?: string;
   idempotencyKey: string;
   notes?: string;
+}
+
+export interface CommitExtensionResult {
+  extension: BookingExtension;
+  /** Present when branch has usePaymentSessions=true; client should call record-payment on this session */
+  session?: {
+    publicId: string;
+    netPayable: string;
+    status: string;
+  };
 }
 
 export interface PaginatedExtensions {
@@ -201,14 +217,19 @@ class ExtensionService {
   /**
    * Commit an extension: acquire locks, re-validate availability (stale data check),
    * execute vehicle allocation, record payment, and update booking.
+   *
+   * When branch has `usePaymentSessions=true`, skips PaymentTransaction creation and
+   * instead creates an EXTENSION PaymentSession with a EXTENSION ledger entry.
+   * The booking endAt is NOT updated yet — it is deferred to the session's post-completion hook.
    */
-  async commit(input: CommitExtensionInput, actor: ActorContext): Promise<BookingExtension> {
+  async commit(input: CommitExtensionInput, actor: ActorContext): Promise<CommitExtensionResult> {
     const extension = await prisma.bookingExtension.findUnique({
       where: { publicId: input.extensionPublicId },
       include: {
         booking: {
           include: {
             items: { include: { vehicle: { include: { category: true } } } },
+            branch: { include: { chargeConfig: { select: { usePaymentSessions: true } } } },
           },
         },
       },
@@ -298,6 +319,115 @@ class ExtensionService {
         );
         vehicleSwapId = vehicleSwap.id;
       }
+
+      // ── Session-based flow (usePaymentSessions = true) ────────────────────
+      const usePaymentSessions = booking.branch?.chargeConfig?.usePaymentSessions ?? false;
+
+      if (usePaymentSessions) {
+        // Create or return existing EXTENSION session
+        const session = await paymentSessionService.createSession(
+          booking.id,
+          booking.branchId,
+          PaymentSessionType.EXTENSION,
+          actor.actorId,
+        );
+
+        // Add EXTENSION ledger entry — payment is deferred to record-payment endpoint
+        await ledgerService.addEntry(
+          session.id,
+          booking.id,
+          LedgerEntryType.EXTENSION,
+          LedgerEntryClassification.TAXABLE,
+          finalAdditionalAmount.toNumber(),
+          input.notes ?? `Extension charge — new end date: ${effectiveNewEndAt.toISOString()}`,
+          actor.actorId,
+          String(actor.actorRole),
+          {
+            idempotencyKey: `ext:${booking.id}:${extension.id}:${input.idempotencyKey}`,
+            referenceId: extension.publicId,
+            referenceType: "BOOKING_EXTENSION",
+          },
+        );
+
+        // Handle SWAP_FUTURE_BOOKING
+        if (
+          input.resolutionType === "SWAP_FUTURE_BOOKING" &&
+          input.affectedBookingSwaps &&
+          input.affectedBookingSwaps.length > 0
+        ) {
+          await prisma.$transaction(async (tx) => {
+            for (const swap of input.affectedBookingSwaps!) {
+              const affectedBooking = await tx.booking.findUnique({
+                where: { publicId: swap.bookingPublicId },
+                select: { id: true },
+              });
+              if (!affectedBooking) throw new Error(`Affected booking ${swap.bookingPublicId} not found`);
+              await extensionVehicleAllocatorService.swapFutureBookingVehicle(
+                affectedBooking.id,
+                swap.newVehiclePublicId,
+                extension.id,
+                actor,
+                tx,
+              );
+            }
+          });
+        }
+
+        // Persist extension resolution details (no booking.endAt yet — deferred to post-completion hook)
+        const updatedExtension = await prisma.bookingExtension.update({
+          where: { id: extension.id },
+          data: {
+            extensionStatus: ExtensionStatus.PENDING_PAYMENT,
+            resolutionType: input.resolutionType as ExtensionResolutionType,
+            vehicleSwapOccurred: input.resolutionType !== "SAME_VEHICLE",
+            vehicleSwapId: vehicleSwapId,
+            additionalAmount: finalAdditionalAmount,
+            newTotalFinal: finalNewTotalFinal,
+          },
+        });
+
+        // Transition session to AWAITING_PAYMENT
+        await paymentSessionService.updateStatus(session.id, PaymentSessionStatus.AWAITING_PAYMENT);
+
+        await Promise.all([
+          auditService.log({
+            actorId: actor.actorId,
+            actorName: actor.actorName,
+            actorRole: actor.actorRole,
+            actorBranchId: actor.actorBranchId,
+            action: "Extension session created — awaiting payment",
+            category: AuditCategory.BOOKING,
+            severity: AuditSeverity.INFO,
+            entity: "BookingExtension",
+            entityId: updatedExtension.publicId,
+            description: `Extension session ${session.publicId} initiated for booking ${booking.publicId}. ₹${finalAdditionalAmount.toFixed(2)} due.`,
+            after: { sessionPublicId: session.publicId, amount: finalAdditionalAmount.toFixed(2) },
+          }),
+          staffActivityService.log({
+            actorPublicId: actor.actorPublicId,
+            actorName: actor.actorName,
+            actorRole: actor.actorRole,
+            branchId: actor.actorBranchId,
+            branchName: actor.branchName,
+            actionType: StaffActionType.INITIATED,
+            entityType: StaffEntityType.PAYMENT_SESSION,
+            entityRef: session.publicId,
+            description: `Extension payment session initiated for booking ${booking.publicId}`,
+          }),
+        ]);
+
+        const updatedSession = await paymentSessionService.getSession(session.publicId);
+        return {
+          extension: updatedExtension,
+          session: {
+            publicId: session.publicId,
+            netPayable: new Decimal(updatedSession!.netPayable.toString()).toFixed(2),
+            status: updatedSession!.status,
+          },
+        };
+      }
+
+      // ── Legacy flow (usePaymentSessions = false) ──────────────────────────
 
       // Record payment transaction
       const paymentInput: RecordPaymentInput = {
@@ -441,7 +571,7 @@ class ExtensionService {
         }),
       ]);
 
-      return updatedExtension;
+      return { extension: updatedExtension };
     } catch (error) {
       // Rollback: if extension was not yet committed, cancel it and clear activeExtensionId
       await prisma.bookingExtension.update({

@@ -11,7 +11,13 @@
       "Bash(npm run:*)",
       "Bash(pnpm -F backend tsc --noEmit)",
       "Bash(grep:*)",
-      "Bash(find /Users/sushan/Projects/freelance/wuw-rental-management-system -name *query* -o -name *Query*)"
+      "Bash(find /Users/sushan/Projects/freelance/wuw-rental-management-system -name *query* -o -name *Query*)",
+      "Bash(pnpm --filter @repo/schemas build)",
+      "Bash(find /c/Freelance/vrms/apps/backend -name *discount* -type f)",
+      "Bash(pnpm --filter backend tsc --noEmit)",
+      "Bash(pnpm --filter frontend tsc --noEmit)",
+      "Bash(pnpm --filter @repo/backend tsc --noEmit)",
+      "Bash(pnpm --filter backend exec tsc --noEmit)"
     ]
   }
 }

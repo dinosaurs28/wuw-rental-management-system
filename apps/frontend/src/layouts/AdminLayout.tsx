@@ -27,6 +27,7 @@ import {
   DollarSign,
   Users,
   Receipt,
+  Tag,
   MessageCircle,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -57,6 +58,11 @@ const items = [
     title: "Global Reports",
     url: "/admin/reports",
     icon: BarChart3,
+  },
+  {
+    title: "Discount Rules",
+    url: "/admin/discount-rules",
+    icon: Tag,
   },
   {
     title: "WhatsApp Support",

@@ -11,6 +11,7 @@ export const bookingSummarySchema = z.object({
   file_public_id: z.string().min(1),
   payment_type: z.enum(["CASH", "ONLINE"]),
   payment_flow: z.enum(["FULL", "ADVANCE"]).default("FULL"),
+  couponCode: z.string().min(1).max(50).optional(),
 });
 
 export const createVehicleSchema = z.object({

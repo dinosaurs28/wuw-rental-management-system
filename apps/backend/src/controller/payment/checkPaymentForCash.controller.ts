@@ -84,6 +84,12 @@ export const checkPaymentForCash = async (req: Request, res: Response) => {
       });
     }
 
+    // Fetch actor info before the transaction to avoid adding latency inside it
+    const cashActor = await prisma.user.findUnique({
+      where: { id: booking.createdById },
+      select: { name: true, role: true, branchId: true },
+    });
+
     await prisma.$transaction(async (tx) => {
       const bookingUpdateData: any = {
         status: BookingStatus.CONFIRMED,
@@ -164,29 +170,29 @@ export const checkPaymentForCash = async (req: Request, res: Response) => {
           amount: paymentAmount,
         },
       });
+    });
 
-      // Clear Redis holds
-      for (const item of booking.items) {
-        await redis.del(`vehicle_holds:${item.vehicle.publicId}`);
-      }
-      await redis.del(`hold:${booking.publicId}`);
+    // Clear Redis holds outside the transaction (Redis is not transactional anyway)
+    for (const item of booking.items) {
+      await redis.del(`vehicle_holds:${item.vehicle.publicId}`);
+    }
+    await redis.del(`hold:${booking.publicId}`);
 
-      const cashActor = await tx.user.findUnique({ where: { id: booking.createdById }, select: { name: true, role: true, branchId: true } });
-      await auditService.log({
-        actorId: booking.createdById,
-        actorName: cashActor?.name ?? "Unknown",
-        actorRole: cashActor?.role ?? Role.CUSTOMER,
-        actorBranchId: cashActor?.branchId ?? undefined,
-        action: booking.isAdvancePayment ? "BOOKING_CONFIRMED_ADVANCE" : "BOOKING_CONFIRMED",
-        category: AuditCategory.PAYMENT,
-        description: `Booking ${booking.publicId} confirmed via cash payment`,
-        entity: "Booking",
-        entityId: booking.publicId,
-        ipAddress: req.ip,
-        userAgent: req.headers["user-agent"] as string | undefined,
-        before: { status: BookingStatus.HOLD },
-        after: { status: "CONFIRMED", paymentStatus: "SUCCESS", paymentMethod: "CASH", isAdvancePayment: booking.isAdvancePayment },
-      }, tx);
+    // Audit log outside the transaction to avoid timeout
+    await auditService.log({
+      actorId: booking.createdById,
+      actorName: cashActor?.name ?? "Unknown",
+      actorRole: cashActor?.role ?? Role.CUSTOMER,
+      actorBranchId: cashActor?.branchId ?? undefined,
+      action: booking.isAdvancePayment ? "BOOKING_CONFIRMED_ADVANCE" : "BOOKING_CONFIRMED",
+      category: AuditCategory.PAYMENT,
+      description: `Booking ${booking.publicId} confirmed via cash payment`,
+      entity: "Booking",
+      entityId: booking.publicId,
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"] as string | undefined,
+      before: { status: BookingStatus.HOLD },
+      after: { status: "CONFIRMED", paymentStatus: "SUCCESS", paymentMethod: "CASH", isAdvancePayment: booking.isAdvancePayment },
     });
 
     return res.status(StatusCode.OK).json({

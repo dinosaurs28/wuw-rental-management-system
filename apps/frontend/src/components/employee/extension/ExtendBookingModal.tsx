@@ -33,6 +33,9 @@ import {
   type ExtensionResolutionType,
 } from "@/services/extension.service";
 import type { PaymentMethod, OnlineGateway } from "@/services/payment.service";
+import { paymentSessionService, type PaymentSession } from "@/services/paymentSession.service";
+import { LedgerSummaryCard } from "@/components/payment/LedgerSummaryCard";
+import { RecordPaymentPanel } from "@/components/payment/RecordPaymentPanel";
 
 interface ExtendBookingModalProps {
   open: boolean;
@@ -43,7 +46,7 @@ interface ExtendBookingModalProps {
   onSuccess: () => void;
 }
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
 
 const resolutionLabels: Record<ExtensionResolutionType, string> = {
   SAME_VEHICLE: "Same vehicle (no conflict)",
@@ -91,6 +94,7 @@ export function ExtendBookingModal({
   const [txnRef, setTxnRef] = useState("");
   const [gateway, setGateway] = useState<OnlineGateway>("UPI");
   const [committing, setCommitting] = useState(false);
+  const [extensionSession, setExtensionSession] = useState<PaymentSession | null>(null);
   const idempotencyKey = useRef(crypto.randomUUID());
 
   const reset = useCallback(() => {
@@ -106,6 +110,7 @@ export function ExtendBookingModal({
     setCashAmount("");
     setTxnRef("");
     setGateway("UPI");
+    setExtensionSession(null);
     idempotencyKey.current = crypto.randomUUID();
   }, []);
 
@@ -218,9 +223,22 @@ export function ExtendBookingModal({
         idempotencyKey: idempotencyKey.current,
       });
 
-      if (res.data.extensionStatus === "CONFIRMED") {
-        toast.success(`Booking extended to ${fmt(res.data.actualNewEndAt ?? evaluation.requestedEndAt)}. Payment confirmed.`);
-      } else if (res.data.extensionStatus === "PAYMENT_COLLECTED") {
+      // Session flow: backend returns { extension, session } when usePaymentSessions=true
+      const resData = res.data as any;
+      const sessionData = resData?.session;
+      const extensionData = resData?.extension ?? resData;
+
+      if (sessionData) {
+        // Session mode — need to collect payment in step 4
+        const sessionDetail = await paymentSessionService.getSession(sessionData.publicId);
+        setExtensionSession(sessionDetail);
+        setStep(4);
+        return;
+      }
+
+      if (extensionData?.extensionStatus === "CONFIRMED") {
+        toast.success(`Booking extended to ${fmt(extensionData.actualNewEndAt ?? evaluation.requestedEndAt)}. Payment confirmed.`);
+      } else if (extensionData?.extensionStatus === "PAYMENT_COLLECTED") {
         toast.info("Cash collected — awaiting manager confirmation to finalize extension.");
       } else {
         toast.success(res.message || "Extension recorded.");
@@ -247,7 +265,7 @@ export function ExtendBookingModal({
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle>Extend Booking</DialogTitle>
-            <span className="text-xs text-neutral-400 font-medium">Step {step} of 3</span>
+            <span className="text-xs text-neutral-400 font-medium">Step {step} of {extensionSession ? 4 : 3}</span>
           </div>
           {/* Progress bar */}
           <div className="flex gap-1 mt-3">
@@ -257,6 +275,9 @@ export function ExtendBookingModal({
                 className={`h-1 flex-1 rounded-full transition-colors ${step >= s ? "bg-orange-500" : "bg-neutral-200"}`}
               />
             ))}
+            {extensionSession && (
+              <div className={`h-1 flex-1 rounded-full transition-colors ${step >= 4 ? "bg-orange-500" : "bg-neutral-200"}`} />
+            )}
           </div>
         </DialogHeader>
 
@@ -628,6 +649,32 @@ export function ExtendBookingModal({
                     : "Record Payment & Confirm"}
                 </Button>
               </div>
+            </motion.div>
+          )}
+          {/* ── Step 4: Session Payment ── */}
+          {step === 4 && extensionSession && (
+            <motion.div
+              key="step4"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-4 py-2"
+            >
+              <p className="text-sm text-muted-foreground">
+                Collect payment to confirm the extension.
+              </p>
+              <LedgerSummaryCard session={extensionSession} />
+              <RecordPaymentPanel
+                session={extensionSession}
+                onSuccess={(updatedSession) => {
+                  setExtensionSession(updatedSession);
+                  if (updatedSession.status === "COMPLETED") {
+                    toast.success("Extension payment collected and confirmed.");
+                    onSuccess();
+                    handleClose();
+                  }
+                }}
+              />
             </motion.div>
           )}
         </AnimatePresence>

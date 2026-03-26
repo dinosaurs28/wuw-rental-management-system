@@ -43,6 +43,10 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
     { label: "Refunds", path: "/manager/payment/refunds", badge: pendingRefundCount },
     { label: "Cash Shifts", path: "/manager/payment/cash-shifts" },
     { label: "Extensions", path: "/manager/payment/extensions" },
+    { label: "Discount Approvals", path: "/manager/payment/discount-approvals" },
+    { label: "Coupons", path: "/manager/payment/coupons" },
+    { label: "Discount Config", path: "/manager/payment/discount-config" },
+    { label: "Charge Settings", path: "/manager/charge-config" },
   ];
 
   const handleLogout = () => {

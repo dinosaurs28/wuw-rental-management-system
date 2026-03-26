@@ -288,6 +288,16 @@ export type FuelRecord = $Result.DefaultSelection<Prisma.$FuelRecordPayload>
  * 
  */
 export type SafetyDepositRequest = $Result.DefaultSelection<Prisma.$SafetyDepositRequestPayload>
+/**
+ * Model PaymentSession
+ * 
+ */
+export type PaymentSession = $Result.DefaultSelection<Prisma.$PaymentSessionPayload>
+/**
+ * Model LedgerEntry
+ * 
+ */
+export type LedgerEntry = $Result.DefaultSelection<Prisma.$LedgerEntryPayload>
 
 /**
  * Enums
@@ -381,7 +391,9 @@ export const StaffEntityType: {
   CHARGE_OVERRIDE: 'CHARGE_OVERRIDE',
   FUEL_RECORD: 'FUEL_RECORD',
   SAFETY_DEPOSIT_REQUEST: 'SAFETY_DEPOSIT_REQUEST',
-  BRANCH_CHARGE_CONFIG: 'BRANCH_CHARGE_CONFIG'
+  BRANCH_CHARGE_CONFIG: 'BRANCH_CHARGE_CONFIG',
+  PAYMENT_SESSION: 'PAYMENT_SESSION',
+  LEDGER_ENTRY: 'LEDGER_ENTRY'
 };
 
 export type StaffEntityType = (typeof StaffEntityType)[keyof typeof StaffEntityType]
@@ -717,6 +729,56 @@ export const SafetyDepositStatus: {
 
 export type SafetyDepositStatus = (typeof SafetyDepositStatus)[keyof typeof SafetyDepositStatus]
 
+
+export const PaymentSessionType: {
+  BOOKING: 'BOOKING',
+  PICKUP: 'PICKUP',
+  EXTENSION: 'EXTENSION',
+  RETURN: 'RETURN'
+};
+
+export type PaymentSessionType = (typeof PaymentSessionType)[keyof typeof PaymentSessionType]
+
+
+export const PaymentSessionStatus: {
+  OPEN: 'OPEN',
+  COMPUTING: 'COMPUTING',
+  AWAITING_PAYMENT: 'AWAITING_PAYMENT',
+  PAYMENT_INITIATED: 'PAYMENT_INITIATED',
+  COMPLETED: 'COMPLETED',
+  ABANDONED: 'ABANDONED'
+};
+
+export type PaymentSessionStatus = (typeof PaymentSessionStatus)[keyof typeof PaymentSessionStatus]
+
+
+export const LedgerEntryType: {
+  BOOKING_BASE: 'BOOKING_BASE',
+  EXTENSION: 'EXTENSION',
+  DEPOSIT: 'DEPOSIT',
+  EXTRA_KM: 'EXTRA_KM',
+  EXTRA_TIME: 'EXTRA_TIME',
+  FUEL: 'FUEL',
+  FASTAG: 'FASTAG',
+  DAMAGE: 'DAMAGE',
+  GRACE_ADJUSTMENT: 'GRACE_ADJUSTMENT',
+  DISCOUNT: 'DISCOUNT',
+  PAYMENT: 'PAYMENT',
+  REFUND: 'REFUND'
+};
+
+export type LedgerEntryType = (typeof LedgerEntryType)[keyof typeof LedgerEntryType]
+
+
+export const LedgerEntryClassification: {
+  TAXABLE: 'TAXABLE',
+  NON_TAXABLE: 'NON_TAXABLE',
+  DISCOUNT: 'DISCOUNT',
+  PAYMENT: 'PAYMENT'
+};
+
+export type LedgerEntryClassification = (typeof LedgerEntryClassification)[keyof typeof LedgerEntryClassification]
+
 }
 
 export type AuthProvider = $Enums.AuthProvider
@@ -870,6 +932,22 @@ export const FuelLevel: typeof $Enums.FuelLevel
 export type SafetyDepositStatus = $Enums.SafetyDepositStatus
 
 export const SafetyDepositStatus: typeof $Enums.SafetyDepositStatus
+
+export type PaymentSessionType = $Enums.PaymentSessionType
+
+export const PaymentSessionType: typeof $Enums.PaymentSessionType
+
+export type PaymentSessionStatus = $Enums.PaymentSessionStatus
+
+export const PaymentSessionStatus: typeof $Enums.PaymentSessionStatus
+
+export type LedgerEntryType = $Enums.LedgerEntryType
+
+export const LedgerEntryType: typeof $Enums.LedgerEntryType
+
+export type LedgerEntryClassification = $Enums.LedgerEntryClassification
+
+export const LedgerEntryClassification: typeof $Enums.LedgerEntryClassification
 
 /**
  * ##  Prisma Client ʲˢ
@@ -1543,6 +1621,26 @@ export class PrismaClient<
     * ```
     */
   get safetyDepositRequest(): Prisma.SafetyDepositRequestDelegate<ExtArgs>;
+
+  /**
+   * `prisma.paymentSession`: Exposes CRUD operations for the **PaymentSession** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more PaymentSessions
+    * const paymentSessions = await prisma.paymentSession.findMany()
+    * ```
+    */
+  get paymentSession(): Prisma.PaymentSessionDelegate<ExtArgs>;
+
+  /**
+   * `prisma.ledgerEntry`: Exposes CRUD operations for the **LedgerEntry** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more LedgerEntries
+    * const ledgerEntries = await prisma.ledgerEntry.findMany()
+    * ```
+    */
+  get ledgerEntry(): Prisma.LedgerEntryDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -2038,7 +2136,9 @@ export namespace Prisma {
     ChargeEntry: 'ChargeEntry',
     ChargeOverride: 'ChargeOverride',
     FuelRecord: 'FuelRecord',
-    SafetyDepositRequest: 'SafetyDepositRequest'
+    SafetyDepositRequest: 'SafetyDepositRequest',
+    PaymentSession: 'PaymentSession',
+    LedgerEntry: 'LedgerEntry'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -2054,7 +2154,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehiclePhotoCaptureConfig" | "vehicle" | "vehiclePricingOverride" | "vehicleCustomPricing" | "branchPricingDefaults" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "gSTRule" | "timezoneSetting" | "cancellationInvoice" | "featureFlag" | "branchFeatureFlag" | "vehicleFeatureFlag" | "vehicleSwap" | "discountRule" | "durationDiscountSlab" | "branchDiscountConfig" | "discountApplication" | "couponUsageLog" | "manualDiscount" | "branchPaymentConfig" | "paymentTransaction" | "refundRequest" | "cashShift" | "bookingExtension" | "branchChargeConfig" | "chargeEntry" | "chargeOverride" | "fuelRecord" | "safetyDepositRequest"
+      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehiclePhotoCaptureConfig" | "vehicle" | "vehiclePricingOverride" | "vehicleCustomPricing" | "branchPricingDefaults" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "gSTRule" | "timezoneSetting" | "cancellationInvoice" | "featureFlag" | "branchFeatureFlag" | "vehicleFeatureFlag" | "vehicleSwap" | "discountRule" | "durationDiscountSlab" | "branchDiscountConfig" | "discountApplication" | "couponUsageLog" | "manualDiscount" | "branchPaymentConfig" | "paymentTransaction" | "refundRequest" | "cashShift" | "bookingExtension" | "branchChargeConfig" | "chargeEntry" | "chargeOverride" | "fuelRecord" | "safetyDepositRequest" | "paymentSession" | "ledgerEntry"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -5908,6 +6008,146 @@ export namespace Prisma {
           }
         }
       }
+      PaymentSession: {
+        payload: Prisma.$PaymentSessionPayload<ExtArgs>
+        fields: Prisma.PaymentSessionFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.PaymentSessionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaymentSessionPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.PaymentSessionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaymentSessionPayload>
+          }
+          findFirst: {
+            args: Prisma.PaymentSessionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaymentSessionPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.PaymentSessionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaymentSessionPayload>
+          }
+          findMany: {
+            args: Prisma.PaymentSessionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaymentSessionPayload>[]
+          }
+          create: {
+            args: Prisma.PaymentSessionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaymentSessionPayload>
+          }
+          createMany: {
+            args: Prisma.PaymentSessionCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.PaymentSessionCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaymentSessionPayload>[]
+          }
+          delete: {
+            args: Prisma.PaymentSessionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaymentSessionPayload>
+          }
+          update: {
+            args: Prisma.PaymentSessionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaymentSessionPayload>
+          }
+          deleteMany: {
+            args: Prisma.PaymentSessionDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.PaymentSessionUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.PaymentSessionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PaymentSessionPayload>
+          }
+          aggregate: {
+            args: Prisma.PaymentSessionAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregatePaymentSession>
+          }
+          groupBy: {
+            args: Prisma.PaymentSessionGroupByArgs<ExtArgs>
+            result: $Utils.Optional<PaymentSessionGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.PaymentSessionCountArgs<ExtArgs>
+            result: $Utils.Optional<PaymentSessionCountAggregateOutputType> | number
+          }
+        }
+      }
+      LedgerEntry: {
+        payload: Prisma.$LedgerEntryPayload<ExtArgs>
+        fields: Prisma.LedgerEntryFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.LedgerEntryFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LedgerEntryPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.LedgerEntryFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LedgerEntryPayload>
+          }
+          findFirst: {
+            args: Prisma.LedgerEntryFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LedgerEntryPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.LedgerEntryFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LedgerEntryPayload>
+          }
+          findMany: {
+            args: Prisma.LedgerEntryFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LedgerEntryPayload>[]
+          }
+          create: {
+            args: Prisma.LedgerEntryCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LedgerEntryPayload>
+          }
+          createMany: {
+            args: Prisma.LedgerEntryCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.LedgerEntryCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LedgerEntryPayload>[]
+          }
+          delete: {
+            args: Prisma.LedgerEntryDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LedgerEntryPayload>
+          }
+          update: {
+            args: Prisma.LedgerEntryUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LedgerEntryPayload>
+          }
+          deleteMany: {
+            args: Prisma.LedgerEntryDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.LedgerEntryUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.LedgerEntryUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LedgerEntryPayload>
+          }
+          aggregate: {
+            args: Prisma.LedgerEntryAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateLedgerEntry>
+          }
+          groupBy: {
+            args: Prisma.LedgerEntryGroupByArgs<ExtArgs>
+            result: $Utils.Optional<LedgerEntryGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.LedgerEntryCountArgs<ExtArgs>
+            result: $Utils.Optional<LedgerEntryCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -6095,6 +6335,9 @@ export namespace Prisma {
     fuelReturnCaptures: number
     safetyDepositRequests: number
     safetyDepositApprovals: number
+    paymentSessionsOpened: number
+    ledgerEntriesActed: number
+    ledgerEntriesVoided: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6124,6 +6367,9 @@ export namespace Prisma {
     fuelReturnCaptures?: boolean | UserCountOutputTypeCountFuelReturnCapturesArgs
     safetyDepositRequests?: boolean | UserCountOutputTypeCountSafetyDepositRequestsArgs
     safetyDepositApprovals?: boolean | UserCountOutputTypeCountSafetyDepositApprovalsArgs
+    paymentSessionsOpened?: boolean | UserCountOutputTypeCountPaymentSessionsOpenedArgs
+    ledgerEntriesActed?: boolean | UserCountOutputTypeCountLedgerEntriesActedArgs
+    ledgerEntriesVoided?: boolean | UserCountOutputTypeCountLedgerEntriesVoidedArgs
   }
 
   // Custom InputTypes
@@ -6319,6 +6565,27 @@ export namespace Prisma {
     where?: SafetyDepositRequestWhereInput
   }
 
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountPaymentSessionsOpenedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PaymentSessionWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountLedgerEntriesActedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: LedgerEntryWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountLedgerEntriesVoidedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: LedgerEntryWhereInput
+  }
+
 
   /**
    * Count Type CustomerCountOutputType
@@ -6465,6 +6732,7 @@ export namespace Prisma {
     cashShifts: number
     refundRequests: number
     extensions: number
+    paymentSessions: number
   }
 
   export type BranchCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6483,6 +6751,7 @@ export namespace Prisma {
     cashShifts?: boolean | BranchCountOutputTypeCountCashShiftsArgs
     refundRequests?: boolean | BranchCountOutputTypeCountRefundRequestsArgs
     extensions?: boolean | BranchCountOutputTypeCountExtensionsArgs
+    paymentSessions?: boolean | BranchCountOutputTypeCountPaymentSessionsArgs
   }
 
   // Custom InputTypes
@@ -6599,6 +6868,13 @@ export namespace Prisma {
    */
   export type BranchCountOutputTypeCountExtensionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: BookingExtensionWhereInput
+  }
+
+  /**
+   * BranchCountOutputType without action
+   */
+  export type BranchCountOutputTypeCountPaymentSessionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PaymentSessionWhereInput
   }
 
 
@@ -6795,6 +7071,8 @@ export namespace Prisma {
     extensions: number
     chargeEntries: number
     chargeOverrides: number
+    paymentSessions: number
+    ledgerEntries: number
   }
 
   export type BookingCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6807,6 +7085,8 @@ export namespace Prisma {
     extensions?: boolean | BookingCountOutputTypeCountExtensionsArgs
     chargeEntries?: boolean | BookingCountOutputTypeCountChargeEntriesArgs
     chargeOverrides?: boolean | BookingCountOutputTypeCountChargeOverridesArgs
+    paymentSessions?: boolean | BookingCountOutputTypeCountPaymentSessionsArgs
+    ledgerEntries?: boolean | BookingCountOutputTypeCountLedgerEntriesArgs
   }
 
   // Custom InputTypes
@@ -6881,6 +7161,20 @@ export namespace Prisma {
    */
   export type BookingCountOutputTypeCountChargeOverridesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ChargeOverrideWhereInput
+  }
+
+  /**
+   * BookingCountOutputType without action
+   */
+  export type BookingCountOutputTypeCountPaymentSessionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PaymentSessionWhereInput
+  }
+
+  /**
+   * BookingCountOutputType without action
+   */
+  export type BookingCountOutputTypeCountLedgerEntriesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: LedgerEntryWhereInput
   }
 
 
@@ -7102,6 +7396,46 @@ export namespace Prisma {
    * BookingExtensionCountOutputType without action
    */
   export type BookingExtensionCountOutputTypeCountActiveForBookingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BookingWhereInput
+  }
+
+
+  /**
+   * Count Type PaymentSessionCountOutputType
+   */
+
+  export type PaymentSessionCountOutputType = {
+    entries: number
+    activeForBookings: number
+  }
+
+  export type PaymentSessionCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    entries?: boolean | PaymentSessionCountOutputTypeCountEntriesArgs
+    activeForBookings?: boolean | PaymentSessionCountOutputTypeCountActiveForBookingsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * PaymentSessionCountOutputType without action
+   */
+  export type PaymentSessionCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentSessionCountOutputType
+     */
+    select?: PaymentSessionCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * PaymentSessionCountOutputType without action
+   */
+  export type PaymentSessionCountOutputTypeCountEntriesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: LedgerEntryWhereInput
+  }
+
+  /**
+   * PaymentSessionCountOutputType without action
+   */
+  export type PaymentSessionCountOutputTypeCountActiveForBookingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: BookingWhereInput
   }
 
@@ -7404,6 +7738,9 @@ export namespace Prisma {
     fuelReturnCaptures?: boolean | User$fuelReturnCapturesArgs<ExtArgs>
     safetyDepositRequests?: boolean | User$safetyDepositRequestsArgs<ExtArgs>
     safetyDepositApprovals?: boolean | User$safetyDepositApprovalsArgs<ExtArgs>
+    paymentSessionsOpened?: boolean | User$paymentSessionsOpenedArgs<ExtArgs>
+    ledgerEntriesActed?: boolean | User$ledgerEntriesActedArgs<ExtArgs>
+    ledgerEntriesVoided?: boolean | User$ledgerEntriesVoidedArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -7469,6 +7806,9 @@ export namespace Prisma {
     fuelReturnCaptures?: boolean | User$fuelReturnCapturesArgs<ExtArgs>
     safetyDepositRequests?: boolean | User$safetyDepositRequestsArgs<ExtArgs>
     safetyDepositApprovals?: boolean | User$safetyDepositApprovalsArgs<ExtArgs>
+    paymentSessionsOpened?: boolean | User$paymentSessionsOpenedArgs<ExtArgs>
+    ledgerEntriesActed?: boolean | User$ledgerEntriesActedArgs<ExtArgs>
+    ledgerEntriesVoided?: boolean | User$ledgerEntriesVoidedArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type UserIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -7506,6 +7846,9 @@ export namespace Prisma {
       fuelReturnCaptures: Prisma.$FuelRecordPayload<ExtArgs>[]
       safetyDepositRequests: Prisma.$SafetyDepositRequestPayload<ExtArgs>[]
       safetyDepositApprovals: Prisma.$SafetyDepositRequestPayload<ExtArgs>[]
+      paymentSessionsOpened: Prisma.$PaymentSessionPayload<ExtArgs>[]
+      ledgerEntriesActed: Prisma.$LedgerEntryPayload<ExtArgs>[]
+      ledgerEntriesVoided: Prisma.$LedgerEntryPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -7913,6 +8256,9 @@ export namespace Prisma {
     fuelReturnCaptures<T extends User$fuelReturnCapturesArgs<ExtArgs> = {}>(args?: Subset<T, User$fuelReturnCapturesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$FuelRecordPayload<ExtArgs>, T, "findMany"> | Null>
     safetyDepositRequests<T extends User$safetyDepositRequestsArgs<ExtArgs> = {}>(args?: Subset<T, User$safetyDepositRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SafetyDepositRequestPayload<ExtArgs>, T, "findMany"> | Null>
     safetyDepositApprovals<T extends User$safetyDepositApprovalsArgs<ExtArgs> = {}>(args?: Subset<T, User$safetyDepositApprovalsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SafetyDepositRequestPayload<ExtArgs>, T, "findMany"> | Null>
+    paymentSessionsOpened<T extends User$paymentSessionsOpenedArgs<ExtArgs> = {}>(args?: Subset<T, User$paymentSessionsOpenedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentSessionPayload<ExtArgs>, T, "findMany"> | Null>
+    ledgerEntriesActed<T extends User$ledgerEntriesActedArgs<ExtArgs> = {}>(args?: Subset<T, User$ledgerEntriesActedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LedgerEntryPayload<ExtArgs>, T, "findMany"> | Null>
+    ledgerEntriesVoided<T extends User$ledgerEntriesVoidedArgs<ExtArgs> = {}>(args?: Subset<T, User$ledgerEntriesVoidedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LedgerEntryPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -8829,6 +9175,66 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: SafetyDepositRequestScalarFieldEnum | SafetyDepositRequestScalarFieldEnum[]
+  }
+
+  /**
+   * User.paymentSessionsOpened
+   */
+  export type User$paymentSessionsOpenedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentSession
+     */
+    select?: PaymentSessionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentSessionInclude<ExtArgs> | null
+    where?: PaymentSessionWhereInput
+    orderBy?: PaymentSessionOrderByWithRelationInput | PaymentSessionOrderByWithRelationInput[]
+    cursor?: PaymentSessionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PaymentSessionScalarFieldEnum | PaymentSessionScalarFieldEnum[]
+  }
+
+  /**
+   * User.ledgerEntriesActed
+   */
+  export type User$ledgerEntriesActedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LedgerEntry
+     */
+    select?: LedgerEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LedgerEntryInclude<ExtArgs> | null
+    where?: LedgerEntryWhereInput
+    orderBy?: LedgerEntryOrderByWithRelationInput | LedgerEntryOrderByWithRelationInput[]
+    cursor?: LedgerEntryWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: LedgerEntryScalarFieldEnum | LedgerEntryScalarFieldEnum[]
+  }
+
+  /**
+   * User.ledgerEntriesVoided
+   */
+  export type User$ledgerEntriesVoidedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LedgerEntry
+     */
+    select?: LedgerEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LedgerEntryInclude<ExtArgs> | null
+    where?: LedgerEntryWhereInput
+    orderBy?: LedgerEntryOrderByWithRelationInput | LedgerEntryOrderByWithRelationInput[]
+    cursor?: LedgerEntryWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: LedgerEntryScalarFieldEnum | LedgerEntryScalarFieldEnum[]
   }
 
   /**
@@ -14427,6 +14833,7 @@ export namespace Prisma {
     cashShifts?: boolean | Branch$cashShiftsArgs<ExtArgs>
     refundRequests?: boolean | Branch$refundRequestsArgs<ExtArgs>
     extensions?: boolean | Branch$extensionsArgs<ExtArgs>
+    paymentSessions?: boolean | Branch$paymentSessionsArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["branch"]>
 
@@ -14471,6 +14878,7 @@ export namespace Prisma {
     cashShifts?: boolean | Branch$cashShiftsArgs<ExtArgs>
     refundRequests?: boolean | Branch$refundRequestsArgs<ExtArgs>
     extensions?: boolean | Branch$extensionsArgs<ExtArgs>
+    paymentSessions?: boolean | Branch$paymentSessionsArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type BranchIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -14498,6 +14906,7 @@ export namespace Prisma {
       cashShifts: Prisma.$CashShiftPayload<ExtArgs>[]
       refundRequests: Prisma.$RefundRequestPayload<ExtArgs>[]
       extensions: Prisma.$BookingExtensionPayload<ExtArgs>[]
+      paymentSessions: Prisma.$PaymentSessionPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -14891,6 +15300,7 @@ export namespace Prisma {
     cashShifts<T extends Branch$cashShiftsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$cashShiftsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CashShiftPayload<ExtArgs>, T, "findMany"> | Null>
     refundRequests<T extends Branch$refundRequestsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$refundRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "findMany"> | Null>
     extensions<T extends Branch$extensionsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$extensionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingExtensionPayload<ExtArgs>, T, "findMany"> | Null>
+    paymentSessions<T extends Branch$paymentSessionsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$paymentSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentSessionPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -15622,6 +16032,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: BookingExtensionScalarFieldEnum | BookingExtensionScalarFieldEnum[]
+  }
+
+  /**
+   * Branch.paymentSessions
+   */
+  export type Branch$paymentSessionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentSession
+     */
+    select?: PaymentSessionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentSessionInclude<ExtArgs> | null
+    where?: PaymentSessionWhereInput
+    orderBy?: PaymentSessionOrderByWithRelationInput | PaymentSessionOrderByWithRelationInput[]
+    cursor?: PaymentSessionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PaymentSessionScalarFieldEnum | PaymentSessionScalarFieldEnum[]
   }
 
   /**
@@ -30610,6 +31040,7 @@ export namespace Prisma {
     activeExtensionId: number | null
     displacedByExtensionId: number | null
     chargeConfigVersion: number | null
+    activePaymentSessionId: number | null
   }
 
   export type BookingSumAggregateOutputType = {
@@ -30639,6 +31070,7 @@ export namespace Prisma {
     activeExtensionId: number | null
     displacedByExtensionId: number | null
     chargeConfigVersion: number | null
+    activePaymentSessionId: number | null
   }
 
   export type BookingMinAggregateOutputType = {
@@ -30697,6 +31129,7 @@ export namespace Prisma {
     displacedByExtensionId: number | null
     extensionDisplacedAt: Date | null
     chargeConfigVersion: number | null
+    activePaymentSessionId: number | null
     createdAt: Date | null
     updatedAt: Date | null
     deletedAt: Date | null
@@ -30758,6 +31191,7 @@ export namespace Prisma {
     displacedByExtensionId: number | null
     extensionDisplacedAt: Date | null
     chargeConfigVersion: number | null
+    activePaymentSessionId: number | null
     createdAt: Date | null
     updatedAt: Date | null
     deletedAt: Date | null
@@ -30821,6 +31255,7 @@ export namespace Prisma {
     extensionDisplacedAt: number
     frozenChargeConfig: number
     chargeConfigVersion: number
+    activePaymentSessionId: number
     createdAt: number
     updatedAt: number
     deletedAt: number
@@ -30855,6 +31290,7 @@ export namespace Prisma {
     activeExtensionId?: true
     displacedByExtensionId?: true
     chargeConfigVersion?: true
+    activePaymentSessionId?: true
   }
 
   export type BookingSumAggregateInputType = {
@@ -30884,6 +31320,7 @@ export namespace Prisma {
     activeExtensionId?: true
     displacedByExtensionId?: true
     chargeConfigVersion?: true
+    activePaymentSessionId?: true
   }
 
   export type BookingMinAggregateInputType = {
@@ -30942,6 +31379,7 @@ export namespace Prisma {
     displacedByExtensionId?: true
     extensionDisplacedAt?: true
     chargeConfigVersion?: true
+    activePaymentSessionId?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -31003,6 +31441,7 @@ export namespace Prisma {
     displacedByExtensionId?: true
     extensionDisplacedAt?: true
     chargeConfigVersion?: true
+    activePaymentSessionId?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -31066,6 +31505,7 @@ export namespace Prisma {
     extensionDisplacedAt?: true
     frozenChargeConfig?: true
     chargeConfigVersion?: true
+    activePaymentSessionId?: true
     createdAt?: true
     updatedAt?: true
     deletedAt?: true
@@ -31216,6 +31656,7 @@ export namespace Prisma {
     extensionDisplacedAt: Date | null
     frozenChargeConfig: JsonValue | null
     chargeConfigVersion: number
+    activePaymentSessionId: number | null
     createdAt: Date
     updatedAt: Date
     deletedAt: Date | null
@@ -31298,6 +31739,7 @@ export namespace Prisma {
     extensionDisplacedAt?: boolean
     frozenChargeConfig?: boolean
     chargeConfigVersion?: boolean
+    activePaymentSessionId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -31323,6 +31765,9 @@ export namespace Prisma {
     chargeOverrides?: boolean | Booking$chargeOverridesArgs<ExtArgs>
     fuelRecord?: boolean | Booking$fuelRecordArgs<ExtArgs>
     safetyDepositRequest?: boolean | Booking$safetyDepositRequestArgs<ExtArgs>
+    activePaymentSession?: boolean | Booking$activePaymentSessionArgs<ExtArgs>
+    paymentSessions?: boolean | Booking$paymentSessionsArgs<ExtArgs>
+    ledgerEntries?: boolean | Booking$ledgerEntriesArgs<ExtArgs>
     _count?: boolean | BookingCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["booking"]>
 
@@ -31384,6 +31829,7 @@ export namespace Prisma {
     extensionDisplacedAt?: boolean
     frozenChargeConfig?: boolean
     chargeConfigVersion?: boolean
+    activePaymentSessionId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -31393,6 +31839,7 @@ export namespace Prisma {
     createdBy?: boolean | UserDefaultArgs<ExtArgs>
     discountRule?: boolean | Booking$discountRuleArgs<ExtArgs>
     activeExtension?: boolean | Booking$activeExtensionArgs<ExtArgs>
+    activePaymentSession?: boolean | Booking$activePaymentSessionArgs<ExtArgs>
   }, ExtArgs["result"]["booking"]>
 
   export type BookingSelectScalar = {
@@ -31453,6 +31900,7 @@ export namespace Prisma {
     extensionDisplacedAt?: boolean
     frozenChargeConfig?: boolean
     chargeConfigVersion?: boolean
+    activePaymentSessionId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     deletedAt?: boolean
@@ -31481,6 +31929,9 @@ export namespace Prisma {
     chargeOverrides?: boolean | Booking$chargeOverridesArgs<ExtArgs>
     fuelRecord?: boolean | Booking$fuelRecordArgs<ExtArgs>
     safetyDepositRequest?: boolean | Booking$safetyDepositRequestArgs<ExtArgs>
+    activePaymentSession?: boolean | Booking$activePaymentSessionArgs<ExtArgs>
+    paymentSessions?: boolean | Booking$paymentSessionsArgs<ExtArgs>
+    ledgerEntries?: boolean | Booking$ledgerEntriesArgs<ExtArgs>
     _count?: boolean | BookingCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type BookingIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -31490,6 +31941,7 @@ export namespace Prisma {
     createdBy?: boolean | UserDefaultArgs<ExtArgs>
     discountRule?: boolean | Booking$discountRuleArgs<ExtArgs>
     activeExtension?: boolean | Booking$activeExtensionArgs<ExtArgs>
+    activePaymentSession?: boolean | Booking$activePaymentSessionArgs<ExtArgs>
   }
 
   export type $BookingPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -31517,6 +31969,9 @@ export namespace Prisma {
       chargeOverrides: Prisma.$ChargeOverridePayload<ExtArgs>[]
       fuelRecord: Prisma.$FuelRecordPayload<ExtArgs> | null
       safetyDepositRequest: Prisma.$SafetyDepositRequestPayload<ExtArgs> | null
+      activePaymentSession: Prisma.$PaymentSessionPayload<ExtArgs> | null
+      paymentSessions: Prisma.$PaymentSessionPayload<ExtArgs>[]
+      ledgerEntries: Prisma.$LedgerEntryPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -31576,6 +32031,7 @@ export namespace Prisma {
       extensionDisplacedAt: Date | null
       frozenChargeConfig: Prisma.JsonValue | null
       chargeConfigVersion: number
+      activePaymentSessionId: number | null
       createdAt: Date
       updatedAt: Date
       deletedAt: Date | null
@@ -31965,6 +32421,9 @@ export namespace Prisma {
     chargeOverrides<T extends Booking$chargeOverridesArgs<ExtArgs> = {}>(args?: Subset<T, Booking$chargeOverridesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ChargeOverridePayload<ExtArgs>, T, "findMany"> | Null>
     fuelRecord<T extends Booking$fuelRecordArgs<ExtArgs> = {}>(args?: Subset<T, Booking$fuelRecordArgs<ExtArgs>>): Prisma__FuelRecordClient<$Result.GetResult<Prisma.$FuelRecordPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     safetyDepositRequest<T extends Booking$safetyDepositRequestArgs<ExtArgs> = {}>(args?: Subset<T, Booking$safetyDepositRequestArgs<ExtArgs>>): Prisma__SafetyDepositRequestClient<$Result.GetResult<Prisma.$SafetyDepositRequestPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    activePaymentSession<T extends Booking$activePaymentSessionArgs<ExtArgs> = {}>(args?: Subset<T, Booking$activePaymentSessionArgs<ExtArgs>>): Prisma__PaymentSessionClient<$Result.GetResult<Prisma.$PaymentSessionPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    paymentSessions<T extends Booking$paymentSessionsArgs<ExtArgs> = {}>(args?: Subset<T, Booking$paymentSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentSessionPayload<ExtArgs>, T, "findMany"> | Null>
+    ledgerEntries<T extends Booking$ledgerEntriesArgs<ExtArgs> = {}>(args?: Subset<T, Booking$ledgerEntriesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LedgerEntryPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -32051,6 +32510,7 @@ export namespace Prisma {
     readonly extensionDisplacedAt: FieldRef<"Booking", 'DateTime'>
     readonly frozenChargeConfig: FieldRef<"Booking", 'Json'>
     readonly chargeConfigVersion: FieldRef<"Booking", 'Int'>
+    readonly activePaymentSessionId: FieldRef<"Booking", 'Int'>
     readonly createdAt: FieldRef<"Booking", 'DateTime'>
     readonly updatedAt: FieldRef<"Booking", 'DateTime'>
     readonly deletedAt: FieldRef<"Booking", 'DateTime'>
@@ -32708,6 +33168,61 @@ export namespace Prisma {
      */
     include?: SafetyDepositRequestInclude<ExtArgs> | null
     where?: SafetyDepositRequestWhereInput
+  }
+
+  /**
+   * Booking.activePaymentSession
+   */
+  export type Booking$activePaymentSessionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentSession
+     */
+    select?: PaymentSessionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentSessionInclude<ExtArgs> | null
+    where?: PaymentSessionWhereInput
+  }
+
+  /**
+   * Booking.paymentSessions
+   */
+  export type Booking$paymentSessionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentSession
+     */
+    select?: PaymentSessionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentSessionInclude<ExtArgs> | null
+    where?: PaymentSessionWhereInput
+    orderBy?: PaymentSessionOrderByWithRelationInput | PaymentSessionOrderByWithRelationInput[]
+    cursor?: PaymentSessionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PaymentSessionScalarFieldEnum | PaymentSessionScalarFieldEnum[]
+  }
+
+  /**
+   * Booking.ledgerEntries
+   */
+  export type Booking$ledgerEntriesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LedgerEntry
+     */
+    select?: LedgerEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LedgerEntryInclude<ExtArgs> | null
+    where?: LedgerEntryWhereInput
+    orderBy?: LedgerEntryOrderByWithRelationInput | LedgerEntryOrderByWithRelationInput[]
+    cursor?: LedgerEntryWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: LedgerEntryScalarFieldEnum | LedgerEntryScalarFieldEnum[]
   }
 
   /**
@@ -63934,6 +64449,7 @@ export namespace Prisma {
     overrideApprovalThreshold: Decimal | null
     safetyDepositEnabled: boolean | null
     safetyDepositRequiresApproval: boolean | null
+    usePaymentSessions: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -63956,6 +64472,7 @@ export namespace Prisma {
     overrideApprovalThreshold: Decimal | null
     safetyDepositEnabled: boolean | null
     safetyDepositRequiresApproval: boolean | null
+    usePaymentSessions: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -63978,6 +64495,7 @@ export namespace Prisma {
     overrideApprovalThreshold: number
     safetyDepositEnabled: number
     safetyDepositRequiresApproval: number
+    usePaymentSessions: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -64018,6 +64536,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: true
     safetyDepositEnabled?: true
     safetyDepositRequiresApproval?: true
+    usePaymentSessions?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -64040,6 +64559,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: true
     safetyDepositEnabled?: true
     safetyDepositRequiresApproval?: true
+    usePaymentSessions?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -64062,6 +64582,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: true
     safetyDepositEnabled?: true
     safetyDepositRequiresApproval?: true
+    usePaymentSessions?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -64171,6 +64692,7 @@ export namespace Prisma {
     overrideApprovalThreshold: Decimal | null
     safetyDepositEnabled: boolean
     safetyDepositRequiresApproval: boolean
+    usePaymentSessions: boolean
     createdAt: Date
     updatedAt: Date
     _count: BranchChargeConfigCountAggregateOutputType | null
@@ -64212,6 +64734,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: boolean
     safetyDepositEnabled?: boolean
     safetyDepositRequiresApproval?: boolean
+    usePaymentSessions?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     branch?: boolean | BranchDefaultArgs<ExtArgs>
@@ -64235,6 +64758,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: boolean
     safetyDepositEnabled?: boolean
     safetyDepositRequiresApproval?: boolean
+    usePaymentSessions?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     branch?: boolean | BranchDefaultArgs<ExtArgs>
@@ -64258,6 +64782,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: boolean
     safetyDepositEnabled?: boolean
     safetyDepositRequiresApproval?: boolean
+    usePaymentSessions?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
@@ -64292,6 +64817,7 @@ export namespace Prisma {
       overrideApprovalThreshold: Prisma.Decimal | null
       safetyDepositEnabled: boolean
       safetyDepositRequiresApproval: boolean
+      usePaymentSessions: boolean
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["branchChargeConfig"]>
@@ -64705,6 +65231,7 @@ export namespace Prisma {
     readonly overrideApprovalThreshold: FieldRef<"BranchChargeConfig", 'Decimal'>
     readonly safetyDepositEnabled: FieldRef<"BranchChargeConfig", 'Boolean'>
     readonly safetyDepositRequiresApproval: FieldRef<"BranchChargeConfig", 'Boolean'>
+    readonly usePaymentSessions: FieldRef<"BranchChargeConfig", 'Boolean'>
     readonly createdAt: FieldRef<"BranchChargeConfig", 'DateTime'>
     readonly updatedAt: FieldRef<"BranchChargeConfig", 'DateTime'>
   }
@@ -69633,6 +70160,2521 @@ export namespace Prisma {
 
 
   /**
+   * Model PaymentSession
+   */
+
+  export type AggregatePaymentSession = {
+    _count: PaymentSessionCountAggregateOutputType | null
+    _avg: PaymentSessionAvgAggregateOutputType | null
+    _sum: PaymentSessionSumAggregateOutputType | null
+    _min: PaymentSessionMinAggregateOutputType | null
+    _max: PaymentSessionMaxAggregateOutputType | null
+  }
+
+  export type PaymentSessionAvgAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    branchId: number | null
+    taxableBase: Decimal | null
+    nonTaxableBase: Decimal | null
+    gstAmount: Decimal | null
+    totalCharges: Decimal | null
+    totalDiscounts: Decimal | null
+    totalPaymentsRecorded: Decimal | null
+    netPayable: Decimal | null
+    actorId: number | null
+  }
+
+  export type PaymentSessionSumAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    branchId: number | null
+    taxableBase: Decimal | null
+    nonTaxableBase: Decimal | null
+    gstAmount: Decimal | null
+    totalCharges: Decimal | null
+    totalDiscounts: Decimal | null
+    totalPaymentsRecorded: Decimal | null
+    netPayable: Decimal | null
+    actorId: number | null
+  }
+
+  export type PaymentSessionMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    bookingId: number | null
+    branchId: number | null
+    sessionType: $Enums.PaymentSessionType | null
+    status: $Enums.PaymentSessionStatus | null
+    taxableBase: Decimal | null
+    nonTaxableBase: Decimal | null
+    gstAmount: Decimal | null
+    totalCharges: Decimal | null
+    totalDiscounts: Decimal | null
+    totalPaymentsRecorded: Decimal | null
+    netPayable: Decimal | null
+    idempotencyKey: string | null
+    gatewayTransactionId: string | null
+    gatewayPaymentUrl: string | null
+    expiresAt: Date | null
+    completedAt: Date | null
+    actorId: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PaymentSessionMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    bookingId: number | null
+    branchId: number | null
+    sessionType: $Enums.PaymentSessionType | null
+    status: $Enums.PaymentSessionStatus | null
+    taxableBase: Decimal | null
+    nonTaxableBase: Decimal | null
+    gstAmount: Decimal | null
+    totalCharges: Decimal | null
+    totalDiscounts: Decimal | null
+    totalPaymentsRecorded: Decimal | null
+    netPayable: Decimal | null
+    idempotencyKey: string | null
+    gatewayTransactionId: string | null
+    gatewayPaymentUrl: string | null
+    expiresAt: Date | null
+    completedAt: Date | null
+    actorId: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PaymentSessionCountAggregateOutputType = {
+    id: number
+    publicId: number
+    bookingId: number
+    branchId: number
+    sessionType: number
+    status: number
+    taxableBase: number
+    nonTaxableBase: number
+    gstAmount: number
+    totalCharges: number
+    totalDiscounts: number
+    totalPaymentsRecorded: number
+    netPayable: number
+    idempotencyKey: number
+    gatewayTransactionId: number
+    gatewayPaymentUrl: number
+    expiresAt: number
+    completedAt: number
+    metadata: number
+    actorId: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type PaymentSessionAvgAggregateInputType = {
+    id?: true
+    bookingId?: true
+    branchId?: true
+    taxableBase?: true
+    nonTaxableBase?: true
+    gstAmount?: true
+    totalCharges?: true
+    totalDiscounts?: true
+    totalPaymentsRecorded?: true
+    netPayable?: true
+    actorId?: true
+  }
+
+  export type PaymentSessionSumAggregateInputType = {
+    id?: true
+    bookingId?: true
+    branchId?: true
+    taxableBase?: true
+    nonTaxableBase?: true
+    gstAmount?: true
+    totalCharges?: true
+    totalDiscounts?: true
+    totalPaymentsRecorded?: true
+    netPayable?: true
+    actorId?: true
+  }
+
+  export type PaymentSessionMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    branchId?: true
+    sessionType?: true
+    status?: true
+    taxableBase?: true
+    nonTaxableBase?: true
+    gstAmount?: true
+    totalCharges?: true
+    totalDiscounts?: true
+    totalPaymentsRecorded?: true
+    netPayable?: true
+    idempotencyKey?: true
+    gatewayTransactionId?: true
+    gatewayPaymentUrl?: true
+    expiresAt?: true
+    completedAt?: true
+    actorId?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PaymentSessionMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    branchId?: true
+    sessionType?: true
+    status?: true
+    taxableBase?: true
+    nonTaxableBase?: true
+    gstAmount?: true
+    totalCharges?: true
+    totalDiscounts?: true
+    totalPaymentsRecorded?: true
+    netPayable?: true
+    idempotencyKey?: true
+    gatewayTransactionId?: true
+    gatewayPaymentUrl?: true
+    expiresAt?: true
+    completedAt?: true
+    actorId?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PaymentSessionCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    branchId?: true
+    sessionType?: true
+    status?: true
+    taxableBase?: true
+    nonTaxableBase?: true
+    gstAmount?: true
+    totalCharges?: true
+    totalDiscounts?: true
+    totalPaymentsRecorded?: true
+    netPayable?: true
+    idempotencyKey?: true
+    gatewayTransactionId?: true
+    gatewayPaymentUrl?: true
+    expiresAt?: true
+    completedAt?: true
+    metadata?: true
+    actorId?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type PaymentSessionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PaymentSession to aggregate.
+     */
+    where?: PaymentSessionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PaymentSessions to fetch.
+     */
+    orderBy?: PaymentSessionOrderByWithRelationInput | PaymentSessionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: PaymentSessionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PaymentSessions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PaymentSessions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned PaymentSessions
+    **/
+    _count?: true | PaymentSessionCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: PaymentSessionAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: PaymentSessionSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: PaymentSessionMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: PaymentSessionMaxAggregateInputType
+  }
+
+  export type GetPaymentSessionAggregateType<T extends PaymentSessionAggregateArgs> = {
+        [P in keyof T & keyof AggregatePaymentSession]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePaymentSession[P]>
+      : GetScalarType<T[P], AggregatePaymentSession[P]>
+  }
+
+
+
+
+  export type PaymentSessionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PaymentSessionWhereInput
+    orderBy?: PaymentSessionOrderByWithAggregationInput | PaymentSessionOrderByWithAggregationInput[]
+    by: PaymentSessionScalarFieldEnum[] | PaymentSessionScalarFieldEnum
+    having?: PaymentSessionScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: PaymentSessionCountAggregateInputType | true
+    _avg?: PaymentSessionAvgAggregateInputType
+    _sum?: PaymentSessionSumAggregateInputType
+    _min?: PaymentSessionMinAggregateInputType
+    _max?: PaymentSessionMaxAggregateInputType
+  }
+
+  export type PaymentSessionGroupByOutputType = {
+    id: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    sessionType: $Enums.PaymentSessionType
+    status: $Enums.PaymentSessionStatus
+    taxableBase: Decimal
+    nonTaxableBase: Decimal
+    gstAmount: Decimal
+    totalCharges: Decimal
+    totalDiscounts: Decimal
+    totalPaymentsRecorded: Decimal
+    netPayable: Decimal
+    idempotencyKey: string | null
+    gatewayTransactionId: string | null
+    gatewayPaymentUrl: string | null
+    expiresAt: Date | null
+    completedAt: Date | null
+    metadata: JsonValue | null
+    actorId: number
+    createdAt: Date
+    updatedAt: Date
+    _count: PaymentSessionCountAggregateOutputType | null
+    _avg: PaymentSessionAvgAggregateOutputType | null
+    _sum: PaymentSessionSumAggregateOutputType | null
+    _min: PaymentSessionMinAggregateOutputType | null
+    _max: PaymentSessionMaxAggregateOutputType | null
+  }
+
+  type GetPaymentSessionGroupByPayload<T extends PaymentSessionGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<PaymentSessionGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof PaymentSessionGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], PaymentSessionGroupByOutputType[P]>
+            : GetScalarType<T[P], PaymentSessionGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type PaymentSessionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    branchId?: boolean
+    sessionType?: boolean
+    status?: boolean
+    taxableBase?: boolean
+    nonTaxableBase?: boolean
+    gstAmount?: boolean
+    totalCharges?: boolean
+    totalDiscounts?: boolean
+    totalPaymentsRecorded?: boolean
+    netPayable?: boolean
+    idempotencyKey?: boolean
+    gatewayTransactionId?: boolean
+    gatewayPaymentUrl?: boolean
+    expiresAt?: boolean
+    completedAt?: boolean
+    metadata?: boolean
+    actorId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    actor?: boolean | UserDefaultArgs<ExtArgs>
+    entries?: boolean | PaymentSession$entriesArgs<ExtArgs>
+    activeForBookings?: boolean | PaymentSession$activeForBookingsArgs<ExtArgs>
+    _count?: boolean | PaymentSessionCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["paymentSession"]>
+
+  export type PaymentSessionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    branchId?: boolean
+    sessionType?: boolean
+    status?: boolean
+    taxableBase?: boolean
+    nonTaxableBase?: boolean
+    gstAmount?: boolean
+    totalCharges?: boolean
+    totalDiscounts?: boolean
+    totalPaymentsRecorded?: boolean
+    netPayable?: boolean
+    idempotencyKey?: boolean
+    gatewayTransactionId?: boolean
+    gatewayPaymentUrl?: boolean
+    expiresAt?: boolean
+    completedAt?: boolean
+    metadata?: boolean
+    actorId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    actor?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["paymentSession"]>
+
+  export type PaymentSessionSelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    branchId?: boolean
+    sessionType?: boolean
+    status?: boolean
+    taxableBase?: boolean
+    nonTaxableBase?: boolean
+    gstAmount?: boolean
+    totalCharges?: boolean
+    totalDiscounts?: boolean
+    totalPaymentsRecorded?: boolean
+    netPayable?: boolean
+    idempotencyKey?: boolean
+    gatewayTransactionId?: boolean
+    gatewayPaymentUrl?: boolean
+    expiresAt?: boolean
+    completedAt?: boolean
+    metadata?: boolean
+    actorId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type PaymentSessionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    actor?: boolean | UserDefaultArgs<ExtArgs>
+    entries?: boolean | PaymentSession$entriesArgs<ExtArgs>
+    activeForBookings?: boolean | PaymentSession$activeForBookingsArgs<ExtArgs>
+    _count?: boolean | PaymentSessionCountOutputTypeDefaultArgs<ExtArgs>
+  }
+  export type PaymentSessionIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    actor?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $PaymentSessionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "PaymentSession"
+    objects: {
+      booking: Prisma.$BookingPayload<ExtArgs>
+      branch: Prisma.$BranchPayload<ExtArgs>
+      actor: Prisma.$UserPayload<ExtArgs>
+      entries: Prisma.$LedgerEntryPayload<ExtArgs>[]
+      activeForBookings: Prisma.$BookingPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      bookingId: number
+      branchId: number
+      sessionType: $Enums.PaymentSessionType
+      status: $Enums.PaymentSessionStatus
+      taxableBase: Prisma.Decimal
+      nonTaxableBase: Prisma.Decimal
+      gstAmount: Prisma.Decimal
+      totalCharges: Prisma.Decimal
+      totalDiscounts: Prisma.Decimal
+      totalPaymentsRecorded: Prisma.Decimal
+      netPayable: Prisma.Decimal
+      idempotencyKey: string | null
+      gatewayTransactionId: string | null
+      gatewayPaymentUrl: string | null
+      expiresAt: Date | null
+      completedAt: Date | null
+      metadata: Prisma.JsonValue | null
+      actorId: number
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["paymentSession"]>
+    composites: {}
+  }
+
+  type PaymentSessionGetPayload<S extends boolean | null | undefined | PaymentSessionDefaultArgs> = $Result.GetResult<Prisma.$PaymentSessionPayload, S>
+
+  type PaymentSessionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<PaymentSessionFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: PaymentSessionCountAggregateInputType | true
+    }
+
+  export interface PaymentSessionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['PaymentSession'], meta: { name: 'PaymentSession' } }
+    /**
+     * Find zero or one PaymentSession that matches the filter.
+     * @param {PaymentSessionFindUniqueArgs} args - Arguments to find a PaymentSession
+     * @example
+     * // Get one PaymentSession
+     * const paymentSession = await prisma.paymentSession.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends PaymentSessionFindUniqueArgs>(args: SelectSubset<T, PaymentSessionFindUniqueArgs<ExtArgs>>): Prisma__PaymentSessionClient<$Result.GetResult<Prisma.$PaymentSessionPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one PaymentSession that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {PaymentSessionFindUniqueOrThrowArgs} args - Arguments to find a PaymentSession
+     * @example
+     * // Get one PaymentSession
+     * const paymentSession = await prisma.paymentSession.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends PaymentSessionFindUniqueOrThrowArgs>(args: SelectSubset<T, PaymentSessionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__PaymentSessionClient<$Result.GetResult<Prisma.$PaymentSessionPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first PaymentSession that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaymentSessionFindFirstArgs} args - Arguments to find a PaymentSession
+     * @example
+     * // Get one PaymentSession
+     * const paymentSession = await prisma.paymentSession.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends PaymentSessionFindFirstArgs>(args?: SelectSubset<T, PaymentSessionFindFirstArgs<ExtArgs>>): Prisma__PaymentSessionClient<$Result.GetResult<Prisma.$PaymentSessionPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first PaymentSession that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaymentSessionFindFirstOrThrowArgs} args - Arguments to find a PaymentSession
+     * @example
+     * // Get one PaymentSession
+     * const paymentSession = await prisma.paymentSession.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends PaymentSessionFindFirstOrThrowArgs>(args?: SelectSubset<T, PaymentSessionFindFirstOrThrowArgs<ExtArgs>>): Prisma__PaymentSessionClient<$Result.GetResult<Prisma.$PaymentSessionPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more PaymentSessions that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaymentSessionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all PaymentSessions
+     * const paymentSessions = await prisma.paymentSession.findMany()
+     * 
+     * // Get first 10 PaymentSessions
+     * const paymentSessions = await prisma.paymentSession.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const paymentSessionWithIdOnly = await prisma.paymentSession.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends PaymentSessionFindManyArgs>(args?: SelectSubset<T, PaymentSessionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentSessionPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a PaymentSession.
+     * @param {PaymentSessionCreateArgs} args - Arguments to create a PaymentSession.
+     * @example
+     * // Create one PaymentSession
+     * const PaymentSession = await prisma.paymentSession.create({
+     *   data: {
+     *     // ... data to create a PaymentSession
+     *   }
+     * })
+     * 
+     */
+    create<T extends PaymentSessionCreateArgs>(args: SelectSubset<T, PaymentSessionCreateArgs<ExtArgs>>): Prisma__PaymentSessionClient<$Result.GetResult<Prisma.$PaymentSessionPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many PaymentSessions.
+     * @param {PaymentSessionCreateManyArgs} args - Arguments to create many PaymentSessions.
+     * @example
+     * // Create many PaymentSessions
+     * const paymentSession = await prisma.paymentSession.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends PaymentSessionCreateManyArgs>(args?: SelectSubset<T, PaymentSessionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many PaymentSessions and returns the data saved in the database.
+     * @param {PaymentSessionCreateManyAndReturnArgs} args - Arguments to create many PaymentSessions.
+     * @example
+     * // Create many PaymentSessions
+     * const paymentSession = await prisma.paymentSession.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many PaymentSessions and only return the `id`
+     * const paymentSessionWithIdOnly = await prisma.paymentSession.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends PaymentSessionCreateManyAndReturnArgs>(args?: SelectSubset<T, PaymentSessionCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentSessionPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a PaymentSession.
+     * @param {PaymentSessionDeleteArgs} args - Arguments to delete one PaymentSession.
+     * @example
+     * // Delete one PaymentSession
+     * const PaymentSession = await prisma.paymentSession.delete({
+     *   where: {
+     *     // ... filter to delete one PaymentSession
+     *   }
+     * })
+     * 
+     */
+    delete<T extends PaymentSessionDeleteArgs>(args: SelectSubset<T, PaymentSessionDeleteArgs<ExtArgs>>): Prisma__PaymentSessionClient<$Result.GetResult<Prisma.$PaymentSessionPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one PaymentSession.
+     * @param {PaymentSessionUpdateArgs} args - Arguments to update one PaymentSession.
+     * @example
+     * // Update one PaymentSession
+     * const paymentSession = await prisma.paymentSession.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends PaymentSessionUpdateArgs>(args: SelectSubset<T, PaymentSessionUpdateArgs<ExtArgs>>): Prisma__PaymentSessionClient<$Result.GetResult<Prisma.$PaymentSessionPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more PaymentSessions.
+     * @param {PaymentSessionDeleteManyArgs} args - Arguments to filter PaymentSessions to delete.
+     * @example
+     * // Delete a few PaymentSessions
+     * const { count } = await prisma.paymentSession.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends PaymentSessionDeleteManyArgs>(args?: SelectSubset<T, PaymentSessionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PaymentSessions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaymentSessionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many PaymentSessions
+     * const paymentSession = await prisma.paymentSession.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends PaymentSessionUpdateManyArgs>(args: SelectSubset<T, PaymentSessionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one PaymentSession.
+     * @param {PaymentSessionUpsertArgs} args - Arguments to update or create a PaymentSession.
+     * @example
+     * // Update or create a PaymentSession
+     * const paymentSession = await prisma.paymentSession.upsert({
+     *   create: {
+     *     // ... data to create a PaymentSession
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the PaymentSession we want to update
+     *   }
+     * })
+     */
+    upsert<T extends PaymentSessionUpsertArgs>(args: SelectSubset<T, PaymentSessionUpsertArgs<ExtArgs>>): Prisma__PaymentSessionClient<$Result.GetResult<Prisma.$PaymentSessionPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of PaymentSessions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaymentSessionCountArgs} args - Arguments to filter PaymentSessions to count.
+     * @example
+     * // Count the number of PaymentSessions
+     * const count = await prisma.paymentSession.count({
+     *   where: {
+     *     // ... the filter for the PaymentSessions we want to count
+     *   }
+     * })
+    **/
+    count<T extends PaymentSessionCountArgs>(
+      args?: Subset<T, PaymentSessionCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], PaymentSessionCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a PaymentSession.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaymentSessionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends PaymentSessionAggregateArgs>(args: Subset<T, PaymentSessionAggregateArgs>): Prisma.PrismaPromise<GetPaymentSessionAggregateType<T>>
+
+    /**
+     * Group by PaymentSession.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PaymentSessionGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends PaymentSessionGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: PaymentSessionGroupByArgs['orderBy'] }
+        : { orderBy?: PaymentSessionGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, PaymentSessionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPaymentSessionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the PaymentSession model
+   */
+  readonly fields: PaymentSessionFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for PaymentSession.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__PaymentSessionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    booking<T extends BookingDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BookingDefaultArgs<ExtArgs>>): Prisma__BookingClient<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    branch<T extends BranchDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BranchDefaultArgs<ExtArgs>>): Prisma__BranchClient<$Result.GetResult<Prisma.$BranchPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    actor<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    entries<T extends PaymentSession$entriesArgs<ExtArgs> = {}>(args?: Subset<T, PaymentSession$entriesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LedgerEntryPayload<ExtArgs>, T, "findMany"> | Null>
+    activeForBookings<T extends PaymentSession$activeForBookingsArgs<ExtArgs> = {}>(args?: Subset<T, PaymentSession$activeForBookingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findMany"> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the PaymentSession model
+   */ 
+  interface PaymentSessionFieldRefs {
+    readonly id: FieldRef<"PaymentSession", 'Int'>
+    readonly publicId: FieldRef<"PaymentSession", 'String'>
+    readonly bookingId: FieldRef<"PaymentSession", 'Int'>
+    readonly branchId: FieldRef<"PaymentSession", 'Int'>
+    readonly sessionType: FieldRef<"PaymentSession", 'PaymentSessionType'>
+    readonly status: FieldRef<"PaymentSession", 'PaymentSessionStatus'>
+    readonly taxableBase: FieldRef<"PaymentSession", 'Decimal'>
+    readonly nonTaxableBase: FieldRef<"PaymentSession", 'Decimal'>
+    readonly gstAmount: FieldRef<"PaymentSession", 'Decimal'>
+    readonly totalCharges: FieldRef<"PaymentSession", 'Decimal'>
+    readonly totalDiscounts: FieldRef<"PaymentSession", 'Decimal'>
+    readonly totalPaymentsRecorded: FieldRef<"PaymentSession", 'Decimal'>
+    readonly netPayable: FieldRef<"PaymentSession", 'Decimal'>
+    readonly idempotencyKey: FieldRef<"PaymentSession", 'String'>
+    readonly gatewayTransactionId: FieldRef<"PaymentSession", 'String'>
+    readonly gatewayPaymentUrl: FieldRef<"PaymentSession", 'String'>
+    readonly expiresAt: FieldRef<"PaymentSession", 'DateTime'>
+    readonly completedAt: FieldRef<"PaymentSession", 'DateTime'>
+    readonly metadata: FieldRef<"PaymentSession", 'Json'>
+    readonly actorId: FieldRef<"PaymentSession", 'Int'>
+    readonly createdAt: FieldRef<"PaymentSession", 'DateTime'>
+    readonly updatedAt: FieldRef<"PaymentSession", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * PaymentSession findUnique
+   */
+  export type PaymentSessionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentSession
+     */
+    select?: PaymentSessionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentSessionInclude<ExtArgs> | null
+    /**
+     * Filter, which PaymentSession to fetch.
+     */
+    where: PaymentSessionWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * PaymentSession findUniqueOrThrow
+   */
+  export type PaymentSessionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentSession
+     */
+    select?: PaymentSessionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentSessionInclude<ExtArgs> | null
+    /**
+     * Filter, which PaymentSession to fetch.
+     */
+    where: PaymentSessionWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * PaymentSession findFirst
+   */
+  export type PaymentSessionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentSession
+     */
+    select?: PaymentSessionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentSessionInclude<ExtArgs> | null
+    /**
+     * Filter, which PaymentSession to fetch.
+     */
+    where?: PaymentSessionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PaymentSessions to fetch.
+     */
+    orderBy?: PaymentSessionOrderByWithRelationInput | PaymentSessionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PaymentSessions.
+     */
+    cursor?: PaymentSessionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PaymentSessions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PaymentSessions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PaymentSessions.
+     */
+    distinct?: PaymentSessionScalarFieldEnum | PaymentSessionScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * PaymentSession findFirstOrThrow
+   */
+  export type PaymentSessionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentSession
+     */
+    select?: PaymentSessionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentSessionInclude<ExtArgs> | null
+    /**
+     * Filter, which PaymentSession to fetch.
+     */
+    where?: PaymentSessionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PaymentSessions to fetch.
+     */
+    orderBy?: PaymentSessionOrderByWithRelationInput | PaymentSessionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PaymentSessions.
+     */
+    cursor?: PaymentSessionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PaymentSessions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PaymentSessions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PaymentSessions.
+     */
+    distinct?: PaymentSessionScalarFieldEnum | PaymentSessionScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * PaymentSession findMany
+   */
+  export type PaymentSessionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentSession
+     */
+    select?: PaymentSessionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentSessionInclude<ExtArgs> | null
+    /**
+     * Filter, which PaymentSessions to fetch.
+     */
+    where?: PaymentSessionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PaymentSessions to fetch.
+     */
+    orderBy?: PaymentSessionOrderByWithRelationInput | PaymentSessionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing PaymentSessions.
+     */
+    cursor?: PaymentSessionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PaymentSessions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PaymentSessions.
+     */
+    skip?: number
+    distinct?: PaymentSessionScalarFieldEnum | PaymentSessionScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * PaymentSession create
+   */
+  export type PaymentSessionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentSession
+     */
+    select?: PaymentSessionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentSessionInclude<ExtArgs> | null
+    /**
+     * The data needed to create a PaymentSession.
+     */
+    data: XOR<PaymentSessionCreateInput, PaymentSessionUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * PaymentSession createMany
+   */
+  export type PaymentSessionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many PaymentSessions.
+     */
+    data: PaymentSessionCreateManyInput | PaymentSessionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PaymentSession createManyAndReturn
+   */
+  export type PaymentSessionCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentSession
+     */
+    select?: PaymentSessionSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many PaymentSessions.
+     */
+    data: PaymentSessionCreateManyInput | PaymentSessionCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentSessionIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * PaymentSession update
+   */
+  export type PaymentSessionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentSession
+     */
+    select?: PaymentSessionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentSessionInclude<ExtArgs> | null
+    /**
+     * The data needed to update a PaymentSession.
+     */
+    data: XOR<PaymentSessionUpdateInput, PaymentSessionUncheckedUpdateInput>
+    /**
+     * Choose, which PaymentSession to update.
+     */
+    where: PaymentSessionWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * PaymentSession updateMany
+   */
+  export type PaymentSessionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update PaymentSessions.
+     */
+    data: XOR<PaymentSessionUpdateManyMutationInput, PaymentSessionUncheckedUpdateManyInput>
+    /**
+     * Filter which PaymentSessions to update
+     */
+    where?: PaymentSessionWhereInput
+  }
+
+  /**
+   * PaymentSession upsert
+   */
+  export type PaymentSessionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentSession
+     */
+    select?: PaymentSessionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentSessionInclude<ExtArgs> | null
+    /**
+     * The filter to search for the PaymentSession to update in case it exists.
+     */
+    where: PaymentSessionWhereUniqueInput
+    /**
+     * In case the PaymentSession found by the `where` argument doesn't exist, create a new PaymentSession with this data.
+     */
+    create: XOR<PaymentSessionCreateInput, PaymentSessionUncheckedCreateInput>
+    /**
+     * In case the PaymentSession was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<PaymentSessionUpdateInput, PaymentSessionUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * PaymentSession delete
+   */
+  export type PaymentSessionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentSession
+     */
+    select?: PaymentSessionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentSessionInclude<ExtArgs> | null
+    /**
+     * Filter which PaymentSession to delete.
+     */
+    where: PaymentSessionWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * PaymentSession deleteMany
+   */
+  export type PaymentSessionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PaymentSessions to delete
+     */
+    where?: PaymentSessionWhereInput
+  }
+
+  /**
+   * PaymentSession.entries
+   */
+  export type PaymentSession$entriesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LedgerEntry
+     */
+    select?: LedgerEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LedgerEntryInclude<ExtArgs> | null
+    where?: LedgerEntryWhereInput
+    orderBy?: LedgerEntryOrderByWithRelationInput | LedgerEntryOrderByWithRelationInput[]
+    cursor?: LedgerEntryWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: LedgerEntryScalarFieldEnum | LedgerEntryScalarFieldEnum[]
+  }
+
+  /**
+   * PaymentSession.activeForBookings
+   */
+  export type PaymentSession$activeForBookingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Booking
+     */
+    select?: BookingSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BookingInclude<ExtArgs> | null
+    where?: BookingWhereInput
+    orderBy?: BookingOrderByWithRelationInput | BookingOrderByWithRelationInput[]
+    cursor?: BookingWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: BookingScalarFieldEnum | BookingScalarFieldEnum[]
+  }
+
+  /**
+   * PaymentSession without action
+   */
+  export type PaymentSessionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentSession
+     */
+    select?: PaymentSessionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentSessionInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model LedgerEntry
+   */
+
+  export type AggregateLedgerEntry = {
+    _count: LedgerEntryCountAggregateOutputType | null
+    _avg: LedgerEntryAvgAggregateOutputType | null
+    _sum: LedgerEntrySumAggregateOutputType | null
+    _min: LedgerEntryMinAggregateOutputType | null
+    _max: LedgerEntryMaxAggregateOutputType | null
+  }
+
+  export type LedgerEntryAvgAggregateOutputType = {
+    id: number | null
+    sessionId: number | null
+    bookingId: number | null
+    amount: Decimal | null
+    baseAmount: Decimal | null
+    gstAmount: Decimal | null
+    voidedById: number | null
+    actorId: number | null
+  }
+
+  export type LedgerEntrySumAggregateOutputType = {
+    id: number | null
+    sessionId: number | null
+    bookingId: number | null
+    amount: Decimal | null
+    baseAmount: Decimal | null
+    gstAmount: Decimal | null
+    voidedById: number | null
+    actorId: number | null
+  }
+
+  export type LedgerEntryMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    sessionId: number | null
+    bookingId: number | null
+    entryType: $Enums.LedgerEntryType | null
+    classification: $Enums.LedgerEntryClassification | null
+    amount: Decimal | null
+    baseAmount: Decimal | null
+    gstAmount: Decimal | null
+    description: string | null
+    referenceId: string | null
+    referenceType: string | null
+    idempotencyKey: string | null
+    isVoided: boolean | null
+    voidedAt: Date | null
+    voidedById: number | null
+    voidReason: string | null
+    actorId: number | null
+    actorRole: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type LedgerEntryMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    sessionId: number | null
+    bookingId: number | null
+    entryType: $Enums.LedgerEntryType | null
+    classification: $Enums.LedgerEntryClassification | null
+    amount: Decimal | null
+    baseAmount: Decimal | null
+    gstAmount: Decimal | null
+    description: string | null
+    referenceId: string | null
+    referenceType: string | null
+    idempotencyKey: string | null
+    isVoided: boolean | null
+    voidedAt: Date | null
+    voidedById: number | null
+    voidReason: string | null
+    actorId: number | null
+    actorRole: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type LedgerEntryCountAggregateOutputType = {
+    id: number
+    publicId: number
+    sessionId: number
+    bookingId: number
+    entryType: number
+    classification: number
+    amount: number
+    baseAmount: number
+    gstAmount: number
+    description: number
+    referenceId: number
+    referenceType: number
+    idempotencyKey: number
+    isVoided: number
+    voidedAt: number
+    voidedById: number
+    voidReason: number
+    actorId: number
+    actorRole: number
+    metadata: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type LedgerEntryAvgAggregateInputType = {
+    id?: true
+    sessionId?: true
+    bookingId?: true
+    amount?: true
+    baseAmount?: true
+    gstAmount?: true
+    voidedById?: true
+    actorId?: true
+  }
+
+  export type LedgerEntrySumAggregateInputType = {
+    id?: true
+    sessionId?: true
+    bookingId?: true
+    amount?: true
+    baseAmount?: true
+    gstAmount?: true
+    voidedById?: true
+    actorId?: true
+  }
+
+  export type LedgerEntryMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    sessionId?: true
+    bookingId?: true
+    entryType?: true
+    classification?: true
+    amount?: true
+    baseAmount?: true
+    gstAmount?: true
+    description?: true
+    referenceId?: true
+    referenceType?: true
+    idempotencyKey?: true
+    isVoided?: true
+    voidedAt?: true
+    voidedById?: true
+    voidReason?: true
+    actorId?: true
+    actorRole?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type LedgerEntryMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    sessionId?: true
+    bookingId?: true
+    entryType?: true
+    classification?: true
+    amount?: true
+    baseAmount?: true
+    gstAmount?: true
+    description?: true
+    referenceId?: true
+    referenceType?: true
+    idempotencyKey?: true
+    isVoided?: true
+    voidedAt?: true
+    voidedById?: true
+    voidReason?: true
+    actorId?: true
+    actorRole?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type LedgerEntryCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    sessionId?: true
+    bookingId?: true
+    entryType?: true
+    classification?: true
+    amount?: true
+    baseAmount?: true
+    gstAmount?: true
+    description?: true
+    referenceId?: true
+    referenceType?: true
+    idempotencyKey?: true
+    isVoided?: true
+    voidedAt?: true
+    voidedById?: true
+    voidReason?: true
+    actorId?: true
+    actorRole?: true
+    metadata?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type LedgerEntryAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which LedgerEntry to aggregate.
+     */
+    where?: LedgerEntryWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of LedgerEntries to fetch.
+     */
+    orderBy?: LedgerEntryOrderByWithRelationInput | LedgerEntryOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: LedgerEntryWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` LedgerEntries from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` LedgerEntries.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned LedgerEntries
+    **/
+    _count?: true | LedgerEntryCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: LedgerEntryAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: LedgerEntrySumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: LedgerEntryMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: LedgerEntryMaxAggregateInputType
+  }
+
+  export type GetLedgerEntryAggregateType<T extends LedgerEntryAggregateArgs> = {
+        [P in keyof T & keyof AggregateLedgerEntry]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateLedgerEntry[P]>
+      : GetScalarType<T[P], AggregateLedgerEntry[P]>
+  }
+
+
+
+
+  export type LedgerEntryGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: LedgerEntryWhereInput
+    orderBy?: LedgerEntryOrderByWithAggregationInput | LedgerEntryOrderByWithAggregationInput[]
+    by: LedgerEntryScalarFieldEnum[] | LedgerEntryScalarFieldEnum
+    having?: LedgerEntryScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: LedgerEntryCountAggregateInputType | true
+    _avg?: LedgerEntryAvgAggregateInputType
+    _sum?: LedgerEntrySumAggregateInputType
+    _min?: LedgerEntryMinAggregateInputType
+    _max?: LedgerEntryMaxAggregateInputType
+  }
+
+  export type LedgerEntryGroupByOutputType = {
+    id: number
+    publicId: string
+    sessionId: number
+    bookingId: number
+    entryType: $Enums.LedgerEntryType
+    classification: $Enums.LedgerEntryClassification
+    amount: Decimal
+    baseAmount: Decimal
+    gstAmount: Decimal
+    description: string
+    referenceId: string | null
+    referenceType: string | null
+    idempotencyKey: string
+    isVoided: boolean
+    voidedAt: Date | null
+    voidedById: number | null
+    voidReason: string | null
+    actorId: number
+    actorRole: string
+    metadata: JsonValue | null
+    createdAt: Date
+    updatedAt: Date
+    _count: LedgerEntryCountAggregateOutputType | null
+    _avg: LedgerEntryAvgAggregateOutputType | null
+    _sum: LedgerEntrySumAggregateOutputType | null
+    _min: LedgerEntryMinAggregateOutputType | null
+    _max: LedgerEntryMaxAggregateOutputType | null
+  }
+
+  type GetLedgerEntryGroupByPayload<T extends LedgerEntryGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<LedgerEntryGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof LedgerEntryGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], LedgerEntryGroupByOutputType[P]>
+            : GetScalarType<T[P], LedgerEntryGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type LedgerEntrySelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    sessionId?: boolean
+    bookingId?: boolean
+    entryType?: boolean
+    classification?: boolean
+    amount?: boolean
+    baseAmount?: boolean
+    gstAmount?: boolean
+    description?: boolean
+    referenceId?: boolean
+    referenceType?: boolean
+    idempotencyKey?: boolean
+    isVoided?: boolean
+    voidedAt?: boolean
+    voidedById?: boolean
+    voidReason?: boolean
+    actorId?: boolean
+    actorRole?: boolean
+    metadata?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    session?: boolean | PaymentSessionDefaultArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    actor?: boolean | UserDefaultArgs<ExtArgs>
+    voidedBy?: boolean | LedgerEntry$voidedByArgs<ExtArgs>
+  }, ExtArgs["result"]["ledgerEntry"]>
+
+  export type LedgerEntrySelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    sessionId?: boolean
+    bookingId?: boolean
+    entryType?: boolean
+    classification?: boolean
+    amount?: boolean
+    baseAmount?: boolean
+    gstAmount?: boolean
+    description?: boolean
+    referenceId?: boolean
+    referenceType?: boolean
+    idempotencyKey?: boolean
+    isVoided?: boolean
+    voidedAt?: boolean
+    voidedById?: boolean
+    voidReason?: boolean
+    actorId?: boolean
+    actorRole?: boolean
+    metadata?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    session?: boolean | PaymentSessionDefaultArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    actor?: boolean | UserDefaultArgs<ExtArgs>
+    voidedBy?: boolean | LedgerEntry$voidedByArgs<ExtArgs>
+  }, ExtArgs["result"]["ledgerEntry"]>
+
+  export type LedgerEntrySelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    sessionId?: boolean
+    bookingId?: boolean
+    entryType?: boolean
+    classification?: boolean
+    amount?: boolean
+    baseAmount?: boolean
+    gstAmount?: boolean
+    description?: boolean
+    referenceId?: boolean
+    referenceType?: boolean
+    idempotencyKey?: boolean
+    isVoided?: boolean
+    voidedAt?: boolean
+    voidedById?: boolean
+    voidReason?: boolean
+    actorId?: boolean
+    actorRole?: boolean
+    metadata?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type LedgerEntryInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    session?: boolean | PaymentSessionDefaultArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    actor?: boolean | UserDefaultArgs<ExtArgs>
+    voidedBy?: boolean | LedgerEntry$voidedByArgs<ExtArgs>
+  }
+  export type LedgerEntryIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    session?: boolean | PaymentSessionDefaultArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    actor?: boolean | UserDefaultArgs<ExtArgs>
+    voidedBy?: boolean | LedgerEntry$voidedByArgs<ExtArgs>
+  }
+
+  export type $LedgerEntryPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "LedgerEntry"
+    objects: {
+      session: Prisma.$PaymentSessionPayload<ExtArgs>
+      booking: Prisma.$BookingPayload<ExtArgs>
+      actor: Prisma.$UserPayload<ExtArgs>
+      voidedBy: Prisma.$UserPayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      sessionId: number
+      bookingId: number
+      entryType: $Enums.LedgerEntryType
+      classification: $Enums.LedgerEntryClassification
+      amount: Prisma.Decimal
+      baseAmount: Prisma.Decimal
+      gstAmount: Prisma.Decimal
+      description: string
+      referenceId: string | null
+      referenceType: string | null
+      idempotencyKey: string
+      isVoided: boolean
+      voidedAt: Date | null
+      voidedById: number | null
+      voidReason: string | null
+      actorId: number
+      actorRole: string
+      metadata: Prisma.JsonValue | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["ledgerEntry"]>
+    composites: {}
+  }
+
+  type LedgerEntryGetPayload<S extends boolean | null | undefined | LedgerEntryDefaultArgs> = $Result.GetResult<Prisma.$LedgerEntryPayload, S>
+
+  type LedgerEntryCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<LedgerEntryFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: LedgerEntryCountAggregateInputType | true
+    }
+
+  export interface LedgerEntryDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['LedgerEntry'], meta: { name: 'LedgerEntry' } }
+    /**
+     * Find zero or one LedgerEntry that matches the filter.
+     * @param {LedgerEntryFindUniqueArgs} args - Arguments to find a LedgerEntry
+     * @example
+     * // Get one LedgerEntry
+     * const ledgerEntry = await prisma.ledgerEntry.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends LedgerEntryFindUniqueArgs>(args: SelectSubset<T, LedgerEntryFindUniqueArgs<ExtArgs>>): Prisma__LedgerEntryClient<$Result.GetResult<Prisma.$LedgerEntryPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one LedgerEntry that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {LedgerEntryFindUniqueOrThrowArgs} args - Arguments to find a LedgerEntry
+     * @example
+     * // Get one LedgerEntry
+     * const ledgerEntry = await prisma.ledgerEntry.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends LedgerEntryFindUniqueOrThrowArgs>(args: SelectSubset<T, LedgerEntryFindUniqueOrThrowArgs<ExtArgs>>): Prisma__LedgerEntryClient<$Result.GetResult<Prisma.$LedgerEntryPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first LedgerEntry that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {LedgerEntryFindFirstArgs} args - Arguments to find a LedgerEntry
+     * @example
+     * // Get one LedgerEntry
+     * const ledgerEntry = await prisma.ledgerEntry.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends LedgerEntryFindFirstArgs>(args?: SelectSubset<T, LedgerEntryFindFirstArgs<ExtArgs>>): Prisma__LedgerEntryClient<$Result.GetResult<Prisma.$LedgerEntryPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first LedgerEntry that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {LedgerEntryFindFirstOrThrowArgs} args - Arguments to find a LedgerEntry
+     * @example
+     * // Get one LedgerEntry
+     * const ledgerEntry = await prisma.ledgerEntry.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends LedgerEntryFindFirstOrThrowArgs>(args?: SelectSubset<T, LedgerEntryFindFirstOrThrowArgs<ExtArgs>>): Prisma__LedgerEntryClient<$Result.GetResult<Prisma.$LedgerEntryPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more LedgerEntries that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {LedgerEntryFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all LedgerEntries
+     * const ledgerEntries = await prisma.ledgerEntry.findMany()
+     * 
+     * // Get first 10 LedgerEntries
+     * const ledgerEntries = await prisma.ledgerEntry.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const ledgerEntryWithIdOnly = await prisma.ledgerEntry.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends LedgerEntryFindManyArgs>(args?: SelectSubset<T, LedgerEntryFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LedgerEntryPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a LedgerEntry.
+     * @param {LedgerEntryCreateArgs} args - Arguments to create a LedgerEntry.
+     * @example
+     * // Create one LedgerEntry
+     * const LedgerEntry = await prisma.ledgerEntry.create({
+     *   data: {
+     *     // ... data to create a LedgerEntry
+     *   }
+     * })
+     * 
+     */
+    create<T extends LedgerEntryCreateArgs>(args: SelectSubset<T, LedgerEntryCreateArgs<ExtArgs>>): Prisma__LedgerEntryClient<$Result.GetResult<Prisma.$LedgerEntryPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many LedgerEntries.
+     * @param {LedgerEntryCreateManyArgs} args - Arguments to create many LedgerEntries.
+     * @example
+     * // Create many LedgerEntries
+     * const ledgerEntry = await prisma.ledgerEntry.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends LedgerEntryCreateManyArgs>(args?: SelectSubset<T, LedgerEntryCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many LedgerEntries and returns the data saved in the database.
+     * @param {LedgerEntryCreateManyAndReturnArgs} args - Arguments to create many LedgerEntries.
+     * @example
+     * // Create many LedgerEntries
+     * const ledgerEntry = await prisma.ledgerEntry.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many LedgerEntries and only return the `id`
+     * const ledgerEntryWithIdOnly = await prisma.ledgerEntry.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends LedgerEntryCreateManyAndReturnArgs>(args?: SelectSubset<T, LedgerEntryCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LedgerEntryPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a LedgerEntry.
+     * @param {LedgerEntryDeleteArgs} args - Arguments to delete one LedgerEntry.
+     * @example
+     * // Delete one LedgerEntry
+     * const LedgerEntry = await prisma.ledgerEntry.delete({
+     *   where: {
+     *     // ... filter to delete one LedgerEntry
+     *   }
+     * })
+     * 
+     */
+    delete<T extends LedgerEntryDeleteArgs>(args: SelectSubset<T, LedgerEntryDeleteArgs<ExtArgs>>): Prisma__LedgerEntryClient<$Result.GetResult<Prisma.$LedgerEntryPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one LedgerEntry.
+     * @param {LedgerEntryUpdateArgs} args - Arguments to update one LedgerEntry.
+     * @example
+     * // Update one LedgerEntry
+     * const ledgerEntry = await prisma.ledgerEntry.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends LedgerEntryUpdateArgs>(args: SelectSubset<T, LedgerEntryUpdateArgs<ExtArgs>>): Prisma__LedgerEntryClient<$Result.GetResult<Prisma.$LedgerEntryPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more LedgerEntries.
+     * @param {LedgerEntryDeleteManyArgs} args - Arguments to filter LedgerEntries to delete.
+     * @example
+     * // Delete a few LedgerEntries
+     * const { count } = await prisma.ledgerEntry.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends LedgerEntryDeleteManyArgs>(args?: SelectSubset<T, LedgerEntryDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more LedgerEntries.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {LedgerEntryUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many LedgerEntries
+     * const ledgerEntry = await prisma.ledgerEntry.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends LedgerEntryUpdateManyArgs>(args: SelectSubset<T, LedgerEntryUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one LedgerEntry.
+     * @param {LedgerEntryUpsertArgs} args - Arguments to update or create a LedgerEntry.
+     * @example
+     * // Update or create a LedgerEntry
+     * const ledgerEntry = await prisma.ledgerEntry.upsert({
+     *   create: {
+     *     // ... data to create a LedgerEntry
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the LedgerEntry we want to update
+     *   }
+     * })
+     */
+    upsert<T extends LedgerEntryUpsertArgs>(args: SelectSubset<T, LedgerEntryUpsertArgs<ExtArgs>>): Prisma__LedgerEntryClient<$Result.GetResult<Prisma.$LedgerEntryPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of LedgerEntries.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {LedgerEntryCountArgs} args - Arguments to filter LedgerEntries to count.
+     * @example
+     * // Count the number of LedgerEntries
+     * const count = await prisma.ledgerEntry.count({
+     *   where: {
+     *     // ... the filter for the LedgerEntries we want to count
+     *   }
+     * })
+    **/
+    count<T extends LedgerEntryCountArgs>(
+      args?: Subset<T, LedgerEntryCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], LedgerEntryCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a LedgerEntry.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {LedgerEntryAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends LedgerEntryAggregateArgs>(args: Subset<T, LedgerEntryAggregateArgs>): Prisma.PrismaPromise<GetLedgerEntryAggregateType<T>>
+
+    /**
+     * Group by LedgerEntry.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {LedgerEntryGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends LedgerEntryGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: LedgerEntryGroupByArgs['orderBy'] }
+        : { orderBy?: LedgerEntryGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, LedgerEntryGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetLedgerEntryGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the LedgerEntry model
+   */
+  readonly fields: LedgerEntryFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for LedgerEntry.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__LedgerEntryClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    session<T extends PaymentSessionDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PaymentSessionDefaultArgs<ExtArgs>>): Prisma__PaymentSessionClient<$Result.GetResult<Prisma.$PaymentSessionPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    booking<T extends BookingDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BookingDefaultArgs<ExtArgs>>): Prisma__BookingClient<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    actor<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    voidedBy<T extends LedgerEntry$voidedByArgs<ExtArgs> = {}>(args?: Subset<T, LedgerEntry$voidedByArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the LedgerEntry model
+   */ 
+  interface LedgerEntryFieldRefs {
+    readonly id: FieldRef<"LedgerEntry", 'Int'>
+    readonly publicId: FieldRef<"LedgerEntry", 'String'>
+    readonly sessionId: FieldRef<"LedgerEntry", 'Int'>
+    readonly bookingId: FieldRef<"LedgerEntry", 'Int'>
+    readonly entryType: FieldRef<"LedgerEntry", 'LedgerEntryType'>
+    readonly classification: FieldRef<"LedgerEntry", 'LedgerEntryClassification'>
+    readonly amount: FieldRef<"LedgerEntry", 'Decimal'>
+    readonly baseAmount: FieldRef<"LedgerEntry", 'Decimal'>
+    readonly gstAmount: FieldRef<"LedgerEntry", 'Decimal'>
+    readonly description: FieldRef<"LedgerEntry", 'String'>
+    readonly referenceId: FieldRef<"LedgerEntry", 'String'>
+    readonly referenceType: FieldRef<"LedgerEntry", 'String'>
+    readonly idempotencyKey: FieldRef<"LedgerEntry", 'String'>
+    readonly isVoided: FieldRef<"LedgerEntry", 'Boolean'>
+    readonly voidedAt: FieldRef<"LedgerEntry", 'DateTime'>
+    readonly voidedById: FieldRef<"LedgerEntry", 'Int'>
+    readonly voidReason: FieldRef<"LedgerEntry", 'String'>
+    readonly actorId: FieldRef<"LedgerEntry", 'Int'>
+    readonly actorRole: FieldRef<"LedgerEntry", 'String'>
+    readonly metadata: FieldRef<"LedgerEntry", 'Json'>
+    readonly createdAt: FieldRef<"LedgerEntry", 'DateTime'>
+    readonly updatedAt: FieldRef<"LedgerEntry", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * LedgerEntry findUnique
+   */
+  export type LedgerEntryFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LedgerEntry
+     */
+    select?: LedgerEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LedgerEntryInclude<ExtArgs> | null
+    /**
+     * Filter, which LedgerEntry to fetch.
+     */
+    where: LedgerEntryWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * LedgerEntry findUniqueOrThrow
+   */
+  export type LedgerEntryFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LedgerEntry
+     */
+    select?: LedgerEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LedgerEntryInclude<ExtArgs> | null
+    /**
+     * Filter, which LedgerEntry to fetch.
+     */
+    where: LedgerEntryWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * LedgerEntry findFirst
+   */
+  export type LedgerEntryFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LedgerEntry
+     */
+    select?: LedgerEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LedgerEntryInclude<ExtArgs> | null
+    /**
+     * Filter, which LedgerEntry to fetch.
+     */
+    where?: LedgerEntryWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of LedgerEntries to fetch.
+     */
+    orderBy?: LedgerEntryOrderByWithRelationInput | LedgerEntryOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for LedgerEntries.
+     */
+    cursor?: LedgerEntryWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` LedgerEntries from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` LedgerEntries.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of LedgerEntries.
+     */
+    distinct?: LedgerEntryScalarFieldEnum | LedgerEntryScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * LedgerEntry findFirstOrThrow
+   */
+  export type LedgerEntryFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LedgerEntry
+     */
+    select?: LedgerEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LedgerEntryInclude<ExtArgs> | null
+    /**
+     * Filter, which LedgerEntry to fetch.
+     */
+    where?: LedgerEntryWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of LedgerEntries to fetch.
+     */
+    orderBy?: LedgerEntryOrderByWithRelationInput | LedgerEntryOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for LedgerEntries.
+     */
+    cursor?: LedgerEntryWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` LedgerEntries from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` LedgerEntries.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of LedgerEntries.
+     */
+    distinct?: LedgerEntryScalarFieldEnum | LedgerEntryScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * LedgerEntry findMany
+   */
+  export type LedgerEntryFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LedgerEntry
+     */
+    select?: LedgerEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LedgerEntryInclude<ExtArgs> | null
+    /**
+     * Filter, which LedgerEntries to fetch.
+     */
+    where?: LedgerEntryWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of LedgerEntries to fetch.
+     */
+    orderBy?: LedgerEntryOrderByWithRelationInput | LedgerEntryOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing LedgerEntries.
+     */
+    cursor?: LedgerEntryWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` LedgerEntries from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` LedgerEntries.
+     */
+    skip?: number
+    distinct?: LedgerEntryScalarFieldEnum | LedgerEntryScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * LedgerEntry create
+   */
+  export type LedgerEntryCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LedgerEntry
+     */
+    select?: LedgerEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LedgerEntryInclude<ExtArgs> | null
+    /**
+     * The data needed to create a LedgerEntry.
+     */
+    data: XOR<LedgerEntryCreateInput, LedgerEntryUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * LedgerEntry createMany
+   */
+  export type LedgerEntryCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many LedgerEntries.
+     */
+    data: LedgerEntryCreateManyInput | LedgerEntryCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * LedgerEntry createManyAndReturn
+   */
+  export type LedgerEntryCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LedgerEntry
+     */
+    select?: LedgerEntrySelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many LedgerEntries.
+     */
+    data: LedgerEntryCreateManyInput | LedgerEntryCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LedgerEntryIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * LedgerEntry update
+   */
+  export type LedgerEntryUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LedgerEntry
+     */
+    select?: LedgerEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LedgerEntryInclude<ExtArgs> | null
+    /**
+     * The data needed to update a LedgerEntry.
+     */
+    data: XOR<LedgerEntryUpdateInput, LedgerEntryUncheckedUpdateInput>
+    /**
+     * Choose, which LedgerEntry to update.
+     */
+    where: LedgerEntryWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * LedgerEntry updateMany
+   */
+  export type LedgerEntryUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update LedgerEntries.
+     */
+    data: XOR<LedgerEntryUpdateManyMutationInput, LedgerEntryUncheckedUpdateManyInput>
+    /**
+     * Filter which LedgerEntries to update
+     */
+    where?: LedgerEntryWhereInput
+  }
+
+  /**
+   * LedgerEntry upsert
+   */
+  export type LedgerEntryUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LedgerEntry
+     */
+    select?: LedgerEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LedgerEntryInclude<ExtArgs> | null
+    /**
+     * The filter to search for the LedgerEntry to update in case it exists.
+     */
+    where: LedgerEntryWhereUniqueInput
+    /**
+     * In case the LedgerEntry found by the `where` argument doesn't exist, create a new LedgerEntry with this data.
+     */
+    create: XOR<LedgerEntryCreateInput, LedgerEntryUncheckedCreateInput>
+    /**
+     * In case the LedgerEntry was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<LedgerEntryUpdateInput, LedgerEntryUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * LedgerEntry delete
+   */
+  export type LedgerEntryDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LedgerEntry
+     */
+    select?: LedgerEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LedgerEntryInclude<ExtArgs> | null
+    /**
+     * Filter which LedgerEntry to delete.
+     */
+    where: LedgerEntryWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * LedgerEntry deleteMany
+   */
+  export type LedgerEntryDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which LedgerEntries to delete
+     */
+    where?: LedgerEntryWhereInput
+  }
+
+  /**
+   * LedgerEntry.voidedBy
+   */
+  export type LedgerEntry$voidedByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the User
+     */
+    select?: UserSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    where?: UserWhereInput
+  }
+
+  /**
+   * LedgerEntry without action
+   */
+  export type LedgerEntryDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LedgerEntry
+     */
+    select?: LedgerEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LedgerEntryInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -70022,6 +73064,7 @@ export namespace Prisma {
     extensionDisplacedAt: 'extensionDisplacedAt',
     frozenChargeConfig: 'frozenChargeConfig',
     chargeConfigVersion: 'chargeConfigVersion',
+    activePaymentSessionId: 'activePaymentSessionId',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
     deletedAt: 'deletedAt'
@@ -70581,6 +73624,7 @@ export namespace Prisma {
     overrideApprovalThreshold: 'overrideApprovalThreshold',
     safetyDepositEnabled: 'safetyDepositEnabled',
     safetyDepositRequiresApproval: 'safetyDepositRequiresApproval',
+    usePaymentSessions: 'usePaymentSessions',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -70670,6 +73714,62 @@ export namespace Prisma {
   };
 
   export type SafetyDepositRequestScalarFieldEnum = (typeof SafetyDepositRequestScalarFieldEnum)[keyof typeof SafetyDepositRequestScalarFieldEnum]
+
+
+  export const PaymentSessionScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    bookingId: 'bookingId',
+    branchId: 'branchId',
+    sessionType: 'sessionType',
+    status: 'status',
+    taxableBase: 'taxableBase',
+    nonTaxableBase: 'nonTaxableBase',
+    gstAmount: 'gstAmount',
+    totalCharges: 'totalCharges',
+    totalDiscounts: 'totalDiscounts',
+    totalPaymentsRecorded: 'totalPaymentsRecorded',
+    netPayable: 'netPayable',
+    idempotencyKey: 'idempotencyKey',
+    gatewayTransactionId: 'gatewayTransactionId',
+    gatewayPaymentUrl: 'gatewayPaymentUrl',
+    expiresAt: 'expiresAt',
+    completedAt: 'completedAt',
+    metadata: 'metadata',
+    actorId: 'actorId',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type PaymentSessionScalarFieldEnum = (typeof PaymentSessionScalarFieldEnum)[keyof typeof PaymentSessionScalarFieldEnum]
+
+
+  export const LedgerEntryScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    sessionId: 'sessionId',
+    bookingId: 'bookingId',
+    entryType: 'entryType',
+    classification: 'classification',
+    amount: 'amount',
+    baseAmount: 'baseAmount',
+    gstAmount: 'gstAmount',
+    description: 'description',
+    referenceId: 'referenceId',
+    referenceType: 'referenceType',
+    idempotencyKey: 'idempotencyKey',
+    isVoided: 'isVoided',
+    voidedAt: 'voidedAt',
+    voidedById: 'voidedById',
+    voidReason: 'voidReason',
+    actorId: 'actorId',
+    actorRole: 'actorRole',
+    metadata: 'metadata',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type LedgerEntryScalarFieldEnum = (typeof LedgerEntryScalarFieldEnum)[keyof typeof LedgerEntryScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -71328,6 +74428,62 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'PaymentSessionType'
+   */
+  export type EnumPaymentSessionTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaymentSessionType'>
+    
+
+
+  /**
+   * Reference to a field of type 'PaymentSessionType[]'
+   */
+  export type ListEnumPaymentSessionTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaymentSessionType[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'PaymentSessionStatus'
+   */
+  export type EnumPaymentSessionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaymentSessionStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'PaymentSessionStatus[]'
+   */
+  export type ListEnumPaymentSessionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaymentSessionStatus[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'LedgerEntryType'
+   */
+  export type EnumLedgerEntryTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'LedgerEntryType'>
+    
+
+
+  /**
+   * Reference to a field of type 'LedgerEntryType[]'
+   */
+  export type ListEnumLedgerEntryTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'LedgerEntryType[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'LedgerEntryClassification'
+   */
+  export type EnumLedgerEntryClassificationFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'LedgerEntryClassification'>
+    
+
+
+  /**
+   * Reference to a field of type 'LedgerEntryClassification[]'
+   */
+  export type ListEnumLedgerEntryClassificationFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'LedgerEntryClassification[]'>
+    
+
+
+  /**
    * Reference to a field of type 'Float'
    */
   export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -71389,6 +74545,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordListRelationFilter
     safetyDepositRequests?: SafetyDepositRequestListRelationFilter
     safetyDepositApprovals?: SafetyDepositRequestListRelationFilter
+    paymentSessionsOpened?: PaymentSessionListRelationFilter
+    ledgerEntriesActed?: LedgerEntryListRelationFilter
+    ledgerEntriesVoided?: LedgerEntryListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -71433,6 +74592,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordOrderByRelationAggregateInput
     safetyDepositRequests?: SafetyDepositRequestOrderByRelationAggregateInput
     safetyDepositApprovals?: SafetyDepositRequestOrderByRelationAggregateInput
+    paymentSessionsOpened?: PaymentSessionOrderByRelationAggregateInput
+    ledgerEntriesActed?: LedgerEntryOrderByRelationAggregateInput
+    ledgerEntriesVoided?: LedgerEntryOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -71480,6 +74642,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordListRelationFilter
     safetyDepositRequests?: SafetyDepositRequestListRelationFilter
     safetyDepositApprovals?: SafetyDepositRequestListRelationFilter
+    paymentSessionsOpened?: PaymentSessionListRelationFilter
+    ledgerEntriesActed?: LedgerEntryListRelationFilter
+    ledgerEntriesVoided?: LedgerEntryListRelationFilter
   }, "id" | "publicId" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -71962,6 +75127,7 @@ export namespace Prisma {
     cashShifts?: CashShiftListRelationFilter
     refundRequests?: RefundRequestListRelationFilter
     extensions?: BookingExtensionListRelationFilter
+    paymentSessions?: PaymentSessionListRelationFilter
   }
 
   export type BranchOrderByWithRelationInput = {
@@ -71992,6 +75158,7 @@ export namespace Prisma {
     cashShifts?: CashShiftOrderByRelationAggregateInput
     refundRequests?: RefundRequestOrderByRelationAggregateInput
     extensions?: BookingExtensionOrderByRelationAggregateInput
+    paymentSessions?: PaymentSessionOrderByRelationAggregateInput
   }
 
   export type BranchWhereUniqueInput = Prisma.AtLeast<{
@@ -72025,6 +75192,7 @@ export namespace Prisma {
     cashShifts?: CashShiftListRelationFilter
     refundRequests?: RefundRequestListRelationFilter
     extensions?: BookingExtensionListRelationFilter
+    paymentSessions?: PaymentSessionListRelationFilter
   }, "id" | "publicId">
 
   export type BranchOrderByWithAggregationInput = {
@@ -73233,6 +76401,7 @@ export namespace Prisma {
     extensionDisplacedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     frozenChargeConfig?: JsonNullableFilter<"Booking">
     chargeConfigVersion?: IntFilter<"Booking"> | number
+    activePaymentSessionId?: IntNullableFilter<"Booking"> | number | null
     createdAt?: DateTimeFilter<"Booking"> | Date | string
     updatedAt?: DateTimeFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
@@ -73258,6 +76427,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideListRelationFilter
     fuelRecord?: XOR<FuelRecordNullableRelationFilter, FuelRecordWhereInput> | null
     safetyDepositRequest?: XOR<SafetyDepositRequestNullableRelationFilter, SafetyDepositRequestWhereInput> | null
+    activePaymentSession?: XOR<PaymentSessionNullableRelationFilter, PaymentSessionWhereInput> | null
+    paymentSessions?: PaymentSessionListRelationFilter
+    ledgerEntries?: LedgerEntryListRelationFilter
   }
 
   export type BookingOrderByWithRelationInput = {
@@ -73318,6 +76490,7 @@ export namespace Prisma {
     extensionDisplacedAt?: SortOrderInput | SortOrder
     frozenChargeConfig?: SortOrderInput | SortOrder
     chargeConfigVersion?: SortOrder
+    activePaymentSessionId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrderInput | SortOrder
@@ -73343,6 +76516,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideOrderByRelationAggregateInput
     fuelRecord?: FuelRecordOrderByWithRelationInput
     safetyDepositRequest?: SafetyDepositRequestOrderByWithRelationInput
+    activePaymentSession?: PaymentSessionOrderByWithRelationInput
+    paymentSessions?: PaymentSessionOrderByRelationAggregateInput
+    ledgerEntries?: LedgerEntryOrderByRelationAggregateInput
   }
 
   export type BookingWhereUniqueInput = Prisma.AtLeast<{
@@ -73406,6 +76582,7 @@ export namespace Prisma {
     extensionDisplacedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     frozenChargeConfig?: JsonNullableFilter<"Booking">
     chargeConfigVersion?: IntFilter<"Booking"> | number
+    activePaymentSessionId?: IntNullableFilter<"Booking"> | number | null
     createdAt?: DateTimeFilter<"Booking"> | Date | string
     updatedAt?: DateTimeFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
@@ -73431,6 +76608,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideListRelationFilter
     fuelRecord?: XOR<FuelRecordNullableRelationFilter, FuelRecordWhereInput> | null
     safetyDepositRequest?: XOR<SafetyDepositRequestNullableRelationFilter, SafetyDepositRequestWhereInput> | null
+    activePaymentSession?: XOR<PaymentSessionNullableRelationFilter, PaymentSessionWhereInput> | null
+    paymentSessions?: PaymentSessionListRelationFilter
+    ledgerEntries?: LedgerEntryListRelationFilter
   }, "id" | "publicId" | "transactionId" | "remainingPaymentId">
 
   export type BookingOrderByWithAggregationInput = {
@@ -73491,6 +76671,7 @@ export namespace Prisma {
     extensionDisplacedAt?: SortOrderInput | SortOrder
     frozenChargeConfig?: SortOrderInput | SortOrder
     chargeConfigVersion?: SortOrder
+    activePaymentSessionId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrderInput | SortOrder
@@ -73562,6 +76743,7 @@ export namespace Prisma {
     extensionDisplacedAt?: DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
     frozenChargeConfig?: JsonNullableWithAggregatesFilter<"Booking">
     chargeConfigVersion?: IntWithAggregatesFilter<"Booking"> | number
+    activePaymentSessionId?: IntNullableWithAggregatesFilter<"Booking"> | number | null
     createdAt?: DateTimeWithAggregatesFilter<"Booking"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
@@ -76443,6 +79625,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: DecimalNullableFilter<"BranchChargeConfig"> | Decimal | DecimalJsLike | number | string | null
     safetyDepositEnabled?: BoolFilter<"BranchChargeConfig"> | boolean
     safetyDepositRequiresApproval?: BoolFilter<"BranchChargeConfig"> | boolean
+    usePaymentSessions?: BoolFilter<"BranchChargeConfig"> | boolean
     createdAt?: DateTimeFilter<"BranchChargeConfig"> | Date | string
     updatedAt?: DateTimeFilter<"BranchChargeConfig"> | Date | string
     branch?: XOR<BranchRelationFilter, BranchWhereInput>
@@ -76466,6 +79649,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: SortOrderInput | SortOrder
     safetyDepositEnabled?: SortOrder
     safetyDepositRequiresApproval?: SortOrder
+    usePaymentSessions?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     branch?: BranchOrderByWithRelationInput
@@ -76492,6 +79676,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: DecimalNullableFilter<"BranchChargeConfig"> | Decimal | DecimalJsLike | number | string | null
     safetyDepositEnabled?: BoolFilter<"BranchChargeConfig"> | boolean
     safetyDepositRequiresApproval?: BoolFilter<"BranchChargeConfig"> | boolean
+    usePaymentSessions?: BoolFilter<"BranchChargeConfig"> | boolean
     createdAt?: DateTimeFilter<"BranchChargeConfig"> | Date | string
     updatedAt?: DateTimeFilter<"BranchChargeConfig"> | Date | string
     branch?: XOR<BranchRelationFilter, BranchWhereInput>
@@ -76515,6 +79700,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: SortOrderInput | SortOrder
     safetyDepositEnabled?: SortOrder
     safetyDepositRequiresApproval?: SortOrder
+    usePaymentSessions?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: BranchChargeConfigCountOrderByAggregateInput
@@ -76545,6 +79731,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: DecimalNullableWithAggregatesFilter<"BranchChargeConfig"> | Decimal | DecimalJsLike | number | string | null
     safetyDepositEnabled?: BoolWithAggregatesFilter<"BranchChargeConfig"> | boolean
     safetyDepositRequiresApproval?: BoolWithAggregatesFilter<"BranchChargeConfig"> | boolean
+    usePaymentSessions?: BoolWithAggregatesFilter<"BranchChargeConfig"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"BranchChargeConfig"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"BranchChargeConfig"> | Date | string
   }
@@ -77005,6 +80192,311 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"SafetyDepositRequest"> | Date | string
   }
 
+  export type PaymentSessionWhereInput = {
+    AND?: PaymentSessionWhereInput | PaymentSessionWhereInput[]
+    OR?: PaymentSessionWhereInput[]
+    NOT?: PaymentSessionWhereInput | PaymentSessionWhereInput[]
+    id?: IntFilter<"PaymentSession"> | number
+    publicId?: StringFilter<"PaymentSession"> | string
+    bookingId?: IntFilter<"PaymentSession"> | number
+    branchId?: IntFilter<"PaymentSession"> | number
+    sessionType?: EnumPaymentSessionTypeFilter<"PaymentSession"> | $Enums.PaymentSessionType
+    status?: EnumPaymentSessionStatusFilter<"PaymentSession"> | $Enums.PaymentSessionStatus
+    taxableBase?: DecimalFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: DecimalFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    totalCharges?: DecimalFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    totalDiscounts?: DecimalFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: DecimalFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    netPayable?: DecimalFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    idempotencyKey?: StringNullableFilter<"PaymentSession"> | string | null
+    gatewayTransactionId?: StringNullableFilter<"PaymentSession"> | string | null
+    gatewayPaymentUrl?: StringNullableFilter<"PaymentSession"> | string | null
+    expiresAt?: DateTimeNullableFilter<"PaymentSession"> | Date | string | null
+    completedAt?: DateTimeNullableFilter<"PaymentSession"> | Date | string | null
+    metadata?: JsonNullableFilter<"PaymentSession">
+    actorId?: IntFilter<"PaymentSession"> | number
+    createdAt?: DateTimeFilter<"PaymentSession"> | Date | string
+    updatedAt?: DateTimeFilter<"PaymentSession"> | Date | string
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+    actor?: XOR<UserRelationFilter, UserWhereInput>
+    entries?: LedgerEntryListRelationFilter
+    activeForBookings?: BookingListRelationFilter
+  }
+
+  export type PaymentSessionOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    sessionType?: SortOrder
+    status?: SortOrder
+    taxableBase?: SortOrder
+    nonTaxableBase?: SortOrder
+    gstAmount?: SortOrder
+    totalCharges?: SortOrder
+    totalDiscounts?: SortOrder
+    totalPaymentsRecorded?: SortOrder
+    netPayable?: SortOrder
+    idempotencyKey?: SortOrderInput | SortOrder
+    gatewayTransactionId?: SortOrderInput | SortOrder
+    gatewayPaymentUrl?: SortOrderInput | SortOrder
+    expiresAt?: SortOrderInput | SortOrder
+    completedAt?: SortOrderInput | SortOrder
+    metadata?: SortOrderInput | SortOrder
+    actorId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    booking?: BookingOrderByWithRelationInput
+    branch?: BranchOrderByWithRelationInput
+    actor?: UserOrderByWithRelationInput
+    entries?: LedgerEntryOrderByRelationAggregateInput
+    activeForBookings?: BookingOrderByRelationAggregateInput
+  }
+
+  export type PaymentSessionWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    AND?: PaymentSessionWhereInput | PaymentSessionWhereInput[]
+    OR?: PaymentSessionWhereInput[]
+    NOT?: PaymentSessionWhereInput | PaymentSessionWhereInput[]
+    bookingId?: IntFilter<"PaymentSession"> | number
+    branchId?: IntFilter<"PaymentSession"> | number
+    sessionType?: EnumPaymentSessionTypeFilter<"PaymentSession"> | $Enums.PaymentSessionType
+    status?: EnumPaymentSessionStatusFilter<"PaymentSession"> | $Enums.PaymentSessionStatus
+    taxableBase?: DecimalFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: DecimalFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    totalCharges?: DecimalFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    totalDiscounts?: DecimalFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: DecimalFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    netPayable?: DecimalFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    idempotencyKey?: StringNullableFilter<"PaymentSession"> | string | null
+    gatewayTransactionId?: StringNullableFilter<"PaymentSession"> | string | null
+    gatewayPaymentUrl?: StringNullableFilter<"PaymentSession"> | string | null
+    expiresAt?: DateTimeNullableFilter<"PaymentSession"> | Date | string | null
+    completedAt?: DateTimeNullableFilter<"PaymentSession"> | Date | string | null
+    metadata?: JsonNullableFilter<"PaymentSession">
+    actorId?: IntFilter<"PaymentSession"> | number
+    createdAt?: DateTimeFilter<"PaymentSession"> | Date | string
+    updatedAt?: DateTimeFilter<"PaymentSession"> | Date | string
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+    actor?: XOR<UserRelationFilter, UserWhereInput>
+    entries?: LedgerEntryListRelationFilter
+    activeForBookings?: BookingListRelationFilter
+  }, "id" | "publicId">
+
+  export type PaymentSessionOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    sessionType?: SortOrder
+    status?: SortOrder
+    taxableBase?: SortOrder
+    nonTaxableBase?: SortOrder
+    gstAmount?: SortOrder
+    totalCharges?: SortOrder
+    totalDiscounts?: SortOrder
+    totalPaymentsRecorded?: SortOrder
+    netPayable?: SortOrder
+    idempotencyKey?: SortOrderInput | SortOrder
+    gatewayTransactionId?: SortOrderInput | SortOrder
+    gatewayPaymentUrl?: SortOrderInput | SortOrder
+    expiresAt?: SortOrderInput | SortOrder
+    completedAt?: SortOrderInput | SortOrder
+    metadata?: SortOrderInput | SortOrder
+    actorId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: PaymentSessionCountOrderByAggregateInput
+    _avg?: PaymentSessionAvgOrderByAggregateInput
+    _max?: PaymentSessionMaxOrderByAggregateInput
+    _min?: PaymentSessionMinOrderByAggregateInput
+    _sum?: PaymentSessionSumOrderByAggregateInput
+  }
+
+  export type PaymentSessionScalarWhereWithAggregatesInput = {
+    AND?: PaymentSessionScalarWhereWithAggregatesInput | PaymentSessionScalarWhereWithAggregatesInput[]
+    OR?: PaymentSessionScalarWhereWithAggregatesInput[]
+    NOT?: PaymentSessionScalarWhereWithAggregatesInput | PaymentSessionScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"PaymentSession"> | number
+    publicId?: StringWithAggregatesFilter<"PaymentSession"> | string
+    bookingId?: IntWithAggregatesFilter<"PaymentSession"> | number
+    branchId?: IntWithAggregatesFilter<"PaymentSession"> | number
+    sessionType?: EnumPaymentSessionTypeWithAggregatesFilter<"PaymentSession"> | $Enums.PaymentSessionType
+    status?: EnumPaymentSessionStatusWithAggregatesFilter<"PaymentSession"> | $Enums.PaymentSessionStatus
+    taxableBase?: DecimalWithAggregatesFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: DecimalWithAggregatesFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalWithAggregatesFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    totalCharges?: DecimalWithAggregatesFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    totalDiscounts?: DecimalWithAggregatesFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: DecimalWithAggregatesFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    netPayable?: DecimalWithAggregatesFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    idempotencyKey?: StringNullableWithAggregatesFilter<"PaymentSession"> | string | null
+    gatewayTransactionId?: StringNullableWithAggregatesFilter<"PaymentSession"> | string | null
+    gatewayPaymentUrl?: StringNullableWithAggregatesFilter<"PaymentSession"> | string | null
+    expiresAt?: DateTimeNullableWithAggregatesFilter<"PaymentSession"> | Date | string | null
+    completedAt?: DateTimeNullableWithAggregatesFilter<"PaymentSession"> | Date | string | null
+    metadata?: JsonNullableWithAggregatesFilter<"PaymentSession">
+    actorId?: IntWithAggregatesFilter<"PaymentSession"> | number
+    createdAt?: DateTimeWithAggregatesFilter<"PaymentSession"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"PaymentSession"> | Date | string
+  }
+
+  export type LedgerEntryWhereInput = {
+    AND?: LedgerEntryWhereInput | LedgerEntryWhereInput[]
+    OR?: LedgerEntryWhereInput[]
+    NOT?: LedgerEntryWhereInput | LedgerEntryWhereInput[]
+    id?: IntFilter<"LedgerEntry"> | number
+    publicId?: StringFilter<"LedgerEntry"> | string
+    sessionId?: IntFilter<"LedgerEntry"> | number
+    bookingId?: IntFilter<"LedgerEntry"> | number
+    entryType?: EnumLedgerEntryTypeFilter<"LedgerEntry"> | $Enums.LedgerEntryType
+    classification?: EnumLedgerEntryClassificationFilter<"LedgerEntry"> | $Enums.LedgerEntryClassification
+    amount?: DecimalFilter<"LedgerEntry"> | Decimal | DecimalJsLike | number | string
+    baseAmount?: DecimalFilter<"LedgerEntry"> | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFilter<"LedgerEntry"> | Decimal | DecimalJsLike | number | string
+    description?: StringFilter<"LedgerEntry"> | string
+    referenceId?: StringNullableFilter<"LedgerEntry"> | string | null
+    referenceType?: StringNullableFilter<"LedgerEntry"> | string | null
+    idempotencyKey?: StringFilter<"LedgerEntry"> | string
+    isVoided?: BoolFilter<"LedgerEntry"> | boolean
+    voidedAt?: DateTimeNullableFilter<"LedgerEntry"> | Date | string | null
+    voidedById?: IntNullableFilter<"LedgerEntry"> | number | null
+    voidReason?: StringNullableFilter<"LedgerEntry"> | string | null
+    actorId?: IntFilter<"LedgerEntry"> | number
+    actorRole?: StringFilter<"LedgerEntry"> | string
+    metadata?: JsonNullableFilter<"LedgerEntry">
+    createdAt?: DateTimeFilter<"LedgerEntry"> | Date | string
+    updatedAt?: DateTimeFilter<"LedgerEntry"> | Date | string
+    session?: XOR<PaymentSessionRelationFilter, PaymentSessionWhereInput>
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    actor?: XOR<UserRelationFilter, UserWhereInput>
+    voidedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+  }
+
+  export type LedgerEntryOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    sessionId?: SortOrder
+    bookingId?: SortOrder
+    entryType?: SortOrder
+    classification?: SortOrder
+    amount?: SortOrder
+    baseAmount?: SortOrder
+    gstAmount?: SortOrder
+    description?: SortOrder
+    referenceId?: SortOrderInput | SortOrder
+    referenceType?: SortOrderInput | SortOrder
+    idempotencyKey?: SortOrder
+    isVoided?: SortOrder
+    voidedAt?: SortOrderInput | SortOrder
+    voidedById?: SortOrderInput | SortOrder
+    voidReason?: SortOrderInput | SortOrder
+    actorId?: SortOrder
+    actorRole?: SortOrder
+    metadata?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    session?: PaymentSessionOrderByWithRelationInput
+    booking?: BookingOrderByWithRelationInput
+    actor?: UserOrderByWithRelationInput
+    voidedBy?: UserOrderByWithRelationInput
+  }
+
+  export type LedgerEntryWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    idempotencyKey?: string
+    AND?: LedgerEntryWhereInput | LedgerEntryWhereInput[]
+    OR?: LedgerEntryWhereInput[]
+    NOT?: LedgerEntryWhereInput | LedgerEntryWhereInput[]
+    sessionId?: IntFilter<"LedgerEntry"> | number
+    bookingId?: IntFilter<"LedgerEntry"> | number
+    entryType?: EnumLedgerEntryTypeFilter<"LedgerEntry"> | $Enums.LedgerEntryType
+    classification?: EnumLedgerEntryClassificationFilter<"LedgerEntry"> | $Enums.LedgerEntryClassification
+    amount?: DecimalFilter<"LedgerEntry"> | Decimal | DecimalJsLike | number | string
+    baseAmount?: DecimalFilter<"LedgerEntry"> | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFilter<"LedgerEntry"> | Decimal | DecimalJsLike | number | string
+    description?: StringFilter<"LedgerEntry"> | string
+    referenceId?: StringNullableFilter<"LedgerEntry"> | string | null
+    referenceType?: StringNullableFilter<"LedgerEntry"> | string | null
+    isVoided?: BoolFilter<"LedgerEntry"> | boolean
+    voidedAt?: DateTimeNullableFilter<"LedgerEntry"> | Date | string | null
+    voidedById?: IntNullableFilter<"LedgerEntry"> | number | null
+    voidReason?: StringNullableFilter<"LedgerEntry"> | string | null
+    actorId?: IntFilter<"LedgerEntry"> | number
+    actorRole?: StringFilter<"LedgerEntry"> | string
+    metadata?: JsonNullableFilter<"LedgerEntry">
+    createdAt?: DateTimeFilter<"LedgerEntry"> | Date | string
+    updatedAt?: DateTimeFilter<"LedgerEntry"> | Date | string
+    session?: XOR<PaymentSessionRelationFilter, PaymentSessionWhereInput>
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    actor?: XOR<UserRelationFilter, UserWhereInput>
+    voidedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+  }, "id" | "publicId" | "idempotencyKey">
+
+  export type LedgerEntryOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    sessionId?: SortOrder
+    bookingId?: SortOrder
+    entryType?: SortOrder
+    classification?: SortOrder
+    amount?: SortOrder
+    baseAmount?: SortOrder
+    gstAmount?: SortOrder
+    description?: SortOrder
+    referenceId?: SortOrderInput | SortOrder
+    referenceType?: SortOrderInput | SortOrder
+    idempotencyKey?: SortOrder
+    isVoided?: SortOrder
+    voidedAt?: SortOrderInput | SortOrder
+    voidedById?: SortOrderInput | SortOrder
+    voidReason?: SortOrderInput | SortOrder
+    actorId?: SortOrder
+    actorRole?: SortOrder
+    metadata?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: LedgerEntryCountOrderByAggregateInput
+    _avg?: LedgerEntryAvgOrderByAggregateInput
+    _max?: LedgerEntryMaxOrderByAggregateInput
+    _min?: LedgerEntryMinOrderByAggregateInput
+    _sum?: LedgerEntrySumOrderByAggregateInput
+  }
+
+  export type LedgerEntryScalarWhereWithAggregatesInput = {
+    AND?: LedgerEntryScalarWhereWithAggregatesInput | LedgerEntryScalarWhereWithAggregatesInput[]
+    OR?: LedgerEntryScalarWhereWithAggregatesInput[]
+    NOT?: LedgerEntryScalarWhereWithAggregatesInput | LedgerEntryScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"LedgerEntry"> | number
+    publicId?: StringWithAggregatesFilter<"LedgerEntry"> | string
+    sessionId?: IntWithAggregatesFilter<"LedgerEntry"> | number
+    bookingId?: IntWithAggregatesFilter<"LedgerEntry"> | number
+    entryType?: EnumLedgerEntryTypeWithAggregatesFilter<"LedgerEntry"> | $Enums.LedgerEntryType
+    classification?: EnumLedgerEntryClassificationWithAggregatesFilter<"LedgerEntry"> | $Enums.LedgerEntryClassification
+    amount?: DecimalWithAggregatesFilter<"LedgerEntry"> | Decimal | DecimalJsLike | number | string
+    baseAmount?: DecimalWithAggregatesFilter<"LedgerEntry"> | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalWithAggregatesFilter<"LedgerEntry"> | Decimal | DecimalJsLike | number | string
+    description?: StringWithAggregatesFilter<"LedgerEntry"> | string
+    referenceId?: StringNullableWithAggregatesFilter<"LedgerEntry"> | string | null
+    referenceType?: StringNullableWithAggregatesFilter<"LedgerEntry"> | string | null
+    idempotencyKey?: StringWithAggregatesFilter<"LedgerEntry"> | string
+    isVoided?: BoolWithAggregatesFilter<"LedgerEntry"> | boolean
+    voidedAt?: DateTimeNullableWithAggregatesFilter<"LedgerEntry"> | Date | string | null
+    voidedById?: IntNullableWithAggregatesFilter<"LedgerEntry"> | number | null
+    voidReason?: StringNullableWithAggregatesFilter<"LedgerEntry"> | string | null
+    actorId?: IntWithAggregatesFilter<"LedgerEntry"> | number
+    actorRole?: StringWithAggregatesFilter<"LedgerEntry"> | string
+    metadata?: JsonNullableWithAggregatesFilter<"LedgerEntry">
+    createdAt?: DateTimeWithAggregatesFilter<"LedgerEntry"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"LedgerEntry"> | Date | string
+  }
+
   export type UserCreateInput = {
     publicId: string
     name: string
@@ -77045,6 +80537,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -77088,6 +80583,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUpdateInput = {
@@ -77130,6 +80628,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -77173,6 +80674,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -77677,6 +81181,7 @@ export namespace Prisma {
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateInput = {
@@ -77707,6 +81212,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUpdateInput = {
@@ -77736,6 +81242,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateInput = {
@@ -77766,6 +81273,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchCreateManyInput = {
@@ -79014,6 +82522,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateInput = {
@@ -79074,6 +82585,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -79093,6 +82605,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUpdateInput = {
@@ -79171,6 +82685,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateInput = {
@@ -79231,6 +82748,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -79250,6 +82768,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingCreateManyInput = {
@@ -79310,6 +82830,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -79429,6 +82950,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -82502,6 +86024,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: Decimal | DecimalJsLike | number | string | null
     safetyDepositEnabled?: boolean
     safetyDepositRequiresApproval?: boolean
+    usePaymentSessions?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     branch: BranchCreateNestedOneWithoutChargeConfigInput
@@ -82525,6 +86048,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: Decimal | DecimalJsLike | number | string | null
     safetyDepositEnabled?: boolean
     safetyDepositRequiresApproval?: boolean
+    usePaymentSessions?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -82545,6 +86069,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     safetyDepositEnabled?: BoolFieldUpdateOperationsInput | boolean
     safetyDepositRequiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    usePaymentSessions?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     branch?: BranchUpdateOneRequiredWithoutChargeConfigNestedInput
@@ -82568,6 +86093,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     safetyDepositEnabled?: BoolFieldUpdateOperationsInput | boolean
     safetyDepositRequiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    usePaymentSessions?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -82590,6 +86116,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: Decimal | DecimalJsLike | number | string | null
     safetyDepositEnabled?: boolean
     safetyDepositRequiresApproval?: boolean
+    usePaymentSessions?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -82610,6 +86137,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     safetyDepositEnabled?: BoolFieldUpdateOperationsInput | boolean
     safetyDepositRequiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    usePaymentSessions?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -82632,6 +86160,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     safetyDepositEnabled?: BoolFieldUpdateOperationsInput | boolean
     safetyDepositRequiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    usePaymentSessions?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -83120,6 +86649,351 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type PaymentSessionCreateInput = {
+    publicId: string
+    sessionType: $Enums.PaymentSessionType
+    status?: $Enums.PaymentSessionStatus
+    taxableBase?: Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    totalDiscounts?: Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: Decimal | DecimalJsLike | number | string
+    netPayable?: Decimal | DecimalJsLike | number | string
+    idempotencyKey?: string | null
+    gatewayTransactionId?: string | null
+    gatewayPaymentUrl?: string | null
+    expiresAt?: Date | string | null
+    completedAt?: Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutPaymentSessionsInput
+    branch: BranchCreateNestedOneWithoutPaymentSessionsInput
+    actor: UserCreateNestedOneWithoutPaymentSessionsOpenedInput
+    entries?: LedgerEntryCreateNestedManyWithoutSessionInput
+    activeForBookings?: BookingCreateNestedManyWithoutActivePaymentSessionInput
+  }
+
+  export type PaymentSessionUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    sessionType: $Enums.PaymentSessionType
+    status?: $Enums.PaymentSessionStatus
+    taxableBase?: Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    totalDiscounts?: Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: Decimal | DecimalJsLike | number | string
+    netPayable?: Decimal | DecimalJsLike | number | string
+    idempotencyKey?: string | null
+    gatewayTransactionId?: string | null
+    gatewayPaymentUrl?: string | null
+    expiresAt?: Date | string | null
+    completedAt?: Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    actorId: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    entries?: LedgerEntryUncheckedCreateNestedManyWithoutSessionInput
+    activeForBookings?: BookingUncheckedCreateNestedManyWithoutActivePaymentSessionInput
+  }
+
+  export type PaymentSessionUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    sessionType?: EnumPaymentSessionTypeFieldUpdateOperationsInput | $Enums.PaymentSessionType
+    status?: EnumPaymentSessionStatusFieldUpdateOperationsInput | $Enums.PaymentSessionStatus
+    taxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscounts?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netPayable?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayPaymentUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutPaymentSessionsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutPaymentSessionsNestedInput
+    actor?: UserUpdateOneRequiredWithoutPaymentSessionsOpenedNestedInput
+    entries?: LedgerEntryUpdateManyWithoutSessionNestedInput
+    activeForBookings?: BookingUpdateManyWithoutActivePaymentSessionNestedInput
+  }
+
+  export type PaymentSessionUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    sessionType?: EnumPaymentSessionTypeFieldUpdateOperationsInput | $Enums.PaymentSessionType
+    status?: EnumPaymentSessionStatusFieldUpdateOperationsInput | $Enums.PaymentSessionStatus
+    taxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscounts?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netPayable?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayPaymentUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    actorId?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    entries?: LedgerEntryUncheckedUpdateManyWithoutSessionNestedInput
+    activeForBookings?: BookingUncheckedUpdateManyWithoutActivePaymentSessionNestedInput
+  }
+
+  export type PaymentSessionCreateManyInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    sessionType: $Enums.PaymentSessionType
+    status?: $Enums.PaymentSessionStatus
+    taxableBase?: Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    totalDiscounts?: Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: Decimal | DecimalJsLike | number | string
+    netPayable?: Decimal | DecimalJsLike | number | string
+    idempotencyKey?: string | null
+    gatewayTransactionId?: string | null
+    gatewayPaymentUrl?: string | null
+    expiresAt?: Date | string | null
+    completedAt?: Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    actorId: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PaymentSessionUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    sessionType?: EnumPaymentSessionTypeFieldUpdateOperationsInput | $Enums.PaymentSessionType
+    status?: EnumPaymentSessionStatusFieldUpdateOperationsInput | $Enums.PaymentSessionStatus
+    taxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscounts?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netPayable?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayPaymentUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaymentSessionUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    sessionType?: EnumPaymentSessionTypeFieldUpdateOperationsInput | $Enums.PaymentSessionType
+    status?: EnumPaymentSessionStatusFieldUpdateOperationsInput | $Enums.PaymentSessionStatus
+    taxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscounts?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netPayable?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayPaymentUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    actorId?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type LedgerEntryCreateInput = {
+    publicId: string
+    entryType: $Enums.LedgerEntryType
+    classification: $Enums.LedgerEntryClassification
+    amount: Decimal | DecimalJsLike | number | string
+    baseAmount?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    description: string
+    referenceId?: string | null
+    referenceType?: string | null
+    idempotencyKey: string
+    isVoided?: boolean
+    voidedAt?: Date | string | null
+    voidReason?: string | null
+    actorRole: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    session: PaymentSessionCreateNestedOneWithoutEntriesInput
+    booking: BookingCreateNestedOneWithoutLedgerEntriesInput
+    actor: UserCreateNestedOneWithoutLedgerEntriesActedInput
+    voidedBy?: UserCreateNestedOneWithoutLedgerEntriesVoidedInput
+  }
+
+  export type LedgerEntryUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    sessionId: number
+    bookingId: number
+    entryType: $Enums.LedgerEntryType
+    classification: $Enums.LedgerEntryClassification
+    amount: Decimal | DecimalJsLike | number | string
+    baseAmount?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    description: string
+    referenceId?: string | null
+    referenceType?: string | null
+    idempotencyKey: string
+    isVoided?: boolean
+    voidedAt?: Date | string | null
+    voidedById?: number | null
+    voidReason?: string | null
+    actorId: number
+    actorRole: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type LedgerEntryUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    entryType?: EnumLedgerEntryTypeFieldUpdateOperationsInput | $Enums.LedgerEntryType
+    classification?: EnumLedgerEntryClassificationFieldUpdateOperationsInput | $Enums.LedgerEntryClassification
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    baseAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    description?: StringFieldUpdateOperationsInput | string
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
+    referenceType?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    isVoided?: BoolFieldUpdateOperationsInput | boolean
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidReason?: NullableStringFieldUpdateOperationsInput | string | null
+    actorRole?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    session?: PaymentSessionUpdateOneRequiredWithoutEntriesNestedInput
+    booking?: BookingUpdateOneRequiredWithoutLedgerEntriesNestedInput
+    actor?: UserUpdateOneRequiredWithoutLedgerEntriesActedNestedInput
+    voidedBy?: UserUpdateOneWithoutLedgerEntriesVoidedNestedInput
+  }
+
+  export type LedgerEntryUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    sessionId?: IntFieldUpdateOperationsInput | number
+    bookingId?: IntFieldUpdateOperationsInput | number
+    entryType?: EnumLedgerEntryTypeFieldUpdateOperationsInput | $Enums.LedgerEntryType
+    classification?: EnumLedgerEntryClassificationFieldUpdateOperationsInput | $Enums.LedgerEntryClassification
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    baseAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    description?: StringFieldUpdateOperationsInput | string
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
+    referenceType?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    isVoided?: BoolFieldUpdateOperationsInput | boolean
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidedById?: NullableIntFieldUpdateOperationsInput | number | null
+    voidReason?: NullableStringFieldUpdateOperationsInput | string | null
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorRole?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type LedgerEntryCreateManyInput = {
+    id?: number
+    publicId: string
+    sessionId: number
+    bookingId: number
+    entryType: $Enums.LedgerEntryType
+    classification: $Enums.LedgerEntryClassification
+    amount: Decimal | DecimalJsLike | number | string
+    baseAmount?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    description: string
+    referenceId?: string | null
+    referenceType?: string | null
+    idempotencyKey: string
+    isVoided?: boolean
+    voidedAt?: Date | string | null
+    voidedById?: number | null
+    voidReason?: string | null
+    actorId: number
+    actorRole: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type LedgerEntryUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    entryType?: EnumLedgerEntryTypeFieldUpdateOperationsInput | $Enums.LedgerEntryType
+    classification?: EnumLedgerEntryClassificationFieldUpdateOperationsInput | $Enums.LedgerEntryClassification
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    baseAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    description?: StringFieldUpdateOperationsInput | string
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
+    referenceType?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    isVoided?: BoolFieldUpdateOperationsInput | boolean
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidReason?: NullableStringFieldUpdateOperationsInput | string | null
+    actorRole?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type LedgerEntryUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    sessionId?: IntFieldUpdateOperationsInput | number
+    bookingId?: IntFieldUpdateOperationsInput | number
+    entryType?: EnumLedgerEntryTypeFieldUpdateOperationsInput | $Enums.LedgerEntryType
+    classification?: EnumLedgerEntryClassificationFieldUpdateOperationsInput | $Enums.LedgerEntryClassification
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    baseAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    description?: StringFieldUpdateOperationsInput | string
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
+    referenceType?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    isVoided?: BoolFieldUpdateOperationsInput | boolean
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidedById?: NullableIntFieldUpdateOperationsInput | number | null
+    voidReason?: NullableStringFieldUpdateOperationsInput | string | null
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorRole?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type IntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -83314,6 +87188,18 @@ export namespace Prisma {
     none?: SafetyDepositRequestWhereInput
   }
 
+  export type PaymentSessionListRelationFilter = {
+    every?: PaymentSessionWhereInput
+    some?: PaymentSessionWhereInput
+    none?: PaymentSessionWhereInput
+  }
+
+  export type LedgerEntryListRelationFilter = {
+    every?: LedgerEntryWhereInput
+    some?: LedgerEntryWhereInput
+    none?: LedgerEntryWhereInput
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -83380,6 +87266,14 @@ export namespace Prisma {
   }
 
   export type SafetyDepositRequestOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type PaymentSessionOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type LedgerEntryOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -85146,6 +89040,11 @@ export namespace Prisma {
     isNot?: SafetyDepositRequestWhereInput | null
   }
 
+  export type PaymentSessionNullableRelationFilter = {
+    is?: PaymentSessionWhereInput | null
+    isNot?: PaymentSessionWhereInput | null
+  }
+
   export type BookingCountOrderByAggregateInput = {
     id?: SortOrder
     publicId?: SortOrder
@@ -85204,6 +89103,7 @@ export namespace Prisma {
     extensionDisplacedAt?: SortOrder
     frozenChargeConfig?: SortOrder
     chargeConfigVersion?: SortOrder
+    activePaymentSessionId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -85236,6 +89136,7 @@ export namespace Prisma {
     activeExtensionId?: SortOrder
     displacedByExtensionId?: SortOrder
     chargeConfigVersion?: SortOrder
+    activePaymentSessionId?: SortOrder
   }
 
   export type BookingMaxOrderByAggregateInput = {
@@ -85294,6 +89195,7 @@ export namespace Prisma {
     displacedByExtensionId?: SortOrder
     extensionDisplacedAt?: SortOrder
     chargeConfigVersion?: SortOrder
+    activePaymentSessionId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -85355,6 +89257,7 @@ export namespace Prisma {
     displacedByExtensionId?: SortOrder
     extensionDisplacedAt?: SortOrder
     chargeConfigVersion?: SortOrder
+    activePaymentSessionId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     deletedAt?: SortOrder
@@ -85387,6 +89290,7 @@ export namespace Prisma {
     activeExtensionId?: SortOrder
     displacedByExtensionId?: SortOrder
     chargeConfigVersion?: SortOrder
+    activePaymentSessionId?: SortOrder
   }
 
   export type EnumRentalPeriodTypeNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -87795,6 +91699,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: SortOrder
     safetyDepositEnabled?: SortOrder
     safetyDepositRequiresApproval?: SortOrder
+    usePaymentSessions?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -87825,6 +91730,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: SortOrder
     safetyDepositEnabled?: SortOrder
     safetyDepositRequiresApproval?: SortOrder
+    usePaymentSessions?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -87847,6 +91753,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: SortOrder
     safetyDepositEnabled?: SortOrder
     safetyDepositRequiresApproval?: SortOrder
+    usePaymentSessions?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -88261,6 +92168,275 @@ export namespace Prisma {
     _max?: NestedEnumSafetyDepositStatusFilter<$PrismaModel>
   }
 
+  export type EnumPaymentSessionTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentSessionType | EnumPaymentSessionTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentSessionType[] | ListEnumPaymentSessionTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentSessionType[] | ListEnumPaymentSessionTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentSessionTypeFilter<$PrismaModel> | $Enums.PaymentSessionType
+  }
+
+  export type EnumPaymentSessionStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentSessionStatus | EnumPaymentSessionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentSessionStatus[] | ListEnumPaymentSessionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentSessionStatus[] | ListEnumPaymentSessionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentSessionStatusFilter<$PrismaModel> | $Enums.PaymentSessionStatus
+  }
+
+  export type PaymentSessionCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    sessionType?: SortOrder
+    status?: SortOrder
+    taxableBase?: SortOrder
+    nonTaxableBase?: SortOrder
+    gstAmount?: SortOrder
+    totalCharges?: SortOrder
+    totalDiscounts?: SortOrder
+    totalPaymentsRecorded?: SortOrder
+    netPayable?: SortOrder
+    idempotencyKey?: SortOrder
+    gatewayTransactionId?: SortOrder
+    gatewayPaymentUrl?: SortOrder
+    expiresAt?: SortOrder
+    completedAt?: SortOrder
+    metadata?: SortOrder
+    actorId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PaymentSessionAvgOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    taxableBase?: SortOrder
+    nonTaxableBase?: SortOrder
+    gstAmount?: SortOrder
+    totalCharges?: SortOrder
+    totalDiscounts?: SortOrder
+    totalPaymentsRecorded?: SortOrder
+    netPayable?: SortOrder
+    actorId?: SortOrder
+  }
+
+  export type PaymentSessionMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    sessionType?: SortOrder
+    status?: SortOrder
+    taxableBase?: SortOrder
+    nonTaxableBase?: SortOrder
+    gstAmount?: SortOrder
+    totalCharges?: SortOrder
+    totalDiscounts?: SortOrder
+    totalPaymentsRecorded?: SortOrder
+    netPayable?: SortOrder
+    idempotencyKey?: SortOrder
+    gatewayTransactionId?: SortOrder
+    gatewayPaymentUrl?: SortOrder
+    expiresAt?: SortOrder
+    completedAt?: SortOrder
+    actorId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PaymentSessionMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    sessionType?: SortOrder
+    status?: SortOrder
+    taxableBase?: SortOrder
+    nonTaxableBase?: SortOrder
+    gstAmount?: SortOrder
+    totalCharges?: SortOrder
+    totalDiscounts?: SortOrder
+    totalPaymentsRecorded?: SortOrder
+    netPayable?: SortOrder
+    idempotencyKey?: SortOrder
+    gatewayTransactionId?: SortOrder
+    gatewayPaymentUrl?: SortOrder
+    expiresAt?: SortOrder
+    completedAt?: SortOrder
+    actorId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PaymentSessionSumOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    taxableBase?: SortOrder
+    nonTaxableBase?: SortOrder
+    gstAmount?: SortOrder
+    totalCharges?: SortOrder
+    totalDiscounts?: SortOrder
+    totalPaymentsRecorded?: SortOrder
+    netPayable?: SortOrder
+    actorId?: SortOrder
+  }
+
+  export type EnumPaymentSessionTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentSessionType | EnumPaymentSessionTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentSessionType[] | ListEnumPaymentSessionTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentSessionType[] | ListEnumPaymentSessionTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentSessionTypeWithAggregatesFilter<$PrismaModel> | $Enums.PaymentSessionType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumPaymentSessionTypeFilter<$PrismaModel>
+    _max?: NestedEnumPaymentSessionTypeFilter<$PrismaModel>
+  }
+
+  export type EnumPaymentSessionStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentSessionStatus | EnumPaymentSessionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentSessionStatus[] | ListEnumPaymentSessionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentSessionStatus[] | ListEnumPaymentSessionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentSessionStatusWithAggregatesFilter<$PrismaModel> | $Enums.PaymentSessionStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumPaymentSessionStatusFilter<$PrismaModel>
+    _max?: NestedEnumPaymentSessionStatusFilter<$PrismaModel>
+  }
+
+  export type EnumLedgerEntryTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.LedgerEntryType | EnumLedgerEntryTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.LedgerEntryType[] | ListEnumLedgerEntryTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.LedgerEntryType[] | ListEnumLedgerEntryTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumLedgerEntryTypeFilter<$PrismaModel> | $Enums.LedgerEntryType
+  }
+
+  export type EnumLedgerEntryClassificationFilter<$PrismaModel = never> = {
+    equals?: $Enums.LedgerEntryClassification | EnumLedgerEntryClassificationFieldRefInput<$PrismaModel>
+    in?: $Enums.LedgerEntryClassification[] | ListEnumLedgerEntryClassificationFieldRefInput<$PrismaModel>
+    notIn?: $Enums.LedgerEntryClassification[] | ListEnumLedgerEntryClassificationFieldRefInput<$PrismaModel>
+    not?: NestedEnumLedgerEntryClassificationFilter<$PrismaModel> | $Enums.LedgerEntryClassification
+  }
+
+  export type PaymentSessionRelationFilter = {
+    is?: PaymentSessionWhereInput
+    isNot?: PaymentSessionWhereInput
+  }
+
+  export type LedgerEntryCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    sessionId?: SortOrder
+    bookingId?: SortOrder
+    entryType?: SortOrder
+    classification?: SortOrder
+    amount?: SortOrder
+    baseAmount?: SortOrder
+    gstAmount?: SortOrder
+    description?: SortOrder
+    referenceId?: SortOrder
+    referenceType?: SortOrder
+    idempotencyKey?: SortOrder
+    isVoided?: SortOrder
+    voidedAt?: SortOrder
+    voidedById?: SortOrder
+    voidReason?: SortOrder
+    actorId?: SortOrder
+    actorRole?: SortOrder
+    metadata?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type LedgerEntryAvgOrderByAggregateInput = {
+    id?: SortOrder
+    sessionId?: SortOrder
+    bookingId?: SortOrder
+    amount?: SortOrder
+    baseAmount?: SortOrder
+    gstAmount?: SortOrder
+    voidedById?: SortOrder
+    actorId?: SortOrder
+  }
+
+  export type LedgerEntryMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    sessionId?: SortOrder
+    bookingId?: SortOrder
+    entryType?: SortOrder
+    classification?: SortOrder
+    amount?: SortOrder
+    baseAmount?: SortOrder
+    gstAmount?: SortOrder
+    description?: SortOrder
+    referenceId?: SortOrder
+    referenceType?: SortOrder
+    idempotencyKey?: SortOrder
+    isVoided?: SortOrder
+    voidedAt?: SortOrder
+    voidedById?: SortOrder
+    voidReason?: SortOrder
+    actorId?: SortOrder
+    actorRole?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type LedgerEntryMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    sessionId?: SortOrder
+    bookingId?: SortOrder
+    entryType?: SortOrder
+    classification?: SortOrder
+    amount?: SortOrder
+    baseAmount?: SortOrder
+    gstAmount?: SortOrder
+    description?: SortOrder
+    referenceId?: SortOrder
+    referenceType?: SortOrder
+    idempotencyKey?: SortOrder
+    isVoided?: SortOrder
+    voidedAt?: SortOrder
+    voidedById?: SortOrder
+    voidReason?: SortOrder
+    actorId?: SortOrder
+    actorRole?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type LedgerEntrySumOrderByAggregateInput = {
+    id?: SortOrder
+    sessionId?: SortOrder
+    bookingId?: SortOrder
+    amount?: SortOrder
+    baseAmount?: SortOrder
+    gstAmount?: SortOrder
+    voidedById?: SortOrder
+    actorId?: SortOrder
+  }
+
+  export type EnumLedgerEntryTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.LedgerEntryType | EnumLedgerEntryTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.LedgerEntryType[] | ListEnumLedgerEntryTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.LedgerEntryType[] | ListEnumLedgerEntryTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumLedgerEntryTypeWithAggregatesFilter<$PrismaModel> | $Enums.LedgerEntryType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumLedgerEntryTypeFilter<$PrismaModel>
+    _max?: NestedEnumLedgerEntryTypeFilter<$PrismaModel>
+  }
+
+  export type EnumLedgerEntryClassificationWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.LedgerEntryClassification | EnumLedgerEntryClassificationFieldRefInput<$PrismaModel>
+    in?: $Enums.LedgerEntryClassification[] | ListEnumLedgerEntryClassificationFieldRefInput<$PrismaModel>
+    notIn?: $Enums.LedgerEntryClassification[] | ListEnumLedgerEntryClassificationFieldRefInput<$PrismaModel>
+    not?: NestedEnumLedgerEntryClassificationWithAggregatesFilter<$PrismaModel> | $Enums.LedgerEntryClassification
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumLedgerEntryClassificationFilter<$PrismaModel>
+    _max?: NestedEnumLedgerEntryClassificationFilter<$PrismaModel>
+  }
+
   export type BranchCreateNestedOneWithoutUsersInput = {
     create?: XOR<BranchCreateWithoutUsersInput, BranchUncheckedCreateWithoutUsersInput>
     connectOrCreate?: BranchCreateOrConnectWithoutUsersInput
@@ -88455,6 +92631,27 @@ export namespace Prisma {
     connect?: SafetyDepositRequestWhereUniqueInput | SafetyDepositRequestWhereUniqueInput[]
   }
 
+  export type PaymentSessionCreateNestedManyWithoutActorInput = {
+    create?: XOR<PaymentSessionCreateWithoutActorInput, PaymentSessionUncheckedCreateWithoutActorInput> | PaymentSessionCreateWithoutActorInput[] | PaymentSessionUncheckedCreateWithoutActorInput[]
+    connectOrCreate?: PaymentSessionCreateOrConnectWithoutActorInput | PaymentSessionCreateOrConnectWithoutActorInput[]
+    createMany?: PaymentSessionCreateManyActorInputEnvelope
+    connect?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+  }
+
+  export type LedgerEntryCreateNestedManyWithoutActorInput = {
+    create?: XOR<LedgerEntryCreateWithoutActorInput, LedgerEntryUncheckedCreateWithoutActorInput> | LedgerEntryCreateWithoutActorInput[] | LedgerEntryUncheckedCreateWithoutActorInput[]
+    connectOrCreate?: LedgerEntryCreateOrConnectWithoutActorInput | LedgerEntryCreateOrConnectWithoutActorInput[]
+    createMany?: LedgerEntryCreateManyActorInputEnvelope
+    connect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+  }
+
+  export type LedgerEntryCreateNestedManyWithoutVoidedByInput = {
+    create?: XOR<LedgerEntryCreateWithoutVoidedByInput, LedgerEntryUncheckedCreateWithoutVoidedByInput> | LedgerEntryCreateWithoutVoidedByInput[] | LedgerEntryUncheckedCreateWithoutVoidedByInput[]
+    connectOrCreate?: LedgerEntryCreateOrConnectWithoutVoidedByInput | LedgerEntryCreateOrConnectWithoutVoidedByInput[]
+    createMany?: LedgerEntryCreateManyVoidedByInputEnvelope
+    connect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+  }
+
   export type EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput = {
     create?: XOR<EmailVerificationOtpCreateWithoutUserInput, EmailVerificationOtpUncheckedCreateWithoutUserInput> | EmailVerificationOtpCreateWithoutUserInput[] | EmailVerificationOtpUncheckedCreateWithoutUserInput[]
     connectOrCreate?: EmailVerificationOtpCreateOrConnectWithoutUserInput | EmailVerificationOtpCreateOrConnectWithoutUserInput[]
@@ -88641,6 +92838,27 @@ export namespace Prisma {
     connectOrCreate?: SafetyDepositRequestCreateOrConnectWithoutApprovedByInput | SafetyDepositRequestCreateOrConnectWithoutApprovedByInput[]
     createMany?: SafetyDepositRequestCreateManyApprovedByInputEnvelope
     connect?: SafetyDepositRequestWhereUniqueInput | SafetyDepositRequestWhereUniqueInput[]
+  }
+
+  export type PaymentSessionUncheckedCreateNestedManyWithoutActorInput = {
+    create?: XOR<PaymentSessionCreateWithoutActorInput, PaymentSessionUncheckedCreateWithoutActorInput> | PaymentSessionCreateWithoutActorInput[] | PaymentSessionUncheckedCreateWithoutActorInput[]
+    connectOrCreate?: PaymentSessionCreateOrConnectWithoutActorInput | PaymentSessionCreateOrConnectWithoutActorInput[]
+    createMany?: PaymentSessionCreateManyActorInputEnvelope
+    connect?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+  }
+
+  export type LedgerEntryUncheckedCreateNestedManyWithoutActorInput = {
+    create?: XOR<LedgerEntryCreateWithoutActorInput, LedgerEntryUncheckedCreateWithoutActorInput> | LedgerEntryCreateWithoutActorInput[] | LedgerEntryUncheckedCreateWithoutActorInput[]
+    connectOrCreate?: LedgerEntryCreateOrConnectWithoutActorInput | LedgerEntryCreateOrConnectWithoutActorInput[]
+    createMany?: LedgerEntryCreateManyActorInputEnvelope
+    connect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+  }
+
+  export type LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput = {
+    create?: XOR<LedgerEntryCreateWithoutVoidedByInput, LedgerEntryUncheckedCreateWithoutVoidedByInput> | LedgerEntryCreateWithoutVoidedByInput[] | LedgerEntryUncheckedCreateWithoutVoidedByInput[]
+    connectOrCreate?: LedgerEntryCreateOrConnectWithoutVoidedByInput | LedgerEntryCreateOrConnectWithoutVoidedByInput[]
+    createMany?: LedgerEntryCreateManyVoidedByInputEnvelope
+    connect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -89051,6 +93269,48 @@ export namespace Prisma {
     deleteMany?: SafetyDepositRequestScalarWhereInput | SafetyDepositRequestScalarWhereInput[]
   }
 
+  export type PaymentSessionUpdateManyWithoutActorNestedInput = {
+    create?: XOR<PaymentSessionCreateWithoutActorInput, PaymentSessionUncheckedCreateWithoutActorInput> | PaymentSessionCreateWithoutActorInput[] | PaymentSessionUncheckedCreateWithoutActorInput[]
+    connectOrCreate?: PaymentSessionCreateOrConnectWithoutActorInput | PaymentSessionCreateOrConnectWithoutActorInput[]
+    upsert?: PaymentSessionUpsertWithWhereUniqueWithoutActorInput | PaymentSessionUpsertWithWhereUniqueWithoutActorInput[]
+    createMany?: PaymentSessionCreateManyActorInputEnvelope
+    set?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    disconnect?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    delete?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    connect?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    update?: PaymentSessionUpdateWithWhereUniqueWithoutActorInput | PaymentSessionUpdateWithWhereUniqueWithoutActorInput[]
+    updateMany?: PaymentSessionUpdateManyWithWhereWithoutActorInput | PaymentSessionUpdateManyWithWhereWithoutActorInput[]
+    deleteMany?: PaymentSessionScalarWhereInput | PaymentSessionScalarWhereInput[]
+  }
+
+  export type LedgerEntryUpdateManyWithoutActorNestedInput = {
+    create?: XOR<LedgerEntryCreateWithoutActorInput, LedgerEntryUncheckedCreateWithoutActorInput> | LedgerEntryCreateWithoutActorInput[] | LedgerEntryUncheckedCreateWithoutActorInput[]
+    connectOrCreate?: LedgerEntryCreateOrConnectWithoutActorInput | LedgerEntryCreateOrConnectWithoutActorInput[]
+    upsert?: LedgerEntryUpsertWithWhereUniqueWithoutActorInput | LedgerEntryUpsertWithWhereUniqueWithoutActorInput[]
+    createMany?: LedgerEntryCreateManyActorInputEnvelope
+    set?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    disconnect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    delete?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    connect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    update?: LedgerEntryUpdateWithWhereUniqueWithoutActorInput | LedgerEntryUpdateWithWhereUniqueWithoutActorInput[]
+    updateMany?: LedgerEntryUpdateManyWithWhereWithoutActorInput | LedgerEntryUpdateManyWithWhereWithoutActorInput[]
+    deleteMany?: LedgerEntryScalarWhereInput | LedgerEntryScalarWhereInput[]
+  }
+
+  export type LedgerEntryUpdateManyWithoutVoidedByNestedInput = {
+    create?: XOR<LedgerEntryCreateWithoutVoidedByInput, LedgerEntryUncheckedCreateWithoutVoidedByInput> | LedgerEntryCreateWithoutVoidedByInput[] | LedgerEntryUncheckedCreateWithoutVoidedByInput[]
+    connectOrCreate?: LedgerEntryCreateOrConnectWithoutVoidedByInput | LedgerEntryCreateOrConnectWithoutVoidedByInput[]
+    upsert?: LedgerEntryUpsertWithWhereUniqueWithoutVoidedByInput | LedgerEntryUpsertWithWhereUniqueWithoutVoidedByInput[]
+    createMany?: LedgerEntryCreateManyVoidedByInputEnvelope
+    set?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    disconnect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    delete?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    connect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    update?: LedgerEntryUpdateWithWhereUniqueWithoutVoidedByInput | LedgerEntryUpdateWithWhereUniqueWithoutVoidedByInput[]
+    updateMany?: LedgerEntryUpdateManyWithWhereWithoutVoidedByInput | LedgerEntryUpdateManyWithWhereWithoutVoidedByInput[]
+    deleteMany?: LedgerEntryScalarWhereInput | LedgerEntryScalarWhereInput[]
+  }
+
   export type IntFieldUpdateOperationsInput = {
     set?: number
     increment?: number
@@ -89439,6 +93699,48 @@ export namespace Prisma {
     update?: SafetyDepositRequestUpdateWithWhereUniqueWithoutApprovedByInput | SafetyDepositRequestUpdateWithWhereUniqueWithoutApprovedByInput[]
     updateMany?: SafetyDepositRequestUpdateManyWithWhereWithoutApprovedByInput | SafetyDepositRequestUpdateManyWithWhereWithoutApprovedByInput[]
     deleteMany?: SafetyDepositRequestScalarWhereInput | SafetyDepositRequestScalarWhereInput[]
+  }
+
+  export type PaymentSessionUncheckedUpdateManyWithoutActorNestedInput = {
+    create?: XOR<PaymentSessionCreateWithoutActorInput, PaymentSessionUncheckedCreateWithoutActorInput> | PaymentSessionCreateWithoutActorInput[] | PaymentSessionUncheckedCreateWithoutActorInput[]
+    connectOrCreate?: PaymentSessionCreateOrConnectWithoutActorInput | PaymentSessionCreateOrConnectWithoutActorInput[]
+    upsert?: PaymentSessionUpsertWithWhereUniqueWithoutActorInput | PaymentSessionUpsertWithWhereUniqueWithoutActorInput[]
+    createMany?: PaymentSessionCreateManyActorInputEnvelope
+    set?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    disconnect?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    delete?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    connect?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    update?: PaymentSessionUpdateWithWhereUniqueWithoutActorInput | PaymentSessionUpdateWithWhereUniqueWithoutActorInput[]
+    updateMany?: PaymentSessionUpdateManyWithWhereWithoutActorInput | PaymentSessionUpdateManyWithWhereWithoutActorInput[]
+    deleteMany?: PaymentSessionScalarWhereInput | PaymentSessionScalarWhereInput[]
+  }
+
+  export type LedgerEntryUncheckedUpdateManyWithoutActorNestedInput = {
+    create?: XOR<LedgerEntryCreateWithoutActorInput, LedgerEntryUncheckedCreateWithoutActorInput> | LedgerEntryCreateWithoutActorInput[] | LedgerEntryUncheckedCreateWithoutActorInput[]
+    connectOrCreate?: LedgerEntryCreateOrConnectWithoutActorInput | LedgerEntryCreateOrConnectWithoutActorInput[]
+    upsert?: LedgerEntryUpsertWithWhereUniqueWithoutActorInput | LedgerEntryUpsertWithWhereUniqueWithoutActorInput[]
+    createMany?: LedgerEntryCreateManyActorInputEnvelope
+    set?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    disconnect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    delete?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    connect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    update?: LedgerEntryUpdateWithWhereUniqueWithoutActorInput | LedgerEntryUpdateWithWhereUniqueWithoutActorInput[]
+    updateMany?: LedgerEntryUpdateManyWithWhereWithoutActorInput | LedgerEntryUpdateManyWithWhereWithoutActorInput[]
+    deleteMany?: LedgerEntryScalarWhereInput | LedgerEntryScalarWhereInput[]
+  }
+
+  export type LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput = {
+    create?: XOR<LedgerEntryCreateWithoutVoidedByInput, LedgerEntryUncheckedCreateWithoutVoidedByInput> | LedgerEntryCreateWithoutVoidedByInput[] | LedgerEntryUncheckedCreateWithoutVoidedByInput[]
+    connectOrCreate?: LedgerEntryCreateOrConnectWithoutVoidedByInput | LedgerEntryCreateOrConnectWithoutVoidedByInput[]
+    upsert?: LedgerEntryUpsertWithWhereUniqueWithoutVoidedByInput | LedgerEntryUpsertWithWhereUniqueWithoutVoidedByInput[]
+    createMany?: LedgerEntryCreateManyVoidedByInputEnvelope
+    set?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    disconnect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    delete?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    connect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    update?: LedgerEntryUpdateWithWhereUniqueWithoutVoidedByInput | LedgerEntryUpdateWithWhereUniqueWithoutVoidedByInput[]
+    updateMany?: LedgerEntryUpdateManyWithWhereWithoutVoidedByInput | LedgerEntryUpdateManyWithWhereWithoutVoidedByInput[]
+    deleteMany?: LedgerEntryScalarWhereInput | LedgerEntryScalarWhereInput[]
   }
 
   export type UserCreateNestedOneWithoutProvidersInput = {
@@ -90036,6 +94338,13 @@ export namespace Prisma {
     connect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
   }
 
+  export type PaymentSessionCreateNestedManyWithoutBranchInput = {
+    create?: XOR<PaymentSessionCreateWithoutBranchInput, PaymentSessionUncheckedCreateWithoutBranchInput> | PaymentSessionCreateWithoutBranchInput[] | PaymentSessionUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: PaymentSessionCreateOrConnectWithoutBranchInput | PaymentSessionCreateOrConnectWithoutBranchInput[]
+    createMany?: PaymentSessionCreateManyBranchInputEnvelope
+    connect?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+  }
+
   export type UserUncheckedCreateNestedManyWithoutBranchInput = {
     create?: XOR<UserCreateWithoutBranchInput, UserUncheckedCreateWithoutBranchInput> | UserCreateWithoutBranchInput[] | UserUncheckedCreateWithoutBranchInput[]
     connectOrCreate?: UserCreateOrConnectWithoutBranchInput | UserCreateOrConnectWithoutBranchInput[]
@@ -90169,6 +94478,13 @@ export namespace Prisma {
     connectOrCreate?: BookingExtensionCreateOrConnectWithoutBranchInput | BookingExtensionCreateOrConnectWithoutBranchInput[]
     createMany?: BookingExtensionCreateManyBranchInputEnvelope
     connect?: BookingExtensionWhereUniqueInput | BookingExtensionWhereUniqueInput[]
+  }
+
+  export type PaymentSessionUncheckedCreateNestedManyWithoutBranchInput = {
+    create?: XOR<PaymentSessionCreateWithoutBranchInput, PaymentSessionUncheckedCreateWithoutBranchInput> | PaymentSessionCreateWithoutBranchInput[] | PaymentSessionUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: PaymentSessionCreateOrConnectWithoutBranchInput | PaymentSessionCreateOrConnectWithoutBranchInput[]
+    createMany?: PaymentSessionCreateManyBranchInputEnvelope
+    connect?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
   }
 
   export type UserUpdateManyWithoutBranchNestedInput = {
@@ -90431,6 +94747,20 @@ export namespace Prisma {
     deleteMany?: BookingExtensionScalarWhereInput | BookingExtensionScalarWhereInput[]
   }
 
+  export type PaymentSessionUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<PaymentSessionCreateWithoutBranchInput, PaymentSessionUncheckedCreateWithoutBranchInput> | PaymentSessionCreateWithoutBranchInput[] | PaymentSessionUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: PaymentSessionCreateOrConnectWithoutBranchInput | PaymentSessionCreateOrConnectWithoutBranchInput[]
+    upsert?: PaymentSessionUpsertWithWhereUniqueWithoutBranchInput | PaymentSessionUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: PaymentSessionCreateManyBranchInputEnvelope
+    set?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    disconnect?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    delete?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    connect?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    update?: PaymentSessionUpdateWithWhereUniqueWithoutBranchInput | PaymentSessionUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: PaymentSessionUpdateManyWithWhereWithoutBranchInput | PaymentSessionUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: PaymentSessionScalarWhereInput | PaymentSessionScalarWhereInput[]
+  }
+
   export type UserUncheckedUpdateManyWithoutBranchNestedInput = {
     create?: XOR<UserCreateWithoutBranchInput, UserUncheckedCreateWithoutBranchInput> | UserCreateWithoutBranchInput[] | UserUncheckedCreateWithoutBranchInput[]
     connectOrCreate?: UserCreateOrConnectWithoutBranchInput | UserCreateOrConnectWithoutBranchInput[]
@@ -90689,6 +95019,20 @@ export namespace Prisma {
     update?: BookingExtensionUpdateWithWhereUniqueWithoutBranchInput | BookingExtensionUpdateWithWhereUniqueWithoutBranchInput[]
     updateMany?: BookingExtensionUpdateManyWithWhereWithoutBranchInput | BookingExtensionUpdateManyWithWhereWithoutBranchInput[]
     deleteMany?: BookingExtensionScalarWhereInput | BookingExtensionScalarWhereInput[]
+  }
+
+  export type PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<PaymentSessionCreateWithoutBranchInput, PaymentSessionUncheckedCreateWithoutBranchInput> | PaymentSessionCreateWithoutBranchInput[] | PaymentSessionUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: PaymentSessionCreateOrConnectWithoutBranchInput | PaymentSessionCreateOrConnectWithoutBranchInput[]
+    upsert?: PaymentSessionUpsertWithWhereUniqueWithoutBranchInput | PaymentSessionUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: PaymentSessionCreateManyBranchInputEnvelope
+    set?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    disconnect?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    delete?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    connect?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    update?: PaymentSessionUpdateWithWhereUniqueWithoutBranchInput | PaymentSessionUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: PaymentSessionUpdateManyWithWhereWithoutBranchInput | PaymentSessionUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: PaymentSessionScalarWhereInput | PaymentSessionScalarWhereInput[]
   }
 
   export type BranchCreateNestedOneWithoutStaffActivityLogsInput = {
@@ -91830,6 +96174,26 @@ export namespace Prisma {
     connect?: SafetyDepositRequestWhereUniqueInput
   }
 
+  export type PaymentSessionCreateNestedOneWithoutActiveForBookingsInput = {
+    create?: XOR<PaymentSessionCreateWithoutActiveForBookingsInput, PaymentSessionUncheckedCreateWithoutActiveForBookingsInput>
+    connectOrCreate?: PaymentSessionCreateOrConnectWithoutActiveForBookingsInput
+    connect?: PaymentSessionWhereUniqueInput
+  }
+
+  export type PaymentSessionCreateNestedManyWithoutBookingInput = {
+    create?: XOR<PaymentSessionCreateWithoutBookingInput, PaymentSessionUncheckedCreateWithoutBookingInput> | PaymentSessionCreateWithoutBookingInput[] | PaymentSessionUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: PaymentSessionCreateOrConnectWithoutBookingInput | PaymentSessionCreateOrConnectWithoutBookingInput[]
+    createMany?: PaymentSessionCreateManyBookingInputEnvelope
+    connect?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+  }
+
+  export type LedgerEntryCreateNestedManyWithoutBookingInput = {
+    create?: XOR<LedgerEntryCreateWithoutBookingInput, LedgerEntryUncheckedCreateWithoutBookingInput> | LedgerEntryCreateWithoutBookingInput[] | LedgerEntryUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: LedgerEntryCreateOrConnectWithoutBookingInput | LedgerEntryCreateOrConnectWithoutBookingInput[]
+    createMany?: LedgerEntryCreateManyBookingInputEnvelope
+    connect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+  }
+
   export type BookingPhotoUncheckedCreateNestedManyWithoutBookingInput = {
     create?: XOR<BookingPhotoCreateWithoutBookingInput, BookingPhotoUncheckedCreateWithoutBookingInput> | BookingPhotoCreateWithoutBookingInput[] | BookingPhotoUncheckedCreateWithoutBookingInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutBookingInput | BookingPhotoCreateOrConnectWithoutBookingInput[]
@@ -91933,6 +96297,20 @@ export namespace Prisma {
     create?: XOR<SafetyDepositRequestCreateWithoutBookingInput, SafetyDepositRequestUncheckedCreateWithoutBookingInput>
     connectOrCreate?: SafetyDepositRequestCreateOrConnectWithoutBookingInput
     connect?: SafetyDepositRequestWhereUniqueInput
+  }
+
+  export type PaymentSessionUncheckedCreateNestedManyWithoutBookingInput = {
+    create?: XOR<PaymentSessionCreateWithoutBookingInput, PaymentSessionUncheckedCreateWithoutBookingInput> | PaymentSessionCreateWithoutBookingInput[] | PaymentSessionUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: PaymentSessionCreateOrConnectWithoutBookingInput | PaymentSessionCreateOrConnectWithoutBookingInput[]
+    createMany?: PaymentSessionCreateManyBookingInputEnvelope
+    connect?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+  }
+
+  export type LedgerEntryUncheckedCreateNestedManyWithoutBookingInput = {
+    create?: XOR<LedgerEntryCreateWithoutBookingInput, LedgerEntryUncheckedCreateWithoutBookingInput> | LedgerEntryCreateWithoutBookingInput[] | LedgerEntryUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: LedgerEntryCreateOrConnectWithoutBookingInput | LedgerEntryCreateOrConnectWithoutBookingInput[]
+    createMany?: LedgerEntryCreateManyBookingInputEnvelope
+    connect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
   }
 
   export type NullableEnumRentalPeriodTypeFieldUpdateOperationsInput = {
@@ -92201,6 +96579,44 @@ export namespace Prisma {
     update?: XOR<XOR<SafetyDepositRequestUpdateToOneWithWhereWithoutBookingInput, SafetyDepositRequestUpdateWithoutBookingInput>, SafetyDepositRequestUncheckedUpdateWithoutBookingInput>
   }
 
+  export type PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput = {
+    create?: XOR<PaymentSessionCreateWithoutActiveForBookingsInput, PaymentSessionUncheckedCreateWithoutActiveForBookingsInput>
+    connectOrCreate?: PaymentSessionCreateOrConnectWithoutActiveForBookingsInput
+    upsert?: PaymentSessionUpsertWithoutActiveForBookingsInput
+    disconnect?: PaymentSessionWhereInput | boolean
+    delete?: PaymentSessionWhereInput | boolean
+    connect?: PaymentSessionWhereUniqueInput
+    update?: XOR<XOR<PaymentSessionUpdateToOneWithWhereWithoutActiveForBookingsInput, PaymentSessionUpdateWithoutActiveForBookingsInput>, PaymentSessionUncheckedUpdateWithoutActiveForBookingsInput>
+  }
+
+  export type PaymentSessionUpdateManyWithoutBookingNestedInput = {
+    create?: XOR<PaymentSessionCreateWithoutBookingInput, PaymentSessionUncheckedCreateWithoutBookingInput> | PaymentSessionCreateWithoutBookingInput[] | PaymentSessionUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: PaymentSessionCreateOrConnectWithoutBookingInput | PaymentSessionCreateOrConnectWithoutBookingInput[]
+    upsert?: PaymentSessionUpsertWithWhereUniqueWithoutBookingInput | PaymentSessionUpsertWithWhereUniqueWithoutBookingInput[]
+    createMany?: PaymentSessionCreateManyBookingInputEnvelope
+    set?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    disconnect?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    delete?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    connect?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    update?: PaymentSessionUpdateWithWhereUniqueWithoutBookingInput | PaymentSessionUpdateWithWhereUniqueWithoutBookingInput[]
+    updateMany?: PaymentSessionUpdateManyWithWhereWithoutBookingInput | PaymentSessionUpdateManyWithWhereWithoutBookingInput[]
+    deleteMany?: PaymentSessionScalarWhereInput | PaymentSessionScalarWhereInput[]
+  }
+
+  export type LedgerEntryUpdateManyWithoutBookingNestedInput = {
+    create?: XOR<LedgerEntryCreateWithoutBookingInput, LedgerEntryUncheckedCreateWithoutBookingInput> | LedgerEntryCreateWithoutBookingInput[] | LedgerEntryUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: LedgerEntryCreateOrConnectWithoutBookingInput | LedgerEntryCreateOrConnectWithoutBookingInput[]
+    upsert?: LedgerEntryUpsertWithWhereUniqueWithoutBookingInput | LedgerEntryUpsertWithWhereUniqueWithoutBookingInput[]
+    createMany?: LedgerEntryCreateManyBookingInputEnvelope
+    set?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    disconnect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    delete?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    connect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    update?: LedgerEntryUpdateWithWhereUniqueWithoutBookingInput | LedgerEntryUpdateWithWhereUniqueWithoutBookingInput[]
+    updateMany?: LedgerEntryUpdateManyWithWhereWithoutBookingInput | LedgerEntryUpdateManyWithWhereWithoutBookingInput[]
+    deleteMany?: LedgerEntryScalarWhereInput | LedgerEntryScalarWhereInput[]
+  }
+
   export type BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput = {
     create?: XOR<BookingPhotoCreateWithoutBookingInput, BookingPhotoUncheckedCreateWithoutBookingInput> | BookingPhotoCreateWithoutBookingInput[] | BookingPhotoUncheckedCreateWithoutBookingInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutBookingInput | BookingPhotoCreateOrConnectWithoutBookingInput[]
@@ -92395,6 +96811,34 @@ export namespace Prisma {
     delete?: SafetyDepositRequestWhereInput | boolean
     connect?: SafetyDepositRequestWhereUniqueInput
     update?: XOR<XOR<SafetyDepositRequestUpdateToOneWithWhereWithoutBookingInput, SafetyDepositRequestUpdateWithoutBookingInput>, SafetyDepositRequestUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput = {
+    create?: XOR<PaymentSessionCreateWithoutBookingInput, PaymentSessionUncheckedCreateWithoutBookingInput> | PaymentSessionCreateWithoutBookingInput[] | PaymentSessionUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: PaymentSessionCreateOrConnectWithoutBookingInput | PaymentSessionCreateOrConnectWithoutBookingInput[]
+    upsert?: PaymentSessionUpsertWithWhereUniqueWithoutBookingInput | PaymentSessionUpsertWithWhereUniqueWithoutBookingInput[]
+    createMany?: PaymentSessionCreateManyBookingInputEnvelope
+    set?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    disconnect?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    delete?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    connect?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+    update?: PaymentSessionUpdateWithWhereUniqueWithoutBookingInput | PaymentSessionUpdateWithWhereUniqueWithoutBookingInput[]
+    updateMany?: PaymentSessionUpdateManyWithWhereWithoutBookingInput | PaymentSessionUpdateManyWithWhereWithoutBookingInput[]
+    deleteMany?: PaymentSessionScalarWhereInput | PaymentSessionScalarWhereInput[]
+  }
+
+  export type LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput = {
+    create?: XOR<LedgerEntryCreateWithoutBookingInput, LedgerEntryUncheckedCreateWithoutBookingInput> | LedgerEntryCreateWithoutBookingInput[] | LedgerEntryUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: LedgerEntryCreateOrConnectWithoutBookingInput | LedgerEntryCreateOrConnectWithoutBookingInput[]
+    upsert?: LedgerEntryUpsertWithWhereUniqueWithoutBookingInput | LedgerEntryUpsertWithWhereUniqueWithoutBookingInput[]
+    createMany?: LedgerEntryCreateManyBookingInputEnvelope
+    set?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    disconnect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    delete?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    connect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    update?: LedgerEntryUpdateWithWhereUniqueWithoutBookingInput | LedgerEntryUpdateWithWhereUniqueWithoutBookingInput[]
+    updateMany?: LedgerEntryUpdateManyWithWhereWithoutBookingInput | LedgerEntryUpdateManyWithWhereWithoutBookingInput[]
+    deleteMany?: LedgerEntryScalarWhereInput | LedgerEntryScalarWhereInput[]
   }
 
   export type VehicleCreateNestedOneWithoutBookingItemsInput = {
@@ -94173,6 +98617,206 @@ export namespace Prisma {
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutSafetyDepositApprovalsInput, UserUpdateWithoutSafetyDepositApprovalsInput>, UserUncheckedUpdateWithoutSafetyDepositApprovalsInput>
   }
 
+  export type BookingCreateNestedOneWithoutPaymentSessionsInput = {
+    create?: XOR<BookingCreateWithoutPaymentSessionsInput, BookingUncheckedCreateWithoutPaymentSessionsInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutPaymentSessionsInput
+    connect?: BookingWhereUniqueInput
+  }
+
+  export type BranchCreateNestedOneWithoutPaymentSessionsInput = {
+    create?: XOR<BranchCreateWithoutPaymentSessionsInput, BranchUncheckedCreateWithoutPaymentSessionsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutPaymentSessionsInput
+    connect?: BranchWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutPaymentSessionsOpenedInput = {
+    create?: XOR<UserCreateWithoutPaymentSessionsOpenedInput, UserUncheckedCreateWithoutPaymentSessionsOpenedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutPaymentSessionsOpenedInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type LedgerEntryCreateNestedManyWithoutSessionInput = {
+    create?: XOR<LedgerEntryCreateWithoutSessionInput, LedgerEntryUncheckedCreateWithoutSessionInput> | LedgerEntryCreateWithoutSessionInput[] | LedgerEntryUncheckedCreateWithoutSessionInput[]
+    connectOrCreate?: LedgerEntryCreateOrConnectWithoutSessionInput | LedgerEntryCreateOrConnectWithoutSessionInput[]
+    createMany?: LedgerEntryCreateManySessionInputEnvelope
+    connect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+  }
+
+  export type BookingCreateNestedManyWithoutActivePaymentSessionInput = {
+    create?: XOR<BookingCreateWithoutActivePaymentSessionInput, BookingUncheckedCreateWithoutActivePaymentSessionInput> | BookingCreateWithoutActivePaymentSessionInput[] | BookingUncheckedCreateWithoutActivePaymentSessionInput[]
+    connectOrCreate?: BookingCreateOrConnectWithoutActivePaymentSessionInput | BookingCreateOrConnectWithoutActivePaymentSessionInput[]
+    createMany?: BookingCreateManyActivePaymentSessionInputEnvelope
+    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+  }
+
+  export type LedgerEntryUncheckedCreateNestedManyWithoutSessionInput = {
+    create?: XOR<LedgerEntryCreateWithoutSessionInput, LedgerEntryUncheckedCreateWithoutSessionInput> | LedgerEntryCreateWithoutSessionInput[] | LedgerEntryUncheckedCreateWithoutSessionInput[]
+    connectOrCreate?: LedgerEntryCreateOrConnectWithoutSessionInput | LedgerEntryCreateOrConnectWithoutSessionInput[]
+    createMany?: LedgerEntryCreateManySessionInputEnvelope
+    connect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+  }
+
+  export type BookingUncheckedCreateNestedManyWithoutActivePaymentSessionInput = {
+    create?: XOR<BookingCreateWithoutActivePaymentSessionInput, BookingUncheckedCreateWithoutActivePaymentSessionInput> | BookingCreateWithoutActivePaymentSessionInput[] | BookingUncheckedCreateWithoutActivePaymentSessionInput[]
+    connectOrCreate?: BookingCreateOrConnectWithoutActivePaymentSessionInput | BookingCreateOrConnectWithoutActivePaymentSessionInput[]
+    createMany?: BookingCreateManyActivePaymentSessionInputEnvelope
+    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+  }
+
+  export type EnumPaymentSessionTypeFieldUpdateOperationsInput = {
+    set?: $Enums.PaymentSessionType
+  }
+
+  export type EnumPaymentSessionStatusFieldUpdateOperationsInput = {
+    set?: $Enums.PaymentSessionStatus
+  }
+
+  export type BookingUpdateOneRequiredWithoutPaymentSessionsNestedInput = {
+    create?: XOR<BookingCreateWithoutPaymentSessionsInput, BookingUncheckedCreateWithoutPaymentSessionsInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutPaymentSessionsInput
+    upsert?: BookingUpsertWithoutPaymentSessionsInput
+    connect?: BookingWhereUniqueInput
+    update?: XOR<XOR<BookingUpdateToOneWithWhereWithoutPaymentSessionsInput, BookingUpdateWithoutPaymentSessionsInput>, BookingUncheckedUpdateWithoutPaymentSessionsInput>
+  }
+
+  export type BranchUpdateOneRequiredWithoutPaymentSessionsNestedInput = {
+    create?: XOR<BranchCreateWithoutPaymentSessionsInput, BranchUncheckedCreateWithoutPaymentSessionsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutPaymentSessionsInput
+    upsert?: BranchUpsertWithoutPaymentSessionsInput
+    connect?: BranchWhereUniqueInput
+    update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutPaymentSessionsInput, BranchUpdateWithoutPaymentSessionsInput>, BranchUncheckedUpdateWithoutPaymentSessionsInput>
+  }
+
+  export type UserUpdateOneRequiredWithoutPaymentSessionsOpenedNestedInput = {
+    create?: XOR<UserCreateWithoutPaymentSessionsOpenedInput, UserUncheckedCreateWithoutPaymentSessionsOpenedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutPaymentSessionsOpenedInput
+    upsert?: UserUpsertWithoutPaymentSessionsOpenedInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutPaymentSessionsOpenedInput, UserUpdateWithoutPaymentSessionsOpenedInput>, UserUncheckedUpdateWithoutPaymentSessionsOpenedInput>
+  }
+
+  export type LedgerEntryUpdateManyWithoutSessionNestedInput = {
+    create?: XOR<LedgerEntryCreateWithoutSessionInput, LedgerEntryUncheckedCreateWithoutSessionInput> | LedgerEntryCreateWithoutSessionInput[] | LedgerEntryUncheckedCreateWithoutSessionInput[]
+    connectOrCreate?: LedgerEntryCreateOrConnectWithoutSessionInput | LedgerEntryCreateOrConnectWithoutSessionInput[]
+    upsert?: LedgerEntryUpsertWithWhereUniqueWithoutSessionInput | LedgerEntryUpsertWithWhereUniqueWithoutSessionInput[]
+    createMany?: LedgerEntryCreateManySessionInputEnvelope
+    set?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    disconnect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    delete?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    connect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    update?: LedgerEntryUpdateWithWhereUniqueWithoutSessionInput | LedgerEntryUpdateWithWhereUniqueWithoutSessionInput[]
+    updateMany?: LedgerEntryUpdateManyWithWhereWithoutSessionInput | LedgerEntryUpdateManyWithWhereWithoutSessionInput[]
+    deleteMany?: LedgerEntryScalarWhereInput | LedgerEntryScalarWhereInput[]
+  }
+
+  export type BookingUpdateManyWithoutActivePaymentSessionNestedInput = {
+    create?: XOR<BookingCreateWithoutActivePaymentSessionInput, BookingUncheckedCreateWithoutActivePaymentSessionInput> | BookingCreateWithoutActivePaymentSessionInput[] | BookingUncheckedCreateWithoutActivePaymentSessionInput[]
+    connectOrCreate?: BookingCreateOrConnectWithoutActivePaymentSessionInput | BookingCreateOrConnectWithoutActivePaymentSessionInput[]
+    upsert?: BookingUpsertWithWhereUniqueWithoutActivePaymentSessionInput | BookingUpsertWithWhereUniqueWithoutActivePaymentSessionInput[]
+    createMany?: BookingCreateManyActivePaymentSessionInputEnvelope
+    set?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    disconnect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    delete?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    update?: BookingUpdateWithWhereUniqueWithoutActivePaymentSessionInput | BookingUpdateWithWhereUniqueWithoutActivePaymentSessionInput[]
+    updateMany?: BookingUpdateManyWithWhereWithoutActivePaymentSessionInput | BookingUpdateManyWithWhereWithoutActivePaymentSessionInput[]
+    deleteMany?: BookingScalarWhereInput | BookingScalarWhereInput[]
+  }
+
+  export type LedgerEntryUncheckedUpdateManyWithoutSessionNestedInput = {
+    create?: XOR<LedgerEntryCreateWithoutSessionInput, LedgerEntryUncheckedCreateWithoutSessionInput> | LedgerEntryCreateWithoutSessionInput[] | LedgerEntryUncheckedCreateWithoutSessionInput[]
+    connectOrCreate?: LedgerEntryCreateOrConnectWithoutSessionInput | LedgerEntryCreateOrConnectWithoutSessionInput[]
+    upsert?: LedgerEntryUpsertWithWhereUniqueWithoutSessionInput | LedgerEntryUpsertWithWhereUniqueWithoutSessionInput[]
+    createMany?: LedgerEntryCreateManySessionInputEnvelope
+    set?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    disconnect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    delete?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    connect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+    update?: LedgerEntryUpdateWithWhereUniqueWithoutSessionInput | LedgerEntryUpdateWithWhereUniqueWithoutSessionInput[]
+    updateMany?: LedgerEntryUpdateManyWithWhereWithoutSessionInput | LedgerEntryUpdateManyWithWhereWithoutSessionInput[]
+    deleteMany?: LedgerEntryScalarWhereInput | LedgerEntryScalarWhereInput[]
+  }
+
+  export type BookingUncheckedUpdateManyWithoutActivePaymentSessionNestedInput = {
+    create?: XOR<BookingCreateWithoutActivePaymentSessionInput, BookingUncheckedCreateWithoutActivePaymentSessionInput> | BookingCreateWithoutActivePaymentSessionInput[] | BookingUncheckedCreateWithoutActivePaymentSessionInput[]
+    connectOrCreate?: BookingCreateOrConnectWithoutActivePaymentSessionInput | BookingCreateOrConnectWithoutActivePaymentSessionInput[]
+    upsert?: BookingUpsertWithWhereUniqueWithoutActivePaymentSessionInput | BookingUpsertWithWhereUniqueWithoutActivePaymentSessionInput[]
+    createMany?: BookingCreateManyActivePaymentSessionInputEnvelope
+    set?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    disconnect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    delete?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+    update?: BookingUpdateWithWhereUniqueWithoutActivePaymentSessionInput | BookingUpdateWithWhereUniqueWithoutActivePaymentSessionInput[]
+    updateMany?: BookingUpdateManyWithWhereWithoutActivePaymentSessionInput | BookingUpdateManyWithWhereWithoutActivePaymentSessionInput[]
+    deleteMany?: BookingScalarWhereInput | BookingScalarWhereInput[]
+  }
+
+  export type PaymentSessionCreateNestedOneWithoutEntriesInput = {
+    create?: XOR<PaymentSessionCreateWithoutEntriesInput, PaymentSessionUncheckedCreateWithoutEntriesInput>
+    connectOrCreate?: PaymentSessionCreateOrConnectWithoutEntriesInput
+    connect?: PaymentSessionWhereUniqueInput
+  }
+
+  export type BookingCreateNestedOneWithoutLedgerEntriesInput = {
+    create?: XOR<BookingCreateWithoutLedgerEntriesInput, BookingUncheckedCreateWithoutLedgerEntriesInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutLedgerEntriesInput
+    connect?: BookingWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutLedgerEntriesActedInput = {
+    create?: XOR<UserCreateWithoutLedgerEntriesActedInput, UserUncheckedCreateWithoutLedgerEntriesActedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutLedgerEntriesActedInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutLedgerEntriesVoidedInput = {
+    create?: XOR<UserCreateWithoutLedgerEntriesVoidedInput, UserUncheckedCreateWithoutLedgerEntriesVoidedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutLedgerEntriesVoidedInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type EnumLedgerEntryTypeFieldUpdateOperationsInput = {
+    set?: $Enums.LedgerEntryType
+  }
+
+  export type EnumLedgerEntryClassificationFieldUpdateOperationsInput = {
+    set?: $Enums.LedgerEntryClassification
+  }
+
+  export type PaymentSessionUpdateOneRequiredWithoutEntriesNestedInput = {
+    create?: XOR<PaymentSessionCreateWithoutEntriesInput, PaymentSessionUncheckedCreateWithoutEntriesInput>
+    connectOrCreate?: PaymentSessionCreateOrConnectWithoutEntriesInput
+    upsert?: PaymentSessionUpsertWithoutEntriesInput
+    connect?: PaymentSessionWhereUniqueInput
+    update?: XOR<XOR<PaymentSessionUpdateToOneWithWhereWithoutEntriesInput, PaymentSessionUpdateWithoutEntriesInput>, PaymentSessionUncheckedUpdateWithoutEntriesInput>
+  }
+
+  export type BookingUpdateOneRequiredWithoutLedgerEntriesNestedInput = {
+    create?: XOR<BookingCreateWithoutLedgerEntriesInput, BookingUncheckedCreateWithoutLedgerEntriesInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutLedgerEntriesInput
+    upsert?: BookingUpsertWithoutLedgerEntriesInput
+    connect?: BookingWhereUniqueInput
+    update?: XOR<XOR<BookingUpdateToOneWithWhereWithoutLedgerEntriesInput, BookingUpdateWithoutLedgerEntriesInput>, BookingUncheckedUpdateWithoutLedgerEntriesInput>
+  }
+
+  export type UserUpdateOneRequiredWithoutLedgerEntriesActedNestedInput = {
+    create?: XOR<UserCreateWithoutLedgerEntriesActedInput, UserUncheckedCreateWithoutLedgerEntriesActedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutLedgerEntriesActedInput
+    upsert?: UserUpsertWithoutLedgerEntriesActedInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutLedgerEntriesActedInput, UserUpdateWithoutLedgerEntriesActedInput>, UserUncheckedUpdateWithoutLedgerEntriesActedInput>
+  }
+
+  export type UserUpdateOneWithoutLedgerEntriesVoidedNestedInput = {
+    create?: XOR<UserCreateWithoutLedgerEntriesVoidedInput, UserUncheckedCreateWithoutLedgerEntriesVoidedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutLedgerEntriesVoidedInput
+    upsert?: UserUpsertWithoutLedgerEntriesVoidedInput
+    disconnect?: UserWhereInput | boolean
+    delete?: UserWhereInput | boolean
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutLedgerEntriesVoidedInput, UserUpdateWithoutLedgerEntriesVoidedInput>, UserUncheckedUpdateWithoutLedgerEntriesVoidedInput>
+  }
+
   export type NestedIntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -95186,6 +99830,74 @@ export namespace Prisma {
     _max?: NestedEnumSafetyDepositStatusFilter<$PrismaModel>
   }
 
+  export type NestedEnumPaymentSessionTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentSessionType | EnumPaymentSessionTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentSessionType[] | ListEnumPaymentSessionTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentSessionType[] | ListEnumPaymentSessionTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentSessionTypeFilter<$PrismaModel> | $Enums.PaymentSessionType
+  }
+
+  export type NestedEnumPaymentSessionStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentSessionStatus | EnumPaymentSessionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentSessionStatus[] | ListEnumPaymentSessionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentSessionStatus[] | ListEnumPaymentSessionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentSessionStatusFilter<$PrismaModel> | $Enums.PaymentSessionStatus
+  }
+
+  export type NestedEnumPaymentSessionTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentSessionType | EnumPaymentSessionTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentSessionType[] | ListEnumPaymentSessionTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentSessionType[] | ListEnumPaymentSessionTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentSessionTypeWithAggregatesFilter<$PrismaModel> | $Enums.PaymentSessionType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumPaymentSessionTypeFilter<$PrismaModel>
+    _max?: NestedEnumPaymentSessionTypeFilter<$PrismaModel>
+  }
+
+  export type NestedEnumPaymentSessionStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentSessionStatus | EnumPaymentSessionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentSessionStatus[] | ListEnumPaymentSessionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentSessionStatus[] | ListEnumPaymentSessionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentSessionStatusWithAggregatesFilter<$PrismaModel> | $Enums.PaymentSessionStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumPaymentSessionStatusFilter<$PrismaModel>
+    _max?: NestedEnumPaymentSessionStatusFilter<$PrismaModel>
+  }
+
+  export type NestedEnumLedgerEntryTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.LedgerEntryType | EnumLedgerEntryTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.LedgerEntryType[] | ListEnumLedgerEntryTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.LedgerEntryType[] | ListEnumLedgerEntryTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumLedgerEntryTypeFilter<$PrismaModel> | $Enums.LedgerEntryType
+  }
+
+  export type NestedEnumLedgerEntryClassificationFilter<$PrismaModel = never> = {
+    equals?: $Enums.LedgerEntryClassification | EnumLedgerEntryClassificationFieldRefInput<$PrismaModel>
+    in?: $Enums.LedgerEntryClassification[] | ListEnumLedgerEntryClassificationFieldRefInput<$PrismaModel>
+    notIn?: $Enums.LedgerEntryClassification[] | ListEnumLedgerEntryClassificationFieldRefInput<$PrismaModel>
+    not?: NestedEnumLedgerEntryClassificationFilter<$PrismaModel> | $Enums.LedgerEntryClassification
+  }
+
+  export type NestedEnumLedgerEntryTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.LedgerEntryType | EnumLedgerEntryTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.LedgerEntryType[] | ListEnumLedgerEntryTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.LedgerEntryType[] | ListEnumLedgerEntryTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumLedgerEntryTypeWithAggregatesFilter<$PrismaModel> | $Enums.LedgerEntryType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumLedgerEntryTypeFilter<$PrismaModel>
+    _max?: NestedEnumLedgerEntryTypeFilter<$PrismaModel>
+  }
+
+  export type NestedEnumLedgerEntryClassificationWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.LedgerEntryClassification | EnumLedgerEntryClassificationFieldRefInput<$PrismaModel>
+    in?: $Enums.LedgerEntryClassification[] | ListEnumLedgerEntryClassificationFieldRefInput<$PrismaModel>
+    notIn?: $Enums.LedgerEntryClassification[] | ListEnumLedgerEntryClassificationFieldRefInput<$PrismaModel>
+    not?: NestedEnumLedgerEntryClassificationWithAggregatesFilter<$PrismaModel> | $Enums.LedgerEntryClassification
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumLedgerEntryClassificationFilter<$PrismaModel>
+    _max?: NestedEnumLedgerEntryClassificationFilter<$PrismaModel>
+  }
+
   export type BranchCreateWithoutUsersInput = {
     publicId: string
     name: string
@@ -95212,6 +99924,7 @@ export namespace Prisma {
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutUsersInput = {
@@ -95241,6 +99954,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutUsersInput = {
@@ -95545,6 +100259,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCreatedByInput = {
@@ -95604,6 +100321,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -95623,6 +100341,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCreatedByInput = {
@@ -96680,6 +101400,181 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type PaymentSessionCreateWithoutActorInput = {
+    publicId: string
+    sessionType: $Enums.PaymentSessionType
+    status?: $Enums.PaymentSessionStatus
+    taxableBase?: Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    totalDiscounts?: Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: Decimal | DecimalJsLike | number | string
+    netPayable?: Decimal | DecimalJsLike | number | string
+    idempotencyKey?: string | null
+    gatewayTransactionId?: string | null
+    gatewayPaymentUrl?: string | null
+    expiresAt?: Date | string | null
+    completedAt?: Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutPaymentSessionsInput
+    branch: BranchCreateNestedOneWithoutPaymentSessionsInput
+    entries?: LedgerEntryCreateNestedManyWithoutSessionInput
+    activeForBookings?: BookingCreateNestedManyWithoutActivePaymentSessionInput
+  }
+
+  export type PaymentSessionUncheckedCreateWithoutActorInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    sessionType: $Enums.PaymentSessionType
+    status?: $Enums.PaymentSessionStatus
+    taxableBase?: Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    totalDiscounts?: Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: Decimal | DecimalJsLike | number | string
+    netPayable?: Decimal | DecimalJsLike | number | string
+    idempotencyKey?: string | null
+    gatewayTransactionId?: string | null
+    gatewayPaymentUrl?: string | null
+    expiresAt?: Date | string | null
+    completedAt?: Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    entries?: LedgerEntryUncheckedCreateNestedManyWithoutSessionInput
+    activeForBookings?: BookingUncheckedCreateNestedManyWithoutActivePaymentSessionInput
+  }
+
+  export type PaymentSessionCreateOrConnectWithoutActorInput = {
+    where: PaymentSessionWhereUniqueInput
+    create: XOR<PaymentSessionCreateWithoutActorInput, PaymentSessionUncheckedCreateWithoutActorInput>
+  }
+
+  export type PaymentSessionCreateManyActorInputEnvelope = {
+    data: PaymentSessionCreateManyActorInput | PaymentSessionCreateManyActorInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type LedgerEntryCreateWithoutActorInput = {
+    publicId: string
+    entryType: $Enums.LedgerEntryType
+    classification: $Enums.LedgerEntryClassification
+    amount: Decimal | DecimalJsLike | number | string
+    baseAmount?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    description: string
+    referenceId?: string | null
+    referenceType?: string | null
+    idempotencyKey: string
+    isVoided?: boolean
+    voidedAt?: Date | string | null
+    voidReason?: string | null
+    actorRole: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    session: PaymentSessionCreateNestedOneWithoutEntriesInput
+    booking: BookingCreateNestedOneWithoutLedgerEntriesInput
+    voidedBy?: UserCreateNestedOneWithoutLedgerEntriesVoidedInput
+  }
+
+  export type LedgerEntryUncheckedCreateWithoutActorInput = {
+    id?: number
+    publicId: string
+    sessionId: number
+    bookingId: number
+    entryType: $Enums.LedgerEntryType
+    classification: $Enums.LedgerEntryClassification
+    amount: Decimal | DecimalJsLike | number | string
+    baseAmount?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    description: string
+    referenceId?: string | null
+    referenceType?: string | null
+    idempotencyKey: string
+    isVoided?: boolean
+    voidedAt?: Date | string | null
+    voidedById?: number | null
+    voidReason?: string | null
+    actorRole: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type LedgerEntryCreateOrConnectWithoutActorInput = {
+    where: LedgerEntryWhereUniqueInput
+    create: XOR<LedgerEntryCreateWithoutActorInput, LedgerEntryUncheckedCreateWithoutActorInput>
+  }
+
+  export type LedgerEntryCreateManyActorInputEnvelope = {
+    data: LedgerEntryCreateManyActorInput | LedgerEntryCreateManyActorInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type LedgerEntryCreateWithoutVoidedByInput = {
+    publicId: string
+    entryType: $Enums.LedgerEntryType
+    classification: $Enums.LedgerEntryClassification
+    amount: Decimal | DecimalJsLike | number | string
+    baseAmount?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    description: string
+    referenceId?: string | null
+    referenceType?: string | null
+    idempotencyKey: string
+    isVoided?: boolean
+    voidedAt?: Date | string | null
+    voidReason?: string | null
+    actorRole: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    session: PaymentSessionCreateNestedOneWithoutEntriesInput
+    booking: BookingCreateNestedOneWithoutLedgerEntriesInput
+    actor: UserCreateNestedOneWithoutLedgerEntriesActedInput
+  }
+
+  export type LedgerEntryUncheckedCreateWithoutVoidedByInput = {
+    id?: number
+    publicId: string
+    sessionId: number
+    bookingId: number
+    entryType: $Enums.LedgerEntryType
+    classification: $Enums.LedgerEntryClassification
+    amount: Decimal | DecimalJsLike | number | string
+    baseAmount?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    description: string
+    referenceId?: string | null
+    referenceType?: string | null
+    idempotencyKey: string
+    isVoided?: boolean
+    voidedAt?: Date | string | null
+    voidReason?: string | null
+    actorId: number
+    actorRole: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type LedgerEntryCreateOrConnectWithoutVoidedByInput = {
+    where: LedgerEntryWhereUniqueInput
+    create: XOR<LedgerEntryCreateWithoutVoidedByInput, LedgerEntryUncheckedCreateWithoutVoidedByInput>
+  }
+
+  export type LedgerEntryCreateManyVoidedByInputEnvelope = {
+    data: LedgerEntryCreateManyVoidedByInput | LedgerEntryCreateManyVoidedByInput[]
+    skipDuplicates?: boolean
+  }
+
   export type BranchUpsertWithoutUsersInput = {
     update: XOR<BranchUpdateWithoutUsersInput, BranchUncheckedUpdateWithoutUsersInput>
     create: XOR<BranchCreateWithoutUsersInput, BranchUncheckedCreateWithoutUsersInput>
@@ -96717,6 +101612,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutUsersInput = {
@@ -96746,6 +101642,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type EmailVerificationOtpUpsertWithWhereUniqueWithoutUserInput = {
@@ -96995,6 +101892,7 @@ export namespace Prisma {
     extensionDisplacedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     frozenChargeConfig?: JsonNullableFilter<"Booking">
     chargeConfigVersion?: IntFilter<"Booking"> | number
+    activePaymentSessionId?: IntNullableFilter<"Booking"> | number | null
     createdAt?: DateTimeFilter<"Booking"> | Date | string
     updatedAt?: DateTimeFilter<"Booking"> | Date | string
     deletedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
@@ -97624,6 +102522,110 @@ export namespace Prisma {
     data: XOR<SafetyDepositRequestUpdateManyMutationInput, SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByInput>
   }
 
+  export type PaymentSessionUpsertWithWhereUniqueWithoutActorInput = {
+    where: PaymentSessionWhereUniqueInput
+    update: XOR<PaymentSessionUpdateWithoutActorInput, PaymentSessionUncheckedUpdateWithoutActorInput>
+    create: XOR<PaymentSessionCreateWithoutActorInput, PaymentSessionUncheckedCreateWithoutActorInput>
+  }
+
+  export type PaymentSessionUpdateWithWhereUniqueWithoutActorInput = {
+    where: PaymentSessionWhereUniqueInput
+    data: XOR<PaymentSessionUpdateWithoutActorInput, PaymentSessionUncheckedUpdateWithoutActorInput>
+  }
+
+  export type PaymentSessionUpdateManyWithWhereWithoutActorInput = {
+    where: PaymentSessionScalarWhereInput
+    data: XOR<PaymentSessionUpdateManyMutationInput, PaymentSessionUncheckedUpdateManyWithoutActorInput>
+  }
+
+  export type PaymentSessionScalarWhereInput = {
+    AND?: PaymentSessionScalarWhereInput | PaymentSessionScalarWhereInput[]
+    OR?: PaymentSessionScalarWhereInput[]
+    NOT?: PaymentSessionScalarWhereInput | PaymentSessionScalarWhereInput[]
+    id?: IntFilter<"PaymentSession"> | number
+    publicId?: StringFilter<"PaymentSession"> | string
+    bookingId?: IntFilter<"PaymentSession"> | number
+    branchId?: IntFilter<"PaymentSession"> | number
+    sessionType?: EnumPaymentSessionTypeFilter<"PaymentSession"> | $Enums.PaymentSessionType
+    status?: EnumPaymentSessionStatusFilter<"PaymentSession"> | $Enums.PaymentSessionStatus
+    taxableBase?: DecimalFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: DecimalFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    totalCharges?: DecimalFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    totalDiscounts?: DecimalFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: DecimalFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    netPayable?: DecimalFilter<"PaymentSession"> | Decimal | DecimalJsLike | number | string
+    idempotencyKey?: StringNullableFilter<"PaymentSession"> | string | null
+    gatewayTransactionId?: StringNullableFilter<"PaymentSession"> | string | null
+    gatewayPaymentUrl?: StringNullableFilter<"PaymentSession"> | string | null
+    expiresAt?: DateTimeNullableFilter<"PaymentSession"> | Date | string | null
+    completedAt?: DateTimeNullableFilter<"PaymentSession"> | Date | string | null
+    metadata?: JsonNullableFilter<"PaymentSession">
+    actorId?: IntFilter<"PaymentSession"> | number
+    createdAt?: DateTimeFilter<"PaymentSession"> | Date | string
+    updatedAt?: DateTimeFilter<"PaymentSession"> | Date | string
+  }
+
+  export type LedgerEntryUpsertWithWhereUniqueWithoutActorInput = {
+    where: LedgerEntryWhereUniqueInput
+    update: XOR<LedgerEntryUpdateWithoutActorInput, LedgerEntryUncheckedUpdateWithoutActorInput>
+    create: XOR<LedgerEntryCreateWithoutActorInput, LedgerEntryUncheckedCreateWithoutActorInput>
+  }
+
+  export type LedgerEntryUpdateWithWhereUniqueWithoutActorInput = {
+    where: LedgerEntryWhereUniqueInput
+    data: XOR<LedgerEntryUpdateWithoutActorInput, LedgerEntryUncheckedUpdateWithoutActorInput>
+  }
+
+  export type LedgerEntryUpdateManyWithWhereWithoutActorInput = {
+    where: LedgerEntryScalarWhereInput
+    data: XOR<LedgerEntryUpdateManyMutationInput, LedgerEntryUncheckedUpdateManyWithoutActorInput>
+  }
+
+  export type LedgerEntryScalarWhereInput = {
+    AND?: LedgerEntryScalarWhereInput | LedgerEntryScalarWhereInput[]
+    OR?: LedgerEntryScalarWhereInput[]
+    NOT?: LedgerEntryScalarWhereInput | LedgerEntryScalarWhereInput[]
+    id?: IntFilter<"LedgerEntry"> | number
+    publicId?: StringFilter<"LedgerEntry"> | string
+    sessionId?: IntFilter<"LedgerEntry"> | number
+    bookingId?: IntFilter<"LedgerEntry"> | number
+    entryType?: EnumLedgerEntryTypeFilter<"LedgerEntry"> | $Enums.LedgerEntryType
+    classification?: EnumLedgerEntryClassificationFilter<"LedgerEntry"> | $Enums.LedgerEntryClassification
+    amount?: DecimalFilter<"LedgerEntry"> | Decimal | DecimalJsLike | number | string
+    baseAmount?: DecimalFilter<"LedgerEntry"> | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFilter<"LedgerEntry"> | Decimal | DecimalJsLike | number | string
+    description?: StringFilter<"LedgerEntry"> | string
+    referenceId?: StringNullableFilter<"LedgerEntry"> | string | null
+    referenceType?: StringNullableFilter<"LedgerEntry"> | string | null
+    idempotencyKey?: StringFilter<"LedgerEntry"> | string
+    isVoided?: BoolFilter<"LedgerEntry"> | boolean
+    voidedAt?: DateTimeNullableFilter<"LedgerEntry"> | Date | string | null
+    voidedById?: IntNullableFilter<"LedgerEntry"> | number | null
+    voidReason?: StringNullableFilter<"LedgerEntry"> | string | null
+    actorId?: IntFilter<"LedgerEntry"> | number
+    actorRole?: StringFilter<"LedgerEntry"> | string
+    metadata?: JsonNullableFilter<"LedgerEntry">
+    createdAt?: DateTimeFilter<"LedgerEntry"> | Date | string
+    updatedAt?: DateTimeFilter<"LedgerEntry"> | Date | string
+  }
+
+  export type LedgerEntryUpsertWithWhereUniqueWithoutVoidedByInput = {
+    where: LedgerEntryWhereUniqueInput
+    update: XOR<LedgerEntryUpdateWithoutVoidedByInput, LedgerEntryUncheckedUpdateWithoutVoidedByInput>
+    create: XOR<LedgerEntryCreateWithoutVoidedByInput, LedgerEntryUncheckedCreateWithoutVoidedByInput>
+  }
+
+  export type LedgerEntryUpdateWithWhereUniqueWithoutVoidedByInput = {
+    where: LedgerEntryWhereUniqueInput
+    data: XOR<LedgerEntryUpdateWithoutVoidedByInput, LedgerEntryUncheckedUpdateWithoutVoidedByInput>
+  }
+
+  export type LedgerEntryUpdateManyWithWhereWithoutVoidedByInput = {
+    where: LedgerEntryScalarWhereInput
+    data: XOR<LedgerEntryUpdateManyMutationInput, LedgerEntryUncheckedUpdateManyWithoutVoidedByInput>
+  }
+
   export type UserCreateWithoutProvidersInput = {
     publicId: string
     name: string
@@ -97663,6 +102665,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutProvidersInput = {
@@ -97705,6 +102710,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutProvidersInput = {
@@ -97762,6 +102770,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutProvidersInput = {
@@ -97804,6 +102815,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserCreateWithoutEmailOtpsInput = {
@@ -97845,6 +102859,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutEmailOtpsInput = {
@@ -97887,6 +102904,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutEmailOtpsInput = {
@@ -97944,6 +102964,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutEmailOtpsInput = {
@@ -97986,6 +103009,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserCreateWithoutCustomerProfileInput = {
@@ -98027,6 +103053,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutCustomerProfileInput = {
@@ -98069,6 +103098,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutCustomerProfileInput = {
@@ -98178,6 +103210,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCustomerInput = {
@@ -98237,6 +103272,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -98256,6 +103292,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCustomerInput = {
@@ -98361,6 +103399,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutCustomerProfileInput = {
@@ -98403,6 +103444,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type CustomerKycUpsertWithWhereUniqueWithoutCustomerInput = {
@@ -98782,6 +103826,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutKycFileInput = {
@@ -98841,6 +103888,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -98860,6 +103908,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutKycFileInput = {
@@ -99163,6 +104213,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutBranchInput = {
@@ -99205,6 +104258,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutBranchInput = {
@@ -99361,6 +104417,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutBranchInput = {
@@ -99420,6 +104479,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -99439,6 +104499,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutBranchInput = {
@@ -99865,6 +104927,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: Decimal | DecimalJsLike | number | string | null
     safetyDepositEnabled?: boolean
     safetyDepositRequiresApproval?: boolean
+    usePaymentSessions?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -99886,6 +104949,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: Decimal | DecimalJsLike | number | string | null
     safetyDepositEnabled?: boolean
     safetyDepositRequiresApproval?: boolean
+    usePaymentSessions?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -100110,6 +105174,67 @@ export namespace Prisma {
 
   export type BookingExtensionCreateManyBranchInputEnvelope = {
     data: BookingExtensionCreateManyBranchInput | BookingExtensionCreateManyBranchInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type PaymentSessionCreateWithoutBranchInput = {
+    publicId: string
+    sessionType: $Enums.PaymentSessionType
+    status?: $Enums.PaymentSessionStatus
+    taxableBase?: Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    totalDiscounts?: Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: Decimal | DecimalJsLike | number | string
+    netPayable?: Decimal | DecimalJsLike | number | string
+    idempotencyKey?: string | null
+    gatewayTransactionId?: string | null
+    gatewayPaymentUrl?: string | null
+    expiresAt?: Date | string | null
+    completedAt?: Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutPaymentSessionsInput
+    actor: UserCreateNestedOneWithoutPaymentSessionsOpenedInput
+    entries?: LedgerEntryCreateNestedManyWithoutSessionInput
+    activeForBookings?: BookingCreateNestedManyWithoutActivePaymentSessionInput
+  }
+
+  export type PaymentSessionUncheckedCreateWithoutBranchInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    sessionType: $Enums.PaymentSessionType
+    status?: $Enums.PaymentSessionStatus
+    taxableBase?: Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    totalDiscounts?: Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: Decimal | DecimalJsLike | number | string
+    netPayable?: Decimal | DecimalJsLike | number | string
+    idempotencyKey?: string | null
+    gatewayTransactionId?: string | null
+    gatewayPaymentUrl?: string | null
+    expiresAt?: Date | string | null
+    completedAt?: Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    actorId: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    entries?: LedgerEntryUncheckedCreateNestedManyWithoutSessionInput
+    activeForBookings?: BookingUncheckedCreateNestedManyWithoutActivePaymentSessionInput
+  }
+
+  export type PaymentSessionCreateOrConnectWithoutBranchInput = {
+    where: PaymentSessionWhereUniqueInput
+    create: XOR<PaymentSessionCreateWithoutBranchInput, PaymentSessionUncheckedCreateWithoutBranchInput>
+  }
+
+  export type PaymentSessionCreateManyBranchInputEnvelope = {
+    data: PaymentSessionCreateManyBranchInput | PaymentSessionCreateManyBranchInput[]
     skipDuplicates?: boolean
   }
 
@@ -100610,6 +105735,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     safetyDepositEnabled?: BoolFieldUpdateOperationsInput | boolean
     safetyDepositRequiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    usePaymentSessions?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -100631,6 +105757,7 @@ export namespace Prisma {
     overrideApprovalThreshold?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     safetyDepositEnabled?: BoolFieldUpdateOperationsInput | boolean
     safetyDepositRequiresApproval?: BoolFieldUpdateOperationsInput | boolean
+    usePaymentSessions?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -100699,6 +105826,22 @@ export namespace Prisma {
     data: XOR<BookingExtensionUpdateManyMutationInput, BookingExtensionUncheckedUpdateManyWithoutBranchInput>
   }
 
+  export type PaymentSessionUpsertWithWhereUniqueWithoutBranchInput = {
+    where: PaymentSessionWhereUniqueInput
+    update: XOR<PaymentSessionUpdateWithoutBranchInput, PaymentSessionUncheckedUpdateWithoutBranchInput>
+    create: XOR<PaymentSessionCreateWithoutBranchInput, PaymentSessionUncheckedCreateWithoutBranchInput>
+  }
+
+  export type PaymentSessionUpdateWithWhereUniqueWithoutBranchInput = {
+    where: PaymentSessionWhereUniqueInput
+    data: XOR<PaymentSessionUpdateWithoutBranchInput, PaymentSessionUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type PaymentSessionUpdateManyWithWhereWithoutBranchInput = {
+    where: PaymentSessionScalarWhereInput
+    data: XOR<PaymentSessionUpdateManyMutationInput, PaymentSessionUncheckedUpdateManyWithoutBranchInput>
+  }
+
   export type BranchCreateWithoutStaffActivityLogsInput = {
     publicId: string
     name: string
@@ -100725,6 +105868,7 @@ export namespace Prisma {
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutStaffActivityLogsInput = {
@@ -100754,6 +105898,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutStaffActivityLogsInput = {
@@ -100798,6 +105943,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutStaffActivityLogsInput = {
@@ -100827,6 +105973,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchCreateWithoutPricingSettingInput = {
@@ -100855,6 +106002,7 @@ export namespace Prisma {
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPricingSettingInput = {
@@ -100884,6 +106032,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPricingSettingInput = {
@@ -100928,6 +106077,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPricingSettingInput = {
@@ -100957,6 +106107,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type PricingDiscountSlabCreateWithoutCategoryInput = {
@@ -101301,6 +106452,7 @@ export namespace Prisma {
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutCaptureConfigsInput = {
@@ -101330,6 +106482,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutCaptureConfigsInput = {
@@ -101404,6 +106557,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutCaptureConfigsInput = {
@@ -101433,6 +106587,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutCaptureConfigsInput = {
@@ -101497,6 +106652,7 @@ export namespace Prisma {
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutVehiclesInput = {
@@ -101526,6 +106682,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutVehiclesInput = {
@@ -101983,6 +107140,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutVehiclesInput = {
@@ -102012,6 +107170,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutVehiclesInput = {
@@ -102612,6 +107771,7 @@ export namespace Prisma {
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutBranchPricingDefaultsInput = {
@@ -102641,6 +107801,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutBranchPricingDefaultsInput = {
@@ -102715,6 +107876,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutBranchPricingDefaultsInput = {
@@ -102744,6 +107906,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutBranchPricingDefaultsInput = {
@@ -103350,6 +108513,7 @@ export namespace Prisma {
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPricingDiscountSlabsInput = {
@@ -103379,6 +108543,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPricingDiscountSlabsInput = {
@@ -103453,6 +108618,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPricingDiscountSlabsInput = {
@@ -103482,6 +108648,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutPricingDiscountSlabsInput = {
@@ -103546,6 +108713,7 @@ export namespace Prisma {
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutCategoryDepositSettingsInput = {
@@ -103575,6 +108743,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutCategoryDepositSettingsInput = {
@@ -103649,6 +108818,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutCategoryDepositSettingsInput = {
@@ -103678,6 +108848,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutCategoryDepositSettingsInput = {
@@ -103818,6 +108989,7 @@ export namespace Prisma {
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutBookingsInput = {
@@ -103847,6 +109019,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutBookingsInput = {
@@ -103893,6 +109066,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutBookingsCreatedInput = {
@@ -103935,6 +109111,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutBookingsCreatedInput = {
@@ -104755,6 +109934,180 @@ export namespace Prisma {
     create: XOR<SafetyDepositRequestCreateWithoutBookingInput, SafetyDepositRequestUncheckedCreateWithoutBookingInput>
   }
 
+  export type PaymentSessionCreateWithoutActiveForBookingsInput = {
+    publicId: string
+    sessionType: $Enums.PaymentSessionType
+    status?: $Enums.PaymentSessionStatus
+    taxableBase?: Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    totalDiscounts?: Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: Decimal | DecimalJsLike | number | string
+    netPayable?: Decimal | DecimalJsLike | number | string
+    idempotencyKey?: string | null
+    gatewayTransactionId?: string | null
+    gatewayPaymentUrl?: string | null
+    expiresAt?: Date | string | null
+    completedAt?: Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutPaymentSessionsInput
+    branch: BranchCreateNestedOneWithoutPaymentSessionsInput
+    actor: UserCreateNestedOneWithoutPaymentSessionsOpenedInput
+    entries?: LedgerEntryCreateNestedManyWithoutSessionInput
+  }
+
+  export type PaymentSessionUncheckedCreateWithoutActiveForBookingsInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    sessionType: $Enums.PaymentSessionType
+    status?: $Enums.PaymentSessionStatus
+    taxableBase?: Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    totalDiscounts?: Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: Decimal | DecimalJsLike | number | string
+    netPayable?: Decimal | DecimalJsLike | number | string
+    idempotencyKey?: string | null
+    gatewayTransactionId?: string | null
+    gatewayPaymentUrl?: string | null
+    expiresAt?: Date | string | null
+    completedAt?: Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    actorId: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    entries?: LedgerEntryUncheckedCreateNestedManyWithoutSessionInput
+  }
+
+  export type PaymentSessionCreateOrConnectWithoutActiveForBookingsInput = {
+    where: PaymentSessionWhereUniqueInput
+    create: XOR<PaymentSessionCreateWithoutActiveForBookingsInput, PaymentSessionUncheckedCreateWithoutActiveForBookingsInput>
+  }
+
+  export type PaymentSessionCreateWithoutBookingInput = {
+    publicId: string
+    sessionType: $Enums.PaymentSessionType
+    status?: $Enums.PaymentSessionStatus
+    taxableBase?: Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    totalDiscounts?: Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: Decimal | DecimalJsLike | number | string
+    netPayable?: Decimal | DecimalJsLike | number | string
+    idempotencyKey?: string | null
+    gatewayTransactionId?: string | null
+    gatewayPaymentUrl?: string | null
+    expiresAt?: Date | string | null
+    completedAt?: Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    branch: BranchCreateNestedOneWithoutPaymentSessionsInput
+    actor: UserCreateNestedOneWithoutPaymentSessionsOpenedInput
+    entries?: LedgerEntryCreateNestedManyWithoutSessionInput
+    activeForBookings?: BookingCreateNestedManyWithoutActivePaymentSessionInput
+  }
+
+  export type PaymentSessionUncheckedCreateWithoutBookingInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    sessionType: $Enums.PaymentSessionType
+    status?: $Enums.PaymentSessionStatus
+    taxableBase?: Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    totalDiscounts?: Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: Decimal | DecimalJsLike | number | string
+    netPayable?: Decimal | DecimalJsLike | number | string
+    idempotencyKey?: string | null
+    gatewayTransactionId?: string | null
+    gatewayPaymentUrl?: string | null
+    expiresAt?: Date | string | null
+    completedAt?: Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    actorId: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    entries?: LedgerEntryUncheckedCreateNestedManyWithoutSessionInput
+    activeForBookings?: BookingUncheckedCreateNestedManyWithoutActivePaymentSessionInput
+  }
+
+  export type PaymentSessionCreateOrConnectWithoutBookingInput = {
+    where: PaymentSessionWhereUniqueInput
+    create: XOR<PaymentSessionCreateWithoutBookingInput, PaymentSessionUncheckedCreateWithoutBookingInput>
+  }
+
+  export type PaymentSessionCreateManyBookingInputEnvelope = {
+    data: PaymentSessionCreateManyBookingInput | PaymentSessionCreateManyBookingInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type LedgerEntryCreateWithoutBookingInput = {
+    publicId: string
+    entryType: $Enums.LedgerEntryType
+    classification: $Enums.LedgerEntryClassification
+    amount: Decimal | DecimalJsLike | number | string
+    baseAmount?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    description: string
+    referenceId?: string | null
+    referenceType?: string | null
+    idempotencyKey: string
+    isVoided?: boolean
+    voidedAt?: Date | string | null
+    voidReason?: string | null
+    actorRole: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    session: PaymentSessionCreateNestedOneWithoutEntriesInput
+    actor: UserCreateNestedOneWithoutLedgerEntriesActedInput
+    voidedBy?: UserCreateNestedOneWithoutLedgerEntriesVoidedInput
+  }
+
+  export type LedgerEntryUncheckedCreateWithoutBookingInput = {
+    id?: number
+    publicId: string
+    sessionId: number
+    entryType: $Enums.LedgerEntryType
+    classification: $Enums.LedgerEntryClassification
+    amount: Decimal | DecimalJsLike | number | string
+    baseAmount?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    description: string
+    referenceId?: string | null
+    referenceType?: string | null
+    idempotencyKey: string
+    isVoided?: boolean
+    voidedAt?: Date | string | null
+    voidedById?: number | null
+    voidReason?: string | null
+    actorId: number
+    actorRole: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type LedgerEntryCreateOrConnectWithoutBookingInput = {
+    where: LedgerEntryWhereUniqueInput
+    create: XOR<LedgerEntryCreateWithoutBookingInput, LedgerEntryUncheckedCreateWithoutBookingInput>
+  }
+
+  export type LedgerEntryCreateManyBookingInputEnvelope = {
+    data: LedgerEntryCreateManyBookingInput | LedgerEntryCreateManyBookingInput[]
+    skipDuplicates?: boolean
+  }
+
   export type FileObjectUpsertWithoutBookingKycsInput = {
     update: XOR<FileObjectUpdateWithoutBookingKycsInput, FileObjectUncheckedUpdateWithoutBookingKycsInput>
     create: XOR<FileObjectCreateWithoutBookingKycsInput, FileObjectUncheckedCreateWithoutBookingKycsInput>
@@ -104880,6 +110233,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutBookingsInput = {
@@ -104909,6 +110263,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type UserUpsertWithoutBookingsCreatedInput = {
@@ -104961,6 +110316,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutBookingsCreatedInput = {
@@ -105003,6 +110361,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type BookingPhotoUpsertWithWhereUniqueWithoutBookingInput = {
@@ -105601,6 +110962,100 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type PaymentSessionUpsertWithoutActiveForBookingsInput = {
+    update: XOR<PaymentSessionUpdateWithoutActiveForBookingsInput, PaymentSessionUncheckedUpdateWithoutActiveForBookingsInput>
+    create: XOR<PaymentSessionCreateWithoutActiveForBookingsInput, PaymentSessionUncheckedCreateWithoutActiveForBookingsInput>
+    where?: PaymentSessionWhereInput
+  }
+
+  export type PaymentSessionUpdateToOneWithWhereWithoutActiveForBookingsInput = {
+    where?: PaymentSessionWhereInput
+    data: XOR<PaymentSessionUpdateWithoutActiveForBookingsInput, PaymentSessionUncheckedUpdateWithoutActiveForBookingsInput>
+  }
+
+  export type PaymentSessionUpdateWithoutActiveForBookingsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    sessionType?: EnumPaymentSessionTypeFieldUpdateOperationsInput | $Enums.PaymentSessionType
+    status?: EnumPaymentSessionStatusFieldUpdateOperationsInput | $Enums.PaymentSessionStatus
+    taxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscounts?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netPayable?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayPaymentUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutPaymentSessionsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutPaymentSessionsNestedInput
+    actor?: UserUpdateOneRequiredWithoutPaymentSessionsOpenedNestedInput
+    entries?: LedgerEntryUpdateManyWithoutSessionNestedInput
+  }
+
+  export type PaymentSessionUncheckedUpdateWithoutActiveForBookingsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    sessionType?: EnumPaymentSessionTypeFieldUpdateOperationsInput | $Enums.PaymentSessionType
+    status?: EnumPaymentSessionStatusFieldUpdateOperationsInput | $Enums.PaymentSessionStatus
+    taxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscounts?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netPayable?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayPaymentUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    actorId?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    entries?: LedgerEntryUncheckedUpdateManyWithoutSessionNestedInput
+  }
+
+  export type PaymentSessionUpsertWithWhereUniqueWithoutBookingInput = {
+    where: PaymentSessionWhereUniqueInput
+    update: XOR<PaymentSessionUpdateWithoutBookingInput, PaymentSessionUncheckedUpdateWithoutBookingInput>
+    create: XOR<PaymentSessionCreateWithoutBookingInput, PaymentSessionUncheckedCreateWithoutBookingInput>
+  }
+
+  export type PaymentSessionUpdateWithWhereUniqueWithoutBookingInput = {
+    where: PaymentSessionWhereUniqueInput
+    data: XOR<PaymentSessionUpdateWithoutBookingInput, PaymentSessionUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type PaymentSessionUpdateManyWithWhereWithoutBookingInput = {
+    where: PaymentSessionScalarWhereInput
+    data: XOR<PaymentSessionUpdateManyMutationInput, PaymentSessionUncheckedUpdateManyWithoutBookingInput>
+  }
+
+  export type LedgerEntryUpsertWithWhereUniqueWithoutBookingInput = {
+    where: LedgerEntryWhereUniqueInput
+    update: XOR<LedgerEntryUpdateWithoutBookingInput, LedgerEntryUncheckedUpdateWithoutBookingInput>
+    create: XOR<LedgerEntryCreateWithoutBookingInput, LedgerEntryUncheckedCreateWithoutBookingInput>
+  }
+
+  export type LedgerEntryUpdateWithWhereUniqueWithoutBookingInput = {
+    where: LedgerEntryWhereUniqueInput
+    data: XOR<LedgerEntryUpdateWithoutBookingInput, LedgerEntryUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type LedgerEntryUpdateManyWithWhereWithoutBookingInput = {
+    where: LedgerEntryScalarWhereInput
+    data: XOR<LedgerEntryUpdateManyMutationInput, LedgerEntryUncheckedUpdateManyWithoutBookingInput>
+  }
+
   export type VehicleCreateWithoutBookingItemsInput = {
     publicId: string
     make: string
@@ -105740,6 +111195,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutItemsInput = {
@@ -105800,6 +111258,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -105818,6 +111277,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutItemsInput = {
@@ -105981,6 +111442,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutItemsInput = {
@@ -106041,6 +111505,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -106059,6 +111524,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingCreateWithoutPhotosInput = {
@@ -106136,6 +111603,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutPhotosInput = {
@@ -106196,6 +111666,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -106214,6 +111685,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutPhotosInput = {
@@ -106377,6 +111850,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutPhotosInput = {
@@ -106437,6 +111913,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -106455,6 +111932,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type FileObjectUpsertWithoutBookingPhotosInput = {
@@ -106614,6 +112093,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDamagesInput = {
@@ -106674,6 +112156,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -106692,6 +112175,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDamagesInput = {
@@ -106802,6 +112287,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutApprovedDamageReportsInput = {
@@ -106844,6 +112332,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutApprovedDamageReportsInput = {
@@ -106966,6 +112457,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDamagesInput = {
@@ -107026,6 +112520,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -107044,6 +112539,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type VehicleUpsertWithoutDamageReportsInput = {
@@ -107166,6 +112663,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutApprovedDamageReportsInput = {
@@ -107208,6 +112708,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type BookingPhotoUpsertWithWhereUniqueWithoutDamageReportInput = {
@@ -107301,6 +112804,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDepositInput = {
@@ -107361,6 +112867,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -107379,6 +112886,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDepositInput = {
@@ -107472,6 +112981,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDepositInput = {
@@ -107532,6 +113044,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -107550,6 +113063,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type InvoiceCreateWithoutPaymentsInput = {
@@ -107743,6 +113258,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutInvoiceInput = {
@@ -107803,6 +113321,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -107821,6 +113340,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutInvoiceInput = {
@@ -108012,6 +113533,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutInvoiceInput = {
@@ -108072,6 +113596,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -108090,6 +113615,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type InvoiceItemUpsertWithWhereUniqueWithoutInvoiceInput = {
@@ -108273,6 +113800,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutActorAuditLogsInput = {
@@ -108315,6 +113845,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutActorAuditLogsInput = {
@@ -108361,6 +113894,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutApproverAuditLogsInput = {
@@ -108403,6 +113939,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutApproverAuditLogsInput = {
@@ -108436,6 +113975,7 @@ export namespace Prisma {
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutAuditLogsInput = {
@@ -108465,6 +114005,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutAuditLogsInput = {
@@ -108522,6 +114063,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutActorAuditLogsInput = {
@@ -108564,6 +114108,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUpsertWithoutApproverAuditLogsInput = {
@@ -108616,6 +114163,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutApproverAuditLogsInput = {
@@ -108658,6 +114208,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type BranchUpsertWithoutAuditLogsInput = {
@@ -108697,6 +114250,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutAuditLogsInput = {
@@ -108726,6 +114280,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchCreateWithoutGstRuleInput = {
@@ -108754,6 +114309,7 @@ export namespace Prisma {
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutGstRuleInput = {
@@ -108783,6 +114339,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutGstRuleInput = {
@@ -108827,6 +114384,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutGstRuleInput = {
@@ -108856,6 +114414,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BookingCreateWithoutCancellationInvoiceInput = {
@@ -108933,6 +114492,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCancellationInvoiceInput = {
@@ -108993,6 +114555,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -109011,6 +114574,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCancellationInvoiceInput = {
@@ -109180,6 +114745,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCancellationInvoiceInput = {
@@ -109240,6 +114808,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -109258,6 +114827,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type CustomerUpsertWithoutCancellationInvoicesInput = {
@@ -109460,6 +115031,7 @@ export namespace Prisma {
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutFeatureFlagsInput = {
@@ -109489,6 +115061,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutFeatureFlagsInput = {
@@ -109565,6 +115138,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutFeatureFlagsInput = {
@@ -109594,6 +115168,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type FeatureFlagUpsertWithoutBranchFlagsInput = {
@@ -109913,6 +115488,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutVehicleSwapsInput = {
@@ -109973,6 +115551,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -109991,6 +115570,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutVehicleSwapsInput = {
@@ -110165,6 +115746,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutVehicleSwapsInput = {
@@ -110207,6 +115791,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutVehicleSwapsInput = {
@@ -110358,6 +115945,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutVehicleSwapsInput = {
@@ -110418,6 +116008,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -110436,6 +116027,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type VehicleUpsertWithoutSwapsAsOriginalInput = {
@@ -110628,6 +116221,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutVehicleSwapsInput = {
@@ -110670,6 +116266,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type BookingExtensionUpsertWithoutVehicleSwapInput = {
@@ -110775,6 +116374,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutDiscountRulesCreatedInput = {
@@ -110817,6 +116419,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutDiscountRulesCreatedInput = {
@@ -110926,6 +116531,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDiscountRuleInput = {
@@ -110985,6 +116593,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -111004,6 +116613,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDiscountRuleInput = {
@@ -111113,6 +116724,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutDiscountRulesCreatedInput = {
@@ -111155,6 +116769,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type CouponUsageLogUpsertWithWhereUniqueWithoutDiscountRuleInput = {
@@ -111267,6 +116884,7 @@ export namespace Prisma {
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutDurationDiscountSlabsInput = {
@@ -111296,6 +116914,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutDurationDiscountSlabsInput = {
@@ -111340,6 +116959,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutDurationDiscountSlabsInput = {
@@ -111369,6 +116989,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchCreateWithoutDiscountConfigInput = {
@@ -111397,6 +117018,7 @@ export namespace Prisma {
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutDiscountConfigInput = {
@@ -111426,6 +117048,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutDiscountConfigInput = {
@@ -111470,6 +117093,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutDiscountConfigInput = {
@@ -111499,6 +117123,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BookingCreateWithoutDiscountApplicationInput = {
@@ -111576,6 +117201,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDiscountApplicationInput = {
@@ -111636,6 +117264,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -111654,6 +117283,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDiscountApplicationInput = {
@@ -111871,6 +117502,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDiscountApplicationInput = {
@@ -111931,6 +117565,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -111949,6 +117584,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type DiscountRuleUpsertWithoutApplicationsInput = {
@@ -112304,6 +117941,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutManualDiscountsIssuedInput = {
@@ -112346,6 +117986,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutManualDiscountsIssuedInput = {
@@ -112392,6 +118035,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutManualDiscountsApprovedInput = {
@@ -112434,6 +118080,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutManualDiscountsApprovedInput = {
@@ -112516,6 +118165,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutManualDiscountInput = {
@@ -112576,6 +118228,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -112594,6 +118247,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutManualDiscountInput = {
@@ -112693,6 +118348,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutManualDiscountsIssuedInput = {
@@ -112735,6 +118393,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUpsertWithoutManualDiscountsApprovedInput = {
@@ -112787,6 +118448,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutManualDiscountsApprovedInput = {
@@ -112829,6 +118493,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type BookingUpsertWithoutManualDiscountInput = {
@@ -112917,6 +118584,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutManualDiscountInput = {
@@ -112977,6 +118647,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -112995,6 +118666,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type DiscountApplicationUpsertWithoutManualDiscountInput = {
@@ -113071,6 +118744,7 @@ export namespace Prisma {
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPaymentConfigInput = {
@@ -113100,6 +118774,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPaymentConfigInput = {
@@ -113144,6 +118819,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPaymentConfigInput = {
@@ -113173,6 +118849,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BookingCreateWithoutPaymentTransactionsInput = {
@@ -113250,6 +118927,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutPaymentTransactionsInput = {
@@ -113310,6 +118990,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -113328,6 +119009,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutPaymentTransactionsInput = {
@@ -113361,6 +119044,7 @@ export namespace Prisma {
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPaymentTransactionsInput = {
@@ -113390,6 +119074,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPaymentTransactionsInput = {
@@ -113436,6 +119121,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutCollectedPaymentsInput = {
@@ -113478,6 +119166,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutCollectedPaymentsInput = {
@@ -113524,6 +119215,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutConfirmedPaymentsInput = {
@@ -113566,6 +119260,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutConfirmedPaymentsInput = {
@@ -113612,6 +119309,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutRejectedPaymentsInput = {
@@ -113654,6 +119354,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutRejectedPaymentsInput = {
@@ -113845,6 +119548,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutPaymentTransactionsInput = {
@@ -113905,6 +119611,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -113923,6 +119630,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BranchUpsertWithoutPaymentTransactionsInput = {
@@ -113962,6 +119671,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPaymentTransactionsInput = {
@@ -113991,6 +119701,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type UserUpsertWithoutCollectedPaymentsInput = {
@@ -114043,6 +119754,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutCollectedPaymentsInput = {
@@ -114085,6 +119799,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUpsertWithoutConfirmedPaymentsInput = {
@@ -114137,6 +119854,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutConfirmedPaymentsInput = {
@@ -114179,6 +119899,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUpsertWithoutRejectedPaymentsInput = {
@@ -114231,6 +119954,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRejectedPaymentsInput = {
@@ -114273,6 +119999,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type CashShiftUpsertWithoutTransactionsInput = {
@@ -114460,6 +120189,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutRefundRequestsInput = {
@@ -114520,6 +120252,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -114538,6 +120271,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutRefundRequestsInput = {
@@ -114571,6 +120306,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutRefundRequestsInput = {
@@ -114600,6 +120336,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutRefundRequestsInput = {
@@ -114646,6 +120383,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutRefundRequestsMadeInput = {
@@ -114688,6 +120428,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutRefundRequestsMadeInput = {
@@ -114734,6 +120477,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutRefundRequestsApprovedInput = {
@@ -114776,6 +120522,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutRefundRequestsApprovedInput = {
@@ -114822,6 +120571,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutRefundRequestsCompletedInput = {
@@ -114864,6 +120616,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutRefundRequestsCompletedInput = {
@@ -114957,6 +120712,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutRefundRequestsInput = {
@@ -115017,6 +120775,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -115035,6 +120794,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BranchUpsertWithoutRefundRequestsInput = {
@@ -115074,6 +120835,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutRefundRequestsInput = {
@@ -115103,6 +120865,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type UserUpsertWithoutRefundRequestsMadeInput = {
@@ -115155,6 +120918,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRefundRequestsMadeInput = {
@@ -115197,6 +120963,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUpsertWithoutRefundRequestsApprovedInput = {
@@ -115249,6 +121018,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRefundRequestsApprovedInput = {
@@ -115291,6 +121063,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUpsertWithoutRefundRequestsCompletedInput = {
@@ -115343,6 +121118,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRefundRequestsCompletedInput = {
@@ -115385,6 +121163,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserCreateWithoutOpenShiftsInput = {
@@ -115426,6 +121207,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutOpenShiftsInput = {
@@ -115468,6 +121252,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutOpenShiftsInput = {
@@ -115501,6 +121288,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutCashShiftsInput = {
@@ -115530,6 +121318,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutCashShiftsInput = {
@@ -115576,6 +121365,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutReconciledShiftsInput = {
@@ -115618,6 +121410,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutReconciledShiftsInput = {
@@ -115736,6 +121531,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutOpenShiftsInput = {
@@ -115778,6 +121576,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type BranchUpsertWithoutCashShiftsInput = {
@@ -115817,6 +121618,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutCashShiftsInput = {
@@ -115846,6 +121648,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type UserUpsertWithoutReconciledShiftsInput = {
@@ -115898,6 +121701,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutReconciledShiftsInput = {
@@ -115940,6 +121746,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type PaymentTransactionUpsertWithWhereUniqueWithoutCashShiftInput = {
@@ -116033,6 +121842,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutExtensionsInput = {
@@ -116093,6 +121905,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -116111,6 +121924,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutExtensionsInput = {
@@ -116144,6 +121959,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutExtensionsInput = {
@@ -116173,6 +121989,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutExtensionsInput = {
@@ -116219,6 +122036,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutInitiatedExtensionsInput = {
@@ -116261,6 +122081,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutInitiatedExtensionsInput = {
@@ -116499,6 +122322,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutActiveExtensionInput = {
@@ -116558,6 +122384,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -116577,6 +122404,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutActiveExtensionInput = {
@@ -116675,6 +122504,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutExtensionsInput = {
@@ -116735,6 +122567,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -116753,6 +122586,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BranchUpsertWithoutExtensionsInput = {
@@ -116792,6 +122627,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutExtensionsInput = {
@@ -116821,6 +122657,7 @@ export namespace Prisma {
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type UserUpsertWithoutInitiatedExtensionsInput = {
@@ -116873,6 +122710,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutInitiatedExtensionsInput = {
@@ -116915,6 +122755,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type VehicleUpsertWithoutExtensionSwapsInput = {
@@ -117133,6 +122976,7 @@ export namespace Prisma {
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutChargeConfigInput = {
@@ -117162,6 +123006,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutChargeConfigInput = {
@@ -117206,6 +123051,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutChargeConfigInput = {
@@ -117235,6 +123081,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BookingCreateWithoutChargeEntriesInput = {
@@ -117312,6 +123159,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutChargeEntriesInput = {
@@ -117372,6 +123222,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -117390,6 +123241,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutChargeEntriesInput = {
@@ -117436,6 +123289,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutChargeEntriesCreatedInput = {
@@ -117478,6 +123334,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutChargeEntriesCreatedInput = {
@@ -117613,6 +123472,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutChargeEntriesInput = {
@@ -117673,6 +123535,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -117691,6 +123554,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type UserUpsertWithoutChargeEntriesCreatedInput = {
@@ -117743,6 +123608,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutChargeEntriesCreatedInput = {
@@ -117785,6 +123653,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type ChargeOverrideUpsertWithoutChargeEntryInput = {
@@ -117910,6 +123781,9 @@ export namespace Prisma {
     chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutChargeOverridesInput = {
@@ -117970,6 +123844,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -117988,6 +123863,8 @@ export namespace Prisma {
     chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutChargeOverridesInput = {
@@ -118074,6 +123951,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutOverridesActedInput = {
@@ -118116,6 +123996,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutOverridesActedInput = {
@@ -118162,6 +124045,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutOverridesApprovedInput = {
@@ -118204,6 +124090,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutOverridesApprovedInput = {
@@ -118297,6 +124186,9 @@ export namespace Prisma {
     chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutChargeOverridesInput = {
@@ -118357,6 +124249,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -118375,6 +124268,8 @@ export namespace Prisma {
     chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type ChargeEntryUpsertWithoutOverrideInput = {
@@ -118473,6 +124368,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutOverridesActedInput = {
@@ -118515,6 +124413,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUpsertWithoutOverridesApprovedInput = {
@@ -118567,6 +124468,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutOverridesApprovedInput = {
@@ -118609,6 +124513,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type BookingCreateWithoutFuelRecordInput = {
@@ -118686,6 +124593,9 @@ export namespace Prisma {
     chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
     chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutFuelRecordInput = {
@@ -118746,6 +124656,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -118764,6 +124675,8 @@ export namespace Prisma {
     chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
     chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutFuelRecordInput = {
@@ -118810,6 +124723,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutFuelPickupCapturesInput = {
@@ -118852,6 +124768,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutFuelPickupCapturesInput = {
@@ -118898,6 +124817,9 @@ export namespace Prisma {
     fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutFuelReturnCapturesInput = {
@@ -118940,6 +124862,9 @@ export namespace Prisma {
     fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutFuelReturnCapturesInput = {
@@ -119033,6 +124958,9 @@ export namespace Prisma {
     chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
     chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutFuelRecordInput = {
@@ -119093,6 +125021,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -119111,6 +125040,8 @@ export namespace Prisma {
     chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
     chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type UserUpsertWithoutFuelPickupCapturesInput = {
@@ -119163,6 +125094,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutFuelPickupCapturesInput = {
@@ -119205,6 +125139,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUpsertWithoutFuelReturnCapturesInput = {
@@ -119257,6 +125194,9 @@ export namespace Prisma {
     fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutFuelReturnCapturesInput = {
@@ -119299,6 +125239,9 @@ export namespace Prisma {
     fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type BookingCreateWithoutSafetyDepositRequestInput = {
@@ -119376,6 +125319,9 @@ export namespace Prisma {
     chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
     chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutSafetyDepositRequestInput = {
@@ -119436,6 +125382,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -119454,6 +125401,8 @@ export namespace Prisma {
     chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
     chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutSafetyDepositRequestInput = {
@@ -119500,6 +125449,9 @@ export namespace Prisma {
     fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutSafetyDepositRequestsInput = {
@@ -119542,6 +125494,9 @@ export namespace Prisma {
     fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutSafetyDepositRequestsInput = {
@@ -119588,6 +125543,9 @@ export namespace Prisma {
     fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
     fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserUncheckedCreateWithoutSafetyDepositApprovalsInput = {
@@ -119630,6 +125588,9 @@ export namespace Prisma {
     fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
     fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
   }
 
   export type UserCreateOrConnectWithoutSafetyDepositApprovalsInput = {
@@ -119723,6 +125684,9 @@ export namespace Prisma {
     chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
     chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutSafetyDepositRequestInput = {
@@ -119783,6 +125747,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -119801,6 +125766,8 @@ export namespace Prisma {
     chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
     chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type UserUpsertWithoutSafetyDepositRequestsInput = {
@@ -119853,6 +125820,9 @@ export namespace Prisma {
     fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSafetyDepositRequestsInput = {
@@ -119895,6 +125865,9 @@ export namespace Prisma {
     fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUpsertWithoutSafetyDepositApprovalsInput = {
@@ -119947,6 +125920,9 @@ export namespace Prisma {
     fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSafetyDepositApprovalsInput = {
@@ -119989,6 +125965,1779 @@ export namespace Prisma {
     fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+  }
+
+  export type BookingCreateWithoutPaymentSessionsInput = {
+    publicId: string
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
+    customer: CustomerCreateNestedOneWithoutBookingsInput
+    branch: BranchCreateNestedOneWithoutBookingsInput
+    createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
+    photos?: BookingPhotoCreateNestedManyWithoutBookingInput
+    damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
+    deposit?: DepositCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+  }
+
+  export type BookingUncheckedCreateWithoutPaymentSessionsInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
+    damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
+    deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+  }
+
+  export type BookingCreateOrConnectWithoutPaymentSessionsInput = {
+    where: BookingWhereUniqueInput
+    create: XOR<BookingCreateWithoutPaymentSessionsInput, BookingUncheckedCreateWithoutPaymentSessionsInput>
+  }
+
+  export type BranchCreateWithoutPaymentSessionsInput = {
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleCreateNestedManyWithoutBranchInput
+    bookings?: BookingCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
+    auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchUncheckedCreateWithoutPaymentSessionsInput = {
+    id?: number
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserUncheckedCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchCreateOrConnectWithoutPaymentSessionsInput = {
+    where: BranchWhereUniqueInput
+    create: XOR<BranchCreateWithoutPaymentSessionsInput, BranchUncheckedCreateWithoutPaymentSessionsInput>
+  }
+
+  export type UserCreateWithoutPaymentSessionsOpenedInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+  }
+
+  export type UserUncheckedCreateWithoutPaymentSessionsOpenedInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+  }
+
+  export type UserCreateOrConnectWithoutPaymentSessionsOpenedInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutPaymentSessionsOpenedInput, UserUncheckedCreateWithoutPaymentSessionsOpenedInput>
+  }
+
+  export type LedgerEntryCreateWithoutSessionInput = {
+    publicId: string
+    entryType: $Enums.LedgerEntryType
+    classification: $Enums.LedgerEntryClassification
+    amount: Decimal | DecimalJsLike | number | string
+    baseAmount?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    description: string
+    referenceId?: string | null
+    referenceType?: string | null
+    idempotencyKey: string
+    isVoided?: boolean
+    voidedAt?: Date | string | null
+    voidReason?: string | null
+    actorRole: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutLedgerEntriesInput
+    actor: UserCreateNestedOneWithoutLedgerEntriesActedInput
+    voidedBy?: UserCreateNestedOneWithoutLedgerEntriesVoidedInput
+  }
+
+  export type LedgerEntryUncheckedCreateWithoutSessionInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    entryType: $Enums.LedgerEntryType
+    classification: $Enums.LedgerEntryClassification
+    amount: Decimal | DecimalJsLike | number | string
+    baseAmount?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    description: string
+    referenceId?: string | null
+    referenceType?: string | null
+    idempotencyKey: string
+    isVoided?: boolean
+    voidedAt?: Date | string | null
+    voidedById?: number | null
+    voidReason?: string | null
+    actorId: number
+    actorRole: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type LedgerEntryCreateOrConnectWithoutSessionInput = {
+    where: LedgerEntryWhereUniqueInput
+    create: XOR<LedgerEntryCreateWithoutSessionInput, LedgerEntryUncheckedCreateWithoutSessionInput>
+  }
+
+  export type LedgerEntryCreateManySessionInputEnvelope = {
+    data: LedgerEntryCreateManySessionInput | LedgerEntryCreateManySessionInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type BookingCreateWithoutActivePaymentSessionInput = {
+    publicId: string
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
+    customer: CustomerCreateNestedOneWithoutBookingsInput
+    branch: BranchCreateNestedOneWithoutBookingsInput
+    createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
+    photos?: BookingPhotoCreateNestedManyWithoutBookingInput
+    damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
+    deposit?: DepositCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+  }
+
+  export type BookingUncheckedCreateWithoutActivePaymentSessionInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
+    damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
+    deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+  }
+
+  export type BookingCreateOrConnectWithoutActivePaymentSessionInput = {
+    where: BookingWhereUniqueInput
+    create: XOR<BookingCreateWithoutActivePaymentSessionInput, BookingUncheckedCreateWithoutActivePaymentSessionInput>
+  }
+
+  export type BookingCreateManyActivePaymentSessionInputEnvelope = {
+    data: BookingCreateManyActivePaymentSessionInput | BookingCreateManyActivePaymentSessionInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type BookingUpsertWithoutPaymentSessionsInput = {
+    update: XOR<BookingUpdateWithoutPaymentSessionsInput, BookingUncheckedUpdateWithoutPaymentSessionsInput>
+    create: XOR<BookingCreateWithoutPaymentSessionsInput, BookingUncheckedCreateWithoutPaymentSessionsInput>
+    where?: BookingWhereInput
+  }
+
+  export type BookingUpdateToOneWithWhereWithoutPaymentSessionsInput = {
+    where?: BookingWhereInput
+    data: XOR<BookingUpdateWithoutPaymentSessionsInput, BookingUncheckedUpdateWithoutPaymentSessionsInput>
+  }
+
+  export type BookingUpdateWithoutPaymentSessionsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
+    customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
+    photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateWithoutPaymentSessionsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+  }
+
+  export type BranchUpsertWithoutPaymentSessionsInput = {
+    update: XOR<BranchUpdateWithoutPaymentSessionsInput, BranchUncheckedUpdateWithoutPaymentSessionsInput>
+    create: XOR<BranchCreateWithoutPaymentSessionsInput, BranchUncheckedCreateWithoutPaymentSessionsInput>
+    where?: BranchWhereInput
+  }
+
+  export type BranchUpdateToOneWithWhereWithoutPaymentSessionsInput = {
+    where?: BranchWhereInput
+    data: XOR<BranchUpdateWithoutPaymentSessionsInput, BranchUncheckedUpdateWithoutPaymentSessionsInput>
+  }
+
+  export type BranchUpdateWithoutPaymentSessionsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+  }
+
+  export type BranchUncheckedUpdateWithoutPaymentSessionsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUncheckedUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+  }
+
+  export type UserUpsertWithoutPaymentSessionsOpenedInput = {
+    update: XOR<UserUpdateWithoutPaymentSessionsOpenedInput, UserUncheckedUpdateWithoutPaymentSessionsOpenedInput>
+    create: XOR<UserCreateWithoutPaymentSessionsOpenedInput, UserUncheckedCreateWithoutPaymentSessionsOpenedInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutPaymentSessionsOpenedInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutPaymentSessionsOpenedInput, UserUncheckedUpdateWithoutPaymentSessionsOpenedInput>
+  }
+
+  export type UserUpdateWithoutPaymentSessionsOpenedInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutPaymentSessionsOpenedInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+  }
+
+  export type LedgerEntryUpsertWithWhereUniqueWithoutSessionInput = {
+    where: LedgerEntryWhereUniqueInput
+    update: XOR<LedgerEntryUpdateWithoutSessionInput, LedgerEntryUncheckedUpdateWithoutSessionInput>
+    create: XOR<LedgerEntryCreateWithoutSessionInput, LedgerEntryUncheckedCreateWithoutSessionInput>
+  }
+
+  export type LedgerEntryUpdateWithWhereUniqueWithoutSessionInput = {
+    where: LedgerEntryWhereUniqueInput
+    data: XOR<LedgerEntryUpdateWithoutSessionInput, LedgerEntryUncheckedUpdateWithoutSessionInput>
+  }
+
+  export type LedgerEntryUpdateManyWithWhereWithoutSessionInput = {
+    where: LedgerEntryScalarWhereInput
+    data: XOR<LedgerEntryUpdateManyMutationInput, LedgerEntryUncheckedUpdateManyWithoutSessionInput>
+  }
+
+  export type BookingUpsertWithWhereUniqueWithoutActivePaymentSessionInput = {
+    where: BookingWhereUniqueInput
+    update: XOR<BookingUpdateWithoutActivePaymentSessionInput, BookingUncheckedUpdateWithoutActivePaymentSessionInput>
+    create: XOR<BookingCreateWithoutActivePaymentSessionInput, BookingUncheckedCreateWithoutActivePaymentSessionInput>
+  }
+
+  export type BookingUpdateWithWhereUniqueWithoutActivePaymentSessionInput = {
+    where: BookingWhereUniqueInput
+    data: XOR<BookingUpdateWithoutActivePaymentSessionInput, BookingUncheckedUpdateWithoutActivePaymentSessionInput>
+  }
+
+  export type BookingUpdateManyWithWhereWithoutActivePaymentSessionInput = {
+    where: BookingScalarWhereInput
+    data: XOR<BookingUpdateManyMutationInput, BookingUncheckedUpdateManyWithoutActivePaymentSessionInput>
+  }
+
+  export type PaymentSessionCreateWithoutEntriesInput = {
+    publicId: string
+    sessionType: $Enums.PaymentSessionType
+    status?: $Enums.PaymentSessionStatus
+    taxableBase?: Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    totalDiscounts?: Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: Decimal | DecimalJsLike | number | string
+    netPayable?: Decimal | DecimalJsLike | number | string
+    idempotencyKey?: string | null
+    gatewayTransactionId?: string | null
+    gatewayPaymentUrl?: string | null
+    expiresAt?: Date | string | null
+    completedAt?: Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutPaymentSessionsInput
+    branch: BranchCreateNestedOneWithoutPaymentSessionsInput
+    actor: UserCreateNestedOneWithoutPaymentSessionsOpenedInput
+    activeForBookings?: BookingCreateNestedManyWithoutActivePaymentSessionInput
+  }
+
+  export type PaymentSessionUncheckedCreateWithoutEntriesInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    sessionType: $Enums.PaymentSessionType
+    status?: $Enums.PaymentSessionStatus
+    taxableBase?: Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    totalDiscounts?: Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: Decimal | DecimalJsLike | number | string
+    netPayable?: Decimal | DecimalJsLike | number | string
+    idempotencyKey?: string | null
+    gatewayTransactionId?: string | null
+    gatewayPaymentUrl?: string | null
+    expiresAt?: Date | string | null
+    completedAt?: Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    actorId: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    activeForBookings?: BookingUncheckedCreateNestedManyWithoutActivePaymentSessionInput
+  }
+
+  export type PaymentSessionCreateOrConnectWithoutEntriesInput = {
+    where: PaymentSessionWhereUniqueInput
+    create: XOR<PaymentSessionCreateWithoutEntriesInput, PaymentSessionUncheckedCreateWithoutEntriesInput>
+  }
+
+  export type BookingCreateWithoutLedgerEntriesInput = {
+    publicId: string
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
+    customer: CustomerCreateNestedOneWithoutBookingsInput
+    branch: BranchCreateNestedOneWithoutBookingsInput
+    createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
+    photos?: BookingPhotoCreateNestedManyWithoutBookingInput
+    damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
+    deposit?: DepositCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+  }
+
+  export type BookingUncheckedCreateWithoutLedgerEntriesInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
+    damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
+    deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+  }
+
+  export type BookingCreateOrConnectWithoutLedgerEntriesInput = {
+    where: BookingWhereUniqueInput
+    create: XOR<BookingCreateWithoutLedgerEntriesInput, BookingUncheckedCreateWithoutLedgerEntriesInput>
+  }
+
+  export type UserCreateWithoutLedgerEntriesActedInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+  }
+
+  export type UserUncheckedCreateWithoutLedgerEntriesActedInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+  }
+
+  export type UserCreateOrConnectWithoutLedgerEntriesActedInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutLedgerEntriesActedInput, UserUncheckedCreateWithoutLedgerEntriesActedInput>
+  }
+
+  export type UserCreateWithoutLedgerEntriesVoidedInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+  }
+
+  export type UserUncheckedCreateWithoutLedgerEntriesVoidedInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+  }
+
+  export type UserCreateOrConnectWithoutLedgerEntriesVoidedInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutLedgerEntriesVoidedInput, UserUncheckedCreateWithoutLedgerEntriesVoidedInput>
+  }
+
+  export type PaymentSessionUpsertWithoutEntriesInput = {
+    update: XOR<PaymentSessionUpdateWithoutEntriesInput, PaymentSessionUncheckedUpdateWithoutEntriesInput>
+    create: XOR<PaymentSessionCreateWithoutEntriesInput, PaymentSessionUncheckedCreateWithoutEntriesInput>
+    where?: PaymentSessionWhereInput
+  }
+
+  export type PaymentSessionUpdateToOneWithWhereWithoutEntriesInput = {
+    where?: PaymentSessionWhereInput
+    data: XOR<PaymentSessionUpdateWithoutEntriesInput, PaymentSessionUncheckedUpdateWithoutEntriesInput>
+  }
+
+  export type PaymentSessionUpdateWithoutEntriesInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    sessionType?: EnumPaymentSessionTypeFieldUpdateOperationsInput | $Enums.PaymentSessionType
+    status?: EnumPaymentSessionStatusFieldUpdateOperationsInput | $Enums.PaymentSessionStatus
+    taxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscounts?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netPayable?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayPaymentUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutPaymentSessionsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutPaymentSessionsNestedInput
+    actor?: UserUpdateOneRequiredWithoutPaymentSessionsOpenedNestedInput
+    activeForBookings?: BookingUpdateManyWithoutActivePaymentSessionNestedInput
+  }
+
+  export type PaymentSessionUncheckedUpdateWithoutEntriesInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    sessionType?: EnumPaymentSessionTypeFieldUpdateOperationsInput | $Enums.PaymentSessionType
+    status?: EnumPaymentSessionStatusFieldUpdateOperationsInput | $Enums.PaymentSessionStatus
+    taxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscounts?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netPayable?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayPaymentUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    actorId?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    activeForBookings?: BookingUncheckedUpdateManyWithoutActivePaymentSessionNestedInput
+  }
+
+  export type BookingUpsertWithoutLedgerEntriesInput = {
+    update: XOR<BookingUpdateWithoutLedgerEntriesInput, BookingUncheckedUpdateWithoutLedgerEntriesInput>
+    create: XOR<BookingCreateWithoutLedgerEntriesInput, BookingUncheckedCreateWithoutLedgerEntriesInput>
+    where?: BookingWhereInput
+  }
+
+  export type BookingUpdateToOneWithWhereWithoutLedgerEntriesInput = {
+    where?: BookingWhereInput
+    data: XOR<BookingUpdateWithoutLedgerEntriesInput, BookingUncheckedUpdateWithoutLedgerEntriesInput>
+  }
+
+  export type BookingUpdateWithoutLedgerEntriesInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
+    customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
+    photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateWithoutLedgerEntriesInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+  }
+
+  export type UserUpsertWithoutLedgerEntriesActedInput = {
+    update: XOR<UserUpdateWithoutLedgerEntriesActedInput, UserUncheckedUpdateWithoutLedgerEntriesActedInput>
+    create: XOR<UserCreateWithoutLedgerEntriesActedInput, UserUncheckedCreateWithoutLedgerEntriesActedInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutLedgerEntriesActedInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutLedgerEntriesActedInput, UserUncheckedUpdateWithoutLedgerEntriesActedInput>
+  }
+
+  export type UserUpdateWithoutLedgerEntriesActedInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutLedgerEntriesActedInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+  }
+
+  export type UserUpsertWithoutLedgerEntriesVoidedInput = {
+    update: XOR<UserUpdateWithoutLedgerEntriesVoidedInput, UserUncheckedUpdateWithoutLedgerEntriesVoidedInput>
+    create: XOR<UserCreateWithoutLedgerEntriesVoidedInput, UserUncheckedCreateWithoutLedgerEntriesVoidedInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutLedgerEntriesVoidedInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutLedgerEntriesVoidedInput, UserUncheckedUpdateWithoutLedgerEntriesVoidedInput>
+  }
+
+  export type UserUpdateWithoutLedgerEntriesVoidedInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutLedgerEntriesVoidedInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
   }
 
   export type EmailVerificationOtpCreateManyUserInput = {
@@ -120120,6 +127869,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -120539,6 +128289,78 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type PaymentSessionCreateManyActorInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    sessionType: $Enums.PaymentSessionType
+    status?: $Enums.PaymentSessionStatus
+    taxableBase?: Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    totalDiscounts?: Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: Decimal | DecimalJsLike | number | string
+    netPayable?: Decimal | DecimalJsLike | number | string
+    idempotencyKey?: string | null
+    gatewayTransactionId?: string | null
+    gatewayPaymentUrl?: string | null
+    expiresAt?: Date | string | null
+    completedAt?: Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type LedgerEntryCreateManyActorInput = {
+    id?: number
+    publicId: string
+    sessionId: number
+    bookingId: number
+    entryType: $Enums.LedgerEntryType
+    classification: $Enums.LedgerEntryClassification
+    amount: Decimal | DecimalJsLike | number | string
+    baseAmount?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    description: string
+    referenceId?: string | null
+    referenceType?: string | null
+    idempotencyKey: string
+    isVoided?: boolean
+    voidedAt?: Date | string | null
+    voidedById?: number | null
+    voidReason?: string | null
+    actorRole: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type LedgerEntryCreateManyVoidedByInput = {
+    id?: number
+    publicId: string
+    sessionId: number
+    bookingId: number
+    entryType: $Enums.LedgerEntryType
+    classification: $Enums.LedgerEntryClassification
+    amount: Decimal | DecimalJsLike | number | string
+    baseAmount?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    description: string
+    referenceId?: string | null
+    referenceType?: string | null
+    idempotencyKey: string
+    isVoided?: boolean
+    voidedAt?: Date | string | null
+    voidReason?: string | null
+    actorId: number
+    actorRole: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type EmailVerificationOtpUpdateWithoutUserInput = {
     phone?: StringFieldUpdateOperationsInput | string
     otpHash?: StringFieldUpdateOperationsInput | string
@@ -120826,6 +128648,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCreatedByInput = {
@@ -120885,6 +128710,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -120904,6 +128730,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutCreatedByInput = {
@@ -120963,6 +128791,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -122217,6 +130046,223 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type PaymentSessionUpdateWithoutActorInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    sessionType?: EnumPaymentSessionTypeFieldUpdateOperationsInput | $Enums.PaymentSessionType
+    status?: EnumPaymentSessionStatusFieldUpdateOperationsInput | $Enums.PaymentSessionStatus
+    taxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscounts?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netPayable?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayPaymentUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutPaymentSessionsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutPaymentSessionsNestedInput
+    entries?: LedgerEntryUpdateManyWithoutSessionNestedInput
+    activeForBookings?: BookingUpdateManyWithoutActivePaymentSessionNestedInput
+  }
+
+  export type PaymentSessionUncheckedUpdateWithoutActorInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    sessionType?: EnumPaymentSessionTypeFieldUpdateOperationsInput | $Enums.PaymentSessionType
+    status?: EnumPaymentSessionStatusFieldUpdateOperationsInput | $Enums.PaymentSessionStatus
+    taxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscounts?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netPayable?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayPaymentUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    entries?: LedgerEntryUncheckedUpdateManyWithoutSessionNestedInput
+    activeForBookings?: BookingUncheckedUpdateManyWithoutActivePaymentSessionNestedInput
+  }
+
+  export type PaymentSessionUncheckedUpdateManyWithoutActorInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    sessionType?: EnumPaymentSessionTypeFieldUpdateOperationsInput | $Enums.PaymentSessionType
+    status?: EnumPaymentSessionStatusFieldUpdateOperationsInput | $Enums.PaymentSessionStatus
+    taxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscounts?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netPayable?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayPaymentUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type LedgerEntryUpdateWithoutActorInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    entryType?: EnumLedgerEntryTypeFieldUpdateOperationsInput | $Enums.LedgerEntryType
+    classification?: EnumLedgerEntryClassificationFieldUpdateOperationsInput | $Enums.LedgerEntryClassification
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    baseAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    description?: StringFieldUpdateOperationsInput | string
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
+    referenceType?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    isVoided?: BoolFieldUpdateOperationsInput | boolean
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidReason?: NullableStringFieldUpdateOperationsInput | string | null
+    actorRole?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    session?: PaymentSessionUpdateOneRequiredWithoutEntriesNestedInput
+    booking?: BookingUpdateOneRequiredWithoutLedgerEntriesNestedInput
+    voidedBy?: UserUpdateOneWithoutLedgerEntriesVoidedNestedInput
+  }
+
+  export type LedgerEntryUncheckedUpdateWithoutActorInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    sessionId?: IntFieldUpdateOperationsInput | number
+    bookingId?: IntFieldUpdateOperationsInput | number
+    entryType?: EnumLedgerEntryTypeFieldUpdateOperationsInput | $Enums.LedgerEntryType
+    classification?: EnumLedgerEntryClassificationFieldUpdateOperationsInput | $Enums.LedgerEntryClassification
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    baseAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    description?: StringFieldUpdateOperationsInput | string
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
+    referenceType?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    isVoided?: BoolFieldUpdateOperationsInput | boolean
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidedById?: NullableIntFieldUpdateOperationsInput | number | null
+    voidReason?: NullableStringFieldUpdateOperationsInput | string | null
+    actorRole?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type LedgerEntryUncheckedUpdateManyWithoutActorInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    sessionId?: IntFieldUpdateOperationsInput | number
+    bookingId?: IntFieldUpdateOperationsInput | number
+    entryType?: EnumLedgerEntryTypeFieldUpdateOperationsInput | $Enums.LedgerEntryType
+    classification?: EnumLedgerEntryClassificationFieldUpdateOperationsInput | $Enums.LedgerEntryClassification
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    baseAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    description?: StringFieldUpdateOperationsInput | string
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
+    referenceType?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    isVoided?: BoolFieldUpdateOperationsInput | boolean
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidedById?: NullableIntFieldUpdateOperationsInput | number | null
+    voidReason?: NullableStringFieldUpdateOperationsInput | string | null
+    actorRole?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type LedgerEntryUpdateWithoutVoidedByInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    entryType?: EnumLedgerEntryTypeFieldUpdateOperationsInput | $Enums.LedgerEntryType
+    classification?: EnumLedgerEntryClassificationFieldUpdateOperationsInput | $Enums.LedgerEntryClassification
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    baseAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    description?: StringFieldUpdateOperationsInput | string
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
+    referenceType?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    isVoided?: BoolFieldUpdateOperationsInput | boolean
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidReason?: NullableStringFieldUpdateOperationsInput | string | null
+    actorRole?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    session?: PaymentSessionUpdateOneRequiredWithoutEntriesNestedInput
+    booking?: BookingUpdateOneRequiredWithoutLedgerEntriesNestedInput
+    actor?: UserUpdateOneRequiredWithoutLedgerEntriesActedNestedInput
+  }
+
+  export type LedgerEntryUncheckedUpdateWithoutVoidedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    sessionId?: IntFieldUpdateOperationsInput | number
+    bookingId?: IntFieldUpdateOperationsInput | number
+    entryType?: EnumLedgerEntryTypeFieldUpdateOperationsInput | $Enums.LedgerEntryType
+    classification?: EnumLedgerEntryClassificationFieldUpdateOperationsInput | $Enums.LedgerEntryClassification
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    baseAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    description?: StringFieldUpdateOperationsInput | string
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
+    referenceType?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    isVoided?: BoolFieldUpdateOperationsInput | boolean
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidReason?: NullableStringFieldUpdateOperationsInput | string | null
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorRole?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type LedgerEntryUncheckedUpdateManyWithoutVoidedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    sessionId?: IntFieldUpdateOperationsInput | number
+    bookingId?: IntFieldUpdateOperationsInput | number
+    entryType?: EnumLedgerEntryTypeFieldUpdateOperationsInput | $Enums.LedgerEntryType
+    classification?: EnumLedgerEntryClassificationFieldUpdateOperationsInput | $Enums.LedgerEntryClassification
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    baseAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    description?: StringFieldUpdateOperationsInput | string
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
+    referenceType?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    isVoided?: BoolFieldUpdateOperationsInput | boolean
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidReason?: NullableStringFieldUpdateOperationsInput | string | null
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorRole?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type CustomerKycCreateManyCustomerInput = {
     id?: number
     publicId: string
@@ -122283,6 +130329,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -122406,6 +130453,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCustomerInput = {
@@ -122465,6 +130515,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -122484,6 +130535,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutCustomerInput = {
@@ -122543,6 +130596,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -122674,6 +130728,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -122849,6 +130904,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutKycFileInput = {
@@ -122908,6 +130966,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -122927,6 +130986,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutKycFileInput = {
@@ -122986,6 +131047,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -123203,6 +131265,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -123396,6 +131459,30 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type PaymentSessionCreateManyBranchInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    sessionType: $Enums.PaymentSessionType
+    status?: $Enums.PaymentSessionStatus
+    taxableBase?: Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    totalDiscounts?: Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: Decimal | DecimalJsLike | number | string
+    netPayable?: Decimal | DecimalJsLike | number | string
+    idempotencyKey?: string | null
+    gatewayTransactionId?: string | null
+    gatewayPaymentUrl?: string | null
+    expiresAt?: Date | string | null
+    completedAt?: Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    actorId: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type UserUpdateWithoutBranchInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
@@ -123435,6 +131522,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutBranchInput = {
@@ -123477,6 +131567,9 @@ export namespace Prisma {
     fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
     safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
   }
 
   export type UserUncheckedUpdateManyWithoutBranchInput = {
@@ -123647,6 +131740,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutBranchInput = {
@@ -123706,6 +131802,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -123725,6 +131822,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutBranchInput = {
@@ -123784,6 +131883,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -124343,6 +132443,81 @@ export namespace Prisma {
     actorRole?: StringFieldUpdateOperationsInput | string
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaymentSessionUpdateWithoutBranchInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    sessionType?: EnumPaymentSessionTypeFieldUpdateOperationsInput | $Enums.PaymentSessionType
+    status?: EnumPaymentSessionStatusFieldUpdateOperationsInput | $Enums.PaymentSessionStatus
+    taxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscounts?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netPayable?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayPaymentUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutPaymentSessionsNestedInput
+    actor?: UserUpdateOneRequiredWithoutPaymentSessionsOpenedNestedInput
+    entries?: LedgerEntryUpdateManyWithoutSessionNestedInput
+    activeForBookings?: BookingUpdateManyWithoutActivePaymentSessionNestedInput
+  }
+
+  export type PaymentSessionUncheckedUpdateWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    sessionType?: EnumPaymentSessionTypeFieldUpdateOperationsInput | $Enums.PaymentSessionType
+    status?: EnumPaymentSessionStatusFieldUpdateOperationsInput | $Enums.PaymentSessionStatus
+    taxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscounts?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netPayable?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayPaymentUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    actorId?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    entries?: LedgerEntryUncheckedUpdateManyWithoutSessionNestedInput
+    activeForBookings?: BookingUncheckedUpdateManyWithoutActivePaymentSessionNestedInput
+  }
+
+  export type PaymentSessionUncheckedUpdateManyWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    sessionType?: EnumPaymentSessionTypeFieldUpdateOperationsInput | $Enums.PaymentSessionType
+    status?: EnumPaymentSessionStatusFieldUpdateOperationsInput | $Enums.PaymentSessionStatus
+    taxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscounts?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netPayable?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayPaymentUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    actorId?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -125264,6 +133439,54 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type PaymentSessionCreateManyBookingInput = {
+    id?: number
+    publicId: string
+    branchId: number
+    sessionType: $Enums.PaymentSessionType
+    status?: $Enums.PaymentSessionStatus
+    taxableBase?: Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    totalDiscounts?: Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: Decimal | DecimalJsLike | number | string
+    netPayable?: Decimal | DecimalJsLike | number | string
+    idempotencyKey?: string | null
+    gatewayTransactionId?: string | null
+    gatewayPaymentUrl?: string | null
+    expiresAt?: Date | string | null
+    completedAt?: Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    actorId: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type LedgerEntryCreateManyBookingInput = {
+    id?: number
+    publicId: string
+    sessionId: number
+    entryType: $Enums.LedgerEntryType
+    classification: $Enums.LedgerEntryClassification
+    amount: Decimal | DecimalJsLike | number | string
+    baseAmount?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    description: string
+    referenceId?: string | null
+    referenceType?: string | null
+    idempotencyKey: string
+    isVoided?: boolean
+    voidedAt?: Date | string | null
+    voidedById?: number | null
+    voidReason?: string | null
+    actorId: number
+    actorRole: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type BookingPhotoUpdateWithoutBookingInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
@@ -125751,6 +133974,152 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type PaymentSessionUpdateWithoutBookingInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    sessionType?: EnumPaymentSessionTypeFieldUpdateOperationsInput | $Enums.PaymentSessionType
+    status?: EnumPaymentSessionStatusFieldUpdateOperationsInput | $Enums.PaymentSessionStatus
+    taxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscounts?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netPayable?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayPaymentUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    branch?: BranchUpdateOneRequiredWithoutPaymentSessionsNestedInput
+    actor?: UserUpdateOneRequiredWithoutPaymentSessionsOpenedNestedInput
+    entries?: LedgerEntryUpdateManyWithoutSessionNestedInput
+    activeForBookings?: BookingUpdateManyWithoutActivePaymentSessionNestedInput
+  }
+
+  export type PaymentSessionUncheckedUpdateWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    sessionType?: EnumPaymentSessionTypeFieldUpdateOperationsInput | $Enums.PaymentSessionType
+    status?: EnumPaymentSessionStatusFieldUpdateOperationsInput | $Enums.PaymentSessionStatus
+    taxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscounts?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netPayable?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayPaymentUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    actorId?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    entries?: LedgerEntryUncheckedUpdateManyWithoutSessionNestedInput
+    activeForBookings?: BookingUncheckedUpdateManyWithoutActivePaymentSessionNestedInput
+  }
+
+  export type PaymentSessionUncheckedUpdateManyWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    branchId?: IntFieldUpdateOperationsInput | number
+    sessionType?: EnumPaymentSessionTypeFieldUpdateOperationsInput | $Enums.PaymentSessionType
+    status?: EnumPaymentSessionStatusFieldUpdateOperationsInput | $Enums.PaymentSessionStatus
+    taxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    nonTaxableBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscounts?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalPaymentsRecorded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netPayable?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayPaymentUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    actorId?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type LedgerEntryUpdateWithoutBookingInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    entryType?: EnumLedgerEntryTypeFieldUpdateOperationsInput | $Enums.LedgerEntryType
+    classification?: EnumLedgerEntryClassificationFieldUpdateOperationsInput | $Enums.LedgerEntryClassification
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    baseAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    description?: StringFieldUpdateOperationsInput | string
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
+    referenceType?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    isVoided?: BoolFieldUpdateOperationsInput | boolean
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidReason?: NullableStringFieldUpdateOperationsInput | string | null
+    actorRole?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    session?: PaymentSessionUpdateOneRequiredWithoutEntriesNestedInput
+    actor?: UserUpdateOneRequiredWithoutLedgerEntriesActedNestedInput
+    voidedBy?: UserUpdateOneWithoutLedgerEntriesVoidedNestedInput
+  }
+
+  export type LedgerEntryUncheckedUpdateWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    sessionId?: IntFieldUpdateOperationsInput | number
+    entryType?: EnumLedgerEntryTypeFieldUpdateOperationsInput | $Enums.LedgerEntryType
+    classification?: EnumLedgerEntryClassificationFieldUpdateOperationsInput | $Enums.LedgerEntryClassification
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    baseAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    description?: StringFieldUpdateOperationsInput | string
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
+    referenceType?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    isVoided?: BoolFieldUpdateOperationsInput | boolean
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidedById?: NullableIntFieldUpdateOperationsInput | number | null
+    voidReason?: NullableStringFieldUpdateOperationsInput | string | null
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorRole?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type LedgerEntryUncheckedUpdateManyWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    sessionId?: IntFieldUpdateOperationsInput | number
+    entryType?: EnumLedgerEntryTypeFieldUpdateOperationsInput | $Enums.LedgerEntryType
+    classification?: EnumLedgerEntryClassificationFieldUpdateOperationsInput | $Enums.LedgerEntryClassification
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    baseAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    description?: StringFieldUpdateOperationsInput | string
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
+    referenceType?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    isVoided?: BoolFieldUpdateOperationsInput | boolean
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidedById?: NullableIntFieldUpdateOperationsInput | number | null
+    voidReason?: NullableStringFieldUpdateOperationsInput | string | null
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorRole?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type BookingPhotoCreateManyDamageReportInput = {
     id?: number
     publicId: string
@@ -126004,6 +134373,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -126129,6 +134499,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDiscountRuleInput = {
@@ -126188,6 +134561,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -126207,6 +134581,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutDiscountRuleInput = {
@@ -126266,6 +134642,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -126485,6 +134862,7 @@ export namespace Prisma {
     extensionDisplacedAt?: Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
     deletedAt?: Date | string | null
@@ -126565,6 +134943,9 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutActiveExtensionInput = {
@@ -126624,6 +135005,7 @@ export namespace Prisma {
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
     chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -126643,6 +135025,8 @@ export namespace Prisma {
     chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutActiveExtensionInput = {
@@ -126698,6 +135082,389 @@ export namespace Prisma {
     originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     extensionCount?: IntFieldUpdateOperationsInput | number
     lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type LedgerEntryCreateManySessionInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    entryType: $Enums.LedgerEntryType
+    classification: $Enums.LedgerEntryClassification
+    amount: Decimal | DecimalJsLike | number | string
+    baseAmount?: Decimal | DecimalJsLike | number | string
+    gstAmount?: Decimal | DecimalJsLike | number | string
+    description: string
+    referenceId?: string | null
+    referenceType?: string | null
+    idempotencyKey: string
+    isVoided?: boolean
+    voidedAt?: Date | string | null
+    voidedById?: number | null
+    voidReason?: string | null
+    actorId: number
+    actorRole: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type BookingCreateManyActivePaymentSessionInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+  }
+
+  export type LedgerEntryUpdateWithoutSessionInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    entryType?: EnumLedgerEntryTypeFieldUpdateOperationsInput | $Enums.LedgerEntryType
+    classification?: EnumLedgerEntryClassificationFieldUpdateOperationsInput | $Enums.LedgerEntryClassification
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    baseAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    description?: StringFieldUpdateOperationsInput | string
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
+    referenceType?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    isVoided?: BoolFieldUpdateOperationsInput | boolean
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidReason?: NullableStringFieldUpdateOperationsInput | string | null
+    actorRole?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutLedgerEntriesNestedInput
+    actor?: UserUpdateOneRequiredWithoutLedgerEntriesActedNestedInput
+    voidedBy?: UserUpdateOneWithoutLedgerEntriesVoidedNestedInput
+  }
+
+  export type LedgerEntryUncheckedUpdateWithoutSessionInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    entryType?: EnumLedgerEntryTypeFieldUpdateOperationsInput | $Enums.LedgerEntryType
+    classification?: EnumLedgerEntryClassificationFieldUpdateOperationsInput | $Enums.LedgerEntryClassification
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    baseAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    description?: StringFieldUpdateOperationsInput | string
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
+    referenceType?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    isVoided?: BoolFieldUpdateOperationsInput | boolean
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidedById?: NullableIntFieldUpdateOperationsInput | number | null
+    voidReason?: NullableStringFieldUpdateOperationsInput | string | null
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorRole?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type LedgerEntryUncheckedUpdateManyWithoutSessionInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    entryType?: EnumLedgerEntryTypeFieldUpdateOperationsInput | $Enums.LedgerEntryType
+    classification?: EnumLedgerEntryClassificationFieldUpdateOperationsInput | $Enums.LedgerEntryClassification
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    baseAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    gstAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    description?: StringFieldUpdateOperationsInput | string
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
+    referenceType?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    isVoided?: BoolFieldUpdateOperationsInput | boolean
+    voidedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    voidedById?: NullableIntFieldUpdateOperationsInput | number | null
+    voidReason?: NullableStringFieldUpdateOperationsInput | string | null
+    actorId?: IntFieldUpdateOperationsInput | number
+    actorRole?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BookingUpdateWithoutActivePaymentSessionInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
+    customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
+    photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateWithoutActivePaymentSessionInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateManyWithoutActivePaymentSessionInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
     extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
@@ -126764,6 +135531,10 @@ export namespace Prisma {
      * @deprecated Use BookingExtensionCountOutputTypeDefaultArgs instead
      */
     export type BookingExtensionCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = BookingExtensionCountOutputTypeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use PaymentSessionCountOutputTypeDefaultArgs instead
+     */
+    export type PaymentSessionCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = PaymentSessionCountOutputTypeDefaultArgs<ExtArgs>
     /**
      * @deprecated Use UserDefaultArgs instead
      */
@@ -126984,6 +135755,14 @@ export namespace Prisma {
      * @deprecated Use SafetyDepositRequestDefaultArgs instead
      */
     export type SafetyDepositRequestArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = SafetyDepositRequestDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use PaymentSessionDefaultArgs instead
+     */
+    export type PaymentSessionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = PaymentSessionDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use LedgerEntryDefaultArgs instead
+     */
+    export type LedgerEntryArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = LedgerEntryDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

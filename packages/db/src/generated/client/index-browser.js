@@ -432,6 +432,7 @@ exports.Prisma.BookingScalarFieldEnum = {
   extensionDisplacedAt: 'extensionDisplacedAt',
   frozenChargeConfig: 'frozenChargeConfig',
   chargeConfigVersion: 'chargeConfigVersion',
+  activePaymentSessionId: 'activePaymentSessionId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   deletedAt: 'deletedAt'
@@ -904,6 +905,7 @@ exports.Prisma.BranchChargeConfigScalarFieldEnum = {
   overrideApprovalThreshold: 'overrideApprovalThreshold',
   safetyDepositEnabled: 'safetyDepositEnabled',
   safetyDepositRequiresApproval: 'safetyDepositRequiresApproval',
+  usePaymentSessions: 'usePaymentSessions',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -976,6 +978,56 @@ exports.Prisma.SafetyDepositRequestScalarFieldEnum = {
   approvedAt: 'approvedAt',
   rejectedAt: 'rejectedAt',
   rejectionReason: 'rejectionReason',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PaymentSessionScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  bookingId: 'bookingId',
+  branchId: 'branchId',
+  sessionType: 'sessionType',
+  status: 'status',
+  taxableBase: 'taxableBase',
+  nonTaxableBase: 'nonTaxableBase',
+  gstAmount: 'gstAmount',
+  totalCharges: 'totalCharges',
+  totalDiscounts: 'totalDiscounts',
+  totalPaymentsRecorded: 'totalPaymentsRecorded',
+  netPayable: 'netPayable',
+  idempotencyKey: 'idempotencyKey',
+  gatewayTransactionId: 'gatewayTransactionId',
+  gatewayPaymentUrl: 'gatewayPaymentUrl',
+  expiresAt: 'expiresAt',
+  completedAt: 'completedAt',
+  metadata: 'metadata',
+  actorId: 'actorId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.LedgerEntryScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  sessionId: 'sessionId',
+  bookingId: 'bookingId',
+  entryType: 'entryType',
+  classification: 'classification',
+  amount: 'amount',
+  baseAmount: 'baseAmount',
+  gstAmount: 'gstAmount',
+  description: 'description',
+  referenceId: 'referenceId',
+  referenceType: 'referenceType',
+  idempotencyKey: 'idempotencyKey',
+  isVoided: 'isVoided',
+  voidedAt: 'voidedAt',
+  voidedById: 'voidedById',
+  voidReason: 'voidReason',
+  actorId: 'actorId',
+  actorRole: 'actorRole',
+  metadata: 'metadata',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -1082,7 +1134,9 @@ exports.StaffEntityType = exports.$Enums.StaffEntityType = {
   CHARGE_OVERRIDE: 'CHARGE_OVERRIDE',
   FUEL_RECORD: 'FUEL_RECORD',
   SAFETY_DEPOSIT_REQUEST: 'SAFETY_DEPOSIT_REQUEST',
-  BRANCH_CHARGE_CONFIG: 'BRANCH_CHARGE_CONFIG'
+  BRANCH_CHARGE_CONFIG: 'BRANCH_CHARGE_CONFIG',
+  PAYMENT_SESSION: 'PAYMENT_SESSION',
+  LEDGER_ENTRY: 'LEDGER_ENTRY'
 };
 
 exports.VehicleStatus = exports.$Enums.VehicleStatus = {
@@ -1320,6 +1374,44 @@ exports.SafetyDepositStatus = exports.$Enums.SafetyDepositStatus = {
   REFUNDED: 'REFUNDED'
 };
 
+exports.PaymentSessionType = exports.$Enums.PaymentSessionType = {
+  BOOKING: 'BOOKING',
+  PICKUP: 'PICKUP',
+  EXTENSION: 'EXTENSION',
+  RETURN: 'RETURN'
+};
+
+exports.PaymentSessionStatus = exports.$Enums.PaymentSessionStatus = {
+  OPEN: 'OPEN',
+  COMPUTING: 'COMPUTING',
+  AWAITING_PAYMENT: 'AWAITING_PAYMENT',
+  PAYMENT_INITIATED: 'PAYMENT_INITIATED',
+  COMPLETED: 'COMPLETED',
+  ABANDONED: 'ABANDONED'
+};
+
+exports.LedgerEntryType = exports.$Enums.LedgerEntryType = {
+  BOOKING_BASE: 'BOOKING_BASE',
+  EXTENSION: 'EXTENSION',
+  DEPOSIT: 'DEPOSIT',
+  EXTRA_KM: 'EXTRA_KM',
+  EXTRA_TIME: 'EXTRA_TIME',
+  FUEL: 'FUEL',
+  FASTAG: 'FASTAG',
+  DAMAGE: 'DAMAGE',
+  GRACE_ADJUSTMENT: 'GRACE_ADJUSTMENT',
+  DISCOUNT: 'DISCOUNT',
+  PAYMENT: 'PAYMENT',
+  REFUND: 'REFUND'
+};
+
+exports.LedgerEntryClassification = exports.$Enums.LedgerEntryClassification = {
+  TAXABLE: 'TAXABLE',
+  NON_TAXABLE: 'NON_TAXABLE',
+  DISCOUNT: 'DISCOUNT',
+  PAYMENT: 'PAYMENT'
+};
+
 exports.Prisma.ModelName = {
   User: 'User',
   UserProvider: 'UserProvider',
@@ -1375,7 +1467,9 @@ exports.Prisma.ModelName = {
   ChargeEntry: 'ChargeEntry',
   ChargeOverride: 'ChargeOverride',
   FuelRecord: 'FuelRecord',
-  SafetyDepositRequest: 'SafetyDepositRequest'
+  SafetyDepositRequest: 'SafetyDepositRequest',
+  PaymentSession: 'PaymentSession',
+  LedgerEntry: 'LedgerEntry'
 };
 
 /**

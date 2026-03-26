@@ -153,7 +153,7 @@ export class PricingEngineService {
       const ZERO = new Decimal(0);
       let discountEvaluation: DiscountEvaluationResult | undefined;
 
-      if (customerId) {
+      if (customerId != null) {
         const evalInput: DiscountEvaluationInput = {
           branchId,
           customerId,

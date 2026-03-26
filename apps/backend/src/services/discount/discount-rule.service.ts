@@ -115,18 +115,20 @@ class DiscountRuleService {
       after: { code: rule.code, discountType: rule.discountType, value: rule.value, scope: rule.scope },
     });
 
-    await staffActivityService.log({
-      actorPublicId: actor.actorPublicId,
-      actorName: actor.actorName,
-      actorRole: actor.actorRole,
-      branchId: actor.actorBranchId ?? 0,
-      branchName: actor.branchName,
-      actionType: StaffActionType.CREATED,
-      entityType: StaffEntityType.DISCOUNT_RULE,
-      entityRef: rule.publicId,
-      description: `Discount rule "${rule.code}" created`,
-      metadata: { code: rule.code, discountType: rule.discountType, scope: rule.scope },
-    });
+    if (actor.actorBranchId) {
+      await staffActivityService.log({
+        actorPublicId: actor.actorPublicId,
+        actorName: actor.actorName,
+        actorRole: actor.actorRole,
+        branchId: actor.actorBranchId,
+        branchName: actor.branchName,
+        actionType: StaffActionType.CREATED,
+        entityType: StaffEntityType.DISCOUNT_RULE,
+        entityRef: rule.publicId,
+        description: `Discount rule "${rule.code}" created`,
+        metadata: { code: rule.code, discountType: rule.discountType, scope: rule.scope },
+      });
+    }
 
     return rule;
   }
@@ -202,17 +204,19 @@ class DiscountRuleService {
       after: { code: updated.code, value: updated.value, isActive: updated.isActive },
     });
 
-    await staffActivityService.log({
-      actorPublicId: actor.actorPublicId,
-      actorName: actor.actorName,
-      actorRole: actor.actorRole,
-      branchId: actor.actorBranchId ?? 0,
-      branchName: actor.branchName,
-      actionType: StaffActionType.UPDATED,
-      entityType: StaffEntityType.DISCOUNT_RULE,
-      entityRef: updated.publicId,
-      description: `Discount rule "${updated.code}" updated`,
-    });
+    if (actor.actorBranchId) {
+      await staffActivityService.log({
+        actorPublicId: actor.actorPublicId,
+        actorName: actor.actorName,
+        actorRole: actor.actorRole,
+        branchId: actor.actorBranchId,
+        branchName: actor.branchName,
+        actionType: StaffActionType.UPDATED,
+        entityType: StaffEntityType.DISCOUNT_RULE,
+        entityRef: updated.publicId,
+        description: `Discount rule "${updated.code}" updated`,
+      });
+    }
 
     return updated;
   }
@@ -243,17 +247,19 @@ class DiscountRuleService {
       after: { isActive: false },
     });
 
-    await staffActivityService.log({
-      actorPublicId: actor.actorPublicId,
-      actorName: actor.actorName,
-      actorRole: actor.actorRole,
-      branchId: actor.actorBranchId ?? 0,
-      branchName: actor.branchName,
-      actionType: StaffActionType.UPDATED,
-      entityType: StaffEntityType.DISCOUNT_RULE,
-      entityRef: updated.publicId,
-      description: `Discount rule "${updated.code}" deactivated`,
-    });
+    if (actor.actorBranchId) {
+      await staffActivityService.log({
+        actorPublicId: actor.actorPublicId,
+        actorName: actor.actorName,
+        actorRole: actor.actorRole,
+        branchId: actor.actorBranchId,
+        branchName: actor.branchName,
+        actionType: StaffActionType.UPDATED,
+        entityType: StaffEntityType.DISCOUNT_RULE,
+        entityRef: updated.publicId,
+        description: `Discount rule "${updated.code}" deactivated`,
+      });
+    }
 
     return updated;
   }

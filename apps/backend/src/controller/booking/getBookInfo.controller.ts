@@ -43,7 +43,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         message: "Customer doesnt Exists",
       });
     }
-    const { vehicles, start, end, file_public_id, payment_flow } = parsed.data;
+    const { vehicles, start, end, file_public_id, payment_flow, couponCode } = parsed.data;
     const customerId = userData.customerProfile.id;
     const kycFile = await prisma.fileObject.findUnique({
       where: { publicId: file_public_id },
@@ -163,6 +163,8 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         startDateDt,
         endDateDt,
         v.branchId,
+        customerId,
+        couponCode?.toUpperCase(),
       );
 
       const baseTotal = Number(pricingResult.basePrice.toString());
@@ -192,6 +194,8 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         baseTotal,
         discountAmount,
         discountPercent: discountPercent * 100, // as percentage (e.g., 10 instead of 0.1)
+        appliedCouponCode: pricingResult.appliedCouponCode ?? null,
+        couponRuleId: pricingResult.couponRuleId ?? null,
         deposit,
         taxAmount,
         cgstAmount,
@@ -298,6 +302,12 @@ export const createBookingSummary = async (req: Request, res: Response) => {
             bookingDuration.billableDuration.toString(),
           ),
           holdExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+          ...(items[0]?.appliedCouponCode
+            ? {
+                couponCode: items[0].appliedCouponCode,
+                discountRuleId: items[0].couponRuleId ?? undefined,
+              }
+            : {}),
           totalBase: grandBaseTotal,
           totalDiscount: grandDiscountTotal,
           totalDeposit: grandDeposit,
@@ -401,6 +411,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
           grandSGSTTotal,
           taxRate: totalTaxRate,
           grandFinalTotal,
+          appliedCouponCode: items[0]?.appliedCouponCode ?? null,
           advanceAmount: isAdvancePayment ? grandAdvanceAmount : grandFinalTotal,
           remainingBalance,
           paymentURL,
