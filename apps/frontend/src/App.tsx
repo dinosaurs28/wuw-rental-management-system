@@ -71,6 +71,8 @@ import { AdminDiscountRulesPage } from "./pages/admin/AdminDiscountRulesPage";
 import { AdminBranchDetailPage } from "./pages/admin/AdminBranchDetailPage";
 import { AdminWhatsAppConfigPage } from "./pages/admin/AdminWhatsAppConfigPage";
 import { AdminAuditLogPage } from "./pages/admin/AdminAuditLogPage";
+import { AdminStaffActivityPage } from "./pages/admin/AdminStaffActivityPage";
+import { ManagerStaffActivityPage } from "./pages/manager/ManagerStaffActivityPage";
 
 function App() {
   return (
@@ -202,6 +204,10 @@ function App() {
             path="/manager/charge-config"
             element={<ChargeConfigPage />}
           />
+          <Route
+            path="/manager/staff-activity"
+            element={<ManagerStaffActivityPage />}
+          />
         </Route>
 
         {/* Admin Protected Routes */}
@@ -250,6 +256,7 @@ function App() {
             />
             <Route path="/admin/whatsapp-config" element={<AdminWhatsAppConfigPage />} />
             <Route path="/admin/audit-log" element={<AdminAuditLogPage />} />
+            <Route path="/admin/staff-activity" element={<AdminStaffActivityPage />} />
           </Route>
         </Route>
 

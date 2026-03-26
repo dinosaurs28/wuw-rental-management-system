@@ -1,5 +1,42 @@
 import apiClient from "@/lib/axios";
 
+// ── Staff Activity Full Types ─────────────────────────────────────────────────
+export type StaffActivityLog = {
+  id: number;
+  publicId: string;
+  actorPublicId: string;
+  actorName: string;
+  actorRole: string;
+  branchId: number;
+  branchName: string;
+  actionType: string;
+  entityType: string;
+  entityRef: string;
+  description: string;
+  metadata: any | null;
+  createdAt: string;
+};
+
+export type StaffActivityParams = {
+  page?: number;
+  limit?: number;
+  actorPublicId?: string;
+  actionType?: string;
+  entityType?: string;
+  startDate?: string;
+  endDate?: string;
+};
+
+export type StaffActivityResponse = {
+  data: StaffActivityLog[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+};
+
 // Types
 export interface KPIStats {
   activeBookings?: number;
@@ -150,6 +187,11 @@ export const managerDashboardService = {
       action: log.description || log.actionType,
       timestamp: log.createdAt,
     }));
+  },
+
+  getStaffActivityFull: async (params: StaffActivityParams): Promise<StaffActivityResponse> => {
+    const response = await apiClient.get("/branchManager/dashboard/staff/activity", { params });
+    return response.data;
   },
 
   getEmployees: async (): Promise<Employee[]> => {
