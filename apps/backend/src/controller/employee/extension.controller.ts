@@ -99,7 +99,23 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
     }
 
     const actor = await buildActorContext(req);
-    const extension = await extensionService.commit(validation.data, actor);
+    const result = await extensionService.commit(validation.data, actor);
+    const { extension, session } = result;
+
+    // Session flow: client must call record-payment on the returned session
+    if (session) {
+      res.status(StatusCode.OK).json({
+        message: "Extension session initiated — collect payment to confirm extension",
+        data: {
+          publicId: extension.publicId,
+          extensionStatus: extension.extensionStatus,
+          resolutionType: extension.resolutionType,
+          additionalAmount: extension.additionalAmount,
+          session,
+        },
+      });
+      return;
+    }
 
     res.status(StatusCode.OK).json({
       message:

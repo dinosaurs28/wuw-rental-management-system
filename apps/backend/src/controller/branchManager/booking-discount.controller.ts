@@ -234,8 +234,11 @@ export const RemoveCoupon = async (req: Request, res: Response) => {
 
 /**
  * GET /api/branchManager/bookings/:bookingId/discount-summary
+ * GET /api/employee/discount/bookings/:bookingId/discount-summary
  *
- * Returns the discount application summary for a booking.
+ * Returns a DiscountSummary for the booking.
+ * Primary source: DiscountApplication record (created when manager/employee applies a discount).
+ * Fallback: booking.couponCode / totalDiscount fields (set when customer applies coupon at booking time).
  */
 export const GetBookingDiscountSummary = async (req: Request, res: Response) => {
   try {
@@ -243,16 +246,67 @@ export const GetBookingDiscountSummary = async (req: Request, res: Response) => 
 
     const booking = await prisma.booking.findUnique({
       where: { publicId: bookingId },
-      select: { id: true, branchId: true },
+      select: {
+        id: true,
+        publicId: true,
+        branchId: true,
+        couponCode: true,
+        totalBase: true,
+        totalDiscount: true,
+        totalFinal: true,
+      },
     });
     if (!booking) return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
 
-    if (booking.branchId !== req.branch_Id) {
+    // Branch-scoped access check (branch_Id is set by EmployeeCheck/ManagerCheck middleware)
+    if (req.branch_Id && booking.branchId !== req.branch_Id) {
       return res.status(StatusCode.FORBIDDEN).json({ message: "Access denied" });
     }
 
     const application = await discountApplicationService.getByBookingId(booking.id);
-    return res.status(StatusCode.OK).json({ data: application });
+
+    if (application) {
+      // Normalise DiscountApplication → DiscountSummary shape expected by frontend
+      const summary = {
+        bookingPublicId: booking.publicId,
+        durationDiscountAmount: application.durationDiscountAmount.toString(),
+        couponCode: application.discountRule?.code ?? null,
+        couponDiscountAmount: application.couponDiscountAmount.toString(),
+        manualDiscountAmount: application.manualDiscountAmount.toString(),
+        totalDiscountAmount: application.totalDiscountAmount.toString(),
+        finalTotal: application.finalAmount.toString(),
+        manualDiscount: application.manualDiscount
+          ? {
+              publicId: (application.manualDiscount as any).publicId,
+              amount: (application.manualDiscount as any).amount?.toString() ?? "0",
+              reason: (application.manualDiscount as any).reason ?? "",
+              status: (application.manualDiscount as any).status ?? "",
+              appliedBy: (application.manualDiscount as any).appliedByName ?? "Unknown",
+              requiresApproval: (application.manualDiscount as any).requiresApproval ?? false,
+            }
+          : null,
+      };
+      return res.status(StatusCode.OK).json({ data: summary });
+    }
+
+    // No DiscountApplication record — coupon was applied during customer booking creation.
+    // Fall back to booking fields to build a synthetic summary.
+    const totalDiscount = parseFloat(booking.totalDiscount?.toString() ?? "0");
+    if (totalDiscount > 0 || booking.couponCode) {
+      const summary = {
+        bookingPublicId: booking.publicId,
+        durationDiscountAmount: "0.00",
+        couponCode: booking.couponCode ?? null,
+        couponDiscountAmount: totalDiscount.toFixed(2),
+        manualDiscountAmount: "0.00",
+        totalDiscountAmount: totalDiscount.toFixed(2),
+        finalTotal: parseFloat(booking.totalFinal.toString()).toFixed(2),
+        manualDiscount: null,
+      };
+      return res.status(StatusCode.OK).json({ data: summary });
+    }
+
+    return res.status(StatusCode.OK).json({ data: null });
   } catch (error) {
     console.error("GetBookingDiscountSummary Error:", error);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });

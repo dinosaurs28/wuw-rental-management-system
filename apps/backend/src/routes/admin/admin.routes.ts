@@ -7,6 +7,12 @@ import {
   EditBranch,
   DeleteBranch,
 } from "../../controller/admin/branch.controller.js";
+import {
+  GetBranchManagers,
+  CreateBranchManager,
+  UpdateBranchManager,
+  DeleteBranchManager,
+} from "../../controller/admin/branchManager.controller.js";
 import { GetBranchRevenue } from "../../controller/admin/report.controller.js";
 import {
   GetRevenueTrends,
@@ -39,6 +45,12 @@ router.get("/dashboard/branches", AdminCheck, GetAllBranches);
 router.post("/dashboard/branches/create", AdminCheck, CreateBranch);
 router.put("/dashboard/branches/edit/:branchId", AdminCheck, EditBranch);
 router.delete("/dashboard/branches/delete/:branchId", AdminCheck, DeleteBranch);
+
+// Branch Manager CRUD (multiple managers per branch)
+router.get("/dashboard/branches/:branchId/managers", AdminCheck, GetBranchManagers);
+router.post("/dashboard/branches/:branchId/managers", AdminCheck, CreateBranchManager);
+router.put("/dashboard/branches/:branchId/managers/:managerId", AdminCheck, UpdateBranchManager);
+router.delete("/dashboard/branches/:branchId/managers/:managerId", AdminCheck, DeleteBranchManager);
 router.get("/dashboard/reports/revenue", AdminCheck, GetBranchRevenue);
 router.get("/dashboard/reports/revenue-trends", AdminCheck, GetRevenueTrends);
 router.get(

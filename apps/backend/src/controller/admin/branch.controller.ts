@@ -107,11 +107,12 @@ export const GetAllBranches = async (req: Request, res: Response) => {
                     }
                 },
                 users: {
-                    where: { role: Role.MANAGER },
-                    take: 1,
+                    where: { role: Role.MANAGER, deletedAt: null },
                     select: {
+                        publicId: true,
                         name: true,
-                        email: true
+                        email: true,
+                        createdAt: true,
                     }
                 }
             },

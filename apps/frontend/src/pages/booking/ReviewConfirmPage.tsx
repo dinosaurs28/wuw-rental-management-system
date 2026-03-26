@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Lock } from "lucide-react";
+import { CouponInput } from "@/components/discount/CouponInput";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +34,8 @@ export const ReviewConfirmPage = () => {
     endDate,
     selectedKycFilePublicId,
     paymentType,
+    couponCode,
+    setCouponCode,
     hasVehicleSelected,
   } = useVehicleRentalStore();
 
@@ -113,8 +116,21 @@ export const ReviewConfirmPage = () => {
               {/* Right Column (Sticky on desktop) */}
               <div className="space-y-6">
                 <div className="lg:sticky lg:top-24">
+                  {/* Coupon Code */}
+                  <div className="p-4 bg-white border border-zinc-200 rounded-xl space-y-2">
+                    <p className="text-sm font-medium text-zinc-700">Have a coupon code?</p>
+                    <CouponInput
+                      vehiclePublicId={selectedVehicleId ?? undefined}
+                      startAt={startDate ? `${startDate}T10:00:00.000Z` : undefined}
+                      endAt={endDate ? `${endDate}T10:00:00.000Z` : undefined}
+                      appliedCode={couponCode}
+                      onApply={(code) => setCouponCode(code)}
+                      onRemove={() => setCouponCode(null)}
+                    />
+                  </div>
+
                   {/* Terms & Conditions */}
-                  <div className="mt-6 p-4 bg-white border border-zinc-200 rounded-xl">
+                  <div className="mt-4 p-4 bg-white border border-zinc-200 rounded-xl">
                     <TermsCheckbox
                       checked={termsAccepted}
                       onCheckedChange={setTermsAccepted}

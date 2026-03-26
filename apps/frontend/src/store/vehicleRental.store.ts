@@ -29,6 +29,7 @@ interface VehicleRentalState {
   paymentType: "CASH" | "ONLINE" | null;
   paymentFlow: "FULL" | "ADVANCE";
   advancePayAmount: number;
+  couponCode: string | null;
 
   // Booking response (after API call)
   holdId: string | null;
@@ -66,6 +67,7 @@ interface VehicleRentalState {
   setPaymentType: (type: "CASH" | "ONLINE" | null) => void;
   setPaymentFlow: (flow: "FULL" | "ADVANCE") => void;
   setAdvancePayAmount: (amount: number) => void;
+  setCouponCode: (code: string | null) => void;
   setBookingResponse: (response: {
     holdId: string;
     transactionId: string;
@@ -180,6 +182,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
       paymentType: null,
       paymentFlow: "FULL",
       advancePayAmount: 0,
+      couponCode: null,
       holdId: null,
       transactionId: null,
       paymentURL: null,
@@ -283,6 +286,8 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
 
       setAdvancePayAmount: (amount) => set({ advancePayAmount: Math.max(0, amount) }),
 
+      setCouponCode: (code) => set({ couponCode: code }),
+
       setBookingResponse: (response) =>
         set({
           holdId: response.holdId,
@@ -352,6 +357,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
           paymentType: null,
           paymentFlow: "FULL",
           advancePayAmount: 0,
+          couponCode: null,
           holdId: null,
           transactionId: null,
           paymentURL: null,

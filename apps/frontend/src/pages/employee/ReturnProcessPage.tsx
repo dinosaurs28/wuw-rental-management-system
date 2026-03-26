@@ -4,6 +4,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import apiClient from "@/lib/axios";
 import { bookingService } from "@/services/booking.service";
+import { paymentSessionService, type ReturnSessionResponse } from "@/services/paymentSession.service";
+import { LedgerSummaryCard } from "@/components/payment/LedgerSummaryCard";
+import { RecordPaymentPanel } from "@/components/payment/RecordPaymentPanel";
 import { DashboardNavbar } from "@/components/employee/DashboardNavbar";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,7 +36,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import {
   Dialog,
   DialogContent,
@@ -60,6 +62,22 @@ import {
 import { useDropzone } from "react-dropzone";
 import { cn, compressImage } from "@/lib/utils";
 
+const FUEL_LEVEL_OPTIONS = [
+  { value: "EMPTY", label: "Empty (0%)" },
+  { value: "QUARTER", label: "Quarter (25%)" },
+  { value: "HALF", label: "Half (50%)" },
+  { value: "THREE_QUARTER", label: "Three Quarter (75%)" },
+  { value: "FULL", label: "Full (100%)" },
+] as const;
+
+const FUEL_LEVEL_ORDER: Record<string, number> = {
+  EMPTY: 0, QUARTER: 1, HALF: 2, THREE_QUARTER: 3, FULL: 4,
+};
+
+const FUEL_LEVEL_TO_PCT: Record<string, number> = {
+  EMPTY: 0, QUARTER: 25, HALF: 50, THREE_QUARTER: 75, FULL: 100,
+};
+
 interface DamageItem {
   id: string;
   area: string;
@@ -75,14 +93,22 @@ export default function ReturnProcessPage() {
   const queryClient = useQueryClient();
 
   // State
-  const [odo, setOdo] = useState<number>(0);
-  const [fuel, setFuel] = useState<number>(100);
   const [returnPhotos, setReturnPhotos] = useState<
     { publicId: string; url: string }[]
   >([]);
   const [hasDamage, setHasDamage] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [requireManagerConfirmation, setRequireManagerConfirmation] = useState(false);
+  // Charge engine state
+  const [endOdometer, setEndOdometer] = useState<string>("");
+  const [returnFuelLevel, setReturnFuelLevel] = useState<string>("");
+  const [fuelDeficitCharge, setFuelDeficitCharge] = useState<string>("");
+  const [fuelSkipReason, setFuelSkipReason] = useState<string>("");
+  const [skipFuelCharge, setSkipFuelCharge] = useState(false);
+  const [fastagAmount, setFastagAmount] = useState<string>("");
+  const [fastagNotes, setFastagNotes] = useState<string>("");
+  const [chargeBreakdown, setChargeBreakdown] = useState<import("@/services/booking.service").ChargeBreakdown | null>(null);
+  const [returnSession, setReturnSession] = useState<ReturnSessionResponse | null>(null);
 
   // Damage Report State
   const [damages, setDamages] = useState<DamageItem[]>([]);
@@ -206,6 +232,54 @@ export default function ReturnProcessPage() {
     onError: () => toast.error("Failed to remove damage photo"),
   });
 
+  const buildComputePayload = () => {
+    const config = booking?.frozenChargeConfig;
+    const payload: any = {
+      endOdometer: parseFloat(endOdometer),
+      returnImageIds: returnPhotos.map((p) => p.publicId),
+    };
+    if (config?.fuelModuleEnabled && returnFuelLevel) {
+      payload.returnFuelLevel = returnFuelLevel;
+      if (skipFuelCharge) {
+        payload.fuelSkipReason = fuelSkipReason || "Waived by employee";
+      } else if (fuelDeficitCharge) {
+        payload.fuelDeficitCharge = parseFloat(fuelDeficitCharge);
+      }
+    }
+    if (config?.fastagModuleEnabled && fastagAmount) {
+      payload.fastagAmount = parseFloat(fastagAmount);
+      if (fastagNotes) payload.fastagNotes = fastagNotes;
+    }
+    return payload;
+  };
+
+  const computeChargesMutation = useMutation({
+    mutationFn: async () => {
+      const payload = buildComputePayload();
+      const usePaymentSessions = booking?.branch?.chargeConfig?.usePaymentSessions ?? false;
+      if (usePaymentSessions) {
+        const sessionResponse = await paymentSessionService.computeReturnSession(bookingId!, payload);
+        return { _sessionMode: true as const, sessionResponse };
+      } else {
+        const legacyData = await bookingService.computeReturnCharges(bookingId!, payload);
+        return { _sessionMode: false as const, legacyData };
+      }
+    },
+    onSuccess: (result) => {
+      if (result._sessionMode) {
+        setReturnSession(result.sessionResponse);
+        setChargeBreakdown(null);
+      } else {
+        setChargeBreakdown((result.legacyData as any).data);
+        setReturnSession(null);
+      }
+      toast.success("Charges computed successfully");
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "Failed to compute charges");
+    },
+  });
+
   const remainingPaymentMutation = useMutation({
     mutationFn: (method: "CASH" | "ONLINE") =>
       bookingService.initiateRemainingPayment(bookingId!, "return", { method }),
@@ -231,21 +305,22 @@ export default function ReturnProcessPage() {
     }).format(Number(amount));
 
   useEffect(() => {
-    if (booking) {
-      if (booking.requiresManagerConfirmation) {
-        setRequireManagerConfirmation(true);
-      }
-      const v = booking.items[0]?.vehicle;
-      if (v) {
-        if (v.odo !== undefined && v.odo !== null) setOdo(v.odo);
-        if (v.fuelLevel !== undefined && v.fuelLevel !== null) setFuel(v.fuelLevel);
-      }
+    if (booking?.requiresManagerConfirmation) {
+      setRequireManagerConfirmation(true);
     }
   }, [booking]);
 
-  const handleCompleteReturn = () => {
+  const handleCompleteReturn = (chargeModulesActive: boolean) => {
     if (returnPhotos.length === 0) {
       toast.error("Please upload return condition photos");
+      return;
+    }
+    if (chargeModulesActive && !endOdometer) {
+      toast.error("Please enter the end odometer reading and compute charges");
+      return;
+    }
+    if (chargeModulesActive && !chargeBreakdown) {
+      toast.error("Please compute charges before completing the return");
       return;
     }
     completeReturnMutation.mutate({
@@ -261,8 +336,8 @@ export default function ReturnProcessPage() {
     }
     reportDamageMutation.mutate({
       bookingId: bookingId,
-      odo,
-      fuelLevel: fuel,
+      odo: parseFloat(endOdometer) || 0,
+      fuelLevel: FUEL_LEVEL_TO_PCT[returnFuelLevel] ?? 100,
       severity: damages.some((d) => d.severity === "Severe")
         ? "Severe"
         : damages.some((d) => d.severity === "Moderate")
@@ -381,6 +456,13 @@ export default function ReturnProcessPage() {
   const vehicle = booking.items[0]?.vehicle;
   const isCompleted =
     booking.status === "RETURNED" || booking.status === "COMPLETED";
+  const chargeModulesActive = !!(
+    booking.frozenChargeConfig?.extraKmEnabled ||
+    booking.frozenChargeConfig?.extraTimeEnabled ||
+    booking.frozenChargeConfig?.fuelModuleEnabled ||
+    booking.frozenChargeConfig?.fastagModuleEnabled
+  );
+  const hasReturnPhotos = returnPhotos.length > 0;
 
   // Zones based on logic
   const isTWUWheeler = vehicle?.category?.toLowerCase().includes("two");
@@ -730,11 +812,227 @@ export default function ReturnProcessPage() {
               </CardContent>
             </Card>
 
-            {/* 2. Condition Check */}
-            <Card className="border-none shadow-sm">
+            {/* 2. Charge Details */}
+            {!isCompleted && hasReturnPhotos && (
+              <Card className="border-none shadow-sm">
+                <CardHeader className="px-6 pt-6 pb-3">
+                  <CardTitle className="text-2xl">2. Charge Details</CardTitle>
+                  <CardDescription className="text-base">
+                    Enter return readings — charges will be computed before completion.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="px-6 pb-6 space-y-5">
+                  {/* End Odometer */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Gauge className="h-4 w-4 text-muted-foreground" />
+                      End Odometer Reading (km)
+                    </Label>
+                    <div className="flex gap-3 items-center">
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="e.g. 12850"
+                        className="h-11 max-w-xs"
+                        value={endOdometer}
+                        onChange={(e) => { setEndOdometer(e.target.value); setChargeBreakdown(null); }}
+                      />
+                      {booking?.startOdometer != null && endOdometer && (
+                        <p className="text-sm text-muted-foreground">
+                          Driven: <span className="font-semibold text-foreground">
+                            {Math.max(0, parseFloat(endOdometer) - booking.startOdometer).toFixed(0)} km
+                          </span>
+                          <span className="text-xs ml-1">(start: {booking.startOdometer} km)</span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Return Fuel Level — always captured together with odometer */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Fuel className="h-4 w-4 text-muted-foreground" />
+                      Return Fuel Level
+                    </Label>
+                    <Select value={returnFuelLevel} onValueChange={(v) => { setReturnFuelLevel(v); setChargeBreakdown(null); }}>
+                      <SelectTrigger className="h-11 max-w-xs">
+                        <SelectValue placeholder="Select fuel level at return" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FUEL_LEVEL_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Fuel Deficit — only when module enabled and fuel is below full */}
+                  {booking?.frozenChargeConfig?.fuelModuleEnabled &&
+                    returnFuelLevel &&
+                    FUEL_LEVEL_ORDER[returnFuelLevel] < FUEL_LEVEL_ORDER["FULL"] && (
+                    <div className="space-y-3 p-4 rounded-lg border bg-amber-50/40 border-amber-200">
+                      <p className="text-sm font-semibold text-amber-900 flex items-center gap-2">
+                        <Fuel className="h-4 w-4" /> Fuel Deficit Charge
+                      </p>
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id="skipFuel"
+                          checked={skipFuelCharge}
+                          onCheckedChange={(v) => setSkipFuelCharge(!!v)}
+                        />
+                        <Label htmlFor="skipFuel" className="text-sm cursor-pointer text-amber-800">
+                          Skip fuel deficit charge (waive)
+                        </Label>
+                      </div>
+                      {!skipFuelCharge ? (
+                        <div className="space-y-2">
+                          <Label className="text-xs text-neutral-600">Fuel Deficit Charge (₹)</Label>
+                          <div className="relative max-w-xs">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">₹</span>
+                            <Input
+                              type="number"
+                              min="0"
+                              className="pl-7 h-10"
+                              placeholder="e.g. 300"
+                              value={fuelDeficitCharge}
+                              onChange={(e) => { setFuelDeficitCharge(e.target.value); setChargeBreakdown(null); }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <Label className="text-xs text-neutral-600">Skip Reason</Label>
+                          <Input
+                            className="h-10 max-w-sm"
+                            placeholder="Reason for waiving fuel charge..."
+                            value={fuelSkipReason}
+                            onChange={(e) => setFuelSkipReason(e.target.value)}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Fastag Module */}
+                  {booking?.frozenChargeConfig?.fastagModuleEnabled && booking?.items[0]?.vehicle?.hasFastag && (
+                    <div className="space-y-3 p-4 rounded-lg border bg-green-50/40 border-green-200">
+                      <p className="text-sm font-semibold text-green-900 flex items-center gap-2">
+                        <CreditCard className="h-4 w-4" /> Fastag Toll Charges
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs text-neutral-600">Fastag Amount (₹)</Label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">₹</span>
+                            <Input
+                              type="number"
+                              min="0"
+                              className="pl-7 h-10"
+                              placeholder="e.g. 150"
+                              value={fastagAmount}
+                              onChange={(e) => { setFastagAmount(e.target.value); setChargeBreakdown(null); }}
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs text-neutral-600">Notes (optional)</Label>
+                          <Input
+                            className="h-10"
+                            placeholder="Route / toll plaza..."
+                            value={fastagNotes}
+                            onChange={(e) => setFastagNotes(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Compute charges — only when charge modules are active */}
+                  {chargeModulesActive && (
+                    <Button
+                      className="bg-[#FF5F00] hover:bg-[#e65600] text-white gap-2"
+                      disabled={!endOdometer || parseFloat(endOdometer) < 0 || computeChargesMutation.isPending}
+                      onClick={() => computeChargesMutation.mutate()}
+                    >
+                      {computeChargesMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <FileCheck className="h-4 w-4" />
+                      )}
+                      Compute Charges
+                    </Button>
+                  )}
+
+                  {/* Session-based payment (new flow) */}
+                  {returnSession && (
+                    <div className="space-y-4">
+                      <LedgerSummaryCard session={returnSession.session} />
+                      <RecordPaymentPanel
+                        session={returnSession.session}
+                        onSuccess={(updatedSession) => {
+                          setReturnSession((prev) => prev ? { ...prev, session: updatedSession } : null);
+                          if (updatedSession.status === "COMPLETED") {
+                            toast.success("Return settled! Booking marked as Returned.");
+                            queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+                            navigate("/employee/dashboard");
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Legacy Charge Breakdown */}
+                  {chargeBreakdown && (
+                    <div className="rounded-lg border overflow-hidden">
+                      <div className="px-4 py-3 bg-neutral-50 border-b">
+                        <p className="text-sm font-semibold text-neutral-900">Charge Breakdown</p>
+                      </div>
+                      <div className="divide-y text-sm">
+                        {chargeBreakdown.charges.map((charge, i) => (
+                          <div key={i} className="flex items-center justify-between px-4 py-3">
+                            <div>
+                              <p className="font-medium text-neutral-800">{charge.label}</p>
+                              {charge.quantity && charge.unitRate && (
+                                <p className="text-xs text-neutral-500">
+                                  {parseFloat(charge.quantity).toFixed(1)} × ₹{charge.unitRate}
+                                </p>
+                              )}
+                              {charge.notes && (
+                                <p className="text-xs text-neutral-400">{charge.notes}</p>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <p className={`font-semibold ${charge.isOverridden ? "line-through text-neutral-400" : "text-neutral-900"}`}>
+                                ₹{parseFloat(charge.originalAmount).toLocaleString("en-IN")}
+                              </p>
+                              {charge.isOverridden && (
+                                <p className="text-xs text-green-600 font-medium">
+                                  ₹{parseFloat(charge.finalAmount).toLocaleString("en-IN")}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="px-4 py-3 bg-neutral-50 border-t flex items-center justify-between">
+                        <p className="font-semibold text-neutral-900">Total</p>
+                        <p className="text-lg font-bold text-[#FF5F00]">
+                          ₹{parseFloat(chargeBreakdown.finalTotal).toLocaleString("en-IN")}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* 3. Condition Check */}
+            {hasReturnPhotos && <Card className="border-none shadow-sm">
               <CardHeader className="px-6 pt-6">
                 <CardTitle className="text-2xl">
-                  2. Vehicle Condition Check
+                  3. Vehicle Condition Check
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6">
@@ -762,16 +1060,16 @@ export default function ReturnProcessPage() {
                   </div>
                 </div>
               </CardContent>
-            </Card>
+            </Card>}
 
-            {/* 3. Damage Details (Conditional) */}
-            {hasDamage && (
+            {/* 4. Damage Details (Conditional) */}
+            {hasReturnPhotos && hasDamage && (
               <Card className="border-orange-200">
                 <CardHeader className="bg-orange-50/50">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-orange-700">
                       <AlertTriangle className="h-5 w-5" />
-                      <CardTitle>3. Damage Report Details</CardTitle>
+                      <CardTitle>4. Damage Report Details</CardTitle>
                     </div>
                     <Button
                       size="sm"
@@ -978,7 +1276,7 @@ export default function ReturnProcessPage() {
             )}
           </div>
 
-          {/* Sidebar / Metrics */}
+          {/* Sidebar */}
           <div className="space-y-8">
             {/* 4. Return Metrics */}
             <Card className="border-none shadow-sm h-fit">
@@ -1033,6 +1331,8 @@ export default function ReturnProcessPage() {
 
             {/* 5. Actions */}
             <Card className="bg-white text-zinc-900 border border-zinc-200 shadow-lg">
+            {/* Actions */}
+            <Card className="bg-[#1A1A1A] text-white border-none shadow-lg">
               <CardHeader>
                 <CardTitle className="text-zinc-900">Return Summary</CardTitle>
               </CardHeader>
@@ -1083,6 +1383,12 @@ export default function ReturnProcessPage() {
                   </div>
                 )}
 
+                {!hasReturnPhotos && !isCompleted && (
+                  <p className="text-xs text-amber-400 text-center py-1">
+                    Upload return photos to proceed
+                  </p>
+                )}
+
                 {isCompleted ? (
                   <Button className="w-full" variant="outline" disabled>
                     Return Completed
@@ -1101,7 +1407,10 @@ export default function ReturnProcessPage() {
                     onOpenChange={setShowReportDialog}
                   >
                     <DialogTrigger asChild>
-                      <Button className="w-full bg-[#FF5F00] hover:bg-[#E05200] text-white border-none">
+                      <Button
+                        className="w-full bg-[#FF5F00] hover:bg-[#E05200] text-white border-none"
+                        disabled={!hasReturnPhotos}
+                      >
                         <AlertTriangle className="mr-2 h-4 w-4" />
                         Report Manager for Damage
                       </Button>
@@ -1118,8 +1427,8 @@ export default function ReturnProcessPage() {
                         <p className="font-medium mb-1">Summary:</p>
                         <ul className="list-disc pl-5 text-sm text-muted-foreground">
                           <li>{damages.length} damage entries</li>
-                          <li>Odometer: {odo} km</li>
-                          <li>Fuel: {fuel}%</li>
+                          {endOdometer && <li>Odometer: {endOdometer} km</li>}
+                          {returnFuelLevel && <li>Fuel: {returnFuelLevel.replace(/_/g, " ")}</li>}
                         </ul>
                       </div>
                       <DialogFooter>
@@ -1138,13 +1447,16 @@ export default function ReturnProcessPage() {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
-                ) : (
+                ) : returnSession ? null : (
                   <Dialog
                     open={showCompleteDialog}
                     onOpenChange={setShowCompleteDialog}
                   >
                     <DialogTrigger asChild>
-                      <Button className="w-full bg-[#28A745] hover:bg-green-700 text-white border-none">
+                      <Button
+                        className="w-full bg-[#28A745] hover:bg-green-700 text-white border-none"
+                        disabled={!hasReturnPhotos}
+                      >
                         <FileCheck className="mr-2 h-4 w-4" />
                         Complete Return
                       </Button>
@@ -1159,10 +1471,15 @@ export default function ReturnProcessPage() {
                       </DialogHeader>
                       <div className="py-4">
                         <p className="font-medium mb-1">Summary:</p>
-                        <ul className="list-disc pl-5 text-sm text-muted-foreground">
+                        <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
                           <li>No new damage</li>
-                          <li>Odometer: {odo} km</li>
-                          <li>Fuel: {fuel}%</li>
+                          {endOdometer && <li>End odometer: {endOdometer} km</li>}
+                          {returnFuelLevel && <li>Return fuel: {returnFuelLevel.replace(/_/g, " ")}</li>}
+                          {chargeBreakdown && (
+                            <li className="text-[#FF5F00] font-medium">
+                              Total charges: ₹{parseFloat(chargeBreakdown.finalTotal).toLocaleString("en-IN")}
+                            </li>
+                          )}
                         </ul>
                       </div>
                       <DialogFooter>
@@ -1174,7 +1491,7 @@ export default function ReturnProcessPage() {
                         </Button>
                         <Button
                           className="bg-green-600 hover:bg-green-700"
-                          onClick={handleCompleteReturn}
+                          onClick={() => handleCompleteReturn(chargeModulesActive)}
                         >
                           Confirm Complete
                         </Button>

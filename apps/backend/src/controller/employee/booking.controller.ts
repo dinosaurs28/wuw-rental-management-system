@@ -486,6 +486,13 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
         remainingPaidAt: true,
         remainingPaymentMode: true,
         remainingPaidDuring: true,
+        frozenChargeConfig: true,
+        startOdometer: true,
+        branch: {
+          select: {
+            chargeConfig: { select: { usePaymentSessions: true } },
+          },
+        },
         customer: {
           select: {
             user: {
@@ -503,6 +510,7 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
                 regNo: true,
                 status: true,
                 odo: true,
+                hasFastag: true,
                 images: {
                   where: { isThumbnail: true },
                   take: 1,
