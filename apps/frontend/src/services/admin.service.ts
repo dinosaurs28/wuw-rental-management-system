@@ -4,6 +4,22 @@ import apiClient from "@/lib/axios";
 
 export type SignInInput = z.infer<typeof emailAuthSchemaSignin>;
 
+export type WhatsAppSupportConfig = {
+    id: number;
+    publicId: string;
+    phoneNumber: string;
+    messageTemplate: string;
+    isEnabled: boolean;
+    createdAt: string;
+    updatedAt: string;
+};
+
+export type WhatsAppSupportConfigInput = {
+    phoneNumber: string;
+    messageTemplate: string;
+    isEnabled: boolean;
+};
+
 export interface AdminAuthResponse {
     message: string;
     user: {
@@ -387,5 +403,21 @@ export const adminService = {
     getAllVehicles: async (): Promise<any> => {
         const response = await apiClient.get('/admin/dashboard/vehicles');
         return response.data;
-    }
+    },
+
+    // ── WhatsApp Support Config ───────────────────────────────────────────────
+
+    getWhatsAppConfig: async (): Promise<WhatsAppSupportConfig | null> => {
+        const response = await apiClient.get('/admin/whatsapp-config');
+        return response.data.data;
+    },
+
+    upsertWhatsAppConfig: async (payload: WhatsAppSupportConfigInput): Promise<WhatsAppSupportConfig> => {
+        const response = await apiClient.put('/admin/whatsapp-config', payload);
+        return response.data.data;
+    },
+
+    clearWhatsAppConfigCache: async (): Promise<void> => {
+        await apiClient.delete('/admin/whatsapp-config/cache');
+    },
 };

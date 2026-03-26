@@ -58,6 +58,7 @@ import { InsurancePermitExpiryPage } from "./pages/admin/reports/InsurancePermit
 import { CollectionReportPage } from "./pages/admin/reports/CollectionReportPage";
 import { FleetExecutivePage } from "./pages/admin/reports/FleetExecutivePage";
 import { GSTReportPage } from "./pages/admin/reports/GSTReportPage";
+import { AdminWhatsAppConfigPage } from "./pages/admin/AdminWhatsAppConfigPage";
 
 function App() {
   return (
@@ -194,6 +195,7 @@ function App() {
               element={<FleetExecutivePage />}
             />
             <Route path="/admin/reports/gst" element={<GSTReportPage />} />
+            <Route path="/admin/whatsapp-config" element={<AdminWhatsAppConfigPage />} />
           </Route>
         </Route>
 
