@@ -120,3 +120,21 @@ export const ListPendingCash = async (req: Request, res: Response): Promise<void
     res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };
+
+export const ListBranchTransactions = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.pageSize as string) || 20;
+    const status = req.query.status as string;
+
+    const result = await paymentTransactionService.listAllForBranch(req.branch_Id, {
+      page,
+      pageSize,
+      status,
+    });
+    res.status(StatusCode.OK).json(result);
+  } catch (error) {
+    console.error("ListBranchTransactions Error:", error);
+    res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};
