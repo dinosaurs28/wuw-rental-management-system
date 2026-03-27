@@ -124,8 +124,8 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
             </div>
 
             {/* Footer with Total and Action Buttons */}
-            <div className="mt-2 flex items-center justify-between pt-4">
-              <div className="flex flex-col gap-1 border-t border-zinc-200 pt-4 w-full sm:w-auto">
+            <div className="flex items-center justify-between gap-4 pt-4 border-t border-zinc-200 mt-2">
+              <div className="flex flex-col gap-0.5">
                 <span className="text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase">
                   Total Amount
                 </span>
@@ -133,25 +133,11 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
                   {formatCurrency(booking.total)}
                 </span>
               </div>
-              <div className="flex flex-wrap gap-2 justify-end w-full sm:w-auto border-t border-zinc-200 pt-4">
-                {/* Invoice Download Button - shows for CONFIRMED and RETURNED only */}
+              <div className="flex items-center gap-2">
                 <InvoiceDownloadButton
                   bookingId={booking.id}
                   bookingStatus={booking.status}
                 />
-                {/* Extension feature temporarily disabled
-                {booking.status === "CONFIRMED" && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2 rounded-full h-10 border-orange-400/30 bg-orange-500/10 hover:bg-orange-500/20 text-orange-300 font-medium px-4 transition-all"
-                    onClick={() => setIsExtendModalOpen(true)}
-                  >
-                    <ArrowUpRight className="h-4 w-4" />
-                    <span className="hidden sm:inline">Extend</span>
-                  </Button>
-                )}
-                */}
                 <Button
                   variant="outline"
                   size="sm"
@@ -159,10 +145,11 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
                   onClick={() => setIsQRModalOpen(true)}
                 >
                   <QrCode className="h-4 w-4" />
-                  <span className="hidden sm:inline">Show Pass</span>
+                  <span>Show Pass</span>
                 </Button>
               </div>
             </div>
+
           </div>
         </CardContent>
       </Card>

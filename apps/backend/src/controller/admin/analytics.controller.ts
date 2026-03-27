@@ -31,15 +31,12 @@ export const GetRevenueTrends = async (req: Request, res: Response) => {
     });
 
     // Get all bookings in the date range
+    // Revenue = confirmed/active/returned bookings regardless of payment status
     const bookings = await prisma.booking.findMany({
       where: {
         branchId: branchId ? branches[0]?.id : undefined,
-        OR: [
-          { status: BookingStatus.CONFIRMED },
-          { status: BookingStatus.PICKED_UP },
-          { status: BookingStatus.RETURNED },
-        ],
-        paymentStatus: PaymentStatus.SUCCESS,
+        status: { in: [BookingStatus.CONFIRMED, BookingStatus.PICKED_UP, BookingStatus.RETURNED] },
+        deletedAt: null,
         createdAt: {
           gte: start,
           lte: end,
@@ -157,7 +154,8 @@ export const GetRevenueByCategory = async (req: Request, res: Response) => {
       where: {
         booking: {
           branchId: branchIds.length > 0 ? { in: branchIds } : undefined,
-          paymentStatus: PaymentStatus.SUCCESS,
+          status: { in: [BookingStatus.CONFIRMED, BookingStatus.PICKED_UP, BookingStatus.RETURNED] },
+          deletedAt: null,
           createdAt: {
             gte: start,
             lte: end,
@@ -255,11 +253,14 @@ export const GetKPISummary = async (req: Request, res: Response) => {
     });
     const branchIds = branches.map((b) => b.id);
 
-    // Current period metrics
+    const revenueStatuses = [BookingStatus.CONFIRMED, BookingStatus.PICKED_UP, BookingStatus.RETURNED];
+
+    // Current period metrics — Revenue = confirmed/active/returned bookings
     const currentBookings = await prisma.booking.aggregate({
       where: {
         branchId: branchIds.length > 0 ? { in: branchIds } : undefined,
-        paymentStatus: PaymentStatus.SUCCESS,
+        status: { in: revenueStatuses },
+        deletedAt: null,
         createdAt: { gte: start, lte: end },
       },
       _sum: { totalFinal: true },
@@ -270,7 +271,8 @@ export const GetKPISummary = async (req: Request, res: Response) => {
     const previousBookings = await prisma.booking.aggregate({
       where: {
         branchId: branchIds.length > 0 ? { in: branchIds } : undefined,
-        paymentStatus: PaymentStatus.SUCCESS,
+        status: { in: revenueStatuses },
+        deletedAt: null,
         createdAt: { gte: prevStart, lte: prevEnd },
       },
       _sum: { totalFinal: true },

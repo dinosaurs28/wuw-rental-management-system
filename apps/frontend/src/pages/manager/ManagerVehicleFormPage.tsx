@@ -654,10 +654,10 @@ export const ManagerVehicleFormPage = () => {
                               mode="single"
                               selected={field.value}
                               onSelect={field.onChange}
-                              disabled={(date) => date < new Date("1900-01-01")}
+                              disabled={(date) => date < new Date("2000-01-01")}
                               captionLayout="dropdown"
-                              fromYear={2000}
-                              toYear={new Date().getFullYear() + 10}
+                              startMonth={new Date(new Date().getFullYear() - 1, 0)}
+                              endMonth={new Date(new Date().getFullYear() + 15, 11)}
                               initialFocus
                             />
                           </PopoverContent>

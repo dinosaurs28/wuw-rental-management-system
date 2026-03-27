@@ -298,6 +298,7 @@ model FileObject {
   vehicleImages VehicleImage[]
   invoicePdfs   Invoice[]      @relation("InvoicePdf")
   cancellationInvoices  CancellationInvoice[] @relation("CancellationInvoicePdf")
+  returnReceiptPdfs ReturnReceipt[] @relation("ReturnReceiptPdf")
 
   @@index([publicId])
 }
@@ -759,6 +760,7 @@ model Booking {
   deposit Deposit?
   invoice Invoice?
   cancellationInvoice CancellationInvoice?
+  returnReceipt ReturnReceipt?
   vehicleSwaps VehicleSwap[]
 
   // Advance Payment Tracking
@@ -1137,6 +1139,35 @@ model CancellationInvoice {
   @@index([bookingId])
   @@index([customerId])
   @@index([invoiceNumber])
+}
+
+model ReturnReceipt {
+  id             Int      @id @default(autoincrement())
+  publicId       String   @unique
+  bookingId      Int      @unique
+  receiptNumber  String?  @unique
+
+  // Line items as JSON: [{label, amount, chargeType}]
+  lineItems      Json     @default("[]")
+
+  // Charge totals
+  totalCharges   Decimal  @default(0)
+  depositPaid    Decimal  @default(0)
+
+  // Settlement outcome
+  amountDue      Decimal  @default(0)   // customer must pay this
+  refundAmount   Decimal  @default(0)   // customer gets this back
+
+  // PDF
+  receiptPdfFileId Int?
+  receiptPdfFile   FileObject? @relation("ReturnReceiptPdf", fields: [receiptPdfFileId], references: [id], onDelete: SetNull)
+  generatedAt      DateTime?
+
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([bookingId])
+  @@index([receiptPdfFileId])
 }
 
 // FEATURE FLAGS
