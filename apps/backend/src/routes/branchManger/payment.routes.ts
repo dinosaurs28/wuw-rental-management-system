@@ -10,6 +10,7 @@ import {
   ListBookingPayments,
   GetFinancialState,
   ListPendingCash,
+  ListBranchTransactions,
 } from "../../controller/branchManager/payment-transaction.controller.js";
 import {
   ConfirmCashPayment,
@@ -46,6 +47,7 @@ router.get("/config", GetMyBranchPaymentConfig);
 router.patch("/config", UpdateMyBranchPaymentConfig);
 
 // Payment transactions
+router.get("/transactions", ListBranchTransactions);
 router.post("/transactions", RecordPayment);
 router.get("/transactions/:publicId", GetPaymentTransaction);
 router.get("/bookings/:bookingPublicId/transactions", ListBookingPayments);
