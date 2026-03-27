@@ -53,6 +53,8 @@ export interface ManagerVehicle {
   customPricing?: {
     price24Hour: number;
   };
+  hasFastag?: boolean;
+  fastagNumber?: string;
 }
 
 // Legacy alias for backward compatibility
@@ -181,6 +183,8 @@ export interface VehicleDetails {
     enabled?: boolean;
   } | null;
   advancePayAmount?: number;
+  hasFastag?: boolean;
+  fastagNumber?: string;
   pricing: {
     daily: number;
   };
