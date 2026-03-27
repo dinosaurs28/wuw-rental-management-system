@@ -49,6 +49,7 @@ export const VehicleDetailsPage = () => {
     setVehicleFullDetails,
     setDeposit,
     setAdvancePayAmount,
+    setApiPricingDetails,
     paymentFlow,
   } = useVehicleRentalStore();
 
@@ -113,18 +114,37 @@ export const VehicleDetailsPage = () => {
 
   const vehicle = data?.data;
 
-  // Update price per day in store when vehicle data changes
+  // Update pricing in store when vehicle data changes
   useEffect(() => {
     if (vehicle?.pricing?.daily) {
       setPricePerDay(vehicle.pricing.daily);
     }
-    if (vehicle?.deposit) {
-      setDeposit(vehicle.deposit);
+    if (vehicle?.deposit !== undefined) {
+      setDeposit(vehicle.deposit ?? 0);
     }
     if (vehicle?.advancePayAmount !== undefined) {
       setAdvancePayAmount(vehicle.advancePayAmount ?? 0);
     }
-  }, [vehicle?.pricing?.daily, vehicle?.deposit, vehicle?.advancePayAmount, setPricePerDay, setDeposit, setAdvancePayAmount]);
+    // Store full API pricing details when available (dates selected)
+    if (vehicle?.pricingDetails) {
+      setApiPricingDetails({
+        basePrice:                  vehicle.pricingDetails.basePrice               ?? 0,
+        durationDiscountAmount:     vehicle.pricingDetails.durationDiscountAmount  ?? 0,
+        durationDiscountPercent:    vehicle.pricingDetails.durationDiscountPercent ?? 0,
+        taxAmount:                  vehicle.pricingDetails.taxAmount               ?? 0,
+        finalTotal:                 vehicle.pricingDetails.finalTotal              ?? 0,
+      });
+    }
+  }, [
+    vehicle?.pricing?.daily,
+    vehicle?.deposit,
+    vehicle?.advancePayAmount,
+    vehicle?.pricingDetails,
+    setPricePerDay,
+    setDeposit,
+    setAdvancePayAmount,
+    setApiPricingDetails,
+  ]);
 
   // Book vehicle handler - clears previous selection, saves new one, and navigates to review
   const handleBookVehicle = useCallback(() => {
@@ -171,6 +191,15 @@ export const VehicleDetailsPage = () => {
     // Set pricing
     setPricePerDay(vehicle.pricing?.daily || 0);
     setDeposit(vehicle.deposit || 0);
+    if (vehicle.pricingDetails) {
+      setApiPricingDetails({
+        basePrice:               vehicle.pricingDetails.basePrice               ?? 0,
+        durationDiscountAmount:  vehicle.pricingDetails.durationDiscountAmount  ?? 0,
+        durationDiscountPercent: vehicle.pricingDetails.durationDiscountPercent ?? 0,
+        taxAmount:               vehicle.pricingDetails.taxAmount               ?? 0,
+        finalTotal:              vehicle.pricingDetails.finalTotal              ?? 0,
+      });
+    }
 
     // Navigate to review & confirm page
     navigate("/booking/review-confirm");
@@ -184,6 +213,7 @@ export const VehicleDetailsPage = () => {
     setEndDate,
     setPricePerDay,
     setDeposit,
+    setApiPricingDetails,
     navigate,
   ]);
 

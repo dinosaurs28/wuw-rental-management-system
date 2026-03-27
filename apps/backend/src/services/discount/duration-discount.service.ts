@@ -20,14 +20,19 @@ const ZERO = new Decimal(0);
 
 class DurationDiscountService {
   /**
-   * Evaluate the best-matching duration slab for a branch+days combination.
+   * Evaluate the best-matching duration slab for a branch + actual hours.
+   * Uses actual hours (not ceiling days) so that e.g. 6d22h (166hr) does NOT
+   * qualify for a 7-day (168hr) slab — preventing over-qualification.
+   *
+   * Slab comparison: slab.minDays * 24 ≤ actualHours ≤ (slab.maxDays ?? ∞) * 24
+   *
    * Returns zero-discount result when:
    *   - branch has durationDiscountEnabled = false
    *   - no slab matches the booking duration
    */
   async evaluate(
     branchId: number,
-    days: number,
+    actualHours: number,
     baseAmount: Decimal,
   ): Promise<DurationDiscountResult> {
     const noDiscount: DurationDiscountResult = {
@@ -65,8 +70,13 @@ class DurationDiscountService {
 
     if (!config || !config.durationDiscountEnabled) return noDiscount;
 
-    // Find highest minDays slab where booking days falls within [minDays, maxDays] (TASK-011: cached)
-    const slabCacheKey = durationDiscountSlabKey(branchId, days);
+    // Convert actualHours to a float day value for slab comparison.
+    // e.g. 168hr → 7.0, 166hr → 6.917, 52hr → 2.167
+    // Prisma compares int column (minDays) against the float — safe for lte/gte.
+    const effectiveDays = actualHours / 24;
+
+    // Cache key bucketed by floored hours so adjacent durations share the cache slot
+    const slabCacheKey = durationDiscountSlabKey(branchId, Math.floor(actualHours));
     let slab: any;
     try {
       const cached = await redis.get(slabCacheKey);
@@ -76,8 +86,8 @@ class DurationDiscountService {
         slab = await prisma.durationDiscountSlab.findFirst({
           where: {
             branchId,
-            minDays: { lte: days },
-            OR: [{ maxDays: null }, { maxDays: { gte: days } }],
+            minDays: { lte: effectiveDays },
+            OR: [{ maxDays: null }, { maxDays: { gte: effectiveDays } }],
           },
           orderBy: { minDays: "desc" },
         });
@@ -88,8 +98,8 @@ class DurationDiscountService {
       slab = await prisma.durationDiscountSlab.findFirst({
         where: {
           branchId,
-          minDays: { lte: days },
-          OR: [{ maxDays: null }, { maxDays: { gte: days } }],
+          minDays: { lte: effectiveDays },
+          OR: [{ maxDays: null }, { maxDays: { gte: effectiveDays } }],
         },
         orderBy: { minDays: "desc" },
       });

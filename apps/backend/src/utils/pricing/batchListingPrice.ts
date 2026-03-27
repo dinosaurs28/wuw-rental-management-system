@@ -64,17 +64,23 @@ function selectPrice(pricing: PricingRow, duration: RentalDuration): number {
   }
 }
 
+export interface ListingPrice {
+  price: number;      // base price before discount
+  finalPrice: number; // price after duration discount
+}
+
 /**
- * Fetch listing prices for multiple vehicles in at most 2 DB queries.
+ * Fetch listing prices for multiple vehicles with duration discounts applied.
+ * Uses at most 4 DB queries total (2 for pricing, 2 for discount config/slabs).
  *
  * @param vehicles  Minimal vehicle objects (id, branchId, categoryId already in memory)
  * @param duration  Pre-computed RentalDuration — same for all vehicles in a single search
- * @returns Map<vehicleId, applicablePrice>
+ * @returns Map<vehicleId, ListingPrice>
  */
 export async function getBatchListingPrices(
   vehicles: VehicleRef[],
   duration: RentalDuration,
-): Promise<Map<number, number>> {
+): Promise<Map<number, ListingPrice>> {
   if (vehicles.length === 0) return new Map();
 
   const vehicleIds = vehicles.map((v) => v.id);
@@ -139,16 +145,74 @@ export async function getBatchListingPrices(
     }
   }
 
-  // Build final price map — select slab based on duration period type
-  const result = new Map<number, number>();
+  // Build base price map
+  const basePriceMap = new Map<number, number>();
   for (const v of vehicles) {
     const pricing = customMap.get(v.id) ?? defaultMap.get(`${v.branchId}:${v.categoryId}`);
-    if (pricing) {
-      result.set(v.id, selectPrice(pricing, duration));
-    } else {
-      // No pricing configured — return 0; UI should treat as "price unavailable"
-      result.set(v.id, 0);
+    basePriceMap.set(v.id, pricing ? selectPrice(pricing, duration) : 0);
+  }
+
+  // ── Apply duration discounts (2 extra queries for all branches) ────────────
+  const uniqueBranchIds = [...new Set(vehicles.map((v) => v.branchId))];
+  const effectiveDays = duration.actualDuration / 24;
+
+  // Query 3: which branches have duration discounts enabled
+  const discountConfigs = await prisma.branchDiscountConfig.findMany({
+    where: { branchId: { in: uniqueBranchIds }, durationDiscountEnabled: true },
+    select: { branchId: true, maxCombinedDiscountPercent: true },
+  });
+
+  const enabledBranchIds = new Set(discountConfigs.map((c) => c.branchId));
+  const configByBranch = new Map(discountConfigs.map((c) => [c.branchId, c]));
+
+  // Query 4: best-matching slab per enabled branch for this duration
+  const branchSlabMap = new Map<number, { discountType: string; value: number }>();
+
+  if (enabledBranchIds.size > 0) {
+    const slabs = await prisma.durationDiscountSlab.findMany({
+      where: {
+        branchId: { in: [...enabledBranchIds] },
+        minDays: { lte: effectiveDays },
+        OR: [{ maxDays: null }, { maxDays: { gte: effectiveDays } }],
+      },
+      orderBy: [{ branchId: "asc" }, { minDays: "desc" }],
+      select: { branchId: true, discountType: true, value: true },
+    });
+
+    // First result per branch = highest matching minDays slab
+    for (const s of slabs) {
+      if (!branchSlabMap.has(s.branchId)) {
+        branchSlabMap.set(s.branchId, { discountType: s.discountType, value: Number(s.value) });
+      }
     }
+  }
+
+  // Build final result with discounts applied
+  const result = new Map<number, ListingPrice>();
+  for (const v of vehicles) {
+    const basePrice = basePriceMap.get(v.id) ?? 0;
+    const slab = branchSlabMap.get(v.branchId);
+
+    if (!slab || basePrice === 0) {
+      result.set(v.id, { price: basePrice, finalPrice: basePrice });
+      continue;
+    }
+
+    let discount = slab.discountType === "PERCENTAGE"
+      ? basePrice * slab.value / 100
+      : Math.min(slab.value, basePrice);
+
+    // Respect combined discount cap if set
+    const cfg = configByBranch.get(v.branchId);
+    if (cfg?.maxCombinedDiscountPercent != null) {
+      const maxDiscount = basePrice * Number(cfg.maxCombinedDiscountPercent) / 100;
+      discount = Math.min(discount, maxDiscount);
+    }
+
+    result.set(v.id, {
+      price: basePrice,
+      finalPrice: Math.max(0, Math.round(basePrice - discount)),
+    });
   }
 
   return result;
