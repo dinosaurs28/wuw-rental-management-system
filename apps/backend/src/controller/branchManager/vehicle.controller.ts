@@ -98,6 +98,8 @@ export const AddVehicle = async (req: Request, res: Response) => {
       extraHourRate,
       isCustomPricingEnabled,
       advancePayAmount,
+      fastagNumber,
+      hasFastag,
     } = validation.data;
 
     const existingVehicle = await prisma.vehicle.findUnique({
@@ -120,6 +122,8 @@ export const AddVehicle = async (req: Request, res: Response) => {
         regNo,
         odo: Number(odo),
         advancePayAmount: advancePayAmount ?? 0,
+        fastagNumber: fastagNumber ?? null,
+        hasFastag: hasFastag ?? false,
         insuranceExpiry: new Date(insuranceExpiry),
         status: VehicleStatus.AVAILABLE,
         customPricing: price24Hour !== undefined ? {
@@ -303,6 +307,7 @@ export const EditVehicle = async (req: Request, res: Response) => {
     delete updateData.extraHourRate;
     delete updateData.isCustomPricingEnabled;
     // advancePayAmount stays in updateData and is applied directly to the vehicle
+    // fastagNumber and hasFastag stay in updateData and are applied directly
 
     if (data.insuranceExpiry) {
       updateData.insuranceExpiry = new Date(data.insuranceExpiry);

@@ -19,6 +19,7 @@ import employeerouter from "./routes/employee/employee.routes.js";
 import branchManagerRouter from "./routes/branchManger/branchManager.routes.js";
 import adminRouter from "./routes/admin/admin.routes.js";
 import invoiceRouter from "./routes/invoice/invoice.routes.js";
+import receiptRouter from "./routes/receipt/receipt.routes.js";
 import configRouter from "./routes/public/config.routes.js";
 import { initImageWorker } from "./jobs/image.worker.js";
 import { initCleanupWorker } from "./jobs/cleanup.worker.js";
@@ -26,6 +27,8 @@ import { initFileCleanupWorker } from "./jobs/fileCleanup.worker.js";
 import { initBookingExpiryWorker } from "./jobs/bookingExpiry.worker.js";
 import { initInvoiceWorker } from "./jobs/invoice.worker.js";
 import { initDelayedCashAlertWorker } from "./jobs/delayedCashAlert.worker.js";
+import { initInsuranceAlertWorker } from "./jobs/insurance-alert.worker.js";
+import insuranceAlertRouter from "./routes/insurance-alert/insurance-alert.routes.js";
 
 // Initialize passport AFTER env vars are loaded
 initializePassport();
@@ -37,6 +40,7 @@ initFileCleanupWorker();
 initBookingExpiryWorker();
 initInvoiceWorker();
 initDelayedCashAlertWorker();
+initInsuranceAlertWorker();
 
 const app = express();
 
@@ -67,6 +71,8 @@ app.use("/api/employee", employeerouter);
 app.use("/api/branchManager", branchManagerRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/invoices", invoiceRouter);
+app.use("/api/receipts", receiptRouter);
+app.use("/api/insurance-alerts", insuranceAlertRouter);
 app.use("/api/config", configRouter);
 
 app.get("/health", (req: Request, res: Response) => {

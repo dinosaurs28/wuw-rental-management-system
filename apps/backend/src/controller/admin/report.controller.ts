@@ -22,13 +22,12 @@ export const GetBranchRevenue = async (req: Request, res: Response) => {
 
     const report = await Promise.all(
       branches.map(async (branch) => {
+        // Revenue = all confirmed/active/returned bookings regardless of payment status
         const revenueAgg = await prisma.booking.aggregate({
           where: {
             branchId: branch.id,
-            OR: [
-              { status: BookingStatus.CONFIRMED },
-              { paymentStatus: PaymentStatus.SUCCESS },
-            ],
+            status: { in: [BookingStatus.CONFIRMED, BookingStatus.PICKED_UP, BookingStatus.RETURNED] },
+            deletedAt: null,
             createdAt: {
               gte: start,
               lte: end,

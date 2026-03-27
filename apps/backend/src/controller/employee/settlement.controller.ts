@@ -18,6 +18,7 @@ import {
   StaffActionType,
   StaffEntityType,
 } from "../../services/staffActivity/staffActivity.service.js";
+import { generateReturnReceipt } from "../../services/receipt-generator.service.js";
 
 /**
  * Compute and return the settlement outcome for employee review.
@@ -226,6 +227,17 @@ export const ConfirmSettlement = async (req: Request, res: Response) => {
         paymentMethod,
       },
     });
+
+    // Generate return receipt asynchronously — fire and forget (non-blocking)
+    generateReturnReceipt(booking.id, {
+      totalCharges,
+      depositPaid,
+      amountDue: diff.gt(0) ? diff : new Decimal(0),
+      refundAmount: diff.lt(0) ? diff.abs() : new Decimal(0),
+      charges: breakdown.results,
+    }).catch((err) =>
+      console.error("[ConfirmSettlement] Receipt generation error:", err),
+    );
 
     return res.status(StatusCode.OK).json({
       message: "Settlement confirmed",

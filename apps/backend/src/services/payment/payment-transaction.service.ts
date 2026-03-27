@@ -358,6 +358,61 @@ class PaymentTransactionService {
     });
   }
 
+  async listAllForBranch(
+    branchId: number,
+    filters: { status?: string; page?: number; pageSize?: number },
+  ): Promise<PaginatedTransactions> {
+    const page = filters.page ?? 1;
+    const pageSize = filters.pageSize ?? 20;
+    const skip = (page - 1) * pageSize;
+
+    const where: any = { branchId };
+    if (filters.status) {
+      where.status = filters.status;
+    }
+
+    const [transactions, total] = await Promise.all([
+      prisma.paymentTransaction.findMany({
+        where,
+        include: {
+          booking: {
+            select: {
+              publicId: true,
+              status: true,
+              customer: {
+                select: { user: { select: { name: true } } },
+              },
+            },
+          },
+          collectedBy: { select: { publicId: true, name: true } },
+          confirmedBy: { select: { publicId: true, name: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: pageSize,
+      }),
+      prisma.paymentTransaction.count({ where }),
+    ]);
+
+    const mapped = (transactions as any[]).map((t) => ({
+      transactionPublicId: t.publicId,
+      bookingPublicId: t.booking.publicId,
+      customerName: t.booking.customer?.user?.name ?? "Unknown",
+      amount: t.totalAmount.toString(),
+      method: t.method,
+      purpose: t.purpose,
+      status: t.status,
+      onlineTransactionRef: t.onlineTransactionRef ?? null,
+      employeeName: t.collectedBy?.name ?? null,
+      confirmedByName: t.confirmedBy?.name ?? null,
+      collectedAt: t.collectedAt?.toISOString() ?? t.createdAt.toISOString(),
+      confirmedAt: t.confirmedAt?.toISOString() ?? null,
+      createdAt: t.createdAt.toISOString(),
+    }));
+
+    return { transactions: mapped as any, total, page, pageSize };
+  }
+
   async listPendingCashForBranch(
     branchId: number,
     filters: { employeePublicId?: string; page?: number; pageSize?: number },

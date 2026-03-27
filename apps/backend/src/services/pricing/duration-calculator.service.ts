@@ -77,18 +77,31 @@ export class DurationCalculatorService {
       periodType = RentalPeriodType.FULL_DAY;
       billableDuration = 24;
     } else if (actualHours <= 720) {
-      // 30 days = 720 hours
-      // Multi-day rental
+      // Multi-day rental — determine billable hours using the same half-day rule
+      // as PricingEngineService.determineBasePrice:
+      //   remainder = 0          → exact full days
+      //   remainder 1–12 hrs     → add a half day (12 hr slab)
+      //   remainder 13–24 hrs    → round up to full day
       const fullDays = Math.floor(actualHours / 24);
       const remainingHours = actualHours % 24;
 
-      // If there are remaining hours, charge for an additional day
-      const totalDays = remainingHours > 0 ? fullDays + 1 : fullDays;
+      let billableHours: number;
+      if (remainingHours <= 0) {
+        billableHours = fullDays * 24;
+      } else if (remainingHours <= 12) {
+        billableHours = fullDays * 24 + 12;
+      } else {
+        billableHours = (fullDays + 1) * 24;
+      }
 
-      // If 30+ days, use monthly rate
-      periodType =
-        totalDays >= 30 ? RentalPeriodType.MONTHLY : RentalPeriodType.MULTI_DAY;
-      billableDuration = totalDays * 24;
+      // Cap at monthly (720 hr) and classify accordingly
+      if (billableHours >= 720) {
+        periodType = RentalPeriodType.MONTHLY;
+        billableDuration = 720;
+      } else {
+        periodType = RentalPeriodType.MULTI_DAY;
+        billableDuration = billableHours;
+      }
     } else {
       // More than 30 days - charge monthly rate
       periodType = RentalPeriodType.MONTHLY;

@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -587,6 +587,8 @@ export default function StaffPickupsPage() {
   };
 
   const onConfirmHandover = (data: HandoverFormValues) => {
+    // const chargeConfig = booking?.frozenChargeConfig;
+
     // Validate required capture photos
     if (captureConfig) {
       const missing = captureConfig.fields

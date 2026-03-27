@@ -6,7 +6,6 @@ import {
   Plus,
   Tag,
   RefreshCw,
-  Shuffle,
   Calendar,
   BadgePercent,
   Banknote,
@@ -34,40 +33,25 @@ import { managerDiscountService, type ManagerCoupon } from "@/services/discount.
 const fmt = (v: string | number) =>
   `₹ ${parseFloat(String(v)).toLocaleString("en-IN", { minimumFractionDigits: 0 })}`;
 
-function generateCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-}
-
 // ── Create Coupon Modal ───────────────────────────────────────────────────────
 
 function CreateCouponModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
-  const [code, setCode] = useState(generateCode());
   const [name, setName] = useState("");
   const [discountType, setDiscountType] = useState<"PERCENTAGE" | "FLAT">("PERCENTAGE");
   const [discountValue, setDiscountValue] = useState("");
-  const [maxCap, setMaxCap] = useState("");
-  const [totalLimit, setTotalLimit] = useState("");
-  const [perCustomer, setPerCustomer] = useState("");
-  const [validFrom, setValidFrom] = useState("");
-  const [validTo, setValidTo] = useState("");
-  const [minAmount, setMinAmount] = useState("");
-  const [minDays, setMinDays] = useState("");
+  const [validityDays, setValidityDays] = useState("7");
+  const [usageLimit, setUsageLimit] = useState("5");
+  const [reason, setReason] = useState("");
 
   const mutation = useMutation({
     mutationFn: () =>
       managerDiscountService.createCoupon({
-        code: code.trim().toUpperCase(),
         name: name.trim(),
         discountType,
-        discountValue: parseFloat(discountValue),
-        ...(maxCap ? { maxDiscountCap: parseFloat(maxCap) } : {}),
-        ...(totalLimit ? { totalUsageLimit: parseInt(totalLimit) } : {}),
-        ...(perCustomer ? { perCustomerLimit: parseInt(perCustomer) } : {}),
-        ...(validFrom ? { validFrom: new Date(validFrom).toISOString() } : {}),
-        ...(validTo ? { validTo: new Date(validTo).toISOString() } : {}),
-        ...(minAmount ? { minBookingAmount: parseFloat(minAmount) } : {}),
-        ...(minDays ? { minRentalDays: parseInt(minDays) } : {}),
+        value: parseFloat(discountValue),
+        reason: reason.trim(),
+        validityDays: parseInt(validityDays) || 7,
+        usageLimit: parseInt(usageLimit) || 5,
       }),
     onSuccess: () => {
       toast.success("Coupon created.");
@@ -79,9 +63,9 @@ function CreateCouponModal({ onClose, onCreated }: { onClose: () => void; onCrea
   });
 
   const isValid =
-    code.trim().length >= 3 &&
     name.trim().length >= 1 &&
-    parseFloat(discountValue) > 0;
+    parseFloat(discountValue) > 0 &&
+    reason.trim().length >= 5;
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -91,31 +75,9 @@ function CreateCouponModal({ onClose, onCreated }: { onClose: () => void; onCrea
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          {/* Code */}
-          <div className="space-y-2">
-            <Label>Coupon Code</Label>
-            <div className="flex gap-2">
-              <Input
-                value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase())}
-                className="font-mono uppercase"
-                placeholder="e.g. SUMMER25"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => setCode(generateCode())}
-                title="Auto-generate"
-              >
-                <Shuffle className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-
           {/* Name */}
           <div className="space-y-2">
-            <Label>Name / Description</Label>
+            <Label>Coupon Name</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Summer Sale 2026" />
           </div>
 
@@ -149,85 +111,41 @@ function CreateCouponModal({ onClose, onCreated }: { onClose: () => void; onCrea
             </div>
           </div>
 
-          {discountType === "PERCENTAGE" && (
-            <div className="space-y-2">
-              <Label>Max Discount Cap (optional)</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">₹</span>
-                <Input
-                  type="number"
-                  min="0"
-                  className="pl-7"
-                  placeholder="No cap"
-                  value={maxCap}
-                  onChange={(e) => setMaxCap(e.target.value)}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Limits */}
+          {/* Validity + Usage Limit */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Total Usage Limit</Label>
+              <Label>Valid for (days)</Label>
               <Input
                 type="number"
                 min="1"
-                placeholder="Unlimited"
-                value={totalLimit}
-                onChange={(e) => setTotalLimit(e.target.value)}
+                max="90"
+                value={validityDays}
+                onChange={(e) => setValidityDays(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label>Per-Customer Limit</Label>
+              <Label>Usage Limit</Label>
               <Input
                 type="number"
                 min="1"
-                placeholder="1"
-                value={perCustomer}
-                onChange={(e) => setPerCustomer(e.target.value)}
+                max="100"
+                value={usageLimit}
+                onChange={(e) => setUsageLimit(e.target.value)}
               />
             </div>
           </div>
 
-          {/* Validity dates */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>Valid From</Label>
-              <Input type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>Valid To</Label>
-              <Input type="date" value={validTo} onChange={(e) => setValidTo(e.target.value)} />
-            </div>
-          </div>
-
-          {/* Min constraints */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>Min Booking Amount (optional)</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">₹</span>
-                <Input
-                  type="number"
-                  min="0"
-                  className="pl-7"
-                  placeholder="None"
-                  value={minAmount}
-                  onChange={(e) => setMinAmount(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Min Rental Days (optional)</Label>
-              <Input
-                type="number"
-                min="1"
-                placeholder="None"
-                value={minDays}
-                onChange={(e) => setMinDays(e.target.value)}
-              />
-            </div>
+          {/* Reason */}
+          <div className="space-y-2">
+            <Label>Reason <span className="text-red-500">*</span></Label>
+            <Input
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. Loyalty reward for returning customer"
+            />
+            {reason.length > 0 && reason.trim().length < 5 && (
+              <p className="text-xs text-red-500">Reason must be at least 5 characters.</p>
+            )}
           </div>
         </div>
 

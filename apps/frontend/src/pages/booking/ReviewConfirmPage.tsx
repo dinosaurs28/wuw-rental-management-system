@@ -36,8 +36,12 @@ export const ReviewConfirmPage = () => {
     endTime,
     selectedKycFilePublicId,
     paymentType,
-    pricePerDay,
     rentalDays,
+    apiBasePrice,
+    apiDurationDiscountAmount,
+    apiDurationDiscountPercent,
+    apiTaxAmount,
+    apiFinalTotal,
     couponCode,
     couponDiscountAmount,
     setCouponCode,
@@ -137,13 +141,23 @@ export const ReviewConfirmPage = () => {
                   {/* Price Summary */}
                   <div className="mt-4 p-5 bg-white border border-zinc-200 rounded-xl space-y-4 shadow-sm">
                     <h3 className="text-base font-semibold text-zinc-800">Price Summary</h3>
-                    
+
                     <div className="space-y-2.5">
+                      {/* Base rental — API total for the period */}
                       <div className="flex justify-between text-sm text-zinc-600">
                         <span>Base Rental ({rentalDays} {rentalDays === 1 ? 'day' : 'days'})</span>
-                        <span className="font-medium text-zinc-900">₹{(pricePerDay * rentalDays).toFixed(2)}</span>
+                        <span className="font-medium text-zinc-900">₹{apiBasePrice.toFixed(2)}</span>
                       </div>
-                      
+
+                      {/* Duration discount (from pricing rules) */}
+                      {apiDurationDiscountAmount > 0 && (
+                        <div className="flex justify-between text-sm text-green-600 font-medium">
+                          <span>Duration Discount ({apiDurationDiscountPercent}%)</span>
+                          <span>-₹{apiDurationDiscountAmount.toFixed(2)}</span>
+                        </div>
+                      )}
+
+                      {/* Coupon discount */}
                       {couponDiscountAmount > 0 && (
                         <div className="flex justify-between text-sm text-green-600 font-medium">
                           <span>Coupon Discount</span>
@@ -151,10 +165,18 @@ export const ReviewConfirmPage = () => {
                         </div>
                       )}
 
+                      {/* Tax */}
+                      {apiTaxAmount > 0 && (
+                        <div className="flex justify-between text-sm text-zinc-500">
+                          <span>GST (included)</span>
+                          <span>₹{apiTaxAmount.toFixed(2)}</span>
+                        </div>
+                      )}
+
                       <div className="pt-3 border-t border-zinc-100 flex justify-between items-center">
                         <span className="text-base font-bold text-zinc-900">Total payable</span>
                         <span className="text-xl font-bold text-primary">
-                          ₹{Math.max(0, (pricePerDay * rentalDays) - couponDiscountAmount).toFixed(2)}
+                          ₹{Math.max(0, apiFinalTotal - couponDiscountAmount).toFixed(2)}
                         </span>
                       </div>
                     </div>

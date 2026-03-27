@@ -338,17 +338,14 @@ export const managerDiscountService = {
   },
 
   createCoupon: async (data: {
-    code: string;
     name: string;
     discountType: "PERCENTAGE" | "FLAT";
-    discountValue: number;
-    maxDiscountCap?: number;
-    totalUsageLimit?: number;
-    perCustomerLimit?: number;
-    validFrom?: string;
-    validTo?: string;
-    minBookingAmount?: number;
-    minRentalDays?: number;
+    value: number;
+    reason: string;
+    validityDays?: number;
+    usageLimit?: number;
+    targetCustomerIds?: number[];
+    description?: string;
   }): Promise<{ message: string; data: ManagerCoupon }> => {
     const res = await apiClient.post("/branchManager/discount/coupons", data);
     return res.data;

@@ -24,7 +24,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Separator } from "@/components/ui/separator";
 import {
   Table,
   TableBody,
@@ -147,116 +146,119 @@ function AuditLogDetail({
 }) {
   return (
     <Sheet open={!!log} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+      <SheetContent className="w-full sm:max-w-lg overflow-y-auto flex flex-col gap-0 p-0">
         {log && (
           <>
-            <SheetHeader className="mb-4">
-              <SheetTitle className="flex items-center gap-2">
+            {/* Header */}
+            <SheetHeader className="px-5 pt-5 pb-4 border-b">
+              <SheetTitle className="text-base font-semibold">Event Detail</SheetTitle>
+              <div className="flex items-center gap-2 flex-wrap mt-1.5">
                 {severityBadge(log.severity)}
-                <span className="font-mono text-sm text-muted-foreground">
-                  {log.publicId}
-                </span>
-              </SheetTitle>
+                {categoryBadge(log.category)}
+              </div>
+              <p className="font-mono text-[11px] text-muted-foreground mt-1.5 break-all">
+                {log.publicId}
+              </p>
             </SheetHeader>
 
-            <div className="space-y-4 text-sm">
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+
+              {/* Event */}
               <Section title="Event">
-                <Row label="Action" value={<code className="text-xs bg-muted px-1.5 py-0.5 rounded">{log.action}</code>} />
-                <Row label="Category" value={categoryBadge(log.category)} />
-                <Row label="Severity" value={severityBadge(log.severity)} />
-                <Row label="Description" value={log.description || "—"} />
-                <Row
-                  label="Time"
-                  value={format(new Date(log.createdAt), "dd MMM yyyy, hh:mm:ss a")}
-                />
-              </Section>
-
-              <Separator />
-
-              <Section title="Actor">
-                <Row label="Name" value={log.actorName || "—"} />
-                <Row label="Role" value={log.actorRole} />
-                {log.approverName && (
-                  <Row label="Approver" value={`${log.approverName} (${log.approverRole})`} />
+                <Row label="Action">
+                  <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">{log.action}</code>
+                </Row>
+                <Row label="Category">{categoryBadge(log.category)}</Row>
+                <Row label="Severity">{severityBadge(log.severity)}</Row>
+                <Row label="Time">{format(new Date(log.createdAt), "dd MMM yyyy, hh:mm:ss a")}</Row>
+                {log.description && (
+                  <div className="pt-0.5">
+                    <p className="text-[11px] text-muted-foreground mb-1">Description</p>
+                    <p className="text-xs text-neutral-700 leading-relaxed">{log.description}</p>
+                  </div>
                 )}
               </Section>
 
-              <Separator />
-
-              <Section title="Entity">
-                <Row label="Type" value={log.entity || "—"} />
-                <Row label="ID" value={<code className="text-xs bg-muted px-1.5 py-0.5 rounded">{log.entityId || "—"}</code>} />
-                {log.entityLabel && <Row label="Label" value={log.entityLabel} />}
+              {/* Actor */}
+              <Section title="Actor">
+                <Row label="Name">{log.actorName || "—"}</Row>
+                <Row label="Role">
+                  <span className="font-mono text-xs">{log.actorRole}</span>
+                </Row>
+                {log.approverName && (
+                  <Row label="Approver">{log.approverName} <span className="text-muted-foreground">({log.approverRole})</span></Row>
+                )}
               </Section>
 
+              {/* Entity */}
+              <Section title="Entity">
+                <Row label="Type">{log.entity || "—"}</Row>
+                <Row label="ID">
+                  <code className="text-[11px] bg-muted px-1.5 py-0.5 rounded font-mono break-all">
+                    {log.entityId || "—"}
+                  </code>
+                </Row>
+                {log.entityLabel && <Row label="Label">{log.entityLabel}</Row>}
+              </Section>
+
+              {/* Changed Fields */}
               {log.changedFields?.length > 0 && (
-                <>
-                  <Separator />
-                  <Section title="Changed Fields">
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {log.changedFields.map((f) => (
-                        <Badge key={f} variant="outline" className="text-xs font-mono">
-                          {f}
-                        </Badge>
-                      ))}
-                    </div>
-                  </Section>
-                </>
+                <Section title="Changed Fields">
+                  <div className="flex flex-wrap gap-1.5">
+                    {log.changedFields.map((f) => (
+                      <Badge key={f} variant="outline" className="text-xs font-mono">
+                        {f}
+                      </Badge>
+                    ))}
+                  </div>
+                </Section>
               )}
 
+              {/* Data Diff */}
               {(log.before || log.after) && (
-                <>
-                  <Separator />
-                  <Section title="Data Diff">
-                    {log.before && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground mb-1">Before</p>
-                        <pre className="text-xs bg-muted rounded p-2 overflow-x-auto whitespace-pre-wrap">
-                          {JSON.stringify(log.before, null, 2)}
-                        </pre>
-                      </div>
-                    )}
-                    {log.after && (
-                      <div className="mt-2">
-                        <p className="text-xs font-medium text-muted-foreground mb-1">After</p>
-                        <pre className="text-xs bg-muted rounded p-2 overflow-x-auto whitespace-pre-wrap">
-                          {JSON.stringify(log.after, null, 2)}
-                        </pre>
-                      </div>
-                    )}
-                  </Section>
-                </>
+                <Section title="Data Diff">
+                  {log.before && (
+                    <div>
+                      <p className="text-[11px] font-medium text-muted-foreground mb-1">Before</p>
+                      <pre className="text-xs bg-muted rounded p-2.5 overflow-x-auto whitespace-pre-wrap">
+                        {JSON.stringify(log.before, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                  {log.after && (
+                    <div className="mt-2">
+                      <p className="text-[11px] font-medium text-muted-foreground mb-1">After</p>
+                      <pre className="text-xs bg-muted rounded p-2.5 overflow-x-auto whitespace-pre-wrap">
+                        {JSON.stringify(log.after, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                </Section>
               )}
 
+              {/* Metadata */}
               {log.metadata && (
-                <>
-                  <Separator />
-                  <Section title="Metadata">
-                    <pre className="text-xs bg-muted rounded p-2 overflow-x-auto whitespace-pre-wrap">
-                      {JSON.stringify(log.metadata, null, 2)}
-                    </pre>
-                  </Section>
-                </>
+                <Section title="Metadata">
+                  <pre className="text-xs bg-muted rounded p-2.5 overflow-x-auto whitespace-pre-wrap">
+                    {JSON.stringify(log.metadata, null, 2)}
+                  </pre>
+                </Section>
               )}
 
+              {/* Request */}
               {(log.ipAddress || log.userAgent) && (
-                <>
-                  <Separator />
-                  <Section title="Request">
-                    {log.ipAddress && <Row label="IP" value={log.ipAddress} />}
-                    {log.userAgent && (
-                      <Row
-                        label="User Agent"
-                        value={
-                          <span className="text-xs text-muted-foreground break-all">
-                            {log.userAgent}
-                          </span>
-                        }
-                      />
-                    )}
-                  </Section>
-                </>
+                <Section title="Request">
+                  {log.ipAddress && <Row label="IP">{log.ipAddress}</Row>}
+                  {log.userAgent && (
+                    <div className="pt-0.5">
+                      <p className="text-[11px] text-muted-foreground mb-1">User Agent</p>
+                      <p className="text-xs text-muted-foreground break-all leading-relaxed">{log.userAgent}</p>
+                    </div>
+                  )}
+                </Section>
               )}
+
             </div>
           </>
         )}
@@ -267,20 +269,20 @@ function AuditLogDetail({
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div>
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+    <div className="rounded-lg border bg-muted/30 p-3.5">
+      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">
         {title}
       </p>
-      <div className="space-y-1.5">{children}</div>
+      <div className="space-y-2.5">{children}</div>
     </div>
   );
 }
 
-function Row({ label, value }: { label: string; value: React.ReactNode }) {
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-2">
-      <span className="text-muted-foreground shrink-0 w-28">{label}</span>
-      <span className="text-right">{value}</span>
+    <div className="grid grid-cols-[100px_1fr] gap-2 items-start">
+      <span className="text-[11px] text-muted-foreground pt-0.5 shrink-0">{label}</span>
+      <span className="text-xs font-medium text-neutral-800 break-words min-w-0">{children}</span>
     </div>
   );
 }

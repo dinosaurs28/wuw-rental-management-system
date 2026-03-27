@@ -79,7 +79,7 @@ export interface PricingResult {
   extraKmRate: Decimal;
 
   // Full evaluation result (for DiscountApplication recording)
-  discountEvaluation?: DiscountEvaluationResult;
+  discountEvaluation: DiscountEvaluationResult;
 
   // Breakdown details
   pricingBreakdown: {
@@ -149,33 +149,33 @@ export class PricingEngineService {
       const { basePrice, freeKmLimit, priceSource } =
         await this.determineBasePrice(pricing, duration, vehicleId, branchId);
 
-      // 5. Evaluate all discounts (duration + coupon + manual) in strict order
+      // 5. Evaluate all discounts (duration + coupon + manual) in strict order.
+      //    Duration discount runs for ALL requests (no customer context needed).
+      //    Coupon and manual discounts only run when a real customerId is supplied.
       const ZERO = new Decimal(0);
-      let discountEvaluation: DiscountEvaluationResult | undefined;
+      const evalInput: DiscountEvaluationInput = {
+        branchId,
+        customerId: customerId ?? 0, // 0 = anonymous; coupon/manual layers skipped below
+        vehicleId,
+        baseAmount: basePrice,
+        rentalDays: duration.days,
+        rentalHours: duration.actualDuration,
+        vehicleCategoryId: resolvedCategoryId,
+        paymentPlan: "FULL",
+        // Only pass coupon/manual context when a real customer is known
+        couponCode:           customerId != null ? couponCode           : undefined,
+        manualDiscountAmount: customerId != null ? manualDiscountAmount : undefined,
+        manualDiscountId:     customerId != null ? manualDiscountId     : undefined,
+      };
+      const discountEvaluation = await discountEvaluationEngine.evaluate(evalInput);
 
-      if (customerId != null) {
-        const evalInput: DiscountEvaluationInput = {
-          branchId,
-          customerId,
-          vehicleId,
-          baseAmount: basePrice,
-          rentalDays: duration.days,
-          vehicleCategoryId: resolvedCategoryId,
-          paymentPlan: "FULL", // default; caller can override via revalidateWithCoupon
-          couponCode,
-          manualDiscountAmount,
-          manualDiscountId,
-        };
-        discountEvaluation = await discountEvaluationEngine.evaluate(evalInput);
-      }
-
-      const postDiscountBase = discountEvaluation?.finalAmount ?? basePrice;
-      const durationDiscountAmount = discountEvaluation?.durationDiscount.discountAmount ?? ZERO;
-      const durationDiscountPercent = discountEvaluation?.durationDiscount.discountPercent ?? ZERO;
-      const couponDiscountAmount = discountEvaluation?.couponDiscountAmount ?? ZERO;
-      const couponDiscountPercent = discountEvaluation?.couponDiscountPercent ?? ZERO;
-      const actualManualDiscount = discountEvaluation?.manualDiscountAmount ?? ZERO;
-      const totalDiscountAmount = discountEvaluation?.totalDiscountAmount ?? ZERO;
+      const postDiscountBase = discountEvaluation.finalAmount;
+      const durationDiscountAmount = discountEvaluation.durationDiscount.discountAmount;
+      const durationDiscountPercent = discountEvaluation.durationDiscount.discountPercent;
+      const couponDiscountAmount = discountEvaluation.couponDiscountAmount;
+      const couponDiscountPercent = discountEvaluation.couponDiscountPercent;
+      const actualManualDiscount = discountEvaluation.manualDiscountAmount;
+      const totalDiscountAmount = discountEvaluation.totalDiscountAmount;
       const totalDiscountPercent = basePrice.gt(0)
         ? totalDiscountAmount.div(basePrice).mul(100).toDecimalPlaces(4)
         : ZERO;
@@ -192,8 +192,8 @@ export class PricingEngineService {
         durationDiscountPercent,
         couponDiscountAmount,
         couponDiscountPercent,
-        appliedCouponCode: discountEvaluation?.appliedCouponCode,
-        couponRuleId: discountEvaluation?.couponRule?.id,
+        appliedCouponCode: discountEvaluation.appliedCouponCode,
+        couponRuleId: discountEvaluation.couponRule?.id,
         manualDiscountAmount: actualManualDiscount,
         discountAmount: totalDiscountAmount,
         discountPercent: totalDiscountPercent,
@@ -241,6 +241,7 @@ export class PricingEngineService {
       vehicleId,
       baseAmount: basePrice,
       rentalDays: duration.days,
+      rentalHours: duration.actualDuration,
       vehicleCategoryId: resolvedCategoryId,
       paymentPlan: "FULL",
     };
@@ -389,8 +390,16 @@ export class PricingEngineService {
     // Hourly not configured — use slab-based billing
     switch (duration.periodType) {
       case RentalPeriodType.HOURLY:
-        // Fallback: theoretically unreachable if hourlyRate is null, but kept for safety
-        throw new Error("Hourly rental not available for this vehicle (hourlyRate not configured)");
+        // No hourlyRate configured — fall back to the 12-hour slab (cheapest available unit).
+        // Per business rule: any rental < 12 hr without a per-hour rate is billed as a half day.
+        if (pricing.price12Hour) {
+          basePrice = pricing.price12Hour;
+          freeKmLimit = pricing.freeKm12Hour;
+        } else {
+          basePrice = pricing.price24Hour;
+          freeKmLimit = pricing.freeKm24Hour;
+        }
+        break;
 
       case RentalPeriodType.HALF_DAY:
         if (!pricing.price12Hour) throw new Error("12-hour rental not available for this vehicle");

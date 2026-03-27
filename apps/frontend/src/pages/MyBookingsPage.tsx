@@ -112,7 +112,7 @@ export function MyBookingsPage() {
 
         {/* Loading State */}
         {isLoading && (
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2">
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
@@ -197,7 +197,7 @@ export function MyBookingsPage() {
         {/* Bookings Grid */}
         {!isLoading && !error && bookings.length > 0 && (
           <>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-6 md:grid-cols-2">
               {bookings.map((booking) => (
                 <UserBookingCard key={booking.bookingId} booking={booking} />
               ))}

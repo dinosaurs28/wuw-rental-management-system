@@ -18,7 +18,16 @@
       "Bash(pnpm --filter frontend tsc --noEmit)",
       "Bash(pnpm --filter @repo/backend tsc --noEmit)",
       "Bash(pnpm --filter backend exec tsc --noEmit)",
-      "Bash(grep:*)"
+      "Bash(npx prisma:*)",
+      "Bash(cp:*)",
+      "Bash(script -q /dev/null npx prisma migrate dev --name add_return_receipt)",
+      "Bash(find . -name .env -not -path */node_modules/*)",
+      "Bash(PGPASSWORD=postgres psql -h localhost -U postgres -d vrms_db -f /tmp/add_return_receipt.sql 2>&1)",
+      "Bash(docker ps:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker cp:*)",
+      "Bash(curl -s \"http://localhost:8080/api/public/vehicles/h7whgyobfwo7n0g8?start=2026-03-27T10:00&end=2026-03-28T10:00\")",
+      "Bash(python3 -m json.tool)"
     ]
   }
 }
