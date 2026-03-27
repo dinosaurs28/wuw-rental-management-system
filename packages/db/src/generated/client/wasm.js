@@ -624,6 +624,21 @@ exports.Prisma.CancellationInvoiceScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.ReturnReceiptScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  bookingId: 'bookingId',
+  receiptNumber: 'receiptNumber',
+  lineItems: 'lineItems',
+  totalCharges: 'totalCharges',
+  depositPaid: 'depositPaid',
+  amountDue: 'amountDue',
+  refundAmount: 'refundAmount',
+  receiptPdfFileId: 'receiptPdfFileId',
+  generatedAt: 'generatedAt',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.FeatureFlagScalarFieldEnum = {
   id: 'id',
   publicId: 'publicId',
@@ -1459,6 +1474,7 @@ exports.Prisma.ModelName = {
   GSTRule: 'GSTRule',
   TimezoneSetting: 'TimezoneSetting',
   CancellationInvoice: 'CancellationInvoice',
+  ReturnReceipt: 'ReturnReceipt',
   FeatureFlag: 'FeatureFlag',
   BranchFeatureFlag: 'BranchFeatureFlag',
   VehicleFeatureFlag: 'VehicleFeatureFlag',

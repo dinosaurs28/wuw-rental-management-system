@@ -15,7 +15,7 @@ import { CashConfirmationsTab } from "./CashConfirmationsPage";
 import { SettlementsTab } from "./SettlementsPage";
 import { RefundsTab } from "./RefundsPage";
 import { CashShiftsTab } from "./CashShiftsPage";
-import { TransactionsTab } from "./TransactionsPage";
+// import { TransactionsTab } from "./TransactionsPage";
 
 export function FinancialsDashboardPage() {
   const [searchParams, setSearchParams] = useSearchParams();

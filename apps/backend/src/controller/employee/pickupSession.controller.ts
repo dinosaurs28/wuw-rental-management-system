@@ -838,7 +838,7 @@ export const RemoveDepositFromPickupSession = async (req: Request, res: Response
       return res.status(StatusCode.BAD_REQUEST).json({ message: "No safety deposit in this session to remove" });
     }
 
-    const depositEntry = session.entries[0];
+    const depositEntry = session.entries[0]!;
     const depositAmt = new Decimal(depositEntry.amount.toString());
 
     await prisma.$transaction(async (tx) => {

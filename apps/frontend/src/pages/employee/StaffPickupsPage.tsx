@@ -17,9 +17,6 @@ import {
   Eye,
   X,
   Image as ImageIcon,
-  Clock,
-  Lock,
-  CheckCircle,
   ArrowLeftRight,
   RefreshCw,
   Tag,
@@ -31,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -590,7 +587,7 @@ export default function StaffPickupsPage() {
   };
 
   const onConfirmHandover = (data: HandoverFormValues) => {
-    const chargeConfig = booking?.frozenChargeConfig;
+    // const chargeConfig = booking?.frozenChargeConfig;
 
     // Validate required capture photos
     if (captureConfig) {
