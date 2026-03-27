@@ -3,14 +3,15 @@ import { toast } from "sonner";
 import { Tag, X, Loader2, CheckCircle2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { discountPublicService, type CouponValidation } from "@/services/discount.service";
+import { discountPublicService } from "@/services/discount.service";
 
 interface CouponInputProps {
   vehiclePublicId?: string;
   startAt?: string;
   endAt?: string;
   appliedCode: string | null;
-  onApply: (code: string, preview?: CouponValidation) => void;
+  appliedAmount?: number;
+  onApply: (code: string, amount?: number) => void;
   onRemove: () => void;
 }
 
@@ -32,6 +33,7 @@ export function CouponInput({
   startAt,
   endAt,
   appliedCode,
+  appliedAmount = 0,
   onApply,
   onRemove,
 }: CouponInputProps) {
@@ -63,9 +65,9 @@ export function CouponInput({
           return;
         }
 
-        onApply(code, res.data);
+        onApply(code, parseFloat(res.data.discountAmount));
         setInputValue("");
-        toast.success(`Coupon ${code} applied!`);
+        toast.success(`Coupon ${code} applied! Saved ₹${res.data.discountAmount}`);
       } else {
         // No vehicle context — just apply the code without validation preview
         onApply(code);
@@ -84,6 +86,7 @@ export function CouponInput({
         <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
         <span className="text-sm font-medium text-green-800 flex-1">
           Coupon applied: <span className="font-mono uppercase">{appliedCode}</span>
+          {appliedAmount > 0 && <span className="ml-1 text-green-600 font-semibold">(Saved ₹{appliedAmount.toFixed(2)})</span>}
         </span>
         <button
           type="button"

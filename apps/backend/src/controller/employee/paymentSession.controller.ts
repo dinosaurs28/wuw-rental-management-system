@@ -45,12 +45,15 @@ const addDepositSchema = z.object({
 
 const recordPaymentSchema = z.object({
   method: z.enum(["CASH", "ONLINE"]),
-  amount: z.coerce.number().positive(),
+  amount: z.coerce.number().min(0),
   idempotencyKey: z.string().min(1),
   notes: z.string().optional(),
   onlineTransactionRef: z.string().optional(),
   onlineGateway: z.string().optional(),
-});
+}).refine(
+  (d) => d.method !== "ONLINE" || !!d.onlineTransactionRef?.trim(),
+  { message: "Transaction reference is required for online payments", path: ["onlineTransactionRef"] },
+);
 
 const recordRefundSchema = z.object({
   method: z.enum(["CASH", "ONLINE"]),
@@ -258,7 +261,7 @@ export const RecordPayment = async (req: Request, res: Response) => {
           tx as any,
         );
 
-        // Create backward-compat PaymentTransaction
+        // Create backward-compat PaymentTransaction (COLLECTED — awaits manager cash confirmation)
         await tx.paymentTransaction.create({
           data: {
             publicId: createID(),
@@ -267,14 +270,12 @@ export const RecordPayment = async (req: Request, res: Response) => {
             branchId: session.branchId,
             purpose: sessionTypeToPurpose(session.sessionType as PaymentSessionType),
             method: "CASH",
-            status: "CONFIRMED",
+            status: "COLLECTED",
             totalAmount: amount.toFixed(2),
             cashAmount: amount.toFixed(2),
             onlineAmount: "0.00",
             collectedById: actor.id,
             collectedAt: new Date(),
-            confirmedById: actor.id,
-            confirmedAt: new Date(),
             notes: notes ?? null,
           },
         });
@@ -287,8 +288,8 @@ export const RecordPayment = async (req: Request, res: Response) => {
         });
 
         // Run post-completion hooks (returns vehicle IDs for RETURN sessions)
-        returnedVehicleIds = await runPostCompletionHooks(session.sessionType as PaymentSessionType, session.bookingId, actor.id, tx as any);
-      });
+        returnedVehicleIds = await runPostCompletionHooks(session.sessionType as PaymentSessionType, session.bookingId, session.id, actor.id, tx as any);
+      }, { timeout: 15000 });
 
       // Invalidate vehicle availability cache for returned vehicles
       if (returnedVehicleIds.length > 0) {
@@ -298,11 +299,51 @@ export const RecordPayment = async (req: Request, res: Response) => {
           console.warn("[record-payment] Cache invalidation failed (non-fatal):", redisErr);
         }
       }
-    } else {
-      // ONLINE — will be verified when gateway returns
-      return res.status(StatusCode.NOT_IMPLEMENTED).json({
-        message: "Online payment gateway initiation not yet implemented in this endpoint. Use booking-level online payment flow.",
-      });
+    } else if (method === "ONLINE") {
+      await prisma.$transaction(async (tx) => {
+        await ledgerService.addEntry(
+          session.id,
+          session.bookingId,
+          LedgerEntryType.PAYMENT,
+          LedgerEntryClassification.PAYMENT,
+          -Math.abs(amount),
+          notes ?? `Online payment of ₹${amount}${onlineTransactionRef ? ` (ref: ${onlineTransactionRef})` : ""}`,
+          actor.id,
+          String(actor.role),
+          { idempotencyKey, referenceType: "ONLINE_PAYMENT" },
+          tx as any,
+        );
+
+        await tx.paymentTransaction.create({
+          data: {
+            publicId: createID(),
+            idempotencyKey: `pt:${idempotencyKey}`,
+            bookingId: session.bookingId,
+            branchId: session.branchId,
+            purpose: sessionTypeToPurpose(session.sessionType as PaymentSessionType),
+            method: "ONLINE",
+            status: "CONFIRMED",
+            totalAmount: amount.toFixed(2),
+            cashAmount: "0.00",
+            onlineAmount: amount.toFixed(2),
+            onlineTransactionRef: onlineTransactionRef ?? null,
+            onlineGateway: onlineGateway ?? null,
+            collectedById: actor.id,
+            collectedAt: new Date(),
+            confirmedById: actor.id,
+            confirmedAt: new Date(),
+            notes: notes ?? null,
+          },
+        });
+
+        await paymentSessionService.updateStatus(session.id, PaymentSessionStatus.COMPLETED, {}, tx as any);
+        await (tx as any).booking.update({
+          where: { id: session.bookingId },
+          data: { activePaymentSessionId: null },
+        });
+
+        returnedVehicleIds = await runPostCompletionHooks(session.sessionType as PaymentSessionType, session.bookingId, session.id, actor.id, tx as any);
+      }, { timeout: 15000 });
     }
 
     // Audit + activity outside transaction
@@ -405,8 +446,8 @@ export const RecordRefund = async (req: Request, res: Response) => {
         data: { activePaymentSessionId: null },
       });
 
-      returnedVehicleIds = await runPostCompletionHooks(session.sessionType as PaymentSessionType, session.bookingId, actor.id, tx as any);
-    });
+      returnedVehicleIds = await runPostCompletionHooks(session.sessionType as PaymentSessionType, session.bookingId, session.id, actor.id, tx as any);
+    }, { timeout: 15000 });
 
     if (returnedVehicleIds.length > 0) {
       try {
@@ -452,6 +493,7 @@ export const RecordRefund = async (req: Request, res: Response) => {
 async function runPostCompletionHooks(
   sessionType: PaymentSessionType,
   bookingId: number,
+  sessionId: number,
   actorId: number,
   tx: any,
 ): Promise<number[]> {
@@ -475,6 +517,117 @@ async function runPostCompletionHooks(
       where: { id: { in: vehicleIds } },
       data: { status: VehicleStatus.OUT_FOR_RENTAL },
     });
+
+    // Case 1: Extension was paid directly (PAYMENT_COLLECTED) before this session
+    const pendingExtension = await tx.bookingExtension.findFirst({
+      where: { bookingId, extensionStatus: ExtensionStatus.PAYMENT_COLLECTED },
+      orderBy: { createdAt: "desc" },
+    });
+    if (pendingExtension) {
+      await tx.bookingExtension.update({
+        where: { id: pendingExtension.id },
+        data: {
+          extensionStatus: ExtensionStatus.CONFIRMED,
+          actualNewEndAt: pendingExtension.requestedEndAt,
+        },
+      });
+      await tx.booking.update({
+        where: { id: bookingId },
+        data: {
+          endAt: pendingExtension.requestedEndAt,
+          activeExtensionId: null,
+          extensionCount: { increment: 1 },
+          lastExtendedAt: new Date(),
+        },
+      });
+    }
+
+    // Case 2: Extension was added to this pickup session via an EXTENSION ledger entry
+    // (extension status is PENDING_PAYMENT — payment deferred to this session)
+    if (!pendingExtension) {
+      const extLedgerEntry = await tx.ledgerEntry.findFirst({
+        where: { sessionId, entryType: LedgerEntryType.EXTENSION, isVoided: false },
+      });
+      if (extLedgerEntry?.referenceId) {
+        const sessionExt = await tx.bookingExtension.findUnique({
+          where: { publicId: extLedgerEntry.referenceId },
+          include: { booking: { select: { extensionCount: true, originalEndAt: true } } },
+        });
+        if (sessionExt && sessionExt.extensionStatus === ExtensionStatus.PENDING_PAYMENT) {
+          await tx.bookingExtension.update({
+            where: { id: sessionExt.id },
+            data: {
+              extensionStatus: ExtensionStatus.CONFIRMED,
+              actualNewEndAt: sessionExt.requestedEndAt,
+            },
+          });
+          // booking.endAt is already set by commit() as the vehicle hold —
+          // just clear activeExtensionId and increment the counter.
+          await tx.booking.update({
+            where: { id: bookingId },
+            data: {
+              activeExtensionId: null,
+              extensionCount: { increment: 1 },
+              lastExtendedAt: new Date(),
+              totalFinal: sessionExt.newTotalFinal,
+              ...(sessionExt.booking.extensionCount === 0 && !sessionExt.booking.originalEndAt
+                ? { originalEndAt: sessionExt.oldEndAt }
+                : {}),
+            },
+          });
+        }
+      }
+    }
+
+    // Case 3: Discount ledger entry — apply to booking record
+    const discountLedgerEntry = await tx.ledgerEntry.findFirst({
+      where: { sessionId, entryType: LedgerEntryType.DISCOUNT, isVoided: false },
+    });
+    if (discountLedgerEntry?.referenceId) {
+      const rule = await tx.discountRule.findUnique({
+        where: { publicId: discountLedgerEntry.referenceId },
+        select: { id: true, code: true },
+      });
+      if (rule) {
+        const discountedAmount = new Decimal(discountLedgerEntry.amount.toString()).abs();
+        const fullBooking = await tx.booking.findUniqueOrThrow({
+          where: { id: bookingId },
+          select: { customerId: true, branchId: true, totalFinal: true },
+        });
+
+        // Upsert DiscountApplication
+        await (tx as any).discountApplication.upsert({
+          where: { bookingId },
+          update: {
+            couponDiscountAmount: discountedAmount.toFixed(2),
+            discountRuleId: rule.id,
+            totalDiscountAmount: discountedAmount.toFixed(2),
+            finalAmount: new Decimal(fullBooking.totalFinal?.toString() ?? "0").minus(discountedAmount).toFixed(2),
+          },
+          create: {
+            publicId: createID(),
+            bookingId,
+            originalAmount: fullBooking.totalFinal?.toString() ?? "0",
+            couponDiscountAmount: discountedAmount.toFixed(2),
+            discountRuleId: rule.id,
+            totalDiscountAmount: discountedAmount.toFixed(2),
+            finalAmount: new Decimal(fullBooking.totalFinal?.toString() ?? "0").minus(discountedAmount).toFixed(2),
+            paymentPlan: "FULL",
+          },
+        });
+
+        // Append usage log
+        await (tx as any).couponUsageLog.create({
+          data: {
+            discountRuleId: rule.id,
+            bookingId,
+            customerId: fullBooking.customerId,
+            branchId: fullBooking.branchId,
+            discountedAmount: discountedAmount.toFixed(2),
+          },
+        });
+      }
+    }
 
     return [];
   } else if (sessionType === PaymentSessionType.EXTENSION) {

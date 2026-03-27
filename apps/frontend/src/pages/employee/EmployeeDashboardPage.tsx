@@ -10,6 +10,9 @@ import {
   bookingService,
   type EmployeeBooking,
 } from "@/services/booking.service";
+import { employeeService } from "@/services/employee.service";
+import { useQuery } from "@tanstack/react-query";
+
 
 import { DashboardNavbar } from "@/components/employee/DashboardNavbar";
 import { BookingTable } from "@/components/employee/BookingTable";
@@ -36,6 +39,14 @@ export default function EmployeeDashboardPage() {
   const [bookings, setBookings] = useState<EmployeeBooking[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+
+  // Dashboard Stats Query
+  const { data: stats, isLoading: isStatsLoading } = useQuery({
+    queryKey: ["employee-dashboard-stats"],
+    queryFn: () => employeeService.getDashboardStats(),
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   // Auth Check
   useEffect(() => {
@@ -166,7 +177,7 @@ export default function EmployeeDashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <DashboardStats />
+          <DashboardStats stats={stats} isLoading={isStatsLoading} />
         </motion.div>
 
         {/* Main Table Section */}

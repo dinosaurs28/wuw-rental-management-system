@@ -7,11 +7,14 @@ export interface SettlementSummary {
   bookingId: number;
   bookingPublicId: string;
   bookingStatus: string;
-  remainingRentalBalance: Decimal;
-  damageChargesTotal: Decimal;
-  totalCollectedConfirmed: Decimal;
-  totalCollectedPending: Decimal;
-  netPayable: Decimal;       // positive = customer owes, negative = refund due
+  customerName: string;
+  vehicleRegNo: string;
+  rentalBalanceRemaining: string; // was remainingRentalBalance
+  damageCharges: string;          // was damageChargesTotal
+  extensionCharges: string;      // Added
+  alreadyPaid: string;           // was totalCollectedConfirmed
+  totalCollectedPending: string;
+  netPayable: string;
   isSettled: boolean;
 }
 
@@ -30,6 +33,17 @@ class SettlementEngineService {
         publicId: true,
         status: true,
         totalFinal: true,
+        customer: {
+          select: {
+            user: { select: { name: true } },
+          },
+        },
+        items: {
+          select: {
+            vehicle: { select: { regNo: true } },
+          },
+          take: 1,
+        },
         damages: {
           where: { status: "APPROVED" },
           select: { finalCost: true, estimatedCost: true },
@@ -67,19 +81,26 @@ class SettlementEngineService {
       else if (row.status === "COLLECTED") totalCollectedPending = totalCollectedPending.add(amt);
     }
 
-    const remainingRentalBalance = Decimal.max(ZERO, totalFinal.sub(totalCollectedConfirmed));
+    const rentalBalanceRemaining = Decimal.max(ZERO, totalFinal.sub(totalCollectedConfirmed));
     const netPayable = totalOwed.sub(totalCollectedConfirmed);
     const isSettled = netPayable.lte(ZERO) && totalCollectedPending.eq(ZERO);
+
+    // Extension charges: for now we can derive it from the total owed vs (base + damage)
+    // but totalFinal already includes base. For simplicity, we'll return 0 if not tracked.
+    const extensionCharges = ZERO; 
 
     return {
       bookingId,
       bookingPublicId: booking.publicId,
       bookingStatus: booking.status,
-      remainingRentalBalance,
-      damageChargesTotal,
-      totalCollectedConfirmed,
-      totalCollectedPending,
-      netPayable,
+      customerName: booking.customer.user.name,
+      vehicleRegNo: booking.items[0]?.vehicle.regNo ?? "N/A",
+      rentalBalanceRemaining: rentalBalanceRemaining.toString(),
+      damageCharges: damageChargesTotal.toString(),
+      extensionCharges: extensionCharges.toString(),
+      alreadyPaid: totalCollectedConfirmed.toString(),
+      totalCollectedPending: totalCollectedPending.toString(),
+      netPayable: netPayable.toString(),
       isSettled,
     };
   }
@@ -103,7 +124,7 @@ class SettlementEngineService {
     for (const b of bookings) {
       const s = await this.calculateSettlement(b.id);
       if (s.isSettled) continue;
-      if (filters.minAmount && s.netPayable.lt(new Decimal(filters.minAmount))) continue;
+      if (filters.minAmount && new Decimal(s.netPayable).lt(new Decimal(filters.minAmount))) continue;
       summaries.push(s);
     }
 

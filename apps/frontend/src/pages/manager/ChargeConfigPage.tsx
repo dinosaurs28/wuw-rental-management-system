@@ -15,6 +15,7 @@ import {
   Settings2,
   AlertCircle,
   CheckCircle2,
+  Layers,
 } from "lucide-react";
 import { ManagerLayout } from "@/components/manager/ManagerLayout";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ const DEFAULT_CONFIG: BranchChargeConfig = {
   overrideApprovalThreshold: null,
   safetyDepositEnabled: false,
   safetyDepositRequiresApproval: true,
+  usePaymentSessions: false,
 };
 
 function ActiveModulesBar({ config }: { config: BranchChargeConfig }) {
@@ -61,6 +63,7 @@ function ActiveModulesBar({ config }: { config: BranchChargeConfig }) {
     config.damageModuleEnabled && "Damage",
     config.employeeOverrideEnabled && "Overrides",
     config.safetyDepositEnabled && "Safety Deposit",
+    config.usePaymentSessions && "Unified Payments",
   ].filter(Boolean) as string[];
 
   return (
@@ -445,6 +448,25 @@ export function ChargeConfigPage() {
                 </label>
               </div>
             </ChargeModuleToggle>
+          </div>
+        </div>
+
+        {/* ── Section: Payment Flow ───────────────────────────────────── */}
+        <div>
+          <SectionHeader
+            title="Payment Flow"
+            description="Control how payments are collected at pickup and return"
+          />
+          <div className="space-y-2">
+            <ChargeModuleToggle
+              icon={Layers}
+              iconColor="text-violet-600"
+              iconBg="bg-violet-100"
+              title="Unified Payment Sessions"
+              description="Consolidate all charges (advance balance, extensions, deposits, discounts) into a single payment at the end of pickup and return flows"
+              enabled={form.usePaymentSessions}
+              onToggle={(v) => update("usePaymentSessions", v)}
+            />
           </div>
         </div>
 

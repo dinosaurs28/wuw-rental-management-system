@@ -69,6 +69,7 @@ import {
   GetPickupPricingRules,
 } from "../../controller/employee/vehicle-swap.controller.js";
 import sessionRouter from "./session.routes.js";
+import dashboardRouter from "./dashboard.routes.js";
 
 const router: Router = Router();
 
@@ -130,6 +131,7 @@ router.post("/damage/report", EmployeeCheck, CreateDamageReport);
 router.use("/extensions", extensionRouter);
 router.use("/payment", paymentRouter);
 router.use("/discount", discountRouter);
+router.use("/dashboard", dashboardRouter);
 router.use("/", sessionRouter);
 
 // ── Vehicle Swap (Employee) ────────────────────────────────────────────────────

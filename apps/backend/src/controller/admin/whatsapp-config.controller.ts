@@ -9,9 +9,13 @@ const CACHE_TTL = 300; // 5 minutes
 
 export const GetWhatsAppConfig = async (req: Request, res: Response) => {
   try {
-    const cached = await redis.get(CACHE_KEY);
-    if (cached) {
-      return res.status(StatusCode.OK).json({ data: JSON.parse(cached) });
+    try {
+      const cached = await redis.get(CACHE_KEY);
+      if (cached) {
+        return res.status(StatusCode.OK).json({ data: JSON.parse(cached) });
+      }
+    } catch (redisError) {
+      console.warn("Redis get error in GetWhatsAppConfig:", redisError);
     }
 
     const config = await prisma.whatsAppSupportConfig.findFirst();
@@ -20,7 +24,11 @@ export const GetWhatsAppConfig = async (req: Request, res: Response) => {
       return res.status(StatusCode.NOT_FOUND).json({ message: "WhatsApp config not found" });
     }
 
-    await redis.setex(CACHE_KEY, CACHE_TTL, JSON.stringify(config));
+    try {
+      await redis.setex(CACHE_KEY, CACHE_TTL, JSON.stringify(config));
+    } catch (redisError) {
+      console.warn("Redis set error in GetWhatsAppConfig:", redisError);
+    }
 
     return res.status(StatusCode.OK).json({ data: config });
   } catch (error) {
@@ -69,7 +77,11 @@ export const UpsertWhatsAppConfig = async (req: Request, res: Response) => {
           },
         });
 
-    await redis.del(CACHE_KEY);
+    try {
+      await redis.del(CACHE_KEY);
+    } catch (redisError) {
+      console.warn("Failed to clear WhatsApp config cache:", redisError);
+    }
 
     return res.status(StatusCode.OK).json({
       message: "WhatsApp config saved successfully",

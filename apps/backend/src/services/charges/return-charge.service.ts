@@ -130,12 +130,14 @@ export class ReturnChargeService {
       actorId,
     };
 
-    // Run charge engine and persist entries — inside a transaction
-    let breakdown: ChargeBreakdown;
+    // Compute charges OUTSIDE the transaction — read-only, can be slow (multiple
+    // module DB reads). Running it inside an interactive transaction would exhaust
+    // the default 5-second timeout before persistChargeEntries ever uses the tx.
+    const breakdown = await chargeEngineService.computeCharges(context);
 
+    // Persist everything atomically — only writes go inside the transaction
     await prisma.$transaction(async (tx) => {
-      breakdown = await chargeEngineService.computeCharges(context);
-      await chargeEngineService.persistChargeEntries(booking.id, breakdown!, actorId, tx as any);
+      await chargeEngineService.persistChargeEntries(booking.id, breakdown, actorId, tx as any);
 
       // Update FuelRecord if fuel module enabled
       if (frozenConfig.fuelModuleEnabled && booking.fuelRecord) {
@@ -165,9 +167,9 @@ export class ReturnChargeService {
           chargeConfigVersion: { increment: 1 },
         },
       });
-    });
+    }, { timeout: 30000 });
 
-    return breakdown!;
+    return breakdown;
   }
 }
 

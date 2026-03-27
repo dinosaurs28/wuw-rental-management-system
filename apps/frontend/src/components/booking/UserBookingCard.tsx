@@ -3,10 +3,10 @@ import type { Booking } from "@/services/userBookings.service";
 import { BookingStatusBadge } from "./BookingStatusBadge";
 import { BookingQRModal } from "./BookingQRModal";
 import { InvoiceDownloadButton } from "@/components/InvoiceDownloadButton";
-import { CustomerExtensionModal } from "@/components/customer/CustomerExtensionModal";
+// import { CustomerExtensionModal } from "@/components/customer/CustomerExtensionModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { QrCode, Calendar, Clock, Car, ArrowUpRight } from "lucide-react";
+import { QrCode, Calendar, Clock, Car/*, ArrowUpRight*/ } from "lucide-react";
 import { format } from "date-fns";
 
 interface UserBookingCardProps {
@@ -15,7 +15,7 @@ interface UserBookingCardProps {
 
 export function UserBookingCard({ booking }: UserBookingCardProps) {
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
-  const [isExtendModalOpen, setIsExtendModalOpen] = useState(false);
+  // const [isExtendModalOpen, setIsExtendModalOpen] = useState(false);
 
   const formatDate = (dateString: string) => {
     return format(new Date(dateString), "MMM dd, yyyy");
@@ -139,6 +139,7 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
                   bookingId={booking.id}
                   bookingStatus={booking.status}
                 />
+                {/* Extension feature temporarily disabled
                 {booking.status === "CONFIRMED" && (
                   <Button
                     variant="outline"
@@ -150,6 +151,7 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
                     <span className="hidden sm:inline">Extend</span>
                   </Button>
                 )}
+                */}
                 <Button
                   variant="outline"
                   size="sm"
@@ -172,7 +174,7 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
         bookingId={booking.bookingId}
       />
 
-      {/* Extension Modal */}
+      {/* Extension Modal — temporarily disabled
       {isExtendModalOpen && (
         <CustomerExtensionModal
           open={isExtendModalOpen}
@@ -181,6 +183,7 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
           onClose={() => setIsExtendModalOpen(false)}
         />
       )}
+      */}
     </>
   );
 }

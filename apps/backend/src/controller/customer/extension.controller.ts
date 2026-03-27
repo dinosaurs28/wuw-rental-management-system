@@ -94,12 +94,12 @@ export const EvaluateExtension = async (req: Request, res: Response): Promise<vo
           additionalAmount: evaluation.pricing.additionalAmount,
           newTotalFinal: evaluation.pricing.newTotalFinal,
         },
-        resolutionOptions: evaluation.resolutionOptions.options.map((o) => ({
+        resolutionOptions: evaluation.resolutionOptions.map((o) => ({
           type: o.type,
           description: o.description,
           partialNewEndAt: o.partialNewEndAt,
         })),
-        recommendedOption: evaluation.resolutionOptions.recommendedOption,
+        recommendedOption: evaluation.recommendedResolution,
       },
     });
   } catch (error: any) {
@@ -178,29 +178,25 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
       branchName: extensionRecord.booking.branch.name,
     };
 
-    // Customers can only use ONLINE payment and must choose SAME_VEHICLE or PARTIAL_EXTENSION
-    const additionalAmount = extensionRecord.additionalAmount.toNumber();
-
-    const result = await extensionService.commit(
-      {
-        extensionPublicId,
-        resolutionType: "SAME_VEHICLE",
-        paymentMethod: "ONLINE",
-        totalAmount: additionalAmount,
-        onlineAmount: additionalAmount,
-        onlineTransactionRef,
-        onlineGateway,
-        idempotencyKey,
-      },
+    // Commit: hold vehicle slot
+    const { extension } = await extensionService.commit(
+      { extensionPublicId, resolutionType: "SAME_VEHICLE", idempotencyKey },
       actor,
     );
-    const { extension } = result;
+
+    // Collect: process online payment immediately
+    const collectResult = await extensionService.collect(
+      extensionPublicId,
+      "ONLINE",
+      actor,
+      onlineTransactionRef,
+    );
 
     res.status(StatusCode.OK).json({
       message: "Extension confirmed successfully",
       data: {
         publicId: extension.publicId,
-        extensionStatus: extension.extensionStatus,
+        extensionStatus: collectResult.payment === "confirmed" ? "CONFIRMED" : "PAYMENT_COLLECTED",
         actualNewEndAt: extension.actualNewEndAt,
         additionalAmount: extension.additionalAmount,
       },

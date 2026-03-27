@@ -155,11 +155,11 @@ export const paymentService = {
   // Cash confirmations
   getPendingCash: (page = 1, pageSize = 20) =>
     apiClient
-      .get<{ data: PendingCashItem[]; total: number }>(
+      .get<{ transactions: PendingCashItem[]; total: number }>(
         `/branchManager/payment/cash/pending`,
         { params: { page, pageSize } }
       )
-      .then((r) => r.data),
+      .then((r) => ({ data: r.data.transactions, total: r.data.total })),
 
   confirmCash: (txnPublicId: string, notes?: string) =>
     apiClient
@@ -180,11 +180,11 @@ export const paymentService = {
   // Settlements
   getSettlements: (page = 1, pageSize = 20) =>
     apiClient
-      .get<{ data: SettlementItem[]; total: number }>(
+      .get<{ settlements: SettlementItem[]; total: number }>(
         `/branchManager/payment/settlements`,
         { params: { page, pageSize } }
       )
-      .then((r) => r.data),
+      .then((r) => ({ data: r.data.settlements, total: r.data.total })),
 
   getSettlementSummary: (bookingPublicId: string) =>
     apiClient
@@ -280,11 +280,11 @@ export const paymentService = {
 
   getAllShifts: (page = 1, pageSize = 20) =>
     apiClient
-      .get<{ data: CashShift[]; total: number }>(
+      .get<{ shifts: CashShift[]; total: number }>(
         `/branchManager/payment/shifts`,
         { params: { page, pageSize } }
       )
-      .then((r) => r.data),
+      .then((r) => ({ data: r.data.shifts, total: r.data.total })),
 
   getShift: (publicId: string) =>
     apiClient

@@ -43,6 +43,19 @@ export {
   ExtensionStatus,
   ExtensionTrigger,
   ExtensionResolutionType,
+  // Discount enums
+  DiscountType,
+  DiscountScope,
+  AdjustmentType,
+  ManualDiscountStatus,
+  // Charge Engine enums
+  GraceType,
+  ChargeType,
+  OverrideStatus,
+  FuelLevel,
+  SafetyDepositStatus,
+  RentalPeriodType,
+  DamageChargeType,
   // Payment session / ledger enums
   PaymentSessionStatus,
   PaymentSessionType,

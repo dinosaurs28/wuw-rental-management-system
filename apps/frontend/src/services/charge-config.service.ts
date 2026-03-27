@@ -16,6 +16,7 @@ export interface BranchChargeConfig {
   overrideApprovalThreshold: number | null;
   safetyDepositEnabled: boolean;
   safetyDepositRequiresApproval: boolean;
+  usePaymentSessions: boolean;
 }
 
 export const chargeConfigService = {
