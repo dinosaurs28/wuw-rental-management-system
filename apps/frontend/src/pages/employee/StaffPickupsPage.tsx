@@ -587,8 +587,6 @@ export default function StaffPickupsPage() {
   };
 
   const onConfirmHandover = (data: HandoverFormValues) => {
-    // const chargeConfig = booking?.frozenChargeConfig; 
-
     // Validate required capture photos
     if (captureConfig) {
       const missing = captureConfig.fields
