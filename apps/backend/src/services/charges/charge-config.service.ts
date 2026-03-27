@@ -48,6 +48,7 @@ export class ChargeConfigService {
         : null,
       safetyDepositEnabled: data.safetyDepositEnabled ?? false,
       safetyDepositRequiresApproval: data.safetyDepositRequiresApproval ?? true,
+      usePaymentSessions: data.usePaymentSessions ?? false,
     };
 
     if (existing) {

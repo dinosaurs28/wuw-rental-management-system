@@ -1,7 +1,8 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { paymentService } from "@/services/payment.service";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -27,9 +28,16 @@ interface ManagerLayoutProps {
 
 export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
   const { user, logout } = useBranchManagerAuthStore();
-  const { pendingCashCount, pendingRefundCount } = usePaymentStore();
+  const { pendingCashCount, pendingRefundCount, setPendingCashCount } = usePaymentStore();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Refresh pending cash count on every page navigation so the sidebar badge stays current
+  useEffect(() => {
+    paymentService.getPendingCash(1, 1)
+      .then((res) => setPendingCashCount(res.total || 0))
+      .catch(() => {/* non-fatal */});
+  }, [location.pathname, setPendingCashCount]);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -38,14 +46,9 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
     { label: "Vehicles", path: "/manager/vehicles" },
     { label: "Employees", path: "/manager/employees" },
     { label: "Photo Capture", path: "/manager/capture-configs" },
-    { label: "Cash Confirmations", path: "/manager/payment/cash-confirmations", badge: pendingCashCount },
-    { label: "Settlements", path: "/manager/payment/settlements" },
-    { label: "Refunds", path: "/manager/payment/refunds", badge: pendingRefundCount },
-    { label: "Cash Shifts", path: "/manager/payment/cash-shifts" },
+    { label: "Financials", path: "/manager/payment/financials", badge: pendingCashCount + pendingRefundCount },
     { label: "Extensions", path: "/manager/payment/extensions" },
-    { label: "Discount Approvals", path: "/manager/payment/discount-approvals" },
-    { label: "Coupons", path: "/manager/payment/coupons" },
-    { label: "Discount Config", path: "/manager/payment/discount-config" },
+    { label: "Discounts", path: "/manager/payment/discounts" },
     { label: "Charge Settings", path: "/manager/charge-config" },
     { label: "Staff Activity", path: "/manager/staff-activity" },
   ];

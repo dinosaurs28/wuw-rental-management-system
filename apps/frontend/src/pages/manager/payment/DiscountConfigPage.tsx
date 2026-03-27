@@ -9,8 +9,9 @@ import {
   Loader2,
   Save,
   AlertCircle,
+  RefreshCw,
 } from "lucide-react";
-import { ManagerLayout } from "@/components/manager/ManagerLayout";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -299,8 +300,9 @@ function ConfigSection({ config }: { config: DiscountConfig }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export function DiscountConfigPage() {
+export function DiscountConfigTab() {
   const [slabModal, setSlabModal] = useState<DurationSlab | true | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: configData, isLoading: loadingConfig } = useQuery({
     queryKey: ["discount-config"],
@@ -316,12 +318,26 @@ export function DiscountConfigPage() {
   const slabs: DurationSlab[] = slabsData?.data ?? [];
 
   return (
-    <ManagerLayout>
-      <div className="max-w-4xl mx-auto px-4 md:px-6 py-8 space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Discount Configuration</h1>
-          <p className="text-sm text-neutral-500 mt-1">Configure duration slabs and discount rules for this branch</p>
+    <>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-neutral-900">Discount Configuration</h2>
+            <p className="text-sm text-neutral-500 mt-1">Configure duration slabs and discount rules for this branch</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              queryClient.invalidateQueries({ queryKey: ["discount-config"] });
+              queryClient.invalidateQueries({ queryKey: ["discount-slabs"] });
+            }}
+            disabled={loadingConfig || loadingSlabs}
+            className="h-9 px-3 text-neutral-600 border-neutral-200"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${loadingConfig || loadingSlabs ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
         </div>
 
         {/* Config section */}
@@ -418,6 +434,6 @@ export function DiscountConfigPage() {
           onSaved={() => setSlabModal(null)}
         />
       )}
-    </ManagerLayout>
+    </>
   );
 }

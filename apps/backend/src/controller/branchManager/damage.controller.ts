@@ -569,29 +569,31 @@ export const CloseDamageReport = async (req: Request, res: Response) => {
         });
       }
 
-      await staffActivityService.logFromRequest(req, {
-        actionType: StaffActionType.COMPLETED,
-        entityType: StaffEntityType.DAMAGE_REPORT,
-        entityRef: damageReport.publicId,
-        description: `Damage report ${damageReport.publicId} closed`,
-      }, tx);
+    }, { timeout: 30000 });
 
-      await auditService.log({
-        actorId: managerUser.id,
-        actorName: managerUser.name,
-        actorRole: managerUser.role,
-        actorBranchId: branchId,
-        action: "DAMAGE_COST_ASSESSED",
-        category: AuditCategory.PAYMENT,
-        severity: AuditSeverity.WARNING,
-        description: `Damage cost of ₹${finalCost} assessed for vehicle ${damageReport.vehicle.regNo} (booking ${booking.publicId})`,
-        entity: "DamageReport",
-        entityId: damageReport.publicId,
-        entityLabel: damageReport.vehicle.regNo,
-        ipAddress: req.ip,
-        userAgent: req.headers["user-agent"],
-        metadata: { damageDescription: damageReport.notes, amount: finalCost, disposition, chargeType: activeChargeType },
-      }, tx);
+    // Activity log and audit are non-critical — run outside transaction to avoid timeout
+    await staffActivityService.logFromRequest(req, {
+      actionType: StaffActionType.COMPLETED,
+      entityType: StaffEntityType.DAMAGE_REPORT,
+      entityRef: damageReport.publicId,
+      description: `Damage report ${damageReport.publicId} closed`,
+    });
+
+    await auditService.log({
+      actorId: managerUser.id,
+      actorName: managerUser.name,
+      actorRole: managerUser.role,
+      actorBranchId: branchId,
+      action: "DAMAGE_COST_ASSESSED",
+      category: AuditCategory.PAYMENT,
+      severity: AuditSeverity.WARNING,
+      description: `Damage cost of ₹${finalCost} assessed for vehicle ${damageReport.vehicle.regNo} (booking ${booking.publicId})`,
+      entity: "DamageReport",
+      entityId: damageReport.publicId,
+      entityLabel: damageReport.vehicle.regNo,
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
+      metadata: { damageDescription: damageReport.notes, amount: finalCost, disposition, chargeType: activeChargeType },
     });
 
     if (isFullySettled) {

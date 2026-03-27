@@ -17,6 +17,7 @@ const branchChargeConfigSchema = z.object({
   overrideApprovalThreshold: z.coerce.number().min(0).nullable().optional(),
   safetyDepositEnabled: z.boolean().optional(),
   safetyDepositRequiresApproval: z.boolean().optional(),
+  usePaymentSessions: z.boolean().optional(),
 });
 import { chargeConfigService } from "../../services/charges/charge-config.service.js";
 import {

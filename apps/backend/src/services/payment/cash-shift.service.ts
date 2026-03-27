@@ -179,14 +179,23 @@ class CashShiftService {
     return updated;
   }
 
-  async getActiveShift(employeeId: number): Promise<CashShift | null> {
-    return prisma.cashShift.findFirst({
+  async getActiveShift(employeeId: number): Promise<any | null> {
+    const shift = await prisma.cashShift.findFirst({
       where: { employeeId, status: "OPEN" },
+      include: { employee: { select: { name: true } } },
     });
+    if (!shift) return null;
+    return {
+      ...shift,
+      employeeName: (shift as any).employee.name,
+      expectedTotal: shift.expectedTotal.toString(),
+      actualTotal: shift.actualTotal.toString(),
+      discrepancy: shift.discrepancy.toString(),
+    };
   }
 
-  async getByPublicId(publicId: string): Promise<CashShift | null> {
-    return prisma.cashShift.findUnique({
+  async getByPublicId(publicId: string): Promise<any | null> {
+    const shift = await prisma.cashShift.findUnique({
       where: { publicId },
       include: {
         employee: { select: { publicId: true, name: true } },
@@ -202,7 +211,15 @@ class CashShiftService {
           },
         },
       },
-    }) as Promise<CashShift | null>;
+    });
+    if (!shift) return null;
+    return {
+      ...shift,
+      employeeName: (shift as any).employee.name,
+      expectedTotal: shift.expectedTotal.toString(),
+      actualTotal: shift.actualTotal.toString(),
+      discrepancy: shift.discrepancy.toString(),
+    };
   }
 
   async listForBranch(
@@ -227,7 +244,15 @@ class CashShiftService {
       prisma.cashShift.count({ where }),
     ]);
 
-    return { shifts: shifts as CashShift[], total, page, pageSize };
+    const mapped = (shifts as any[]).map((s) => ({
+      ...s,
+      employeeName: s.employee.name,
+      expectedTotal: s.expectedTotal.toString(),
+      actualTotal: s.actualTotal.toString(),
+      discrepancy: s.discrepancy.toString(),
+    }));
+
+    return { shifts: mapped as any, total, page, pageSize };
   }
 
   /**

@@ -1,5 +1,4 @@
 import apiClient from "@/lib/axios";
-import type { PaymentMethod, OnlineGateway } from "@/services/payment.service";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -81,12 +80,24 @@ export interface CommitExtensionPayload {
   selectedVehicleId?: string;
   affectedBookingSwaps?: { bookingPublicId: string; newVehiclePublicId: string }[];
   partialNewEndAt?: string;
-  paymentMethod: PaymentMethod;
-  cashAmount?: number;
-  onlineAmount?: number;
-  onlineTransactionRef?: string;
-  onlineGateway?: string;
   idempotencyKey: string;
+}
+
+export interface CommitExtensionResult {
+  publicId: string;
+  extensionStatus: ExtensionStatus;
+  resolutionType: ExtensionResolutionType;
+  additionalAmount: string;
+  remainAmount: {
+    extension: string;
+  };
+}
+
+export interface CollectExtensionResult {
+  remainAmount: {
+    extension: string;
+  };
+  payment: "pending" | "confirmed";
 }
 
 // ── Service ───────────────────────────────────────────────────────────────────
@@ -104,8 +115,19 @@ export const extensionService = {
 
   employeeCommit: (payload: CommitExtensionPayload) =>
     apiClient
-      .post<{ data: BookingExtension; message: string }>(
+      .post<{ data: CommitExtensionResult; message: string }>(
         `/employee/extensions/commit`,
+        payload
+      )
+      .then((r) => r.data),
+
+  employeeCollect: (
+    extensionPublicId: string,
+    payload: { method: "CASH" | "ONLINE"; onlineTransactionRef?: string }
+  ) =>
+    apiClient
+      .post<{ data: CollectExtensionResult; message: string }>(
+        `/employee/extensions/${extensionPublicId}/collect`,
         payload
       )
       .then((r) => r.data),
@@ -192,7 +214,7 @@ export const extensionService = {
     extensionPublicId: string;
     paymentMethod: "ONLINE";
     onlineTransactionRef: string;
-    onlineGateway?: OnlineGateway;
+    onlineGateway?: string;
     idempotencyKey: string;
   }) =>
     apiClient

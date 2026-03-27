@@ -131,6 +131,13 @@ export interface EmployeeBooking {
   requiresManagerConfirmation?: boolean;
   frozenChargeConfig?: FrozenChargeConfig | null;
   startOdometer?: number | null;
+  safetyDeposit?: string | null;
+  days?: number;
+  freeKmLimit?: number | null;
+  effectiveFreeKmLimit?: number | null;
+  extraKmRate?: number | null;
+  pickupFuelLevel?: string | null;
+  usePaymentSessions?: boolean;
   branch?: {
     chargeConfig?: { usePaymentSessions: boolean } | null;
   };

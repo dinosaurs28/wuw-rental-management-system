@@ -488,6 +488,11 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
         remainingPaidDuring: true,
         frozenChargeConfig: true,
         startOdometer: true,
+        safetyDeposit: true,
+        days: true,
+        freeKmLimit: true,
+        branchId: true,
+        fuelRecord: { select: { pickupFuelLevel: true } },
         branch: {
           select: {
             chargeConfig: { select: { usePaymentSessions: true } },
@@ -502,6 +507,7 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
         },
         items: {
           select: {
+            vehicleId: true,
             vehicle: {
               select: {
                 publicId: true,
@@ -527,9 +533,51 @@ export const GetBookingDetails = async (req: Request, res: Response) => {
       return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
     }
 
+    // Compute effective km limit — use stored value if available, otherwise fall
+    // back to vehicle pricing (same logic as return-charge.service)
+    let effectiveFreeKmLimit: number | null = booking.freeKmLimit ?? null;
+    let extraKmRate: number | null = null;
+
+    if (effectiveFreeKmLimit === null) {
+      const vehicleId = booking.items[0]?.vehicleId;
+      if (vehicleId) {
+        const customPricing = await prisma.vehicleCustomPricing.findUnique({
+          where: { vehicleId },
+          select: { freeKm24Hour: true, extraKmRate: true },
+        });
+        if (customPricing) {
+          effectiveFreeKmLimit = customPricing.freeKm24Hour * Math.max(1, booking.days ?? 1);
+          extraKmRate = Number(customPricing.extraKmRate);
+        } else {
+          const vehicle = await prisma.vehicle.findUnique({
+            where: { id: vehicleId },
+            select: { categoryId: true },
+          });
+          if (vehicle) {
+            const branchPricing = await prisma.branchPricingDefaults.findUnique({
+              where: { branchId_categoryId: { branchId: booking.branchId, categoryId: vehicle.categoryId } },
+              select: { freeKm24Hour: true, extraKmRate: true },
+            });
+            if (branchPricing) {
+              effectiveFreeKmLimit = branchPricing.freeKm24Hour * Math.max(1, booking.days ?? 1);
+              extraKmRate = Number(branchPricing.extraKmRate);
+            }
+          }
+        }
+      }
+    }
+
+    const { branch, fuelRecord, branchId, items, ...bookingData } = booking;
     return res.status(StatusCode.OK).json({
       message: "Booking details fetched successfully",
-      data: booking,
+      data: {
+        ...bookingData,
+        items: items.map(({ vehicleId: _vid, ...rest }) => rest),
+        pickupFuelLevel: fuelRecord?.pickupFuelLevel ?? null,
+        effectiveFreeKmLimit,
+        extraKmRate,
+        usePaymentSessions: branch?.chargeConfig?.usePaymentSessions ?? false,
+      },
     });
   } catch (error) {
     console.error("Error fetching booking details:", error);

@@ -1,4 +1,6 @@
 import { Request, Response } from "express";
+import { z } from "zod";
+import Decimal from "decimal.js";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus, ExtensionTrigger, ExtensionStatus } from "@repo/database/client";
 import { extensionService } from "../../services/extension/index.js";
@@ -8,6 +10,14 @@ import {
   cancelExtensionSchema,
   listExtensionsSchema,
 } from "@repo/schemas";
+
+const collectExtensionSchema = z.object({
+  method: z.enum(["CASH", "ONLINE"]),
+  onlineTransactionRef: z.string().min(1).optional(),
+}).refine(
+  (d) => d.method !== "ONLINE" || !!d.onlineTransactionRef?.trim(),
+  { message: "onlineTransactionRef is required for ONLINE payment", path: ["onlineTransactionRef"] },
+);
 
 const buildActorContext = async (req: Request) => {
   const user = await prisma.user.findUnique({
@@ -99,35 +109,28 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
     }
 
     const actor = await buildActorContext(req);
-    const result = await extensionService.commit(validation.data, actor);
-    const { extension, session } = result;
+    const { extension, remainAmount } = await extensionService.commit(validation.data, actor);
 
-    // Session flow: client must call record-payment on the returned session
-    if (session) {
-      res.status(StatusCode.OK).json({
-        message: "Extension session initiated — collect payment to confirm extension",
-        data: {
-          publicId: extension.publicId,
-          extensionStatus: extension.extensionStatus,
-          resolutionType: extension.resolutionType,
-          additionalAmount: extension.additionalAmount,
-          session,
-        },
-      });
-      return;
-    }
+    // Check if this branch uses deferred payment sessions so the frontend
+    // knows to add the extension charge to the active pickup session instead
+    // of collecting payment immediately via Step 3 of the extension modal.
+    const branchConfig = await prisma.branchChargeConfig.findUnique({
+      where: { branchId: req.branch_Id },
+      select: { usePaymentSessions: true },
+    });
+    const usePaymentSession = branchConfig?.usePaymentSessions ?? false;
 
     res.status(StatusCode.OK).json({
-      message:
-        extension.extensionStatus === "CONFIRMED"
-          ? "Extension confirmed successfully"
-          : "Extension payment collected — pending cash confirmation",
+      message: usePaymentSession
+        ? "Extension committed — charge will be added to pickup payment session"
+        : "Extension committed — vehicle held, collect payment to confirm",
       data: {
         publicId: extension.publicId,
         extensionStatus: extension.extensionStatus,
         resolutionType: extension.resolutionType,
-        actualNewEndAt: extension.actualNewEndAt,
-        additionalAmount: extension.additionalAmount,
+        additionalAmount: new Decimal(extension.additionalAmount.toString()).toFixed(2),
+        remainAmount,
+        usePaymentSession,
       },
     });
   } catch (error: any) {
@@ -142,6 +145,42 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
       error.message?.includes("cannot be committed")
     ) {
       res.status(StatusCode.CONFLICT).json({ message: error.message });
+      return;
+    }
+    res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * POST /api/employee/extensions/:extensionPublicId/collect
+ * Collect payment for an extension that is PENDING_PAYMENT.
+ */
+export const CollectExtensionPayment = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const validation = collectExtensionSchema.safeParse(req.body);
+    if (!validation.success) {
+      res.status(StatusCode.BAD_REQUEST).json({ message: "Validation failed", errors: validation.error.format() });
+      return;
+    }
+    const actor = await buildActorContext(req);
+    const result = await extensionService.collect(
+      req.params.extensionPublicId!,
+      validation.data.method,
+      actor,
+      validation.data.onlineTransactionRef,
+    );
+    res.status(StatusCode.OK).json({
+      message: result.payment === "confirmed" ? "Extension confirmed" : "Extension payment collected — awaiting manager confirmation",
+      data: result,
+    });
+  } catch (error: any) {
+    console.error("CollectExtensionPayment Error:", error);
+    if (error.message?.includes("not found")) {
+      res.status(StatusCode.NOT_FOUND).json({ message: error.message });
+      return;
+    }
+    if (error.message?.includes("already in")) {
+      res.status(StatusCode.BAD_REQUEST).json({ message: error.message });
       return;
     }
     res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });

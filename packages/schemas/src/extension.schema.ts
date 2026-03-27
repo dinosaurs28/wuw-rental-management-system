@@ -10,7 +10,7 @@ export const evaluateExtensionSchema = z.object({
 
 // ── Employee / Manager: Commit Extension ─────────────────────────────────────
 
-const commitPaymentBase = z.object({
+export const commitExtensionSchema = z.object({
   extensionPublicId: z.string().min(1),
   resolutionType: z.enum([
     "SAME_VEHICLE",
@@ -18,9 +18,7 @@ const commitPaymentBase = z.object({
     "SWAP_FUTURE_BOOKING",
     "PARTIAL_EXTENSION",
   ]),
-  // Required when resolutionType = SWAP_CURRENT_TO_OTHER
   selectedVehiclePublicId: z.string().optional(),
-  // Required when resolutionType = SWAP_FUTURE_BOOKING
   affectedBookingSwaps: z
     .array(
       z.object({
@@ -29,23 +27,13 @@ const commitPaymentBase = z.object({
       }),
     )
     .optional(),
-  // Required when resolutionType = PARTIAL_EXTENSION
   partialNewEndAt: z
     .string()
     .datetime({ message: "partialNewEndAt must be an ISO 8601 datetime string" })
     .optional(),
-  // Payment fields
-  paymentMethod: z.enum(["CASH", "ONLINE", "SPLIT"]),
-  totalAmount: z.number().positive(),
-  cashAmount: z.number().min(0).optional(),
-  onlineAmount: z.number().min(0).optional(),
-  onlineTransactionRef: z.string().optional(),
-  onlineGateway: z.string().optional(),
   idempotencyKey: z.string().min(1).max(64),
   notes: z.string().max(500).optional(),
-});
-
-export const commitExtensionSchema = commitPaymentBase
+})
   .refine(
     (d) => {
       if (d.resolutionType === "SWAP_CURRENT_TO_OTHER") return !!d.selectedVehiclePublicId;
@@ -67,31 +55,6 @@ export const commitExtensionSchema = commitPaymentBase
       return true;
     },
     { message: "partialNewEndAt is required when resolutionType is PARTIAL_EXTENSION", path: ["partialNewEndAt"] },
-  )
-  .refine(
-    (d) => {
-      if (d.paymentMethod === "CASH") return (d.cashAmount ?? 0) === d.totalAmount;
-      return true;
-    },
-    { message: "cashAmount must equal totalAmount for CASH method", path: ["cashAmount"] },
-  )
-  .refine(
-    (d) => {
-      if (d.paymentMethod === "ONLINE")
-        return (d.onlineAmount ?? 0) === d.totalAmount && !!d.onlineTransactionRef;
-      return true;
-    },
-    { message: "onlineAmount must equal totalAmount and onlineTransactionRef is required for ONLINE method", path: ["onlineAmount"] },
-  )
-  .refine(
-    (d) => {
-      if (d.paymentMethod === "SPLIT") {
-        const sum = (d.cashAmount ?? 0) + (d.onlineAmount ?? 0);
-        return Math.abs(sum - d.totalAmount) < 0.01 && !!d.onlineTransactionRef;
-      }
-      return true;
-    },
-    { message: "cashAmount + onlineAmount must equal totalAmount and onlineTransactionRef is required for SPLIT method", path: ["cashAmount"] },
   );
 
 // ── Customer: Evaluate Extension ─────────────────────────────────────────────

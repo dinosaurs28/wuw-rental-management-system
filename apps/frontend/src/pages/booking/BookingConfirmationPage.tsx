@@ -245,7 +245,7 @@ export const BookingConfirmationPage = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
-        <main className="flex-1">
+        <main className="flex-1 mt-24">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
             {/* Breadcrumb Skeleton */}
             <div className="flex items-center gap-2 mb-8">
@@ -357,8 +357,7 @@ export const BookingConfirmationPage = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
-
-      <main className="flex-1">
+      <main className="flex-1 mt-24 min-h-[80vh]">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
           {/* Breadcrumb */}
           <Breadcrumb className="mb-6">

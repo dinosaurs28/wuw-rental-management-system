@@ -32,9 +32,14 @@ export const ReviewConfirmPage = () => {
     selectedVehicleId,
     startDate,
     endDate,
+    startTime,
+    endTime,
     selectedKycFilePublicId,
     paymentType,
+    pricePerDay,
+    rentalDays,
     couponCode,
+    couponDiscountAmount,
     setCouponCode,
     hasVehicleSelected,
   } = useVehicleRentalStore();
@@ -65,8 +70,7 @@ export const ReviewConfirmPage = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
-
-      <main className="flex-1">
+      <main className="flex-1 mt-24 min-h-[80vh]">
         {/* Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
           {/* Breadcrumb */}
@@ -121,12 +125,39 @@ export const ReviewConfirmPage = () => {
                     <p className="text-sm font-medium text-zinc-700">Have a coupon code?</p>
                     <CouponInput
                       vehiclePublicId={selectedVehicleId ?? undefined}
-                      startAt={startDate ? `${startDate}T10:00:00.000Z` : undefined}
-                      endAt={endDate ? `${endDate}T10:00:00.000Z` : undefined}
+                      startAt={startDate ? `${startDate}T${startTime}:00.000Z` : undefined}
+                      endAt={endDate ? `${endDate}T${endTime}:00.000Z` : undefined}
                       appliedCode={couponCode}
-                      onApply={(code) => setCouponCode(code)}
-                      onRemove={() => setCouponCode(null)}
+                      appliedAmount={couponDiscountAmount}
+                      onApply={(code, amount) => setCouponCode(code, amount)}
+                      onRemove={() => setCouponCode(null, 0)}
                     />
+                  </div>
+
+                  {/* Price Summary */}
+                  <div className="mt-4 p-5 bg-white border border-zinc-200 rounded-xl space-y-4 shadow-sm">
+                    <h3 className="text-base font-semibold text-zinc-800">Price Summary</h3>
+                    
+                    <div className="space-y-2.5">
+                      <div className="flex justify-between text-sm text-zinc-600">
+                        <span>Base Rental ({rentalDays} {rentalDays === 1 ? 'day' : 'days'})</span>
+                        <span className="font-medium text-zinc-900">₹{(pricePerDay * rentalDays).toFixed(2)}</span>
+                      </div>
+                      
+                      {couponDiscountAmount > 0 && (
+                        <div className="flex justify-between text-sm text-green-600 font-medium">
+                          <span>Coupon Discount</span>
+                          <span>-₹{couponDiscountAmount.toFixed(2)}</span>
+                        </div>
+                      )}
+
+                      <div className="pt-3 border-t border-zinc-100 flex justify-between items-center">
+                        <span className="text-base font-bold text-zinc-900">Total payable</span>
+                        <span className="text-xl font-bold text-primary">
+                          ₹{Math.max(0, (pricePerDay * rentalDays) - couponDiscountAmount).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Terms & Conditions */}

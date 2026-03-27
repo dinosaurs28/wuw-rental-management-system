@@ -30,6 +30,7 @@ interface VehicleRentalState {
   paymentFlow: "FULL" | "ADVANCE";
   advancePayAmount: number;
   couponCode: string | null;
+  couponDiscountAmount: number;
 
   // Booking response (after API call)
   holdId: string | null;
@@ -67,7 +68,7 @@ interface VehicleRentalState {
   setPaymentType: (type: "CASH" | "ONLINE" | null) => void;
   setPaymentFlow: (flow: "FULL" | "ADVANCE") => void;
   setAdvancePayAmount: (amount: number) => void;
-  setCouponCode: (code: string | null) => void;
+  setCouponCode: (code: string | null, amount?: number) => void;
   setBookingResponse: (response: {
     holdId: string;
     transactionId: string;
@@ -112,39 +113,37 @@ const isDateInPast = (dateStr: string): boolean => {
   return checkDate < today;
 };
 
-// Helper to calculate days between two dates (inclusive of both start and end)
-// Returns minimum 1 day for same-day rentals
+// Helper to calculate days between two dates/times
+// Based on 24-hour cycles: 24h = 1 day, 25h = 2 days
 const calculateDaysBetween = (
-  start: string | null,
-  end: string | null,
+  startDateStr: string | null,
+  endDateStr: string | null,
+  startTimeStr: string = "10:00",
+  endTimeStr: string = "10:00",
 ): number => {
-  if (!start || !end) return 0;
+  if (!startDateStr || !endDateStr) return 0;
 
-  const startDate = new Date(start);
-  const endDate = new Date(end);
+  // Combine local date and time strings
+  // Note: We use the format YYYY-MM-DDTHH:mm to avoid timezone shifts during manual parsing
+  const start = new Date(`${startDateStr}T${startTimeStr}`);
+  const end = new Date(`${endDateStr}T${endTimeStr}`);
 
   // Validate dates
-  if (!isValidDate(startDate) || !isValidDate(endDate)) return 0;
+  if (!isValidDate(start) || !isValidDate(end)) return 0;
 
-  // Normalize to start of day (midnight)
-  const startTime = new Date(
-    startDate.getFullYear(),
-    startDate.getMonth(),
-    startDate.getDate(),
-  ).getTime();
-  const endTime = new Date(
-    endDate.getFullYear(),
-    endDate.getMonth(),
-    endDate.getDate(),
-  ).getTime();
+  // Duration in hours
+  const diffTime = end.getTime() - start.getTime();
+  const diffHours = diffTime / (1000 * 60 * 60);
 
-  const diffTime = endTime - startTime;
-  // Add 1 to include both start and end dates (calendar days)
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  if (diffHours <= 0) return 0;
+
+  // Use ceiling to count partial 24h blocks as full days
+  const diffDays = Math.ceil(diffHours / 24);
 
   // Minimum 1 day rental
   return diffDays >= MIN_RENTAL_DAYS ? diffDays : 0;
 };
+
 
 // Helper to convert Date to local date string (YYYY-MM-DD format)
 // Using local date format prevents timezone issues when converting to/from ISO
@@ -183,6 +182,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
       paymentFlow: "FULL",
       advancePayAmount: 0,
       couponCode: null,
+      couponDiscountAmount: 0,
       holdId: null,
       transactionId: null,
       paymentURL: null,
@@ -221,7 +221,12 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
           return;
         }
 
-        const rentalDays = calculateDaysBetween(startDateStr, state.endDate);
+        const rentalDays = calculateDaysBetween(
+          startDateStr,
+          state.endDate,
+          state.startTime,
+          state.endTime,
+        );
         set({
           startDate: startDateStr,
           dateSelectionTimestamp: Date.now(),
@@ -239,7 +244,12 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
           return;
         }
 
-        const rentalDays = calculateDaysBetween(state.startDate, endDateStr);
+        const rentalDays = calculateDaysBetween(
+          state.startDate,
+          endDateStr,
+          state.startTime,
+          state.endTime,
+        );
         set({
           endDate: endDateStr,
           dateSelectionTimestamp: Date.now(),
@@ -248,15 +258,46 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
         });
       },
 
-      setStartTime: (time) => set({ startTime: time }),
+      setStartTime: (time) => {
+        const state = get();
+        const rentalDays = calculateDaysBetween(
+          state.startDate,
+          state.endDate,
+          time,
+          state.endTime,
+        );
+        set({
+          startTime: time,
+          rentalDays,
+          totalPrice: rentalDays * state.pricePerDay,
+        });
+      },
 
-      setEndTime: (time) => set({ endTime: time }),
+      setEndTime: (time) => {
+        const state = get();
+        const rentalDays = calculateDaysBetween(
+          state.startDate,
+          state.endDate,
+          state.startTime,
+          time,
+        );
+        set({
+          endTime: time,
+          rentalDays,
+          totalPrice: rentalDays * state.pricePerDay,
+        });
+      },
 
       setDateRange: (startDate, endDate) => {
         const state = get();
         const startDateStr = toLocalDateString(startDate);
         const endDateStr = toLocalDateString(endDate);
-        const rentalDays = calculateDaysBetween(startDateStr, endDateStr);
+        const rentalDays = calculateDaysBetween(
+          startDateStr,
+          endDateStr,
+          state.startTime,
+          state.endTime,
+        );
         set({
           startDate: startDateStr,
           endDate: endDateStr,
@@ -286,7 +327,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
 
       setAdvancePayAmount: (amount) => set({ advancePayAmount: Math.max(0, amount) }),
 
-      setCouponCode: (code) => set({ couponCode: code }),
+      setCouponCode: (code, amount = 0) => set({ couponCode: code, couponDiscountAmount: amount }),
 
       setBookingResponse: (response) =>
         set({
@@ -301,8 +342,8 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
         }),
 
       calculateRentalDays: () => {
-        const { startDate, endDate } = get();
-        return calculateDaysBetween(startDate, endDate);
+        const { startDate, endDate, startTime, endTime } = get();
+        return calculateDaysBetween(startDate, endDate, startTime, endTime);
       },
 
       calculateTotalPrice: () => {
@@ -358,6 +399,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
           paymentFlow: "FULL",
           advancePayAmount: 0,
           couponCode: null,
+          couponDiscountAmount: 0,
           holdId: null,
           transactionId: null,
           paymentURL: null,

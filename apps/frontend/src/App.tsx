@@ -43,14 +43,9 @@ import { ManagerInsuranceExpiryPage } from "./pages/manager/ManagerInsuranceExpi
 import DamageReviewPage from "./pages/manager/DamageReviewPage";
 import FinePaymentStatusPage from "./pages/manager/FinePaymentStatusPage";
 import { VehicleSwapPage } from "./pages/manager/VehicleSwapPage";
-import { CashConfirmationsPage } from "./pages/manager/payment/CashConfirmationsPage";
-import { SettlementsPage } from "./pages/manager/payment/SettlementsPage";
-import { RefundsPage } from "./pages/manager/payment/RefundsPage";
-import { CashShiftsPage } from "./pages/manager/payment/CashShiftsPage";
+import { FinancialsDashboardPage } from "./pages/manager/payment/FinancialsDashboardPage";
 import { ExtensionsPage } from "./pages/manager/payment/ExtensionsPage";
-import { DiscountApprovalsPage } from "./pages/manager/payment/DiscountApprovalsPage";
-import { CouponsPage } from "./pages/manager/payment/CouponsPage";
-import { DiscountConfigPage } from "./pages/manager/payment/DiscountConfigPage";
+import { DiscountsDashboardPage } from "./pages/manager/payment/DiscountsDashboardPage";
 import { ChargeConfigPage } from "./pages/manager/ChargeConfigPage";
 import AdminSignInPage from "./pages/auth/AdminSignInPage";
 import { AdminProtectedRoute } from "@/components/auth/AdminProtectedRoute";
@@ -73,10 +68,12 @@ import { AdminWhatsAppConfigPage } from "./pages/admin/AdminWhatsAppConfigPage";
 import { AdminAuditLogPage } from "./pages/admin/AdminAuditLogPage";
 import { AdminStaffActivityPage } from "./pages/admin/AdminStaffActivityPage";
 import { ManagerStaffActivityPage } from "./pages/manager/ManagerStaffActivityPage";
+import { ScrollToTop } from "@/components/utils/ScrollToTop";
 
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AuthInitializer />
       <Toaster richColors position="top-center" />
       <Routes>
@@ -169,36 +166,44 @@ function App() {
             element={<VehicleSwapPage />}
           />
           <Route
+            path="/manager/payment/financials"
+            element={<FinancialsDashboardPage />}
+          />
+          <Route
             path="/manager/payment/cash-confirmations"
-            element={<CashConfirmationsPage />}
+            element={<Navigate to="/manager/payment/financials?tab=confirmations" replace />}
           />
           <Route
             path="/manager/payment/settlements"
-            element={<SettlementsPage />}
+            element={<Navigate to="/manager/payment/financials?tab=settlements" replace />}
           />
           <Route
             path="/manager/payment/refunds"
-            element={<RefundsPage />}
+            element={<Navigate to="/manager/payment/financials?tab=refunds" replace />}
           />
           <Route
             path="/manager/payment/cash-shifts"
-            element={<CashShiftsPage />}
+            element={<Navigate to="/manager/payment/financials?tab=shifts" replace />}
           />
           <Route
             path="/manager/payment/extensions"
             element={<ExtensionsPage />}
           />
           <Route
+            path="/manager/payment/discounts"
+            element={<DiscountsDashboardPage />}
+          />
+          <Route
             path="/manager/payment/discount-approvals"
-            element={<DiscountApprovalsPage />}
+            element={<Navigate to="/manager/payment/discounts?tab=approvals" replace />}
           />
           <Route
             path="/manager/payment/coupons"
-            element={<CouponsPage />}
+            element={<Navigate to="/manager/payment/discounts?tab=coupons" replace />}
           />
           <Route
             path="/manager/payment/discount-config"
-            element={<DiscountConfigPage />}
+            element={<Navigate to="/manager/payment/discounts?tab=config" replace />}
           />
           <Route
             path="/manager/charge-config"

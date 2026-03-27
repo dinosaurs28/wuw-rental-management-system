@@ -129,10 +129,11 @@ export const CreateDamageReport = async (req: Request, res: Response) => {
     const ALLOWED_STATUSES: BookingStatus[] = [
       BookingStatus.CONFIRMED,
       BookingStatus.PICKED_UP,
+      BookingStatus.RETURNED,
     ];
     if (!ALLOWED_STATUSES.includes(booking.status)) {
       return res.status(StatusCode.BAD_REQUEST).json({
-        message: `Invalid Booking Status. Expected CONFIRMED or PICKED_UP, got ${booking.status}`,
+        message: `Invalid Booking Status. Expected CONFIRMED, PICKED_UP, or RETURNED, got ${booking.status}`,
       });
     }
 
@@ -160,6 +161,7 @@ export const CreateDamageReport = async (req: Request, res: Response) => {
     const damageReportPublicId = createID();
 
     const result = await prisma.$transaction(async (tx) => {
+
       // Create Damage Report
       const report = await tx.damageReport.create({
         data: {
@@ -229,22 +231,26 @@ export const CreateDamageReport = async (req: Request, res: Response) => {
         },
       });
 
-      await tx.booking.update({
-        where: { id: booking.id },
-        data: {
-          status: BookingStatus.RETURNED,
-        },
-      });
-
-      await staffActivityService.logFromRequest(req, {
-        actionType: StaffActionType.CREATED,
-        entityType: StaffEntityType.DAMAGE_REPORT,
-        entityRef: report.publicId,
-        description: `Damage report ${report.publicId} created for booking ${booking.publicId}`,
-        metadata: { bookingRef: booking.publicId },
-      }, tx);
+      // Only transition to RETURNED if not already (session flow sets it earlier via runPostCompletionHooks)
+      if (booking.status !== BookingStatus.RETURNED) {
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: {
+            status: BookingStatus.RETURNED,
+          },
+        });
+      }
 
       return report;
+    }, { timeout: 30000 });
+
+    // Activity log is non-critical — run outside transaction to avoid timeout
+    await staffActivityService.logFromRequest(req, {
+      actionType: StaffActionType.CREATED,
+      entityType: StaffEntityType.DAMAGE_REPORT,
+      entityRef: result.publicId,
+      description: `Damage report ${result.publicId} created for booking ${booking.publicId}`,
+      metadata: { bookingRef: booking.publicId },
     });
 
     return res.status(StatusCode.CREATED).json({

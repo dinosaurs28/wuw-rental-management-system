@@ -14,4 +14,5 @@ export interface BranchChargeConfigInput {
   overrideApprovalThreshold?: number | null;
   safetyDepositEnabled?: boolean;
   safetyDepositRequiresApproval?: boolean;
+  usePaymentSessions?: boolean;
 }
