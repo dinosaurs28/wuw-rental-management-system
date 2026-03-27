@@ -37,7 +37,7 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
           <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
           {/* Header with Booking ID and Statuses */}
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-100 bg-zinc-50 px-5 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 bg-zinc-50 px-6 py-5">
             <div className="flex items-center gap-3">
               <span className="text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase">
                 Booking Ref:
@@ -56,14 +56,14 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
           </div>
 
           {/* Main Content */}
-          <div className="p-5 flex flex-col gap-5 relative z-10">
+          <div className="p-6 flex flex-col gap-6 relative z-10">
             {/* Date and Duration Row */}
             <div className="flex flex-wrap items-center gap-6 pb-4 border-b border-zinc-200">
               <div className="flex flex-col gap-1">
                 <span className="text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase">
                   Schedule
                 </span>
-                <div className="flex items-center gap-2 text-sm font-medium text-zinc-700">
+                <div className="flex items-center gap-2 text-base font-medium text-zinc-700">
                   <Calendar className="h-4 w-4 text-zinc-400" />
                   <span>
                     {formatDate(booking.startAt)}{" "}
@@ -76,7 +76,7 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
                 <span className="text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase">
                   Duration
                 </span>
-                <div className="flex items-center gap-2 text-sm font-medium text-zinc-700">
+                <div className="flex items-center gap-2 text-base font-medium text-zinc-700">
                   <Clock className="h-4 w-4 text-zinc-400" />
                   <span>
                     {booking.days} {booking.days === 1 ? "day" : "days"}
@@ -93,10 +93,10 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
               {booking.vehicles.map((vehicle) => (
                 <div
                   key={vehicle.publicId}
-                  className="flex items-center gap-4 rounded-xl border border-zinc-200 bg-zinc-50 p-3 hover:bg-zinc-100 transition-colors"
+                  className="flex items-center gap-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4 hover:bg-zinc-100 transition-colors"
                 >
                   {/* Vehicle Thumbnail */}
-                  <div className="h-16 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-zinc-100 border border-zinc-200">
+                  <div className="h-20 w-28 flex-shrink-0 overflow-hidden rounded-lg bg-zinc-100 border border-zinc-200">
                     {vehicle.thumbnail ? (
                       <img
                         src={vehicle.thumbnail}
@@ -112,7 +112,7 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
 
                   {/* Vehicle Info */}
                   <div className="flex flex-1 flex-col justify-center">
-                    <h4 className="font-bold text-zinc-900 tracking-wide">
+                    <h4 className="text-base font-bold text-zinc-900 tracking-wide">
                       {vehicle.make} {vehicle.model}
                     </h4>
                     <span className="text-sm font-medium text-zinc-400 font-mono">
@@ -129,7 +129,7 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
                 <span className="text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase">
                   Total Amount
                 </span>
-                <span className="text-xl font-bold text-zinc-900 font-mono tracking-tight">
+                <span className="text-2xl font-bold text-zinc-900 font-mono tracking-tight">
                   {formatCurrency(booking.total)}
                 </span>
               </div>
@@ -141,7 +141,7 @@ export function UserBookingCard({ booking }: UserBookingCardProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-2 rounded-full h-10 border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-700 font-medium px-4 transition-all"
+                  className="gap-2 rounded-full h-11 border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-700 font-semibold px-5 transition-all"
                   onClick={() => setIsQRModalOpen(true)}
                 >
                   <QrCode className="h-4 w-4" />

@@ -1,4 +1,6 @@
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import axios from "axios";
 import {
   Sidebar,
   SidebarContent,
@@ -130,6 +132,13 @@ export function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAdminAuthStore();
+  const [insuranceAlertCount, setInsuranceAlertCount] = useState(0);
+
+  useEffect(() => {
+    axios.get("/api/insurance-alerts/counts", { withCredentials: true })
+      .then((res) => setInsuranceAlertCount(res.data?.data?.total ?? 0))
+      .catch(() => {/* non-fatal */});
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -181,9 +190,14 @@ export function AdminLayout() {
                       tooltip={item.title}
                       onClick={() => navigate(item.url)}
                     >
-                      <button>
+                      <button className="relative">
                         <item.icon />
                         <span>{item.title}</span>
+                        {item.title === "Insurance & Permit" && insuranceAlertCount > 0 && (
+                          <span className="ml-auto min-w-[20px] h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1.5">
+                            {insuranceAlertCount}
+                          </span>
+                        )}
                       </button>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

@@ -27,6 +27,8 @@ import { initFileCleanupWorker } from "./jobs/fileCleanup.worker.js";
 import { initBookingExpiryWorker } from "./jobs/bookingExpiry.worker.js";
 import { initInvoiceWorker } from "./jobs/invoice.worker.js";
 import { initDelayedCashAlertWorker } from "./jobs/delayedCashAlert.worker.js";
+import { initInsuranceAlertWorker } from "./jobs/insurance-alert.worker.js";
+import insuranceAlertRouter from "./routes/insurance-alert/insurance-alert.routes.js";
 
 // Initialize passport AFTER env vars are loaded
 initializePassport();
@@ -38,6 +40,7 @@ initFileCleanupWorker();
 initBookingExpiryWorker();
 initInvoiceWorker();
 initDelayedCashAlertWorker();
+initInsuranceAlertWorker();
 
 const app = express();
 
@@ -67,6 +70,7 @@ app.use("/api/branchManager", branchManagerRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/invoices", invoiceRouter);
 app.use("/api/receipts", receiptRouter);
+app.use("/api/insurance-alerts", insuranceAlertRouter);
 app.use("/api/config", configRouter);
 
 app.get("/health", (req: Request, res: Response) => {
