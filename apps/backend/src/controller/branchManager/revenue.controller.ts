@@ -51,9 +51,8 @@ export const GetRevenueStats = async (req: Request, res: Response) => {
       },
       where: {
         branchId: branchId,
-        status: {
-          not: BookingStatus.CANCELLED,
-        },
+        status: { in: [BookingStatus.CONFIRMED, BookingStatus.PICKED_UP, BookingStatus.RETURNED] },
+        deletedAt: null,
       },
     });
 
@@ -63,9 +62,8 @@ export const GetRevenueStats = async (req: Request, res: Response) => {
       },
       where: {
         branchId: branchId,
-        status: {
-          not: BookingStatus.CANCELLED,
-        },
+        status: { in: [BookingStatus.CONFIRMED, BookingStatus.PICKED_UP, BookingStatus.RETURNED] },
+        deletedAt: null,
         createdAt: {
           gte: startOfMonth,
           lte: endOfMonth,
@@ -79,9 +77,8 @@ export const GetRevenueStats = async (req: Request, res: Response) => {
       },
       where: {
         branchId: branchId,
-        status: {
-          not: BookingStatus.CANCELLED,
-        },
+        status: { in: [BookingStatus.CONFIRMED, BookingStatus.PICKED_UP, BookingStatus.RETURNED] },
+        deletedAt: null,
         createdAt: {
           gte: startOfDay,
           lte: endOfDay,
