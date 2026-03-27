@@ -12,6 +12,7 @@ import { DurationCalculatorService } from "../../services/pricing/duration-calcu
 import {
   getBatchListingPrices,
   getBatchFallbackPrices,
+  type ListingPrice,
 } from "../../utils/pricing/batchListingPrice.js";
 import { DateTime } from "luxon";
 
@@ -127,7 +128,7 @@ export const searchVehicles = async (req: Request, res: Response) => {
 
     // Batch pricing — same approach as public listing (TASK-025 consistency)
     let durationInfo: ReturnType<typeof DurationCalculatorService.calculate> | null = null;
-    let durationPriceMap: Map<number, number> | null = null;
+    let durationPriceMap: Map<number, ListingPrice> | null = null;
     let fallbackPriceMap: Map<number, { daily: number; hourly: number; halfDay: number }> | null = null;
 
     if (startDate && endDate) {
@@ -140,7 +141,10 @@ export const searchVehicles = async (req: Request, res: Response) => {
     const formatted = [];
     for (const v of vehicles) {
       if (durationPriceMap && durationInfo) {
-        const price = durationPriceMap.get(v.id) ?? 0;
+        const lp = durationPriceMap.get(v.id);
+        const price = lp?.price ?? 0;
+        const finalPrice = lp?.finalPrice ?? 0;
+
         formatted.push({
           publicId: v.publicId,
           make: v.make,
@@ -148,8 +152,8 @@ export const searchVehicles = async (req: Request, res: Response) => {
           category: v.category.name,
           branch: v.branch.name,
           imageUrl: v.images,
-          pricing: { daily: price },
-          pricingDetails: { price, finalPrice: price, type: durationInfo.periodType },
+          pricing: { daily: finalPrice },
+          pricingDetails: { price, finalPrice, type: durationInfo.periodType },
           status: v.status,
         });
       } else {

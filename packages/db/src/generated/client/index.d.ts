@@ -194,6 +194,11 @@ export type TimezoneSetting = $Result.DefaultSelection<Prisma.$TimezoneSettingPa
  */
 export type CancellationInvoice = $Result.DefaultSelection<Prisma.$CancellationInvoicePayload>
 /**
+ * Model ReturnReceipt
+ * 
+ */
+export type ReturnReceipt = $Result.DefaultSelection<Prisma.$ReturnReceiptPayload>
+/**
  * Model FeatureFlag
  * 
  */
@@ -1438,6 +1443,16 @@ export class PrismaClient<
   get cancellationInvoice(): Prisma.CancellationInvoiceDelegate<ExtArgs>;
 
   /**
+   * `prisma.returnReceipt`: Exposes CRUD operations for the **ReturnReceipt** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ReturnReceipts
+    * const returnReceipts = await prisma.returnReceipt.findMany()
+    * ```
+    */
+  get returnReceipt(): Prisma.ReturnReceiptDelegate<ExtArgs>;
+
+  /**
    * `prisma.featureFlag`: Exposes CRUD operations for the **FeatureFlag** model.
     * Example usage:
     * ```ts
@@ -2133,6 +2148,7 @@ export namespace Prisma {
     GSTRule: 'GSTRule',
     TimezoneSetting: 'TimezoneSetting',
     CancellationInvoice: 'CancellationInvoice',
+    ReturnReceipt: 'ReturnReceipt',
     FeatureFlag: 'FeatureFlag',
     BranchFeatureFlag: 'BranchFeatureFlag',
     VehicleFeatureFlag: 'VehicleFeatureFlag',
@@ -2170,7 +2186,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehiclePhotoCaptureConfig" | "vehicle" | "vehiclePricingOverride" | "vehicleCustomPricing" | "branchPricingDefaults" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "whatsAppSupportConfig" | "gSTRule" | "timezoneSetting" | "cancellationInvoice" | "featureFlag" | "branchFeatureFlag" | "vehicleFeatureFlag" | "vehicleSwap" | "discountRule" | "durationDiscountSlab" | "branchDiscountConfig" | "discountApplication" | "couponUsageLog" | "manualDiscount" | "branchPaymentConfig" | "paymentTransaction" | "refundRequest" | "cashShift" | "bookingExtension" | "branchChargeConfig" | "chargeEntry" | "chargeOverride" | "fuelRecord" | "safetyDepositRequest" | "paymentSession" | "ledgerEntry"
+      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehiclePhotoCaptureConfig" | "vehicle" | "vehiclePricingOverride" | "vehicleCustomPricing" | "branchPricingDefaults" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "whatsAppSupportConfig" | "gSTRule" | "timezoneSetting" | "cancellationInvoice" | "returnReceipt" | "featureFlag" | "branchFeatureFlag" | "vehicleFeatureFlag" | "vehicleSwap" | "discountRule" | "durationDiscountSlab" | "branchDiscountConfig" | "discountApplication" | "couponUsageLog" | "manualDiscount" | "branchPaymentConfig" | "paymentTransaction" | "refundRequest" | "cashShift" | "bookingExtension" | "branchChargeConfig" | "chargeEntry" | "chargeOverride" | "fuelRecord" | "safetyDepositRequest" | "paymentSession" | "ledgerEntry"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -4694,6 +4710,76 @@ export namespace Prisma {
           }
         }
       }
+      ReturnReceipt: {
+        payload: Prisma.$ReturnReceiptPayload<ExtArgs>
+        fields: Prisma.ReturnReceiptFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ReturnReceiptFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReturnReceiptPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ReturnReceiptFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReturnReceiptPayload>
+          }
+          findFirst: {
+            args: Prisma.ReturnReceiptFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReturnReceiptPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ReturnReceiptFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReturnReceiptPayload>
+          }
+          findMany: {
+            args: Prisma.ReturnReceiptFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReturnReceiptPayload>[]
+          }
+          create: {
+            args: Prisma.ReturnReceiptCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReturnReceiptPayload>
+          }
+          createMany: {
+            args: Prisma.ReturnReceiptCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ReturnReceiptCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReturnReceiptPayload>[]
+          }
+          delete: {
+            args: Prisma.ReturnReceiptDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReturnReceiptPayload>
+          }
+          update: {
+            args: Prisma.ReturnReceiptUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReturnReceiptPayload>
+          }
+          deleteMany: {
+            args: Prisma.ReturnReceiptDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ReturnReceiptUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ReturnReceiptUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReturnReceiptPayload>
+          }
+          aggregate: {
+            args: Prisma.ReturnReceiptAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateReturnReceipt>
+          }
+          groupBy: {
+            args: Prisma.ReturnReceiptGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ReturnReceiptGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ReturnReceiptCountArgs<ExtArgs>
+            result: $Utils.Optional<ReturnReceiptCountAggregateOutputType> | number
+          }
+        }
+      }
       FeatureFlag: {
         payload: Prisma.$FeatureFlagPayload<ExtArgs>
         fields: Prisma.FeatureFlagFieldRefs
@@ -6733,6 +6819,7 @@ export namespace Prisma {
     vehicleImages: number
     invoicePdfs: number
     cancellationInvoices: number
+    returnReceiptPdfs: number
   }
 
   export type FileObjectCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6742,6 +6829,7 @@ export namespace Prisma {
     vehicleImages?: boolean | FileObjectCountOutputTypeCountVehicleImagesArgs
     invoicePdfs?: boolean | FileObjectCountOutputTypeCountInvoicePdfsArgs
     cancellationInvoices?: boolean | FileObjectCountOutputTypeCountCancellationInvoicesArgs
+    returnReceiptPdfs?: boolean | FileObjectCountOutputTypeCountReturnReceiptPdfsArgs
   }
 
   // Custom InputTypes
@@ -6795,6 +6883,13 @@ export namespace Prisma {
    */
   export type FileObjectCountOutputTypeCountCancellationInvoicesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: CancellationInvoiceWhereInput
+  }
+
+  /**
+   * FileObjectCountOutputType without action
+   */
+  export type FileObjectCountOutputTypeCountReturnReceiptPdfsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ReturnReceiptWhereInput
   }
 
 
@@ -13770,6 +13865,7 @@ export namespace Prisma {
     vehicleImages?: boolean | FileObject$vehicleImagesArgs<ExtArgs>
     invoicePdfs?: boolean | FileObject$invoicePdfsArgs<ExtArgs>
     cancellationInvoices?: boolean | FileObject$cancellationInvoicesArgs<ExtArgs>
+    returnReceiptPdfs?: boolean | FileObject$returnReceiptPdfsArgs<ExtArgs>
     _count?: boolean | FileObjectCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["fileObject"]>
 
@@ -13800,6 +13896,7 @@ export namespace Prisma {
     vehicleImages?: boolean | FileObject$vehicleImagesArgs<ExtArgs>
     invoicePdfs?: boolean | FileObject$invoicePdfsArgs<ExtArgs>
     cancellationInvoices?: boolean | FileObject$cancellationInvoicesArgs<ExtArgs>
+    returnReceiptPdfs?: boolean | FileObject$returnReceiptPdfsArgs<ExtArgs>
     _count?: boolean | FileObjectCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type FileObjectIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -13813,6 +13910,7 @@ export namespace Prisma {
       vehicleImages: Prisma.$VehicleImagePayload<ExtArgs>[]
       invoicePdfs: Prisma.$InvoicePayload<ExtArgs>[]
       cancellationInvoices: Prisma.$CancellationInvoicePayload<ExtArgs>[]
+      returnReceiptPdfs: Prisma.$ReturnReceiptPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -14192,6 +14290,7 @@ export namespace Prisma {
     vehicleImages<T extends FileObject$vehicleImagesArgs<ExtArgs> = {}>(args?: Subset<T, FileObject$vehicleImagesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleImagePayload<ExtArgs>, T, "findMany"> | Null>
     invoicePdfs<T extends FileObject$invoicePdfsArgs<ExtArgs> = {}>(args?: Subset<T, FileObject$invoicePdfsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InvoicePayload<ExtArgs>, T, "findMany"> | Null>
     cancellationInvoices<T extends FileObject$cancellationInvoicesArgs<ExtArgs> = {}>(args?: Subset<T, FileObject$cancellationInvoicesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CancellationInvoicePayload<ExtArgs>, T, "findMany"> | Null>
+    returnReceiptPdfs<T extends FileObject$returnReceiptPdfsArgs<ExtArgs> = {}>(args?: Subset<T, FileObject$returnReceiptPdfsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReturnReceiptPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -14668,6 +14767,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: CancellationInvoiceScalarFieldEnum | CancellationInvoiceScalarFieldEnum[]
+  }
+
+  /**
+   * FileObject.returnReceiptPdfs
+   */
+  export type FileObject$returnReceiptPdfsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReturnReceipt
+     */
+    select?: ReturnReceiptSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReturnReceiptInclude<ExtArgs> | null
+    where?: ReturnReceiptWhereInput
+    orderBy?: ReturnReceiptOrderByWithRelationInput | ReturnReceiptOrderByWithRelationInput[]
+    cursor?: ReturnReceiptWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ReturnReceiptScalarFieldEnum | ReturnReceiptScalarFieldEnum[]
   }
 
   /**
@@ -31839,6 +31958,7 @@ export namespace Prisma {
     deposit?: boolean | Booking$depositArgs<ExtArgs>
     invoice?: boolean | Booking$invoiceArgs<ExtArgs>
     cancellationInvoice?: boolean | Booking$cancellationInvoiceArgs<ExtArgs>
+    returnReceipt?: boolean | Booking$returnReceiptArgs<ExtArgs>
     vehicleSwaps?: boolean | Booking$vehicleSwapsArgs<ExtArgs>
     discountRule?: boolean | Booking$discountRuleArgs<ExtArgs>
     discountApplication?: boolean | Booking$discountApplicationArgs<ExtArgs>
@@ -32003,6 +32123,7 @@ export namespace Prisma {
     deposit?: boolean | Booking$depositArgs<ExtArgs>
     invoice?: boolean | Booking$invoiceArgs<ExtArgs>
     cancellationInvoice?: boolean | Booking$cancellationInvoiceArgs<ExtArgs>
+    returnReceipt?: boolean | Booking$returnReceiptArgs<ExtArgs>
     vehicleSwaps?: boolean | Booking$vehicleSwapsArgs<ExtArgs>
     discountRule?: boolean | Booking$discountRuleArgs<ExtArgs>
     discountApplication?: boolean | Booking$discountApplicationArgs<ExtArgs>
@@ -32043,6 +32164,7 @@ export namespace Prisma {
       deposit: Prisma.$DepositPayload<ExtArgs> | null
       invoice: Prisma.$InvoicePayload<ExtArgs> | null
       cancellationInvoice: Prisma.$CancellationInvoicePayload<ExtArgs> | null
+      returnReceipt: Prisma.$ReturnReceiptPayload<ExtArgs> | null
       vehicleSwaps: Prisma.$VehicleSwapPayload<ExtArgs>[]
       discountRule: Prisma.$DiscountRulePayload<ExtArgs> | null
       discountApplication: Prisma.$DiscountApplicationPayload<ExtArgs> | null
@@ -32495,6 +32617,7 @@ export namespace Prisma {
     deposit<T extends Booking$depositArgs<ExtArgs> = {}>(args?: Subset<T, Booking$depositArgs<ExtArgs>>): Prisma__DepositClient<$Result.GetResult<Prisma.$DepositPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     invoice<T extends Booking$invoiceArgs<ExtArgs> = {}>(args?: Subset<T, Booking$invoiceArgs<ExtArgs>>): Prisma__InvoiceClient<$Result.GetResult<Prisma.$InvoicePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     cancellationInvoice<T extends Booking$cancellationInvoiceArgs<ExtArgs> = {}>(args?: Subset<T, Booking$cancellationInvoiceArgs<ExtArgs>>): Prisma__CancellationInvoiceClient<$Result.GetResult<Prisma.$CancellationInvoicePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    returnReceipt<T extends Booking$returnReceiptArgs<ExtArgs> = {}>(args?: Subset<T, Booking$returnReceiptArgs<ExtArgs>>): Prisma__ReturnReceiptClient<$Result.GetResult<Prisma.$ReturnReceiptPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     vehicleSwaps<T extends Booking$vehicleSwapsArgs<ExtArgs> = {}>(args?: Subset<T, Booking$vehicleSwapsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleSwapPayload<ExtArgs>, T, "findMany"> | Null>
     discountRule<T extends Booking$discountRuleArgs<ExtArgs> = {}>(args?: Subset<T, Booking$discountRuleArgs<ExtArgs>>): Prisma__DiscountRuleClient<$Result.GetResult<Prisma.$DiscountRulePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     discountApplication<T extends Booking$discountApplicationArgs<ExtArgs> = {}>(args?: Subset<T, Booking$discountApplicationArgs<ExtArgs>>): Prisma__DiscountApplicationClient<$Result.GetResult<Prisma.$DiscountApplicationPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
@@ -33044,6 +33167,21 @@ export namespace Prisma {
      */
     include?: CancellationInvoiceInclude<ExtArgs> | null
     where?: CancellationInvoiceWhereInput
+  }
+
+  /**
+   * Booking.returnReceipt
+   */
+  export type Booking$returnReceiptArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReturnReceipt
+     */
+    select?: ReturnReceiptSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReturnReceiptInclude<ExtArgs> | null
+    where?: ReturnReceiptWhereInput
   }
 
   /**
@@ -48048,6 +48186,1107 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: CancellationInvoiceInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ReturnReceipt
+   */
+
+  export type AggregateReturnReceipt = {
+    _count: ReturnReceiptCountAggregateOutputType | null
+    _avg: ReturnReceiptAvgAggregateOutputType | null
+    _sum: ReturnReceiptSumAggregateOutputType | null
+    _min: ReturnReceiptMinAggregateOutputType | null
+    _max: ReturnReceiptMaxAggregateOutputType | null
+  }
+
+  export type ReturnReceiptAvgAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    totalCharges: Decimal | null
+    depositPaid: Decimal | null
+    amountDue: Decimal | null
+    refundAmount: Decimal | null
+    receiptPdfFileId: number | null
+  }
+
+  export type ReturnReceiptSumAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    totalCharges: Decimal | null
+    depositPaid: Decimal | null
+    amountDue: Decimal | null
+    refundAmount: Decimal | null
+    receiptPdfFileId: number | null
+  }
+
+  export type ReturnReceiptMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    bookingId: number | null
+    receiptNumber: string | null
+    totalCharges: Decimal | null
+    depositPaid: Decimal | null
+    amountDue: Decimal | null
+    refundAmount: Decimal | null
+    receiptPdfFileId: number | null
+    generatedAt: Date | null
+    createdAt: Date | null
+  }
+
+  export type ReturnReceiptMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    bookingId: number | null
+    receiptNumber: string | null
+    totalCharges: Decimal | null
+    depositPaid: Decimal | null
+    amountDue: Decimal | null
+    refundAmount: Decimal | null
+    receiptPdfFileId: number | null
+    generatedAt: Date | null
+    createdAt: Date | null
+  }
+
+  export type ReturnReceiptCountAggregateOutputType = {
+    id: number
+    publicId: number
+    bookingId: number
+    receiptNumber: number
+    lineItems: number
+    totalCharges: number
+    depositPaid: number
+    amountDue: number
+    refundAmount: number
+    receiptPdfFileId: number
+    generatedAt: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type ReturnReceiptAvgAggregateInputType = {
+    id?: true
+    bookingId?: true
+    totalCharges?: true
+    depositPaid?: true
+    amountDue?: true
+    refundAmount?: true
+    receiptPdfFileId?: true
+  }
+
+  export type ReturnReceiptSumAggregateInputType = {
+    id?: true
+    bookingId?: true
+    totalCharges?: true
+    depositPaid?: true
+    amountDue?: true
+    refundAmount?: true
+    receiptPdfFileId?: true
+  }
+
+  export type ReturnReceiptMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    receiptNumber?: true
+    totalCharges?: true
+    depositPaid?: true
+    amountDue?: true
+    refundAmount?: true
+    receiptPdfFileId?: true
+    generatedAt?: true
+    createdAt?: true
+  }
+
+  export type ReturnReceiptMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    receiptNumber?: true
+    totalCharges?: true
+    depositPaid?: true
+    amountDue?: true
+    refundAmount?: true
+    receiptPdfFileId?: true
+    generatedAt?: true
+    createdAt?: true
+  }
+
+  export type ReturnReceiptCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    bookingId?: true
+    receiptNumber?: true
+    lineItems?: true
+    totalCharges?: true
+    depositPaid?: true
+    amountDue?: true
+    refundAmount?: true
+    receiptPdfFileId?: true
+    generatedAt?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type ReturnReceiptAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ReturnReceipt to aggregate.
+     */
+    where?: ReturnReceiptWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ReturnReceipts to fetch.
+     */
+    orderBy?: ReturnReceiptOrderByWithRelationInput | ReturnReceiptOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ReturnReceiptWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ReturnReceipts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ReturnReceipts.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ReturnReceipts
+    **/
+    _count?: true | ReturnReceiptCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ReturnReceiptAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ReturnReceiptSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ReturnReceiptMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ReturnReceiptMaxAggregateInputType
+  }
+
+  export type GetReturnReceiptAggregateType<T extends ReturnReceiptAggregateArgs> = {
+        [P in keyof T & keyof AggregateReturnReceipt]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateReturnReceipt[P]>
+      : GetScalarType<T[P], AggregateReturnReceipt[P]>
+  }
+
+
+
+
+  export type ReturnReceiptGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ReturnReceiptWhereInput
+    orderBy?: ReturnReceiptOrderByWithAggregationInput | ReturnReceiptOrderByWithAggregationInput[]
+    by: ReturnReceiptScalarFieldEnum[] | ReturnReceiptScalarFieldEnum
+    having?: ReturnReceiptScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ReturnReceiptCountAggregateInputType | true
+    _avg?: ReturnReceiptAvgAggregateInputType
+    _sum?: ReturnReceiptSumAggregateInputType
+    _min?: ReturnReceiptMinAggregateInputType
+    _max?: ReturnReceiptMaxAggregateInputType
+  }
+
+  export type ReturnReceiptGroupByOutputType = {
+    id: number
+    publicId: string
+    bookingId: number
+    receiptNumber: string | null
+    lineItems: JsonValue
+    totalCharges: Decimal
+    depositPaid: Decimal
+    amountDue: Decimal
+    refundAmount: Decimal
+    receiptPdfFileId: number | null
+    generatedAt: Date | null
+    createdAt: Date
+    _count: ReturnReceiptCountAggregateOutputType | null
+    _avg: ReturnReceiptAvgAggregateOutputType | null
+    _sum: ReturnReceiptSumAggregateOutputType | null
+    _min: ReturnReceiptMinAggregateOutputType | null
+    _max: ReturnReceiptMaxAggregateOutputType | null
+  }
+
+  type GetReturnReceiptGroupByPayload<T extends ReturnReceiptGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ReturnReceiptGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ReturnReceiptGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ReturnReceiptGroupByOutputType[P]>
+            : GetScalarType<T[P], ReturnReceiptGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ReturnReceiptSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    receiptNumber?: boolean
+    lineItems?: boolean
+    totalCharges?: boolean
+    depositPaid?: boolean
+    amountDue?: boolean
+    refundAmount?: boolean
+    receiptPdfFileId?: boolean
+    generatedAt?: boolean
+    createdAt?: boolean
+    receiptPdfFile?: boolean | ReturnReceipt$receiptPdfFileArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["returnReceipt"]>
+
+  export type ReturnReceiptSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    receiptNumber?: boolean
+    lineItems?: boolean
+    totalCharges?: boolean
+    depositPaid?: boolean
+    amountDue?: boolean
+    refundAmount?: boolean
+    receiptPdfFileId?: boolean
+    generatedAt?: boolean
+    createdAt?: boolean
+    receiptPdfFile?: boolean | ReturnReceipt$receiptPdfFileArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["returnReceipt"]>
+
+  export type ReturnReceiptSelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    bookingId?: boolean
+    receiptNumber?: boolean
+    lineItems?: boolean
+    totalCharges?: boolean
+    depositPaid?: boolean
+    amountDue?: boolean
+    refundAmount?: boolean
+    receiptPdfFileId?: boolean
+    generatedAt?: boolean
+    createdAt?: boolean
+  }
+
+  export type ReturnReceiptInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    receiptPdfFile?: boolean | ReturnReceipt$receiptPdfFileArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+  }
+  export type ReturnReceiptIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    receiptPdfFile?: boolean | ReturnReceipt$receiptPdfFileArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+  }
+
+  export type $ReturnReceiptPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ReturnReceipt"
+    objects: {
+      receiptPdfFile: Prisma.$FileObjectPayload<ExtArgs> | null
+      booking: Prisma.$BookingPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      bookingId: number
+      receiptNumber: string | null
+      lineItems: Prisma.JsonValue
+      totalCharges: Prisma.Decimal
+      depositPaid: Prisma.Decimal
+      amountDue: Prisma.Decimal
+      refundAmount: Prisma.Decimal
+      receiptPdfFileId: number | null
+      generatedAt: Date | null
+      createdAt: Date
+    }, ExtArgs["result"]["returnReceipt"]>
+    composites: {}
+  }
+
+  type ReturnReceiptGetPayload<S extends boolean | null | undefined | ReturnReceiptDefaultArgs> = $Result.GetResult<Prisma.$ReturnReceiptPayload, S>
+
+  type ReturnReceiptCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<ReturnReceiptFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: ReturnReceiptCountAggregateInputType | true
+    }
+
+  export interface ReturnReceiptDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ReturnReceipt'], meta: { name: 'ReturnReceipt' } }
+    /**
+     * Find zero or one ReturnReceipt that matches the filter.
+     * @param {ReturnReceiptFindUniqueArgs} args - Arguments to find a ReturnReceipt
+     * @example
+     * // Get one ReturnReceipt
+     * const returnReceipt = await prisma.returnReceipt.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ReturnReceiptFindUniqueArgs>(args: SelectSubset<T, ReturnReceiptFindUniqueArgs<ExtArgs>>): Prisma__ReturnReceiptClient<$Result.GetResult<Prisma.$ReturnReceiptPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one ReturnReceipt that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {ReturnReceiptFindUniqueOrThrowArgs} args - Arguments to find a ReturnReceipt
+     * @example
+     * // Get one ReturnReceipt
+     * const returnReceipt = await prisma.returnReceipt.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ReturnReceiptFindUniqueOrThrowArgs>(args: SelectSubset<T, ReturnReceiptFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ReturnReceiptClient<$Result.GetResult<Prisma.$ReturnReceiptPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first ReturnReceipt that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReturnReceiptFindFirstArgs} args - Arguments to find a ReturnReceipt
+     * @example
+     * // Get one ReturnReceipt
+     * const returnReceipt = await prisma.returnReceipt.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ReturnReceiptFindFirstArgs>(args?: SelectSubset<T, ReturnReceiptFindFirstArgs<ExtArgs>>): Prisma__ReturnReceiptClient<$Result.GetResult<Prisma.$ReturnReceiptPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first ReturnReceipt that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReturnReceiptFindFirstOrThrowArgs} args - Arguments to find a ReturnReceipt
+     * @example
+     * // Get one ReturnReceipt
+     * const returnReceipt = await prisma.returnReceipt.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ReturnReceiptFindFirstOrThrowArgs>(args?: SelectSubset<T, ReturnReceiptFindFirstOrThrowArgs<ExtArgs>>): Prisma__ReturnReceiptClient<$Result.GetResult<Prisma.$ReturnReceiptPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more ReturnReceipts that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReturnReceiptFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ReturnReceipts
+     * const returnReceipts = await prisma.returnReceipt.findMany()
+     * 
+     * // Get first 10 ReturnReceipts
+     * const returnReceipts = await prisma.returnReceipt.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const returnReceiptWithIdOnly = await prisma.returnReceipt.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ReturnReceiptFindManyArgs>(args?: SelectSubset<T, ReturnReceiptFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReturnReceiptPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a ReturnReceipt.
+     * @param {ReturnReceiptCreateArgs} args - Arguments to create a ReturnReceipt.
+     * @example
+     * // Create one ReturnReceipt
+     * const ReturnReceipt = await prisma.returnReceipt.create({
+     *   data: {
+     *     // ... data to create a ReturnReceipt
+     *   }
+     * })
+     * 
+     */
+    create<T extends ReturnReceiptCreateArgs>(args: SelectSubset<T, ReturnReceiptCreateArgs<ExtArgs>>): Prisma__ReturnReceiptClient<$Result.GetResult<Prisma.$ReturnReceiptPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many ReturnReceipts.
+     * @param {ReturnReceiptCreateManyArgs} args - Arguments to create many ReturnReceipts.
+     * @example
+     * // Create many ReturnReceipts
+     * const returnReceipt = await prisma.returnReceipt.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ReturnReceiptCreateManyArgs>(args?: SelectSubset<T, ReturnReceiptCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ReturnReceipts and returns the data saved in the database.
+     * @param {ReturnReceiptCreateManyAndReturnArgs} args - Arguments to create many ReturnReceipts.
+     * @example
+     * // Create many ReturnReceipts
+     * const returnReceipt = await prisma.returnReceipt.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many ReturnReceipts and only return the `id`
+     * const returnReceiptWithIdOnly = await prisma.returnReceipt.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends ReturnReceiptCreateManyAndReturnArgs>(args?: SelectSubset<T, ReturnReceiptCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReturnReceiptPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a ReturnReceipt.
+     * @param {ReturnReceiptDeleteArgs} args - Arguments to delete one ReturnReceipt.
+     * @example
+     * // Delete one ReturnReceipt
+     * const ReturnReceipt = await prisma.returnReceipt.delete({
+     *   where: {
+     *     // ... filter to delete one ReturnReceipt
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ReturnReceiptDeleteArgs>(args: SelectSubset<T, ReturnReceiptDeleteArgs<ExtArgs>>): Prisma__ReturnReceiptClient<$Result.GetResult<Prisma.$ReturnReceiptPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one ReturnReceipt.
+     * @param {ReturnReceiptUpdateArgs} args - Arguments to update one ReturnReceipt.
+     * @example
+     * // Update one ReturnReceipt
+     * const returnReceipt = await prisma.returnReceipt.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ReturnReceiptUpdateArgs>(args: SelectSubset<T, ReturnReceiptUpdateArgs<ExtArgs>>): Prisma__ReturnReceiptClient<$Result.GetResult<Prisma.$ReturnReceiptPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more ReturnReceipts.
+     * @param {ReturnReceiptDeleteManyArgs} args - Arguments to filter ReturnReceipts to delete.
+     * @example
+     * // Delete a few ReturnReceipts
+     * const { count } = await prisma.returnReceipt.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ReturnReceiptDeleteManyArgs>(args?: SelectSubset<T, ReturnReceiptDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ReturnReceipts.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReturnReceiptUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ReturnReceipts
+     * const returnReceipt = await prisma.returnReceipt.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ReturnReceiptUpdateManyArgs>(args: SelectSubset<T, ReturnReceiptUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ReturnReceipt.
+     * @param {ReturnReceiptUpsertArgs} args - Arguments to update or create a ReturnReceipt.
+     * @example
+     * // Update or create a ReturnReceipt
+     * const returnReceipt = await prisma.returnReceipt.upsert({
+     *   create: {
+     *     // ... data to create a ReturnReceipt
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ReturnReceipt we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ReturnReceiptUpsertArgs>(args: SelectSubset<T, ReturnReceiptUpsertArgs<ExtArgs>>): Prisma__ReturnReceiptClient<$Result.GetResult<Prisma.$ReturnReceiptPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of ReturnReceipts.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReturnReceiptCountArgs} args - Arguments to filter ReturnReceipts to count.
+     * @example
+     * // Count the number of ReturnReceipts
+     * const count = await prisma.returnReceipt.count({
+     *   where: {
+     *     // ... the filter for the ReturnReceipts we want to count
+     *   }
+     * })
+    **/
+    count<T extends ReturnReceiptCountArgs>(
+      args?: Subset<T, ReturnReceiptCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ReturnReceiptCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ReturnReceipt.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReturnReceiptAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ReturnReceiptAggregateArgs>(args: Subset<T, ReturnReceiptAggregateArgs>): Prisma.PrismaPromise<GetReturnReceiptAggregateType<T>>
+
+    /**
+     * Group by ReturnReceipt.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReturnReceiptGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ReturnReceiptGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ReturnReceiptGroupByArgs['orderBy'] }
+        : { orderBy?: ReturnReceiptGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ReturnReceiptGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetReturnReceiptGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ReturnReceipt model
+   */
+  readonly fields: ReturnReceiptFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ReturnReceipt.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ReturnReceiptClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    receiptPdfFile<T extends ReturnReceipt$receiptPdfFileArgs<ExtArgs> = {}>(args?: Subset<T, ReturnReceipt$receiptPdfFileArgs<ExtArgs>>): Prisma__FileObjectClient<$Result.GetResult<Prisma.$FileObjectPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    booking<T extends BookingDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BookingDefaultArgs<ExtArgs>>): Prisma__BookingClient<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ReturnReceipt model
+   */ 
+  interface ReturnReceiptFieldRefs {
+    readonly id: FieldRef<"ReturnReceipt", 'Int'>
+    readonly publicId: FieldRef<"ReturnReceipt", 'String'>
+    readonly bookingId: FieldRef<"ReturnReceipt", 'Int'>
+    readonly receiptNumber: FieldRef<"ReturnReceipt", 'String'>
+    readonly lineItems: FieldRef<"ReturnReceipt", 'Json'>
+    readonly totalCharges: FieldRef<"ReturnReceipt", 'Decimal'>
+    readonly depositPaid: FieldRef<"ReturnReceipt", 'Decimal'>
+    readonly amountDue: FieldRef<"ReturnReceipt", 'Decimal'>
+    readonly refundAmount: FieldRef<"ReturnReceipt", 'Decimal'>
+    readonly receiptPdfFileId: FieldRef<"ReturnReceipt", 'Int'>
+    readonly generatedAt: FieldRef<"ReturnReceipt", 'DateTime'>
+    readonly createdAt: FieldRef<"ReturnReceipt", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ReturnReceipt findUnique
+   */
+  export type ReturnReceiptFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReturnReceipt
+     */
+    select?: ReturnReceiptSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReturnReceiptInclude<ExtArgs> | null
+    /**
+     * Filter, which ReturnReceipt to fetch.
+     */
+    where: ReturnReceiptWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ReturnReceipt findUniqueOrThrow
+   */
+  export type ReturnReceiptFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReturnReceipt
+     */
+    select?: ReturnReceiptSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReturnReceiptInclude<ExtArgs> | null
+    /**
+     * Filter, which ReturnReceipt to fetch.
+     */
+    where: ReturnReceiptWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ReturnReceipt findFirst
+   */
+  export type ReturnReceiptFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReturnReceipt
+     */
+    select?: ReturnReceiptSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReturnReceiptInclude<ExtArgs> | null
+    /**
+     * Filter, which ReturnReceipt to fetch.
+     */
+    where?: ReturnReceiptWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ReturnReceipts to fetch.
+     */
+    orderBy?: ReturnReceiptOrderByWithRelationInput | ReturnReceiptOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ReturnReceipts.
+     */
+    cursor?: ReturnReceiptWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ReturnReceipts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ReturnReceipts.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ReturnReceipts.
+     */
+    distinct?: ReturnReceiptScalarFieldEnum | ReturnReceiptScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ReturnReceipt findFirstOrThrow
+   */
+  export type ReturnReceiptFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReturnReceipt
+     */
+    select?: ReturnReceiptSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReturnReceiptInclude<ExtArgs> | null
+    /**
+     * Filter, which ReturnReceipt to fetch.
+     */
+    where?: ReturnReceiptWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ReturnReceipts to fetch.
+     */
+    orderBy?: ReturnReceiptOrderByWithRelationInput | ReturnReceiptOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ReturnReceipts.
+     */
+    cursor?: ReturnReceiptWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ReturnReceipts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ReturnReceipts.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ReturnReceipts.
+     */
+    distinct?: ReturnReceiptScalarFieldEnum | ReturnReceiptScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ReturnReceipt findMany
+   */
+  export type ReturnReceiptFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReturnReceipt
+     */
+    select?: ReturnReceiptSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReturnReceiptInclude<ExtArgs> | null
+    /**
+     * Filter, which ReturnReceipts to fetch.
+     */
+    where?: ReturnReceiptWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ReturnReceipts to fetch.
+     */
+    orderBy?: ReturnReceiptOrderByWithRelationInput | ReturnReceiptOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ReturnReceipts.
+     */
+    cursor?: ReturnReceiptWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ReturnReceipts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ReturnReceipts.
+     */
+    skip?: number
+    distinct?: ReturnReceiptScalarFieldEnum | ReturnReceiptScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ReturnReceipt create
+   */
+  export type ReturnReceiptCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReturnReceipt
+     */
+    select?: ReturnReceiptSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReturnReceiptInclude<ExtArgs> | null
+    /**
+     * The data needed to create a ReturnReceipt.
+     */
+    data: XOR<ReturnReceiptCreateInput, ReturnReceiptUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ReturnReceipt createMany
+   */
+  export type ReturnReceiptCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ReturnReceipts.
+     */
+    data: ReturnReceiptCreateManyInput | ReturnReceiptCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ReturnReceipt createManyAndReturn
+   */
+  export type ReturnReceiptCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReturnReceipt
+     */
+    select?: ReturnReceiptSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many ReturnReceipts.
+     */
+    data: ReturnReceiptCreateManyInput | ReturnReceiptCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReturnReceiptIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * ReturnReceipt update
+   */
+  export type ReturnReceiptUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReturnReceipt
+     */
+    select?: ReturnReceiptSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReturnReceiptInclude<ExtArgs> | null
+    /**
+     * The data needed to update a ReturnReceipt.
+     */
+    data: XOR<ReturnReceiptUpdateInput, ReturnReceiptUncheckedUpdateInput>
+    /**
+     * Choose, which ReturnReceipt to update.
+     */
+    where: ReturnReceiptWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ReturnReceipt updateMany
+   */
+  export type ReturnReceiptUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ReturnReceipts.
+     */
+    data: XOR<ReturnReceiptUpdateManyMutationInput, ReturnReceiptUncheckedUpdateManyInput>
+    /**
+     * Filter which ReturnReceipts to update
+     */
+    where?: ReturnReceiptWhereInput
+  }
+
+  /**
+   * ReturnReceipt upsert
+   */
+  export type ReturnReceiptUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReturnReceipt
+     */
+    select?: ReturnReceiptSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReturnReceiptInclude<ExtArgs> | null
+    /**
+     * The filter to search for the ReturnReceipt to update in case it exists.
+     */
+    where: ReturnReceiptWhereUniqueInput
+    /**
+     * In case the ReturnReceipt found by the `where` argument doesn't exist, create a new ReturnReceipt with this data.
+     */
+    create: XOR<ReturnReceiptCreateInput, ReturnReceiptUncheckedCreateInput>
+    /**
+     * In case the ReturnReceipt was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ReturnReceiptUpdateInput, ReturnReceiptUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ReturnReceipt delete
+   */
+  export type ReturnReceiptDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReturnReceipt
+     */
+    select?: ReturnReceiptSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReturnReceiptInclude<ExtArgs> | null
+    /**
+     * Filter which ReturnReceipt to delete.
+     */
+    where: ReturnReceiptWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * ReturnReceipt deleteMany
+   */
+  export type ReturnReceiptDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ReturnReceipts to delete
+     */
+    where?: ReturnReceiptWhereInput
+  }
+
+  /**
+   * ReturnReceipt.receiptPdfFile
+   */
+  export type ReturnReceipt$receiptPdfFileArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FileObject
+     */
+    select?: FileObjectSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FileObjectInclude<ExtArgs> | null
+    where?: FileObjectWhereInput
+  }
+
+  /**
+   * ReturnReceipt without action
+   */
+  export type ReturnReceiptDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReturnReceipt
+     */
+    select?: ReturnReceiptSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReturnReceiptInclude<ExtArgs> | null
   }
 
 
@@ -74332,6 +75571,24 @@ export namespace Prisma {
   export type CancellationInvoiceScalarFieldEnum = (typeof CancellationInvoiceScalarFieldEnum)[keyof typeof CancellationInvoiceScalarFieldEnum]
 
 
+  export const ReturnReceiptScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    bookingId: 'bookingId',
+    receiptNumber: 'receiptNumber',
+    lineItems: 'lineItems',
+    totalCharges: 'totalCharges',
+    depositPaid: 'depositPaid',
+    amountDue: 'amountDue',
+    refundAmount: 'refundAmount',
+    receiptPdfFileId: 'receiptPdfFileId',
+    generatedAt: 'generatedAt',
+    createdAt: 'createdAt'
+  };
+
+  export type ReturnReceiptScalarFieldEnum = (typeof ReturnReceiptScalarFieldEnum)[keyof typeof ReturnReceiptScalarFieldEnum]
+
+
   export const FeatureFlagScalarFieldEnum: {
     id: 'id',
     publicId: 'publicId',
@@ -76075,6 +77332,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageListRelationFilter
     invoicePdfs?: InvoiceListRelationFilter
     cancellationInvoices?: CancellationInvoiceListRelationFilter
+    returnReceiptPdfs?: ReturnReceiptListRelationFilter
   }
 
   export type FileObjectOrderByWithRelationInput = {
@@ -76091,6 +77349,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageOrderByRelationAggregateInput
     invoicePdfs?: InvoiceOrderByRelationAggregateInput
     cancellationInvoices?: CancellationInvoiceOrderByRelationAggregateInput
+    returnReceiptPdfs?: ReturnReceiptOrderByRelationAggregateInput
   }
 
   export type FileObjectWhereUniqueInput = Prisma.AtLeast<{
@@ -76110,6 +77369,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageListRelationFilter
     invoicePdfs?: InvoiceListRelationFilter
     cancellationInvoices?: CancellationInvoiceListRelationFilter
+    returnReceiptPdfs?: ReturnReceiptListRelationFilter
   }, "id" | "publicId">
 
   export type FileObjectOrderByWithAggregationInput = {
@@ -77459,6 +78719,7 @@ export namespace Prisma {
     deposit?: XOR<DepositNullableRelationFilter, DepositWhereInput> | null
     invoice?: XOR<InvoiceNullableRelationFilter, InvoiceWhereInput> | null
     cancellationInvoice?: XOR<CancellationInvoiceNullableRelationFilter, CancellationInvoiceWhereInput> | null
+    returnReceipt?: XOR<ReturnReceiptNullableRelationFilter, ReturnReceiptWhereInput> | null
     vehicleSwaps?: VehicleSwapListRelationFilter
     discountRule?: XOR<DiscountRuleNullableRelationFilter, DiscountRuleWhereInput> | null
     discountApplication?: XOR<DiscountApplicationNullableRelationFilter, DiscountApplicationWhereInput> | null
@@ -77548,6 +78809,7 @@ export namespace Prisma {
     deposit?: DepositOrderByWithRelationInput
     invoice?: InvoiceOrderByWithRelationInput
     cancellationInvoice?: CancellationInvoiceOrderByWithRelationInput
+    returnReceipt?: ReturnReceiptOrderByWithRelationInput
     vehicleSwaps?: VehicleSwapOrderByRelationAggregateInput
     discountRule?: DiscountRuleOrderByWithRelationInput
     discountApplication?: DiscountApplicationOrderByWithRelationInput
@@ -77640,6 +78902,7 @@ export namespace Prisma {
     deposit?: XOR<DepositNullableRelationFilter, DepositWhereInput> | null
     invoice?: XOR<InvoiceNullableRelationFilter, InvoiceWhereInput> | null
     cancellationInvoice?: XOR<CancellationInvoiceNullableRelationFilter, CancellationInvoiceWhereInput> | null
+    returnReceipt?: XOR<ReturnReceiptNullableRelationFilter, ReturnReceiptWhereInput> | null
     vehicleSwaps?: VehicleSwapListRelationFilter
     discountRule?: XOR<DiscountRuleNullableRelationFilter, DiscountRuleWhereInput> | null
     discountApplication?: XOR<DiscountApplicationNullableRelationFilter, DiscountApplicationWhereInput> | null
@@ -78986,6 +80249,101 @@ export namespace Prisma {
     sentAt?: DateTimeNullableWithAggregatesFilter<"CancellationInvoice"> | Date | string | null
     createdAt?: DateTimeWithAggregatesFilter<"CancellationInvoice"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"CancellationInvoice"> | Date | string
+  }
+
+  export type ReturnReceiptWhereInput = {
+    AND?: ReturnReceiptWhereInput | ReturnReceiptWhereInput[]
+    OR?: ReturnReceiptWhereInput[]
+    NOT?: ReturnReceiptWhereInput | ReturnReceiptWhereInput[]
+    id?: IntFilter<"ReturnReceipt"> | number
+    publicId?: StringFilter<"ReturnReceipt"> | string
+    bookingId?: IntFilter<"ReturnReceipt"> | number
+    receiptNumber?: StringNullableFilter<"ReturnReceipt"> | string | null
+    lineItems?: JsonFilter<"ReturnReceipt">
+    totalCharges?: DecimalFilter<"ReturnReceipt"> | Decimal | DecimalJsLike | number | string
+    depositPaid?: DecimalFilter<"ReturnReceipt"> | Decimal | DecimalJsLike | number | string
+    amountDue?: DecimalFilter<"ReturnReceipt"> | Decimal | DecimalJsLike | number | string
+    refundAmount?: DecimalFilter<"ReturnReceipt"> | Decimal | DecimalJsLike | number | string
+    receiptPdfFileId?: IntNullableFilter<"ReturnReceipt"> | number | null
+    generatedAt?: DateTimeNullableFilter<"ReturnReceipt"> | Date | string | null
+    createdAt?: DateTimeFilter<"ReturnReceipt"> | Date | string
+    receiptPdfFile?: XOR<FileObjectNullableRelationFilter, FileObjectWhereInput> | null
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+  }
+
+  export type ReturnReceiptOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    receiptNumber?: SortOrderInput | SortOrder
+    lineItems?: SortOrder
+    totalCharges?: SortOrder
+    depositPaid?: SortOrder
+    amountDue?: SortOrder
+    refundAmount?: SortOrder
+    receiptPdfFileId?: SortOrderInput | SortOrder
+    generatedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    receiptPdfFile?: FileObjectOrderByWithRelationInput
+    booking?: BookingOrderByWithRelationInput
+  }
+
+  export type ReturnReceiptWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    bookingId?: number
+    receiptNumber?: string
+    AND?: ReturnReceiptWhereInput | ReturnReceiptWhereInput[]
+    OR?: ReturnReceiptWhereInput[]
+    NOT?: ReturnReceiptWhereInput | ReturnReceiptWhereInput[]
+    lineItems?: JsonFilter<"ReturnReceipt">
+    totalCharges?: DecimalFilter<"ReturnReceipt"> | Decimal | DecimalJsLike | number | string
+    depositPaid?: DecimalFilter<"ReturnReceipt"> | Decimal | DecimalJsLike | number | string
+    amountDue?: DecimalFilter<"ReturnReceipt"> | Decimal | DecimalJsLike | number | string
+    refundAmount?: DecimalFilter<"ReturnReceipt"> | Decimal | DecimalJsLike | number | string
+    receiptPdfFileId?: IntNullableFilter<"ReturnReceipt"> | number | null
+    generatedAt?: DateTimeNullableFilter<"ReturnReceipt"> | Date | string | null
+    createdAt?: DateTimeFilter<"ReturnReceipt"> | Date | string
+    receiptPdfFile?: XOR<FileObjectNullableRelationFilter, FileObjectWhereInput> | null
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+  }, "id" | "publicId" | "bookingId" | "receiptNumber">
+
+  export type ReturnReceiptOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    receiptNumber?: SortOrderInput | SortOrder
+    lineItems?: SortOrder
+    totalCharges?: SortOrder
+    depositPaid?: SortOrder
+    amountDue?: SortOrder
+    refundAmount?: SortOrder
+    receiptPdfFileId?: SortOrderInput | SortOrder
+    generatedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    _count?: ReturnReceiptCountOrderByAggregateInput
+    _avg?: ReturnReceiptAvgOrderByAggregateInput
+    _max?: ReturnReceiptMaxOrderByAggregateInput
+    _min?: ReturnReceiptMinOrderByAggregateInput
+    _sum?: ReturnReceiptSumOrderByAggregateInput
+  }
+
+  export type ReturnReceiptScalarWhereWithAggregatesInput = {
+    AND?: ReturnReceiptScalarWhereWithAggregatesInput | ReturnReceiptScalarWhereWithAggregatesInput[]
+    OR?: ReturnReceiptScalarWhereWithAggregatesInput[]
+    NOT?: ReturnReceiptScalarWhereWithAggregatesInput | ReturnReceiptScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"ReturnReceipt"> | number
+    publicId?: StringWithAggregatesFilter<"ReturnReceipt"> | string
+    bookingId?: IntWithAggregatesFilter<"ReturnReceipt"> | number
+    receiptNumber?: StringNullableWithAggregatesFilter<"ReturnReceipt"> | string | null
+    lineItems?: JsonWithAggregatesFilter<"ReturnReceipt">
+    totalCharges?: DecimalWithAggregatesFilter<"ReturnReceipt"> | Decimal | DecimalJsLike | number | string
+    depositPaid?: DecimalWithAggregatesFilter<"ReturnReceipt"> | Decimal | DecimalJsLike | number | string
+    amountDue?: DecimalWithAggregatesFilter<"ReturnReceipt"> | Decimal | DecimalJsLike | number | string
+    refundAmount?: DecimalWithAggregatesFilter<"ReturnReceipt"> | Decimal | DecimalJsLike | number | string
+    receiptPdfFileId?: IntNullableWithAggregatesFilter<"ReturnReceipt"> | number | null
+    generatedAt?: DateTimeNullableWithAggregatesFilter<"ReturnReceipt"> | Date | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"ReturnReceipt"> | Date | string
   }
 
   export type FeatureFlagWhereInput = {
@@ -82184,6 +83542,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageCreateNestedManyWithoutFileInput
     invoicePdfs?: InvoiceCreateNestedManyWithoutInvoicePdfFileInput
     cancellationInvoices?: CancellationInvoiceCreateNestedManyWithoutInvoicePdfFileInput
+    returnReceiptPdfs?: ReturnReceiptCreateNestedManyWithoutReceiptPdfFileInput
   }
 
   export type FileObjectUncheckedCreateInput = {
@@ -82200,6 +83559,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageUncheckedCreateNestedManyWithoutFileInput
     invoicePdfs?: InvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
     cancellationInvoices?: CancellationInvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
+    returnReceiptPdfs?: ReturnReceiptUncheckedCreateNestedManyWithoutReceiptPdfFileInput
   }
 
   export type FileObjectUpdateInput = {
@@ -82215,6 +83575,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageUpdateManyWithoutFileNestedInput
     invoicePdfs?: InvoiceUpdateManyWithoutInvoicePdfFileNestedInput
     cancellationInvoices?: CancellationInvoiceUpdateManyWithoutInvoicePdfFileNestedInput
+    returnReceiptPdfs?: ReturnReceiptUpdateManyWithoutReceiptPdfFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateInput = {
@@ -82231,6 +83592,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
     invoicePdfs?: InvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
     cancellationInvoices?: CancellationInvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
+    returnReceiptPdfs?: ReturnReceiptUncheckedUpdateManyWithoutReceiptPdfFileNestedInput
   }
 
   export type FileObjectCreateManyInput = {
@@ -83618,6 +84980,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
@@ -83703,6 +85066,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
@@ -83781,6 +85145,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
@@ -83866,6 +85231,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
@@ -85314,6 +86680,106 @@ export namespace Prisma {
     sentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ReturnReceiptCreateInput = {
+    publicId: string
+    receiptNumber?: string | null
+    lineItems?: JsonNullValueInput | InputJsonValue
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    depositPaid?: Decimal | DecimalJsLike | number | string
+    amountDue?: Decimal | DecimalJsLike | number | string
+    refundAmount?: Decimal | DecimalJsLike | number | string
+    generatedAt?: Date | string | null
+    createdAt?: Date | string
+    receiptPdfFile?: FileObjectCreateNestedOneWithoutReturnReceiptPdfsInput
+    booking: BookingCreateNestedOneWithoutReturnReceiptInput
+  }
+
+  export type ReturnReceiptUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    receiptNumber?: string | null
+    lineItems?: JsonNullValueInput | InputJsonValue
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    depositPaid?: Decimal | DecimalJsLike | number | string
+    amountDue?: Decimal | DecimalJsLike | number | string
+    refundAmount?: Decimal | DecimalJsLike | number | string
+    receiptPdfFileId?: number | null
+    generatedAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
+  export type ReturnReceiptUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    receiptNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    lineItems?: JsonNullValueInput | InputJsonValue
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    depositPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    refundAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    receiptPdfFile?: FileObjectUpdateOneWithoutReturnReceiptPdfsNestedInput
+    booking?: BookingUpdateOneRequiredWithoutReturnReceiptNestedInput
+  }
+
+  export type ReturnReceiptUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    receiptNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    lineItems?: JsonNullValueInput | InputJsonValue
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    depositPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    refundAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    receiptPdfFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ReturnReceiptCreateManyInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    receiptNumber?: string | null
+    lineItems?: JsonNullValueInput | InputJsonValue
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    depositPaid?: Decimal | DecimalJsLike | number | string
+    amountDue?: Decimal | DecimalJsLike | number | string
+    refundAmount?: Decimal | DecimalJsLike | number | string
+    receiptPdfFileId?: number | null
+    generatedAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
+  export type ReturnReceiptUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    receiptNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    lineItems?: JsonNullValueInput | InputJsonValue
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    depositPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    refundAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ReturnReceiptUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    receiptNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    lineItems?: JsonNullValueInput | InputJsonValue
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    depositPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    refundAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    receiptPdfFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type FeatureFlagCreateInput = {
@@ -88925,6 +90391,12 @@ export namespace Prisma {
     none?: InvoiceWhereInput
   }
 
+  export type ReturnReceiptListRelationFilter = {
+    every?: ReturnReceiptWhereInput
+    some?: ReturnReceiptWhereInput
+    none?: ReturnReceiptWhereInput
+  }
+
   export type BookingPhotoOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -88934,6 +90406,10 @@ export namespace Prisma {
   }
 
   export type InvoiceOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type ReturnReceiptOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -90183,6 +91659,11 @@ export namespace Prisma {
   export type CancellationInvoiceNullableRelationFilter = {
     is?: CancellationInvoiceWhereInput | null
     isNot?: CancellationInvoiceWhereInput | null
+  }
+
+  export type ReturnReceiptNullableRelationFilter = {
+    is?: ReturnReceiptWhereInput | null
+    isNot?: ReturnReceiptWhereInput | null
   }
 
   export type DiscountRuleNullableRelationFilter = {
@@ -91453,6 +92934,69 @@ export namespace Prisma {
     advanceAmount?: SortOrder
     cancellationFee?: SortOrder
     invoicePdfFileId?: SortOrder
+  }
+
+  export type ReturnReceiptCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    receiptNumber?: SortOrder
+    lineItems?: SortOrder
+    totalCharges?: SortOrder
+    depositPaid?: SortOrder
+    amountDue?: SortOrder
+    refundAmount?: SortOrder
+    receiptPdfFileId?: SortOrder
+    generatedAt?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type ReturnReceiptAvgOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    totalCharges?: SortOrder
+    depositPaid?: SortOrder
+    amountDue?: SortOrder
+    refundAmount?: SortOrder
+    receiptPdfFileId?: SortOrder
+  }
+
+  export type ReturnReceiptMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    receiptNumber?: SortOrder
+    totalCharges?: SortOrder
+    depositPaid?: SortOrder
+    amountDue?: SortOrder
+    refundAmount?: SortOrder
+    receiptPdfFileId?: SortOrder
+    generatedAt?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type ReturnReceiptMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    bookingId?: SortOrder
+    receiptNumber?: SortOrder
+    totalCharges?: SortOrder
+    depositPaid?: SortOrder
+    amountDue?: SortOrder
+    refundAmount?: SortOrder
+    receiptPdfFileId?: SortOrder
+    generatedAt?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type ReturnReceiptSumOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    totalCharges?: SortOrder
+    depositPaid?: SortOrder
+    amountDue?: SortOrder
+    refundAmount?: SortOrder
+    receiptPdfFileId?: SortOrder
   }
 
   export type EnumFeatureFlagScopeFilter<$PrismaModel = never> = {
@@ -95206,6 +96750,13 @@ export namespace Prisma {
     connect?: CancellationInvoiceWhereUniqueInput | CancellationInvoiceWhereUniqueInput[]
   }
 
+  export type ReturnReceiptCreateNestedManyWithoutReceiptPdfFileInput = {
+    create?: XOR<ReturnReceiptCreateWithoutReceiptPdfFileInput, ReturnReceiptUncheckedCreateWithoutReceiptPdfFileInput> | ReturnReceiptCreateWithoutReceiptPdfFileInput[] | ReturnReceiptUncheckedCreateWithoutReceiptPdfFileInput[]
+    connectOrCreate?: ReturnReceiptCreateOrConnectWithoutReceiptPdfFileInput | ReturnReceiptCreateOrConnectWithoutReceiptPdfFileInput[]
+    createMany?: ReturnReceiptCreateManyReceiptPdfFileInputEnvelope
+    connect?: ReturnReceiptWhereUniqueInput | ReturnReceiptWhereUniqueInput[]
+  }
+
   export type BookingPhotoUncheckedCreateNestedManyWithoutFileInput = {
     create?: XOR<BookingPhotoCreateWithoutFileInput, BookingPhotoUncheckedCreateWithoutFileInput> | BookingPhotoCreateWithoutFileInput[] | BookingPhotoUncheckedCreateWithoutFileInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutFileInput | BookingPhotoCreateOrConnectWithoutFileInput[]
@@ -95246,6 +96797,13 @@ export namespace Prisma {
     connectOrCreate?: CancellationInvoiceCreateOrConnectWithoutInvoicePdfFileInput | CancellationInvoiceCreateOrConnectWithoutInvoicePdfFileInput[]
     createMany?: CancellationInvoiceCreateManyInvoicePdfFileInputEnvelope
     connect?: CancellationInvoiceWhereUniqueInput | CancellationInvoiceWhereUniqueInput[]
+  }
+
+  export type ReturnReceiptUncheckedCreateNestedManyWithoutReceiptPdfFileInput = {
+    create?: XOR<ReturnReceiptCreateWithoutReceiptPdfFileInput, ReturnReceiptUncheckedCreateWithoutReceiptPdfFileInput> | ReturnReceiptCreateWithoutReceiptPdfFileInput[] | ReturnReceiptUncheckedCreateWithoutReceiptPdfFileInput[]
+    connectOrCreate?: ReturnReceiptCreateOrConnectWithoutReceiptPdfFileInput | ReturnReceiptCreateOrConnectWithoutReceiptPdfFileInput[]
+    createMany?: ReturnReceiptCreateManyReceiptPdfFileInputEnvelope
+    connect?: ReturnReceiptWhereUniqueInput | ReturnReceiptWhereUniqueInput[]
   }
 
   export type BookingPhotoUpdateManyWithoutFileNestedInput = {
@@ -95332,6 +96890,20 @@ export namespace Prisma {
     deleteMany?: CancellationInvoiceScalarWhereInput | CancellationInvoiceScalarWhereInput[]
   }
 
+  export type ReturnReceiptUpdateManyWithoutReceiptPdfFileNestedInput = {
+    create?: XOR<ReturnReceiptCreateWithoutReceiptPdfFileInput, ReturnReceiptUncheckedCreateWithoutReceiptPdfFileInput> | ReturnReceiptCreateWithoutReceiptPdfFileInput[] | ReturnReceiptUncheckedCreateWithoutReceiptPdfFileInput[]
+    connectOrCreate?: ReturnReceiptCreateOrConnectWithoutReceiptPdfFileInput | ReturnReceiptCreateOrConnectWithoutReceiptPdfFileInput[]
+    upsert?: ReturnReceiptUpsertWithWhereUniqueWithoutReceiptPdfFileInput | ReturnReceiptUpsertWithWhereUniqueWithoutReceiptPdfFileInput[]
+    createMany?: ReturnReceiptCreateManyReceiptPdfFileInputEnvelope
+    set?: ReturnReceiptWhereUniqueInput | ReturnReceiptWhereUniqueInput[]
+    disconnect?: ReturnReceiptWhereUniqueInput | ReturnReceiptWhereUniqueInput[]
+    delete?: ReturnReceiptWhereUniqueInput | ReturnReceiptWhereUniqueInput[]
+    connect?: ReturnReceiptWhereUniqueInput | ReturnReceiptWhereUniqueInput[]
+    update?: ReturnReceiptUpdateWithWhereUniqueWithoutReceiptPdfFileInput | ReturnReceiptUpdateWithWhereUniqueWithoutReceiptPdfFileInput[]
+    updateMany?: ReturnReceiptUpdateManyWithWhereWithoutReceiptPdfFileInput | ReturnReceiptUpdateManyWithWhereWithoutReceiptPdfFileInput[]
+    deleteMany?: ReturnReceiptScalarWhereInput | ReturnReceiptScalarWhereInput[]
+  }
+
   export type BookingPhotoUncheckedUpdateManyWithoutFileNestedInput = {
     create?: XOR<BookingPhotoCreateWithoutFileInput, BookingPhotoUncheckedCreateWithoutFileInput> | BookingPhotoCreateWithoutFileInput[] | BookingPhotoUncheckedCreateWithoutFileInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutFileInput | BookingPhotoCreateOrConnectWithoutFileInput[]
@@ -95414,6 +96986,20 @@ export namespace Prisma {
     update?: CancellationInvoiceUpdateWithWhereUniqueWithoutInvoicePdfFileInput | CancellationInvoiceUpdateWithWhereUniqueWithoutInvoicePdfFileInput[]
     updateMany?: CancellationInvoiceUpdateManyWithWhereWithoutInvoicePdfFileInput | CancellationInvoiceUpdateManyWithWhereWithoutInvoicePdfFileInput[]
     deleteMany?: CancellationInvoiceScalarWhereInput | CancellationInvoiceScalarWhereInput[]
+  }
+
+  export type ReturnReceiptUncheckedUpdateManyWithoutReceiptPdfFileNestedInput = {
+    create?: XOR<ReturnReceiptCreateWithoutReceiptPdfFileInput, ReturnReceiptUncheckedCreateWithoutReceiptPdfFileInput> | ReturnReceiptCreateWithoutReceiptPdfFileInput[] | ReturnReceiptUncheckedCreateWithoutReceiptPdfFileInput[]
+    connectOrCreate?: ReturnReceiptCreateOrConnectWithoutReceiptPdfFileInput | ReturnReceiptCreateOrConnectWithoutReceiptPdfFileInput[]
+    upsert?: ReturnReceiptUpsertWithWhereUniqueWithoutReceiptPdfFileInput | ReturnReceiptUpsertWithWhereUniqueWithoutReceiptPdfFileInput[]
+    createMany?: ReturnReceiptCreateManyReceiptPdfFileInputEnvelope
+    set?: ReturnReceiptWhereUniqueInput | ReturnReceiptWhereUniqueInput[]
+    disconnect?: ReturnReceiptWhereUniqueInput | ReturnReceiptWhereUniqueInput[]
+    delete?: ReturnReceiptWhereUniqueInput | ReturnReceiptWhereUniqueInput[]
+    connect?: ReturnReceiptWhereUniqueInput | ReturnReceiptWhereUniqueInput[]
+    update?: ReturnReceiptUpdateWithWhereUniqueWithoutReceiptPdfFileInput | ReturnReceiptUpdateWithWhereUniqueWithoutReceiptPdfFileInput[]
+    updateMany?: ReturnReceiptUpdateManyWithWhereWithoutReceiptPdfFileInput | ReturnReceiptUpdateManyWithWhereWithoutReceiptPdfFileInput[]
+    deleteMany?: ReturnReceiptScalarWhereInput | ReturnReceiptScalarWhereInput[]
   }
 
   export type UserCreateNestedManyWithoutBranchInput = {
@@ -97309,6 +98895,12 @@ export namespace Prisma {
     connect?: CancellationInvoiceWhereUniqueInput
   }
 
+  export type ReturnReceiptCreateNestedOneWithoutBookingInput = {
+    create?: XOR<ReturnReceiptCreateWithoutBookingInput, ReturnReceiptUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: ReturnReceiptCreateOrConnectWithoutBookingInput
+    connect?: ReturnReceiptWhereUniqueInput
+  }
+
   export type VehicleSwapCreateNestedManyWithoutBookingInput = {
     create?: XOR<VehicleSwapCreateWithoutBookingInput, VehicleSwapUncheckedCreateWithoutBookingInput> | VehicleSwapCreateWithoutBookingInput[] | VehicleSwapUncheckedCreateWithoutBookingInput[]
     connectOrCreate?: VehicleSwapCreateOrConnectWithoutBookingInput | VehicleSwapCreateOrConnectWithoutBookingInput[]
@@ -97444,6 +99036,12 @@ export namespace Prisma {
     create?: XOR<CancellationInvoiceCreateWithoutBookingInput, CancellationInvoiceUncheckedCreateWithoutBookingInput>
     connectOrCreate?: CancellationInvoiceCreateOrConnectWithoutBookingInput
     connect?: CancellationInvoiceWhereUniqueInput
+  }
+
+  export type ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput = {
+    create?: XOR<ReturnReceiptCreateWithoutBookingInput, ReturnReceiptUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: ReturnReceiptCreateOrConnectWithoutBookingInput
+    connect?: ReturnReceiptWhereUniqueInput
   }
 
   export type VehicleSwapUncheckedCreateNestedManyWithoutBookingInput = {
@@ -97646,6 +99244,16 @@ export namespace Prisma {
     delete?: CancellationInvoiceWhereInput | boolean
     connect?: CancellationInvoiceWhereUniqueInput
     update?: XOR<XOR<CancellationInvoiceUpdateToOneWithWhereWithoutBookingInput, CancellationInvoiceUpdateWithoutBookingInput>, CancellationInvoiceUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type ReturnReceiptUpdateOneWithoutBookingNestedInput = {
+    create?: XOR<ReturnReceiptCreateWithoutBookingInput, ReturnReceiptUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: ReturnReceiptCreateOrConnectWithoutBookingInput
+    upsert?: ReturnReceiptUpsertWithoutBookingInput
+    disconnect?: ReturnReceiptWhereInput | boolean
+    delete?: ReturnReceiptWhereInput | boolean
+    connect?: ReturnReceiptWhereUniqueInput
+    update?: XOR<XOR<ReturnReceiptUpdateToOneWithWhereWithoutBookingInput, ReturnReceiptUpdateWithoutBookingInput>, ReturnReceiptUncheckedUpdateWithoutBookingInput>
   }
 
   export type VehicleSwapUpdateManyWithoutBookingNestedInput = {
@@ -97900,6 +99508,16 @@ export namespace Prisma {
     delete?: CancellationInvoiceWhereInput | boolean
     connect?: CancellationInvoiceWhereUniqueInput
     update?: XOR<XOR<CancellationInvoiceUpdateToOneWithWhereWithoutBookingInput, CancellationInvoiceUpdateWithoutBookingInput>, CancellationInvoiceUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput = {
+    create?: XOR<ReturnReceiptCreateWithoutBookingInput, ReturnReceiptUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: ReturnReceiptCreateOrConnectWithoutBookingInput
+    upsert?: ReturnReceiptUpsertWithoutBookingInput
+    disconnect?: ReturnReceiptWhereInput | boolean
+    delete?: ReturnReceiptWhereInput | boolean
+    connect?: ReturnReceiptWhereUniqueInput
+    update?: XOR<XOR<ReturnReceiptUpdateToOneWithWhereWithoutBookingInput, ReturnReceiptUpdateWithoutBookingInput>, ReturnReceiptUncheckedUpdateWithoutBookingInput>
   }
 
   export type VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput = {
@@ -98517,6 +100135,36 @@ export namespace Prisma {
     delete?: FileObjectWhereInput | boolean
     connect?: FileObjectWhereUniqueInput
     update?: XOR<XOR<FileObjectUpdateToOneWithWhereWithoutCancellationInvoicesInput, FileObjectUpdateWithoutCancellationInvoicesInput>, FileObjectUncheckedUpdateWithoutCancellationInvoicesInput>
+  }
+
+  export type FileObjectCreateNestedOneWithoutReturnReceiptPdfsInput = {
+    create?: XOR<FileObjectCreateWithoutReturnReceiptPdfsInput, FileObjectUncheckedCreateWithoutReturnReceiptPdfsInput>
+    connectOrCreate?: FileObjectCreateOrConnectWithoutReturnReceiptPdfsInput
+    connect?: FileObjectWhereUniqueInput
+  }
+
+  export type BookingCreateNestedOneWithoutReturnReceiptInput = {
+    create?: XOR<BookingCreateWithoutReturnReceiptInput, BookingUncheckedCreateWithoutReturnReceiptInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutReturnReceiptInput
+    connect?: BookingWhereUniqueInput
+  }
+
+  export type FileObjectUpdateOneWithoutReturnReceiptPdfsNestedInput = {
+    create?: XOR<FileObjectCreateWithoutReturnReceiptPdfsInput, FileObjectUncheckedCreateWithoutReturnReceiptPdfsInput>
+    connectOrCreate?: FileObjectCreateOrConnectWithoutReturnReceiptPdfsInput
+    upsert?: FileObjectUpsertWithoutReturnReceiptPdfsInput
+    disconnect?: FileObjectWhereInput | boolean
+    delete?: FileObjectWhereInput | boolean
+    connect?: FileObjectWhereUniqueInput
+    update?: XOR<XOR<FileObjectUpdateToOneWithWhereWithoutReturnReceiptPdfsInput, FileObjectUpdateWithoutReturnReceiptPdfsInput>, FileObjectUncheckedUpdateWithoutReturnReceiptPdfsInput>
+  }
+
+  export type BookingUpdateOneRequiredWithoutReturnReceiptNestedInput = {
+    create?: XOR<BookingCreateWithoutReturnReceiptInput, BookingUncheckedCreateWithoutReturnReceiptInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutReturnReceiptInput
+    upsert?: BookingUpsertWithoutReturnReceiptInput
+    connect?: BookingWhereUniqueInput
+    update?: XOR<XOR<BookingUpdateToOneWithWhereWithoutReturnReceiptInput, BookingUpdateWithoutReturnReceiptInput>, BookingUncheckedUpdateWithoutReturnReceiptInput>
   }
 
   export type BranchFeatureFlagCreateNestedManyWithoutFlagInput = {
@@ -101460,6 +103108,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
@@ -101544,6 +103193,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
@@ -104411,6 +106061,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
@@ -104495,6 +106146,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
@@ -104798,6 +106450,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageCreateNestedManyWithoutFileInput
     invoicePdfs?: InvoiceCreateNestedManyWithoutInvoicePdfFileInput
     cancellationInvoices?: CancellationInvoiceCreateNestedManyWithoutInvoicePdfFileInput
+    returnReceiptPdfs?: ReturnReceiptCreateNestedManyWithoutReceiptPdfFileInput
   }
 
   export type FileObjectUncheckedCreateWithoutCustomerKycsInput = {
@@ -104813,6 +106466,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageUncheckedCreateNestedManyWithoutFileInput
     invoicePdfs?: InvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
     cancellationInvoices?: CancellationInvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
+    returnReceiptPdfs?: ReturnReceiptUncheckedCreateNestedManyWithoutReceiptPdfFileInput
   }
 
   export type FileObjectCreateOrConnectWithoutCustomerKycsInput = {
@@ -104891,6 +106545,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageUpdateManyWithoutFileNestedInput
     invoicePdfs?: InvoiceUpdateManyWithoutInvoicePdfFileNestedInput
     cancellationInvoices?: CancellationInvoiceUpdateManyWithoutInvoicePdfFileNestedInput
+    returnReceiptPdfs?: ReturnReceiptUpdateManyWithoutReceiptPdfFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateWithoutCustomerKycsInput = {
@@ -104906,6 +106561,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
     invoicePdfs?: InvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
     cancellationInvoices?: CancellationInvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
+    returnReceiptPdfs?: ReturnReceiptUncheckedUpdateManyWithoutReceiptPdfFileNestedInput
   }
 
   export type BookingPhotoCreateWithoutFileInput = {
@@ -105027,6 +106683,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
@@ -105111,6 +106768,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
@@ -105243,6 +106901,43 @@ export namespace Prisma {
 
   export type CancellationInvoiceCreateManyInvoicePdfFileInputEnvelope = {
     data: CancellationInvoiceCreateManyInvoicePdfFileInput | CancellationInvoiceCreateManyInvoicePdfFileInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type ReturnReceiptCreateWithoutReceiptPdfFileInput = {
+    publicId: string
+    receiptNumber?: string | null
+    lineItems?: JsonNullValueInput | InputJsonValue
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    depositPaid?: Decimal | DecimalJsLike | number | string
+    amountDue?: Decimal | DecimalJsLike | number | string
+    refundAmount?: Decimal | DecimalJsLike | number | string
+    generatedAt?: Date | string | null
+    createdAt?: Date | string
+    booking: BookingCreateNestedOneWithoutReturnReceiptInput
+  }
+
+  export type ReturnReceiptUncheckedCreateWithoutReceiptPdfFileInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    receiptNumber?: string | null
+    lineItems?: JsonNullValueInput | InputJsonValue
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    depositPaid?: Decimal | DecimalJsLike | number | string
+    amountDue?: Decimal | DecimalJsLike | number | string
+    refundAmount?: Decimal | DecimalJsLike | number | string
+    generatedAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
+  export type ReturnReceiptCreateOrConnectWithoutReceiptPdfFileInput = {
+    where: ReturnReceiptWhereUniqueInput
+    create: XOR<ReturnReceiptCreateWithoutReceiptPdfFileInput, ReturnReceiptUncheckedCreateWithoutReceiptPdfFileInput>
+  }
+
+  export type ReturnReceiptCreateManyReceiptPdfFileInputEnvelope = {
+    data: ReturnReceiptCreateManyReceiptPdfFileInput | ReturnReceiptCreateManyReceiptPdfFileInput[]
     skipDuplicates?: boolean
   }
 
@@ -105385,6 +107080,40 @@ export namespace Prisma {
   export type CancellationInvoiceUpdateManyWithWhereWithoutInvoicePdfFileInput = {
     where: CancellationInvoiceScalarWhereInput
     data: XOR<CancellationInvoiceUpdateManyMutationInput, CancellationInvoiceUncheckedUpdateManyWithoutInvoicePdfFileInput>
+  }
+
+  export type ReturnReceiptUpsertWithWhereUniqueWithoutReceiptPdfFileInput = {
+    where: ReturnReceiptWhereUniqueInput
+    update: XOR<ReturnReceiptUpdateWithoutReceiptPdfFileInput, ReturnReceiptUncheckedUpdateWithoutReceiptPdfFileInput>
+    create: XOR<ReturnReceiptCreateWithoutReceiptPdfFileInput, ReturnReceiptUncheckedCreateWithoutReceiptPdfFileInput>
+  }
+
+  export type ReturnReceiptUpdateWithWhereUniqueWithoutReceiptPdfFileInput = {
+    where: ReturnReceiptWhereUniqueInput
+    data: XOR<ReturnReceiptUpdateWithoutReceiptPdfFileInput, ReturnReceiptUncheckedUpdateWithoutReceiptPdfFileInput>
+  }
+
+  export type ReturnReceiptUpdateManyWithWhereWithoutReceiptPdfFileInput = {
+    where: ReturnReceiptScalarWhereInput
+    data: XOR<ReturnReceiptUpdateManyMutationInput, ReturnReceiptUncheckedUpdateManyWithoutReceiptPdfFileInput>
+  }
+
+  export type ReturnReceiptScalarWhereInput = {
+    AND?: ReturnReceiptScalarWhereInput | ReturnReceiptScalarWhereInput[]
+    OR?: ReturnReceiptScalarWhereInput[]
+    NOT?: ReturnReceiptScalarWhereInput | ReturnReceiptScalarWhereInput[]
+    id?: IntFilter<"ReturnReceipt"> | number
+    publicId?: StringFilter<"ReturnReceipt"> | string
+    bookingId?: IntFilter<"ReturnReceipt"> | number
+    receiptNumber?: StringNullableFilter<"ReturnReceipt"> | string | null
+    lineItems?: JsonFilter<"ReturnReceipt">
+    totalCharges?: DecimalFilter<"ReturnReceipt"> | Decimal | DecimalJsLike | number | string
+    depositPaid?: DecimalFilter<"ReturnReceipt"> | Decimal | DecimalJsLike | number | string
+    amountDue?: DecimalFilter<"ReturnReceipt"> | Decimal | DecimalJsLike | number | string
+    refundAmount?: DecimalFilter<"ReturnReceipt"> | Decimal | DecimalJsLike | number | string
+    receiptPdfFileId?: IntNullableFilter<"ReturnReceipt"> | number | null
+    generatedAt?: DateTimeNullableFilter<"ReturnReceipt"> | Date | string | null
+    createdAt?: DateTimeFilter<"ReturnReceipt"> | Date | string
   }
 
   export type UserCreateWithoutBranchInput = {
@@ -105618,6 +107347,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
@@ -105702,6 +107432,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
@@ -109502,6 +111233,7 @@ export namespace Prisma {
     bookingKycs?: BookingCreateNestedManyWithoutKycFileInput
     invoicePdfs?: InvoiceCreateNestedManyWithoutInvoicePdfFileInput
     cancellationInvoices?: CancellationInvoiceCreateNestedManyWithoutInvoicePdfFileInput
+    returnReceiptPdfs?: ReturnReceiptCreateNestedManyWithoutReceiptPdfFileInput
   }
 
   export type FileObjectUncheckedCreateWithoutVehicleImagesInput = {
@@ -109517,6 +111249,7 @@ export namespace Prisma {
     bookingKycs?: BookingUncheckedCreateNestedManyWithoutKycFileInput
     invoicePdfs?: InvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
     cancellationInvoices?: CancellationInvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
+    returnReceiptPdfs?: ReturnReceiptUncheckedCreateNestedManyWithoutReceiptPdfFileInput
   }
 
   export type FileObjectCreateOrConnectWithoutVehicleImagesInput = {
@@ -109617,6 +111350,7 @@ export namespace Prisma {
     bookingKycs?: BookingUpdateManyWithoutKycFileNestedInput
     invoicePdfs?: InvoiceUpdateManyWithoutInvoicePdfFileNestedInput
     cancellationInvoices?: CancellationInvoiceUpdateManyWithoutInvoicePdfFileNestedInput
+    returnReceiptPdfs?: ReturnReceiptUpdateManyWithoutReceiptPdfFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateWithoutVehicleImagesInput = {
@@ -109632,6 +111366,7 @@ export namespace Prisma {
     bookingKycs?: BookingUncheckedUpdateManyWithoutKycFileNestedInput
     invoicePdfs?: InvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
     cancellationInvoices?: CancellationInvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
+    returnReceiptPdfs?: ReturnReceiptUncheckedUpdateManyWithoutReceiptPdfFileNestedInput
   }
 
   export type VehicleCategoryCreateWithoutPricingRulesInput = {
@@ -110112,6 +111847,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageCreateNestedManyWithoutFileInput
     invoicePdfs?: InvoiceCreateNestedManyWithoutInvoicePdfFileInput
     cancellationInvoices?: CancellationInvoiceCreateNestedManyWithoutInvoicePdfFileInput
+    returnReceiptPdfs?: ReturnReceiptCreateNestedManyWithoutReceiptPdfFileInput
   }
 
   export type FileObjectUncheckedCreateWithoutBookingKycsInput = {
@@ -110127,6 +111863,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageUncheckedCreateNestedManyWithoutFileInput
     invoicePdfs?: InvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
     cancellationInvoices?: CancellationInvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
+    returnReceiptPdfs?: ReturnReceiptUncheckedCreateNestedManyWithoutReceiptPdfFileInput
   }
 
   export type FileObjectCreateOrConnectWithoutBookingKycsInput = {
@@ -110543,6 +112280,38 @@ export namespace Prisma {
   export type CancellationInvoiceCreateOrConnectWithoutBookingInput = {
     where: CancellationInvoiceWhereUniqueInput
     create: XOR<CancellationInvoiceCreateWithoutBookingInput, CancellationInvoiceUncheckedCreateWithoutBookingInput>
+  }
+
+  export type ReturnReceiptCreateWithoutBookingInput = {
+    publicId: string
+    receiptNumber?: string | null
+    lineItems?: JsonNullValueInput | InputJsonValue
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    depositPaid?: Decimal | DecimalJsLike | number | string
+    amountDue?: Decimal | DecimalJsLike | number | string
+    refundAmount?: Decimal | DecimalJsLike | number | string
+    generatedAt?: Date | string | null
+    createdAt?: Date | string
+    receiptPdfFile?: FileObjectCreateNestedOneWithoutReturnReceiptPdfsInput
+  }
+
+  export type ReturnReceiptUncheckedCreateWithoutBookingInput = {
+    id?: number
+    publicId: string
+    receiptNumber?: string | null
+    lineItems?: JsonNullValueInput | InputJsonValue
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    depositPaid?: Decimal | DecimalJsLike | number | string
+    amountDue?: Decimal | DecimalJsLike | number | string
+    refundAmount?: Decimal | DecimalJsLike | number | string
+    receiptPdfFileId?: number | null
+    generatedAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
+  export type ReturnReceiptCreateOrConnectWithoutBookingInput = {
+    where: ReturnReceiptWhereUniqueInput
+    create: XOR<ReturnReceiptCreateWithoutBookingInput, ReturnReceiptUncheckedCreateWithoutBookingInput>
   }
 
   export type VehicleSwapCreateWithoutBookingInput = {
@@ -111344,6 +113113,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageUpdateManyWithoutFileNestedInput
     invoicePdfs?: InvoiceUpdateManyWithoutInvoicePdfFileNestedInput
     cancellationInvoices?: CancellationInvoiceUpdateManyWithoutInvoicePdfFileNestedInput
+    returnReceiptPdfs?: ReturnReceiptUpdateManyWithoutReceiptPdfFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateWithoutBookingKycsInput = {
@@ -111359,6 +113129,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
     invoicePdfs?: InvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
     cancellationInvoices?: CancellationInvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
+    returnReceiptPdfs?: ReturnReceiptUncheckedUpdateManyWithoutReceiptPdfFileNestedInput
   }
 
   export type CustomerUpsertWithoutBookingsInput = {
@@ -111745,6 +113516,44 @@ export namespace Prisma {
     sentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ReturnReceiptUpsertWithoutBookingInput = {
+    update: XOR<ReturnReceiptUpdateWithoutBookingInput, ReturnReceiptUncheckedUpdateWithoutBookingInput>
+    create: XOR<ReturnReceiptCreateWithoutBookingInput, ReturnReceiptUncheckedCreateWithoutBookingInput>
+    where?: ReturnReceiptWhereInput
+  }
+
+  export type ReturnReceiptUpdateToOneWithWhereWithoutBookingInput = {
+    where?: ReturnReceiptWhereInput
+    data: XOR<ReturnReceiptUpdateWithoutBookingInput, ReturnReceiptUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type ReturnReceiptUpdateWithoutBookingInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    receiptNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    lineItems?: JsonNullValueInput | InputJsonValue
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    depositPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    refundAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    receiptPdfFile?: FileObjectUpdateOneWithoutReturnReceiptPdfsNestedInput
+  }
+
+  export type ReturnReceiptUncheckedUpdateWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    receiptNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    lineItems?: JsonNullValueInput | InputJsonValue
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    depositPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    refundAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    receiptPdfFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type VehicleSwapUpsertWithWhereUniqueWithoutBookingInput = {
@@ -112396,6 +114205,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
@@ -112480,6 +114290,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
@@ -112643,6 +114454,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
@@ -112727,6 +114539,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
@@ -112804,6 +114617,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
@@ -112888,6 +114702,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
@@ -112919,6 +114734,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageCreateNestedManyWithoutFileInput
     invoicePdfs?: InvoiceCreateNestedManyWithoutInvoicePdfFileInput
     cancellationInvoices?: CancellationInvoiceCreateNestedManyWithoutInvoicePdfFileInput
+    returnReceiptPdfs?: ReturnReceiptCreateNestedManyWithoutReceiptPdfFileInput
   }
 
   export type FileObjectUncheckedCreateWithoutBookingPhotosInput = {
@@ -112934,6 +114750,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageUncheckedCreateNestedManyWithoutFileInput
     invoicePdfs?: InvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
     cancellationInvoices?: CancellationInvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
+    returnReceiptPdfs?: ReturnReceiptUncheckedCreateNestedManyWithoutReceiptPdfFileInput
   }
 
   export type FileObjectCreateOrConnectWithoutBookingPhotosInput = {
@@ -113051,6 +114868,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
@@ -113135,6 +114953,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
@@ -113172,6 +114991,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageUpdateManyWithoutFileNestedInput
     invoicePdfs?: InvoiceUpdateManyWithoutInvoicePdfFileNestedInput
     cancellationInvoices?: CancellationInvoiceUpdateManyWithoutInvoicePdfFileNestedInput
+    returnReceiptPdfs?: ReturnReceiptUpdateManyWithoutReceiptPdfFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateWithoutBookingPhotosInput = {
@@ -113187,6 +115007,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
     invoicePdfs?: InvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
     cancellationInvoices?: CancellationInvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
+    returnReceiptPdfs?: ReturnReceiptUncheckedUpdateManyWithoutReceiptPdfFileNestedInput
   }
 
   export type DamageReportUpsertWithoutPhotosInput = {
@@ -113294,6 +115115,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
@@ -113378,6 +115200,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
@@ -113658,6 +115481,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
@@ -113742,6 +115566,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
@@ -114005,6 +115830,7 @@ export namespace Prisma {
     items?: BookingItemCreateNestedManyWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
@@ -114089,6 +115915,7 @@ export namespace Prisma {
     items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
@@ -114182,6 +116009,7 @@ export namespace Prisma {
     items?: BookingItemUpdateManyWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
@@ -114266,6 +116094,7 @@ export namespace Prisma {
     items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
@@ -114374,6 +116203,7 @@ export namespace Prisma {
     bookingKycs?: BookingCreateNestedManyWithoutKycFileInput
     vehicleImages?: VehicleImageCreateNestedManyWithoutFileInput
     cancellationInvoices?: CancellationInvoiceCreateNestedManyWithoutInvoicePdfFileInput
+    returnReceiptPdfs?: ReturnReceiptCreateNestedManyWithoutReceiptPdfFileInput
   }
 
   export type FileObjectUncheckedCreateWithoutInvoicePdfsInput = {
@@ -114389,6 +116219,7 @@ export namespace Prisma {
     bookingKycs?: BookingUncheckedCreateNestedManyWithoutKycFileInput
     vehicleImages?: VehicleImageUncheckedCreateNestedManyWithoutFileInput
     cancellationInvoices?: CancellationInvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
+    returnReceiptPdfs?: ReturnReceiptUncheckedCreateNestedManyWithoutReceiptPdfFileInput
   }
 
   export type FileObjectCreateOrConnectWithoutInvoicePdfsInput = {
@@ -114459,6 +116290,7 @@ export namespace Prisma {
     items?: BookingItemCreateNestedManyWithoutBookingInput
     deposit?: DepositCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
@@ -114543,6 +116375,7 @@ export namespace Prisma {
     items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
@@ -114643,6 +116476,7 @@ export namespace Prisma {
     bookingKycs?: BookingUpdateManyWithoutKycFileNestedInput
     vehicleImages?: VehicleImageUpdateManyWithoutFileNestedInput
     cancellationInvoices?: CancellationInvoiceUpdateManyWithoutInvoicePdfFileNestedInput
+    returnReceiptPdfs?: ReturnReceiptUpdateManyWithoutReceiptPdfFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateWithoutInvoicePdfsInput = {
@@ -114658,6 +116492,7 @@ export namespace Prisma {
     bookingKycs?: BookingUncheckedUpdateManyWithoutKycFileNestedInput
     vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
     cancellationInvoices?: CancellationInvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
+    returnReceiptPdfs?: ReturnReceiptUncheckedUpdateManyWithoutReceiptPdfFileNestedInput
   }
 
   export type BookingUpsertWithoutInvoiceInput = {
@@ -114734,6 +116569,7 @@ export namespace Prisma {
     items?: BookingItemUpdateManyWithoutBookingNestedInput
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
@@ -114818,6 +116654,7 @@ export namespace Prisma {
     items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
@@ -115693,6 +117530,7 @@ export namespace Prisma {
     items?: BookingItemCreateNestedManyWithoutBookingInput
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
@@ -115777,6 +117615,7 @@ export namespace Prisma {
     items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
@@ -115850,6 +117689,7 @@ export namespace Prisma {
     bookingKycs?: BookingCreateNestedManyWithoutKycFileInput
     vehicleImages?: VehicleImageCreateNestedManyWithoutFileInput
     invoicePdfs?: InvoiceCreateNestedManyWithoutInvoicePdfFileInput
+    returnReceiptPdfs?: ReturnReceiptCreateNestedManyWithoutReceiptPdfFileInput
   }
 
   export type FileObjectUncheckedCreateWithoutCancellationInvoicesInput = {
@@ -115865,6 +117705,7 @@ export namespace Prisma {
     bookingKycs?: BookingUncheckedCreateNestedManyWithoutKycFileInput
     vehicleImages?: VehicleImageUncheckedCreateNestedManyWithoutFileInput
     invoicePdfs?: InvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
+    returnReceiptPdfs?: ReturnReceiptUncheckedCreateNestedManyWithoutReceiptPdfFileInput
   }
 
   export type FileObjectCreateOrConnectWithoutCancellationInvoicesInput = {
@@ -115946,6 +117787,7 @@ export namespace Prisma {
     items?: BookingItemUpdateManyWithoutBookingNestedInput
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
@@ -116030,6 +117872,7 @@ export namespace Prisma {
     items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
@@ -116115,6 +117958,7 @@ export namespace Prisma {
     bookingKycs?: BookingUpdateManyWithoutKycFileNestedInput
     vehicleImages?: VehicleImageUpdateManyWithoutFileNestedInput
     invoicePdfs?: InvoiceUpdateManyWithoutInvoicePdfFileNestedInput
+    returnReceiptPdfs?: ReturnReceiptUpdateManyWithoutReceiptPdfFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateWithoutCancellationInvoicesInput = {
@@ -116130,6 +117974,427 @@ export namespace Prisma {
     bookingKycs?: BookingUncheckedUpdateManyWithoutKycFileNestedInput
     vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
     invoicePdfs?: InvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
+    returnReceiptPdfs?: ReturnReceiptUncheckedUpdateManyWithoutReceiptPdfFileNestedInput
+  }
+
+  export type FileObjectCreateWithoutReturnReceiptPdfsInput = {
+    publicId: string
+    key: string
+    url: string
+    mime: string
+    size: number
+    createdAt?: Date | string
+    bookingPhotos?: BookingPhotoCreateNestedManyWithoutFileInput
+    customerKycs?: CustomerKycCreateNestedManyWithoutFileInput
+    bookingKycs?: BookingCreateNestedManyWithoutKycFileInput
+    vehicleImages?: VehicleImageCreateNestedManyWithoutFileInput
+    invoicePdfs?: InvoiceCreateNestedManyWithoutInvoicePdfFileInput
+    cancellationInvoices?: CancellationInvoiceCreateNestedManyWithoutInvoicePdfFileInput
+  }
+
+  export type FileObjectUncheckedCreateWithoutReturnReceiptPdfsInput = {
+    id?: number
+    publicId: string
+    key: string
+    url: string
+    mime: string
+    size: number
+    createdAt?: Date | string
+    bookingPhotos?: BookingPhotoUncheckedCreateNestedManyWithoutFileInput
+    customerKycs?: CustomerKycUncheckedCreateNestedManyWithoutFileInput
+    bookingKycs?: BookingUncheckedCreateNestedManyWithoutKycFileInput
+    vehicleImages?: VehicleImageUncheckedCreateNestedManyWithoutFileInput
+    invoicePdfs?: InvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
+    cancellationInvoices?: CancellationInvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
+  }
+
+  export type FileObjectCreateOrConnectWithoutReturnReceiptPdfsInput = {
+    where: FileObjectWhereUniqueInput
+    create: XOR<FileObjectCreateWithoutReturnReceiptPdfsInput, FileObjectUncheckedCreateWithoutReturnReceiptPdfsInput>
+  }
+
+  export type BookingCreateWithoutReturnReceiptInput = {
+    publicId: string
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
+    customer: CustomerCreateNestedOneWithoutBookingsInput
+    branch: BranchCreateNestedOneWithoutBookingsInput
+    createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
+    photos?: BookingPhotoCreateNestedManyWithoutBookingInput
+    damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
+    deposit?: DepositCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+  }
+
+  export type BookingUncheckedCreateWithoutReturnReceiptInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
+    damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
+    deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+  }
+
+  export type BookingCreateOrConnectWithoutReturnReceiptInput = {
+    where: BookingWhereUniqueInput
+    create: XOR<BookingCreateWithoutReturnReceiptInput, BookingUncheckedCreateWithoutReturnReceiptInput>
+  }
+
+  export type FileObjectUpsertWithoutReturnReceiptPdfsInput = {
+    update: XOR<FileObjectUpdateWithoutReturnReceiptPdfsInput, FileObjectUncheckedUpdateWithoutReturnReceiptPdfsInput>
+    create: XOR<FileObjectCreateWithoutReturnReceiptPdfsInput, FileObjectUncheckedCreateWithoutReturnReceiptPdfsInput>
+    where?: FileObjectWhereInput
+  }
+
+  export type FileObjectUpdateToOneWithWhereWithoutReturnReceiptPdfsInput = {
+    where?: FileObjectWhereInput
+    data: XOR<FileObjectUpdateWithoutReturnReceiptPdfsInput, FileObjectUncheckedUpdateWithoutReturnReceiptPdfsInput>
+  }
+
+  export type FileObjectUpdateWithoutReturnReceiptPdfsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    url?: StringFieldUpdateOperationsInput | string
+    mime?: StringFieldUpdateOperationsInput | string
+    size?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    bookingPhotos?: BookingPhotoUpdateManyWithoutFileNestedInput
+    customerKycs?: CustomerKycUpdateManyWithoutFileNestedInput
+    bookingKycs?: BookingUpdateManyWithoutKycFileNestedInput
+    vehicleImages?: VehicleImageUpdateManyWithoutFileNestedInput
+    invoicePdfs?: InvoiceUpdateManyWithoutInvoicePdfFileNestedInput
+    cancellationInvoices?: CancellationInvoiceUpdateManyWithoutInvoicePdfFileNestedInput
+  }
+
+  export type FileObjectUncheckedUpdateWithoutReturnReceiptPdfsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    url?: StringFieldUpdateOperationsInput | string
+    mime?: StringFieldUpdateOperationsInput | string
+    size?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    bookingPhotos?: BookingPhotoUncheckedUpdateManyWithoutFileNestedInput
+    customerKycs?: CustomerKycUncheckedUpdateManyWithoutFileNestedInput
+    bookingKycs?: BookingUncheckedUpdateManyWithoutKycFileNestedInput
+    vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
+    invoicePdfs?: InvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
+    cancellationInvoices?: CancellationInvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
+  }
+
+  export type BookingUpsertWithoutReturnReceiptInput = {
+    update: XOR<BookingUpdateWithoutReturnReceiptInput, BookingUncheckedUpdateWithoutReturnReceiptInput>
+    create: XOR<BookingCreateWithoutReturnReceiptInput, BookingUncheckedCreateWithoutReturnReceiptInput>
+    where?: BookingWhereInput
+  }
+
+  export type BookingUpdateToOneWithWhereWithoutReturnReceiptInput = {
+    where?: BookingWhereInput
+    data: XOR<BookingUpdateWithoutReturnReceiptInput, BookingUncheckedUpdateWithoutReturnReceiptInput>
+  }
+
+  export type BookingUpdateWithoutReturnReceiptInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
+    customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
+    photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateWithoutReturnReceiptInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BranchFeatureFlagCreateWithoutFlagInput = {
@@ -116690,6 +118955,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
@@ -116774,6 +119040,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
@@ -117147,6 +119414,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
@@ -117231,6 +119499,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
@@ -117733,6 +120002,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
@@ -117816,6 +120086,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
@@ -118403,6 +120674,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
@@ -118487,6 +120759,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
@@ -118704,6 +120977,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
@@ -118788,6 +121062,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
@@ -119367,6 +121642,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
@@ -119451,6 +121727,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
@@ -119786,6 +122063,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
@@ -119870,6 +122148,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
@@ -120129,6 +122408,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
@@ -120213,6 +122493,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
@@ -120750,6 +123031,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
@@ -120834,6 +123116,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
@@ -121391,6 +123674,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
@@ -121475,6 +123759,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
@@ -121914,6 +124199,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
@@ -121998,6 +124284,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
@@ -123044,6 +125331,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
@@ -123128,6 +125416,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
@@ -123524,6 +125813,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
@@ -123607,6 +125897,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
@@ -123706,6 +125997,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
@@ -123790,6 +126082,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
@@ -124361,6 +126654,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
@@ -124445,6 +126739,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
@@ -124674,6 +126969,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
@@ -124758,6 +127054,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
@@ -124983,6 +127280,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
@@ -125067,6 +127365,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
@@ -125388,6 +127687,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
@@ -125472,6 +127772,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
@@ -125795,6 +128096,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
@@ -125879,6 +128181,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
@@ -126160,6 +128463,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
@@ -126244,6 +128548,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
@@ -126521,6 +128826,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
@@ -126605,6 +128911,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
@@ -126886,6 +129193,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
@@ -126970,6 +129278,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
@@ -127247,6 +129556,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
@@ -127331,6 +129641,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
@@ -127628,6 +129939,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
@@ -127711,6 +130023,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
@@ -127810,6 +130123,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
@@ -127894,6 +130208,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
@@ -128229,6 +130544,7 @@ export namespace Prisma {
     deposit?: DepositCreateNestedOneWithoutBookingInput
     invoice?: InvoiceCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
     discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
     discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
@@ -128313,6 +130629,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
     invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
     cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
     vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
     discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
     manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
@@ -128656,6 +130973,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
@@ -128740,6 +131058,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
@@ -129849,6 +132168,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
@@ -129933,6 +132253,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
@@ -131654,6 +133975,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
@@ -131738,6 +134060,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
@@ -131987,6 +134310,20 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type ReturnReceiptCreateManyReceiptPdfFileInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    receiptNumber?: string | null
+    lineItems?: JsonNullValueInput | InputJsonValue
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    depositPaid?: Decimal | DecimalJsLike | number | string
+    amountDue?: Decimal | DecimalJsLike | number | string
+    refundAmount?: Decimal | DecimalJsLike | number | string
+    generatedAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
   export type BookingPhotoUpdateWithoutFileInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
@@ -132105,6 +134442,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
@@ -132189,6 +134527,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
@@ -132385,6 +134724,47 @@ export namespace Prisma {
     sentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ReturnReceiptUpdateWithoutReceiptPdfFileInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    receiptNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    lineItems?: JsonNullValueInput | InputJsonValue
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    depositPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    refundAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutReturnReceiptNestedInput
+  }
+
+  export type ReturnReceiptUncheckedUpdateWithoutReceiptPdfFileInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    receiptNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    lineItems?: JsonNullValueInput | InputJsonValue
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    depositPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    refundAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ReturnReceiptUncheckedUpdateManyWithoutReceiptPdfFileInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    receiptNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    lineItems?: JsonNullValueInput | InputJsonValue
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    depositPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    refundAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type UserCreateManyBranchInput = {
@@ -132941,6 +135321,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
@@ -133025,6 +135406,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
@@ -135701,6 +138083,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
@@ -135784,6 +138167,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
@@ -136145,6 +138529,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
@@ -136228,6 +138613,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
@@ -136527,6 +138913,7 @@ export namespace Prisma {
     deposit?: DepositUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
     discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
     discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
@@ -136610,6 +138997,7 @@ export namespace Prisma {
     deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
     invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
     cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
     vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
     discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
     manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
@@ -136892,6 +139280,10 @@ export namespace Prisma {
      * @deprecated Use CancellationInvoiceDefaultArgs instead
      */
     export type CancellationInvoiceArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CancellationInvoiceDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ReturnReceiptDefaultArgs instead
+     */
+    export type ReturnReceiptArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ReturnReceiptDefaultArgs<ExtArgs>
     /**
      * @deprecated Use FeatureFlagDefaultArgs instead
      */

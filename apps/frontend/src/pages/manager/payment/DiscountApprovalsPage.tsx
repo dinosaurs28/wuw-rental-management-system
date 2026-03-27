@@ -42,7 +42,7 @@ function ReviewModal({
   onDone: () => void;
 }) {
   const [note, setNote] = useState("");
-  const [action, setAction] = useState<"approve" | "reject" | null>(null);
+  const [, setAction] = useState<"approve" | "reject" | null>(null);
   const queryClient = useQueryClient();
 
   const bookingTotal = discount.booking?.totalFinal ? parseFloat(discount.booking.totalFinal) : null;

@@ -217,7 +217,7 @@ export function ExtendBookingModal({
         return;
       }
 
-      setCommittedExtension(res.data);
+      setCommittedExtension(res.data as CommitExtensionResult) ;
       setStep(3);
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Failed to commit extension.");

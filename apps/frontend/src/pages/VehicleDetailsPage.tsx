@@ -129,8 +129,8 @@ export const VehicleDetailsPage = () => {
     if (vehicle?.pricingDetails) {
       setApiPricingDetails({
         basePrice:                  vehicle.pricingDetails.basePrice               ?? 0,
-        durationDiscountAmount:     vehicle.pricingDetails.durationDiscountAmount  ?? 0,
-        durationDiscountPercent:    vehicle.pricingDetails.durationDiscountPercent ?? 0,
+        durationDiscountAmount:     vehicle.pricingDetails.discountAmount          ?? 0,
+        durationDiscountPercent:    vehicle.pricingDetails.discountPercent         ?? 0,
         taxAmount:                  vehicle.pricingDetails.taxAmount               ?? 0,
         finalTotal:                 vehicle.pricingDetails.finalTotal              ?? 0,
       });
@@ -194,8 +194,8 @@ export const VehicleDetailsPage = () => {
     if (vehicle.pricingDetails) {
       setApiPricingDetails({
         basePrice:               vehicle.pricingDetails.basePrice               ?? 0,
-        durationDiscountAmount:  vehicle.pricingDetails.durationDiscountAmount  ?? 0,
-        durationDiscountPercent: vehicle.pricingDetails.durationDiscountPercent ?? 0,
+        durationDiscountAmount:  vehicle.pricingDetails.discountAmount          ?? 0,
+        durationDiscountPercent: vehicle.pricingDetails.discountPercent         ?? 0,
         taxAmount:               vehicle.pricingDetails.taxAmount               ?? 0,
         finalTotal:              vehicle.pricingDetails.finalTotal              ?? 0,
       });
