@@ -1,7 +1,7 @@
 import { useEffect, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Shield, Loader2 } from "lucide-react";
+import { Shield, Loader2, User } from "lucide-react";
 import axios from "axios";
 
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DocumentTypeSelector } from "@/components/verification/DocumentTypeSelector";
 import { DocumentUploadZone } from "@/components/verification/DocumentUploadZone";
@@ -42,6 +43,7 @@ export function DocumentsPage() {
   } = useKycStore();
 
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isProfileMissing, setIsProfileMissing] = useState(false);
 
   // Fetch existing documents on mount
   useEffect(() => {
@@ -51,9 +53,18 @@ export function DocumentsPage() {
         const response = await kycService.getDocuments();
         setUploadedDocuments(response.data);
       } catch (error) {
-        if (axios.isAxiosError(error) && error.response?.status === 403) {
-          toast.error("Please sign in to continue");
-          navigate("/auth/sign-in", { replace: true });
+        if (axios.isAxiosError(error)) {
+          if (error.response?.status === 403) {
+            toast.error("Please sign in to continue");
+            navigate("/auth/sign-in", { replace: true });
+          } else if (
+            error.response?.status === 404 &&
+            error.response?.data?.message === "Customer profile not found"
+          ) {
+            setIsProfileMissing(true);
+          } else {
+            toast.error("Failed to load documents");
+          }
         } else {
           toast.error("Failed to load documents");
         }
@@ -192,58 +203,82 @@ export function DocumentsPage() {
           </CardHeader>
 
           <CardContent className="space-y-10 pt-8 px-8 pb-8 relative z-10">
-            {/* Document Type Selection */}
-            <section>
-              <h2 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-zinc-200">
-                Select Document Type
-              </h2>
-              <DocumentTypeSelector
-                selectedType={selectedDocumentType}
-                onSelectType={setSelectedDocumentType}
-                disabledTypes={uploadedTypes}
-              />
-            </section>
-
-            {/* Upload Zone */}
-            <section>
-              <DocumentUploadZone
-                onFileSelect={handleFileSelect}
-                isUploading={isUploading}
-                disabled={!selectedDocumentType}
-                error={uploadError}
-              />
-              {!selectedDocumentType && !isUploading && (
-                <p className="text-sm font-medium text-zinc-500 text-center mt-4">
-                  Please select a document type above to enable the upload zone
-                </p>
-              )}
-            </section>
-
-            {/* Uploaded Documents Grid */}
-            <section>
-              <h2 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-zinc-200">
-                Uploaded Documents
-              </h2>
-              {isFetching ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-4 w-48 rounded-full" />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {[1, 2, 3].map((i) => (
-                      <Skeleton
-                        key={i}
-                        className="aspect-[1.586/1] rounded-2xl bg-white/10"
-                      />
-                    ))}
-                  </div>
+            {isProfileMissing ? (
+              <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+                <div className="w-20 h-20 bg-zinc-50 rounded-full flex items-center justify-center mb-6 shadow-sm border border-zinc-100">
+                  <User className="w-10 h-10 text-zinc-300" />
                 </div>
-              ) : (
-                <UploadedDocumentsGrid
-                  documents={uploadedDocuments}
-                  onDeleteDocument={handleDeleteDocument}
-                  deletingDocumentId={deletingDocumentId}
-                />
-              )}
-            </section>
+                <h2 className="text-2xl font-serif font-black text-zinc-900 mb-3">
+                  Complete Your Profile
+                </h2>
+                <p className="text-zinc-500 max-w-md mx-auto mb-8 font-medium leading-relaxed">
+                  To access identity verification and upload documents, you first need to complete your customer profile with basic information.
+                </p>
+                <Button
+                  size="lg"
+                  onClick={() => navigate("/profile")}
+                  className="rounded-full px-10 h-14 bg-zinc-900 text-white hover:bg-zinc-800 transition-all duration-300 font-bold shadow-xl shadow-zinc-200"
+                >
+                  Complete Profile
+                </Button>
+              </div>
+            ) : (
+              <>
+                {/* Document Type Selection */}
+                <section>
+                  <h2 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-zinc-200">
+                    Select Document Type
+                  </h2>
+                  <DocumentTypeSelector
+                    selectedType={selectedDocumentType}
+                    onSelectType={setSelectedDocumentType}
+                    disabledTypes={uploadedTypes}
+                  />
+                </section>
+
+                {/* Upload Zone */}
+                <section>
+                  <DocumentUploadZone
+                    onFileSelect={handleFileSelect}
+                    isUploading={isUploading}
+                    disabled={!selectedDocumentType}
+                    error={uploadError}
+                  />
+                  {!selectedDocumentType && !isUploading && (
+                    <p className="text-sm font-medium text-zinc-500 text-center mt-4">
+                      Please select a document type above to enable the upload
+                      zone
+                    </p>
+                  )}
+                </section>
+
+                {/* Uploaded Documents Grid */}
+                <section>
+                  <h2 className="text-xs font-black text-zinc-500/80 uppercase tracking-widest mb-6 pb-2 border-b border-zinc-200">
+                    Uploaded Documents
+                  </h2>
+                  {isFetching ? (
+                    <div className="space-y-4">
+                      <Skeleton className="h-4 w-48 rounded-full" />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {[1, 2, 3].map((i) => (
+                          <Skeleton
+                            key={i}
+                            className="aspect-[1.586/1] rounded-2xl bg-white/10"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <UploadedDocumentsGrid
+                      documents={uploadedDocuments}
+                      onDeleteDocument={handleDeleteDocument}
+                      deletingDocumentId={deletingDocumentId}
+                    />
+                  )}
+                </section>
+              </>
+            )}
           </CardContent>
         </Card>
 
