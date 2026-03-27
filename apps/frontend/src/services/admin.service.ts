@@ -558,7 +558,7 @@ export const adminService = {
     // ── Staff Activity ────────────────────────────────────────────────────────
 
     getStaffActivity: async (params: AdminStaffActivityParams): Promise<StaffActivityResponse> => {
-        const response = await apiClient.get<StaffActivityResponse>('/admin/staff-activity', { params });
+        const response = await apiClient.get<StaffActivityResponse>('/admin/staff-activity/logs', { params });
         return response.data;
     },
 

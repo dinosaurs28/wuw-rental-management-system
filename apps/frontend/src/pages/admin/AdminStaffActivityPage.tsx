@@ -188,8 +188,15 @@ export function AdminStaffActivityPage() {
   const [branchId, setBranchId] = useState("");
   const [actionType, setActionType] = useState("");
   const [entityType, setEntityType] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
 
   const [selectedLog, setSelectedLog] = useState<StaffActivityLog | null>(null);
 
