@@ -15,7 +15,7 @@ import { CashConfirmationsTab } from "./CashConfirmationsPage";
 import { SettlementsTab } from "./SettlementsPage";
 import { RefundsTab } from "./RefundsPage";
 import { CashShiftsTab } from "./CashShiftsPage";
-// import { TransactionsTab } from "./TransactionsPage";
+import { TransactionsTab } from "./TransactionsPage";
 
 export function FinancialsDashboardPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -112,6 +112,9 @@ export function FinancialsDashboardPage() {
           
           <TabsContent value="shifts" className="mt-0 outline-none">
             <CashShiftsTab />
+          </TabsContent>
+          <TabsContent value="transactions" className="mt-0 outline-none">
+            <TransactionsTab />
           </TabsContent>
         </Tabs>
       </div>
