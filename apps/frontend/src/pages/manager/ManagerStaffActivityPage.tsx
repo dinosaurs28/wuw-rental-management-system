@@ -160,8 +160,8 @@ export function ManagerStaffActivityPage() {
 
   const [actionType, setActionType] = useState("");
   const [entityType, setEntityType] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [endDate, setEndDate] = useState(format(new Date(Date.now() + 86400000), "yyyy-MM-dd"));
 
   const [selectedLog, setSelectedLog] = useState<StaffActivityLog | null>(null);
 
