@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, Controller } from "react-hook-form";
@@ -17,13 +17,13 @@ import {
   Eye,
   X,
   Image as ImageIcon,
-  Banknote,
-  CreditCard,
   Clock,
   Lock,
   CheckCircle,
   ArrowLeftRight,
   RefreshCw,
+  Tag,
+  ShieldAlert,
 } from "lucide-react";
 
 import { cn, compressImage } from "@/lib/utils";
@@ -57,16 +57,19 @@ import {
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb";
 import { DashboardNavbar } from "@/components/employee/DashboardNavbar";
-import { BookingPaymentPanel } from "@/components/manager/payment/BookingPaymentPanel";
-import { ExtendBookingModal } from "@/components/employee/extension/ExtendBookingModal";
-import { ExtensionHistoryPanel } from "@/components/employee/extension/ExtensionHistoryPanel";
-import { DiscountPanel } from "@/components/employee/discount/DiscountPanel";
+import { StepCard } from "@/components/employee/StepCard";
+// import {
+//   ExtendBookingModal,
+//   type ExtendBookingModalSuccessResult,
+// } from "@/components/employee/extension/ExtendBookingModal";
+// import { ExtensionHistoryPanel } from "@/components/employee/extension/ExtensionHistoryPanel";
 import { AvailableVehiclesList } from "@/components/manager/vehicle-swap/AvailableVehiclesList";
 import { SwapConfirmationModal } from "@/components/manager/vehicle-swap/SwapConfirmationModal";
 
 import apiClient from "@/lib/axios";
 import { bookingService } from "@/services/booking.service";
 import { kycService } from "@/services/kyc.service";
+// import { extensionService } from "@/services/extension.service";
 import { employeeVehicleSwapService } from "@/services/vehicleSwap.service";
 import { paymentSessionService, type PaymentSession } from "@/services/paymentSession.service";
 import type { AvailableVehicle } from "@/types/vehicleSwap";
@@ -132,76 +135,7 @@ const handoverSchema = z.object({
 
 type HandoverFormValues = z.infer<typeof handoverSchema>;
 
-// --- STEP CARD COMPONENT ---
-interface StepCardProps {
-  stepNum: number;
-  title: string;
-  subtitle?: string;
-  isCompleted: boolean;
-  isLocked: boolean;
-  children: React.ReactNode;
-}
-
-function StepCard({
-  stepNum,
-  title,
-  subtitle,
-  isCompleted,
-  isLocked,
-  children,
-}: StepCardProps) {
-  return (
-    <Card
-      className={cn(
-        "shadow-sm border transition-all duration-200",
-        isLocked
-          ? "border-gray-200 opacity-60"
-          : isCompleted
-            ? "border-green-200 bg-green-50/30"
-            : "border-gray-200 bg-white",
-      )}
-    >
-      <CardHeader className="pb-3 border-b">
-        <div className="flex items-center gap-3">
-          {/* Step circle */}
-          <div
-            className={cn(
-              "w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold shrink-0",
-              isLocked
-                ? "border-gray-300 bg-gray-100 text-gray-400"
-                : isCompleted
-                  ? "border-[#FF5F00] bg-[#FF5F00] text-white"
-                  : "border-[#FF5F00] bg-white text-[#FF5F00]",
-            )}
-          >
-            {isCompleted ? (
-              <CheckCircle className="h-4 w-4" />
-            ) : (
-              stepNum
-            )}
-          </div>
-          <div className="flex-1">
-            <CardTitle className="text-base font-semibold text-gray-900">
-              {title}
-            </CardTitle>
-            {subtitle && (
-              <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
-            )}
-          </div>
-          {isLocked && (
-            <div className="flex items-center gap-1 text-xs text-gray-400">
-              <Lock className="h-3.5 w-3.5" />
-              <span>Locked</span>
-            </div>
-          )}
-        </div>
-      </CardHeader>
-      <div className={cn(isLocked ? "pointer-events-none select-none" : "")}>
-        {children}
-      </div>
-    </Card>
-  );
-}
+// StepCard is imported from @/components/employee/StepCard
 
 // --- YES/NO TOGGLE ---
 interface YesNoToggleProps {
@@ -267,19 +201,22 @@ export default function StaffPickupsPage() {
   const [selectedVehicle, setSelectedVehicle] = useState<AvailableVehicle | null>(null);
   const [showSwapConfirmModal, setShowSwapConfirmModal] = useState(false);
 
-  // --- STEP 1: Extension ---
-  const [extensionChosen, setExtensionChosen] = useState<boolean | null>(null);
-  const [extensionCompleted, setExtensionCompleted] = useState(false);
-  const [showExtendModal, setShowExtendModal] = useState(false);
+  // --- STEP 1: Extension --- (temporarily disabled)
+  // const [extensionChosen, setExtensionChosen] = useState<boolean | null>(null);
+  // const [extensionCompleted, setExtensionCompleted] = useState(false);
+  // const [showExtendModal, setShowExtendModal] = useState(false);
+  // const [pendingExtensionPublicId, setPendingExtensionPublicId] = useState<string | null>(null);
 
   // --- STEP 2: Payment ---
-  const [payRemainingNow, setPayRemainingNow] = useState<boolean | null>(null);
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<"CASH" | "ONLINE" | null>(null);
-  const [onlinePaymentUrl, setOnlinePaymentUrl] = useState<string | null>(null);
-  // Session-based pickup: set when InitiatePickupSession succeeds
+  // Session-based pickup: set when InitiatePickupSession succeeds or restored on mount
   const [pickupSession, setPickupSession] = useState<PaymentSession | null>(null);
-  const [showSessionPaymentDialog, setShowSessionPaymentDialog] = useState(false);
+
+  // --- STEP 6: Safety Deposit (managed after session is initiated) ---
+  // safetyDepositAmount / safetyDepositReason / requestSafetyDeposit already declared below
+
+  // --- STEP 7: Discount ---
+  const [discountInput, setDiscountInput] = useState("");
+  const [pendingDiscountCode, setPendingDiscountCode] = useState<string | null>(null);
 
   // --- STEP 3: KYC ---
   const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
@@ -352,6 +289,31 @@ export default function StaffPickupsPage() {
       bookingId ? bookingService.getPickupPricingRules(bookingId) : null,
     enabled: isConfirmOpen,
   });
+
+  // Extension query — temporarily disabled
+  // const { data: extensionsData } = useQuery({
+  //   queryKey: ["extensions", booking?.publicId],
+  //   queryFn: () =>
+  //     booking?.publicId
+  //       ? extensionService.listEmployeeExtensions(1, 50, booking.publicId)
+  //       : null,
+  //   enabled: !!booking?.publicId,
+  // });
+
+  // Auto-select "Yes" on the extension step if an extension already exists
+  // useEffect(() => {
+  //   const extensions = extensionsData?.data?.extensions;
+  //   if (!extensions?.length) return;
+  //   const active = extensions.find((e) =>
+  //     ["PAYMENT_COLLECTED", "CONFIRMED", "PENDING_PAYMENT"].includes(e.extensionStatus),
+  //   );
+  //   if (!active) return;
+  //   setExtensionChosen(true);
+  //   setExtensionCompleted(true);
+  //   if (active.extensionStatus === "PENDING_PAYMENT") {
+  //     setPendingExtensionPublicId((prev) => prev ?? active.publicId);
+  //   }
+  // }, [extensionsData]);
 
   // --- FORM ---
   const {
@@ -427,40 +389,65 @@ export default function StaffPickupsPage() {
     },
   });
 
-  const remainingPaymentMutation = useMutation({
-    mutationFn: (method: "CASH" | "ONLINE") =>
-      bookingService.initiateRemainingPayment(bookingId!, "pickup", { method }),
-    onSuccess: (data, method) => {
-      if (method === "ONLINE" && data.paymentURL) {
-        setOnlinePaymentUrl(data.paymentURL);
-        return;
-      }
-      toast.success("Remaining payment collected!");
-      setShowPaymentDialog(false);
-      setPayRemainingNow(true);
-      queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Payment failed");
-    },
-  });
-
   const initiatePickupSessionMutation = useMutation({
     mutationFn: (payload: Parameters<typeof paymentSessionService.initiatePickupSession>[1]) =>
       paymentSessionService.initiatePickupSession(bookingId!, payload),
     onSuccess: (session) => {
       setPickupSession(session);
-      setShowSessionPaymentDialog(true);
+      setTimeout(() => {
+        document.getElementById("pickup-payment-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
     },
     onError: (error: any) => {
       const status = error?.response?.status;
       if (status === 409) {
-        // Safety fallback: feature flag check should prevent reaching here, but guard anyway
         setIsConfirmOpen(true);
       } else {
         toast.error(error?.response?.data?.message || "Failed to initiate payment session");
       }
     },
+  });
+
+  const applyDiscountMutation = useMutation({
+    mutationFn: (code: string) => paymentSessionService.applyDiscountToPickupSession(bookingId!, code),
+    onSuccess: (session) => {
+      setPickupSession(session);
+      setDiscountInput("");
+      toast.success("Discount applied");
+    },
+    onError: (error: any) => toast.error(error?.response?.data?.message || "Invalid discount code"),
+  });
+
+  const removeDiscountMutation = useMutation({
+    mutationFn: () => paymentSessionService.removeDiscountFromPickupSession(bookingId!),
+    onSuccess: (session) => {
+      setPickupSession(session);
+      setPendingDiscountCode(null);
+      toast.success("Discount removed");
+    },
+    onError: (error: any) => toast.error(error?.response?.data?.message || "Failed to remove discount"),
+  });
+
+  const addDepositMutation = useMutation({
+    mutationFn: (payload: { amount: number; reason: string }) =>
+      paymentSessionService.addDepositToPickupSession(bookingId!, payload),
+    onSuccess: (session) => {
+      setPickupSession(session);
+      toast.success("Safety deposit updated");
+    },
+    onError: (error: any) => toast.error(error?.response?.data?.message || "Failed to update deposit"),
+  });
+
+  const removeDepositMutation = useMutation({
+    mutationFn: () => paymentSessionService.removeDepositFromPickupSession(bookingId!),
+    onSuccess: (session) => {
+      setPickupSession(session);
+      setRequestSafetyDeposit(false);
+      setSafetyDepositAmount("");
+      setSafetyDepositReason("");
+      toast.success("Safety deposit removed");
+    },
+    onError: (error: any) => toast.error(error?.response?.data?.message || "Failed to remove deposit"),
   });
 
   const swapMutation = useMutation({
@@ -491,15 +478,24 @@ export default function StaffPickupsPage() {
   const areAllDocsApproved =
     kycDocs.length > 0 && kycDocs.every((doc) => doc.status === "APPROVED");
   const isPickedUp = booking?.status === "PICKED_UP";
-  const hasPendingPayment =
-    !!booking?.isAdvancePayment && !booking?.remainingPaidAt;
+  // useSessionFlow is true whenever the branch has usePaymentSessions enabled —
+  // regardless of whether this is an advance-payment booking. Extension-only and
+  // deposit-only pickups also use the session flow.
+  const useSessionFlow = booking?.usePaymentSessions === true;
+
+  // Restore active session on page reload (must be after useSessionFlow is declared)
+  useEffect(() => {
+    if (!bookingId || !useSessionFlow || pickupSession) return;
+    paymentSessionService.getActivePickupSession(bookingId).then((session) => {
+      if (session) setPickupSession(session);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookingId, useSessionFlow]);
 
   const canProceedFromStep0 = vehicleAvailable === true || swapCompleted;
-  const canProceedFromStep1 =
-    canProceedFromStep0 &&
-    (extensionChosen === false || extensionCompleted);
-  const canProceedFromStep2 =
-    canProceedFromStep1 && (!hasPendingPayment || payRemainingNow !== null);
+  // Extension step disabled — step 1 passes through automatically
+  const canProceedFromStep1 = canProceedFromStep0;
+  const canProceedFromStep2 = canProceedFromStep1;
   const isHandoverReady =
     canProceedFromStep2 &&
     areAllDocsApproved &&
@@ -566,10 +562,7 @@ export default function StaffPickupsPage() {
     const fuelNumeric = FUEL_LEVEL_TO_NUM[data.fuelLevel] ?? 0;
     const chargeConfig = booking?.frozenChargeConfig;
     const safetyDepositPayload =
-      chargeConfig?.safetyDepositEnabled &&
-      requestSafetyDeposit &&
-      safetyDepositAmount &&
-      safetyDepositReason
+      requestSafetyDeposit && safetyDepositAmount && safetyDepositReason
         ? {
             requestedAmount: parseFloat(safetyDepositAmount),
             reason: safetyDepositReason,
@@ -581,7 +574,7 @@ export default function StaffPickupsPage() {
       fuelLevel: fuelNumeric,
       pickupFuelLevel: chargeConfig?.fuelModuleEnabled ? data.fuelLevel : undefined,
       requireManagerConfirmation: data.requireManagerConfirmation,
-      payRemainingAtPickup: payRemainingNow ?? false,
+      payRemainingAtPickup: true,
       safetyDepositRequest: safetyDepositPayload,
     };
 
@@ -597,7 +590,7 @@ export default function StaffPickupsPage() {
   };
 
   const onConfirmHandover = (data: HandoverFormValues) => {
-    const chargeConfig = booking?.frozenChargeConfig;
+    // const chargeConfig = booking?.frozenChargeConfig; 
 
     // Validate required capture photos
     if (captureConfig) {
@@ -612,20 +605,21 @@ export default function StaffPickupsPage() {
 
     const payload = buildHandoverPayload(data);
 
-    const usePaymentSessions = booking?.branch?.chargeConfig?.usePaymentSessions ?? false;
-    if (hasPendingPayment && usePaymentSessions) {
+    if (useSessionFlow) {
       initiatePickupSessionMutation.mutate({
         odo: payload.odo,
         fuelLevel: payload.fuelLevel,
         pickupFuelLevel: payload.pickupFuelLevel,
         pickupImageIds: (payload as any).pickupImageIds,
         captureImages: (payload as any).captureImages,
-        safetyDepositAmount: chargeConfig?.safetyDepositEnabled && requestSafetyDeposit && safetyDepositAmount
+        safetyDepositAmount: requestSafetyDeposit && safetyDepositAmount
           ? parseFloat(safetyDepositAmount)
           : undefined,
-        safetyDepositReason: chargeConfig?.safetyDepositEnabled && requestSafetyDeposit && safetyDepositReason
+        safetyDepositReason: requestSafetyDeposit && safetyDepositReason
           ? safetyDepositReason
           : undefined,
+        // extensionPublicId: pendingExtensionPublicId ?? undefined, // extension disabled
+        discountCode: pendingDiscountCode ?? undefined,
       });
     } else {
       setIsConfirmOpen(true);
@@ -874,9 +868,9 @@ export default function StaffPickupsPage() {
         </StepCard>
 
         {/* ─────────────────────────────────────────────────────────── */}
-        {/* STEP 1: EXTENSION?                                          */}
+        {/* STEP 1: EXTENSION — temporarily disabled                    */}
         {/* ─────────────────────────────────────────────────────────── */}
-        <StepCard
+        {/* <StepCard
           stepNum={2}
           title="Does the customer need an extension?"
           subtitle="Extend the booking duration before proceeding"
@@ -888,113 +882,43 @@ export default function StaffPickupsPage() {
               value={extensionChosen}
               onChange={(v) => {
                 setExtensionChosen(v);
-                if (v) {
-                  setShowExtendModal(true);
-                }
+                if (v) setShowExtendModal(true);
               }}
               disabled={!canProceedFromStep0 || isPickedUp || extensionCompleted}
               yesLabel="Yes — Extend"
               noLabel="No — Continue"
             />
-
             {extensionCompleted && (
               <div className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 p-3 text-green-800">
                 <CheckCircle2 className="h-4 w-4 shrink-0" />
                 <p className="text-sm font-medium">
-                  Extension processed. Booking dates updated.
+                  {pendingExtensionPublicId
+                    ? "Extension committed — charge will be collected at payment."
+                    : "Extension processed. Booking dates updated."}
                 </p>
               </div>
             )}
-
             {extensionChosen === true && !extensionCompleted && (
               <div className="flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-200 p-3 text-blue-800">
                 <Clock className="h-4 w-4 shrink-0" />
                 <p className="text-sm">
-                  Extension modal is open. Complete the payment to proceed.
+                  Extension modal is open. {useSessionFlow ? "Confirm to add charge to payment." : "Complete the payment to proceed."}
                 </p>
               </div>
             )}
-
-            {/* Extension history (if any) */}
             {canProceedFromStep0 && (
-              <ExtensionHistoryPanel
-                bookingPublicId={booking.publicId}
-                role="employee"
-              />
+              <ExtensionHistoryPanel bookingPublicId={booking.publicId} role="employee" />
             )}
           </CardContent>
-        </StepCard>
+        </StepCard> */}
 
         {/* ─────────────────────────────────────────────────────────── */}
-        {/* STEP 2: PENDING PAYMENT (conditional)                       */}
-        {/* ─────────────────────────────────────────────────────────── */}
-        {hasPendingPayment && (
-          <StepCard
-            stepNum={3}
-            title="Collect Remaining Payment"
-            subtitle={`Balance due: ${formatPrice(booking.remainingBalance ?? "0")}`}
-            isCompleted={payRemainingNow !== null}
-            isLocked={!canProceedFromStep1 || isPickedUp}
-          >
-            <CardContent className="pt-4 space-y-4">
-              {payRemainingNow === null ? (
-                <div className="grid grid-cols-2 gap-3">
-                  <Button
-                    variant="outline"
-                    className="h-16 flex-col gap-1 border-green-200 hover:bg-green-50 hover:border-green-400"
-                    disabled={!canProceedFromStep1}
-                    onClick={() => setShowPaymentDialog(true)}
-                  >
-                    <Banknote className="h-5 w-5 text-green-600" />
-                    <span className="text-sm font-medium">Pay Now</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="h-16 flex-col gap-1 border-amber-200 hover:bg-amber-50 hover:border-amber-400"
-                    disabled={!canProceedFromStep1}
-                    onClick={() => setPayRemainingNow(false)}
-                  >
-                    <Clock className="h-5 w-5 text-amber-600" />
-                    <span className="text-sm font-medium">Pay at Return</span>
-                  </Button>
-                </div>
-              ) : payRemainingNow === true ? (
-                <div className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 p-3 text-green-800">
-                  <CheckCircle2 className="h-4 w-4 shrink-0" />
-                  <p className="text-sm font-medium">
-                    Payment collected. Ready to proceed.
-                  </p>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 p-3 text-amber-800">
-                  <Clock className="h-4 w-4 shrink-0" />
-                  <p className="text-sm font-medium">
-                    Customer will pay at return. Proceeding without payment.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </StepCard>
-        )}
-
-        {/* Payment + Discount panels (always visible for staff) */}
-        <BookingPaymentPanel bookingPublicId={booking.publicId} role="employee" />
-        {(booking.status === "CONFIRMED" || booking.status === "PICKED_UP") && (
-          <DiscountPanel
-            bookingPublicId={booking.publicId}
-            bookingTotal={
-              booking.totalFinal ? parseFloat(booking.totalFinal) : undefined
-            }
-          />
-        )}
-
-        {/* ─────────────────────────────────────────────────────────── */}
-        {/* STEPS 3–5: only shown/unlocked when step 2 is resolved      */}
+        {/* STEPS 3–7: only shown/unlocked when step 2 is resolved      */}
         {/* ─────────────────────────────────────────────────────────── */}
 
         {/* STEP 3: KYC VERIFICATION */}
         <StepCard
-          stepNum={hasPendingPayment ? 4 : 3}
+          stepNum={3}
           title="KYC Verification"
           subtitle="Approve all customer documents before handover"
           isCompleted={areAllDocsApproved}
@@ -1118,7 +1042,7 @@ export default function StaffPickupsPage() {
 
         {/* STEP 4: VEHICLE INSPECTION */}
         <StepCard
-          stepNum={hasPendingPayment ? 5 : 4}
+          stepNum={4}
           title="Vehicle Inspection"
           subtitle="Record odometer and fuel level at handover"
           isCompleted={
@@ -1189,200 +1113,13 @@ export default function StaffPickupsPage() {
                 )}
               </div>
 
-                  {/* Pickup Images Section */}
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium flex items-center gap-2">
-                      <ImageIcon className="h-4 w-4" />
-                      Vehicle Photos
-                      {captureConfig && (
-                        <span className="text-xs font-normal text-muted-foreground ml-1">
-                          ({captureConfig.category.name})
-                        </span>
-                      )}
-                    </Label>
-
-                    {captureConfig ? (
-                      /* ── Labeled capture slots ── */
-                      <div className="grid grid-cols-2 gap-3">
-                        {captureConfig.fields.map((field) => {
-                          const slot = captureSlots[field.name] ?? null;
-                          const isUploadingThis = uploadingSlot === field.name;
-                          return (
-                            <div
-                              key={field.name}
-                              className="border rounded-lg overflow-hidden bg-gray-50"
-                            >
-                              {slot ? (
-                                <div className="relative">
-                                  <img
-                                    src={slot.url}
-                                    alt={field.name}
-                                    className="w-full h-28 object-cover"
-                                  />
-                                  {!isPickedUp && (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleCaptureSlotDelete(field.name, slot.fileId)}
-                                      className="absolute top-1 right-1 bg-zinc-100/80 rounded-full p-0.5 text-zinc-700 hover:bg-zinc-200"
-                                    >
-                                      <X className="h-3.5 w-3.5" />
-                                    </button>
-                                  )}
-                                </div>
-                              ) : (
-                                <label
-                                  className={`flex flex-col items-center justify-center h-28 cursor-pointer gap-1 text-muted-foreground hover:bg-gray-100 transition-colors ${isPickedUp ? "cursor-default opacity-50" : ""}`}
-                                >
-                                  {isUploadingThis ? (
-                                    <Loader2 className="h-5 w-5 animate-spin" />
-                                  ) : (
-                                    <ImageIcon className="h-5 w-5 opacity-50" />
-                                  )}
-                                  <span className="text-xs">{isUploadingThis ? "Uploading…" : "Tap to upload"}</span>
-                                  {!isPickedUp && (
-                                    <input
-                                      type="file"
-                                      accept="image/*"
-                                      className="hidden"
-                                      onChange={(e) => {
-                                        const f = e.target.files?.[0];
-                                        if (f) handleCaptureSlotUpload(field.name, f);
-                                        e.target.value = "";
-                                      }}
-                                    />
-                                  )}
-                                </label>
-                              )}
-                              <div className="px-2 py-1.5 bg-white border-t flex items-center gap-1">
-                                <span className="text-xs font-medium truncate">{field.name}</span>
-                                {field.required && (
-                                  <span className="text-orange-500 text-xs shrink-0">*</span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      /* ── Fallback: simple unstructured upload ── */
-                      <>
-                        <p className="text-xs text-muted-foreground">
-                          Upload photos of the vehicle before handover
-                        </p>
-                        {!isPickedUp && (
-                          <DocumentUploadZone
-                            onFileSelect={handleFileSelect}
-                            isUploading={isUploading}
-                            disabled={isPickedUp}
-                            error={uploadError}
-                          />
-                        )}
-                        {uploadedImages.length > 0 && (
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
-                            {uploadedImages.map((image) => (
-                              <PickupImageCard
-                                key={image.fileId}
-                                image={image}
-                                onDelete={handleDeleteImage}
-                                isDeleting={deletingImageId === image.fileId}
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-              {/* Safety Deposit */}
-              {booking?.frozenChargeConfig?.safetyDepositEnabled && !isPickedUp && (
-                <div className="space-y-3 border rounded-lg p-4 bg-amber-50/50 border-amber-200">
-                  <div className="flex items-center gap-3">
-                    <Checkbox
-                      id="requestDeposit"
-                      checked={requestSafetyDeposit}
-                      onCheckedChange={(v) => setRequestSafetyDeposit(!!v)}
-                    />
-                    <Label
-                      htmlFor="requestDeposit"
-                      className="text-sm font-medium cursor-pointer"
-                    >
-                      Request Safety Deposit
-                    </Label>
-                  </div>
-                  {requestSafetyDeposit && (
-                    <div className="space-y-3 pt-1">
-                      <div className="space-y-2">
-                        <Label className="text-xs text-neutral-600">
-                          Amount (₹)
-                        </Label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">
-                            ₹
-                          </span>
-                          <Input
-                            type="number"
-                            min="0"
-                            className="pl-7 h-10"
-                            placeholder="e.g. 2000"
-                            value={safetyDepositAmount}
-                            onChange={(e) =>
-                              setSafetyDepositAmount(e.target.value)
-                            }
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs text-neutral-600">
-                          Reason
-                        </Label>
-                        <Input
-                          className="h-10"
-                          placeholder="Reason for safety deposit..."
-                          value={safetyDepositReason}
-                          onChange={(e) =>
-                            setSafetyDepositReason(e.target.value)
-                          }
-                        />
-                      </div>
-                      {booking.frozenChargeConfig?.safetyDepositRequiresApproval && (
-                        <p className="text-xs text-amber-700 flex items-center gap-1">
-                          <AlertCircle className="h-3 w-3" />
-                          Requires manager approval before charging
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Manager Confirmation */}
-              {!isPickedUp && (
-                <Controller
-                  name="requireManagerConfirmation"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="requireManagerConfirmation"
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                      <Label
-                        htmlFor="requireManagerConfirmation"
-                        className="text-sm font-medium cursor-pointer"
-                      >
-                        Confirm with Manager Before Final Pickup
-                      </Label>
-                    </div>
-                  )}
-                />
-              )}
             </form>
           </CardContent>
         </StepCard>
 
         {/* STEP 5: PICKUP PHOTOS */}
         <StepCard
-          stepNum={hasPendingPayment ? 6 : 5}
+          stepNum={5}
           title="Pickup Photos"
           subtitle={
             captureConfig
@@ -1494,23 +1231,323 @@ export default function StaffPickupsPage() {
         </StepCard>
 
         {/* ─────────────────────────────────────────────────────────── */}
-        {/* CONFIRM HANDOVER BUTTON                                     */}
+        {/* STEP 6: SAFETY DEPOSIT                                      */}
         {/* ─────────────────────────────────────────────────────────── */}
-        {!isPickedUp && (
+        <StepCard
+          stepNum={6}
+          title="Safety Deposit"
+          subtitle="Optional — collect a refundable deposit before handover"
+          isCompleted={requestSafetyDeposit === false || (requestSafetyDeposit && !!safetyDepositAmount && !!safetyDepositReason)}
+          isLocked={!canProceedFromStep2 || isPickedUp}
+        >
+          <CardContent className="pt-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <Checkbox
+                id="requestDeposit"
+                checked={requestSafetyDeposit}
+                onCheckedChange={(v) => {
+                  const checked = !!v;
+                  setRequestSafetyDeposit(checked);
+                  // If session is open and employee unchecks, remove deposit from session
+                  if (!checked && pickupSession) {
+                    removeDepositMutation.mutate();
+                  }
+                }}
+                disabled={isPickedUp || removeDepositMutation.isPending}
+              />
+              <Label htmlFor="requestDeposit" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                <ShieldAlert className="h-4 w-4 text-amber-500" />
+                Request Safety Deposit
+              </Label>
+            </div>
+
+            {requestSafetyDeposit && (
+              <div className="space-y-3 pl-7">
+                <div className="space-y-2">
+                  <Label className="text-xs text-neutral-600">Amount (₹)</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">₹</span>
+                    <Input
+                      type="number"
+                      min="0"
+                      className="pl-7 h-10"
+                      placeholder="e.g. 2000"
+                      value={safetyDepositAmount}
+                      onChange={(e) => setSafetyDepositAmount(e.target.value)}
+                      disabled={isPickedUp}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-neutral-600">Reason</Label>
+                  <Input
+                    className="h-10"
+                    placeholder="Reason for safety deposit..."
+                    value={safetyDepositReason}
+                    onChange={(e) => setSafetyDepositReason(e.target.value)}
+                    disabled={isPickedUp}
+                  />
+                </div>
+                {/* If session is open, show Update button to sync deposit into ledger */}
+                {pickupSession && safetyDepositAmount && safetyDepositReason && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    disabled={addDepositMutation.isPending}
+                    onClick={() =>
+                      addDepositMutation.mutate({
+                        amount: parseFloat(safetyDepositAmount),
+                        reason: safetyDepositReason,
+                      })
+                    }
+                  >
+                    {addDepositMutation.isPending ? (
+                      <><Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />Updating…</>
+                    ) : (
+                      "Update Deposit in Session"
+                    )}
+                  </Button>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </StepCard>
+
+        {/* ─────────────────────────────────────────────────────────── */}
+        {/* STEP 7: DISCOUNT / COUPON CODE                             */}
+        {/* ─────────────────────────────────────────────────────────── */}
+        <StepCard
+          stepNum={7}
+          title="Discount / Coupon Code"
+          subtitle="Optional — apply a coupon to reduce the total"
+          isCompleted={false}
+          isLocked={!canProceedFromStep2 || isPickedUp}
+        >
+          <CardContent className="pt-4 space-y-3">
+            {pickupSession ? (
+              // Session is open — apply/remove discount live
+              (() => {
+                const discountEntry = pickupSession.entries.find((e) => e.classification === "DISCOUNT");
+                return discountEntry ? (
+                  <div className="flex items-center justify-between rounded-lg bg-green-50 border border-green-200 px-4 py-3">
+                    <div className="flex items-center gap-2 text-green-800">
+                      <Tag className="h-4 w-4" />
+                      <span className="text-sm font-medium">{discountEntry.description}</span>
+                      <span className="text-sm font-semibold">
+                        −{formatPrice(Math.abs(parseFloat(discountEntry.amount)).toString())}
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-red-600 hover:text-red-700 hover:bg-red-50 px-2"
+                      disabled={removeDiscountMutation.isPending}
+                      onClick={() => removeDiscountMutation.mutate()}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        className="pl-9 h-10 uppercase"
+                        placeholder="Enter coupon code"
+                        value={discountInput}
+                        onChange={(e) => setDiscountInput(e.target.value.toUpperCase())}
+                        disabled={applyDiscountMutation.isPending}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-10 px-4 bg-[#FF5F00] hover:bg-[#e65600]"
+                      disabled={!discountInput.trim() || applyDiscountMutation.isPending}
+                      onClick={() => applyDiscountMutation.mutate(discountInput.trim())}
+                    >
+                      {applyDiscountMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                    </Button>
+                  </div>
+                );
+              })()
+            ) : (
+              // Pre-session — store code locally, will be sent at initiation
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      className="pl-9 h-10 uppercase"
+                      placeholder="Enter coupon code"
+                      value={pendingDiscountCode ?? discountInput}
+                      onChange={(e) => {
+                        setDiscountInput(e.target.value.toUpperCase());
+                        setPendingDiscountCode(null);
+                      }}
+                      disabled={!!pendingDiscountCode}
+                    />
+                  </div>
+                  {pendingDiscountCode ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-10 text-red-600"
+                      onClick={() => { setPendingDiscountCode(null); setDiscountInput(""); }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-10 px-4 bg-[#FF5F00] hover:bg-[#e65600]"
+                      disabled={!discountInput.trim()}
+                      onClick={() => { setPendingDiscountCode(discountInput.trim()); }}
+                    >
+                      Save
+                    </Button>
+                  )}
+                </div>
+                {pendingDiscountCode && (
+                  <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                    <Tag className="h-3.5 w-3.5" />
+                    <span>Coupon <strong>{pendingDiscountCode}</strong> will be applied at payment</span>
+                  </div>
+                )}
+                {!pendingDiscountCode && (
+                  <p className="text-xs text-muted-foreground">
+                    Discount will be validated and applied when you proceed to payment.
+                  </p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </StepCard>
+
+        {/* ─────────────────────────────────────────────────────────── */}
+        {/* STEP 8: COLLECT PAYMENT (session) / CONFIRM HANDOVER       */}
+        {/* ─────────────────────────────────────────────────────────── */}
+        {!isPickedUp && useSessionFlow && (
+          <div id="pickup-payment-section">
+            <StepCard
+              stepNum={8}
+              title="Collect Payment"
+              subtitle="Review charges and collect payment from the customer"
+              isCompleted={pickupSession?.status === "COMPLETED"}
+              isLocked={!isHandoverReady}
+            >
+              <CardContent className="pt-4 space-y-4">
+                {!pickupSession ? (
+                  <>
+                    {/* Pre-session charge preview */}
+                    <div className="rounded-lg border divide-y text-sm">
+                      {booking.remainingBalance && parseFloat(booking.remainingBalance) > 0 && (
+                        <div className="flex items-center justify-between px-4 py-2.5">
+                          <span className="text-muted-foreground">Remaining rental balance</span>
+                          <span className="font-medium">{formatPrice(booking.remainingBalance)}</span>
+                        </div>
+                      )}
+                      {/* Extension charge preview — disabled
+                      {pendingExtensionPublicId && extensionsData?.data?.extensions && (() => {
+                        const ext = extensionsData.data.extensions.find(
+                          (e) => e.publicId === pendingExtensionPublicId,
+                        );
+                        return ext ? (
+                          <div className="flex items-center justify-between px-4 py-2.5">
+                            <span className="text-muted-foreground">Extension charge</span>
+                            <span className="font-medium">{formatPrice(ext.additionalAmount)}</span>
+                          </div>
+                        ) : null;
+                      })()}
+                      */}
+                      {requestSafetyDeposit && safetyDepositAmount && parseFloat(safetyDepositAmount) > 0 && (
+                        <div className="flex items-center justify-between px-4 py-2.5">
+                          <span className="text-muted-foreground">Safety deposit</span>
+                          <span className="font-medium">{formatPrice(safetyDepositAmount)}</span>
+                        </div>
+                      )}
+                      {pendingDiscountCode && (
+                        <div className="flex items-center justify-between px-4 py-2.5 text-green-700">
+                          <span className="flex items-center gap-1"><Tag className="h-3 w-3" /> Coupon ({pendingDiscountCode})</span>
+                          <span className="text-xs">Applied at payment</span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30">
+                        <span className="font-semibold text-sm">Estimated total</span>
+                        <span className="font-bold text-base">
+                          {formatPrice(
+                            (parseFloat(booking.remainingBalance ?? "0") || 0) +
+                            // extension charge removed (feature disabled)
+                            (requestSafetyDeposit ? parseFloat(safetyDepositAmount || "0") || 0 : 0),
+                          )}
+                        </span>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground text-center">
+                      GST and discounts will be computed on the next step
+                    </p>
+
+                    <Button
+                      type="button"
+                      className="w-full bg-[#FF5F00] hover:bg-[#e65600] h-12 text-sm font-semibold rounded-xl"
+                      disabled={!isHandoverReady || initiatePickupSessionMutation.isPending}
+                      onClick={handleSubmit(onConfirmHandover)}
+                    >
+                      {initiatePickupSessionMutation.isPending ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Computing charges…</>
+                      ) : (
+                        "Confirm & Proceed to Payment →"
+                      )}
+                    </Button>
+                    {!isHandoverReady && (
+                      <p className="text-xs text-center text-muted-foreground">
+                        Complete all steps above to proceed
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <LedgerSummaryCard
+                      session={pickupSession}
+                      onRemoveDiscount={() => removeDiscountMutation.mutate()}
+                    />
+                    <RecordPaymentPanel
+                      session={pickupSession}
+                      onSuccess={(updatedSession) => {
+                        setPickupSession(updatedSession);
+                        if (updatedSession.status === "COMPLETED") {
+                          toast.success("Payment collected! Booking marked as Picked Up.");
+                          queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+                          navigate("/employee/dashboard");
+                        }
+                      }}
+                    />
+                  </>
+                )}
+              </CardContent>
+            </StepCard>
+          </div>
+        )}
+
+        {!isPickedUp && !useSessionFlow && (
           <div className="pt-2">
             <Button
               type="button"
               className="w-full bg-[#FF5F00] hover:bg-[#e65600] h-14 text-base font-semibold rounded-xl shadow-md"
-              disabled={!isHandoverReady || handoverMutation.isPending || initiatePickupSessionMutation.isPending}
-              onClick={handleSubmit(onConfirmHandover)}
+              disabled={!isHandoverReady || handoverMutation.isPending}
+              onClick={handleSubmit(onConfirmHandoverLegacy)}
             >
-              {handoverMutation.isPending || initiatePickupSessionMutation.isPending ? (
+              {handoverMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Processing…
                 </>
-              ) : hasPendingPayment ? (
-                "Proceed to Payment"
               ) : (
                 "Confirm Handover"
               )}
@@ -1550,127 +1587,35 @@ export default function StaffPickupsPage() {
         />
       )}
 
-      {/* Extension Modal */}
-      {showExtendModal && (
+      {/* Extension Modal — temporarily disabled */}
+      {/* {showExtendModal && (
         <ExtendBookingModal
           open={showExtendModal}
           bookingPublicId={booking.publicId}
           currentEndAt={booking.endAt}
           role="employee"
+          mode={useSessionFlow ? "pickup-session" : "standalone"}
           onClose={() => {
             setShowExtendModal(false);
-            if (!extensionCompleted) {
-              // They cancelled without completing — reset
-              setExtensionChosen(null);
-            }
+            if (!extensionCompleted) setExtensionChosen(null);
           }}
-          onSuccess={() => {
+          onSuccess={async (result?: ExtendBookingModalSuccessResult) => {
             setShowExtendModal(false);
             setExtensionCompleted(true);
+            if (result?.usePaymentSession && result.extensionPublicId) {
+              setPendingExtensionPublicId(result.extensionPublicId);
+            }
             queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
-            queryClient.invalidateQueries({
-              queryKey: ["extensions", booking.publicId],
-            });
+            queryClient.invalidateQueries({ queryKey: ["extensions", booking.publicId] });
+            if (pickupSession && !result?.usePaymentSession) {
+              try {
+                const refreshed = await paymentSessionService.getSession(pickupSession.publicId);
+                if (refreshed) setPickupSession(refreshed);
+              } catch {}
+            }
           }}
         />
-      )}
-
-      {/* Remaining Payment Dialog */}
-      <Dialog
-        open={showPaymentDialog}
-        onOpenChange={(open) => {
-          setShowPaymentDialog(open);
-          if (!open) {
-            setOnlinePaymentUrl(null);
-            setSelectedPaymentMethod(null);
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Collect Remaining Payment</DialogTitle>
-            <DialogDescription>
-              Amount due:{" "}
-              <strong>{formatPrice(booking.remainingBalance ?? "0")}</strong>
-              . Select payment method.
-            </DialogDescription>
-          </DialogHeader>
-
-          {onlinePaymentUrl ? (
-            <div className="py-4 space-y-4">
-              <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 p-4 text-blue-800">
-                <CreditCard className="h-5 w-5 shrink-0" />
-                <p className="text-sm font-medium">
-                  Payment link generated. Share with customer or open below.
-                </p>
-              </div>
-              <a
-                href={onlinePaymentUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full rounded-lg bg-[#FF5F00] hover:bg-[#e65600] text-white font-semibold py-3 px-4 transition-colors"
-              >
-                <CreditCard className="h-4 w-4" />
-                Open Payment Portal
-              </a>
-              <p className="text-xs text-muted-foreground text-center break-all">
-                {onlinePaymentUrl}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-3 py-4">
-              {(["CASH", "ONLINE"] as const).map((method) => (
-                <button
-                  key={method}
-                  onClick={() => setSelectedPaymentMethod(method)}
-                  className={cn(
-                    "flex flex-col items-center gap-2 p-4 rounded-lg border transition-all",
-                    selectedPaymentMethod === method
-                      ? "border-primary bg-primary/10"
-                      : "border-gray-200 hover:border-gray-300",
-                  )}
-                >
-                  {method === "CASH" && <Banknote className="h-6 w-6" />}
-                  {method === "ONLINE" && <CreditCard className="h-6 w-6" />}
-                  <span className="text-sm font-medium">{method}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowPaymentDialog(false);
-                setOnlinePaymentUrl(null);
-                setSelectedPaymentMethod(null);
-              }}
-            >
-              {onlinePaymentUrl ? "Close" : "Cancel"}
-            </Button>
-            {!onlinePaymentUrl && (
-              <Button
-                className="bg-[#FF5F00] hover:bg-[#e65600]"
-                disabled={
-                  !selectedPaymentMethod ||
-                  remainingPaymentMutation.isPending
-                }
-                onClick={() =>
-                  selectedPaymentMethod &&
-                  remainingPaymentMutation.mutate(selectedPaymentMethod)
-                }
-              >
-                {remainingPaymentMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Confirm Payment"
-                )}
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      )} */}
 
       {/* Confirm Handover Dialog (with pricing rules) */}
       <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
@@ -1786,40 +1731,6 @@ export default function StaffPickupsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Session-based Payment Dialog */}
-      {pickupSession && (
-        <Dialog
-          open={showSessionPaymentDialog}
-          onOpenChange={(open) => {
-            if (!open) setShowSessionPaymentDialog(false);
-          }}
-        >
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Collect Payment</DialogTitle>
-              <DialogDescription>
-                Review charges and record payment to complete handover.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-2">
-              <LedgerSummaryCard session={pickupSession} />
-              <RecordPaymentPanel
-                session={pickupSession}
-                onSuccess={(updatedSession) => {
-                  setPickupSession(updatedSession);
-                  if (updatedSession.status === "COMPLETED") {
-                    toast.success("Payment collected! Booking marked as Picked Up.");
-                    setShowSessionPaymentDialog(false);
-                    queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
-                    navigate("/employee/dashboard");
-                  }
-                }}
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
 
       {/* Document Preview Dialog */}
       {selectedDoc && (

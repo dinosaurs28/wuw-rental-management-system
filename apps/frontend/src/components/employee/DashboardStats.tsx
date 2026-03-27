@@ -1,5 +1,7 @@
 import { AlertTriangle, ArrowUpRight, Car, Key, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { EmployeeDashboardStats } from "@/services/employee.service";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface StatsCardProps {
   title: string;
@@ -12,6 +14,7 @@ interface StatsCardProps {
   };
   alert?: boolean;
   active?: boolean;
+  isLoading?: boolean;
 }
 
 function StatsCard({
@@ -21,6 +24,7 @@ function StatsCard({
   trend,
   alert,
   active,
+  isLoading,
 }: StatsCardProps) {
   return (
     <div
@@ -72,7 +76,11 @@ function StatsCard({
           {title}
         </p>
         <div className="flex items-baseline gap-2">
-          <h3 className="text-3xl font-bold tracking-tight">{value}</h3>
+          {isLoading ? (
+            <Skeleton className="h-9 w-16" />
+          ) : (
+            <h3 className="text-3xl font-bold tracking-tight">{value}</h3>
+          )}
           {alert && (
             <span className="text-sm font-medium text-orange-600">
               Pending Approvals
@@ -84,36 +92,41 @@ function StatsCard({
   );
 }
 
-export function DashboardStats() {
-  // Mock data based on reference image
-  // In real app, props would be passed or fetched here
+interface DashboardStatsProps {
+  stats?: EmployeeDashboardStats;
+  isLoading: boolean;
+}
+
+export function DashboardStats({ stats, isLoading }: DashboardStatsProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <StatsCard
         title="Today's Pickups"
-        value="12"
+        value={stats?.todaysPickups ?? 0}
         icon={Car}
-        trend={{ value: "+12% vs yst", positive: true, label: "vs yesterday" }}
+        isLoading={isLoading}
       />
       <StatsCard
         title="Today's Returns"
-        value="8"
+        value={stats?.todaysReturns ?? 0}
         icon={RotateCcw}
-        trend={{ value: "No change", positive: true, label: "vs yesterday" }}
+        isLoading={isLoading}
       />
       <StatsCard
         title="ACTION REQUIRED"
-        value="3"
+        value="0"
         icon={AlertTriangle}
         alert={true}
         active={true}
+        isLoading={isLoading}
       />
       <StatsCard
         title="Active Rentals"
-        value="45"
+        value={stats?.activeRentals ?? 0}
         icon={Key}
-        trend={{ value: "+5% vs yst", positive: true, label: "vs yesterday" }}
+        isLoading={isLoading}
       />
     </div>
   );
 }
+

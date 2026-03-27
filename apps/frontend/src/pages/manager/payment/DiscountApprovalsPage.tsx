@@ -9,8 +9,9 @@ import {
   PercentCircle,
   Loader2,
   ChevronRight,
+  RefreshCw,
 } from "lucide-react";
-import { ManagerLayout } from "@/components/manager/ManagerLayout";
+
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -163,10 +164,10 @@ function ReviewModal({
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export function DiscountApprovalsPage() {
+export function DiscountApprovalsTab() {
   const [selected, setSelected] = useState<ManualDiscount | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["pending-manual-discounts"],
     queryFn: () => managerDiscountService.getPendingManualDiscounts(),
     refetchInterval: 30_000,
@@ -175,20 +176,32 @@ export function DiscountApprovalsPage() {
   const discounts: ManualDiscount[] = data?.data ?? [];
 
   return (
-    <ManagerLayout>
-      <div className="max-w-4xl mx-auto px-4 md:px-6 py-8 space-y-6">
+    <>
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900">Discount Approvals</h1>
+            <h2 className="text-lg font-semibold text-neutral-900">Discount Approvals</h2>
             <p className="text-sm text-neutral-500 mt-1">Manual discount requests waiting for your review</p>
           </div>
-          {discounts.length > 0 && (
-            <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-full px-4 py-1.5">
-              <Clock className="w-4 h-4 text-yellow-600" />
-              <span className="text-sm font-semibold text-yellow-800">{discounts.length} pending</span>
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isLoading || isFetching}
+              className="h-9 px-3 text-neutral-600 border-neutral-200"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+            {discounts.length > 0 && (
+              <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-full px-4 py-1.5">
+                <Clock className="w-4 h-4 text-yellow-600" />
+                <span className="text-sm font-semibold text-yellow-800">{discounts.length} pending</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Content */}
@@ -284,6 +297,6 @@ export function DiscountApprovalsPage() {
           onDone={() => setSelected(null)}
         />
       )}
-    </ManagerLayout>
+    </>
   );
 }

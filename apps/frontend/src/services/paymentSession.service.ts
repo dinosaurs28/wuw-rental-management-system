@@ -75,6 +75,7 @@ export const paymentSessionService = {
    * Initiate a PICKUP payment session for a booking.
    * Accepts handover metadata (odo/fuel/photos) — saves them and defers vehicle
    * status change to when payment is recorded.
+   * Pass extensionPublicId to include a PENDING_PAYMENT extension charge in the session.
    */
   async initiatePickupSession(
     bookingPublicId: string,
@@ -82,6 +83,8 @@ export const paymentSessionService = {
       overrideRemainingBalance?: number;
       safetyDepositAmount?: number;
       safetyDepositReason?: string;
+      extensionPublicId?: string;
+      discountCode?: string;
       odo?: number;
       fuelLevel?: number;
       pickupFuelLevel?: string;
@@ -93,7 +96,7 @@ export const paymentSessionService = {
       `/employee/bookings/${bookingPublicId}/pickup-session/initiate`,
       payload ?? {},
     );
-    return data.data.session;
+    return data.data;
   },
 
   /**
@@ -101,7 +104,74 @@ export const paymentSessionService = {
    */
   async getPickupSession(bookingPublicId: string): Promise<PaymentSession> {
     const { data } = await apiClient.get(`/employee/bookings/${bookingPublicId}/pickup-session`);
-    return data.data.session;
+    return data.data;
+  },
+
+  /**
+   * Abandon an active PICKUP session (e.g., employee navigates away mid-flow).
+   * Extension linked to the session stays PENDING_PAYMENT for manual handling.
+   */
+  async abandonPickupSession(bookingPublicId: string): Promise<void> {
+    await apiClient.post(`/employee/bookings/${bookingPublicId}/pickup-session/abandon`);
+  },
+
+  /**
+   * Fetch the current active PICKUP session for a booking. Returns null if none found.
+   */
+  async getActivePickupSession(bookingPublicId: string): Promise<PaymentSession | null> {
+    try {
+      const { data } = await apiClient.get(`/employee/bookings/${bookingPublicId}/pickup-session`);
+      return data.data;
+    } catch (err: any) {
+      if (err?.response?.status === 404) return null;
+      throw err;
+    }
+  },
+
+  /**
+   * Apply a discount code to the active PICKUP session.
+   * Replaces any previously applied discount.
+   */
+  async applyDiscountToPickupSession(bookingPublicId: string, discountCode: string): Promise<PaymentSession> {
+    const { data } = await apiClient.post(
+      `/employee/bookings/${bookingPublicId}/pickup-session/apply-discount`,
+      { discountCode },
+    );
+    return data.data;
+  },
+
+  /**
+   * Remove the active discount from the PICKUP session.
+   */
+  async removeDiscountFromPickupSession(bookingPublicId: string): Promise<PaymentSession> {
+    const { data } = await apiClient.delete(
+      `/employee/bookings/${bookingPublicId}/pickup-session/remove-discount`,
+    );
+    return data.data;
+  },
+
+  /**
+   * Add or replace the safety deposit entry in the active PICKUP session.
+   */
+  async addDepositToPickupSession(
+    bookingPublicId: string,
+    payload: { amount: number; reason: string },
+  ): Promise<PaymentSession> {
+    const { data } = await apiClient.post(
+      `/employee/bookings/${bookingPublicId}/pickup-session/add-deposit`,
+      payload,
+    );
+    return data.data;
+  },
+
+  /**
+   * Remove the safety deposit entry from the active PICKUP session.
+   */
+  async removeDepositFromPickupSession(bookingPublicId: string): Promise<PaymentSession> {
+    const { data } = await apiClient.delete(
+      `/employee/bookings/${bookingPublicId}/pickup-session/remove-deposit`,
+    );
+    return data.data;
   },
 
   /**
@@ -112,11 +182,11 @@ export const paymentSessionService = {
     payload: {
       endOdometer: number;
       returnFuelLevel?: string;
-      fuelDeficitCharge?: number;
-      fuelSkipReason?: string;
+      extraKmCharge?: number;
+      fuelCharge?: number;
       fastagAmount?: number;
       fastagNotes?: string;
-      applyGrace?: boolean;
+      otherCharges?: { label: string; amount: number }[];
       returnImageIds?: string[];
     },
   ): Promise<ReturnSessionResponse> {
@@ -133,6 +203,20 @@ export const paymentSessionService = {
   async getReturnSession(bookingPublicId: string): Promise<ReturnSessionResponse> {
     const { data } = await apiClient.get(`/employee/bookings/${bookingPublicId}/return/session`);
     return data.data;
+  },
+
+  /**
+   * Fetch the active RETURN session on page reload. Returns null if none found.
+   * chargeBreakdown may be null for sessions computed before metadata was stored.
+   */
+  async getActiveReturnSession(bookingPublicId: string): Promise<ReturnSessionResponse | null> {
+    try {
+      const { data } = await apiClient.get(`/employee/bookings/${bookingPublicId}/return/session`);
+      return data.data;
+    } catch (err: any) {
+      if (err?.response?.status === 404) return null;
+      throw err;
+    }
   },
 
   /**

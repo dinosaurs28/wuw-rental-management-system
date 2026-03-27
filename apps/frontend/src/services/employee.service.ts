@@ -14,6 +14,12 @@ export interface EmployeeAuthResponse {
   };
 }
 
+export interface EmployeeDashboardStats {
+  todaysPickups: number;
+  todaysReturns: number;
+  activeRentals: number;
+}
+
 export const employeeService = {
   login: async (data: SignInInput): Promise<EmployeeAuthResponse> => {
     const response = await apiClient.post<EmployeeAuthResponse>(
@@ -40,4 +46,12 @@ export const employeeService = {
     });
     return response.data;
   },
+
+  getDashboardStats: async (): Promise<EmployeeDashboardStats> => {
+    const response = await apiClient.get<EmployeeDashboardStats>(
+      "/employee/dashboard/stats",
+    );
+    return response.data;
+  },
 };
+

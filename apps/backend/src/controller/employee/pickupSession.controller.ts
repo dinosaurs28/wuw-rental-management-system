@@ -15,10 +15,12 @@ import {
   prisma,
   BookingStatus,
   BookingPhotoType,
+  ExtensionStatus,
   LedgerEntryType,
   LedgerEntryClassification,
   PaymentSessionType,
   PaymentSessionStatus,
+  DiscountType,
 } from "@repo/database/client";
 import { StatusCode } from "../../types/statusCode.js";
 import { paymentSessionService } from "../../services/payment/paymentSession.service.js";
@@ -39,6 +41,10 @@ const initiatePickupSessionSchema = z.object({
   // Safety deposit
   safetyDepositAmount: z.coerce.number().positive().optional(),
   safetyDepositReason: z.string().min(1).optional(),
+  // Optional: a PENDING_PAYMENT extension to include in this session
+  extensionPublicId: z.string().min(1).optional(),
+  // Optional: coupon code to apply as a DISCOUNT ledger entry at initiation
+  discountCode: z.string().min(1).optional(),
   // Handover metadata — saved now; vehicle status set when payment is recorded
   odo: z.coerce.number().min(0).optional(),
   fuelLevel: z.coerce.number().min(0).max(100).optional(),
@@ -64,6 +70,8 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
       overrideRemainingBalance,
       safetyDepositAmount,
       safetyDepositReason,
+      extensionPublicId,
+      discountCode,
       odo,
       fuelLevel,
       pickupFuelLevel,
@@ -112,12 +120,10 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
       ?? DEFAULT_FROZEN_CHARGE_CONFIG;
 
     // Validate safety deposit inputs
-    if (frozenConfig.safetyDepositEnabled && safetyDepositAmount !== undefined) {
-      if (!safetyDepositReason) {
-        return res.status(StatusCode.BAD_REQUEST).json({
-          message: "safetyDepositReason is required when safetyDepositAmount is provided",
-        });
-      }
+    if (safetyDepositAmount !== undefined && !safetyDepositReason) {
+      return res.status(StatusCode.BAD_REQUEST).json({
+        message: "safetyDepositReason is required when safetyDepositAmount is provided",
+      });
     }
 
     // Create or return existing PICKUP session
@@ -147,6 +153,7 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
     }
 
     // Add BOOKING_BASE ledger entry (the remaining balance to be collected)
+    // timeout: many chained ledger ops (addEntry calls recomputeTotals internally)
     await prisma.$transaction(async (tx) => {
       if (remainingBalance > 0) {
         await ledgerService.addEntry(
@@ -167,12 +174,8 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
         );
       }
 
-      // Add DEPOSIT ledger entry if safety deposit is requested
-      if (
-        frozenConfig.safetyDepositEnabled &&
-        safetyDepositAmount !== undefined &&
-        safetyDepositReason
-      ) {
+      // Add DEPOSIT ledger entry if safety deposit is provided
+      if (safetyDepositAmount !== undefined && safetyDepositReason) {
         await ledgerService.addEntry(
           session.id,
           booking.id,
@@ -189,30 +192,114 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
           tx as any,
         );
 
-        // Create SafetyDepositRequest
+        // Create SafetyDepositRequest (auto-approved — no manager step)
         await tx.safetyDepositRequest.create({
           data: {
             publicId: `sdp_${session.id}`,
             bookingId: booking.id,
             requestedAmount: String(safetyDepositAmount),
             reason: safetyDepositReason,
-            status: frozenConfig.safetyDepositRequiresApproval ? "PENDING_APPROVAL" : "APPROVED",
+            status: "APPROVED",
             requestedById: actor.id,
-            approvedAmount: frozenConfig.safetyDepositRequiresApproval
-              ? undefined
-              : String(safetyDepositAmount),
-            approvedAt: frozenConfig.safetyDepositRequiresApproval ? undefined : new Date(),
+            approvedAmount: String(safetyDepositAmount),
+            approvedAt: new Date(),
           },
         });
 
-        if (!frozenConfig.safetyDepositRequiresApproval) {
-          await tx.booking.update({
-            where: { id: booking.id },
-            data: {
-              safetyDeposit: { increment: safetyDepositAmount },
-              safetyDepositPaidAt: new Date(),
-            },
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: {
+            safetyDeposit: { increment: safetyDepositAmount },
+            safetyDepositPaidAt: new Date(),
+          },
+        });
+      }
+
+      // ── Extension ledger entry ───────────────────────────────────────────
+      // If a PENDING_PAYMENT extension is provided, add its charge to the session.
+      // The extension is confirmed atomically when payment is recorded.
+      if (extensionPublicId) {
+        const extension = await (tx as any).bookingExtension.findFirst({
+          where: {
+            publicId: extensionPublicId,
+            bookingId: booking.id,
+            extensionStatus: ExtensionStatus.PENDING_PAYMENT,
+          },
+          select: { id: true, publicId: true, additionalAmount: true, requestedEndAt: true },
+        });
+        if (!extension) {
+          throw Object.assign(
+            new Error("Extension not found or not in PENDING_PAYMENT status"),
+            { status: 400 },
+          );
+        }
+        const extAmount = new Decimal(extension.additionalAmount.toString());
+        if (extAmount.gt(0)) {
+          const extDate = new Date(extension.requestedEndAt).toLocaleDateString("en-IN", {
+            day: "2-digit", month: "short", year: "numeric",
           });
+          await ledgerService.addEntry(
+            session.id,
+            booking.id,
+            LedgerEntryType.EXTENSION,
+            LedgerEntryClassification.TAXABLE,
+            extAmount,
+            `Extension charge (until ${extDate})`,
+            actor.id,
+            String(actor.role),
+            {
+              idempotencyKey: `pickup:${booking.id}:ext:${extension.id}:${session.id}`,
+              referenceType: "BOOKING_EXTENSION",
+              referenceId: extension.publicId,
+            },
+            tx as any,
+          );
+        }
+      }
+
+      // ── Discount ledger entry ────────────────────────────────────────────
+      if (discountCode) {
+        const now = new Date();
+        const rule = await (tx as any).discountRule.findUnique({ where: { code: discountCode } });
+        if (rule && rule.isActive && rule.startDate <= now && rule.endDate >= now) {
+          // We need the session totals recomputed after base+deposit+extension to compute %
+          await paymentSessionService.recomputeTotals(session.id, tx as any);
+          const refreshedSession = await (tx as any).paymentSession.findUnique({
+            where: { id: session.id },
+            select: { taxableBase: true, totalCharges: true },
+          });
+          const taxableBase = new Decimal(refreshedSession.taxableBase?.toString() ?? "0");
+          const totalCharges = new Decimal(refreshedSession.totalCharges?.toString() ?? "0");
+          let discountAmount: Decimal;
+          if (rule.discountType === DiscountType.PERCENTAGE) {
+            discountAmount = taxableBase.mul(rule.value).div(100);
+            if (rule.maxDiscountCap) {
+              discountAmount = Decimal.min(discountAmount, new Decimal(rule.maxDiscountCap.toString()));
+            }
+          } else {
+            discountAmount = Decimal.min(new Decimal(rule.value.toString()), totalCharges);
+          }
+          discountAmount = discountAmount.toDecimalPlaces(2);
+          if (discountAmount.gt(0)) {
+            await (tx as any).ledgerEntry.create({
+              data: {
+                publicId: createID(),
+                sessionId: session.id,
+                bookingId: booking.id,
+                entryType: LedgerEntryType.DISCOUNT,
+                classification: LedgerEntryClassification.DISCOUNT,
+                amount: discountAmount.negated().toFixed(2),
+                baseAmount: "0.00",
+                gstAmount: "0.00",
+                description: `Coupon discount (${rule.code})`,
+                referenceId: rule.publicId,
+                referenceType: "DISCOUNT_RULE",
+                idempotencyKey: `pickup:${booking.id}:discount:${session.id}:${rule.id}`,
+                actorId: actor.id,
+                actorRole: String(actor.role),
+              },
+            });
+          }
         }
       }
 
@@ -293,7 +380,7 @@ export const InitiatePickupSession = async (req: Request, res: Response) => {
         {},
         tx as any,
       );
-    });
+    }, { timeout: 30000 });
 
     await auditService.log({
       actorId: actor.id,
@@ -375,6 +462,413 @@ export const GetPickupSession = async (req: Request, res: Response) => {
     return res.status(StatusCode.OK).json({
       message: "Pickup session fetched",
       data: serializePickupSession(session),
+    });
+  } catch (err: any) {
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: err.message });
+  }
+};
+
+// ── POST /employee/bookings/:bookingId/pickup-session/abandon ──────────────────
+
+export const AbandonPickupSession = async (req: Request, res: Response) => {
+  try {
+    const { bookingId } = req.params;
+
+    const actor = await prisma.user.findUnique({
+      where: { publicId: req.public_Id },
+      select: { id: true, branchId: true },
+    });
+    if (!actor) {
+      return res.status(StatusCode.UNAUTHORIZED).json({ message: "Unauthorized" });
+    }
+
+    const booking = await prisma.booking.findFirst({
+      where: { publicId: bookingId, branchId: actor.branchId! },
+      select: { id: true },
+    });
+    if (!booking) {
+      return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
+    }
+
+    const session = await prisma.paymentSession.findFirst({
+      where: {
+        bookingId: booking.id,
+        sessionType: PaymentSessionType.PICKUP,
+        status: {
+          in: [
+            PaymentSessionStatus.OPEN,
+            PaymentSessionStatus.AWAITING_PAYMENT,
+            PaymentSessionStatus.PAYMENT_INITIATED,
+          ],
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!session) {
+      return res.status(StatusCode.NOT_FOUND).json({ message: "No active pickup session to abandon" });
+    }
+
+    await prisma.paymentSession.update({
+      where: { id: session.id },
+      data: { status: PaymentSessionStatus.ABANDONED },
+    });
+
+    return res.status(StatusCode.OK).json({ message: "Pickup session abandoned" });
+  } catch (err: any) {
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: err.message });
+  }
+};
+
+// ── POST /employee/bookings/:bookingId/pickup-session/apply-discount ──────────
+
+const applyDiscountSchema = z.object({
+  discountCode: z.string().min(1),
+});
+
+export const ApplyDiscountToPickupSession = async (req: Request, res: Response) => {
+  try {
+    const { bookingId } = req.params;
+
+    const validation = applyDiscountSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Validation failed", errors: validation.error.format() });
+    }
+    const { discountCode } = validation.data;
+
+    const actor = await prisma.user.findUnique({
+      where: { publicId: req.public_Id },
+      select: { id: true, name: true, role: true, branchId: true },
+    });
+    if (!actor) return res.status(StatusCode.UNAUTHORIZED).json({ message: "Unauthorized" });
+
+    const booking = await prisma.booking.findFirst({
+      where: { publicId: bookingId, branchId: actor.branchId! },
+      select: { id: true, customerId: true },
+    });
+    if (!booking) return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
+
+    // Validate discount rule
+    const now = new Date();
+    const rule = await prisma.discountRule.findUnique({
+      where: { code: discountCode },
+    });
+    if (!rule || !rule.isActive || rule.startDate > now || rule.endDate < now) {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid or expired discount code" });
+    }
+    if (rule.scope === "BRANCH" && !rule.applicableBranchIds.includes(actor.branchId!)) {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Discount code not valid for this branch" });
+    }
+
+    // Find active PICKUP session
+    const session = await prisma.paymentSession.findFirst({
+      where: {
+        bookingId: booking.id,
+        sessionType: PaymentSessionType.PICKUP,
+        status: { in: [PaymentSessionStatus.OPEN, PaymentSessionStatus.AWAITING_PAYMENT] },
+      },
+      include: { entries: { where: { isVoided: false } } },
+    });
+    if (!session) {
+      return res.status(StatusCode.NOT_FOUND).json({ message: "No active pickup session found. Initiate a session first." });
+    }
+
+    // Compute discount amount from rule
+    const taxableBase = new Decimal(session.taxableBase?.toString() ?? "0");
+    const totalCharges = new Decimal(session.totalCharges?.toString() ?? "0");
+
+    let discountAmount: Decimal;
+    if (rule.discountType === DiscountType.PERCENTAGE) {
+      discountAmount = taxableBase.mul(rule.value).div(100);
+      if (rule.maxDiscountCap) {
+        discountAmount = Decimal.min(discountAmount, new Decimal(rule.maxDiscountCap.toString()));
+      }
+    } else {
+      // FLAT
+      discountAmount = Decimal.min(new Decimal(rule.value.toString()), totalCharges);
+    }
+    discountAmount = discountAmount.toDecimalPlaces(2);
+
+    if (discountAmount.lte(0)) {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Discount amount is zero — no charges to discount" });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // Void any existing DISCOUNT entry
+      await (tx as any).ledgerEntry.updateMany({
+        where: { sessionId: session.id, entryType: LedgerEntryType.DISCOUNT, isVoided: false },
+        data: { isVoided: true, voidedAt: new Date(), voidedById: actor.id, voidReason: "Replaced by new discount" },
+      });
+
+      // Create new DISCOUNT entry (negative = reduces net payable)
+      await (tx as any).ledgerEntry.create({
+        data: {
+          publicId: createID(),
+          sessionId: session.id,
+          bookingId: booking.id,
+          entryType: LedgerEntryType.DISCOUNT,
+          classification: LedgerEntryClassification.DISCOUNT,
+          amount: discountAmount.negated().toFixed(2),
+          baseAmount: "0.00",
+          gstAmount: "0.00",
+          description: `Coupon discount (${rule.code})`,
+          referenceId: rule.publicId,
+          referenceType: "DISCOUNT_RULE",
+          idempotencyKey: `pickup:${booking.id}:discount:${session.id}:${rule.id}`,
+          actorId: actor.id,
+          actorRole: String(actor.role),
+        },
+      });
+
+      await paymentSessionService.recomputeTotals(session.id, tx as any);
+    });
+
+    const updatedSession = await paymentSessionService.getSession(session.publicId);
+    return res.status(StatusCode.OK).json({
+      message: "Discount applied to session",
+      data: serializePickupSession(updatedSession!),
+    });
+  } catch (err: any) {
+    console.error("ApplyDiscountToPickupSession Error:", err);
+    return res.status(err.status ?? StatusCode.INTERNAL_SERVER_ERROR).json({ message: err.message ?? "Internal server error" });
+  }
+};
+
+// ── DELETE /employee/bookings/:bookingId/pickup-session/remove-discount ────────
+
+export const RemoveDiscountFromPickupSession = async (req: Request, res: Response) => {
+  try {
+    const { bookingId } = req.params;
+
+    const actor = await prisma.user.findUnique({
+      where: { publicId: req.public_Id },
+      select: { id: true, branchId: true },
+    });
+    if (!actor) return res.status(StatusCode.UNAUTHORIZED).json({ message: "Unauthorized" });
+
+    const booking = await prisma.booking.findFirst({
+      where: { publicId: bookingId, branchId: actor.branchId! },
+      select: { id: true },
+    });
+    if (!booking) return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
+
+    const session = await prisma.paymentSession.findFirst({
+      where: {
+        bookingId: booking.id,
+        sessionType: PaymentSessionType.PICKUP,
+        status: { in: [PaymentSessionStatus.OPEN, PaymentSessionStatus.AWAITING_PAYMENT] },
+      },
+    });
+    if (!session) {
+      return res.status(StatusCode.NOT_FOUND).json({ message: "No active pickup session found" });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await (tx as any).ledgerEntry.updateMany({
+        where: { sessionId: session.id, entryType: LedgerEntryType.DISCOUNT, isVoided: false },
+        data: { isVoided: true, voidedAt: new Date(), voidedById: actor.id, voidReason: "Discount removed by employee" },
+      });
+      await paymentSessionService.recomputeTotals(session.id, tx as any);
+    });
+
+    const updatedSession = await paymentSessionService.getSession(session.publicId);
+    return res.status(StatusCode.OK).json({
+      message: "Discount removed from session",
+      data: serializePickupSession(updatedSession!),
+    });
+  } catch (err: any) {
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: err.message });
+  }
+};
+
+// ── POST /employee/bookings/:bookingId/pickup-session/add-deposit ─────────────
+
+const addDepositSchema = z.object({
+  amount: z.coerce.number().positive(),
+  reason: z.string().min(1),
+});
+
+export const AddDepositToPickupSession = async (req: Request, res: Response) => {
+  try {
+    const { bookingId } = req.params;
+
+    const validation = addDepositSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Validation failed", errors: validation.error.format() });
+    }
+    const { amount, reason } = validation.data;
+
+    const actor = await prisma.user.findUnique({
+      where: { publicId: req.public_Id },
+      select: { id: true, name: true, role: true, branchId: true },
+    });
+    if (!actor) return res.status(StatusCode.UNAUTHORIZED).json({ message: "Unauthorized" });
+
+    const booking = await prisma.booking.findFirst({
+      where: { publicId: bookingId, branchId: actor.branchId! },
+      select: { id: true, safetyDeposit: true },
+    });
+    if (!booking) return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
+
+    const session = await prisma.paymentSession.findFirst({
+      where: {
+        bookingId: booking.id,
+        sessionType: PaymentSessionType.PICKUP,
+        status: { in: [PaymentSessionStatus.OPEN, PaymentSessionStatus.AWAITING_PAYMENT] },
+      },
+      include: { entries: { where: { isVoided: false, entryType: LedgerEntryType.DEPOSIT } } },
+    });
+    if (!session) {
+      return res.status(StatusCode.NOT_FOUND).json({ message: "No active pickup session found" });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // Subtract old deposit from booking if one exists in session
+      const oldDeposit = session.entries[0];
+      if (oldDeposit) {
+        const oldAmt = new Decimal(oldDeposit.amount.toString());
+        await (tx as any).ledgerEntry.update({
+          where: { id: oldDeposit.id },
+          data: { isVoided: true, voidedAt: new Date(), voidedById: actor.id, voidReason: "Replaced by updated deposit amount" },
+        });
+        await (tx as any).booking.update({
+          where: { id: booking.id },
+          data: { safetyDeposit: { decrement: oldAmt.toNumber() } },
+        });
+      }
+
+      // Create new DEPOSIT entry
+      await (tx as any).ledgerEntry.create({
+        data: {
+          publicId: createID(),
+          sessionId: session.id,
+          bookingId: booking.id,
+          entryType: LedgerEntryType.DEPOSIT,
+          classification: LedgerEntryClassification.NON_TAXABLE,
+          amount: new Decimal(amount).toFixed(2),
+          baseAmount: "0.00",
+          gstAmount: "0.00",
+          description: reason,
+          referenceType: "SAFETY_DEPOSIT",
+          idempotencyKey: `pickup:${booking.id}:deposit:${session.id}:${Date.now()}`,
+          actorId: actor.id,
+          actorRole: String(actor.role),
+        },
+      });
+
+      // Upsert SafetyDepositRequest
+      await (tx as any).safetyDepositRequest.upsert({
+        where: { bookingId: booking.id },
+        update: {
+          requestedAmount: String(amount),
+          reason,
+          status: "APPROVED",
+          requestedById: actor.id,
+          approvedAmount: String(amount),
+          approvedAt: new Date(),
+          rejectedAt: null,
+          rejectionReason: null,
+        },
+        create: {
+          publicId: createID(),
+          bookingId: booking.id,
+          requestedAmount: String(amount),
+          reason,
+          status: "APPROVED",
+          requestedById: actor.id,
+          approvedAmount: String(amount),
+          approvedAt: new Date(),
+        },
+      });
+
+      // Add deposit to booking
+      await (tx as any).booking.update({
+        where: { id: booking.id },
+        data: {
+          safetyDeposit: { increment: amount },
+          safetyDepositPaidAt: new Date(),
+        },
+      });
+
+      await paymentSessionService.recomputeTotals(session.id, tx as any);
+    });
+
+    const updatedSession = await paymentSessionService.getSession(session.publicId);
+    return res.status(StatusCode.OK).json({
+      message: "Safety deposit added to session",
+      data: serializePickupSession(updatedSession!),
+    });
+  } catch (err: any) {
+    console.error("AddDepositToPickupSession Error:", err);
+    return res.status(err.status ?? StatusCode.INTERNAL_SERVER_ERROR).json({ message: err.message ?? "Internal server error" });
+  }
+};
+
+// ── DELETE /employee/bookings/:bookingId/pickup-session/remove-deposit ─────────
+
+export const RemoveDepositFromPickupSession = async (req: Request, res: Response) => {
+  try {
+    const { bookingId } = req.params;
+
+    const actor = await prisma.user.findUnique({
+      where: { publicId: req.public_Id },
+      select: { id: true, branchId: true },
+    });
+    if (!actor) return res.status(StatusCode.UNAUTHORIZED).json({ message: "Unauthorized" });
+
+    const booking = await prisma.booking.findFirst({
+      where: { publicId: bookingId, branchId: actor.branchId! },
+      select: { id: true, safetyDeposit: true },
+    });
+    if (!booking) return res.status(StatusCode.NOT_FOUND).json({ message: "Booking not found" });
+
+    const session = await prisma.paymentSession.findFirst({
+      where: {
+        bookingId: booking.id,
+        sessionType: PaymentSessionType.PICKUP,
+        status: { in: [PaymentSessionStatus.OPEN, PaymentSessionStatus.AWAITING_PAYMENT] },
+      },
+      include: { entries: { where: { isVoided: false, entryType: LedgerEntryType.DEPOSIT } } },
+    });
+    if (!session) {
+      return res.status(StatusCode.NOT_FOUND).json({ message: "No active pickup session found" });
+    }
+
+    if (session.entries.length === 0) {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "No safety deposit in this session to remove" });
+    }
+
+    const depositEntry = session.entries[0];
+    const depositAmt = new Decimal(depositEntry.amount.toString());
+
+    await prisma.$transaction(async (tx) => {
+      // Void the DEPOSIT ledger entry
+      await (tx as any).ledgerEntry.update({
+        where: { id: depositEntry.id },
+        data: { isVoided: true, voidedAt: new Date(), voidedById: actor.id, voidReason: "Deposit removed by employee" },
+      });
+
+      // Delete the SafetyDepositRequest
+      await (tx as any).safetyDepositRequest.deleteMany({
+        where: { bookingId: booking.id },
+      });
+
+      // Reverse the booking safetyDeposit increment
+      await (tx as any).booking.update({
+        where: { id: booking.id },
+        data: {
+          safetyDeposit: { decrement: depositAmt.toNumber() },
+          safetyDepositPaidAt: null,
+        },
+      });
+
+      await paymentSessionService.recomputeTotals(session.id, tx as any);
+    });
+
+    const updatedSession = await paymentSessionService.getSession(session.publicId);
+    return res.status(StatusCode.OK).json({
+      message: "Safety deposit removed from session",
+      data: serializePickupSession(updatedSession!),
     });
   } catch (err: any) {
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: err.message });

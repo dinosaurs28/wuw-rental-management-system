@@ -4,13 +4,8 @@ import {
   ExtensionStatus,
   ExtensionTrigger,
   ExtensionResolutionType,
-  PaymentPurpose,
-  PaymentMethod,
   Role,
-  LedgerEntryType,
-  LedgerEntryClassification,
-  PaymentSessionType,
-  PaymentSessionStatus,
+  PaymentPurpose,
 } from "@repo/database/client";
 import type { BookingExtension } from "@repo/database/client";
 import Decimal from "decimal.js";
@@ -18,15 +13,13 @@ import { createID } from "../../utils/nanoID.js";
 import { auditService, AuditCategory } from "../audit/audit.service.js";
 import { AuditSeverity } from "@repo/database/client";
 import { staffActivityService, StaffActionType, StaffEntityType } from "../staffActivity/staffActivity.service.js";
-import { paymentTransactionService, type RecordPaymentInput } from "../payment/payment-transaction.service.js";
-import { branchPaymentConfigService } from "../payment/index.js";
-import { paymentSessionService } from "../payment/paymentSession.service.js";
-import { ledgerService } from "../payment/ledger.service.js";
 import { extensionAvailabilityService } from "./extension-availability.service.js";
 import { extensionPricingService, type ExtensionPricingResult } from "./extension-pricing.service.js";
 import { extensionConflictResolverService, type ConflictResolutionOptions } from "./extension-conflict-resolver.service.js";
 import { extensionVehicleAllocatorService } from "./extension-vehicle-allocator.service.js";
 import { extensionLockService } from "./extension-lock.service.js";
+import { redis } from "../../lib/redisconfig.js";
+import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
 
 export interface ActorContext {
   actorId: number;
@@ -37,13 +30,31 @@ export interface ActorContext {
   branchName: string;
 }
 
+export interface EvaluationResolutionOption {
+  type: string;
+  label: string;
+  description: string;
+  availableVehicles?: Array<{ publicId: string; make: string; model: string; regNo: string }>;
+  affectedBookings?: Array<{ bookingPublicId: string; newVehicle: { publicId: string; make: string; model: string; regNo: string } }>;
+  partialNewEndAt?: string;
+  additionalAmount: string;
+  newTotalFinal: string;
+}
+
 export interface ExtensionEvaluation {
   extensionPublicId: string;
   bookingPublicId: string;
-  oldEndAt: Date;
-  requestedEndAt: Date;
-  pricing: ExtensionPricingResult;
-  resolutionOptions: ConflictResolutionOptions;
+  oldEndAt: string;
+  requestedEndAt: string;
+  pricing: {
+    originalDays: number;
+    newDays: number;
+    originalTotalFinal: string;
+    newTotalFinal: string;
+    additionalAmount: string;
+  };
+  resolutionOptions: EvaluationResolutionOption[];
+  recommendedResolution: string;
 }
 
 export interface CommitExtensionInput {
@@ -52,24 +63,22 @@ export interface CommitExtensionInput {
   selectedVehiclePublicId?: string;
   affectedBookingSwaps?: Array<{ bookingPublicId: string; newVehiclePublicId: string }>;
   partialNewEndAt?: string;
-  paymentMethod: "CASH" | "ONLINE" | "SPLIT";
-  totalAmount: number;
-  cashAmount?: number;
-  onlineAmount?: number;
-  onlineTransactionRef?: string;
-  onlineGateway?: string;
   idempotencyKey: string;
   notes?: string;
 }
 
 export interface CommitExtensionResult {
   extension: BookingExtension;
-  /** Present when branch has usePaymentSessions=true; client should call record-payment on this session */
-  session?: {
-    publicId: string;
-    netPayable: string;
-    status: string;
+  remainAmount: {
+    extension: string;
   };
+}
+
+export interface CollectExtensionResult {
+  remainAmount: {
+    extension: string;
+  };
+  payment: "pending" | "confirmed";
 }
 
 export interface PaginatedExtensions {
@@ -204,13 +213,58 @@ class ExtensionService {
       }),
     ]);
 
+    // Compute original booking duration for the pricing summary
+    const originalDays = Math.max(1, Math.ceil(
+      (booking.endAt.getTime() - booking.startAt.getTime()) / (1000 * 60 * 60 * 24)
+    ));
+
+    const resolutionLabels: Record<string, string> = {
+      SAME_VEHICLE: "Same vehicle (no conflict)",
+      SWAP_CURRENT_TO_OTHER: "Swap to an available equivalent vehicle",
+      SWAP_FUTURE_BOOKING: "Reassign the conflicting booking's vehicle",
+      PARTIAL_EXTENSION: "Partial extension (until last available date)",
+      NO_RESOLUTION: "No extension available",
+    };
+
+    const additionalAmountStr = pricing.additionalAmount.toFixed(2);
+    const newTotalFinalStr = pricing.newTotalFinal.toFixed(2);
+
     return {
       extensionPublicId: extension.publicId,
       bookingPublicId: booking.publicId,
-      oldEndAt: booking.endAt,
-      requestedEndAt: newEndAt,
-      pricing,
-      resolutionOptions,
+      oldEndAt: booking.endAt.toISOString(),
+      requestedEndAt: newEndAt.toISOString(),
+      pricing: {
+        originalDays,
+        newDays: pricing.newDays,
+        originalTotalFinal: new Decimal(booking.totalFinal.toString()).toFixed(2),
+        newTotalFinal: newTotalFinalStr,
+        additionalAmount: additionalAmountStr,
+      },
+      resolutionOptions: resolutionOptions.options.map(opt => ({
+        type: opt.type,
+        label: resolutionLabels[opt.type] ?? opt.type,
+        description: opt.description,
+        availableVehicles: opt.alternativeVehicles?.map(v => ({
+          publicId: v.publicId,
+          make: v.make,
+          model: v.model,
+          regNo: v.regNo,
+        })),
+        affectedBookings: opt.futureBookingSwaps?.map(swap => ({
+          bookingPublicId: swap.bookingPublicId,
+          newVehicle: {
+            publicId: swap.alternatives[0]!.publicId,
+            make: swap.alternatives[0]!.make,
+            model: swap.alternatives[0]!.model,
+            regNo: swap.alternatives[0]!.regNo,
+          },
+        })),
+        partialNewEndAt: opt.partialNewEndAt?.toISOString(),
+        additionalAmount: additionalAmountStr,
+        newTotalFinal: newTotalFinalStr,
+      })),
+      recommendedResolution: resolutionOptions.recommendedOption,
     };
   }
 
@@ -229,7 +283,6 @@ class ExtensionService {
         booking: {
           include: {
             items: { include: { vehicle: { include: { category: true } } } },
-            branch: { include: { chargeConfig: { select: { usePaymentSessions: true } } } },
           },
         },
       },
@@ -320,164 +373,19 @@ class ExtensionService {
         vehicleSwapId = vehicleSwap.id;
       }
 
-      // ── Session-based flow (usePaymentSessions = true) ────────────────────
-      const usePaymentSessions = booking.branch?.chargeConfig?.usePaymentSessions ?? false;
-
-      if (usePaymentSessions) {
-        // Create or return existing EXTENSION session
-        const session = await paymentSessionService.createSession(
-          booking.id,
-          booking.branchId,
-          PaymentSessionType.EXTENSION,
-          actor.actorId,
-        );
-
-        // Add EXTENSION ledger entry — payment is deferred to record-payment endpoint
-        await ledgerService.addEntry(
-          session.id,
-          booking.id,
-          LedgerEntryType.EXTENSION,
-          LedgerEntryClassification.TAXABLE,
-          finalAdditionalAmount.toNumber(),
-          input.notes ?? `Extension charge — new end date: ${effectiveNewEndAt.toISOString()}`,
-          actor.actorId,
-          String(actor.actorRole),
-          {
-            idempotencyKey: `ext:${booking.id}:${extension.id}:${input.idempotencyKey}`,
-            referenceId: extension.publicId,
-            referenceType: "BOOKING_EXTENSION",
-          },
-        );
-
-        // Handle SWAP_FUTURE_BOOKING
-        if (
-          input.resolutionType === "SWAP_FUTURE_BOOKING" &&
-          input.affectedBookingSwaps &&
-          input.affectedBookingSwaps.length > 0
-        ) {
-          await prisma.$transaction(async (tx) => {
-            for (const swap of input.affectedBookingSwaps!) {
-              const affectedBooking = await tx.booking.findUnique({
-                where: { publicId: swap.bookingPublicId },
-                select: { id: true },
-              });
-              if (!affectedBooking) throw new Error(`Affected booking ${swap.bookingPublicId} not found`);
-              await extensionVehicleAllocatorService.swapFutureBookingVehicle(
-                affectedBooking.id,
-                swap.newVehiclePublicId,
-                extension.id,
-                actor,
-                tx,
-              );
-            }
-          });
-        }
-
-        // Persist extension resolution details (no booking.endAt yet — deferred to post-completion hook)
-        const updatedExtension = await prisma.bookingExtension.update({
-          where: { id: extension.id },
-          data: {
-            extensionStatus: ExtensionStatus.PENDING_PAYMENT,
-            resolutionType: input.resolutionType as ExtensionResolutionType,
-            vehicleSwapOccurred: input.resolutionType !== "SAME_VEHICLE",
-            vehicleSwapId: vehicleSwapId,
-            additionalAmount: finalAdditionalAmount,
-            newTotalFinal: finalNewTotalFinal,
-          },
-        });
-
-        // Transition session to AWAITING_PAYMENT
-        await paymentSessionService.updateStatus(session.id, PaymentSessionStatus.AWAITING_PAYMENT);
-
-        await Promise.all([
-          auditService.log({
-            actorId: actor.actorId,
-            actorName: actor.actorName,
-            actorRole: actor.actorRole,
-            actorBranchId: actor.actorBranchId,
-            action: "Extension session created — awaiting payment",
-            category: AuditCategory.BOOKING,
-            severity: AuditSeverity.INFO,
-            entity: "BookingExtension",
-            entityId: updatedExtension.publicId,
-            description: `Extension session ${session.publicId} initiated for booking ${booking.publicId}. ₹${finalAdditionalAmount.toFixed(2)} due.`,
-            after: { sessionPublicId: session.publicId, amount: finalAdditionalAmount.toFixed(2) },
-          }),
-          staffActivityService.log({
-            actorPublicId: actor.actorPublicId,
-            actorName: actor.actorName,
-            actorRole: actor.actorRole,
-            branchId: actor.actorBranchId,
-            branchName: actor.branchName,
-            actionType: StaffActionType.INITIATED,
-            entityType: StaffEntityType.PAYMENT_SESSION,
-            entityRef: session.publicId,
-            description: `Extension payment session initiated for booking ${booking.publicId}`,
-          }),
-        ]);
-
-        const updatedSession = await paymentSessionService.getSession(session.publicId);
-        return {
-          extension: updatedExtension,
-          session: {
-            publicId: session.publicId,
-            netPayable: new Decimal(updatedSession!.netPayable.toString()).toFixed(2),
-            status: updatedSession!.status,
-          },
-        };
-      }
-
-      // ── Legacy flow (usePaymentSessions = false) ──────────────────────────
-
-      // Record payment transaction
-      const paymentInput: RecordPaymentInput = {
-        bookingPublicId: booking.publicId,
-        purpose: PaymentPurpose.EXTENSION,
-        method: input.paymentMethod as PaymentMethod,
-        totalAmount: finalAdditionalAmount.toNumber(),
-        cashAmount: input.cashAmount,
-        onlineAmount: input.onlineAmount,
-        onlineTransactionRef: input.onlineTransactionRef,
-        onlineGateway: input.onlineGateway,
-        idempotencyKey: input.idempotencyKey,
-        notes: input.notes ?? `Extension payment — new end date: ${effectiveNewEndAt.toISOString()}`,
-      };
-
-      const paymentTxn = await paymentTransactionService.record(paymentInput, {
-        actorId: actor.actorId,
-        actorName: actor.actorName,
-        actorRole: actor.actorRole,
-        actorBranchId: actor.actorBranchId,
-        actorPublicId: actor.actorPublicId,
-        branchName: actor.branchName,
-      });
-
-      // Determine extension status based on payment status
-      const config = await branchPaymentConfigService.getConfig(actor.actorBranchId);
-      const isPaymentPending =
-        config.cashConfirmationEnabled &&
-        (paymentTxn.status === "COLLECTED");
-
-      const newExtensionStatus = isPaymentPending
-        ? ExtensionStatus.PAYMENT_COLLECTED
-        : ExtensionStatus.CONFIRMED;
-
-      // DB transaction: update booking + extension atomically
-      const updatedExtension = await prisma.$transaction(async (tx) => {
-        // Handle SWAP_FUTURE_BOOKING inside transaction
-        if (
-          input.resolutionType === "SWAP_FUTURE_BOOKING" &&
-          input.affectedBookingSwaps &&
-          input.affectedBookingSwaps.length > 0
-        ) {
-          for (const swap of input.affectedBookingSwaps) {
+      // Handle SWAP_FUTURE_BOOKING
+      if (
+        input.resolutionType === "SWAP_FUTURE_BOOKING" &&
+        input.affectedBookingSwaps &&
+        input.affectedBookingSwaps.length > 0
+      ) {
+        await prisma.$transaction(async (tx) => {
+          for (const swap of input.affectedBookingSwaps!) {
             const affectedBooking = await tx.booking.findUnique({
               where: { publicId: swap.bookingPublicId },
               select: { id: true },
             });
-            if (!affectedBooking) {
-              throw new Error(`Affected booking ${swap.bookingPublicId} not found`);
-            }
+            if (!affectedBooking) throw new Error(`Affected booking ${swap.bookingPublicId} not found`);
             await extensionVehicleAllocatorService.swapFutureBookingVehicle(
               affectedBooking.id,
               swap.newVehiclePublicId,
@@ -486,77 +394,44 @@ class ExtensionService {
               tx,
             );
           }
-        }
-
-        // Build updated affectedBookingIds
-        const affectedBookingIds =
-          input.resolutionType === "SWAP_FUTURE_BOOKING" && input.affectedBookingSwaps
-            ? await Promise.all(
-                input.affectedBookingSwaps.map(async (s) => {
-                  const b = await tx.booking.findUnique({
-                    where: { publicId: s.bookingPublicId },
-                    select: { id: true },
-                  });
-                  return b?.id ?? 0;
-                }),
-              )
-            : [];
-
-        // Update Booking: new endAt, extension tracking fields
-        const isFirstExtension = booking.extensionCount === 0;
-        await tx.booking.update({
-          where: { id: booking.id },
-          data: {
-            endAt: effectiveNewEndAt,
-            originalEndAt: isFirstExtension ? booking.endAt : undefined,
-            extensionCount: { increment: 1 },
-            lastExtendedAt: new Date(),
-            totalBase: finalNewTotalFinal, // update total on booking
-            totalFinal: finalNewTotalFinal,
-            activeExtensionId: newExtensionStatus === ExtensionStatus.CONFIRMED ? null : extension.id,
-          },
         });
+      }
 
-        // Update BookingItem pricing
-        await tx.bookingItem.updateMany({
-          where: { bookingId: booking.id },
-          data: { finalTotal: finalNewTotalFinal },
-        });
-
-        // Update the extension record
-        const updated = await tx.bookingExtension.update({
-          where: { id: extension.id },
-          data: {
-            extensionStatus: newExtensionStatus,
-            actualNewEndAt: newExtensionStatus === ExtensionStatus.CONFIRMED ? effectiveNewEndAt : undefined,
-            resolutionType: input.resolutionType as ExtensionResolutionType,
-            vehicleSwapOccurred: input.resolutionType !== "SAME_VEHICLE",
-            vehicleSwapId: vehicleSwapId,
-            paymentTransactionId: paymentTxn.id,
-            additionalAmount: finalAdditionalAmount,
-            newTotalFinal: finalNewTotalFinal,
-            affectedBookingIds: affectedBookingIds.filter((id) => id > 0),
-          },
-        });
-
-        return updated;
+      // ── Vehicle hold ──────────────────────────────────────────────────────
+      // Update booking.endAt immediately so the vehicle slot is blocked for
+      // other bookings while payment is pending. Reverted in the catch block
+      // if the commit rolls back.
+      await prisma.booking.update({
+        where: { id: booking.id },
+        data: { endAt: effectiveNewEndAt },
       });
 
-      // Audit + staff activity
+      // Persist extension resolution details
+      const updatedExtension = await prisma.bookingExtension.update({
+        where: { id: extension.id },
+        data: {
+          extensionStatus: ExtensionStatus.PENDING_PAYMENT,
+          resolutionType: input.resolutionType as ExtensionResolutionType,
+          vehicleSwapOccurred: input.resolutionType !== "SAME_VEHICLE",
+          vehicleSwapId: vehicleSwapId,
+          additionalAmount: finalAdditionalAmount,
+          newTotalFinal: finalNewTotalFinal,
+        },
+      });
+
       await Promise.all([
         auditService.log({
           actorId: actor.actorId,
           actorName: actor.actorName,
           actorRole: actor.actorRole,
           actorBranchId: actor.actorBranchId,
-          action: newExtensionStatus === ExtensionStatus.CONFIRMED ? "Extension confirmed" : "Extension payment collected — pending confirmation",
+          action: "Extension committed — vehicle held, awaiting payment collection",
           category: AuditCategory.BOOKING,
           severity: AuditSeverity.INFO,
           entity: "BookingExtension",
           entityId: updatedExtension.publicId,
-          description: `Booking ${booking.publicId} extended to ${effectiveNewEndAt.toISOString()}`,
-          before: { endAt: booking.endAt, totalFinal: booking.totalFinal },
-          after: { endAt: effectiveNewEndAt, totalFinal: finalNewTotalFinal, resolutionType: input.resolutionType },
+          description: `Extension committed for booking ${booking.publicId}. ₹${finalAdditionalAmount.toFixed(2)} due. Vehicle held until ${effectiveNewEndAt.toISOString()}.`,
+          after: { amount: finalAdditionalAmount.toFixed(2), newEndAt: effectiveNewEndAt },
         }),
         staffActivityService.log({
           actorPublicId: actor.actorPublicId,
@@ -564,23 +439,31 @@ class ExtensionService {
           actorRole: actor.actorRole,
           branchId: actor.actorBranchId,
           branchName: actor.branchName,
-          actionType: StaffActionType.EXTENDED,
+          actionType: StaffActionType.INITIATED,
           entityType: StaffEntityType.BOOKING_EXTENSION,
           entityRef: updatedExtension.publicId,
-          description: `Booking ${booking.publicId} extended to ${effectiveNewEndAt.toISOString()} via ${input.resolutionType}`,
+          description: `Extension committed for booking ${booking.publicId} — ₹${finalAdditionalAmount.toFixed(2)} pending collection`,
         }),
       ]);
 
-      return { extension: updatedExtension };
+      return {
+        extension: updatedExtension,
+        remainAmount: {
+          extension: finalAdditionalAmount.toFixed(2),
+        },
+      };
     } catch (error) {
-      // Rollback: if extension was not yet committed, cancel it and clear activeExtensionId
+      // Rollback: cancel extension, clear activeExtensionId, and revert vehicle hold
       await prisma.bookingExtension.update({
         where: { id: extension.id },
         data: { extensionStatus: ExtensionStatus.CANCELLED },
       });
       await prisma.booking.update({
         where: { id: booking.id },
-        data: { activeExtensionId: null },
+        data: {
+          activeExtensionId: null,
+          endAt: booking.endAt, // revert vehicle hold
+        },
       });
       throw error;
     } finally {
@@ -641,12 +524,12 @@ class ExtensionService {
   }
 
   /**
-   * Cancel a pending extension — reverts activeExtensionId on the booking.
+   * Cancel a pending extension — reverts booking.endAt to oldEndAt and releases the vehicle hold.
    */
   async cancel(extensionPublicId: string, actor: ActorContext, reason?: string): Promise<void> {
     const extension = await prisma.bookingExtension.findUnique({
       where: { publicId: extensionPublicId },
-      select: { id: true, bookingId: true, extensionStatus: true },
+      select: { id: true, bookingId: true, extensionStatus: true, oldEndAt: true, booking: { select: { items: { select: { vehicleId: true } } } } },
     });
 
     if (!extension) throw new Error("Extension not found");
@@ -662,11 +545,25 @@ class ExtensionService {
           rejectionReason: reason,
         },
       });
+      // Revert vehicle hold: restore the original endAt
       await tx.booking.update({
         where: { id: extension.bookingId },
-        data: { activeExtensionId: null },
+        data: {
+          activeExtensionId: null,
+          endAt: extension.oldEndAt,
+        },
       });
     });
+
+    // Invalidate vehicle availability cache so the reverted slot shows as available again
+    const vehicleIds = extension.booking.items.map((i) => i.vehicleId);
+    if (vehicleIds.length > 0) {
+      try {
+        await invalidateVehicleAvailability(redis, vehicleIds);
+      } catch {
+        // non-fatal
+      }
+    }
 
     await Promise.all([
       auditService.log({
@@ -693,6 +590,110 @@ class ExtensionService {
         description: `Extension ${extensionPublicId} cancelled`,
       }),
     ]);
+  }
+
+  /**
+   * Collect payment for a PENDING_PAYMENT extension.
+   * CASH → PaymentTransaction COLLECTED (awaits manager confirmation).
+   * ONLINE → PaymentTransaction CONFIRMED + extension immediately finalized.
+   */
+  async collect(
+    extensionPublicId: string,
+    method: "CASH" | "ONLINE",
+    actor: ActorContext,
+    onlineTransactionRef?: string,
+  ): Promise<CollectExtensionResult> {
+    const extension = await prisma.bookingExtension.findUnique({
+      where: { publicId: extensionPublicId },
+      include: { booking: true },
+    });
+
+    if (!extension) throw new Error("Extension not found");
+    if (extension.extensionStatus !== ExtensionStatus.PENDING_PAYMENT) {
+      throw new Error(`Extension is already in ${extension.extensionStatus} status`);
+    }
+
+    const booking = extension.booking;
+    const isOnline = method === "ONLINE";
+    const additionalAmount = new Decimal(extension.additionalAmount.toString());
+
+    await prisma.$transaction(async (tx) => {
+      // Create PaymentTransaction — COLLECTED for cash (manager confirms later), CONFIRMED for online
+      const txn = await (tx as any).paymentTransaction.create({
+        data: {
+          publicId: createID(),
+          idempotencyKey: `ext:collect:${extension.id}`,
+          bookingId: booking.id,
+          branchId: booking.branchId,
+          purpose: PaymentPurpose.EXTENSION,
+          method,
+          status: isOnline ? "CONFIRMED" : "COLLECTED",
+          totalAmount: additionalAmount.toFixed(2),
+          cashAmount: isOnline ? "0.00" : additionalAmount.toFixed(2),
+          onlineAmount: isOnline ? additionalAmount.toFixed(2) : "0.00",
+          onlineTransactionRef: onlineTransactionRef ?? null,
+          collectedById: actor.actorId,
+          collectedAt: new Date(),
+          ...(isOnline && { confirmedById: actor.actorId, confirmedAt: new Date() }),
+        },
+      });
+
+      // Update extension: link to PaymentTransaction + set status
+      await (tx as any).bookingExtension.update({
+        where: { id: extension.id },
+        data: {
+          extensionStatus: isOnline ? ExtensionStatus.CONFIRMED : ExtensionStatus.PAYMENT_COLLECTED,
+          paymentTransactionId: txn.id,
+          ...(isOnline && { actualNewEndAt: extension.requestedEndAt }),
+        },
+      });
+
+      // For online payment: immediately finalize booking
+      if (isOnline) {
+        await (tx as any).booking.update({
+          where: { id: booking.id },
+          data: {
+            endAt: extension.requestedEndAt,
+            activeExtensionId: null,
+            extensionCount: { increment: 1 },
+            lastExtendedAt: new Date(),
+            totalFinal: extension.newTotalFinal,
+            ...(booking.extensionCount === 0 && { originalEndAt: extension.oldEndAt }),
+          },
+        });
+      }
+    });
+
+    await Promise.all([
+      auditService.log({
+        actorId: actor.actorId,
+        actorName: actor.actorName,
+        actorRole: actor.actorRole,
+        actorBranchId: actor.actorBranchId,
+        action: isOnline ? "Extension payment confirmed (online)" : "Extension payment collected (cash — pending manager confirmation)",
+        category: AuditCategory.PAYMENT,
+        severity: AuditSeverity.INFO,
+        entity: "BookingExtension",
+        entityId: extension.publicId,
+        description: `₹${additionalAmount.toFixed(2)} collected for extension ${extension.publicId} via ${method}`,
+      }),
+      staffActivityService.log({
+        actorPublicId: actor.actorPublicId,
+        actorName: actor.actorName,
+        actorRole: actor.actorRole,
+        branchId: actor.actorBranchId,
+        branchName: actor.branchName,
+        actionType: StaffActionType.COLLECTED,
+        entityType: StaffEntityType.BOOKING_EXTENSION,
+        entityRef: extension.publicId,
+        description: `Extension payment ₹${additionalAmount.toFixed(2)} collected via ${method}`,
+      }),
+    ]);
+
+    return {
+      remainAmount: { extension: additionalAmount.toFixed(2) },
+      payment: isOnline ? "confirmed" : "pending",
+    };
   }
 
   async getByPublicId(publicId: string): Promise<BookingExtension | null> {

@@ -11,7 +11,7 @@ import {
   BadgePercent,
   Banknote,
 } from "lucide-react";
-import { ManagerLayout } from "@/components/manager/ManagerLayout";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -250,7 +250,7 @@ function CreateCouponModal({ onClose, onCreated }: { onClose: () => void; onCrea
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export function CouponsPage() {
+export function CouponsTab() {
   const [createOpen, setCreateOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -262,25 +262,27 @@ export function CouponsPage() {
   const coupons: ManagerCoupon[] = data?.data ?? [];
 
   return (
-    <ManagerLayout>
-      <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 space-y-6">
+    <>
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900">Coupons</h1>
+            <h2 className="text-lg font-semibold text-neutral-900">Coupons</h2>
             <p className="text-sm text-neutral-500 mt-1">Create and manage discount coupons for this branch</p>
           </div>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              size="icon"
-              className="h-9 w-9 text-neutral-500"
+              size="sm"
               onClick={() => refetch()}
+              disabled={isLoading}
+              className="h-9 px-3 text-neutral-600 border-neutral-200"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+              Refresh
             </Button>
             <Button
-              className="bg-orange-500 hover:bg-orange-600 text-white gap-1.5"
+              className="bg-orange-500 hover:bg-orange-600 text-white gap-1.5 h-9"
               onClick={() => setCreateOpen(true)}
             >
               <Plus className="w-4 h-4" /> Create Coupon
@@ -422,6 +424,6 @@ export function CouponsPage() {
           }}
         />
       )}
-    </ManagerLayout>
+    </>
   );
 }

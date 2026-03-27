@@ -70,11 +70,12 @@ export class LedgerService {
     const decimalAmount = new Decimal(amount.toString());
     const idempotencyKey = opts.idempotencyKey ?? `${actorId}:${sessionId}:${entryType}:${Date.now()}`;
 
-    // Idempotency check — return existing entry if key already used
+    // Idempotency check — return existing non-voided entry if key already used.
+    // Voided entries do NOT block re-creation (e.g. recompute voids then re-adds deposit credit).
     const existingEntry = await db.ledgerEntry.findUnique({
       where: { idempotencyKey },
     });
-    if (existingEntry) return existingEntry;
+    if (existingEntry && !existingEntry.isVoided) return existingEntry;
 
     // Verify session is still mutable
     const session = await db.paymentSession.findUniqueOrThrow({

@@ -2,10 +2,12 @@ import type { PaymentSession, LedgerEntry } from "@/services/paymentSession.serv
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { X } from "lucide-react";
 
 interface LedgerSummaryCardProps {
   session: PaymentSession;
   className?: string;
+  onRemoveDiscount?: () => void;
 }
 
 const ENTRY_TYPE_LABELS: Record<string, string> = {
@@ -40,7 +42,7 @@ function amountColor(entry: LedgerEntry) {
   return "text-foreground";
 }
 
-export function LedgerSummaryCard({ session, className }: LedgerSummaryCardProps) {
+export function LedgerSummaryCard({ session, className, onRemoveDiscount }: LedgerSummaryCardProps) {
   const charges = session.entries.filter(
     (e) => e.classification === "TAXABLE" || e.classification === "NON_TAXABLE",
   );
@@ -78,9 +80,19 @@ export function LedgerSummaryCard({ session, className }: LedgerSummaryCardProps
           <>
             <Separator className="my-1" />
             {discounts.map((e) => (
-              <div key={e.publicId} className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{entryLabel(e)}</span>
-                <span className={amountColor(e)}>{formatAmount(e.amount)}</span>
+              <div key={e.publicId} className="flex items-center justify-between text-sm">
+                <span className={cn("flex-1", amountColor(e))}>{entryLabel(e)}</span>
+                <span className={cn("font-medium", amountColor(e))}>{formatAmount(e.amount)}</span>
+                {onRemoveDiscount && session.status === "AWAITING_PAYMENT" && (
+                  <button
+                    type="button"
+                    onClick={onRemoveDiscount}
+                    className="ml-2 text-muted-foreground hover:text-red-500 transition-colors"
+                    title="Remove discount"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
             ))}
           </>

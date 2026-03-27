@@ -1,14 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
-import { ArrowRight, TrendingDown } from "lucide-react";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-  BreadcrumbPage,
-} from "@/components/ui/breadcrumb";
+import { ArrowRight, TrendingDown, RefreshCw } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ManagerLayout } from "@/components/manager/ManagerLayout";
+
 import {
   paymentService,
   type SettlementItem,
@@ -282,7 +275,7 @@ function SettleModal({
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export function SettlementsPage() {
+export function SettlementsTab() {
   const [items, setItems] = useState<SettlementItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -310,29 +303,27 @@ export function SettlementsPage() {
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <ManagerLayout>
-      <div className="max-w-[1440px] mx-auto px-4 md:px-6 py-6 space-y-6">
+    <>
+      <div className="space-y-6">
         {/* Header */}
-        <div>
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/manager/dashboard">Dashboard</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Settlements</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-
-          <div className="mt-4 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-neutral-900">Pending Settlements</h1>
-              <p className="text-sm text-neutral-500 mt-1">
-                Returned bookings with outstanding balances
-              </p>
-            </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-neutral-900">Pending Settlements</h2>
+            <p className="text-sm text-neutral-500 mt-1">
+              Returned bookings with outstanding balances
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={load}
+              disabled={loading}
+              className="h-9 px-3 text-neutral-600 border-neutral-200"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
             {total > 0 && (
               <span className="bg-orange-100 text-orange-700 text-sm font-semibold px-3 py-1 rounded-full">
                 {total} pending
@@ -448,6 +439,6 @@ export function SettlementsPage() {
           }}
         />
       )}
-    </ManagerLayout>
+    </>
   );
 }

@@ -1,14 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { AlertTriangle } from "lucide-react";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-  BreadcrumbPage,
-} from "@/components/ui/breadcrumb";
+import { AlertTriangle, RefreshCw } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,7 +12,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { ManagerLayout } from "@/components/manager/ManagerLayout";
+
 import { ShiftStatusBadge } from "@/components/manager/payment/PaymentStateBadge";
 import { paymentService, type CashShift } from "@/services/payment.service";
 
@@ -167,7 +160,7 @@ function ReconcileModal({
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export function CashShiftsPage() {
+export function CashShiftsTab() {
   const [shifts, setShifts] = useState<CashShift[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -195,28 +188,26 @@ export function CashShiftsPage() {
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <ManagerLayout>
-      <div className="max-w-[1440px] mx-auto px-4 md:px-6 py-6 space-y-6">
+    <>
+      <div className="space-y-6">
         {/* Header */}
-        <div>
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/manager/dashboard">Dashboard</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Cash Shifts</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-
-          <div className="mt-4">
-            <h1 className="text-2xl font-bold text-neutral-900">Cash Shifts</h1>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-neutral-900">Cash Shifts</h2>
             <p className="text-sm text-neutral-500 mt-1">
               All employee cash shift records for this branch
             </p>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={load}
+            disabled={loading}
+            className="h-9 px-3 text-neutral-600 border-neutral-200"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
         </div>
 
         {/* Table */}
@@ -344,6 +335,6 @@ export function CashShiftsPage() {
           }}
         />
       )}
-    </ManagerLayout>
+    </>
   );
 }

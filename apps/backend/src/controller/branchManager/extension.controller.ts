@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import Decimal from "decimal.js";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma, BookingStatus, ExtensionTrigger, ExtensionStatus, ExtensionTrigger as ET } from "@repo/database/client";
 import { extensionService } from "../../services/extension/index.js";
@@ -99,30 +100,16 @@ export const CommitExtension = async (req: Request, res: Response): Promise<void
     }
 
     const actor = await buildActorContext(req);
-    const result = await extensionService.commit(validation.data, actor);
-    const { extension, session } = result;
-
-    if (session) {
-      res.status(StatusCode.OK).json({
-        message: "Extension session initiated — collect payment to confirm extension",
-        data: { publicId: extension.publicId, extensionStatus: extension.extensionStatus, session },
-      });
-      return;
-    }
+    const { extension, remainAmount } = await extensionService.commit(validation.data, actor);
 
     res.status(StatusCode.OK).json({
-      message:
-        extension.extensionStatus === "CONFIRMED"
-          ? "Extension confirmed successfully"
-          : "Extension payment collected — pending cash confirmation",
+      message: "Extension committed — vehicle held, collect payment to confirm",
       data: {
         publicId: extension.publicId,
         extensionStatus: extension.extensionStatus,
         resolutionType: extension.resolutionType,
-        actualNewEndAt: extension.actualNewEndAt,
-        additionalAmount: extension.additionalAmount,
-        newTotalFinal: extension.newTotalFinal,
-        vehicleSwapOccurred: extension.vehicleSwapOccurred,
+        additionalAmount: new Decimal(extension.additionalAmount.toString()).toFixed(2),
+        remainAmount,
       },
     });
   } catch (error: any) {

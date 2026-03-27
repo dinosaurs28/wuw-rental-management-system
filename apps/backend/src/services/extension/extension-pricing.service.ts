@@ -55,9 +55,10 @@ class ExtensionPricingService {
     // Compute days for the new full duration
     const newDays = Math.max(1, Math.ceil(endAt.diff(startAt, "days").days));
 
-    // Additional amount = what the customer still owes on top of what is confirmed
+    // Additional amount = what the customer still owes on top of what has been collected
+    // Include COLLECTED (pending confirmation) payments — cash was physically received
     const financialState = await financialStateService.getState(bookingId);
-    const alreadyPaid = financialState.totalCollectedConfirmed;
+    const alreadyPaid = financialState.totalCollectedConfirmed.add(financialState.totalCollectedPending);
     const additionalAmount = Decimal.max(
       new Decimal(0),
       pricingResult.finalTotal.sub(alreadyPaid),

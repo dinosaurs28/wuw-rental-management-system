@@ -1,14 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Send } from "lucide-react";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-  BreadcrumbPage,
-} from "@/components/ui/breadcrumb";
+import { CheckCircle, XCircle, Send, RefreshCw } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +13,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { ManagerLayout } from "@/components/manager/ManagerLayout";
+
 import { RefundStatusBadge } from "@/components/manager/payment/PaymentStateBadge";
 import { paymentService, type RefundItem } from "@/services/payment.service";
 import { usePaymentStore } from "@/store/payment.store";
@@ -286,7 +279,7 @@ function RefundDetailModal({
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export function RefundsPage() {
+export function RefundsTab() {
   const { setPendingRefundCount } = usePaymentStore();
   const [items, setItems] = useState<RefundItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -319,29 +312,27 @@ export function RefundsPage() {
     });
 
   return (
-    <ManagerLayout>
-      <div className="max-w-[1440px] mx-auto px-4 md:px-6 py-6 space-y-6">
+    <>
+      <div className="space-y-6">
         {/* Header */}
-        <div>
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/manager/dashboard">Dashboard</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Refunds</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-
-          <div className="mt-4 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-neutral-900">Pending Refund Approvals</h1>
-              <p className="text-sm text-neutral-500 mt-1">
-                Approve or reject customer refund requests
-              </p>
-            </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-neutral-900">Pending Refund Approvals</h2>
+            <p className="text-sm text-neutral-500 mt-1">
+              Approve or reject customer refund requests
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={load}
+              disabled={loading}
+              className="h-9 px-3 text-neutral-600 border-neutral-200"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
             {items.length > 0 && (
               <span className="bg-orange-100 text-orange-700 text-sm font-semibold px-3 py-1 rounded-full">
                 {items.length} pending
@@ -437,6 +428,6 @@ export function RefundsPage() {
           }}
         />
       )}
-    </ManagerLayout>
+    </>
   );
 }

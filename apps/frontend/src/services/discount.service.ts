@@ -3,13 +3,9 @@ import apiClient from "@/lib/axios";
 export interface CouponValidationResult {
   valid: true;
   couponCode: string;
-  originalAmount: string;
-  durationDiscountAmount: string;
-  couponDiscountAmount: string;
-  finalAmountBeforeTax: string;
-  taxAmount: string;
-  finalTotal: string;
-  savingsAmount: string;
+  discountAmount: string;
+  discountType?: string;
+  discountValue?: string;
 }
 
 export interface CouponValidationError {

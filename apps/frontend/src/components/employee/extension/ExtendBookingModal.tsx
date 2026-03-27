@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { CalendarIcon, Car } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -31,11 +30,15 @@ import {
   type ExtensionEvaluation,
   type ResolutionOption,
   type ExtensionResolutionType,
+  type CommitExtensionResult,
 } from "@/services/extension.service";
-import type { PaymentMethod, OnlineGateway } from "@/services/payment.service";
-import { paymentSessionService, type PaymentSession } from "@/services/paymentSession.service";
-import { LedgerSummaryCard } from "@/components/payment/LedgerSummaryCard";
-import { RecordPaymentPanel } from "@/components/payment/RecordPaymentPanel";
+
+export interface ExtendBookingModalSuccessResult {
+  /** True when the branch uses deferred payment sessions — charge was NOT collected here. */
+  usePaymentSession?: boolean;
+  extensionPublicId?: string;
+  amount?: string;
+}
 
 interface ExtendBookingModalProps {
   open: boolean;
@@ -43,10 +46,16 @@ interface ExtendBookingModalProps {
   currentEndAt: string;
   role: "employee" | "manager";
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (result?: ExtendBookingModalSuccessResult) => void;
+  /**
+   * "standalone" (default): shows Step 3 payment collection in the modal.
+   * "pickup-session": skips Step 3 — extension charge is deferred to the active
+   *   pickup payment session. onSuccess is called with { usePaymentSession: true }.
+   */
+  mode?: "standalone" | "pickup-session";
 }
 
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3;
 
 const resolutionLabels: Record<ExtensionResolutionType, string> = {
   SAME_VEHICLE: "Same vehicle (no conflict)",
@@ -56,14 +65,8 @@ const resolutionLabels: Record<ExtensionResolutionType, string> = {
   NO_RESOLUTION: "No extension available",
 };
 
-const gateways: OnlineGateway[] = ["UPI", "Razorpay", "Other"];
-
 function fmt(iso: string) {
   return format(parseISO(iso), "dd MMM yyyy, hh:mm a");
-}
-
-function fmtMoney(val: string) {
-  return "₹ " + parseFloat(val).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 }
 
 export function ExtendBookingModal({
@@ -73,6 +76,7 @@ export function ExtendBookingModal({
   role,
   onClose,
   onSuccess,
+  mode = "standalone",
 }: ExtendBookingModalProps) {
   const [step, setStep] = useState<Step>(1);
 
@@ -87,14 +91,13 @@ export function ExtendBookingModal({
   const [evaluation, setEvaluation] = useState<ExtensionEvaluation | null>(null);
   const [selectedResolution, setSelectedResolution] = useState<ExtensionResolutionType | null>(null);
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
-
-  // Step 3 state (payment)
-  const [method, setMethod] = useState<PaymentMethod>("CASH");
-  const [cashAmount, setCashAmount] = useState("");
-  const [txnRef, setTxnRef] = useState("");
-  const [gateway, setGateway] = useState<OnlineGateway>("UPI");
   const [committing, setCommitting] = useState(false);
-  const [extensionSession, setExtensionSession] = useState<PaymentSession | null>(null);
+
+  // Step 3 state
+  const [committedExtension, setCommittedExtension] = useState<CommitExtensionResult | null>(null);
+  const [collecting, setCollecting] = useState(false);
+  const [collected, setCollected] = useState(false);
+
   const idempotencyKey = useRef(crypto.randomUUID());
 
   const reset = useCallback(() => {
@@ -106,15 +109,25 @@ export function ExtendBookingModal({
     setEvaluation(null);
     setSelectedResolution(null);
     setSelectedVehicleId("");
-    setMethod("CASH");
-    setCashAmount("");
-    setTxnRef("");
-    setGateway("UPI");
-    setExtensionSession(null);
+    setCommitting(false);
+    setCommittedExtension(null);
+    setCollecting(false);
+    setCollected(false);
     idempotencyKey.current = crypto.randomUUID();
   }, []);
 
-  const handleClose = () => {
+  const handleClose = async () => {
+    // In standalone mode: if we're on Step 3 with a committed (but unpaid) extension,
+    // cancel it so the vehicle hold is released.
+    // In pickup-session mode: the extension stays PENDING_PAYMENT and will be confirmed
+    // when the session payment is recorded (or the employee can cancel via history panel).
+    if (mode === "standalone" && step === 3 && committedExtension && !collected) {
+      try {
+        await extensionService.employeeCancel(committedExtension.publicId);
+      } catch {
+        // best-effort — vehicle hold will expire via Redis TTL
+      }
+    }
     reset();
     onClose();
   };
@@ -140,7 +153,7 @@ export function ExtendBookingModal({
       const res = await fn(bookingPublicId, isoDate.toISOString(), notes || undefined);
       setEvaluation(res.data);
       const recommended = res.data.recommendedResolution;
-      setSelectedResolution(recommended !== "NO_RESOLUTION" ? recommended : null);
+      setSelectedResolution(recommended !== "NO_RESOLUTION" ? (recommended as ExtensionResolutionType) : null);
       // pre-select first available vehicle if SWAP_CURRENT
       const swapOpt = res.data.resolutionOptions.find((o) => o.type === "SWAP_CURRENT_TO_OTHER");
       if (recommended === "SWAP_CURRENT_TO_OTHER" && swapOpt?.availableVehicles?.[0]) {
@@ -154,9 +167,9 @@ export function ExtendBookingModal({
     }
   };
 
-  // ── Step 2 → 3: Proceed to payment ───────────────────────────────────────
+  // ── Step 2 → 3: Commit + open session ────────────────────────────────────
 
-  const handleProceed = () => {
+  const handleProceed = async () => {
     if (!selectedResolution) {
       toast.error("Please select a resolution option.");
       return;
@@ -169,42 +182,14 @@ export function ExtendBookingModal({
       toast.error("Please select an alternative vehicle.");
       return;
     }
-    // Pre-fill amount from selected resolution
+
     const opt = evaluation?.resolutionOptions.find((o) => o.type === selectedResolution);
-    if (opt) setCashAmount(parseFloat(opt.additionalAmount).toFixed(2));
-    setStep(3);
-  };
-
-  // ── Step 3: Commit ────────────────────────────────────────────────────────
-
-  const additionalAmount = evaluation
-    ? parseFloat(
-        evaluation.resolutionOptions.find((o) => o.type === selectedResolution)?.additionalAmount ?? "0"
-      )
-    : 0;
-
-  const totalNum = additionalAmount;
-  const cashNum = parseFloat(cashAmount) || 0;
-  const onlineNum = method === "SPLIT" ? Math.max(0, totalNum - cashNum) : 0;
-
-  const handleCommit = async () => {
-    if (!evaluation || !selectedResolution) return;
-    if ((method === "ONLINE" || method === "SPLIT") && !txnRef.trim()) {
-      toast.error("Transaction reference is required for online payments.");
-      return;
-    }
-    if (method === "SPLIT" && (cashNum <= 0 || onlineNum <= 0)) {
-      toast.error("Both cash and online portions must be greater than 0.");
-      return;
-    }
-
-    const opt = evaluation.resolutionOptions.find((o) => o.type === selectedResolution);
     const fn = role === "manager" ? extensionService.managerCommit : extensionService.employeeCommit;
 
     setCommitting(true);
     try {
       const res = await fn({
-        extensionPublicId: evaluation.extensionPublicId,
+        extensionPublicId: evaluation!.extensionPublicId,
         resolutionType: selectedResolution,
         selectedVehicleId: selectedResolution === "SWAP_CURRENT_TO_OTHER" ? selectedVehicleId : undefined,
         affectedBookingSwaps:
@@ -215,37 +200,25 @@ export function ExtendBookingModal({
               }))
             : undefined,
         partialNewEndAt: selectedResolution === "PARTIAL_EXTENSION" ? opt?.partialNewEndAt : undefined,
-        paymentMethod: method,
-        cashAmount: method !== "ONLINE" ? (method === "SPLIT" ? cashNum : totalNum) : undefined,
-        onlineAmount: method !== "CASH" ? (method === "SPLIT" ? onlineNum : totalNum) : undefined,
-        onlineTransactionRef: method !== "CASH" ? txnRef : undefined,
-        onlineGateway: method !== "CASH" ? gateway : undefined,
         idempotencyKey: idempotencyKey.current,
       });
 
-      // Session flow: backend returns { extension, session } when usePaymentSessions=true
-      const resData = res.data as any;
-      const sessionData = resData?.session;
-      const extensionData = resData?.extension ?? resData;
-
-      if (sessionData) {
-        // Session mode — need to collect payment in step 4
-        const sessionDetail = await paymentSessionService.getSession(sessionData.publicId);
-        setExtensionSession(sessionDetail);
-        setStep(4);
+      // In pickup-session mode, if the backend confirms deferred payment,
+      // skip Step 3 — the charge will be bundled into the pickup session.
+      if (mode === "pickup-session" && (res.data as any).usePaymentSession) {
+        toast.success(`Extension committed — ₹${res.data.additionalAmount} added to pickup payment.`);
+        onSuccess({
+          usePaymentSession: true,
+          extensionPublicId: res.data.publicId,
+          amount: res.data.additionalAmount,
+        });
+        reset();
+        onClose();
         return;
       }
 
-      if (extensionData?.extensionStatus === "CONFIRMED") {
-        toast.success(`Booking extended to ${fmt(extensionData.actualNewEndAt ?? evaluation.requestedEndAt)}. Payment confirmed.`);
-      } else if (extensionData?.extensionStatus === "PAYMENT_COLLECTED") {
-        toast.info("Cash collected — awaiting manager confirmation to finalize extension.");
-      } else {
-        toast.success(res.message || "Extension recorded.");
-      }
-
-      onSuccess();
-      handleClose();
+      setCommittedExtension(res.data);
+      setStep(3);
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Failed to commit extension.");
     } finally {
@@ -253,9 +226,30 @@ export function ExtendBookingModal({
     }
   };
 
-  const selectedOpt: ResolutionOption | undefined = evaluation?.resolutionOptions.find(
-    (o) => o.type === selectedResolution
-  );
+  // ── Step 3: Collect payment ───────────────────────────────────────────────
+
+  const handleCollect = async () => {
+    if (!committedExtension) return;
+    setCollecting(true);
+    try {
+      const result = await extensionService.employeeCollect(committedExtension.publicId, {
+        method: "CASH",
+      });
+      setCollected(true);
+      if (result.data.payment === "confirmed") {
+        toast.success("Extension confirmed and booking updated.");
+      } else {
+        toast.success("Payment collected. Awaiting manager confirmation.");
+      }
+      onSuccess();
+      reset();
+      onClose();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to collect payment.");
+    } finally {
+      setCollecting(false);
+    }
+  };
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -265,19 +259,18 @@ export function ExtendBookingModal({
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle>Extend Booking</DialogTitle>
-            <span className="text-xs text-neutral-400 font-medium">Step {step} of {extensionSession ? 4 : 3}</span>
+            <span className="text-xs text-neutral-400 font-medium">
+              Step {step} of {mode === "pickup-session" ? 2 : 3}
+            </span>
           </div>
           {/* Progress bar */}
           <div className="flex gap-1 mt-3">
-            {([1, 2, 3] as Step[]).map((s) => (
+            {(mode === "pickup-session" ? [1, 2] : [1, 2, 3]).map((s) => (
               <div
                 key={s}
                 className={`h-1 flex-1 rounded-full transition-colors ${step >= s ? "bg-orange-500" : "bg-neutral-200"}`}
               />
             ))}
-            {extensionSession && (
-              <div className={`h-1 flex-1 rounded-full transition-colors ${step >= 4 ? "bg-orange-500" : "bg-neutral-200"}`} />
-            )}
           </div>
         </DialogHeader>
 
@@ -407,14 +400,16 @@ export function ExtendBookingModal({
                 </div>
                 <div className="flex justify-between font-semibold text-neutral-900 pt-1 border-t border-neutral-200">
                   <span>Additional due</span>
-                  <span className="text-orange-600">{fmtMoney(evaluation.pricing.additionalAmount)}</span>
+                  <span className="text-orange-600">
+                    ₹{parseFloat(evaluation.pricing.additionalAmount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  </span>
                 </div>
               </div>
 
               {/* Resolution options */}
               <div className="space-y-2">
                 <Label className="text-sm text-neutral-600">Resolution</Label>
-                {evaluation.resolutionOptions.map((opt) => {
+                {evaluation.resolutionOptions.map((opt: ResolutionOption) => {
                   const isSelected = selectedResolution === opt.type;
                   const isDisabled = opt.type === "NO_RESOLUTION";
                   return (
@@ -423,7 +418,7 @@ export function ExtendBookingModal({
                         type="button"
                         disabled={isDisabled}
                         onClick={() => {
-                          setSelectedResolution(opt.type);
+                          setSelectedResolution(opt.type as ExtensionResolutionType);
                           setSelectedVehicleId("");
                         }}
                         className={`w-full text-left px-4 py-3 rounded-lg border text-sm transition-all ${
@@ -442,12 +437,14 @@ export function ExtendBookingModal({
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className={`font-medium ${isSelected ? "text-orange-700" : "text-neutral-700"}`}>
-                              {resolutionLabels[opt.type]}
+                              {resolutionLabels[opt.type as ExtensionResolutionType]}
                             </p>
                             {opt.type !== "NO_RESOLUTION" && (
                               <p className="text-xs text-neutral-500 mt-0.5">
                                 Additional:{" "}
-                                <span className="font-semibold">{fmtMoney(opt.additionalAmount)}</span>
+                                <span className="font-semibold">
+                                  ₹{parseFloat(opt.additionalAmount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                </span>
                               </p>
                             )}
                             {opt.type === "PARTIAL_EXTENSION" && opt.partialNewEndAt && (
@@ -496,16 +493,16 @@ export function ExtendBookingModal({
                 <Button
                   className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
                   onClick={handleProceed}
-                  disabled={!selectedResolution || selectedResolution === "NO_RESOLUTION"}
+                  disabled={committing || !selectedResolution || selectedResolution === "NO_RESOLUTION"}
                 >
-                  Proceed to Payment →
+                  {committing ? "Processing…" : mode === "pickup-session" ? "Confirm →" : "Confirm & Pay →"}
                 </Button>
               </div>
             </motion.div>
           )}
 
-          {/* ── Step 3: Payment ── */}
-          {step === 3 && evaluation && selectedOpt && (
+          {/* ── Step 3: Collect Payment ── */}
+          {step === 3 && committedExtension && (
             <motion.div
               key="step3"
               initial={{ opacity: 0, x: 20 }}
@@ -513,168 +510,31 @@ export function ExtendBookingModal({
               exit={{ opacity: 0, x: -20 }}
               className="space-y-4 py-2"
             >
-              {/* Summary */}
-              <div className="bg-neutral-50 rounded-lg px-4 py-3 text-sm flex justify-between items-center">
-                <span className="text-neutral-500">
-                  Extension Fee •{" "}
-                  <span className="text-neutral-700">{resolutionLabels[selectedOpt.type]}</span>
-                </span>
-                <span className="font-semibold text-neutral-900">
-                  {fmtMoney(selectedOpt.additionalAmount)}
-                </span>
+              {/* Amount due */}
+              <div className="bg-neutral-50 rounded-lg px-4 py-4 space-y-1 text-sm">
+                <div className="flex justify-between text-neutral-600">
+                  <span>Amount due</span>
+                  <span className="font-bold text-lg text-orange-600">
+                    ₹{parseFloat(committedExtension.remainAmount.extension).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <p className="text-xs text-neutral-400">
+                  Vehicle is on hold until payment is collected or this window is closed.
+                </p>
               </div>
 
-              {/* Method selector */}
-              <div className="space-y-2">
-                <Label>Payment Method</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(["CASH", "ONLINE", "SPLIT"] as PaymentMethod[]).map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => setMethod(m)}
-                      className={`px-3 py-2.5 rounded-lg border text-sm font-medium transition-all ${
-                        method === m
-                          ? "border-orange-500 bg-orange-50 text-orange-700"
-                          : "border-neutral-200 hover:border-neutral-300 text-neutral-700"
-                      }`}
-                    >
-                      {m === "SPLIT" ? "Split" : m.charAt(0) + m.slice(1).toLowerCase()}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Amount — pre-filled, read-only for non-split */}
-              {method !== "SPLIT" && (
-                <div className="space-y-2">
-                  <Label>Amount</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">₹</span>
-                    <Input
-                      type="number"
-                      className="pl-8 h-12 bg-neutral-50"
-                      value={totalNum.toFixed(2)}
-                      readOnly
-                    />
-                  </div>
-                  <p className="text-xs text-neutral-400">Amount is fixed to the extension fee.</p>
-                </div>
-              )}
-
-              {/* Split fields */}
-              {method === "SPLIT" && (
-                <>
-                  <div className="space-y-2">
-                    <Label>Total Amount</Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">₹</span>
-                      <Input className="pl-8 h-12 bg-neutral-50" value={totalNum.toFixed(2)} readOnly />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label>Cash Portion <span className="text-red-500">*</span></Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">₹</span>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          className="pl-8 h-12"
-                          value={cashAmount}
-                          onChange={(e) => setCashAmount(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Online Portion</Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">₹</span>
-                        <Input
-                          className="pl-8 h-12 bg-neutral-50 text-neutral-500"
-                          value={onlineNum > 0 ? onlineNum.toFixed(2) : "0.00"}
-                          readOnly
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Online fields */}
-              {(method === "ONLINE" || method === "SPLIT") && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="extTxnRef">
-                      Transaction Reference <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="extTxnRef"
-                      placeholder="e.g. pay_xyz789"
-                      className="h-12"
-                      value={txnRef}
-                      onChange={(e) => setTxnRef(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Gateway</Label>
-                    <Select value={gateway} onValueChange={(v) => setGateway(v as OnlineGateway)}>
-                      <SelectTrigger className="h-12">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {gateways.map((g) => (
-                          <SelectItem key={g} value={g}>{g}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </>
-              )}
-
-              <div className="flex gap-2 pt-2">
-                <Button variant="outline" className="flex-1" onClick={() => setStep(2)} disabled={committing}>
-                  ← Back
+              <div className="flex gap-2 pt-1">
+                <Button variant="outline" className="flex-1" onClick={handleClose} disabled={collecting}>
+                  Cancel
                 </Button>
                 <Button
                   className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
-                  onClick={handleCommit}
-                  disabled={committing}
+                  onClick={handleCollect}
+                  disabled={collecting}
                 >
-                  {committing
-                    ? "Processing…"
-                    : method === "CASH"
-                    ? "Collect Cash & Confirm"
-                    : "Record Payment & Confirm"}
+                  {collecting ? "Processing…" : "Mark as Collected"}
                 </Button>
               </div>
-            </motion.div>
-          )}
-          {/* ── Step 4: Session Payment ── */}
-          {step === 4 && extensionSession && (
-            <motion.div
-              key="step4"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-4 py-2"
-            >
-              <p className="text-sm text-muted-foreground">
-                Collect payment to confirm the extension.
-              </p>
-              <LedgerSummaryCard session={extensionSession} />
-              <RecordPaymentPanel
-                session={extensionSession}
-                onSuccess={(updatedSession) => {
-                  setExtensionSession(updatedSession);
-                  if (updatedSession.status === "COMPLETED") {
-                    toast.success("Extension payment collected and confirmed.");
-                    onSuccess();
-                    handleClose();
-                  }
-                }}
-              />
             </motion.div>
           )}
         </AnimatePresence>

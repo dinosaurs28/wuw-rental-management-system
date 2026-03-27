@@ -193,7 +193,7 @@ export const VehicleDetailsPage = () => {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50">
         <Navbar />
-        <main className="flex-1 container mx-auto px-4 lg:px-8 py-6 md:py-8 mt-24">
+        <main className="flex-1 container mx-auto px-4 lg:px-8 py-6 md:py-8 mt-24 min-h-[80vh]">
           {/* Breadcrumb Skeleton */}
           <div className="flex items-center gap-2 mb-8">
             <Skeleton className="h-4 w-12 bg-zinc-100" />
@@ -272,8 +272,7 @@ export const VehicleDetailsPage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 scroll-smooth">
       <Navbar />
-
-      <main className="flex-1 container mx-auto px-4 lg:px-8 py-6 md:py-8 mt-24">
+      <main className="flex-1 container mx-auto px-4 lg:px-8 py-6 md:py-8 mt-24 min-h-[80vh]">
         {/* Breadcrumb */}
         <Breadcrumb className="mb-8">
           <BreadcrumbList>

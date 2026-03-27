@@ -68,13 +68,9 @@ export const ValidateCoupon = async (req: Request, res: Response) => {
       data: {
         valid: true,
         couponCode: pricing.appliedCouponCode ?? couponCode.toUpperCase(),
-        originalAmount: pricing.basePrice.toFixed(2),
-        durationDiscountAmount: pricing.durationDiscountAmount.toFixed(2),
-        couponDiscountAmount: pricing.couponDiscountAmount.toFixed(2),
-        finalAmountBeforeTax: pricing.basePrice.minus(pricing.discountAmount).toFixed(2),
-        taxAmount: pricing.taxAmount.toFixed(2),
-        finalTotal: pricing.finalTotal.toFixed(2),
-        savingsAmount: pricing.discountAmount.toFixed(2),
+        discountAmount: pricing.couponDiscountAmount.toFixed(2),
+        discountType: pricing.discountEvaluation?.couponRule?.discountType,
+        discountValue: pricing.discountEvaluation?.couponRule?.value?.toString(),
       },
     });
   } catch (error) {

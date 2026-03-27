@@ -244,27 +244,68 @@ class RefundService {
     return updated;
   }
 
-  async getByPublicId(publicId: string): Promise<RefundRequest | null> {
-    return prisma.refundRequest.findUnique({
+  async getByPublicId(publicId: string): Promise<any | null> {
+    const refund = await prisma.refundRequest.findUnique({
       where: { publicId },
       include: {
         requestedBy: { select: { publicId: true, name: true, role: true } },
         approvedBy: { select: { publicId: true, name: true, role: true } },
         completedBy: { select: { publicId: true, name: true, role: true } },
-        booking: { select: { publicId: true, status: true } },
+        booking: {
+          select: {
+            publicId: true,
+            status: true,
+            customer: { select: { user: { select: { name: true } } } },
+          },
+        },
       },
-    }) as Promise<RefundRequest | null>;
+    });
+
+    if (!refund) return null;
+
+    return {
+      publicId: refund.publicId,
+      bookingPublicId: refund.booking.publicId,
+      customerName: (refund.booking as any).customer.user.name,
+      amount: refund.amount.toString(),
+      method: refund.method,
+      reason: refund.reason,
+      status: refund.status,
+      requestedBy: refund.requestedBy.name,
+      requestedAt: refund.createdAt.toISOString(),
+      approvedBy: refund.approvedBy?.name,
+      approvedAt: refund.approvedAt?.toISOString(),
+      onlineTransactionRef: refund.onlineTransactionRef,
+    };
   }
 
-  async listPendingForBranch(branchId: number): Promise<RefundRequest[]> {
-    return prisma.refundRequest.findMany({
+  async listPendingForBranch(branchId: number): Promise<any[]> {
+    const refunds = await prisma.refundRequest.findMany({
       where: { branchId, status: "PENDING_APPROVAL" },
       include: {
         requestedBy: { select: { publicId: true, name: true } },
-        booking: { select: { publicId: true, status: true } },
+        booking: {
+          select: {
+            publicId: true,
+            status: true,
+            customer: { select: { user: { select: { name: true } } } },
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
-    }) as Promise<RefundRequest[]>;
+    });
+
+    return refunds.map((r) => ({
+      publicId: r.publicId,
+      bookingPublicId: r.booking.publicId,
+      customerName: (r.booking as any).customer.user.name,
+      amount: r.amount.toString(),
+      method: r.method,
+      reason: r.reason,
+      status: r.status,
+      requestedBy: r.requestedBy.name,
+      requestedAt: r.createdAt.toISOString(),
+    }));
   }
 }
 

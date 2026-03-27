@@ -375,7 +375,17 @@ class PaymentTransactionService {
       prisma.paymentTransaction.findMany({
         where,
         include: {
-          booking: { select: { publicId: true, status: true } },
+          booking: {
+            select: {
+              publicId: true,
+              status: true,
+              customer: {
+                select: {
+                  user: { select: { name: true } },
+                },
+              },
+            },
+          },
           collectedBy: { select: { publicId: true, name: true } },
         },
         orderBy: { collectedAt: "asc" },
@@ -385,7 +395,18 @@ class PaymentTransactionService {
       prisma.paymentTransaction.count({ where }),
     ]);
 
-    return { transactions: transactions as PaymentTransaction[], total, page, pageSize };
+    // Map to PendingCashItem format expected by frontend
+    const mapped = (transactions as any[]).map((t) => ({
+      transactionPublicId: t.publicId,
+      bookingPublicId: t.booking.publicId,
+      customerName: t.booking.customer.user.name,
+      amount: t.totalAmount.toString(),
+      employeeName: t.collectedBy?.name ?? "Unknown",
+      collectedAt: t.collectedAt?.toISOString() ?? t.createdAt.toISOString(),
+      purpose: t.purpose,
+    }));
+
+    return { transactions: mapped as any, total, page, pageSize };
   }
 }
 
