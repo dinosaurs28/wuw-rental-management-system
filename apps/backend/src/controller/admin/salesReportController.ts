@@ -82,12 +82,15 @@ export const GetSalesReport = async (req: Request, res: Response) => {
       branchFilter = { id: branch.id };
     }
 
-    // Status filter
+    // Status filter — default to revenue statuses when not explicitly filtered
     if (
       status &&
       Object.values(BookingStatus).includes(status as BookingStatus)
     ) {
       whereClause.status = status as BookingStatus;
+    } else {
+      // Revenue = confirmed/active/returned bookings (excludes HOLD, CANCELLED, HOLD_EXPIRED)
+      whereClause.status = { in: [BookingStatus.CONFIRMED, BookingStatus.PICKED_UP, BookingStatus.RETURNED] };
     }
 
     // Payment status filter

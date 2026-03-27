@@ -189,7 +189,7 @@ export const KycVerificationPage = () => {
     <div className="min-h-screen flex flex-col bg-zinc-50">
       <Navbar />
 
-      <main className="flex-1 container mx-auto px-4 py-6 md:py-10">
+      <main className="flex-1 container mx-auto px-4 pt-28 md:pt-32 pb-10">
         {/* Main Card */}
         <Card className="max-w-4xl mx-auto shadow-lg">
           <CardHeader className="text-center pb-2">

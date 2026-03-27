@@ -93,7 +93,7 @@ export const VehiclePricingCard = ({
     <Card className="overflow-hidden bg-white border border-zinc-200 shadow-2xl rounded-[2rem]">
       <CardContent className="p-0">
         {/* Price Header */}
-        <div className="p-8 border-b border-zinc-200">
+        <div className="p-5 sm:p-8 border-b border-zinc-200">
           <div className="flex items-baseline justify-between mb-4">
             <div>
               <span className="text-4xl lg:text-5xl font-serif font-black text-zinc-900 tracking-tight">
@@ -121,8 +121,8 @@ export const VehiclePricingCard = ({
         </div>
 
         {/* Date + Time Selectors */}
-        <div className="p-8 space-y-4 border-b border-zinc-200">
-          <div className="grid grid-cols-2 gap-4">
+        <div className="p-5 sm:p-8 space-y-4 border-b border-zinc-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Pickup Date */}
             <div className="space-y-3">
               <label className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">
@@ -216,7 +216,7 @@ export const VehiclePricingCard = ({
         </div>
 
         {/* Pricing Breakdown */}
-        <div className="p-8 space-y-4 border-b border-zinc-200 relative">
+        <div className="p-5 sm:p-8 space-y-4 border-b border-zinc-200 relative">
           {isRefetching && (
             <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center z-10">
               <Loader2 className="size-6 text-orange-500 animate-spin" />
@@ -290,7 +290,7 @@ export const VehiclePricingCard = ({
         </div>
 
         {/* Deposit Info */}
-        <div className="px-8 py-6 bg-zinc-50 border-b border-zinc-200">
+        <div className="px-5 py-4 sm:px-8 sm:py-6 bg-zinc-50 border-b border-zinc-200">
           <div className="flex justify-between text-base">
             <span className="text-zinc-400">Security Deposit</span>
             <span className="text-zinc-900 font-medium">
@@ -301,7 +301,7 @@ export const VehiclePricingCard = ({
 
         {/* Advance Payment Option */}
         {vehicle.advancePayAmount && vehicle.advancePayAmount > 0 && pd && (
-          <div className="px-8 py-6 border-b border-zinc-200 space-y-3">
+          <div className="px-5 py-4 sm:px-8 sm:py-6 border-b border-zinc-200 space-y-3">
             <p className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">
               Payment Plan
             </p>
@@ -310,13 +310,13 @@ export const VehiclePricingCard = ({
                 type="button"
                 onClick={() => setPaymentFlow("FULL")}
                 className={cn(
-                  "flex flex-col items-center gap-1.5 p-4 rounded-2xl border transition-all",
+                  "flex flex-col items-center gap-1.5 p-4 rounded-2xl border-2 transition-all",
                   paymentFlow === "FULL"
-                    ? "bg-white text-zinc-950 border-white"
-                    : "bg-zinc-100 text-zinc-400 border-zinc-200 hover:border-zinc-300",
+                    ? "bg-white text-zinc-950 border-zinc-900 shadow-sm"
+                    : "bg-white/10 text-zinc-300 border-zinc-600 hover:border-zinc-400 hover:text-zinc-100",
                 )}
               >
-                <Check className="size-4" />
+                <Check className={cn("size-4", paymentFlow === "FULL" ? "text-zinc-900" : "text-zinc-400")} />
                 <span className="text-xs font-black uppercase tracking-wider">
                   Full Pay
                 </span>
@@ -328,10 +328,10 @@ export const VehiclePricingCard = ({
                 type="button"
                 onClick={() => setPaymentFlow("ADVANCE")}
                 className={cn(
-                  "flex flex-col items-center gap-1.5 p-4 rounded-2xl border transition-all",
+                  "flex flex-col items-center gap-1.5 p-4 rounded-2xl border-2 transition-all",
                   paymentFlow === "ADVANCE"
-                    ? "bg-orange-500 text-white border-orange-500"
-                    : "bg-zinc-100 text-zinc-400 border-zinc-200 hover:border-zinc-300",
+                    ? "bg-orange-500 text-white border-orange-500 shadow-sm"
+                    : "bg-white/10 text-zinc-300 border-zinc-600 hover:border-zinc-400 hover:text-zinc-100",
                 )}
               >
                 <Wallet className="size-4" />
@@ -343,8 +343,8 @@ export const VehiclePricingCard = ({
                 </span>
               </button>
             </div>
-            {paymentFlow === "ADVANCE" && (
-              <div className="text-xs text-zinc-500 space-y-1">
+            {paymentFlow === "ADVANCE" ? (
+              <div className="text-xs text-zinc-400 space-y-1">
                 <div className="flex justify-between">
                   <span>Pay now (advance)</span>
                   <span className="text-orange-400 font-bold">
@@ -353,21 +353,25 @@ export const VehiclePricingCard = ({
                 </div>
                 <div className="flex justify-between">
                   <span>Remaining (at pickup/return)</span>
-                  <span className="text-zinc-400">
+                  <span className="text-zinc-300">
                     {formatCurrency(pd.finalTotal - vehicle.advancePayAmount)}
                   </span>
                 </div>
               </div>
+            ) : (
+              <p className="text-xs text-zinc-400 text-center">
+                Pay the full amount upfront — no balance due at pickup.
+              </p>
             )}
           </div>
         )}
 
         {/* CTA */}
-        <div className="p-8">
+        <div className="p-5 sm:p-8">
           <Button
             onClick={onBookVehicle}
             disabled={!canBook}
-            className="w-full h-16 bg-white hover:bg-zinc-200 text-zinc-950 font-black text-lg uppercase tracking-widest rounded-full transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none"
+            className="w-full h-16 bg-zinc-900 hover:bg-black text-white font-black text-lg uppercase tracking-widest rounded-full transition-all hover:scale-105 active:scale-95 shadow-[0_4px_24px_rgba(0,0,0,0.25)] hover:shadow-[0_6px_32px_rgba(0,0,0,0.35)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none"
           >
             {isRefetching ? (
               <span className="flex items-center gap-3">

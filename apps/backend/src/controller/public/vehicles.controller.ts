@@ -13,6 +13,7 @@ import { checkVehicleAvailability } from "../../utils/availability/checkAvailabi
 import {
   getBatchListingPrices,
   getBatchFallbackPrices,
+  ListingPrice,
 } from "../../utils/pricing/batchListingPrice.js";
 
 const pricingEngine = new PricingEngineService();
@@ -185,7 +186,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
     // ── Batch pricing (TASK-007 / TASK-009): at most 2 queries for all vehicles
 
     console.time("[perf] listing:pricing");
-    let durationPriceMap: Map<number, number> | null = null;
+    let durationPriceMap: Map<number, ListingPrice> | null = null;
     let fallbackPriceMap: Map<
       number,
       { daily: number; hourly: number; halfDay: number }
@@ -205,7 +206,10 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
     const finalResponse = [];
     for (const v of availableVehicles) {
       if (durationPriceMap && durationInfo) {
-        const price = durationPriceMap.get(v.id) ?? 0;
+        const lp = durationPriceMap.get(v.id);
+        const finalPrice = lp?.finalPrice ?? 0;
+        const basePrice = lp?.price ?? 0;
+
         finalResponse.push({
           publicId: v.publicId,
           make: v.make,
@@ -213,10 +217,10 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
           category: v.category.name,
           branch: v.branch.name,
           imageUrl: v.images,
-          pricing: { daily: price },
+          pricing: { daily: finalPrice },
           pricingDetails: {
-            price,
-            finalPrice: price, // base price; discounts shown in detail view
+            price: basePrice,
+            finalPrice,
             type: durationInfo.periodType,
           },
         });
@@ -314,6 +318,8 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
         advancePayAmount: true,
         insuranceExpiry: true,
         status: true,
+        fastagNumber: true,
+        hasFastag: true,
         branchId: true,
         categoryId: true,
         createdAt: true,
@@ -419,6 +425,8 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
       make:             vehicleData.make,
       model:            vehicleData.model,
       status:           vehicleData.status,
+      fastagNumber:     vehicleData.fastagNumber,
+      hasFastag:       vehicleData.hasFastag,
       category:         vehicleData.category.name,
       branch:           vehicleData.branch.name,
       advancePayAmount: vehicleData.advancePayAmount,

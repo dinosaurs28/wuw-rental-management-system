@@ -15,6 +15,7 @@ import { CashConfirmationsTab } from "./CashConfirmationsPage";
 import { SettlementsTab } from "./SettlementsPage";
 import { RefundsTab } from "./RefundsPage";
 import { CashShiftsTab } from "./CashShiftsPage";
+// import { TransactionsTab } from "./TransactionsPage";
 
 export function FinancialsDashboardPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -88,6 +89,12 @@ export function FinancialsDashboardPage() {
               className="px-4 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-neutral-900 data-[state=active]:shadow-sm"
             >
               Cash Shifts
+            </TabsTrigger>
+            <TabsTrigger
+              value="transactions"
+              className="px-4 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-neutral-900 data-[state=active]:shadow-sm"
+            >
+              All Transactions
             </TabsTrigger>
           </TabsList>
           

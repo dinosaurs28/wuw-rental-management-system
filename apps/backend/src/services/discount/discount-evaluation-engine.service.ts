@@ -11,10 +11,11 @@ const DISCOUNT_CONFIG_TTL = 300;
 
 export interface DiscountEvaluationInput {
   branchId: number;
-  customerId: number;
+  customerId: number;  // 0 = anonymous (skips coupon/manual layers)
   vehicleId: number;
   baseAmount: Decimal;       // total base before any discount
-  rentalDays: number;
+  rentalDays: number;        // Math.ceil(actualHours/24) — used for coupon day constraints
+  rentalHours: number;       // actual duration in hours — used for duration slab matching
   vehicleCategoryId: number;
   paymentPlan: string;       // "FULL" | "ADVANCE"
   couponCode?: string;
@@ -52,7 +53,7 @@ class DiscountEvaluationEngine {
   async evaluate(input: DiscountEvaluationInput): Promise<DiscountEvaluationResult> {
     const {
       branchId, customerId, vehicleId, baseAmount,
-      rentalDays, vehicleCategoryId, paymentPlan,
+      rentalDays, rentalHours, vehicleCategoryId, paymentPlan,
       couponCode, manualDiscountAmount, manualDiscountId,
     } = input;
 
@@ -81,7 +82,7 @@ class DiscountEvaluationEngine {
     }
 
     // ── Step 1: Duration discount ────────────────────────────────────────────
-    const durationDiscount = await durationDiscountService.evaluate(branchId, rentalDays, baseAmount);
+    const durationDiscount = await durationDiscountService.evaluate(branchId, rentalHours, baseAmount);
 
     // After duration discount, this is the base for the coupon layer
     let postDurationAmount = durationDiscount.postDiscountAmount;

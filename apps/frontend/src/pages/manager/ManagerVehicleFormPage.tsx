@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { Loader2, ArrowLeft, CalendarIcon } from "lucide-react";
+import { Loader2, ArrowLeft, CalendarIcon, Truck } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +34,7 @@ import {
   BreadcrumbSeparator,
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -81,6 +82,8 @@ const vehicleSchema = z.object({
   images: z
     .array(z.custom<string | File>())
     .min(1, "At least one image is required"),
+  hasFastag: z.boolean().default(false),
+  fastagNumber: z.string().optional(),
 });
 
 type VehicleFormValues = z.infer<typeof vehicleSchema>;
@@ -95,7 +98,7 @@ export const ManagerVehicleFormPage = () => {
   const [originalImages, setOriginalImages] = useState<any[]>([]);
 
   const form = useForm<VehicleFormValues>({
-    resolver: zodResolver(vehicleSchema),
+    resolver: zodResolver(vehicleSchema) as any,
     defaultValues: {
       make: "",
       model: "",
@@ -118,6 +121,8 @@ export const ManagerVehicleFormPage = () => {
       policyNumber: "",
       provider: "",
       images: [],
+      hasFastag: false,
+      fastagNumber: "",
     },
   });
 
@@ -180,9 +185,11 @@ export const ManagerVehicleFormPage = () => {
               vehicle.policyNumber || latestInsurance?.policyNumber || "",
             provider: vehicle.provider || latestInsurance?.provider || "",
             images:
-              vehicle.images
-                ?.filter((img) => !img.isThumbnail)
-                .map((img) => img.file.url) || [],
+              (vehicle.images || [])
+                .filter((img: any) => !img.isThumbnail)
+                .map((img: any) => img.file.url),
+            hasFastag: vehicle.hasFastag ?? false,
+            fastagNumber: vehicle.fastagNumber ?? "",
           });
         } catch (error) {
           toast.error("Failed to load vehicle details");
@@ -195,7 +202,7 @@ export const ManagerVehicleFormPage = () => {
     }
   }, [isEditMode, vehicleId, form, navigate]);
 
-  const onSubmit = async (data: VehicleFormValues) => {
+  const onSubmit = async (data: any) => {
     setIsLoading(true);
     try {
       const formData = new FormData();
@@ -208,6 +215,10 @@ export const ManagerVehicleFormPage = () => {
       formData.append("policyNumber", data.policyNumber);
       formData.append("provider", data.provider);
       formData.append("status", data.status);
+      formData.append("hasFastag", data.hasFastag.toString());
+      if (data.hasFastag && data.fastagNumber) {
+        formData.append("fastagNumber", data.fastagNumber);
+      }
 
       formData.append("hourlyRate", data.hourlyRate?.toString() || "0");
       formData.append("price12Hour", data.price12Hour?.toString() || "0");
@@ -224,7 +235,7 @@ export const ManagerVehicleFormPage = () => {
       }
 
       // Handle Images
-      data.images.forEach((img) => {
+      data.images.forEach((img: any) => {
         if (img instanceof File) {
           formData.append("images", img);
         }
@@ -234,7 +245,7 @@ export const ManagerVehicleFormPage = () => {
       if (isEditMode) {
         // Get current URLs (strings only)
         const currentImageUrls = data.images.filter(
-          (img) => typeof img === "string",
+          (img: any) => typeof img === "string",
         ) as string[];
 
         // Find images that were in original but NOT in current
@@ -470,6 +481,54 @@ export const ManagerVehicleFormPage = () => {
                     )}
                   />
                 </div>
+
+                <div className="pt-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Truck className="w-5 h-5 text-orange-500" />
+                    <h3 className="font-medium text-neutral-800 text-lg">FASTag Details</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+                    <FormField
+                      control={form.control}
+                      name="hasFastag"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 bg-neutral-50/50">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel className="cursor-pointer">Has FASTag?</FormLabel>
+                            <p className="text-xs text-neutral-500">
+                              Check if this vehicle has a FASTag sticker.
+                            </p>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    {form.watch("hasFastag") && (
+                      <FormField
+                        control={form.control}
+                        name="fastagNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>FASTag Number</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="e.g. 1234567890"
+                                className="h-12"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Section 2: Pricing & Insurance */}
@@ -654,10 +713,10 @@ export const ManagerVehicleFormPage = () => {
                               mode="single"
                               selected={field.value}
                               onSelect={field.onChange}
-                              disabled={(date) => date < new Date("1900-01-01")}
+                              disabled={(date) => date < new Date("2000-01-01")}
                               captionLayout="dropdown"
-                              fromYear={2000}
-                              toYear={new Date().getFullYear() + 10}
+                              startMonth={new Date(new Date().getFullYear() - 1, 0)}
+                              endMonth={new Date(new Date().getFullYear() + 15, 11)}
                               initialFocus
                             />
                           </PopoverContent>

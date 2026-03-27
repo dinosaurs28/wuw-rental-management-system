@@ -29,6 +29,22 @@ export type TransactionStatus =
   | "FAILED"
   | "REFUNDED";
 
+export interface BranchTransaction {
+  transactionPublicId: string;
+  bookingPublicId: string;
+  customerName: string;
+  amount: string;
+  method: PaymentMethod;
+  purpose: PaymentPurpose;
+  status: TransactionStatus;
+  onlineTransactionRef: string | null;
+  employeeName: string | null;
+  confirmedByName: string | null;
+  collectedAt: string;
+  confirmedAt: string | null;
+  createdAt: string;
+}
+
 export type ShiftStatus = "OPEN" | "CLOSED" | "DISCREPANCY_FLAGGED";
 export type RefundStatus = "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "COMPLETED";
 export type RefundMethod = "CASH" | "ONLINE";
@@ -151,6 +167,14 @@ export const paymentService = {
         payload
       )
       .then((r) => r.data),
+
+  getAllTransactions: (page = 1, pageSize = 20, status?: string) =>
+    apiClient
+      .get<{ transactions: BranchTransaction[]; total: number }>(
+        `/branchManager/payment/transactions`,
+        { params: { page, pageSize, ...(status ? { status } : {}) } }
+      )
+      .then((r) => ({ data: r.data.transactions, total: r.data.total })),
 
   // Cash confirmations
   getPendingCash: (page = 1, pageSize = 20) =>

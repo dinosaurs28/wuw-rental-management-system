@@ -133,15 +133,6 @@ export const checkPayment = async (req: Request, res: Response) => {
           },
         });
 
-        await tx.invoiceItem.createMany({
-          data: booking.items.map((item) => ({
-            publicId: createID(),
-            invoiceId: invoice.id,
-            label: `${item.vehicle.make} ${item.vehicle.model}`,
-            amount: item.finalTotal,
-          })),
-        });
-
         // Payment record reflects the actual amount charged (advance or full)
         const paymentAmount = booking.isAdvancePayment
           ? booking.advanceAmount

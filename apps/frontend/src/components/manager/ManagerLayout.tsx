@@ -1,9 +1,10 @@
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { paymentService } from "@/services/payment.service";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import axios from "axios";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +30,7 @@ interface ManagerLayoutProps {
 export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
   const { user, logout } = useBranchManagerAuthStore();
   const { pendingCashCount, pendingRefundCount, setPendingCashCount } = usePaymentStore();
+  const [insuranceAlertCount, setInsuranceAlertCount] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -38,6 +40,13 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
       .then((res) => setPendingCashCount(res.total || 0))
       .catch(() => {/* non-fatal */});
   }, [location.pathname, setPendingCashCount]);
+
+  // Fetch insurance alert count once on mount
+  useEffect(() => {
+    axios.get("/api/insurance-alerts/counts", { withCredentials: true })
+      .then((res) => setInsuranceAlertCount(res.data?.data?.total ?? 0))
+      .catch(() => {/* non-fatal */});
+  }, []);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -51,6 +60,7 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
     { label: "Discounts", path: "/manager/payment/discounts" },
     { label: "Charge Settings", path: "/manager/charge-config" },
     { label: "Staff Activity", path: "/manager/staff-activity" },
+    { label: "Insurance & Permit", path: "/manager/insurance-expiry", badge: insuranceAlertCount, badgeVariant: "red" as const },
   ];
 
   const handleLogout = () => {
@@ -88,8 +98,8 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
                   }`}
                 >
                   {item.label}
-                  {"badge" in item && item.badge as number > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-orange-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                  {"badge" in item && (item.badge as number) > 0 && (
+                    <span className={`absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 ${"badgeVariant" in item && item.badgeVariant === "red" ? "bg-red-500" : "bg-orange-500"}`}>
                       {item.badge}
                     </span>
                   )}
@@ -176,8 +186,8 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
                           }`}
                         >
                           <span>{item.label}</span>
-                          {"badge" in item && item.badge as number > 0 && (
-                            <span className="min-w-[20px] h-5 bg-orange-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1.5">
+                          {"badge" in item && (item.badge as number) > 0 && (
+                            <span className={`min-w-[20px] h-5 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1.5 ${"badgeVariant" in item && item.badgeVariant === "red" ? "bg-red-500" : "bg-orange-500"}`}>
                               {item.badge}
                             </span>
                           )}

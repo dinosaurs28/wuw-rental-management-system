@@ -39,6 +39,12 @@ export const createVehicleSchema = z.object({
     .or(z.string().transform((v) => v === "true"))
     .optional(),
   advancePayAmount: z.coerce.number().min(0).optional(),
+  fastagNumber: z.string().optional(),
+  hasFastag: z
+    .boolean()
+    .or(z.string().transform((v) => v === "true"))
+    .optional()
+    .default(false),
 });
 
 export const editVehicleSchema = createVehicleSchema.partial().extend({

@@ -24,6 +24,13 @@ interface VehicleRentalState {
   totalPrice: number;
   deposit: number;
 
+  // API-returned pricing details (from vehicle details endpoint with dates)
+  apiBasePrice: number;
+  apiDurationDiscountAmount: number;
+  apiDurationDiscountPercent: number;
+  apiTaxAmount: number;
+  apiFinalTotal: number;
+
   // Booking state
   selectedKycFilePublicId: string | null;
   paymentType: "CASH" | "ONLINE" | null;
@@ -64,6 +71,13 @@ interface VehicleRentalState {
   setDateRange: (startDate: Date | null, endDate: Date | null) => void;
   setPricePerDay: (price: number) => void;
   setDeposit: (deposit: number) => void;
+  setApiPricingDetails: (details: {
+    basePrice: number;
+    durationDiscountAmount: number;
+    durationDiscountPercent: number;
+    taxAmount: number;
+    finalTotal: number;
+  }) => void;
   setSelectedKyc: (filePublicId: string | null) => void;
   setPaymentType: (type: "CASH" | "ONLINE" | null) => void;
   setPaymentFlow: (flow: "FULL" | "ADVANCE") => void;
@@ -177,6 +191,11 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
       pricePerDay: 0,
       totalPrice: 0,
       deposit: 0,
+      apiBasePrice: 0,
+      apiDurationDiscountAmount: 0,
+      apiDurationDiscountPercent: 0,
+      apiTaxAmount: 0,
+      apiFinalTotal: 0,
       selectedKycFilePublicId: null,
       paymentType: null,
       paymentFlow: "FULL",
@@ -318,6 +337,15 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
 
       setDeposit: (deposit) => set({ deposit: Math.max(0, deposit) }),
 
+      setApiPricingDetails: (details) =>
+        set({
+          apiBasePrice: details.basePrice,
+          apiDurationDiscountAmount: details.durationDiscountAmount,
+          apiDurationDiscountPercent: details.durationDiscountPercent,
+          apiTaxAmount: details.taxAmount,
+          apiFinalTotal: details.finalTotal,
+        }),
+
       setSelectedKyc: (filePublicId) =>
         set({ selectedKycFilePublicId: filePublicId }),
 
@@ -380,6 +408,11 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
           pricePerDay: 0,
           totalPrice: 0,
           deposit: 0,
+          apiBasePrice: 0,
+          apiDurationDiscountAmount: 0,
+          apiDurationDiscountPercent: 0,
+          apiTaxAmount: 0,
+          apiFinalTotal: 0,
           selectedKycFilePublicId: null,
           paymentType: null,
           holdId: null,
