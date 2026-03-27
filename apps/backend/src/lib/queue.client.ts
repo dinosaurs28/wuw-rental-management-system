@@ -7,6 +7,7 @@ let imageQueueInstance: Queue | null = null;
 let cleanupQueueInstance: Queue | null = null;
 let fileCleanupQueueInstance: Queue | null = null;
 let invoiceQueueInstance: Queue | null = null;
+let insuranceAlertQueueInstance: Queue | null = null;
 
 function getConnection(): Redis {
   if (!connection) {
@@ -111,6 +112,21 @@ export function getInvoiceQueue(): Queue {
     });
   }
   return invoiceQueueInstance;
+}
+
+export function getInsuranceAlertQueue(): Queue {
+  if (!insuranceAlertQueueInstance) {
+    insuranceAlertQueueInstance = new Queue("{bull}insurance-alert", {
+      connection: getConnection() as any,
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: { type: "exponential", delay: 5000 },
+        removeOnComplete: { count: 10 },
+        removeOnFail: { age: 86400 },
+      },
+    });
+  }
+  return insuranceAlertQueueInstance;
 }
 
 // For backward compatibility, export as properties that call the getters
