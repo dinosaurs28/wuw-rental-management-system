@@ -33,7 +33,7 @@ export function DashboardNavbar() {
           >
             {/* Orange Triangle Logo Mock */}
             <div className="w-0 h-0 border-l-[8px] border-l-transparent border-b-[14px] border-b-primary border-r-[8px] border-r-transparent" />
-            <span>WUW Admin</span>
+            <span>WUW Staff</span>
           </Link>
 
           {/* Navigation */}
