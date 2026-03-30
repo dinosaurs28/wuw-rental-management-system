@@ -11,12 +11,14 @@ interface PaymentOption {
 }
 
 const PAYMENT_OPTIONS: PaymentOption[] = [
+  /* Cash payment — temporarily disabled
   {
     id: "CASH",
     title: "Cash",
     description: "Pay at pickup location",
     icon: "💵",
   },
+  */
   {
     id: "ONLINE",
     title: "Online",

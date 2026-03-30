@@ -47,6 +47,13 @@ export const employeeService = {
     return response.data;
   },
 
+  getVehicleCategories: async (): Promise<{ publicId: string; name: string }[]> => {
+    const response = await apiClient.get<{
+      data: { publicId: string; name: string }[];
+    }>("/employee/vehicles/categories");
+    return response.data.data;
+  },
+
   getDashboardStats: async (): Promise<EmployeeDashboardStats> => {
     const response = await apiClient.get<EmployeeDashboardStats>(
       "/employee/dashboard/stats",

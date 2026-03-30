@@ -357,6 +357,7 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
           endAt:        endDate,
           days:         items[0]!.days,
           status:       BookingStatus.HOLD,
+          holdExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
           paymentStatus: "CREATED",
           depositMethod:
             payment_type === "CASH"
@@ -444,6 +445,7 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
 
     const snapshot = booking.pricingSnapshot as any;
 
+    const holdExpiry = 10 * 60; // 600 seconds
     return res.status(StatusCode.OK).json({
       message: "Booking Created Successfully",
       data: {
@@ -455,6 +457,8 @@ export const createEmployeeBooking = async (req: Request, res: Response) => {
         transactionId: booking.transactionId,
         totals:        snapshot?.totals,
         items:         snapshot?.items,
+        expiresAt:     new Date(Date.now() + holdExpiry * 1000).toISOString(),
+        expiresIn:     holdExpiry,
       },
     });
   } catch (error) {
