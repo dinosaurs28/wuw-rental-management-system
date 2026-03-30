@@ -41,6 +41,7 @@ interface VehicleRentalState {
 
   // Booking response (after API call)
   holdId: string | null;
+  holdExpiresAt: string | null;
   transactionId: string | null;
   paymentURL: string | null;
   encryptedFinalPrice: string | null;
@@ -85,6 +86,7 @@ interface VehicleRentalState {
   setCouponCode: (code: string | null, amount?: number) => void;
   setBookingResponse: (response: {
     holdId: string;
+    holdExpiresAt: string;
     transactionId: string;
     paymentURL: string | null;
     encryptedFinalPrice: string | null;
@@ -203,6 +205,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
       couponCode: null,
       couponDiscountAmount: 0,
       holdId: null,
+      holdExpiresAt: null,
       transactionId: null,
       paymentURL: null,
       encryptedFinalPrice: null,
@@ -360,6 +363,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
       setBookingResponse: (response) =>
         set({
           holdId: response.holdId,
+          holdExpiresAt: response.holdExpiresAt,
           transactionId: response.transactionId,
           paymentURL: response.paymentURL,
           encryptedFinalPrice: response.encryptedFinalPrice,
@@ -416,6 +420,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
           selectedKycFilePublicId: null,
           paymentType: null,
           holdId: null,
+          holdExpiresAt: null,
           transactionId: null,
           paymentURL: null,
           encryptedFinalPrice: null,
@@ -434,6 +439,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
           couponCode: null,
           couponDiscountAmount: 0,
           holdId: null,
+          holdExpiresAt: null,
           transactionId: null,
           paymentURL: null,
           encryptedFinalPrice: null,

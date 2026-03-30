@@ -6,9 +6,20 @@ import { ArrowLeft, Car, ArrowRight, Tag } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { bookingService } from "@/services/booking.service";
 import { CouponInput } from "@/components/discount/CouponInput";
 import { employeeDiscountService } from "@/services/discount.service";
+import { HoldCountdownTimer } from "@/components/booking/HoldCountdownTimer";
 
 export const EmployeeBookingSummaryPage = () => {
   const navigate = useNavigate();
@@ -23,6 +34,9 @@ export const EmployeeBookingSummaryPage = () => {
   );
   const [loading, setLoading] = useState(!location.state?.bookingData);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [holdExpiresAt, setHoldExpiresAt] = useState<string | null>(null);
   const bookingPayload = location.state?.bookingPayload;
 
   useEffect(() => {
@@ -57,6 +71,9 @@ export const EmployeeBookingSummaryPage = () => {
         }
 
         setBookingData(response);
+        if (response.data?.expiresAt) {
+          setHoldExpiresAt(response.data.expiresAt);
+        }
       } catch (error: any) {
         console.error("Booking creation failed", error);
         toast.error(
@@ -94,6 +111,31 @@ export const EmployeeBookingSummaryPage = () => {
 
   if (!bookingData) return null;
 
+  const holdId = bookingData?.data?.bookingId;
+
+  const handleCancelHold = async () => {
+    if (!holdId) {
+      navigate("/employee/dashboard");
+      return;
+    }
+    setIsCancelling(true);
+    try {
+      await bookingService.cancelEmployeeHold(holdId);
+      toast.info("Booking hold cancelled.");
+      navigate("/employee/dashboard");
+    } catch {
+      toast.error("Failed to cancel hold. Please try again.");
+    } finally {
+      setIsCancelling(false);
+      setShowCancelDialog(false);
+    }
+  };
+
+  const handleHoldExpired = () => {
+    toast.error("Booking hold has expired. Please start again.", { duration: 6000 });
+    navigate("/employee/dashboard");
+  };
+
   const {
     startDate: startDateString,
     endDate: endDateString,
@@ -119,13 +161,39 @@ export const EmployeeBookingSummaryPage = () => {
     <div className="min-h-screen bg-zinc-50 pb-20">
       {/* Header */}
       <header className="bg-white border-b px-4 py-4 sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="size-5" />
-          </Button>
-          <h1 className="text-lg font-semibold">Booking Summary</h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => setShowCancelDialog(true)}>
+              <ArrowLeft className="size-5" />
+            </Button>
+            <h1 className="text-lg font-semibold">Booking Summary</h1>
+          </div>
+          {holdExpiresAt && (
+            <HoldCountdownTimer expiresAt={holdExpiresAt} onExpired={handleHoldExpired} />
+          )}
         </div>
       </header>
+
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel booking hold?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will cancel the booking hold. The vehicle will become available again for these dates.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, stay here</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelHold}
+              disabled={isCancelling}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isCancelling ? "Cancelling..." : "Yes, go back"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <main className="container mx-auto px-4 py-6 space-y-6">
         {/* Vehicle Card */}
@@ -271,7 +339,7 @@ export const EmployeeBookingSummaryPage = () => {
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => navigate("/employee/dashboard")}
+              onClick={() => setShowCancelDialog(true)}
             >
               Return to Dashboard
             </Button>

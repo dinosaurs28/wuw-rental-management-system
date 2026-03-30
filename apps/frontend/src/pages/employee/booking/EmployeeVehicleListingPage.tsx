@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 
 import { useEmployeeVehicles } from "@/hooks/useEmployeeVehicles";
 import type { VehicleFilters as VehicleFiltersType } from "@/services/vehicle.service";
+import { useQuery } from "@tanstack/react-query";
+import { employeeService } from "@/services/employee.service";
 
 import { useEmployeeAuthStore } from "@/store/employeeAuth.store";
 import { customerSession } from "@/utils/customerSession";
@@ -129,6 +131,12 @@ export default function EmployeeVehicleListingPage() {
   const vehicles = vehiclesData?.data || [];
   const vehicleCount = vehiclesData?.pagination?.total || vehicles.length || 0;
 
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ["employee-vehicle-categories"],
+    queryFn: () => employeeService.getVehicleCategories(),
+    staleTime: 2 * 60 * 1000,
+  });
+
   const handleReset = useCallback(() => {
     const today = new Date();
     setSelectedPickupDate(today);
@@ -181,6 +189,8 @@ export default function EmployeeVehicleListingPage() {
             branches={[]}
             branchesLoading={false}
             selectedBranch=""
+            categories={categories}
+            categoriesLoading={categoriesLoading}
             pickupDate={selectedPickupDate}
             returnDate={selectedReturnDate}
             pickupTime={pickupTime}

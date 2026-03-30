@@ -200,6 +200,17 @@ export const bookingService = {
   },
 
   /**
+   * Cancel a booking hold manually
+   * DELETE /user/booking/hold/:holdId
+   */
+  cancelHold: async (holdId: string): Promise<{ message: string }> => {
+    const response = await apiClient.delete<{ message: string }>(
+      `/user/booking/hold/${holdId}`,
+    );
+    return response.data;
+  },
+
+  /**
    * Confirm cash payment
    * POST /user/payment/cash
    */
@@ -450,6 +461,17 @@ export const bookingService = {
       `/employee/pickup/${bookingId}/pricing-rules`,
     );
     return response.data.data;
+  },
+
+  /**
+   * Cancel an employee booking hold manually
+   * DELETE /employee/booking/hold/:holdId
+   */
+  cancelEmployeeHold: async (holdId: string): Promise<{ message: string }> => {
+    const response = await apiClient.delete<{ message: string }>(
+      `/employee/booking/hold/${holdId}`,
+    );
+    return response.data;
   },
 
   // Create Booking (Employee)

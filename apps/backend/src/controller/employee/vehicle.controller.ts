@@ -344,3 +344,48 @@ export const getEmployeeVehicleDetails = async (
       .json({ message: "Internal Error" });
   }
 };
+
+export const getEmployeeVehicleCategories = async (req: Request, res: Response) => {
+  try {
+    const branchId = req.branch_Id;
+    const cacheKey = `employee:branch:${branchId}:categories`;
+
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return res.status(StatusCode.OK).json({
+        message: "Categories fetched successfully",
+        data: JSON.parse(cached),
+      });
+    }
+
+    // Only return categories that have at least one active vehicle in this branch
+    const categories = await prisma.vehicleCategory.findMany({
+      where: {
+        vehicles: {
+          some: {
+            branchId,
+            status: { in: ["AVAILABLE", "OUT_FOR_RENTAL"] },
+            deletedAt: null,
+          },
+        },
+      },
+      select: {
+        publicId: true,
+        name: true,
+      },
+      orderBy: {
+        name: "asc",
+      },
+    });
+
+    await redis.setex(cacheKey, 120, JSON.stringify(categories));
+
+    return res.status(StatusCode.OK).json({
+      message: "Categories fetched successfully",
+      data: categories,
+    });
+  } catch (error) {
+    console.error("[getEmployeeVehicleCategories] Error:", error);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+  }
+};

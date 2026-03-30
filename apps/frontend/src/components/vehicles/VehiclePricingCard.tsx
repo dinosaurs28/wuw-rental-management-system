@@ -352,7 +352,7 @@ export const VehiclePricingCard = ({
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Remaining (at pickup/return)</span>
+                  <span>Remaining (at pickup)</span>
                   <span className="text-zinc-300">
                     {formatCurrency(pd.finalTotal - vehicle.advancePayAmount)}
                   </span>

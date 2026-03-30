@@ -8,6 +8,8 @@ import {
   createEmployeeBooking,
   GetBookingDetails,
 } from "../../controller/employee/booking.controller.js";
+import { getEmployeeVehicleCategories } from "../../controller/employee/vehicle.controller.js";
+import { cancelEmployeeHold } from "../../controller/employee/cancelHold.controller.js";
 import { EmployeeCheck } from "../../middlewares/employeeCheck.middlewares.js";
 import { BookingController } from "../../controller/employee/booking.controller.js";
 import { returnController } from "../../controller/employee/return.controller.js";
@@ -116,9 +118,11 @@ router.post(
 router.get("/walkin/kyc/:customerPublicId", EmployeeCheck, GetCustomerKyc);
 router.post("/walkin/kyc/status", EmployeeCheck, UpdateWalkinKycStatus);
 router.delete("/walkin/kyc", EmployeeCheck, DeleteKycDocument);
+router.get("/vehicles/categories", EmployeeCheck, getEmployeeVehicleCategories);
 router.get("/vehicles/search", EmployeeCheck, searchVehicles);
 router.get("/vehicles/:id", EmployeeCheck, getEmployeeVehicleDetails);
 router.post("/booking/create", EmployeeCheck, createEmployeeBooking);
+router.delete("/booking/hold/:holdId", EmployeeCheck, cancelEmployeeHold);
 router.get("/customer/search", EmployeeCheck, SearchCustomer);
 router.get("/customer/:publicId", EmployeeCheck, GetCustomerDetails);
 router.post(

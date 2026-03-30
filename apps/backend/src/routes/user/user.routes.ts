@@ -12,7 +12,8 @@ import {
   DeleteKycDocument,
 } from "../../controller/user/kyc.controller.js";
 import { upload } from "../../middlewares/upload.middleware.js";
-import { checkPaymentForCash } from "../../controller/payment/checkPaymentForCash.controller.js";
+// import { checkPaymentForCash } from "../../controller/payment/checkPaymentForCash.controller.js"; // Cash payment — temporarily disabled
+import { cancelHold } from "../../controller/booking/cancelHold.controller.js";
 import {
   EvaluateExtension as CustomerEvaluateExtension,
   CommitExtension as CustomerCommitExtension,
@@ -31,7 +32,8 @@ router
 router.get("/kyc", authCheckJwt, GetKycDocuments);
 router.post("/kyc", authCheckJwt, upload.single("file"), UploadKycDocument);
 router.delete("/kyc", authCheckJwt, DeleteKycDocument);
-router.post("/payment/cash", authCheckJwt, checkPaymentForCash);
+// router.post("/payment/cash", authCheckJwt, checkPaymentForCash); // Cash payment — temporarily disabled
+router.delete("/booking/hold/:holdId", authCheckJwt, cancelHold);
 
 // Customer extension routes
 router.post("/bookings/:bookingPublicId/extensions/evaluate", authCheckJwt, CustomerEvaluateExtension);

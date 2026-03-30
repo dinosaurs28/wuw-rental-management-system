@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, useBlocker, Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -24,6 +24,18 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { HoldCountdownTimer } from "@/components/booking/HoldCountdownTimer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
@@ -62,6 +74,9 @@ export const BookingConfirmationPage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bookingData, setBookingData] = useState<BookingResponse | null>(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [holdExpiresAt, setHoldExpiresAt] = useState<string | null>(null);
 
   // Get booking state from store
   const {
@@ -79,7 +94,9 @@ export const BookingConfirmationPage = () => {
     paymentType,
     paymentFlow,
     couponCode,
+    holdId,
     clearVehicleSelection,
+    clearBookingState,
   } = useVehicleRentalStore();
 
   // Make API call on page load
@@ -128,6 +145,9 @@ export const BookingConfirmationPage = () => {
           payment_flow: paymentFlow,
           ...(couponCode ? { couponCode } : {}),
         });
+
+        // Capture expiry for countdown timer
+        setHoldExpiresAt(response.expiresAt);
 
         // Store the response
         setBookingData({
@@ -201,6 +221,34 @@ export const BookingConfirmationPage = () => {
       : endDate
         ? format(new Date(endDate), "EEE, MMM d, yyyy")
         : "-";
+
+  // Handle cancelling the booking hold and going back to review
+  const handleCancelHold = async () => {
+    const id = holdId ?? bookingData?.holdId;
+    if (!id) {
+      navigate("/booking/review-confirm");
+      return;
+    }
+    setIsCancelling(true);
+    try {
+      await bookingService.cancelHold(id);
+      clearBookingState();
+      toast.info("Booking hold cancelled.");
+      navigate("/booking/review-confirm");
+    } catch {
+      toast.error("Failed to cancel hold. Please try again.");
+    } finally {
+      setIsCancelling(false);
+      setShowCancelDialog(false);
+    }
+  };
+
+  // Handle hold expiry (auto-redirect)
+  const handleHoldExpired = () => {
+    clearBookingState();
+    toast.error("Your booking hold has expired. Please start again.", { duration: 6000 });
+    navigate("/booking/review-confirm");
+  };
 
   // Handle Online Payment
   const handleOnlinePayment = () => {
@@ -398,6 +446,14 @@ export const BookingConfirmationPage = () => {
             <p className="text-muted-foreground">
               Complete your payment to confirm the booking
             </p>
+            {holdExpiresAt && (
+              <div className="mt-3 flex items-center justify-center">
+                <HoldCountdownTimer
+                  expiresAt={holdExpiresAt}
+                  onExpired={handleHoldExpired}
+                />
+              </div>
+            )}
           </div>
 
           {/* Booking Summary Card */}
@@ -572,7 +628,7 @@ export const BookingConfirmationPage = () => {
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Remaining (at pickup/return)</span>
+                    <span className="text-muted-foreground">Remaining (at pickup)</span>
                     <span className="font-medium text-foreground">
                       {formatPrice(bookingData.remainingBalance)}
                     </span>
@@ -609,8 +665,9 @@ export const BookingConfirmationPage = () => {
                     256-bit SSL encrypted payment
                   </div>
                 </div>
+              ) : null
+              /* Cash Payment — temporarily disabled
               ) : (
-                /* Cash Payment */
                 <div className="text-center">
                   <div className="w-14 h-14 mx-auto rounded-full bg-green-100 flex items-center justify-center mb-4">
                     <Banknote className="size-7 text-green-600" />
@@ -655,19 +712,38 @@ export const BookingConfirmationPage = () => {
                     )}
                   </p>
                 </div>
-              )}
+              ) */}
             </CardContent>
           </Card>
 
-          {/* Back Link */}
+          {/* Back to Review with confirmation */}
           <div className="text-center mt-6">
-            <Link
-              to="/booking/review-confirm"
-              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="size-4" />
-              Back to Review
-            </Link>
+            <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+              <AlertDialogTrigger asChild>
+                <button className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <ArrowLeft className="size-4" />
+                  Back to Review
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Cancel booking hold?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Going back will cancel your booking hold. The vehicle may become unavailable for these dates.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>No, stay here</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleCancelHold}
+                    disabled={isCancelling}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {isCancelling ? "Cancelling..." : "Yes, go back"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
 
           {/* WhatsApp Support */}
