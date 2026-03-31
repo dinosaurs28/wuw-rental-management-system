@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useBlocker, Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  Loader2,
   CheckCircle,
   CreditCard,
   Banknote,
@@ -33,7 +32,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { HoldCountdownTimer } from "@/components/booking/HoldCountdownTimer";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -70,13 +68,23 @@ interface BookingResponse {
 
 export const BookingConfirmationPage = () => {
   const navigate = useNavigate();
+  const allowNavigationRef = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false);
+  // const [ , setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bookingData, setBookingData] = useState<BookingResponse | null>(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [holdExpiresAt, setHoldExpiresAt] = useState<string | null>(null);
+
+  // Block browser back button while booking hold is active
+  const blocker = useBlocker(() => !!bookingData && !allowNavigationRef.current);
+
+  useEffect(() => {
+    if (blocker.state === "blocked") {
+      setShowCancelDialog(true);
+    }
+  }, [blocker.state]);
 
   // Get booking state from store
   const {
@@ -95,7 +103,6 @@ export const BookingConfirmationPage = () => {
     paymentFlow,
     couponCode,
     holdId,
-    clearVehicleSelection,
     clearBookingState,
   } = useVehicleRentalStore();
 
@@ -226,7 +233,9 @@ export const BookingConfirmationPage = () => {
   const handleCancelHold = async () => {
     const id = holdId ?? bookingData?.holdId;
     if (!id) {
-      navigate("/booking/review-confirm");
+      allowNavigationRef.current = true;
+      if (blocker.state === "blocked") blocker.proceed();
+      else navigate("/booking/review-confirm");
       return;
     }
     setIsCancelling(true);
@@ -234,7 +243,9 @@ export const BookingConfirmationPage = () => {
       await bookingService.cancelHold(id);
       clearBookingState();
       toast.info("Booking hold cancelled.");
-      navigate("/booking/review-confirm");
+      allowNavigationRef.current = true;
+      if (blocker.state === "blocked") blocker.proceed();
+      else navigate("/booking/review-confirm");
     } catch {
       toast.error("Failed to cancel hold. Please try again.");
     } finally {
@@ -247,6 +258,7 @@ export const BookingConfirmationPage = () => {
   const handleHoldExpired = () => {
     clearBookingState();
     toast.error("Your booking hold has expired. Please start again.", { duration: 6000 });
+    allowNavigationRef.current = true;
     navigate("/booking/review-confirm");
   };
 
@@ -258,35 +270,35 @@ export const BookingConfirmationPage = () => {
   };
 
   // Handle Cash Payment Confirmation
-  const handleCashPayment = async () => {
-    if (!bookingData?.encryptedFinalPrice || !bookingData?.transactionId) {
-      toast.error("Invalid payment details");
-      return;
-    }
+  // const handleCashPayment = async () => {
+  //   if (!bookingData?.encryptedFinalPrice || !bookingData?.transactionId) {
+  //     toast.error("Invalid payment details");
+  //     return;
+  //   }
 
-    setIsProcessing(true);
+  //   setIsProcessing(true);
 
-    try {
-      const response = await bookingService.confirmCashPayment({
-        encryptedFinalPrice: bookingData.encryptedFinalPrice,
-        transactionId: bookingData.transactionId,
-      });
+  //   try {
+  //     const response = await bookingService.confirmCashPayment({
+  //       encryptedFinalPrice: bookingData.encryptedFinalPrice,
+  //       transactionId: bookingData.transactionId,
+  //     });
 
-      if (response.status === "Success") {
-        toast.success("Booking confirmed successfully!");
-        clearVehicleSelection();
-        navigate("/booking/history");
-      } else {
-        toast.error(response.message || "Payment confirmation failed");
-      }
-    } catch (err: any) {
-      const message =
-        err?.response?.data?.message || "Cash payment confirmation failed";
-      toast.error(message);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  //     if (response.status === "Success") {
+  //       toast.success("Booking confirmed successfully!");
+  //       clearVehicleSelection();
+  //       navigate("/booking/history");
+  //     } else {
+  //       toast.error(response.message || "Payment confirmation failed");
+  //     }
+  //   } catch (err: any) {
+  //     const message =
+  //       err?.response?.data?.message || "Cash payment confirmation failed";
+  //     toast.error(message);
+  //   } finally {
+  //     setIsProcessing(false);
+  //   }
+  // };
 
   // Loading state
   if (isLoading) {
@@ -718,33 +730,41 @@ export const BookingConfirmationPage = () => {
 
           {/* Back to Review with confirmation */}
           <div className="text-center mt-6">
-            <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-              <AlertDialogTrigger asChild>
-                <button className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  <ArrowLeft className="size-4" />
-                  Back to Review
-                </button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Cancel booking hold?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Going back will cancel your booking hold. The vehicle may become unavailable for these dates.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>No, stay here</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleCancelHold}
-                    disabled={isCancelling}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    {isCancelling ? "Cancelling..." : "Yes, go back"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <button
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setShowCancelDialog(true)}
+            >
+              <ArrowLeft className="size-4" />
+              Back to Review
+            </button>
           </div>
+
+          <AlertDialog
+            open={showCancelDialog}
+            onOpenChange={(open) => {
+              if (!open && blocker.state === "blocked") blocker.reset();
+              setShowCancelDialog(open);
+            }}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Cancel booking hold?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Going back will cancel your booking hold. The vehicle may become unavailable for these dates.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>No, stay here</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleCancelHold}
+                  disabled={isCancelling}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {isCancelling ? "Cancelling..." : "Yes, go back"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {/* WhatsApp Support */}
           <div className="flex flex-col items-center gap-2 mt-6">
