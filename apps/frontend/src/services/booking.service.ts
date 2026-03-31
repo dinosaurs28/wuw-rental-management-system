@@ -61,6 +61,23 @@ export interface CreateBookingSummaryResponse {
   };
 }
 
+export interface CreateEmployeeBookingResponse {
+  message: string;
+  data: {
+    bookingId: string;
+    publicId?: string; // Mapped for frontend consistency
+    paymentURL: string | null;
+    status: string;
+    startDate: string;
+    endDate: string;
+    transactionId: string;
+    totals: BookingTotals;
+    items: any[];
+    expiresAt: string;
+    expiresIn: number;
+  };
+}
+
 // Online payment status response
 export interface PaymentStatusResponse {
   status: "Success" | "Pending" | "Failed";
@@ -482,16 +499,17 @@ export const bookingService = {
     start: string;
     end: string;
     payment_type: "CASH" | "ONLINE";
-  }) => {
-    const response = await apiClient.post<{
-      message: string;
-      data: {
-        bookingId: string;
-        paymentURL: string | null;
-        status: string;
-        transactionId: string;
-      };
-    }>("/employee/booking/create", data);
+  }): Promise<CreateEmployeeBookingResponse> => {
+    const response = await apiClient.post<CreateEmployeeBookingResponse>(
+      "/employee/booking/create",
+      data,
+    );
+
+    // Map publicId for consistency if needed by frontend components
+    if (response.data?.data && !response.data.data.publicId) {
+      response.data.data.publicId = response.data.data.bookingId;
+    }
+
     return response.data;
   },
 };

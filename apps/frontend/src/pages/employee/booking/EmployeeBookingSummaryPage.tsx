@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useBlocker } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { ArrowLeft, Car, ArrowRight, Tag } from "lucide-react";
@@ -25,6 +25,7 @@ export const EmployeeBookingSummaryPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const initialized = useRef(false);
+  const allowNavigationRef = useRef(false);
 
   // Two possible states:
   // 1. passed existing bookingData (legacy/direct view)
@@ -38,6 +39,15 @@ export const EmployeeBookingSummaryPage = () => {
   const [isCancelling, setIsCancelling] = useState(false);
   const [holdExpiresAt, setHoldExpiresAt] = useState<string | null>(null);
   const bookingPayload = location.state?.bookingPayload;
+
+  // Block browser back button while booking hold is active
+  const blocker = useBlocker(() => !!bookingData && !allowNavigationRef.current);
+
+  useEffect(() => {
+    if (blocker.state === "blocked") {
+      setShowCancelDialog(true);
+    }
+  }, [blocker.state]);
 
   useEffect(() => {
     const createBooking = async () => {
@@ -115,14 +125,18 @@ export const EmployeeBookingSummaryPage = () => {
 
   const handleCancelHold = async () => {
     if (!holdId) {
-      navigate("/employee/dashboard");
+      allowNavigationRef.current = true;
+      if (blocker.state === "blocked") blocker.proceed();
+      else navigate("/employee/dashboard");
       return;
     }
     setIsCancelling(true);
     try {
       await bookingService.cancelEmployeeHold(holdId);
       toast.info("Booking hold cancelled.");
-      navigate("/employee/dashboard");
+      allowNavigationRef.current = true;
+      if (blocker.state === "blocked") blocker.proceed();
+      else navigate("/employee/dashboard");
     } catch {
       toast.error("Failed to cancel hold. Please try again.");
     } finally {
@@ -133,6 +147,7 @@ export const EmployeeBookingSummaryPage = () => {
 
   const handleHoldExpired = () => {
     toast.error("Booking hold has expired. Please start again.", { duration: 6000 });
+    allowNavigationRef.current = true;
     navigate("/employee/dashboard");
   };
 
@@ -174,7 +189,13 @@ export const EmployeeBookingSummaryPage = () => {
         </div>
       </header>
 
-      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+      <AlertDialog
+        open={showCancelDialog}
+        onOpenChange={(open) => {
+          if (!open && blocker.state === "blocked") blocker.reset();
+          setShowCancelDialog(open);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Cancel booking hold?</AlertDialogTitle>
