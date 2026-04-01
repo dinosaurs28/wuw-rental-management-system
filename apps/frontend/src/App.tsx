@@ -68,6 +68,8 @@ import { AdminWhatsAppConfigPage } from "./pages/admin/AdminWhatsAppConfigPage";
 import { AdminAuditLogPage } from "./pages/admin/AdminAuditLogPage";
 import { AdminStaffActivityPage } from "./pages/admin/AdminStaffActivityPage";
 import { ManagerStaffActivityPage } from "./pages/manager/ManagerStaffActivityPage";
+import { LedgerPage } from "./pages/manager/LedgerPage";
+import { CustomerCreditPage } from "./pages/manager/CustomerCreditPage";
 import { ScrollToTop } from "@/components/utils/ScrollToTop";
 
 function App() {
@@ -215,6 +217,14 @@ function App() {
           <Route
             path="/manager/staff-activity"
             element={<ManagerStaffActivityPage />}
+          />
+          <Route
+            path="/manager/ledger"
+            element={<LedgerPage />}
+          />
+          <Route
+            path="/manager/ledger/:customerId"
+            element={<CustomerCreditPage />}
           />
         </Route>
 

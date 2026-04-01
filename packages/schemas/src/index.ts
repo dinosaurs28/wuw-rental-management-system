@@ -8,3 +8,4 @@ export * from "./payment.schema.js";
 export * from "./extension.schema.js";
 export * from "./charge-config.schema.js";
 export * from "./charge-entry.schema.js";
+export * from "./ledger.schema.js";

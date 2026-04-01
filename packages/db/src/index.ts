@@ -56,6 +56,11 @@ export {
   SafetyDepositStatus,
   RentalPeriodType,
   DamageChargeType,
+  CreditStatus,
+  PaymentTransactionStatus,
+  RefundStatus,
+  CashShiftStatus,
+  FeatureFlagScope,
   // Payment session / ledger enums
   PaymentSessionStatus,
   PaymentSessionType,
