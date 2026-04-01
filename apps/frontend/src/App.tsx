@@ -69,6 +69,9 @@ import { AdminAuditLogPage } from "./pages/admin/AdminAuditLogPage";
 import { AdminStaffActivityPage } from "./pages/admin/AdminStaffActivityPage";
 import { ManagerStaffActivityPage } from "./pages/manager/ManagerStaffActivityPage";
 import { ScrollToTop } from "@/components/utils/ScrollToTop";
+import { TermsPage } from "./pages/legal/TermsPage";
+import { PrivacyPage } from "./pages/legal/PrivacyPage";
+import { FaqPage } from "./pages/legal/FaqPage";
 
 function App() {
   return (
@@ -81,9 +84,9 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/vehicles" element={<VehiclesPage />} />
         <Route path="/vehicle/:vehicleId" element={<VehicleDetailsPage />} />
-        <Route path="/terms" element={<Navigate to="/legal/terms.html" replace />} />
-        <Route path="/privacy" element={<Navigate to="/legal/privacy.html" replace />} />
-        <Route path="/faq" element={<Navigate to="/legal/faq.html" replace />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/faq" element={<FaqPage />} />
         <Route path="/portal" element={<PortalPage />} />
         <Route path="/links" element={<Navigate to="/portal" replace />} />
 
