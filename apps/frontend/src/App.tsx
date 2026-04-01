@@ -81,6 +81,9 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/vehicles" element={<VehiclesPage />} />
         <Route path="/vehicle/:vehicleId" element={<VehicleDetailsPage />} />
+        <Route path="/terms" element={<Navigate to="/legal/terms.html" replace />} />
+        <Route path="/privacy" element={<Navigate to="/legal/privacy.html" replace />} />
+        <Route path="/faq" element={<Navigate to="/legal/faq.html" replace />} />
         <Route path="/portal" element={<PortalPage />} />
         <Route path="/links" element={<Navigate to="/portal" replace />} />
 

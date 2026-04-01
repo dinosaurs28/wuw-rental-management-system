@@ -68,7 +68,7 @@ export const Footer = () => {
               <ul className="space-y-5">
                 <li>
                   <Link
-                    to="#"
+                    to="/faq"
                     className="text-zinc-500 font-semibold hover:text-zinc-900 hover:translate-x-1 inline-flex transition-all duration-300"
                   >
                     Help Center
@@ -84,7 +84,7 @@ export const Footer = () => {
                 </li>
                 <li>
                   <Link
-                    to="#"
+                    to="/terms"
                     className="text-zinc-500 font-semibold hover:text-zinc-900 hover:translate-x-1 inline-flex transition-all duration-300"
                   >
                     Terms
@@ -92,7 +92,7 @@ export const Footer = () => {
                 </li>
                 <li>
                   <Link
-                    to="#"
+                    to="/privacy"
                     className="text-zinc-500 font-semibold hover:text-zinc-900 hover:translate-x-1 inline-flex transition-all duration-300"
                   >
                     Privacy
