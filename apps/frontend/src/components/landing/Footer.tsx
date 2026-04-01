@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Twitter, Instagram, Linkedin, Mail } from "lucide-react";
+import { Twitter, Instagram, Linkedin } from "lucide-react";
 
 export const Footer = () => {
   return (
@@ -21,28 +21,6 @@ export const Footer = () => {
                 Redefining mobility with a premium fleet and exceptional
                 service. Drive the extraordinary.
               </p>
-
-              {/* Newsletter */}
-              <div className="w-full max-w-md mx-auto md:mx-0">
-                <h4 className="text-xs font-bold text-zinc-400 mb-5 tracking-[0.25em] uppercase">
-                  Private Access
-                </h4>
-                <div className="relative group/input flex flex-col sm:flex-row gap-3">
-                  <div className="relative flex-1">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-6 pointer-events-none text-zinc-400 group-focus-within/input:text-zinc-900 transition-colors">
-                      <Mail className="size-5" />
-                    </div>
-                    <input
-                      type="email"
-                      placeholder="Enter your email"
-                      className="w-full h-16 bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-2xl pl-16 pr-6 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-900 transition-all placeholder:text-zinc-400 text-base"
-                    />
-                  </div>
-                  <button className="h-16 px-10 bg-zinc-900 hover:bg-black text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all hover:shadow-lg active:scale-95 w-full sm:w-auto shrink-0">
-                    Subscribe
-                  </button>
-                </div>
-              </div>
             </div>
 
             {/* Spacer for large screens */}
@@ -77,14 +55,6 @@ export const Footer = () => {
                     className="text-zinc-500 font-semibold hover:text-zinc-900 hover:translate-x-1 inline-flex transition-all duration-300"
                   >
                     Careers
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#"
-                    className="text-zinc-500 font-semibold hover:text-zinc-900 hover:translate-x-1 inline-flex transition-all duration-300"
-                  >
-                    Press
                   </Link>
                 </li>
               </ul>
