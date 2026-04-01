@@ -83,20 +83,20 @@ export const Footer = () => {
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    to="/terms"
+                  <a
+                    href="/legal/terms.html"
                     className="text-zinc-500 font-semibold hover:text-zinc-900 hover:translate-x-1 inline-flex transition-all duration-300"
                   >
                     Terms
-                  </Link>
+                  </a>
                 </li>
                 <li>
-                  <Link
-                    to="/privacy"
+                  <a
+                    href="/legal/privacy.html"
                     className="text-zinc-500 font-semibold hover:text-zinc-900 hover:translate-x-1 inline-flex transition-all duration-300"
                   >
                     Privacy
-                  </Link>
+                  </a>
                 </li>
               </ul>
             </div>

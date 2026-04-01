@@ -38,14 +38,14 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
   useEffect(() => {
     paymentService.getPendingCash(1, 1)
       .then((res) => setPendingCashCount(res.total || 0))
-      .catch(() => {/* non-fatal */});
+      .catch(() => {/* non-fatal */ });
   }, [location.pathname, setPendingCashCount]);
 
   // Fetch insurance alert count once on mount
   useEffect(() => {
     axios.get("/api/insurance-alerts/counts", { withCredentials: true })
       .then((res) => setInsuranceAlertCount(res.data?.data?.total ?? 0))
-      .catch(() => {/* non-fatal */});
+      .catch(() => {/* non-fatal */ });
   }, []);
 
   const isActive = (path: string) => location.pathname === path;
@@ -59,6 +59,7 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
     { label: "Extensions", path: "/manager/payment/extensions" },
     { label: "Discounts", path: "/manager/payment/discounts" },
     { label: "Charge Settings", path: "/manager/charge-config" },
+    { label: "Ledger", path: "/manager/ledger" },
     { label: "Staff Activity", path: "/manager/staff-activity" },
     { label: "Insurance & Permit", path: "/manager/insurance-expiry", badge: insuranceAlertCount, badgeVariant: "red" as const },
   ];
@@ -80,7 +81,7 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
                 <span className="text-white font-bold text-lg">S</span>
               </div>
               <span className="font-bold text-xl tracking-tight hidden md:block">
-                WUW Rentals{" "}
+                WUW 
                 <span className="text-neutral-500 font-normal">Manager</span>
               </span>
             </Link>
@@ -91,11 +92,10 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`relative px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                    isActive(item.path)
+                  className={`relative px-4 py-2 rounded-full text-sm font-medium transition-colors ${isActive(item.path)
                       ? "bg-orange-50 text-orange-600"
                       : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"
-                  }`}
+                    }`}
                 >
                   {item.label}
                   {"badge" in item && (item.badge as number) > 0 && (
@@ -179,11 +179,10 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
                         <Link
                           key={item.path}
                           to={item.path}
-                          className={`flex items-center justify-between w-full px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                            isActive(item.path)
+                          className={`flex items-center justify-between w-full px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive(item.path)
                               ? "bg-orange-50 text-orange-600"
                               : "text-neutral-600 hover:bg-neutral-100"
-                          }`}
+                            }`}
                         >
                           <span>{item.label}</span>
                           {"badge" in item && (item.badge as number) > 0 && (
@@ -196,11 +195,10 @@ export const ManagerLayout = ({ children }: ManagerLayoutProps) => {
                       <div className="my-2 border-t border-neutral-100" />
                       <Link
                         to="/manager/profile"
-                        className={`flex items-center w-full px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                          isActive("/manager/profile")
+                        className={`flex items-center w-full px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive("/manager/profile")
                             ? "bg-orange-50 text-orange-600"
                             : "text-neutral-600 hover:bg-neutral-100"
-                        }`}
+                          }`}
                       >
                         My Profile
                       </Link>

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import SignInPage from "./pages/auth/SignInPage";
@@ -68,7 +69,16 @@ import { AdminWhatsAppConfigPage } from "./pages/admin/AdminWhatsAppConfigPage";
 import { AdminAuditLogPage } from "./pages/admin/AdminAuditLogPage";
 import { AdminStaffActivityPage } from "./pages/admin/AdminStaffActivityPage";
 import { ManagerStaffActivityPage } from "./pages/manager/ManagerStaffActivityPage";
+import { LedgerPage } from "./pages/manager/LedgerPage";
+import { CustomerCreditPage } from "./pages/manager/CustomerCreditPage";
 import { ScrollToTop } from "@/components/utils/ScrollToTop";
+
+const ExternalRedirect = ({ to }: { to: string }) => {
+  useEffect(() => {
+    window.location.replace(to);
+  }, [to]);
+  return null;
+};
 import { TermsPage } from "./pages/legal/TermsPage";
 import { PrivacyPage } from "./pages/legal/PrivacyPage";
 import { FaqPage } from "./pages/legal/FaqPage";
@@ -84,6 +94,9 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/vehicles" element={<VehiclesPage />} />
         <Route path="/vehicle/:vehicleId" element={<VehicleDetailsPage />} />
+        <Route path="/terms" element={<ExternalRedirect to="/legal/terms.html" />} />
+        <Route path="/privacy" element={<ExternalRedirect to="/legal/privacy.html" />} />
+        <Route path="/faq" element={<ExternalRedirect to="/legal/faq.html" />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/faq" element={<FaqPage />} />
@@ -218,6 +231,14 @@ function App() {
           <Route
             path="/manager/staff-activity"
             element={<ManagerStaffActivityPage />}
+          />
+          <Route
+            path="/manager/ledger"
+            element={<LedgerPage />}
+          />
+          <Route
+            path="/manager/ledger/:customerId"
+            element={<CustomerCreditPage />}
           />
         </Route>
 
