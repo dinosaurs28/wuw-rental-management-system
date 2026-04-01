@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import SignInPage from "./pages/auth/SignInPage";
@@ -72,6 +73,13 @@ import { LedgerPage } from "./pages/manager/LedgerPage";
 import { CustomerCreditPage } from "./pages/manager/CustomerCreditPage";
 import { ScrollToTop } from "@/components/utils/ScrollToTop";
 
+const ExternalRedirect = ({ to }: { to: string }) => {
+  useEffect(() => {
+    window.location.replace(to);
+  }, [to]);
+  return null;
+};
+
 function App() {
   return (
     <BrowserRouter>
@@ -83,9 +91,9 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/vehicles" element={<VehiclesPage />} />
         <Route path="/vehicle/:vehicleId" element={<VehicleDetailsPage />} />
-        <Route path="/terms" element={<Navigate to="/legal/terms.html" replace />} />
-        <Route path="/privacy" element={<Navigate to="/legal/privacy.html" replace />} />
-        <Route path="/faq" element={<Navigate to="/legal/faq.html" replace />} />
+        <Route path="/terms" element={<ExternalRedirect to="/legal/terms.html" />} />
+        <Route path="/privacy" element={<ExternalRedirect to="/legal/privacy.html" />} />
+        <Route path="/faq" element={<ExternalRedirect to="/legal/faq.html" />} />
         <Route path="/portal" element={<PortalPage />} />
         <Route path="/links" element={<Navigate to="/portal" replace />} />
 
