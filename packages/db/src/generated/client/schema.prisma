@@ -83,6 +83,12 @@ enum SafetyDepositStatus {
   REFUNDED
 }
 
+enum CreditStatus {
+  PENDING
+  PARTIALLY_CLEARED
+  CLEARED
+}
+
 enum BookingStatus {
   HOLD
   CONFIRMED
@@ -204,6 +210,8 @@ model User {
   paymentSessionsOpened   PaymentSession[]       @relation("SessionActor")
   ledgerEntriesActed      LedgerEntry[]          @relation("LedgerEntryActor")
   ledgerEntriesVoided     LedgerEntry[]          @relation("LedgerEntryVoidedBy")
+  creditEntriesCreated    CustomerCreditEntry[]  @relation("CreditEntryCreator")
+  creditClearancesActed   CreditClearance[]      @relation("CreditClearanceActor")
   createdAt               DateTime               @default(now())
   updatedAt               DateTime               @updatedAt
   deletedAt               DateTime?
@@ -258,6 +266,7 @@ model Customer {
   bookings           Booking[]
 
   cancellationInvoices CancellationInvoice[]
+  creditEntries        CustomerCreditEntry[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -332,6 +341,7 @@ model Branch {
   refundRequests          RefundRequest[]
   extensions              BookingExtension[]
   paymentSessions         PaymentSession[]
+  creditEntries           CustomerCreditEntry[]
   createdAt               DateTime                    @default(now())
   deletedAt               DateTime?
 }
@@ -830,6 +840,9 @@ model Booking {
   activePaymentSession   PaymentSession?  @relation("ActiveBookingSession", fields: [activePaymentSessionId], references: [id])
   paymentSessions        PaymentSession[] @relation("BookingPaymentSessions")
   ledgerEntries          LedgerEntry[]
+
+  // Credit Ledger
+  creditEntry CustomerCreditEntry?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -2044,4 +2057,61 @@ enum LedgerEntryClassification {
   NON_TAXABLE
   DISCOUNT
   PAYMENT
+}
+
+// ── Customer Credit Ledger ────────────────────────────────────────────────────
+
+// One record per booking. Sections are stored as a JSONB array and are
+// appended on each "Add Credit" action. Cleared sections are marked in-place.
+model CustomerCreditEntry {
+  id          Int    @id @default(autoincrement())
+  publicId    String @unique
+  customerId  Int
+  bookingId   Int    @unique
+  branchId    Int
+  createdById Int
+
+  // JSONB array of credit sections:
+  // [{ sectionKey: string, label: string, amount: number,
+  //    isCleared: boolean, clearedAt?: string, clearedRef?: string, isCustom?: boolean }]
+  sections Json
+
+  totalAmount   Decimal      @db.Decimal(10, 2)
+  clearedAmount Decimal      @default(0) @db.Decimal(10, 2)
+  pendingAmount Decimal      @db.Decimal(10, 2)
+  status        CreditStatus
+
+  customer   Customer          @relation(fields: [customerId], references: [id])
+  booking    Booking           @relation(fields: [bookingId], references: [id])
+  branch     Branch            @relation(fields: [branchId], references: [id])
+  createdBy  User              @relation("CreditEntryCreator", fields: [createdById], references: [id])
+  clearances CreditClearance[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([branchId])
+  @@index([bookingId])
+  @@index([status])
+}
+
+// Immutable audit record for each clearing event.
+model CreditClearance {
+  id            Int    @id @default(autoincrement())
+  publicId      String @unique
+  creditEntryId Int
+
+  clearedSectionKeys Json // string[]
+  amountCleared      Decimal @db.Decimal(10, 2)
+  paymentMethod      String // "CASH" | "ONLINE"
+  transactionRef     String?
+
+  clearedById Int
+  clearedAt   DateTime @default(now())
+
+  creditEntry CustomerCreditEntry @relation(fields: [creditEntryId], references: [id])
+  clearedBy   User                @relation("CreditClearanceActor", fields: [clearedById], references: [id])
+
+  @@index([creditEntryId])
 }

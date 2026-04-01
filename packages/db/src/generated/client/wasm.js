@@ -1057,6 +1057,34 @@ exports.Prisma.LedgerEntryScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.CustomerCreditEntryScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  customerId: 'customerId',
+  bookingId: 'bookingId',
+  branchId: 'branchId',
+  createdById: 'createdById',
+  sections: 'sections',
+  totalAmount: 'totalAmount',
+  clearedAmount: 'clearedAmount',
+  pendingAmount: 'pendingAmount',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CreditClearanceScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  creditEntryId: 'creditEntryId',
+  clearedSectionKeys: 'clearedSectionKeys',
+  amountCleared: 'amountCleared',
+  paymentMethod: 'paymentMethod',
+  transactionRef: 'transactionRef',
+  clearedById: 'clearedById',
+  clearedAt: 'clearedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1437,6 +1465,12 @@ exports.LedgerEntryClassification = exports.$Enums.LedgerEntryClassification = {
   PAYMENT: 'PAYMENT'
 };
 
+exports.CreditStatus = exports.$Enums.CreditStatus = {
+  PENDING: 'PENDING',
+  PARTIALLY_CLEARED: 'PARTIALLY_CLEARED',
+  CLEARED: 'CLEARED'
+};
+
 exports.Prisma.ModelName = {
   User: 'User',
   UserProvider: 'UserProvider',
@@ -1496,7 +1530,9 @@ exports.Prisma.ModelName = {
   FuelRecord: 'FuelRecord',
   SafetyDepositRequest: 'SafetyDepositRequest',
   PaymentSession: 'PaymentSession',
-  LedgerEntry: 'LedgerEntry'
+  LedgerEntry: 'LedgerEntry',
+  CustomerCreditEntry: 'CustomerCreditEntry',
+  CreditClearance: 'CreditClearance'
 };
 
 /**

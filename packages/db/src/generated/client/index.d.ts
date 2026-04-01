@@ -308,6 +308,16 @@ export type PaymentSession = $Result.DefaultSelection<Prisma.$PaymentSessionPayl
  * 
  */
 export type LedgerEntry = $Result.DefaultSelection<Prisma.$LedgerEntryPayload>
+/**
+ * Model CustomerCreditEntry
+ * 
+ */
+export type CustomerCreditEntry = $Result.DefaultSelection<Prisma.$CustomerCreditEntryPayload>
+/**
+ * Model CreditClearance
+ * 
+ */
+export type CreditClearance = $Result.DefaultSelection<Prisma.$CreditClearancePayload>
 
 /**
  * Enums
@@ -789,6 +799,15 @@ export const LedgerEntryClassification: {
 
 export type LedgerEntryClassification = (typeof LedgerEntryClassification)[keyof typeof LedgerEntryClassification]
 
+
+export const CreditStatus: {
+  PENDING: 'PENDING',
+  PARTIALLY_CLEARED: 'PARTIALLY_CLEARED',
+  CLEARED: 'CLEARED'
+};
+
+export type CreditStatus = (typeof CreditStatus)[keyof typeof CreditStatus]
+
 }
 
 export type AuthProvider = $Enums.AuthProvider
@@ -958,6 +977,10 @@ export const LedgerEntryType: typeof $Enums.LedgerEntryType
 export type LedgerEntryClassification = $Enums.LedgerEntryClassification
 
 export const LedgerEntryClassification: typeof $Enums.LedgerEntryClassification
+
+export type CreditStatus = $Enums.CreditStatus
+
+export const CreditStatus: typeof $Enums.CreditStatus
 
 /**
  * ##  Prisma Client ʲˢ
@@ -1671,6 +1694,26 @@ export class PrismaClient<
     * ```
     */
   get ledgerEntry(): Prisma.LedgerEntryDelegate<ExtArgs>;
+
+  /**
+   * `prisma.customerCreditEntry`: Exposes CRUD operations for the **CustomerCreditEntry** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more CustomerCreditEntries
+    * const customerCreditEntries = await prisma.customerCreditEntry.findMany()
+    * ```
+    */
+  get customerCreditEntry(): Prisma.CustomerCreditEntryDelegate<ExtArgs>;
+
+  /**
+   * `prisma.creditClearance`: Exposes CRUD operations for the **CreditClearance** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more CreditClearances
+    * const creditClearances = await prisma.creditClearance.findMany()
+    * ```
+    */
+  get creditClearance(): Prisma.CreditClearanceDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -2170,7 +2213,9 @@ export namespace Prisma {
     FuelRecord: 'FuelRecord',
     SafetyDepositRequest: 'SafetyDepositRequest',
     PaymentSession: 'PaymentSession',
-    LedgerEntry: 'LedgerEntry'
+    LedgerEntry: 'LedgerEntry',
+    CustomerCreditEntry: 'CustomerCreditEntry',
+    CreditClearance: 'CreditClearance'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -2186,7 +2231,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehiclePhotoCaptureConfig" | "vehicle" | "vehiclePricingOverride" | "vehicleCustomPricing" | "branchPricingDefaults" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "whatsAppSupportConfig" | "gSTRule" | "timezoneSetting" | "cancellationInvoice" | "returnReceipt" | "featureFlag" | "branchFeatureFlag" | "vehicleFeatureFlag" | "vehicleSwap" | "discountRule" | "durationDiscountSlab" | "branchDiscountConfig" | "discountApplication" | "couponUsageLog" | "manualDiscount" | "branchPaymentConfig" | "paymentTransaction" | "refundRequest" | "cashShift" | "bookingExtension" | "branchChargeConfig" | "chargeEntry" | "chargeOverride" | "fuelRecord" | "safetyDepositRequest" | "paymentSession" | "ledgerEntry"
+      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehiclePhotoCaptureConfig" | "vehicle" | "vehiclePricingOverride" | "vehicleCustomPricing" | "branchPricingDefaults" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "whatsAppSupportConfig" | "gSTRule" | "timezoneSetting" | "cancellationInvoice" | "returnReceipt" | "featureFlag" | "branchFeatureFlag" | "vehicleFeatureFlag" | "vehicleSwap" | "discountRule" | "durationDiscountSlab" | "branchDiscountConfig" | "discountApplication" | "couponUsageLog" | "manualDiscount" | "branchPaymentConfig" | "paymentTransaction" | "refundRequest" | "cashShift" | "bookingExtension" | "branchChargeConfig" | "chargeEntry" | "chargeOverride" | "fuelRecord" | "safetyDepositRequest" | "paymentSession" | "ledgerEntry" | "customerCreditEntry" | "creditClearance"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -6320,6 +6365,146 @@ export namespace Prisma {
           }
         }
       }
+      CustomerCreditEntry: {
+        payload: Prisma.$CustomerCreditEntryPayload<ExtArgs>
+        fields: Prisma.CustomerCreditEntryFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.CustomerCreditEntryFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CustomerCreditEntryPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.CustomerCreditEntryFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CustomerCreditEntryPayload>
+          }
+          findFirst: {
+            args: Prisma.CustomerCreditEntryFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CustomerCreditEntryPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.CustomerCreditEntryFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CustomerCreditEntryPayload>
+          }
+          findMany: {
+            args: Prisma.CustomerCreditEntryFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CustomerCreditEntryPayload>[]
+          }
+          create: {
+            args: Prisma.CustomerCreditEntryCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CustomerCreditEntryPayload>
+          }
+          createMany: {
+            args: Prisma.CustomerCreditEntryCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.CustomerCreditEntryCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CustomerCreditEntryPayload>[]
+          }
+          delete: {
+            args: Prisma.CustomerCreditEntryDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CustomerCreditEntryPayload>
+          }
+          update: {
+            args: Prisma.CustomerCreditEntryUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CustomerCreditEntryPayload>
+          }
+          deleteMany: {
+            args: Prisma.CustomerCreditEntryDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.CustomerCreditEntryUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.CustomerCreditEntryUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CustomerCreditEntryPayload>
+          }
+          aggregate: {
+            args: Prisma.CustomerCreditEntryAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateCustomerCreditEntry>
+          }
+          groupBy: {
+            args: Prisma.CustomerCreditEntryGroupByArgs<ExtArgs>
+            result: $Utils.Optional<CustomerCreditEntryGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.CustomerCreditEntryCountArgs<ExtArgs>
+            result: $Utils.Optional<CustomerCreditEntryCountAggregateOutputType> | number
+          }
+        }
+      }
+      CreditClearance: {
+        payload: Prisma.$CreditClearancePayload<ExtArgs>
+        fields: Prisma.CreditClearanceFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.CreditClearanceFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditClearancePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.CreditClearanceFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditClearancePayload>
+          }
+          findFirst: {
+            args: Prisma.CreditClearanceFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditClearancePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.CreditClearanceFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditClearancePayload>
+          }
+          findMany: {
+            args: Prisma.CreditClearanceFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditClearancePayload>[]
+          }
+          create: {
+            args: Prisma.CreditClearanceCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditClearancePayload>
+          }
+          createMany: {
+            args: Prisma.CreditClearanceCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.CreditClearanceCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditClearancePayload>[]
+          }
+          delete: {
+            args: Prisma.CreditClearanceDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditClearancePayload>
+          }
+          update: {
+            args: Prisma.CreditClearanceUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditClearancePayload>
+          }
+          deleteMany: {
+            args: Prisma.CreditClearanceDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.CreditClearanceUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.CreditClearanceUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditClearancePayload>
+          }
+          aggregate: {
+            args: Prisma.CreditClearanceAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateCreditClearance>
+          }
+          groupBy: {
+            args: Prisma.CreditClearanceGroupByArgs<ExtArgs>
+            result: $Utils.Optional<CreditClearanceGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.CreditClearanceCountArgs<ExtArgs>
+            result: $Utils.Optional<CreditClearanceCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -6510,6 +6695,8 @@ export namespace Prisma {
     paymentSessionsOpened: number
     ledgerEntriesActed: number
     ledgerEntriesVoided: number
+    creditEntriesCreated: number
+    creditClearancesActed: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6542,6 +6729,8 @@ export namespace Prisma {
     paymentSessionsOpened?: boolean | UserCountOutputTypeCountPaymentSessionsOpenedArgs
     ledgerEntriesActed?: boolean | UserCountOutputTypeCountLedgerEntriesActedArgs
     ledgerEntriesVoided?: boolean | UserCountOutputTypeCountLedgerEntriesVoidedArgs
+    creditEntriesCreated?: boolean | UserCountOutputTypeCountCreditEntriesCreatedArgs
+    creditClearancesActed?: boolean | UserCountOutputTypeCountCreditClearancesActedArgs
   }
 
   // Custom InputTypes
@@ -6758,6 +6947,20 @@ export namespace Prisma {
     where?: LedgerEntryWhereInput
   }
 
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountCreditEntriesCreatedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CustomerCreditEntryWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountCreditClearancesActedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CreditClearanceWhereInput
+  }
+
 
   /**
    * Count Type CustomerCountOutputType
@@ -6767,12 +6970,14 @@ export namespace Prisma {
     kycs: number
     bookings: number
     cancellationInvoices: number
+    creditEntries: number
   }
 
   export type CustomerCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     kycs?: boolean | CustomerCountOutputTypeCountKycsArgs
     bookings?: boolean | CustomerCountOutputTypeCountBookingsArgs
     cancellationInvoices?: boolean | CustomerCountOutputTypeCountCancellationInvoicesArgs
+    creditEntries?: boolean | CustomerCountOutputTypeCountCreditEntriesArgs
   }
 
   // Custom InputTypes
@@ -6805,6 +7010,13 @@ export namespace Prisma {
    */
   export type CustomerCountOutputTypeCountCancellationInvoicesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: CancellationInvoiceWhereInput
+  }
+
+  /**
+   * CustomerCountOutputType without action
+   */
+  export type CustomerCountOutputTypeCountCreditEntriesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CustomerCreditEntryWhereInput
   }
 
 
@@ -6914,6 +7126,7 @@ export namespace Prisma {
     refundRequests: number
     extensions: number
     paymentSessions: number
+    creditEntries: number
   }
 
   export type BranchCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6933,6 +7146,7 @@ export namespace Prisma {
     refundRequests?: boolean | BranchCountOutputTypeCountRefundRequestsArgs
     extensions?: boolean | BranchCountOutputTypeCountExtensionsArgs
     paymentSessions?: boolean | BranchCountOutputTypeCountPaymentSessionsArgs
+    creditEntries?: boolean | BranchCountOutputTypeCountCreditEntriesArgs
   }
 
   // Custom InputTypes
@@ -7056,6 +7270,13 @@ export namespace Prisma {
    */
   export type BranchCountOutputTypeCountPaymentSessionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: PaymentSessionWhereInput
+  }
+
+  /**
+   * BranchCountOutputType without action
+   */
+  export type BranchCountOutputTypeCountCreditEntriesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CustomerCreditEntryWhereInput
   }
 
 
@@ -7622,6 +7843,37 @@ export namespace Prisma {
 
 
   /**
+   * Count Type CustomerCreditEntryCountOutputType
+   */
+
+  export type CustomerCreditEntryCountOutputType = {
+    clearances: number
+  }
+
+  export type CustomerCreditEntryCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    clearances?: boolean | CustomerCreditEntryCountOutputTypeCountClearancesArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * CustomerCreditEntryCountOutputType without action
+   */
+  export type CustomerCreditEntryCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomerCreditEntryCountOutputType
+     */
+    select?: CustomerCreditEntryCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * CustomerCreditEntryCountOutputType without action
+   */
+  export type CustomerCreditEntryCountOutputTypeCountClearancesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CreditClearanceWhereInput
+  }
+
+
+  /**
    * Models
    */
 
@@ -7922,6 +8174,8 @@ export namespace Prisma {
     paymentSessionsOpened?: boolean | User$paymentSessionsOpenedArgs<ExtArgs>
     ledgerEntriesActed?: boolean | User$ledgerEntriesActedArgs<ExtArgs>
     ledgerEntriesVoided?: boolean | User$ledgerEntriesVoidedArgs<ExtArgs>
+    creditEntriesCreated?: boolean | User$creditEntriesCreatedArgs<ExtArgs>
+    creditClearancesActed?: boolean | User$creditClearancesActedArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -7990,6 +8244,8 @@ export namespace Prisma {
     paymentSessionsOpened?: boolean | User$paymentSessionsOpenedArgs<ExtArgs>
     ledgerEntriesActed?: boolean | User$ledgerEntriesActedArgs<ExtArgs>
     ledgerEntriesVoided?: boolean | User$ledgerEntriesVoidedArgs<ExtArgs>
+    creditEntriesCreated?: boolean | User$creditEntriesCreatedArgs<ExtArgs>
+    creditClearancesActed?: boolean | User$creditClearancesActedArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type UserIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -8030,6 +8286,8 @@ export namespace Prisma {
       paymentSessionsOpened: Prisma.$PaymentSessionPayload<ExtArgs>[]
       ledgerEntriesActed: Prisma.$LedgerEntryPayload<ExtArgs>[]
       ledgerEntriesVoided: Prisma.$LedgerEntryPayload<ExtArgs>[]
+      creditEntriesCreated: Prisma.$CustomerCreditEntryPayload<ExtArgs>[]
+      creditClearancesActed: Prisma.$CreditClearancePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -8440,6 +8698,8 @@ export namespace Prisma {
     paymentSessionsOpened<T extends User$paymentSessionsOpenedArgs<ExtArgs> = {}>(args?: Subset<T, User$paymentSessionsOpenedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentSessionPayload<ExtArgs>, T, "findMany"> | Null>
     ledgerEntriesActed<T extends User$ledgerEntriesActedArgs<ExtArgs> = {}>(args?: Subset<T, User$ledgerEntriesActedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LedgerEntryPayload<ExtArgs>, T, "findMany"> | Null>
     ledgerEntriesVoided<T extends User$ledgerEntriesVoidedArgs<ExtArgs> = {}>(args?: Subset<T, User$ledgerEntriesVoidedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LedgerEntryPayload<ExtArgs>, T, "findMany"> | Null>
+    creditEntriesCreated<T extends User$creditEntriesCreatedArgs<ExtArgs> = {}>(args?: Subset<T, User$creditEntriesCreatedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CustomerCreditEntryPayload<ExtArgs>, T, "findMany"> | Null>
+    creditClearancesActed<T extends User$creditClearancesActedArgs<ExtArgs> = {}>(args?: Subset<T, User$creditClearancesActedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CreditClearancePayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -9416,6 +9676,46 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: LedgerEntryScalarFieldEnum | LedgerEntryScalarFieldEnum[]
+  }
+
+  /**
+   * User.creditEntriesCreated
+   */
+  export type User$creditEntriesCreatedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomerCreditEntry
+     */
+    select?: CustomerCreditEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CustomerCreditEntryInclude<ExtArgs> | null
+    where?: CustomerCreditEntryWhereInput
+    orderBy?: CustomerCreditEntryOrderByWithRelationInput | CustomerCreditEntryOrderByWithRelationInput[]
+    cursor?: CustomerCreditEntryWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CustomerCreditEntryScalarFieldEnum | CustomerCreditEntryScalarFieldEnum[]
+  }
+
+  /**
+   * User.creditClearancesActed
+   */
+  export type User$creditClearancesActedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditClearance
+     */
+    select?: CreditClearanceSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditClearanceInclude<ExtArgs> | null
+    where?: CreditClearanceWhereInput
+    orderBy?: CreditClearanceOrderByWithRelationInput | CreditClearanceOrderByWithRelationInput[]
+    cursor?: CreditClearanceWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CreditClearanceScalarFieldEnum | CreditClearanceScalarFieldEnum[]
   }
 
   /**
@@ -11743,6 +12043,7 @@ export namespace Prisma {
     kycs?: boolean | Customer$kycsArgs<ExtArgs>
     bookings?: boolean | Customer$bookingsArgs<ExtArgs>
     cancellationInvoices?: boolean | Customer$cancellationInvoicesArgs<ExtArgs>
+    creditEntries?: boolean | Customer$creditEntriesArgs<ExtArgs>
     _count?: boolean | CustomerCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["customer"]>
 
@@ -11786,6 +12087,7 @@ export namespace Prisma {
     kycs?: boolean | Customer$kycsArgs<ExtArgs>
     bookings?: boolean | Customer$bookingsArgs<ExtArgs>
     cancellationInvoices?: boolean | Customer$cancellationInvoicesArgs<ExtArgs>
+    creditEntries?: boolean | Customer$creditEntriesArgs<ExtArgs>
     _count?: boolean | CustomerCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type CustomerIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -11799,6 +12101,7 @@ export namespace Prisma {
       kycs: Prisma.$CustomerKycPayload<ExtArgs>[]
       bookings: Prisma.$BookingPayload<ExtArgs>[]
       cancellationInvoices: Prisma.$CancellationInvoicePayload<ExtArgs>[]
+      creditEntries: Prisma.$CustomerCreditEntryPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -12183,6 +12486,7 @@ export namespace Prisma {
     kycs<T extends Customer$kycsArgs<ExtArgs> = {}>(args?: Subset<T, Customer$kycsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CustomerKycPayload<ExtArgs>, T, "findMany"> | Null>
     bookings<T extends Customer$bookingsArgs<ExtArgs> = {}>(args?: Subset<T, Customer$bookingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findMany"> | Null>
     cancellationInvoices<T extends Customer$cancellationInvoicesArgs<ExtArgs> = {}>(args?: Subset<T, Customer$cancellationInvoicesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CancellationInvoicePayload<ExtArgs>, T, "findMany"> | Null>
+    creditEntries<T extends Customer$creditEntriesArgs<ExtArgs> = {}>(args?: Subset<T, Customer$creditEntriesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CustomerCreditEntryPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -12610,6 +12914,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: CancellationInvoiceScalarFieldEnum | CancellationInvoiceScalarFieldEnum[]
+  }
+
+  /**
+   * Customer.creditEntries
+   */
+  export type Customer$creditEntriesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomerCreditEntry
+     */
+    select?: CustomerCreditEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CustomerCreditEntryInclude<ExtArgs> | null
+    where?: CustomerCreditEntryWhereInput
+    orderBy?: CustomerCreditEntryOrderByWithRelationInput | CustomerCreditEntryOrderByWithRelationInput[]
+    cursor?: CustomerCreditEntryWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CustomerCreditEntryScalarFieldEnum | CustomerCreditEntryScalarFieldEnum[]
   }
 
   /**
@@ -15039,6 +15363,7 @@ export namespace Prisma {
     refundRequests?: boolean | Branch$refundRequestsArgs<ExtArgs>
     extensions?: boolean | Branch$extensionsArgs<ExtArgs>
     paymentSessions?: boolean | Branch$paymentSessionsArgs<ExtArgs>
+    creditEntries?: boolean | Branch$creditEntriesArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["branch"]>
 
@@ -15084,6 +15409,7 @@ export namespace Prisma {
     refundRequests?: boolean | Branch$refundRequestsArgs<ExtArgs>
     extensions?: boolean | Branch$extensionsArgs<ExtArgs>
     paymentSessions?: boolean | Branch$paymentSessionsArgs<ExtArgs>
+    creditEntries?: boolean | Branch$creditEntriesArgs<ExtArgs>
     _count?: boolean | BranchCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type BranchIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -15112,6 +15438,7 @@ export namespace Prisma {
       refundRequests: Prisma.$RefundRequestPayload<ExtArgs>[]
       extensions: Prisma.$BookingExtensionPayload<ExtArgs>[]
       paymentSessions: Prisma.$PaymentSessionPayload<ExtArgs>[]
+      creditEntries: Prisma.$CustomerCreditEntryPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -15506,6 +15833,7 @@ export namespace Prisma {
     refundRequests<T extends Branch$refundRequestsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$refundRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefundRequestPayload<ExtArgs>, T, "findMany"> | Null>
     extensions<T extends Branch$extensionsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$extensionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingExtensionPayload<ExtArgs>, T, "findMany"> | Null>
     paymentSessions<T extends Branch$paymentSessionsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$paymentSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentSessionPayload<ExtArgs>, T, "findMany"> | Null>
+    creditEntries<T extends Branch$creditEntriesArgs<ExtArgs> = {}>(args?: Subset<T, Branch$creditEntriesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CustomerCreditEntryPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -16257,6 +16585,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: PaymentSessionScalarFieldEnum | PaymentSessionScalarFieldEnum[]
+  }
+
+  /**
+   * Branch.creditEntries
+   */
+  export type Branch$creditEntriesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomerCreditEntry
+     */
+    select?: CustomerCreditEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CustomerCreditEntryInclude<ExtArgs> | null
+    where?: CustomerCreditEntryWhereInput
+    orderBy?: CustomerCreditEntryOrderByWithRelationInput | CustomerCreditEntryOrderByWithRelationInput[]
+    cursor?: CustomerCreditEntryWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CustomerCreditEntryScalarFieldEnum | CustomerCreditEntryScalarFieldEnum[]
   }
 
   /**
@@ -31974,6 +32322,7 @@ export namespace Prisma {
     activePaymentSession?: boolean | Booking$activePaymentSessionArgs<ExtArgs>
     paymentSessions?: boolean | Booking$paymentSessionsArgs<ExtArgs>
     ledgerEntries?: boolean | Booking$ledgerEntriesArgs<ExtArgs>
+    creditEntry?: boolean | Booking$creditEntryArgs<ExtArgs>
     _count?: boolean | BookingCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["booking"]>
 
@@ -32139,6 +32488,7 @@ export namespace Prisma {
     activePaymentSession?: boolean | Booking$activePaymentSessionArgs<ExtArgs>
     paymentSessions?: boolean | Booking$paymentSessionsArgs<ExtArgs>
     ledgerEntries?: boolean | Booking$ledgerEntriesArgs<ExtArgs>
+    creditEntry?: boolean | Booking$creditEntryArgs<ExtArgs>
     _count?: boolean | BookingCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type BookingIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -32180,6 +32530,7 @@ export namespace Prisma {
       activePaymentSession: Prisma.$PaymentSessionPayload<ExtArgs> | null
       paymentSessions: Prisma.$PaymentSessionPayload<ExtArgs>[]
       ledgerEntries: Prisma.$LedgerEntryPayload<ExtArgs>[]
+      creditEntry: Prisma.$CustomerCreditEntryPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -32633,6 +32984,7 @@ export namespace Prisma {
     activePaymentSession<T extends Booking$activePaymentSessionArgs<ExtArgs> = {}>(args?: Subset<T, Booking$activePaymentSessionArgs<ExtArgs>>): Prisma__PaymentSessionClient<$Result.GetResult<Prisma.$PaymentSessionPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     paymentSessions<T extends Booking$paymentSessionsArgs<ExtArgs> = {}>(args?: Subset<T, Booking$paymentSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentSessionPayload<ExtArgs>, T, "findMany"> | Null>
     ledgerEntries<T extends Booking$ledgerEntriesArgs<ExtArgs> = {}>(args?: Subset<T, Booking$ledgerEntriesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LedgerEntryPayload<ExtArgs>, T, "findMany"> | Null>
+    creditEntry<T extends Booking$creditEntryArgs<ExtArgs> = {}>(args?: Subset<T, Booking$creditEntryArgs<ExtArgs>>): Prisma__CustomerCreditEntryClient<$Result.GetResult<Prisma.$CustomerCreditEntryPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -33447,6 +33799,21 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: LedgerEntryScalarFieldEnum | LedgerEntryScalarFieldEnum[]
+  }
+
+  /**
+   * Booking.creditEntry
+   */
+  export type Booking$creditEntryArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomerCreditEntry
+     */
+    select?: CustomerCreditEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CustomerCreditEntryInclude<ExtArgs> | null
+    where?: CustomerCreditEntryWhereInput
   }
 
   /**
@@ -74945,6 +75312,2184 @@ export namespace Prisma {
 
 
   /**
+   * Model CustomerCreditEntry
+   */
+
+  export type AggregateCustomerCreditEntry = {
+    _count: CustomerCreditEntryCountAggregateOutputType | null
+    _avg: CustomerCreditEntryAvgAggregateOutputType | null
+    _sum: CustomerCreditEntrySumAggregateOutputType | null
+    _min: CustomerCreditEntryMinAggregateOutputType | null
+    _max: CustomerCreditEntryMaxAggregateOutputType | null
+  }
+
+  export type CustomerCreditEntryAvgAggregateOutputType = {
+    id: number | null
+    customerId: number | null
+    bookingId: number | null
+    branchId: number | null
+    createdById: number | null
+    totalAmount: Decimal | null
+    clearedAmount: Decimal | null
+    pendingAmount: Decimal | null
+  }
+
+  export type CustomerCreditEntrySumAggregateOutputType = {
+    id: number | null
+    customerId: number | null
+    bookingId: number | null
+    branchId: number | null
+    createdById: number | null
+    totalAmount: Decimal | null
+    clearedAmount: Decimal | null
+    pendingAmount: Decimal | null
+  }
+
+  export type CustomerCreditEntryMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    customerId: number | null
+    bookingId: number | null
+    branchId: number | null
+    createdById: number | null
+    totalAmount: Decimal | null
+    clearedAmount: Decimal | null
+    pendingAmount: Decimal | null
+    status: $Enums.CreditStatus | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type CustomerCreditEntryMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    customerId: number | null
+    bookingId: number | null
+    branchId: number | null
+    createdById: number | null
+    totalAmount: Decimal | null
+    clearedAmount: Decimal | null
+    pendingAmount: Decimal | null
+    status: $Enums.CreditStatus | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type CustomerCreditEntryCountAggregateOutputType = {
+    id: number
+    publicId: number
+    customerId: number
+    bookingId: number
+    branchId: number
+    createdById: number
+    sections: number
+    totalAmount: number
+    clearedAmount: number
+    pendingAmount: number
+    status: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type CustomerCreditEntryAvgAggregateInputType = {
+    id?: true
+    customerId?: true
+    bookingId?: true
+    branchId?: true
+    createdById?: true
+    totalAmount?: true
+    clearedAmount?: true
+    pendingAmount?: true
+  }
+
+  export type CustomerCreditEntrySumAggregateInputType = {
+    id?: true
+    customerId?: true
+    bookingId?: true
+    branchId?: true
+    createdById?: true
+    totalAmount?: true
+    clearedAmount?: true
+    pendingAmount?: true
+  }
+
+  export type CustomerCreditEntryMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    customerId?: true
+    bookingId?: true
+    branchId?: true
+    createdById?: true
+    totalAmount?: true
+    clearedAmount?: true
+    pendingAmount?: true
+    status?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type CustomerCreditEntryMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    customerId?: true
+    bookingId?: true
+    branchId?: true
+    createdById?: true
+    totalAmount?: true
+    clearedAmount?: true
+    pendingAmount?: true
+    status?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type CustomerCreditEntryCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    customerId?: true
+    bookingId?: true
+    branchId?: true
+    createdById?: true
+    sections?: true
+    totalAmount?: true
+    clearedAmount?: true
+    pendingAmount?: true
+    status?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type CustomerCreditEntryAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CustomerCreditEntry to aggregate.
+     */
+    where?: CustomerCreditEntryWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CustomerCreditEntries to fetch.
+     */
+    orderBy?: CustomerCreditEntryOrderByWithRelationInput | CustomerCreditEntryOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: CustomerCreditEntryWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CustomerCreditEntries from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CustomerCreditEntries.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned CustomerCreditEntries
+    **/
+    _count?: true | CustomerCreditEntryCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: CustomerCreditEntryAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: CustomerCreditEntrySumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: CustomerCreditEntryMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: CustomerCreditEntryMaxAggregateInputType
+  }
+
+  export type GetCustomerCreditEntryAggregateType<T extends CustomerCreditEntryAggregateArgs> = {
+        [P in keyof T & keyof AggregateCustomerCreditEntry]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateCustomerCreditEntry[P]>
+      : GetScalarType<T[P], AggregateCustomerCreditEntry[P]>
+  }
+
+
+
+
+  export type CustomerCreditEntryGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CustomerCreditEntryWhereInput
+    orderBy?: CustomerCreditEntryOrderByWithAggregationInput | CustomerCreditEntryOrderByWithAggregationInput[]
+    by: CustomerCreditEntryScalarFieldEnum[] | CustomerCreditEntryScalarFieldEnum
+    having?: CustomerCreditEntryScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: CustomerCreditEntryCountAggregateInputType | true
+    _avg?: CustomerCreditEntryAvgAggregateInputType
+    _sum?: CustomerCreditEntrySumAggregateInputType
+    _min?: CustomerCreditEntryMinAggregateInputType
+    _max?: CustomerCreditEntryMaxAggregateInputType
+  }
+
+  export type CustomerCreditEntryGroupByOutputType = {
+    id: number
+    publicId: string
+    customerId: number
+    bookingId: number
+    branchId: number
+    createdById: number
+    sections: JsonValue
+    totalAmount: Decimal
+    clearedAmount: Decimal
+    pendingAmount: Decimal
+    status: $Enums.CreditStatus
+    createdAt: Date
+    updatedAt: Date
+    _count: CustomerCreditEntryCountAggregateOutputType | null
+    _avg: CustomerCreditEntryAvgAggregateOutputType | null
+    _sum: CustomerCreditEntrySumAggregateOutputType | null
+    _min: CustomerCreditEntryMinAggregateOutputType | null
+    _max: CustomerCreditEntryMaxAggregateOutputType | null
+  }
+
+  type GetCustomerCreditEntryGroupByPayload<T extends CustomerCreditEntryGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<CustomerCreditEntryGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof CustomerCreditEntryGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], CustomerCreditEntryGroupByOutputType[P]>
+            : GetScalarType<T[P], CustomerCreditEntryGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type CustomerCreditEntrySelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    customerId?: boolean
+    bookingId?: boolean
+    branchId?: boolean
+    createdById?: boolean
+    sections?: boolean
+    totalAmount?: boolean
+    clearedAmount?: boolean
+    pendingAmount?: boolean
+    status?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    customer?: boolean | CustomerDefaultArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    createdBy?: boolean | UserDefaultArgs<ExtArgs>
+    clearances?: boolean | CustomerCreditEntry$clearancesArgs<ExtArgs>
+    _count?: boolean | CustomerCreditEntryCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["customerCreditEntry"]>
+
+  export type CustomerCreditEntrySelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    customerId?: boolean
+    bookingId?: boolean
+    branchId?: boolean
+    createdById?: boolean
+    sections?: boolean
+    totalAmount?: boolean
+    clearedAmount?: boolean
+    pendingAmount?: boolean
+    status?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    customer?: boolean | CustomerDefaultArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    createdBy?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["customerCreditEntry"]>
+
+  export type CustomerCreditEntrySelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    customerId?: boolean
+    bookingId?: boolean
+    branchId?: boolean
+    createdById?: boolean
+    sections?: boolean
+    totalAmount?: boolean
+    clearedAmount?: boolean
+    pendingAmount?: boolean
+    status?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type CustomerCreditEntryInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    customer?: boolean | CustomerDefaultArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    createdBy?: boolean | UserDefaultArgs<ExtArgs>
+    clearances?: boolean | CustomerCreditEntry$clearancesArgs<ExtArgs>
+    _count?: boolean | CustomerCreditEntryCountOutputTypeDefaultArgs<ExtArgs>
+  }
+  export type CustomerCreditEntryIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    customer?: boolean | CustomerDefaultArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    branch?: boolean | BranchDefaultArgs<ExtArgs>
+    createdBy?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $CustomerCreditEntryPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "CustomerCreditEntry"
+    objects: {
+      customer: Prisma.$CustomerPayload<ExtArgs>
+      booking: Prisma.$BookingPayload<ExtArgs>
+      branch: Prisma.$BranchPayload<ExtArgs>
+      createdBy: Prisma.$UserPayload<ExtArgs>
+      clearances: Prisma.$CreditClearancePayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      customerId: number
+      bookingId: number
+      branchId: number
+      createdById: number
+      sections: Prisma.JsonValue
+      totalAmount: Prisma.Decimal
+      clearedAmount: Prisma.Decimal
+      pendingAmount: Prisma.Decimal
+      status: $Enums.CreditStatus
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["customerCreditEntry"]>
+    composites: {}
+  }
+
+  type CustomerCreditEntryGetPayload<S extends boolean | null | undefined | CustomerCreditEntryDefaultArgs> = $Result.GetResult<Prisma.$CustomerCreditEntryPayload, S>
+
+  type CustomerCreditEntryCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<CustomerCreditEntryFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: CustomerCreditEntryCountAggregateInputType | true
+    }
+
+  export interface CustomerCreditEntryDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['CustomerCreditEntry'], meta: { name: 'CustomerCreditEntry' } }
+    /**
+     * Find zero or one CustomerCreditEntry that matches the filter.
+     * @param {CustomerCreditEntryFindUniqueArgs} args - Arguments to find a CustomerCreditEntry
+     * @example
+     * // Get one CustomerCreditEntry
+     * const customerCreditEntry = await prisma.customerCreditEntry.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends CustomerCreditEntryFindUniqueArgs>(args: SelectSubset<T, CustomerCreditEntryFindUniqueArgs<ExtArgs>>): Prisma__CustomerCreditEntryClient<$Result.GetResult<Prisma.$CustomerCreditEntryPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one CustomerCreditEntry that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {CustomerCreditEntryFindUniqueOrThrowArgs} args - Arguments to find a CustomerCreditEntry
+     * @example
+     * // Get one CustomerCreditEntry
+     * const customerCreditEntry = await prisma.customerCreditEntry.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends CustomerCreditEntryFindUniqueOrThrowArgs>(args: SelectSubset<T, CustomerCreditEntryFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CustomerCreditEntryClient<$Result.GetResult<Prisma.$CustomerCreditEntryPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first CustomerCreditEntry that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CustomerCreditEntryFindFirstArgs} args - Arguments to find a CustomerCreditEntry
+     * @example
+     * // Get one CustomerCreditEntry
+     * const customerCreditEntry = await prisma.customerCreditEntry.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends CustomerCreditEntryFindFirstArgs>(args?: SelectSubset<T, CustomerCreditEntryFindFirstArgs<ExtArgs>>): Prisma__CustomerCreditEntryClient<$Result.GetResult<Prisma.$CustomerCreditEntryPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first CustomerCreditEntry that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CustomerCreditEntryFindFirstOrThrowArgs} args - Arguments to find a CustomerCreditEntry
+     * @example
+     * // Get one CustomerCreditEntry
+     * const customerCreditEntry = await prisma.customerCreditEntry.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends CustomerCreditEntryFindFirstOrThrowArgs>(args?: SelectSubset<T, CustomerCreditEntryFindFirstOrThrowArgs<ExtArgs>>): Prisma__CustomerCreditEntryClient<$Result.GetResult<Prisma.$CustomerCreditEntryPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more CustomerCreditEntries that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CustomerCreditEntryFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all CustomerCreditEntries
+     * const customerCreditEntries = await prisma.customerCreditEntry.findMany()
+     * 
+     * // Get first 10 CustomerCreditEntries
+     * const customerCreditEntries = await prisma.customerCreditEntry.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const customerCreditEntryWithIdOnly = await prisma.customerCreditEntry.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends CustomerCreditEntryFindManyArgs>(args?: SelectSubset<T, CustomerCreditEntryFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CustomerCreditEntryPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a CustomerCreditEntry.
+     * @param {CustomerCreditEntryCreateArgs} args - Arguments to create a CustomerCreditEntry.
+     * @example
+     * // Create one CustomerCreditEntry
+     * const CustomerCreditEntry = await prisma.customerCreditEntry.create({
+     *   data: {
+     *     // ... data to create a CustomerCreditEntry
+     *   }
+     * })
+     * 
+     */
+    create<T extends CustomerCreditEntryCreateArgs>(args: SelectSubset<T, CustomerCreditEntryCreateArgs<ExtArgs>>): Prisma__CustomerCreditEntryClient<$Result.GetResult<Prisma.$CustomerCreditEntryPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many CustomerCreditEntries.
+     * @param {CustomerCreditEntryCreateManyArgs} args - Arguments to create many CustomerCreditEntries.
+     * @example
+     * // Create many CustomerCreditEntries
+     * const customerCreditEntry = await prisma.customerCreditEntry.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends CustomerCreditEntryCreateManyArgs>(args?: SelectSubset<T, CustomerCreditEntryCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many CustomerCreditEntries and returns the data saved in the database.
+     * @param {CustomerCreditEntryCreateManyAndReturnArgs} args - Arguments to create many CustomerCreditEntries.
+     * @example
+     * // Create many CustomerCreditEntries
+     * const customerCreditEntry = await prisma.customerCreditEntry.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many CustomerCreditEntries and only return the `id`
+     * const customerCreditEntryWithIdOnly = await prisma.customerCreditEntry.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends CustomerCreditEntryCreateManyAndReturnArgs>(args?: SelectSubset<T, CustomerCreditEntryCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CustomerCreditEntryPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a CustomerCreditEntry.
+     * @param {CustomerCreditEntryDeleteArgs} args - Arguments to delete one CustomerCreditEntry.
+     * @example
+     * // Delete one CustomerCreditEntry
+     * const CustomerCreditEntry = await prisma.customerCreditEntry.delete({
+     *   where: {
+     *     // ... filter to delete one CustomerCreditEntry
+     *   }
+     * })
+     * 
+     */
+    delete<T extends CustomerCreditEntryDeleteArgs>(args: SelectSubset<T, CustomerCreditEntryDeleteArgs<ExtArgs>>): Prisma__CustomerCreditEntryClient<$Result.GetResult<Prisma.$CustomerCreditEntryPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one CustomerCreditEntry.
+     * @param {CustomerCreditEntryUpdateArgs} args - Arguments to update one CustomerCreditEntry.
+     * @example
+     * // Update one CustomerCreditEntry
+     * const customerCreditEntry = await prisma.customerCreditEntry.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends CustomerCreditEntryUpdateArgs>(args: SelectSubset<T, CustomerCreditEntryUpdateArgs<ExtArgs>>): Prisma__CustomerCreditEntryClient<$Result.GetResult<Prisma.$CustomerCreditEntryPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more CustomerCreditEntries.
+     * @param {CustomerCreditEntryDeleteManyArgs} args - Arguments to filter CustomerCreditEntries to delete.
+     * @example
+     * // Delete a few CustomerCreditEntries
+     * const { count } = await prisma.customerCreditEntry.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends CustomerCreditEntryDeleteManyArgs>(args?: SelectSubset<T, CustomerCreditEntryDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more CustomerCreditEntries.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CustomerCreditEntryUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many CustomerCreditEntries
+     * const customerCreditEntry = await prisma.customerCreditEntry.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends CustomerCreditEntryUpdateManyArgs>(args: SelectSubset<T, CustomerCreditEntryUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one CustomerCreditEntry.
+     * @param {CustomerCreditEntryUpsertArgs} args - Arguments to update or create a CustomerCreditEntry.
+     * @example
+     * // Update or create a CustomerCreditEntry
+     * const customerCreditEntry = await prisma.customerCreditEntry.upsert({
+     *   create: {
+     *     // ... data to create a CustomerCreditEntry
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the CustomerCreditEntry we want to update
+     *   }
+     * })
+     */
+    upsert<T extends CustomerCreditEntryUpsertArgs>(args: SelectSubset<T, CustomerCreditEntryUpsertArgs<ExtArgs>>): Prisma__CustomerCreditEntryClient<$Result.GetResult<Prisma.$CustomerCreditEntryPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of CustomerCreditEntries.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CustomerCreditEntryCountArgs} args - Arguments to filter CustomerCreditEntries to count.
+     * @example
+     * // Count the number of CustomerCreditEntries
+     * const count = await prisma.customerCreditEntry.count({
+     *   where: {
+     *     // ... the filter for the CustomerCreditEntries we want to count
+     *   }
+     * })
+    **/
+    count<T extends CustomerCreditEntryCountArgs>(
+      args?: Subset<T, CustomerCreditEntryCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], CustomerCreditEntryCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a CustomerCreditEntry.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CustomerCreditEntryAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends CustomerCreditEntryAggregateArgs>(args: Subset<T, CustomerCreditEntryAggregateArgs>): Prisma.PrismaPromise<GetCustomerCreditEntryAggregateType<T>>
+
+    /**
+     * Group by CustomerCreditEntry.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CustomerCreditEntryGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends CustomerCreditEntryGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: CustomerCreditEntryGroupByArgs['orderBy'] }
+        : { orderBy?: CustomerCreditEntryGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, CustomerCreditEntryGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCustomerCreditEntryGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the CustomerCreditEntry model
+   */
+  readonly fields: CustomerCreditEntryFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for CustomerCreditEntry.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__CustomerCreditEntryClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    customer<T extends CustomerDefaultArgs<ExtArgs> = {}>(args?: Subset<T, CustomerDefaultArgs<ExtArgs>>): Prisma__CustomerClient<$Result.GetResult<Prisma.$CustomerPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    booking<T extends BookingDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BookingDefaultArgs<ExtArgs>>): Prisma__BookingClient<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    branch<T extends BranchDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BranchDefaultArgs<ExtArgs>>): Prisma__BranchClient<$Result.GetResult<Prisma.$BranchPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    createdBy<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    clearances<T extends CustomerCreditEntry$clearancesArgs<ExtArgs> = {}>(args?: Subset<T, CustomerCreditEntry$clearancesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CreditClearancePayload<ExtArgs>, T, "findMany"> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the CustomerCreditEntry model
+   */ 
+  interface CustomerCreditEntryFieldRefs {
+    readonly id: FieldRef<"CustomerCreditEntry", 'Int'>
+    readonly publicId: FieldRef<"CustomerCreditEntry", 'String'>
+    readonly customerId: FieldRef<"CustomerCreditEntry", 'Int'>
+    readonly bookingId: FieldRef<"CustomerCreditEntry", 'Int'>
+    readonly branchId: FieldRef<"CustomerCreditEntry", 'Int'>
+    readonly createdById: FieldRef<"CustomerCreditEntry", 'Int'>
+    readonly sections: FieldRef<"CustomerCreditEntry", 'Json'>
+    readonly totalAmount: FieldRef<"CustomerCreditEntry", 'Decimal'>
+    readonly clearedAmount: FieldRef<"CustomerCreditEntry", 'Decimal'>
+    readonly pendingAmount: FieldRef<"CustomerCreditEntry", 'Decimal'>
+    readonly status: FieldRef<"CustomerCreditEntry", 'CreditStatus'>
+    readonly createdAt: FieldRef<"CustomerCreditEntry", 'DateTime'>
+    readonly updatedAt: FieldRef<"CustomerCreditEntry", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * CustomerCreditEntry findUnique
+   */
+  export type CustomerCreditEntryFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomerCreditEntry
+     */
+    select?: CustomerCreditEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CustomerCreditEntryInclude<ExtArgs> | null
+    /**
+     * Filter, which CustomerCreditEntry to fetch.
+     */
+    where: CustomerCreditEntryWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CustomerCreditEntry findUniqueOrThrow
+   */
+  export type CustomerCreditEntryFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomerCreditEntry
+     */
+    select?: CustomerCreditEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CustomerCreditEntryInclude<ExtArgs> | null
+    /**
+     * Filter, which CustomerCreditEntry to fetch.
+     */
+    where: CustomerCreditEntryWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CustomerCreditEntry findFirst
+   */
+  export type CustomerCreditEntryFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomerCreditEntry
+     */
+    select?: CustomerCreditEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CustomerCreditEntryInclude<ExtArgs> | null
+    /**
+     * Filter, which CustomerCreditEntry to fetch.
+     */
+    where?: CustomerCreditEntryWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CustomerCreditEntries to fetch.
+     */
+    orderBy?: CustomerCreditEntryOrderByWithRelationInput | CustomerCreditEntryOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CustomerCreditEntries.
+     */
+    cursor?: CustomerCreditEntryWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CustomerCreditEntries from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CustomerCreditEntries.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CustomerCreditEntries.
+     */
+    distinct?: CustomerCreditEntryScalarFieldEnum | CustomerCreditEntryScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CustomerCreditEntry findFirstOrThrow
+   */
+  export type CustomerCreditEntryFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomerCreditEntry
+     */
+    select?: CustomerCreditEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CustomerCreditEntryInclude<ExtArgs> | null
+    /**
+     * Filter, which CustomerCreditEntry to fetch.
+     */
+    where?: CustomerCreditEntryWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CustomerCreditEntries to fetch.
+     */
+    orderBy?: CustomerCreditEntryOrderByWithRelationInput | CustomerCreditEntryOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CustomerCreditEntries.
+     */
+    cursor?: CustomerCreditEntryWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CustomerCreditEntries from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CustomerCreditEntries.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CustomerCreditEntries.
+     */
+    distinct?: CustomerCreditEntryScalarFieldEnum | CustomerCreditEntryScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CustomerCreditEntry findMany
+   */
+  export type CustomerCreditEntryFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomerCreditEntry
+     */
+    select?: CustomerCreditEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CustomerCreditEntryInclude<ExtArgs> | null
+    /**
+     * Filter, which CustomerCreditEntries to fetch.
+     */
+    where?: CustomerCreditEntryWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CustomerCreditEntries to fetch.
+     */
+    orderBy?: CustomerCreditEntryOrderByWithRelationInput | CustomerCreditEntryOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing CustomerCreditEntries.
+     */
+    cursor?: CustomerCreditEntryWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CustomerCreditEntries from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CustomerCreditEntries.
+     */
+    skip?: number
+    distinct?: CustomerCreditEntryScalarFieldEnum | CustomerCreditEntryScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CustomerCreditEntry create
+   */
+  export type CustomerCreditEntryCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomerCreditEntry
+     */
+    select?: CustomerCreditEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CustomerCreditEntryInclude<ExtArgs> | null
+    /**
+     * The data needed to create a CustomerCreditEntry.
+     */
+    data: XOR<CustomerCreditEntryCreateInput, CustomerCreditEntryUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CustomerCreditEntry createMany
+   */
+  export type CustomerCreditEntryCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many CustomerCreditEntries.
+     */
+    data: CustomerCreditEntryCreateManyInput | CustomerCreditEntryCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * CustomerCreditEntry createManyAndReturn
+   */
+  export type CustomerCreditEntryCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomerCreditEntry
+     */
+    select?: CustomerCreditEntrySelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many CustomerCreditEntries.
+     */
+    data: CustomerCreditEntryCreateManyInput | CustomerCreditEntryCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CustomerCreditEntryIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * CustomerCreditEntry update
+   */
+  export type CustomerCreditEntryUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomerCreditEntry
+     */
+    select?: CustomerCreditEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CustomerCreditEntryInclude<ExtArgs> | null
+    /**
+     * The data needed to update a CustomerCreditEntry.
+     */
+    data: XOR<CustomerCreditEntryUpdateInput, CustomerCreditEntryUncheckedUpdateInput>
+    /**
+     * Choose, which CustomerCreditEntry to update.
+     */
+    where: CustomerCreditEntryWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CustomerCreditEntry updateMany
+   */
+  export type CustomerCreditEntryUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update CustomerCreditEntries.
+     */
+    data: XOR<CustomerCreditEntryUpdateManyMutationInput, CustomerCreditEntryUncheckedUpdateManyInput>
+    /**
+     * Filter which CustomerCreditEntries to update
+     */
+    where?: CustomerCreditEntryWhereInput
+  }
+
+  /**
+   * CustomerCreditEntry upsert
+   */
+  export type CustomerCreditEntryUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomerCreditEntry
+     */
+    select?: CustomerCreditEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CustomerCreditEntryInclude<ExtArgs> | null
+    /**
+     * The filter to search for the CustomerCreditEntry to update in case it exists.
+     */
+    where: CustomerCreditEntryWhereUniqueInput
+    /**
+     * In case the CustomerCreditEntry found by the `where` argument doesn't exist, create a new CustomerCreditEntry with this data.
+     */
+    create: XOR<CustomerCreditEntryCreateInput, CustomerCreditEntryUncheckedCreateInput>
+    /**
+     * In case the CustomerCreditEntry was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<CustomerCreditEntryUpdateInput, CustomerCreditEntryUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CustomerCreditEntry delete
+   */
+  export type CustomerCreditEntryDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomerCreditEntry
+     */
+    select?: CustomerCreditEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CustomerCreditEntryInclude<ExtArgs> | null
+    /**
+     * Filter which CustomerCreditEntry to delete.
+     */
+    where: CustomerCreditEntryWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CustomerCreditEntry deleteMany
+   */
+  export type CustomerCreditEntryDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CustomerCreditEntries to delete
+     */
+    where?: CustomerCreditEntryWhereInput
+  }
+
+  /**
+   * CustomerCreditEntry.clearances
+   */
+  export type CustomerCreditEntry$clearancesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditClearance
+     */
+    select?: CreditClearanceSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditClearanceInclude<ExtArgs> | null
+    where?: CreditClearanceWhereInput
+    orderBy?: CreditClearanceOrderByWithRelationInput | CreditClearanceOrderByWithRelationInput[]
+    cursor?: CreditClearanceWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CreditClearanceScalarFieldEnum | CreditClearanceScalarFieldEnum[]
+  }
+
+  /**
+   * CustomerCreditEntry without action
+   */
+  export type CustomerCreditEntryDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomerCreditEntry
+     */
+    select?: CustomerCreditEntrySelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CustomerCreditEntryInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model CreditClearance
+   */
+
+  export type AggregateCreditClearance = {
+    _count: CreditClearanceCountAggregateOutputType | null
+    _avg: CreditClearanceAvgAggregateOutputType | null
+    _sum: CreditClearanceSumAggregateOutputType | null
+    _min: CreditClearanceMinAggregateOutputType | null
+    _max: CreditClearanceMaxAggregateOutputType | null
+  }
+
+  export type CreditClearanceAvgAggregateOutputType = {
+    id: number | null
+    creditEntryId: number | null
+    amountCleared: Decimal | null
+    clearedById: number | null
+  }
+
+  export type CreditClearanceSumAggregateOutputType = {
+    id: number | null
+    creditEntryId: number | null
+    amountCleared: Decimal | null
+    clearedById: number | null
+  }
+
+  export type CreditClearanceMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    creditEntryId: number | null
+    amountCleared: Decimal | null
+    paymentMethod: string | null
+    transactionRef: string | null
+    clearedById: number | null
+    clearedAt: Date | null
+  }
+
+  export type CreditClearanceMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    creditEntryId: number | null
+    amountCleared: Decimal | null
+    paymentMethod: string | null
+    transactionRef: string | null
+    clearedById: number | null
+    clearedAt: Date | null
+  }
+
+  export type CreditClearanceCountAggregateOutputType = {
+    id: number
+    publicId: number
+    creditEntryId: number
+    clearedSectionKeys: number
+    amountCleared: number
+    paymentMethod: number
+    transactionRef: number
+    clearedById: number
+    clearedAt: number
+    _all: number
+  }
+
+
+  export type CreditClearanceAvgAggregateInputType = {
+    id?: true
+    creditEntryId?: true
+    amountCleared?: true
+    clearedById?: true
+  }
+
+  export type CreditClearanceSumAggregateInputType = {
+    id?: true
+    creditEntryId?: true
+    amountCleared?: true
+    clearedById?: true
+  }
+
+  export type CreditClearanceMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    creditEntryId?: true
+    amountCleared?: true
+    paymentMethod?: true
+    transactionRef?: true
+    clearedById?: true
+    clearedAt?: true
+  }
+
+  export type CreditClearanceMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    creditEntryId?: true
+    amountCleared?: true
+    paymentMethod?: true
+    transactionRef?: true
+    clearedById?: true
+    clearedAt?: true
+  }
+
+  export type CreditClearanceCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    creditEntryId?: true
+    clearedSectionKeys?: true
+    amountCleared?: true
+    paymentMethod?: true
+    transactionRef?: true
+    clearedById?: true
+    clearedAt?: true
+    _all?: true
+  }
+
+  export type CreditClearanceAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CreditClearance to aggregate.
+     */
+    where?: CreditClearanceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CreditClearances to fetch.
+     */
+    orderBy?: CreditClearanceOrderByWithRelationInput | CreditClearanceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: CreditClearanceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CreditClearances from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CreditClearances.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned CreditClearances
+    **/
+    _count?: true | CreditClearanceCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: CreditClearanceAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: CreditClearanceSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: CreditClearanceMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: CreditClearanceMaxAggregateInputType
+  }
+
+  export type GetCreditClearanceAggregateType<T extends CreditClearanceAggregateArgs> = {
+        [P in keyof T & keyof AggregateCreditClearance]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateCreditClearance[P]>
+      : GetScalarType<T[P], AggregateCreditClearance[P]>
+  }
+
+
+
+
+  export type CreditClearanceGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CreditClearanceWhereInput
+    orderBy?: CreditClearanceOrderByWithAggregationInput | CreditClearanceOrderByWithAggregationInput[]
+    by: CreditClearanceScalarFieldEnum[] | CreditClearanceScalarFieldEnum
+    having?: CreditClearanceScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: CreditClearanceCountAggregateInputType | true
+    _avg?: CreditClearanceAvgAggregateInputType
+    _sum?: CreditClearanceSumAggregateInputType
+    _min?: CreditClearanceMinAggregateInputType
+    _max?: CreditClearanceMaxAggregateInputType
+  }
+
+  export type CreditClearanceGroupByOutputType = {
+    id: number
+    publicId: string
+    creditEntryId: number
+    clearedSectionKeys: JsonValue
+    amountCleared: Decimal
+    paymentMethod: string
+    transactionRef: string | null
+    clearedById: number
+    clearedAt: Date
+    _count: CreditClearanceCountAggregateOutputType | null
+    _avg: CreditClearanceAvgAggregateOutputType | null
+    _sum: CreditClearanceSumAggregateOutputType | null
+    _min: CreditClearanceMinAggregateOutputType | null
+    _max: CreditClearanceMaxAggregateOutputType | null
+  }
+
+  type GetCreditClearanceGroupByPayload<T extends CreditClearanceGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<CreditClearanceGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof CreditClearanceGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], CreditClearanceGroupByOutputType[P]>
+            : GetScalarType<T[P], CreditClearanceGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type CreditClearanceSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    creditEntryId?: boolean
+    clearedSectionKeys?: boolean
+    amountCleared?: boolean
+    paymentMethod?: boolean
+    transactionRef?: boolean
+    clearedById?: boolean
+    clearedAt?: boolean
+    creditEntry?: boolean | CustomerCreditEntryDefaultArgs<ExtArgs>
+    clearedBy?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["creditClearance"]>
+
+  export type CreditClearanceSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    creditEntryId?: boolean
+    clearedSectionKeys?: boolean
+    amountCleared?: boolean
+    paymentMethod?: boolean
+    transactionRef?: boolean
+    clearedById?: boolean
+    clearedAt?: boolean
+    creditEntry?: boolean | CustomerCreditEntryDefaultArgs<ExtArgs>
+    clearedBy?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["creditClearance"]>
+
+  export type CreditClearanceSelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    creditEntryId?: boolean
+    clearedSectionKeys?: boolean
+    amountCleared?: boolean
+    paymentMethod?: boolean
+    transactionRef?: boolean
+    clearedById?: boolean
+    clearedAt?: boolean
+  }
+
+  export type CreditClearanceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    creditEntry?: boolean | CustomerCreditEntryDefaultArgs<ExtArgs>
+    clearedBy?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type CreditClearanceIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    creditEntry?: boolean | CustomerCreditEntryDefaultArgs<ExtArgs>
+    clearedBy?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $CreditClearancePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "CreditClearance"
+    objects: {
+      creditEntry: Prisma.$CustomerCreditEntryPayload<ExtArgs>
+      clearedBy: Prisma.$UserPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      creditEntryId: number
+      clearedSectionKeys: Prisma.JsonValue
+      amountCleared: Prisma.Decimal
+      paymentMethod: string
+      transactionRef: string | null
+      clearedById: number
+      clearedAt: Date
+    }, ExtArgs["result"]["creditClearance"]>
+    composites: {}
+  }
+
+  type CreditClearanceGetPayload<S extends boolean | null | undefined | CreditClearanceDefaultArgs> = $Result.GetResult<Prisma.$CreditClearancePayload, S>
+
+  type CreditClearanceCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<CreditClearanceFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: CreditClearanceCountAggregateInputType | true
+    }
+
+  export interface CreditClearanceDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['CreditClearance'], meta: { name: 'CreditClearance' } }
+    /**
+     * Find zero or one CreditClearance that matches the filter.
+     * @param {CreditClearanceFindUniqueArgs} args - Arguments to find a CreditClearance
+     * @example
+     * // Get one CreditClearance
+     * const creditClearance = await prisma.creditClearance.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends CreditClearanceFindUniqueArgs>(args: SelectSubset<T, CreditClearanceFindUniqueArgs<ExtArgs>>): Prisma__CreditClearanceClient<$Result.GetResult<Prisma.$CreditClearancePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one CreditClearance that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {CreditClearanceFindUniqueOrThrowArgs} args - Arguments to find a CreditClearance
+     * @example
+     * // Get one CreditClearance
+     * const creditClearance = await prisma.creditClearance.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends CreditClearanceFindUniqueOrThrowArgs>(args: SelectSubset<T, CreditClearanceFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CreditClearanceClient<$Result.GetResult<Prisma.$CreditClearancePayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first CreditClearance that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CreditClearanceFindFirstArgs} args - Arguments to find a CreditClearance
+     * @example
+     * // Get one CreditClearance
+     * const creditClearance = await prisma.creditClearance.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends CreditClearanceFindFirstArgs>(args?: SelectSubset<T, CreditClearanceFindFirstArgs<ExtArgs>>): Prisma__CreditClearanceClient<$Result.GetResult<Prisma.$CreditClearancePayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first CreditClearance that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CreditClearanceFindFirstOrThrowArgs} args - Arguments to find a CreditClearance
+     * @example
+     * // Get one CreditClearance
+     * const creditClearance = await prisma.creditClearance.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends CreditClearanceFindFirstOrThrowArgs>(args?: SelectSubset<T, CreditClearanceFindFirstOrThrowArgs<ExtArgs>>): Prisma__CreditClearanceClient<$Result.GetResult<Prisma.$CreditClearancePayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more CreditClearances that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CreditClearanceFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all CreditClearances
+     * const creditClearances = await prisma.creditClearance.findMany()
+     * 
+     * // Get first 10 CreditClearances
+     * const creditClearances = await prisma.creditClearance.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const creditClearanceWithIdOnly = await prisma.creditClearance.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends CreditClearanceFindManyArgs>(args?: SelectSubset<T, CreditClearanceFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CreditClearancePayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a CreditClearance.
+     * @param {CreditClearanceCreateArgs} args - Arguments to create a CreditClearance.
+     * @example
+     * // Create one CreditClearance
+     * const CreditClearance = await prisma.creditClearance.create({
+     *   data: {
+     *     // ... data to create a CreditClearance
+     *   }
+     * })
+     * 
+     */
+    create<T extends CreditClearanceCreateArgs>(args: SelectSubset<T, CreditClearanceCreateArgs<ExtArgs>>): Prisma__CreditClearanceClient<$Result.GetResult<Prisma.$CreditClearancePayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many CreditClearances.
+     * @param {CreditClearanceCreateManyArgs} args - Arguments to create many CreditClearances.
+     * @example
+     * // Create many CreditClearances
+     * const creditClearance = await prisma.creditClearance.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends CreditClearanceCreateManyArgs>(args?: SelectSubset<T, CreditClearanceCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many CreditClearances and returns the data saved in the database.
+     * @param {CreditClearanceCreateManyAndReturnArgs} args - Arguments to create many CreditClearances.
+     * @example
+     * // Create many CreditClearances
+     * const creditClearance = await prisma.creditClearance.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many CreditClearances and only return the `id`
+     * const creditClearanceWithIdOnly = await prisma.creditClearance.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends CreditClearanceCreateManyAndReturnArgs>(args?: SelectSubset<T, CreditClearanceCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CreditClearancePayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a CreditClearance.
+     * @param {CreditClearanceDeleteArgs} args - Arguments to delete one CreditClearance.
+     * @example
+     * // Delete one CreditClearance
+     * const CreditClearance = await prisma.creditClearance.delete({
+     *   where: {
+     *     // ... filter to delete one CreditClearance
+     *   }
+     * })
+     * 
+     */
+    delete<T extends CreditClearanceDeleteArgs>(args: SelectSubset<T, CreditClearanceDeleteArgs<ExtArgs>>): Prisma__CreditClearanceClient<$Result.GetResult<Prisma.$CreditClearancePayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one CreditClearance.
+     * @param {CreditClearanceUpdateArgs} args - Arguments to update one CreditClearance.
+     * @example
+     * // Update one CreditClearance
+     * const creditClearance = await prisma.creditClearance.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends CreditClearanceUpdateArgs>(args: SelectSubset<T, CreditClearanceUpdateArgs<ExtArgs>>): Prisma__CreditClearanceClient<$Result.GetResult<Prisma.$CreditClearancePayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more CreditClearances.
+     * @param {CreditClearanceDeleteManyArgs} args - Arguments to filter CreditClearances to delete.
+     * @example
+     * // Delete a few CreditClearances
+     * const { count } = await prisma.creditClearance.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends CreditClearanceDeleteManyArgs>(args?: SelectSubset<T, CreditClearanceDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more CreditClearances.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CreditClearanceUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many CreditClearances
+     * const creditClearance = await prisma.creditClearance.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends CreditClearanceUpdateManyArgs>(args: SelectSubset<T, CreditClearanceUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one CreditClearance.
+     * @param {CreditClearanceUpsertArgs} args - Arguments to update or create a CreditClearance.
+     * @example
+     * // Update or create a CreditClearance
+     * const creditClearance = await prisma.creditClearance.upsert({
+     *   create: {
+     *     // ... data to create a CreditClearance
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the CreditClearance we want to update
+     *   }
+     * })
+     */
+    upsert<T extends CreditClearanceUpsertArgs>(args: SelectSubset<T, CreditClearanceUpsertArgs<ExtArgs>>): Prisma__CreditClearanceClient<$Result.GetResult<Prisma.$CreditClearancePayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of CreditClearances.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CreditClearanceCountArgs} args - Arguments to filter CreditClearances to count.
+     * @example
+     * // Count the number of CreditClearances
+     * const count = await prisma.creditClearance.count({
+     *   where: {
+     *     // ... the filter for the CreditClearances we want to count
+     *   }
+     * })
+    **/
+    count<T extends CreditClearanceCountArgs>(
+      args?: Subset<T, CreditClearanceCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], CreditClearanceCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a CreditClearance.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CreditClearanceAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends CreditClearanceAggregateArgs>(args: Subset<T, CreditClearanceAggregateArgs>): Prisma.PrismaPromise<GetCreditClearanceAggregateType<T>>
+
+    /**
+     * Group by CreditClearance.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CreditClearanceGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends CreditClearanceGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: CreditClearanceGroupByArgs['orderBy'] }
+        : { orderBy?: CreditClearanceGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, CreditClearanceGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCreditClearanceGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the CreditClearance model
+   */
+  readonly fields: CreditClearanceFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for CreditClearance.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__CreditClearanceClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    creditEntry<T extends CustomerCreditEntryDefaultArgs<ExtArgs> = {}>(args?: Subset<T, CustomerCreditEntryDefaultArgs<ExtArgs>>): Prisma__CustomerCreditEntryClient<$Result.GetResult<Prisma.$CustomerCreditEntryPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    clearedBy<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the CreditClearance model
+   */ 
+  interface CreditClearanceFieldRefs {
+    readonly id: FieldRef<"CreditClearance", 'Int'>
+    readonly publicId: FieldRef<"CreditClearance", 'String'>
+    readonly creditEntryId: FieldRef<"CreditClearance", 'Int'>
+    readonly clearedSectionKeys: FieldRef<"CreditClearance", 'Json'>
+    readonly amountCleared: FieldRef<"CreditClearance", 'Decimal'>
+    readonly paymentMethod: FieldRef<"CreditClearance", 'String'>
+    readonly transactionRef: FieldRef<"CreditClearance", 'String'>
+    readonly clearedById: FieldRef<"CreditClearance", 'Int'>
+    readonly clearedAt: FieldRef<"CreditClearance", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * CreditClearance findUnique
+   */
+  export type CreditClearanceFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditClearance
+     */
+    select?: CreditClearanceSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditClearanceInclude<ExtArgs> | null
+    /**
+     * Filter, which CreditClearance to fetch.
+     */
+    where: CreditClearanceWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CreditClearance findUniqueOrThrow
+   */
+  export type CreditClearanceFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditClearance
+     */
+    select?: CreditClearanceSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditClearanceInclude<ExtArgs> | null
+    /**
+     * Filter, which CreditClearance to fetch.
+     */
+    where: CreditClearanceWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CreditClearance findFirst
+   */
+  export type CreditClearanceFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditClearance
+     */
+    select?: CreditClearanceSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditClearanceInclude<ExtArgs> | null
+    /**
+     * Filter, which CreditClearance to fetch.
+     */
+    where?: CreditClearanceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CreditClearances to fetch.
+     */
+    orderBy?: CreditClearanceOrderByWithRelationInput | CreditClearanceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CreditClearances.
+     */
+    cursor?: CreditClearanceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CreditClearances from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CreditClearances.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CreditClearances.
+     */
+    distinct?: CreditClearanceScalarFieldEnum | CreditClearanceScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CreditClearance findFirstOrThrow
+   */
+  export type CreditClearanceFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditClearance
+     */
+    select?: CreditClearanceSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditClearanceInclude<ExtArgs> | null
+    /**
+     * Filter, which CreditClearance to fetch.
+     */
+    where?: CreditClearanceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CreditClearances to fetch.
+     */
+    orderBy?: CreditClearanceOrderByWithRelationInput | CreditClearanceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CreditClearances.
+     */
+    cursor?: CreditClearanceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CreditClearances from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CreditClearances.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CreditClearances.
+     */
+    distinct?: CreditClearanceScalarFieldEnum | CreditClearanceScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CreditClearance findMany
+   */
+  export type CreditClearanceFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditClearance
+     */
+    select?: CreditClearanceSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditClearanceInclude<ExtArgs> | null
+    /**
+     * Filter, which CreditClearances to fetch.
+     */
+    where?: CreditClearanceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CreditClearances to fetch.
+     */
+    orderBy?: CreditClearanceOrderByWithRelationInput | CreditClearanceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing CreditClearances.
+     */
+    cursor?: CreditClearanceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CreditClearances from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CreditClearances.
+     */
+    skip?: number
+    distinct?: CreditClearanceScalarFieldEnum | CreditClearanceScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CreditClearance create
+   */
+  export type CreditClearanceCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditClearance
+     */
+    select?: CreditClearanceSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditClearanceInclude<ExtArgs> | null
+    /**
+     * The data needed to create a CreditClearance.
+     */
+    data: XOR<CreditClearanceCreateInput, CreditClearanceUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CreditClearance createMany
+   */
+  export type CreditClearanceCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many CreditClearances.
+     */
+    data: CreditClearanceCreateManyInput | CreditClearanceCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * CreditClearance createManyAndReturn
+   */
+  export type CreditClearanceCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditClearance
+     */
+    select?: CreditClearanceSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many CreditClearances.
+     */
+    data: CreditClearanceCreateManyInput | CreditClearanceCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditClearanceIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * CreditClearance update
+   */
+  export type CreditClearanceUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditClearance
+     */
+    select?: CreditClearanceSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditClearanceInclude<ExtArgs> | null
+    /**
+     * The data needed to update a CreditClearance.
+     */
+    data: XOR<CreditClearanceUpdateInput, CreditClearanceUncheckedUpdateInput>
+    /**
+     * Choose, which CreditClearance to update.
+     */
+    where: CreditClearanceWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CreditClearance updateMany
+   */
+  export type CreditClearanceUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update CreditClearances.
+     */
+    data: XOR<CreditClearanceUpdateManyMutationInput, CreditClearanceUncheckedUpdateManyInput>
+    /**
+     * Filter which CreditClearances to update
+     */
+    where?: CreditClearanceWhereInput
+  }
+
+  /**
+   * CreditClearance upsert
+   */
+  export type CreditClearanceUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditClearance
+     */
+    select?: CreditClearanceSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditClearanceInclude<ExtArgs> | null
+    /**
+     * The filter to search for the CreditClearance to update in case it exists.
+     */
+    where: CreditClearanceWhereUniqueInput
+    /**
+     * In case the CreditClearance found by the `where` argument doesn't exist, create a new CreditClearance with this data.
+     */
+    create: XOR<CreditClearanceCreateInput, CreditClearanceUncheckedCreateInput>
+    /**
+     * In case the CreditClearance was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<CreditClearanceUpdateInput, CreditClearanceUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CreditClearance delete
+   */
+  export type CreditClearanceDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditClearance
+     */
+    select?: CreditClearanceSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditClearanceInclude<ExtArgs> | null
+    /**
+     * Filter which CreditClearance to delete.
+     */
+    where: CreditClearanceWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CreditClearance deleteMany
+   */
+  export type CreditClearanceDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CreditClearances to delete
+     */
+    where?: CreditClearanceWhereInput
+  }
+
+  /**
+   * CreditClearance without action
+   */
+  export type CreditClearanceDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditClearance
+     */
+    select?: CreditClearanceSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditClearanceInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -76073,6 +78618,40 @@ export namespace Prisma {
   export type LedgerEntryScalarFieldEnum = (typeof LedgerEntryScalarFieldEnum)[keyof typeof LedgerEntryScalarFieldEnum]
 
 
+  export const CustomerCreditEntryScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    customerId: 'customerId',
+    bookingId: 'bookingId',
+    branchId: 'branchId',
+    createdById: 'createdById',
+    sections: 'sections',
+    totalAmount: 'totalAmount',
+    clearedAmount: 'clearedAmount',
+    pendingAmount: 'pendingAmount',
+    status: 'status',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type CustomerCreditEntryScalarFieldEnum = (typeof CustomerCreditEntryScalarFieldEnum)[keyof typeof CustomerCreditEntryScalarFieldEnum]
+
+
+  export const CreditClearanceScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    creditEntryId: 'creditEntryId',
+    clearedSectionKeys: 'clearedSectionKeys',
+    amountCleared: 'amountCleared',
+    paymentMethod: 'paymentMethod',
+    transactionRef: 'transactionRef',
+    clearedById: 'clearedById',
+    clearedAt: 'clearedAt'
+  };
+
+  export type CreditClearanceScalarFieldEnum = (typeof CreditClearanceScalarFieldEnum)[keyof typeof CreditClearanceScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -76785,6 +79364,20 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'CreditStatus'
+   */
+  export type EnumCreditStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CreditStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'CreditStatus[]'
+   */
+  export type ListEnumCreditStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CreditStatus[]'>
+    
+
+
+  /**
    * Reference to a field of type 'Float'
    */
   export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -76849,6 +79442,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionListRelationFilter
     ledgerEntriesActed?: LedgerEntryListRelationFilter
     ledgerEntriesVoided?: LedgerEntryListRelationFilter
+    creditEntriesCreated?: CustomerCreditEntryListRelationFilter
+    creditClearancesActed?: CreditClearanceListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -76896,6 +79491,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionOrderByRelationAggregateInput
     ledgerEntriesActed?: LedgerEntryOrderByRelationAggregateInput
     ledgerEntriesVoided?: LedgerEntryOrderByRelationAggregateInput
+    creditEntriesCreated?: CustomerCreditEntryOrderByRelationAggregateInput
+    creditClearancesActed?: CreditClearanceOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -76946,6 +79543,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionListRelationFilter
     ledgerEntriesActed?: LedgerEntryListRelationFilter
     ledgerEntriesVoided?: LedgerEntryListRelationFilter
+    creditEntriesCreated?: CustomerCreditEntryListRelationFilter
+    creditClearancesActed?: CreditClearanceListRelationFilter
   }, "id" | "publicId" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -77155,6 +79754,7 @@ export namespace Prisma {
     kycs?: CustomerKycListRelationFilter
     bookings?: BookingListRelationFilter
     cancellationInvoices?: CancellationInvoiceListRelationFilter
+    creditEntries?: CustomerCreditEntryListRelationFilter
   }
 
   export type CustomerOrderByWithRelationInput = {
@@ -77176,6 +79776,7 @@ export namespace Prisma {
     kycs?: CustomerKycOrderByRelationAggregateInput
     bookings?: BookingOrderByRelationAggregateInput
     cancellationInvoices?: CancellationInvoiceOrderByRelationAggregateInput
+    creditEntries?: CustomerCreditEntryOrderByRelationAggregateInput
   }
 
   export type CustomerWhereUniqueInput = Prisma.AtLeast<{
@@ -77200,6 +79801,7 @@ export namespace Prisma {
     kycs?: CustomerKycListRelationFilter
     bookings?: BookingListRelationFilter
     cancellationInvoices?: CancellationInvoiceListRelationFilter
+    creditEntries?: CustomerCreditEntryListRelationFilter
   }, "id" | "publicId" | "userId">
 
   export type CustomerOrderByWithAggregationInput = {
@@ -77432,6 +80034,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestListRelationFilter
     extensions?: BookingExtensionListRelationFilter
     paymentSessions?: PaymentSessionListRelationFilter
+    creditEntries?: CustomerCreditEntryListRelationFilter
   }
 
   export type BranchOrderByWithRelationInput = {
@@ -77463,6 +80066,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestOrderByRelationAggregateInput
     extensions?: BookingExtensionOrderByRelationAggregateInput
     paymentSessions?: PaymentSessionOrderByRelationAggregateInput
+    creditEntries?: CustomerCreditEntryOrderByRelationAggregateInput
   }
 
   export type BranchWhereUniqueInput = Prisma.AtLeast<{
@@ -77497,6 +80101,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestListRelationFilter
     extensions?: BookingExtensionListRelationFilter
     paymentSessions?: PaymentSessionListRelationFilter
+    creditEntries?: CustomerCreditEntryListRelationFilter
   }, "id" | "publicId">
 
   export type BranchOrderByWithAggregationInput = {
@@ -78735,6 +81340,7 @@ export namespace Prisma {
     activePaymentSession?: XOR<PaymentSessionNullableRelationFilter, PaymentSessionWhereInput> | null
     paymentSessions?: PaymentSessionListRelationFilter
     ledgerEntries?: LedgerEntryListRelationFilter
+    creditEntry?: XOR<CustomerCreditEntryNullableRelationFilter, CustomerCreditEntryWhereInput> | null
   }
 
   export type BookingOrderByWithRelationInput = {
@@ -78825,6 +81431,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionOrderByWithRelationInput
     paymentSessions?: PaymentSessionOrderByRelationAggregateInput
     ledgerEntries?: LedgerEntryOrderByRelationAggregateInput
+    creditEntry?: CustomerCreditEntryOrderByWithRelationInput
   }
 
   export type BookingWhereUniqueInput = Prisma.AtLeast<{
@@ -78918,6 +81525,7 @@ export namespace Prisma {
     activePaymentSession?: XOR<PaymentSessionNullableRelationFilter, PaymentSessionWhereInput> | null
     paymentSessions?: PaymentSessionListRelationFilter
     ledgerEntries?: LedgerEntryListRelationFilter
+    creditEntry?: XOR<CustomerCreditEntryNullableRelationFilter, CustomerCreditEntryWhereInput> | null
   }, "id" | "publicId" | "transactionId" | "remainingPaymentId">
 
   export type BookingOrderByWithAggregationInput = {
@@ -82963,6 +85571,195 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"LedgerEntry"> | Date | string
   }
 
+  export type CustomerCreditEntryWhereInput = {
+    AND?: CustomerCreditEntryWhereInput | CustomerCreditEntryWhereInput[]
+    OR?: CustomerCreditEntryWhereInput[]
+    NOT?: CustomerCreditEntryWhereInput | CustomerCreditEntryWhereInput[]
+    id?: IntFilter<"CustomerCreditEntry"> | number
+    publicId?: StringFilter<"CustomerCreditEntry"> | string
+    customerId?: IntFilter<"CustomerCreditEntry"> | number
+    bookingId?: IntFilter<"CustomerCreditEntry"> | number
+    branchId?: IntFilter<"CustomerCreditEntry"> | number
+    createdById?: IntFilter<"CustomerCreditEntry"> | number
+    sections?: JsonFilter<"CustomerCreditEntry">
+    totalAmount?: DecimalFilter<"CustomerCreditEntry"> | Decimal | DecimalJsLike | number | string
+    clearedAmount?: DecimalFilter<"CustomerCreditEntry"> | Decimal | DecimalJsLike | number | string
+    pendingAmount?: DecimalFilter<"CustomerCreditEntry"> | Decimal | DecimalJsLike | number | string
+    status?: EnumCreditStatusFilter<"CustomerCreditEntry"> | $Enums.CreditStatus
+    createdAt?: DateTimeFilter<"CustomerCreditEntry"> | Date | string
+    updatedAt?: DateTimeFilter<"CustomerCreditEntry"> | Date | string
+    customer?: XOR<CustomerRelationFilter, CustomerWhereInput>
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+    createdBy?: XOR<UserRelationFilter, UserWhereInput>
+    clearances?: CreditClearanceListRelationFilter
+  }
+
+  export type CustomerCreditEntryOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    customerId?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    createdById?: SortOrder
+    sections?: SortOrder
+    totalAmount?: SortOrder
+    clearedAmount?: SortOrder
+    pendingAmount?: SortOrder
+    status?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    customer?: CustomerOrderByWithRelationInput
+    booking?: BookingOrderByWithRelationInput
+    branch?: BranchOrderByWithRelationInput
+    createdBy?: UserOrderByWithRelationInput
+    clearances?: CreditClearanceOrderByRelationAggregateInput
+  }
+
+  export type CustomerCreditEntryWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    bookingId?: number
+    AND?: CustomerCreditEntryWhereInput | CustomerCreditEntryWhereInput[]
+    OR?: CustomerCreditEntryWhereInput[]
+    NOT?: CustomerCreditEntryWhereInput | CustomerCreditEntryWhereInput[]
+    customerId?: IntFilter<"CustomerCreditEntry"> | number
+    branchId?: IntFilter<"CustomerCreditEntry"> | number
+    createdById?: IntFilter<"CustomerCreditEntry"> | number
+    sections?: JsonFilter<"CustomerCreditEntry">
+    totalAmount?: DecimalFilter<"CustomerCreditEntry"> | Decimal | DecimalJsLike | number | string
+    clearedAmount?: DecimalFilter<"CustomerCreditEntry"> | Decimal | DecimalJsLike | number | string
+    pendingAmount?: DecimalFilter<"CustomerCreditEntry"> | Decimal | DecimalJsLike | number | string
+    status?: EnumCreditStatusFilter<"CustomerCreditEntry"> | $Enums.CreditStatus
+    createdAt?: DateTimeFilter<"CustomerCreditEntry"> | Date | string
+    updatedAt?: DateTimeFilter<"CustomerCreditEntry"> | Date | string
+    customer?: XOR<CustomerRelationFilter, CustomerWhereInput>
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    branch?: XOR<BranchRelationFilter, BranchWhereInput>
+    createdBy?: XOR<UserRelationFilter, UserWhereInput>
+    clearances?: CreditClearanceListRelationFilter
+  }, "id" | "publicId" | "bookingId">
+
+  export type CustomerCreditEntryOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    customerId?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    createdById?: SortOrder
+    sections?: SortOrder
+    totalAmount?: SortOrder
+    clearedAmount?: SortOrder
+    pendingAmount?: SortOrder
+    status?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: CustomerCreditEntryCountOrderByAggregateInput
+    _avg?: CustomerCreditEntryAvgOrderByAggregateInput
+    _max?: CustomerCreditEntryMaxOrderByAggregateInput
+    _min?: CustomerCreditEntryMinOrderByAggregateInput
+    _sum?: CustomerCreditEntrySumOrderByAggregateInput
+  }
+
+  export type CustomerCreditEntryScalarWhereWithAggregatesInput = {
+    AND?: CustomerCreditEntryScalarWhereWithAggregatesInput | CustomerCreditEntryScalarWhereWithAggregatesInput[]
+    OR?: CustomerCreditEntryScalarWhereWithAggregatesInput[]
+    NOT?: CustomerCreditEntryScalarWhereWithAggregatesInput | CustomerCreditEntryScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"CustomerCreditEntry"> | number
+    publicId?: StringWithAggregatesFilter<"CustomerCreditEntry"> | string
+    customerId?: IntWithAggregatesFilter<"CustomerCreditEntry"> | number
+    bookingId?: IntWithAggregatesFilter<"CustomerCreditEntry"> | number
+    branchId?: IntWithAggregatesFilter<"CustomerCreditEntry"> | number
+    createdById?: IntWithAggregatesFilter<"CustomerCreditEntry"> | number
+    sections?: JsonWithAggregatesFilter<"CustomerCreditEntry">
+    totalAmount?: DecimalWithAggregatesFilter<"CustomerCreditEntry"> | Decimal | DecimalJsLike | number | string
+    clearedAmount?: DecimalWithAggregatesFilter<"CustomerCreditEntry"> | Decimal | DecimalJsLike | number | string
+    pendingAmount?: DecimalWithAggregatesFilter<"CustomerCreditEntry"> | Decimal | DecimalJsLike | number | string
+    status?: EnumCreditStatusWithAggregatesFilter<"CustomerCreditEntry"> | $Enums.CreditStatus
+    createdAt?: DateTimeWithAggregatesFilter<"CustomerCreditEntry"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"CustomerCreditEntry"> | Date | string
+  }
+
+  export type CreditClearanceWhereInput = {
+    AND?: CreditClearanceWhereInput | CreditClearanceWhereInput[]
+    OR?: CreditClearanceWhereInput[]
+    NOT?: CreditClearanceWhereInput | CreditClearanceWhereInput[]
+    id?: IntFilter<"CreditClearance"> | number
+    publicId?: StringFilter<"CreditClearance"> | string
+    creditEntryId?: IntFilter<"CreditClearance"> | number
+    clearedSectionKeys?: JsonFilter<"CreditClearance">
+    amountCleared?: DecimalFilter<"CreditClearance"> | Decimal | DecimalJsLike | number | string
+    paymentMethod?: StringFilter<"CreditClearance"> | string
+    transactionRef?: StringNullableFilter<"CreditClearance"> | string | null
+    clearedById?: IntFilter<"CreditClearance"> | number
+    clearedAt?: DateTimeFilter<"CreditClearance"> | Date | string
+    creditEntry?: XOR<CustomerCreditEntryRelationFilter, CustomerCreditEntryWhereInput>
+    clearedBy?: XOR<UserRelationFilter, UserWhereInput>
+  }
+
+  export type CreditClearanceOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    creditEntryId?: SortOrder
+    clearedSectionKeys?: SortOrder
+    amountCleared?: SortOrder
+    paymentMethod?: SortOrder
+    transactionRef?: SortOrderInput | SortOrder
+    clearedById?: SortOrder
+    clearedAt?: SortOrder
+    creditEntry?: CustomerCreditEntryOrderByWithRelationInput
+    clearedBy?: UserOrderByWithRelationInput
+  }
+
+  export type CreditClearanceWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    AND?: CreditClearanceWhereInput | CreditClearanceWhereInput[]
+    OR?: CreditClearanceWhereInput[]
+    NOT?: CreditClearanceWhereInput | CreditClearanceWhereInput[]
+    creditEntryId?: IntFilter<"CreditClearance"> | number
+    clearedSectionKeys?: JsonFilter<"CreditClearance">
+    amountCleared?: DecimalFilter<"CreditClearance"> | Decimal | DecimalJsLike | number | string
+    paymentMethod?: StringFilter<"CreditClearance"> | string
+    transactionRef?: StringNullableFilter<"CreditClearance"> | string | null
+    clearedById?: IntFilter<"CreditClearance"> | number
+    clearedAt?: DateTimeFilter<"CreditClearance"> | Date | string
+    creditEntry?: XOR<CustomerCreditEntryRelationFilter, CustomerCreditEntryWhereInput>
+    clearedBy?: XOR<UserRelationFilter, UserWhereInput>
+  }, "id" | "publicId">
+
+  export type CreditClearanceOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    creditEntryId?: SortOrder
+    clearedSectionKeys?: SortOrder
+    amountCleared?: SortOrder
+    paymentMethod?: SortOrder
+    transactionRef?: SortOrderInput | SortOrder
+    clearedById?: SortOrder
+    clearedAt?: SortOrder
+    _count?: CreditClearanceCountOrderByAggregateInput
+    _avg?: CreditClearanceAvgOrderByAggregateInput
+    _max?: CreditClearanceMaxOrderByAggregateInput
+    _min?: CreditClearanceMinOrderByAggregateInput
+    _sum?: CreditClearanceSumOrderByAggregateInput
+  }
+
+  export type CreditClearanceScalarWhereWithAggregatesInput = {
+    AND?: CreditClearanceScalarWhereWithAggregatesInput | CreditClearanceScalarWhereWithAggregatesInput[]
+    OR?: CreditClearanceScalarWhereWithAggregatesInput[]
+    NOT?: CreditClearanceScalarWhereWithAggregatesInput | CreditClearanceScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"CreditClearance"> | number
+    publicId?: StringWithAggregatesFilter<"CreditClearance"> | string
+    creditEntryId?: IntWithAggregatesFilter<"CreditClearance"> | number
+    clearedSectionKeys?: JsonWithAggregatesFilter<"CreditClearance">
+    amountCleared?: DecimalWithAggregatesFilter<"CreditClearance"> | Decimal | DecimalJsLike | number | string
+    paymentMethod?: StringWithAggregatesFilter<"CreditClearance"> | string
+    transactionRef?: StringNullableWithAggregatesFilter<"CreditClearance"> | string | null
+    clearedById?: IntWithAggregatesFilter<"CreditClearance"> | number
+    clearedAt?: DateTimeWithAggregatesFilter<"CreditClearance"> | Date | string
+  }
+
   export type UserCreateInput = {
     publicId: string
     name: string
@@ -83006,6 +85803,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -83052,6 +85851,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUpdateInput = {
@@ -83097,6 +85898,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -83143,6 +85946,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -83354,6 +86159,7 @@ export namespace Prisma {
     kycs?: CustomerKycCreateNestedManyWithoutCustomerInput
     bookings?: BookingCreateNestedManyWithoutCustomerInput
     cancellationInvoices?: CancellationInvoiceCreateNestedManyWithoutCustomerInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerUncheckedCreateInput = {
@@ -83374,6 +86180,7 @@ export namespace Prisma {
     kycs?: CustomerKycUncheckedCreateNestedManyWithoutCustomerInput
     bookings?: BookingUncheckedCreateNestedManyWithoutCustomerInput
     cancellationInvoices?: CancellationInvoiceUncheckedCreateNestedManyWithoutCustomerInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerUpdateInput = {
@@ -83393,6 +86200,7 @@ export namespace Prisma {
     kycs?: CustomerKycUpdateManyWithoutCustomerNestedInput
     bookings?: BookingUpdateManyWithoutCustomerNestedInput
     cancellationInvoices?: CancellationInvoiceUpdateManyWithoutCustomerNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutCustomerNestedInput
   }
 
   export type CustomerUncheckedUpdateInput = {
@@ -83413,6 +86221,7 @@ export namespace Prisma {
     kycs?: CustomerKycUncheckedUpdateManyWithoutCustomerNestedInput
     bookings?: BookingUncheckedUpdateManyWithoutCustomerNestedInput
     cancellationInvoices?: CancellationInvoiceUncheckedUpdateManyWithoutCustomerNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutCustomerNestedInput
   }
 
   export type CustomerCreateManyInput = {
@@ -83652,6 +86461,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateInput = {
@@ -83683,6 +86493,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUpdateInput = {
@@ -83713,6 +86524,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateInput = {
@@ -83744,6 +86556,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchCreateManyInput = {
@@ -84996,6 +87809,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateInput = {
@@ -85079,6 +87893,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUpdateInput = {
@@ -85161,6 +87976,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateInput = {
@@ -85244,6 +88060,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingCreateManyInput = {
@@ -89635,6 +92452,194 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type CustomerCreditEntryCreateInput = {
+    publicId: string
+    sections: JsonNullValueInput | InputJsonValue
+    totalAmount: Decimal | DecimalJsLike | number | string
+    clearedAmount?: Decimal | DecimalJsLike | number | string
+    pendingAmount: Decimal | DecimalJsLike | number | string
+    status: $Enums.CreditStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    customer: CustomerCreateNestedOneWithoutCreditEntriesInput
+    booking: BookingCreateNestedOneWithoutCreditEntryInput
+    branch: BranchCreateNestedOneWithoutCreditEntriesInput
+    createdBy: UserCreateNestedOneWithoutCreditEntriesCreatedInput
+    clearances?: CreditClearanceCreateNestedManyWithoutCreditEntryInput
+  }
+
+  export type CustomerCreditEntryUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    bookingId: number
+    branchId: number
+    createdById: number
+    sections: JsonNullValueInput | InputJsonValue
+    totalAmount: Decimal | DecimalJsLike | number | string
+    clearedAmount?: Decimal | DecimalJsLike | number | string
+    pendingAmount: Decimal | DecimalJsLike | number | string
+    status: $Enums.CreditStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    clearances?: CreditClearanceUncheckedCreateNestedManyWithoutCreditEntryInput
+  }
+
+  export type CustomerCreditEntryUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    sections?: JsonNullValueInput | InputJsonValue
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    clearedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pendingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumCreditStatusFieldUpdateOperationsInput | $Enums.CreditStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    customer?: CustomerUpdateOneRequiredWithoutCreditEntriesNestedInput
+    booking?: BookingUpdateOneRequiredWithoutCreditEntryNestedInput
+    branch?: BranchUpdateOneRequiredWithoutCreditEntriesNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutCreditEntriesCreatedNestedInput
+    clearances?: CreditClearanceUpdateManyWithoutCreditEntryNestedInput
+  }
+
+  export type CustomerCreditEntryUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    createdById?: IntFieldUpdateOperationsInput | number
+    sections?: JsonNullValueInput | InputJsonValue
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    clearedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pendingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumCreditStatusFieldUpdateOperationsInput | $Enums.CreditStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    clearances?: CreditClearanceUncheckedUpdateManyWithoutCreditEntryNestedInput
+  }
+
+  export type CustomerCreditEntryCreateManyInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    bookingId: number
+    branchId: number
+    createdById: number
+    sections: JsonNullValueInput | InputJsonValue
+    totalAmount: Decimal | DecimalJsLike | number | string
+    clearedAmount?: Decimal | DecimalJsLike | number | string
+    pendingAmount: Decimal | DecimalJsLike | number | string
+    status: $Enums.CreditStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type CustomerCreditEntryUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    sections?: JsonNullValueInput | InputJsonValue
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    clearedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pendingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumCreditStatusFieldUpdateOperationsInput | $Enums.CreditStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CustomerCreditEntryUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    createdById?: IntFieldUpdateOperationsInput | number
+    sections?: JsonNullValueInput | InputJsonValue
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    clearedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pendingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumCreditStatusFieldUpdateOperationsInput | $Enums.CreditStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CreditClearanceCreateInput = {
+    publicId: string
+    clearedSectionKeys: JsonNullValueInput | InputJsonValue
+    amountCleared: Decimal | DecimalJsLike | number | string
+    paymentMethod: string
+    transactionRef?: string | null
+    clearedAt?: Date | string
+    creditEntry: CustomerCreditEntryCreateNestedOneWithoutClearancesInput
+    clearedBy: UserCreateNestedOneWithoutCreditClearancesActedInput
+  }
+
+  export type CreditClearanceUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    creditEntryId: number
+    clearedSectionKeys: JsonNullValueInput | InputJsonValue
+    amountCleared: Decimal | DecimalJsLike | number | string
+    paymentMethod: string
+    transactionRef?: string | null
+    clearedById: number
+    clearedAt?: Date | string
+  }
+
+  export type CreditClearanceUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    clearedSectionKeys?: JsonNullValueInput | InputJsonValue
+    amountCleared?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    transactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    clearedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    creditEntry?: CustomerCreditEntryUpdateOneRequiredWithoutClearancesNestedInput
+    clearedBy?: UserUpdateOneRequiredWithoutCreditClearancesActedNestedInput
+  }
+
+  export type CreditClearanceUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    creditEntryId?: IntFieldUpdateOperationsInput | number
+    clearedSectionKeys?: JsonNullValueInput | InputJsonValue
+    amountCleared?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    transactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    clearedById?: IntFieldUpdateOperationsInput | number
+    clearedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CreditClearanceCreateManyInput = {
+    id?: number
+    publicId: string
+    creditEntryId: number
+    clearedSectionKeys: JsonNullValueInput | InputJsonValue
+    amountCleared: Decimal | DecimalJsLike | number | string
+    paymentMethod: string
+    transactionRef?: string | null
+    clearedById: number
+    clearedAt?: Date | string
+  }
+
+  export type CreditClearanceUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    clearedSectionKeys?: JsonNullValueInput | InputJsonValue
+    amountCleared?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    transactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    clearedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CreditClearanceUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    creditEntryId?: IntFieldUpdateOperationsInput | number
+    clearedSectionKeys?: JsonNullValueInput | InputJsonValue
+    amountCleared?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    transactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    clearedById?: IntFieldUpdateOperationsInput | number
+    clearedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type IntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -89841,6 +92846,18 @@ export namespace Prisma {
     none?: LedgerEntryWhereInput
   }
 
+  export type CustomerCreditEntryListRelationFilter = {
+    every?: CustomerCreditEntryWhereInput
+    some?: CustomerCreditEntryWhereInput
+    none?: CustomerCreditEntryWhereInput
+  }
+
+  export type CreditClearanceListRelationFilter = {
+    every?: CreditClearanceWhereInput
+    some?: CreditClearanceWhereInput
+    none?: CreditClearanceWhereInput
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -89915,6 +92932,14 @@ export namespace Prisma {
   }
 
   export type LedgerEntryOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type CustomerCreditEntryOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type CreditClearanceOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -91699,6 +94724,11 @@ export namespace Prisma {
   export type PaymentSessionNullableRelationFilter = {
     is?: PaymentSessionWhereInput | null
     isNot?: PaymentSessionWhereInput | null
+  }
+
+  export type CustomerCreditEntryNullableRelationFilter = {
+    is?: CustomerCreditEntryWhereInput | null
+    isNot?: CustomerCreditEntryWhereInput | null
   }
 
   export type BookingCountOrderByAggregateInput = {
@@ -95194,6 +98224,144 @@ export namespace Prisma {
     _max?: NestedEnumLedgerEntryClassificationFilter<$PrismaModel>
   }
 
+  export type EnumCreditStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.CreditStatus | EnumCreditStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CreditStatus[] | ListEnumCreditStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CreditStatus[] | ListEnumCreditStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumCreditStatusFilter<$PrismaModel> | $Enums.CreditStatus
+  }
+
+  export type CustomerCreditEntryCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    customerId?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    createdById?: SortOrder
+    sections?: SortOrder
+    totalAmount?: SortOrder
+    clearedAmount?: SortOrder
+    pendingAmount?: SortOrder
+    status?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type CustomerCreditEntryAvgOrderByAggregateInput = {
+    id?: SortOrder
+    customerId?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    createdById?: SortOrder
+    totalAmount?: SortOrder
+    clearedAmount?: SortOrder
+    pendingAmount?: SortOrder
+  }
+
+  export type CustomerCreditEntryMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    customerId?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    createdById?: SortOrder
+    totalAmount?: SortOrder
+    clearedAmount?: SortOrder
+    pendingAmount?: SortOrder
+    status?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type CustomerCreditEntryMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    customerId?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    createdById?: SortOrder
+    totalAmount?: SortOrder
+    clearedAmount?: SortOrder
+    pendingAmount?: SortOrder
+    status?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type CustomerCreditEntrySumOrderByAggregateInput = {
+    id?: SortOrder
+    customerId?: SortOrder
+    bookingId?: SortOrder
+    branchId?: SortOrder
+    createdById?: SortOrder
+    totalAmount?: SortOrder
+    clearedAmount?: SortOrder
+    pendingAmount?: SortOrder
+  }
+
+  export type EnumCreditStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.CreditStatus | EnumCreditStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CreditStatus[] | ListEnumCreditStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CreditStatus[] | ListEnumCreditStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumCreditStatusWithAggregatesFilter<$PrismaModel> | $Enums.CreditStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumCreditStatusFilter<$PrismaModel>
+    _max?: NestedEnumCreditStatusFilter<$PrismaModel>
+  }
+
+  export type CustomerCreditEntryRelationFilter = {
+    is?: CustomerCreditEntryWhereInput
+    isNot?: CustomerCreditEntryWhereInput
+  }
+
+  export type CreditClearanceCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    creditEntryId?: SortOrder
+    clearedSectionKeys?: SortOrder
+    amountCleared?: SortOrder
+    paymentMethod?: SortOrder
+    transactionRef?: SortOrder
+    clearedById?: SortOrder
+    clearedAt?: SortOrder
+  }
+
+  export type CreditClearanceAvgOrderByAggregateInput = {
+    id?: SortOrder
+    creditEntryId?: SortOrder
+    amountCleared?: SortOrder
+    clearedById?: SortOrder
+  }
+
+  export type CreditClearanceMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    creditEntryId?: SortOrder
+    amountCleared?: SortOrder
+    paymentMethod?: SortOrder
+    transactionRef?: SortOrder
+    clearedById?: SortOrder
+    clearedAt?: SortOrder
+  }
+
+  export type CreditClearanceMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    creditEntryId?: SortOrder
+    amountCleared?: SortOrder
+    paymentMethod?: SortOrder
+    transactionRef?: SortOrder
+    clearedById?: SortOrder
+    clearedAt?: SortOrder
+  }
+
+  export type CreditClearanceSumOrderByAggregateInput = {
+    id?: SortOrder
+    creditEntryId?: SortOrder
+    amountCleared?: SortOrder
+    clearedById?: SortOrder
+  }
+
   export type BranchCreateNestedOneWithoutUsersInput = {
     create?: XOR<BranchCreateWithoutUsersInput, BranchUncheckedCreateWithoutUsersInput>
     connectOrCreate?: BranchCreateOrConnectWithoutUsersInput
@@ -95409,6 +98577,20 @@ export namespace Prisma {
     connect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
   }
 
+  export type CustomerCreditEntryCreateNestedManyWithoutCreatedByInput = {
+    create?: XOR<CustomerCreditEntryCreateWithoutCreatedByInput, CustomerCreditEntryUncheckedCreateWithoutCreatedByInput> | CustomerCreditEntryCreateWithoutCreatedByInput[] | CustomerCreditEntryUncheckedCreateWithoutCreatedByInput[]
+    connectOrCreate?: CustomerCreditEntryCreateOrConnectWithoutCreatedByInput | CustomerCreditEntryCreateOrConnectWithoutCreatedByInput[]
+    createMany?: CustomerCreditEntryCreateManyCreatedByInputEnvelope
+    connect?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+  }
+
+  export type CreditClearanceCreateNestedManyWithoutClearedByInput = {
+    create?: XOR<CreditClearanceCreateWithoutClearedByInput, CreditClearanceUncheckedCreateWithoutClearedByInput> | CreditClearanceCreateWithoutClearedByInput[] | CreditClearanceUncheckedCreateWithoutClearedByInput[]
+    connectOrCreate?: CreditClearanceCreateOrConnectWithoutClearedByInput | CreditClearanceCreateOrConnectWithoutClearedByInput[]
+    createMany?: CreditClearanceCreateManyClearedByInputEnvelope
+    connect?: CreditClearanceWhereUniqueInput | CreditClearanceWhereUniqueInput[]
+  }
+
   export type EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput = {
     create?: XOR<EmailVerificationOtpCreateWithoutUserInput, EmailVerificationOtpUncheckedCreateWithoutUserInput> | EmailVerificationOtpCreateWithoutUserInput[] | EmailVerificationOtpUncheckedCreateWithoutUserInput[]
     connectOrCreate?: EmailVerificationOtpCreateOrConnectWithoutUserInput | EmailVerificationOtpCreateOrConnectWithoutUserInput[]
@@ -95616,6 +98798,20 @@ export namespace Prisma {
     connectOrCreate?: LedgerEntryCreateOrConnectWithoutVoidedByInput | LedgerEntryCreateOrConnectWithoutVoidedByInput[]
     createMany?: LedgerEntryCreateManyVoidedByInputEnvelope
     connect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+  }
+
+  export type CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput = {
+    create?: XOR<CustomerCreditEntryCreateWithoutCreatedByInput, CustomerCreditEntryUncheckedCreateWithoutCreatedByInput> | CustomerCreditEntryCreateWithoutCreatedByInput[] | CustomerCreditEntryUncheckedCreateWithoutCreatedByInput[]
+    connectOrCreate?: CustomerCreditEntryCreateOrConnectWithoutCreatedByInput | CustomerCreditEntryCreateOrConnectWithoutCreatedByInput[]
+    createMany?: CustomerCreditEntryCreateManyCreatedByInputEnvelope
+    connect?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+  }
+
+  export type CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput = {
+    create?: XOR<CreditClearanceCreateWithoutClearedByInput, CreditClearanceUncheckedCreateWithoutClearedByInput> | CreditClearanceCreateWithoutClearedByInput[] | CreditClearanceUncheckedCreateWithoutClearedByInput[]
+    connectOrCreate?: CreditClearanceCreateOrConnectWithoutClearedByInput | CreditClearanceCreateOrConnectWithoutClearedByInput[]
+    createMany?: CreditClearanceCreateManyClearedByInputEnvelope
+    connect?: CreditClearanceWhereUniqueInput | CreditClearanceWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -96068,6 +99264,34 @@ export namespace Prisma {
     deleteMany?: LedgerEntryScalarWhereInput | LedgerEntryScalarWhereInput[]
   }
 
+  export type CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput = {
+    create?: XOR<CustomerCreditEntryCreateWithoutCreatedByInput, CustomerCreditEntryUncheckedCreateWithoutCreatedByInput> | CustomerCreditEntryCreateWithoutCreatedByInput[] | CustomerCreditEntryUncheckedCreateWithoutCreatedByInput[]
+    connectOrCreate?: CustomerCreditEntryCreateOrConnectWithoutCreatedByInput | CustomerCreditEntryCreateOrConnectWithoutCreatedByInput[]
+    upsert?: CustomerCreditEntryUpsertWithWhereUniqueWithoutCreatedByInput | CustomerCreditEntryUpsertWithWhereUniqueWithoutCreatedByInput[]
+    createMany?: CustomerCreditEntryCreateManyCreatedByInputEnvelope
+    set?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    disconnect?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    delete?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    connect?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    update?: CustomerCreditEntryUpdateWithWhereUniqueWithoutCreatedByInput | CustomerCreditEntryUpdateWithWhereUniqueWithoutCreatedByInput[]
+    updateMany?: CustomerCreditEntryUpdateManyWithWhereWithoutCreatedByInput | CustomerCreditEntryUpdateManyWithWhereWithoutCreatedByInput[]
+    deleteMany?: CustomerCreditEntryScalarWhereInput | CustomerCreditEntryScalarWhereInput[]
+  }
+
+  export type CreditClearanceUpdateManyWithoutClearedByNestedInput = {
+    create?: XOR<CreditClearanceCreateWithoutClearedByInput, CreditClearanceUncheckedCreateWithoutClearedByInput> | CreditClearanceCreateWithoutClearedByInput[] | CreditClearanceUncheckedCreateWithoutClearedByInput[]
+    connectOrCreate?: CreditClearanceCreateOrConnectWithoutClearedByInput | CreditClearanceCreateOrConnectWithoutClearedByInput[]
+    upsert?: CreditClearanceUpsertWithWhereUniqueWithoutClearedByInput | CreditClearanceUpsertWithWhereUniqueWithoutClearedByInput[]
+    createMany?: CreditClearanceCreateManyClearedByInputEnvelope
+    set?: CreditClearanceWhereUniqueInput | CreditClearanceWhereUniqueInput[]
+    disconnect?: CreditClearanceWhereUniqueInput | CreditClearanceWhereUniqueInput[]
+    delete?: CreditClearanceWhereUniqueInput | CreditClearanceWhereUniqueInput[]
+    connect?: CreditClearanceWhereUniqueInput | CreditClearanceWhereUniqueInput[]
+    update?: CreditClearanceUpdateWithWhereUniqueWithoutClearedByInput | CreditClearanceUpdateWithWhereUniqueWithoutClearedByInput[]
+    updateMany?: CreditClearanceUpdateManyWithWhereWithoutClearedByInput | CreditClearanceUpdateManyWithWhereWithoutClearedByInput[]
+    deleteMany?: CreditClearanceScalarWhereInput | CreditClearanceScalarWhereInput[]
+  }
+
   export type IntFieldUpdateOperationsInput = {
     set?: number
     increment?: number
@@ -96500,6 +99724,34 @@ export namespace Prisma {
     deleteMany?: LedgerEntryScalarWhereInput | LedgerEntryScalarWhereInput[]
   }
 
+  export type CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput = {
+    create?: XOR<CustomerCreditEntryCreateWithoutCreatedByInput, CustomerCreditEntryUncheckedCreateWithoutCreatedByInput> | CustomerCreditEntryCreateWithoutCreatedByInput[] | CustomerCreditEntryUncheckedCreateWithoutCreatedByInput[]
+    connectOrCreate?: CustomerCreditEntryCreateOrConnectWithoutCreatedByInput | CustomerCreditEntryCreateOrConnectWithoutCreatedByInput[]
+    upsert?: CustomerCreditEntryUpsertWithWhereUniqueWithoutCreatedByInput | CustomerCreditEntryUpsertWithWhereUniqueWithoutCreatedByInput[]
+    createMany?: CustomerCreditEntryCreateManyCreatedByInputEnvelope
+    set?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    disconnect?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    delete?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    connect?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    update?: CustomerCreditEntryUpdateWithWhereUniqueWithoutCreatedByInput | CustomerCreditEntryUpdateWithWhereUniqueWithoutCreatedByInput[]
+    updateMany?: CustomerCreditEntryUpdateManyWithWhereWithoutCreatedByInput | CustomerCreditEntryUpdateManyWithWhereWithoutCreatedByInput[]
+    deleteMany?: CustomerCreditEntryScalarWhereInput | CustomerCreditEntryScalarWhereInput[]
+  }
+
+  export type CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput = {
+    create?: XOR<CreditClearanceCreateWithoutClearedByInput, CreditClearanceUncheckedCreateWithoutClearedByInput> | CreditClearanceCreateWithoutClearedByInput[] | CreditClearanceUncheckedCreateWithoutClearedByInput[]
+    connectOrCreate?: CreditClearanceCreateOrConnectWithoutClearedByInput | CreditClearanceCreateOrConnectWithoutClearedByInput[]
+    upsert?: CreditClearanceUpsertWithWhereUniqueWithoutClearedByInput | CreditClearanceUpsertWithWhereUniqueWithoutClearedByInput[]
+    createMany?: CreditClearanceCreateManyClearedByInputEnvelope
+    set?: CreditClearanceWhereUniqueInput | CreditClearanceWhereUniqueInput[]
+    disconnect?: CreditClearanceWhereUniqueInput | CreditClearanceWhereUniqueInput[]
+    delete?: CreditClearanceWhereUniqueInput | CreditClearanceWhereUniqueInput[]
+    connect?: CreditClearanceWhereUniqueInput | CreditClearanceWhereUniqueInput[]
+    update?: CreditClearanceUpdateWithWhereUniqueWithoutClearedByInput | CreditClearanceUpdateWithWhereUniqueWithoutClearedByInput[]
+    updateMany?: CreditClearanceUpdateManyWithWhereWithoutClearedByInput | CreditClearanceUpdateManyWithWhereWithoutClearedByInput[]
+    deleteMany?: CreditClearanceScalarWhereInput | CreditClearanceScalarWhereInput[]
+  }
+
   export type UserCreateNestedOneWithoutProvidersInput = {
     create?: XOR<UserCreateWithoutProvidersInput, UserUncheckedCreateWithoutProvidersInput>
     connectOrCreate?: UserCreateOrConnectWithoutProvidersInput
@@ -96559,6 +99811,13 @@ export namespace Prisma {
     connect?: CancellationInvoiceWhereUniqueInput | CancellationInvoiceWhereUniqueInput[]
   }
 
+  export type CustomerCreditEntryCreateNestedManyWithoutCustomerInput = {
+    create?: XOR<CustomerCreditEntryCreateWithoutCustomerInput, CustomerCreditEntryUncheckedCreateWithoutCustomerInput> | CustomerCreditEntryCreateWithoutCustomerInput[] | CustomerCreditEntryUncheckedCreateWithoutCustomerInput[]
+    connectOrCreate?: CustomerCreditEntryCreateOrConnectWithoutCustomerInput | CustomerCreditEntryCreateOrConnectWithoutCustomerInput[]
+    createMany?: CustomerCreditEntryCreateManyCustomerInputEnvelope
+    connect?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+  }
+
   export type CustomerKycUncheckedCreateNestedManyWithoutCustomerInput = {
     create?: XOR<CustomerKycCreateWithoutCustomerInput, CustomerKycUncheckedCreateWithoutCustomerInput> | CustomerKycCreateWithoutCustomerInput[] | CustomerKycUncheckedCreateWithoutCustomerInput[]
     connectOrCreate?: CustomerKycCreateOrConnectWithoutCustomerInput | CustomerKycCreateOrConnectWithoutCustomerInput[]
@@ -96578,6 +99837,13 @@ export namespace Prisma {
     connectOrCreate?: CancellationInvoiceCreateOrConnectWithoutCustomerInput | CancellationInvoiceCreateOrConnectWithoutCustomerInput[]
     createMany?: CancellationInvoiceCreateManyCustomerInputEnvelope
     connect?: CancellationInvoiceWhereUniqueInput | CancellationInvoiceWhereUniqueInput[]
+  }
+
+  export type CustomerCreditEntryUncheckedCreateNestedManyWithoutCustomerInput = {
+    create?: XOR<CustomerCreditEntryCreateWithoutCustomerInput, CustomerCreditEntryUncheckedCreateWithoutCustomerInput> | CustomerCreditEntryCreateWithoutCustomerInput[] | CustomerCreditEntryUncheckedCreateWithoutCustomerInput[]
+    connectOrCreate?: CustomerCreditEntryCreateOrConnectWithoutCustomerInput | CustomerCreditEntryCreateOrConnectWithoutCustomerInput[]
+    createMany?: CustomerCreditEntryCreateManyCustomerInputEnvelope
+    connect?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
   }
 
   export type UserUpdateOneRequiredWithoutCustomerProfileNestedInput = {
@@ -96630,6 +99896,20 @@ export namespace Prisma {
     deleteMany?: CancellationInvoiceScalarWhereInput | CancellationInvoiceScalarWhereInput[]
   }
 
+  export type CustomerCreditEntryUpdateManyWithoutCustomerNestedInput = {
+    create?: XOR<CustomerCreditEntryCreateWithoutCustomerInput, CustomerCreditEntryUncheckedCreateWithoutCustomerInput> | CustomerCreditEntryCreateWithoutCustomerInput[] | CustomerCreditEntryUncheckedCreateWithoutCustomerInput[]
+    connectOrCreate?: CustomerCreditEntryCreateOrConnectWithoutCustomerInput | CustomerCreditEntryCreateOrConnectWithoutCustomerInput[]
+    upsert?: CustomerCreditEntryUpsertWithWhereUniqueWithoutCustomerInput | CustomerCreditEntryUpsertWithWhereUniqueWithoutCustomerInput[]
+    createMany?: CustomerCreditEntryCreateManyCustomerInputEnvelope
+    set?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    disconnect?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    delete?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    connect?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    update?: CustomerCreditEntryUpdateWithWhereUniqueWithoutCustomerInput | CustomerCreditEntryUpdateWithWhereUniqueWithoutCustomerInput[]
+    updateMany?: CustomerCreditEntryUpdateManyWithWhereWithoutCustomerInput | CustomerCreditEntryUpdateManyWithWhereWithoutCustomerInput[]
+    deleteMany?: CustomerCreditEntryScalarWhereInput | CustomerCreditEntryScalarWhereInput[]
+  }
+
   export type CustomerKycUncheckedUpdateManyWithoutCustomerNestedInput = {
     create?: XOR<CustomerKycCreateWithoutCustomerInput, CustomerKycUncheckedCreateWithoutCustomerInput> | CustomerKycCreateWithoutCustomerInput[] | CustomerKycUncheckedCreateWithoutCustomerInput[]
     connectOrCreate?: CustomerKycCreateOrConnectWithoutCustomerInput | CustomerKycCreateOrConnectWithoutCustomerInput[]
@@ -96670,6 +99950,20 @@ export namespace Prisma {
     update?: CancellationInvoiceUpdateWithWhereUniqueWithoutCustomerInput | CancellationInvoiceUpdateWithWhereUniqueWithoutCustomerInput[]
     updateMany?: CancellationInvoiceUpdateManyWithWhereWithoutCustomerInput | CancellationInvoiceUpdateManyWithWhereWithoutCustomerInput[]
     deleteMany?: CancellationInvoiceScalarWhereInput | CancellationInvoiceScalarWhereInput[]
+  }
+
+  export type CustomerCreditEntryUncheckedUpdateManyWithoutCustomerNestedInput = {
+    create?: XOR<CustomerCreditEntryCreateWithoutCustomerInput, CustomerCreditEntryUncheckedCreateWithoutCustomerInput> | CustomerCreditEntryCreateWithoutCustomerInput[] | CustomerCreditEntryUncheckedCreateWithoutCustomerInput[]
+    connectOrCreate?: CustomerCreditEntryCreateOrConnectWithoutCustomerInput | CustomerCreditEntryCreateOrConnectWithoutCustomerInput[]
+    upsert?: CustomerCreditEntryUpsertWithWhereUniqueWithoutCustomerInput | CustomerCreditEntryUpsertWithWhereUniqueWithoutCustomerInput[]
+    createMany?: CustomerCreditEntryCreateManyCustomerInputEnvelope
+    set?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    disconnect?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    delete?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    connect?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    update?: CustomerCreditEntryUpdateWithWhereUniqueWithoutCustomerInput | CustomerCreditEntryUpdateWithWhereUniqueWithoutCustomerInput[]
+    updateMany?: CustomerCreditEntryUpdateManyWithWhereWithoutCustomerInput | CustomerCreditEntryUpdateManyWithWhereWithoutCustomerInput[]
+    deleteMany?: CustomerCreditEntryScalarWhereInput | CustomerCreditEntryScalarWhereInput[]
   }
 
   export type CustomerCreateNestedOneWithoutKycsInput = {
@@ -97144,6 +100438,13 @@ export namespace Prisma {
     connect?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
   }
 
+  export type CustomerCreditEntryCreateNestedManyWithoutBranchInput = {
+    create?: XOR<CustomerCreditEntryCreateWithoutBranchInput, CustomerCreditEntryUncheckedCreateWithoutBranchInput> | CustomerCreditEntryCreateWithoutBranchInput[] | CustomerCreditEntryUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: CustomerCreditEntryCreateOrConnectWithoutBranchInput | CustomerCreditEntryCreateOrConnectWithoutBranchInput[]
+    createMany?: CustomerCreditEntryCreateManyBranchInputEnvelope
+    connect?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+  }
+
   export type UserUncheckedCreateNestedManyWithoutBranchInput = {
     create?: XOR<UserCreateWithoutBranchInput, UserUncheckedCreateWithoutBranchInput> | UserCreateWithoutBranchInput[] | UserUncheckedCreateWithoutBranchInput[]
     connectOrCreate?: UserCreateOrConnectWithoutBranchInput | UserCreateOrConnectWithoutBranchInput[]
@@ -97284,6 +100585,13 @@ export namespace Prisma {
     connectOrCreate?: PaymentSessionCreateOrConnectWithoutBranchInput | PaymentSessionCreateOrConnectWithoutBranchInput[]
     createMany?: PaymentSessionCreateManyBranchInputEnvelope
     connect?: PaymentSessionWhereUniqueInput | PaymentSessionWhereUniqueInput[]
+  }
+
+  export type CustomerCreditEntryUncheckedCreateNestedManyWithoutBranchInput = {
+    create?: XOR<CustomerCreditEntryCreateWithoutBranchInput, CustomerCreditEntryUncheckedCreateWithoutBranchInput> | CustomerCreditEntryCreateWithoutBranchInput[] | CustomerCreditEntryUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: CustomerCreditEntryCreateOrConnectWithoutBranchInput | CustomerCreditEntryCreateOrConnectWithoutBranchInput[]
+    createMany?: CustomerCreditEntryCreateManyBranchInputEnvelope
+    connect?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
   }
 
   export type UserUpdateManyWithoutBranchNestedInput = {
@@ -97560,6 +100868,20 @@ export namespace Prisma {
     deleteMany?: PaymentSessionScalarWhereInput | PaymentSessionScalarWhereInput[]
   }
 
+  export type CustomerCreditEntryUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<CustomerCreditEntryCreateWithoutBranchInput, CustomerCreditEntryUncheckedCreateWithoutBranchInput> | CustomerCreditEntryCreateWithoutBranchInput[] | CustomerCreditEntryUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: CustomerCreditEntryCreateOrConnectWithoutBranchInput | CustomerCreditEntryCreateOrConnectWithoutBranchInput[]
+    upsert?: CustomerCreditEntryUpsertWithWhereUniqueWithoutBranchInput | CustomerCreditEntryUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: CustomerCreditEntryCreateManyBranchInputEnvelope
+    set?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    disconnect?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    delete?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    connect?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    update?: CustomerCreditEntryUpdateWithWhereUniqueWithoutBranchInput | CustomerCreditEntryUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: CustomerCreditEntryUpdateManyWithWhereWithoutBranchInput | CustomerCreditEntryUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: CustomerCreditEntryScalarWhereInput | CustomerCreditEntryScalarWhereInput[]
+  }
+
   export type UserUncheckedUpdateManyWithoutBranchNestedInput = {
     create?: XOR<UserCreateWithoutBranchInput, UserUncheckedCreateWithoutBranchInput> | UserCreateWithoutBranchInput[] | UserUncheckedCreateWithoutBranchInput[]
     connectOrCreate?: UserCreateOrConnectWithoutBranchInput | UserCreateOrConnectWithoutBranchInput[]
@@ -97832,6 +101154,20 @@ export namespace Prisma {
     update?: PaymentSessionUpdateWithWhereUniqueWithoutBranchInput | PaymentSessionUpdateWithWhereUniqueWithoutBranchInput[]
     updateMany?: PaymentSessionUpdateManyWithWhereWithoutBranchInput | PaymentSessionUpdateManyWithWhereWithoutBranchInput[]
     deleteMany?: PaymentSessionScalarWhereInput | PaymentSessionScalarWhereInput[]
+  }
+
+  export type CustomerCreditEntryUncheckedUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<CustomerCreditEntryCreateWithoutBranchInput, CustomerCreditEntryUncheckedCreateWithoutBranchInput> | CustomerCreditEntryCreateWithoutBranchInput[] | CustomerCreditEntryUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: CustomerCreditEntryCreateOrConnectWithoutBranchInput | CustomerCreditEntryCreateOrConnectWithoutBranchInput[]
+    upsert?: CustomerCreditEntryUpsertWithWhereUniqueWithoutBranchInput | CustomerCreditEntryUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: CustomerCreditEntryCreateManyBranchInputEnvelope
+    set?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    disconnect?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    delete?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    connect?: CustomerCreditEntryWhereUniqueInput | CustomerCreditEntryWhereUniqueInput[]
+    update?: CustomerCreditEntryUpdateWithWhereUniqueWithoutBranchInput | CustomerCreditEntryUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: CustomerCreditEntryUpdateManyWithWhereWithoutBranchInput | CustomerCreditEntryUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: CustomerCreditEntryScalarWhereInput | CustomerCreditEntryScalarWhereInput[]
   }
 
   export type BranchCreateNestedOneWithoutStaffActivityLogsInput = {
@@ -98999,6 +102335,12 @@ export namespace Prisma {
     connect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
   }
 
+  export type CustomerCreditEntryCreateNestedOneWithoutBookingInput = {
+    create?: XOR<CustomerCreditEntryCreateWithoutBookingInput, CustomerCreditEntryUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: CustomerCreditEntryCreateOrConnectWithoutBookingInput
+    connect?: CustomerCreditEntryWhereUniqueInput
+  }
+
   export type BookingPhotoUncheckedCreateNestedManyWithoutBookingInput = {
     create?: XOR<BookingPhotoCreateWithoutBookingInput, BookingPhotoUncheckedCreateWithoutBookingInput> | BookingPhotoCreateWithoutBookingInput[] | BookingPhotoUncheckedCreateWithoutBookingInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutBookingInput | BookingPhotoCreateOrConnectWithoutBookingInput[]
@@ -99122,6 +102464,12 @@ export namespace Prisma {
     connectOrCreate?: LedgerEntryCreateOrConnectWithoutBookingInput | LedgerEntryCreateOrConnectWithoutBookingInput[]
     createMany?: LedgerEntryCreateManyBookingInputEnvelope
     connect?: LedgerEntryWhereUniqueInput | LedgerEntryWhereUniqueInput[]
+  }
+
+  export type CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput = {
+    create?: XOR<CustomerCreditEntryCreateWithoutBookingInput, CustomerCreditEntryUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: CustomerCreditEntryCreateOrConnectWithoutBookingInput
+    connect?: CustomerCreditEntryWhereUniqueInput
   }
 
   export type NullableEnumRentalPeriodTypeFieldUpdateOperationsInput = {
@@ -99438,6 +102786,16 @@ export namespace Prisma {
     deleteMany?: LedgerEntryScalarWhereInput | LedgerEntryScalarWhereInput[]
   }
 
+  export type CustomerCreditEntryUpdateOneWithoutBookingNestedInput = {
+    create?: XOR<CustomerCreditEntryCreateWithoutBookingInput, CustomerCreditEntryUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: CustomerCreditEntryCreateOrConnectWithoutBookingInput
+    upsert?: CustomerCreditEntryUpsertWithoutBookingInput
+    disconnect?: CustomerCreditEntryWhereInput | boolean
+    delete?: CustomerCreditEntryWhereInput | boolean
+    connect?: CustomerCreditEntryWhereUniqueInput
+    update?: XOR<XOR<CustomerCreditEntryUpdateToOneWithWhereWithoutBookingInput, CustomerCreditEntryUpdateWithoutBookingInput>, CustomerCreditEntryUncheckedUpdateWithoutBookingInput>
+  }
+
   export type BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput = {
     create?: XOR<BookingPhotoCreateWithoutBookingInput, BookingPhotoUncheckedCreateWithoutBookingInput> | BookingPhotoCreateWithoutBookingInput[] | BookingPhotoUncheckedCreateWithoutBookingInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutBookingInput | BookingPhotoCreateOrConnectWithoutBookingInput[]
@@ -99670,6 +103028,16 @@ export namespace Prisma {
     update?: LedgerEntryUpdateWithWhereUniqueWithoutBookingInput | LedgerEntryUpdateWithWhereUniqueWithoutBookingInput[]
     updateMany?: LedgerEntryUpdateManyWithWhereWithoutBookingInput | LedgerEntryUpdateManyWithWhereWithoutBookingInput[]
     deleteMany?: LedgerEntryScalarWhereInput | LedgerEntryScalarWhereInput[]
+  }
+
+  export type CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput = {
+    create?: XOR<CustomerCreditEntryCreateWithoutBookingInput, CustomerCreditEntryUncheckedCreateWithoutBookingInput>
+    connectOrCreate?: CustomerCreditEntryCreateOrConnectWithoutBookingInput
+    upsert?: CustomerCreditEntryUpsertWithoutBookingInput
+    disconnect?: CustomerCreditEntryWhereInput | boolean
+    delete?: CustomerCreditEntryWhereInput | boolean
+    connect?: CustomerCreditEntryWhereUniqueInput
+    update?: XOR<XOR<CustomerCreditEntryUpdateToOneWithWhereWithoutBookingInput, CustomerCreditEntryUpdateWithoutBookingInput>, CustomerCreditEntryUncheckedUpdateWithoutBookingInput>
   }
 
   export type VehicleCreateNestedOneWithoutBookingItemsInput = {
@@ -101678,6 +105046,136 @@ export namespace Prisma {
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutLedgerEntriesVoidedInput, UserUpdateWithoutLedgerEntriesVoidedInput>, UserUncheckedUpdateWithoutLedgerEntriesVoidedInput>
   }
 
+  export type CustomerCreateNestedOneWithoutCreditEntriesInput = {
+    create?: XOR<CustomerCreateWithoutCreditEntriesInput, CustomerUncheckedCreateWithoutCreditEntriesInput>
+    connectOrCreate?: CustomerCreateOrConnectWithoutCreditEntriesInput
+    connect?: CustomerWhereUniqueInput
+  }
+
+  export type BookingCreateNestedOneWithoutCreditEntryInput = {
+    create?: XOR<BookingCreateWithoutCreditEntryInput, BookingUncheckedCreateWithoutCreditEntryInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutCreditEntryInput
+    connect?: BookingWhereUniqueInput
+  }
+
+  export type BranchCreateNestedOneWithoutCreditEntriesInput = {
+    create?: XOR<BranchCreateWithoutCreditEntriesInput, BranchUncheckedCreateWithoutCreditEntriesInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutCreditEntriesInput
+    connect?: BranchWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutCreditEntriesCreatedInput = {
+    create?: XOR<UserCreateWithoutCreditEntriesCreatedInput, UserUncheckedCreateWithoutCreditEntriesCreatedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutCreditEntriesCreatedInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type CreditClearanceCreateNestedManyWithoutCreditEntryInput = {
+    create?: XOR<CreditClearanceCreateWithoutCreditEntryInput, CreditClearanceUncheckedCreateWithoutCreditEntryInput> | CreditClearanceCreateWithoutCreditEntryInput[] | CreditClearanceUncheckedCreateWithoutCreditEntryInput[]
+    connectOrCreate?: CreditClearanceCreateOrConnectWithoutCreditEntryInput | CreditClearanceCreateOrConnectWithoutCreditEntryInput[]
+    createMany?: CreditClearanceCreateManyCreditEntryInputEnvelope
+    connect?: CreditClearanceWhereUniqueInput | CreditClearanceWhereUniqueInput[]
+  }
+
+  export type CreditClearanceUncheckedCreateNestedManyWithoutCreditEntryInput = {
+    create?: XOR<CreditClearanceCreateWithoutCreditEntryInput, CreditClearanceUncheckedCreateWithoutCreditEntryInput> | CreditClearanceCreateWithoutCreditEntryInput[] | CreditClearanceUncheckedCreateWithoutCreditEntryInput[]
+    connectOrCreate?: CreditClearanceCreateOrConnectWithoutCreditEntryInput | CreditClearanceCreateOrConnectWithoutCreditEntryInput[]
+    createMany?: CreditClearanceCreateManyCreditEntryInputEnvelope
+    connect?: CreditClearanceWhereUniqueInput | CreditClearanceWhereUniqueInput[]
+  }
+
+  export type EnumCreditStatusFieldUpdateOperationsInput = {
+    set?: $Enums.CreditStatus
+  }
+
+  export type CustomerUpdateOneRequiredWithoutCreditEntriesNestedInput = {
+    create?: XOR<CustomerCreateWithoutCreditEntriesInput, CustomerUncheckedCreateWithoutCreditEntriesInput>
+    connectOrCreate?: CustomerCreateOrConnectWithoutCreditEntriesInput
+    upsert?: CustomerUpsertWithoutCreditEntriesInput
+    connect?: CustomerWhereUniqueInput
+    update?: XOR<XOR<CustomerUpdateToOneWithWhereWithoutCreditEntriesInput, CustomerUpdateWithoutCreditEntriesInput>, CustomerUncheckedUpdateWithoutCreditEntriesInput>
+  }
+
+  export type BookingUpdateOneRequiredWithoutCreditEntryNestedInput = {
+    create?: XOR<BookingCreateWithoutCreditEntryInput, BookingUncheckedCreateWithoutCreditEntryInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutCreditEntryInput
+    upsert?: BookingUpsertWithoutCreditEntryInput
+    connect?: BookingWhereUniqueInput
+    update?: XOR<XOR<BookingUpdateToOneWithWhereWithoutCreditEntryInput, BookingUpdateWithoutCreditEntryInput>, BookingUncheckedUpdateWithoutCreditEntryInput>
+  }
+
+  export type BranchUpdateOneRequiredWithoutCreditEntriesNestedInput = {
+    create?: XOR<BranchCreateWithoutCreditEntriesInput, BranchUncheckedCreateWithoutCreditEntriesInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutCreditEntriesInput
+    upsert?: BranchUpsertWithoutCreditEntriesInput
+    connect?: BranchWhereUniqueInput
+    update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutCreditEntriesInput, BranchUpdateWithoutCreditEntriesInput>, BranchUncheckedUpdateWithoutCreditEntriesInput>
+  }
+
+  export type UserUpdateOneRequiredWithoutCreditEntriesCreatedNestedInput = {
+    create?: XOR<UserCreateWithoutCreditEntriesCreatedInput, UserUncheckedCreateWithoutCreditEntriesCreatedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutCreditEntriesCreatedInput
+    upsert?: UserUpsertWithoutCreditEntriesCreatedInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutCreditEntriesCreatedInput, UserUpdateWithoutCreditEntriesCreatedInput>, UserUncheckedUpdateWithoutCreditEntriesCreatedInput>
+  }
+
+  export type CreditClearanceUpdateManyWithoutCreditEntryNestedInput = {
+    create?: XOR<CreditClearanceCreateWithoutCreditEntryInput, CreditClearanceUncheckedCreateWithoutCreditEntryInput> | CreditClearanceCreateWithoutCreditEntryInput[] | CreditClearanceUncheckedCreateWithoutCreditEntryInput[]
+    connectOrCreate?: CreditClearanceCreateOrConnectWithoutCreditEntryInput | CreditClearanceCreateOrConnectWithoutCreditEntryInput[]
+    upsert?: CreditClearanceUpsertWithWhereUniqueWithoutCreditEntryInput | CreditClearanceUpsertWithWhereUniqueWithoutCreditEntryInput[]
+    createMany?: CreditClearanceCreateManyCreditEntryInputEnvelope
+    set?: CreditClearanceWhereUniqueInput | CreditClearanceWhereUniqueInput[]
+    disconnect?: CreditClearanceWhereUniqueInput | CreditClearanceWhereUniqueInput[]
+    delete?: CreditClearanceWhereUniqueInput | CreditClearanceWhereUniqueInput[]
+    connect?: CreditClearanceWhereUniqueInput | CreditClearanceWhereUniqueInput[]
+    update?: CreditClearanceUpdateWithWhereUniqueWithoutCreditEntryInput | CreditClearanceUpdateWithWhereUniqueWithoutCreditEntryInput[]
+    updateMany?: CreditClearanceUpdateManyWithWhereWithoutCreditEntryInput | CreditClearanceUpdateManyWithWhereWithoutCreditEntryInput[]
+    deleteMany?: CreditClearanceScalarWhereInput | CreditClearanceScalarWhereInput[]
+  }
+
+  export type CreditClearanceUncheckedUpdateManyWithoutCreditEntryNestedInput = {
+    create?: XOR<CreditClearanceCreateWithoutCreditEntryInput, CreditClearanceUncheckedCreateWithoutCreditEntryInput> | CreditClearanceCreateWithoutCreditEntryInput[] | CreditClearanceUncheckedCreateWithoutCreditEntryInput[]
+    connectOrCreate?: CreditClearanceCreateOrConnectWithoutCreditEntryInput | CreditClearanceCreateOrConnectWithoutCreditEntryInput[]
+    upsert?: CreditClearanceUpsertWithWhereUniqueWithoutCreditEntryInput | CreditClearanceUpsertWithWhereUniqueWithoutCreditEntryInput[]
+    createMany?: CreditClearanceCreateManyCreditEntryInputEnvelope
+    set?: CreditClearanceWhereUniqueInput | CreditClearanceWhereUniqueInput[]
+    disconnect?: CreditClearanceWhereUniqueInput | CreditClearanceWhereUniqueInput[]
+    delete?: CreditClearanceWhereUniqueInput | CreditClearanceWhereUniqueInput[]
+    connect?: CreditClearanceWhereUniqueInput | CreditClearanceWhereUniqueInput[]
+    update?: CreditClearanceUpdateWithWhereUniqueWithoutCreditEntryInput | CreditClearanceUpdateWithWhereUniqueWithoutCreditEntryInput[]
+    updateMany?: CreditClearanceUpdateManyWithWhereWithoutCreditEntryInput | CreditClearanceUpdateManyWithWhereWithoutCreditEntryInput[]
+    deleteMany?: CreditClearanceScalarWhereInput | CreditClearanceScalarWhereInput[]
+  }
+
+  export type CustomerCreditEntryCreateNestedOneWithoutClearancesInput = {
+    create?: XOR<CustomerCreditEntryCreateWithoutClearancesInput, CustomerCreditEntryUncheckedCreateWithoutClearancesInput>
+    connectOrCreate?: CustomerCreditEntryCreateOrConnectWithoutClearancesInput
+    connect?: CustomerCreditEntryWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutCreditClearancesActedInput = {
+    create?: XOR<UserCreateWithoutCreditClearancesActedInput, UserUncheckedCreateWithoutCreditClearancesActedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutCreditClearancesActedInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type CustomerCreditEntryUpdateOneRequiredWithoutClearancesNestedInput = {
+    create?: XOR<CustomerCreditEntryCreateWithoutClearancesInput, CustomerCreditEntryUncheckedCreateWithoutClearancesInput>
+    connectOrCreate?: CustomerCreditEntryCreateOrConnectWithoutClearancesInput
+    upsert?: CustomerCreditEntryUpsertWithoutClearancesInput
+    connect?: CustomerCreditEntryWhereUniqueInput
+    update?: XOR<XOR<CustomerCreditEntryUpdateToOneWithWhereWithoutClearancesInput, CustomerCreditEntryUpdateWithoutClearancesInput>, CustomerCreditEntryUncheckedUpdateWithoutClearancesInput>
+  }
+
+  export type UserUpdateOneRequiredWithoutCreditClearancesActedNestedInput = {
+    create?: XOR<UserCreateWithoutCreditClearancesActedInput, UserUncheckedCreateWithoutCreditClearancesActedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutCreditClearancesActedInput
+    upsert?: UserUpsertWithoutCreditClearancesActedInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutCreditClearancesActedInput, UserUpdateWithoutCreditClearancesActedInput>, UserUncheckedUpdateWithoutCreditClearancesActedInput>
+  }
+
   export type NestedIntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -102759,6 +106257,23 @@ export namespace Prisma {
     _max?: NestedEnumLedgerEntryClassificationFilter<$PrismaModel>
   }
 
+  export type NestedEnumCreditStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.CreditStatus | EnumCreditStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CreditStatus[] | ListEnumCreditStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CreditStatus[] | ListEnumCreditStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumCreditStatusFilter<$PrismaModel> | $Enums.CreditStatus
+  }
+
+  export type NestedEnumCreditStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.CreditStatus | EnumCreditStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CreditStatus[] | ListEnumCreditStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CreditStatus[] | ListEnumCreditStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumCreditStatusWithAggregatesFilter<$PrismaModel> | $Enums.CreditStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumCreditStatusFilter<$PrismaModel>
+    _max?: NestedEnumCreditStatusFilter<$PrismaModel>
+  }
+
   export type BranchCreateWithoutUsersInput = {
     publicId: string
     name: string
@@ -102786,6 +106301,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutUsersInput = {
@@ -102816,6 +106332,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutUsersInput = {
@@ -102897,6 +106414,7 @@ export namespace Prisma {
     kycs?: CustomerKycCreateNestedManyWithoutCustomerInput
     bookings?: BookingCreateNestedManyWithoutCustomerInput
     cancellationInvoices?: CancellationInvoiceCreateNestedManyWithoutCustomerInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerUncheckedCreateWithoutUserInput = {
@@ -102916,6 +106434,7 @@ export namespace Prisma {
     kycs?: CustomerKycUncheckedCreateNestedManyWithoutCustomerInput
     bookings?: BookingUncheckedCreateNestedManyWithoutCustomerInput
     cancellationInvoices?: CancellationInvoiceUncheckedCreateNestedManyWithoutCustomerInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerCreateOrConnectWithoutUserInput = {
@@ -103124,6 +106643,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCreatedByInput = {
@@ -103206,6 +106726,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCreatedByInput = {
@@ -104438,6 +107959,78 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type CustomerCreditEntryCreateWithoutCreatedByInput = {
+    publicId: string
+    sections: JsonNullValueInput | InputJsonValue
+    totalAmount: Decimal | DecimalJsLike | number | string
+    clearedAmount?: Decimal | DecimalJsLike | number | string
+    pendingAmount: Decimal | DecimalJsLike | number | string
+    status: $Enums.CreditStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    customer: CustomerCreateNestedOneWithoutCreditEntriesInput
+    booking: BookingCreateNestedOneWithoutCreditEntryInput
+    branch: BranchCreateNestedOneWithoutCreditEntriesInput
+    clearances?: CreditClearanceCreateNestedManyWithoutCreditEntryInput
+  }
+
+  export type CustomerCreditEntryUncheckedCreateWithoutCreatedByInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    bookingId: number
+    branchId: number
+    sections: JsonNullValueInput | InputJsonValue
+    totalAmount: Decimal | DecimalJsLike | number | string
+    clearedAmount?: Decimal | DecimalJsLike | number | string
+    pendingAmount: Decimal | DecimalJsLike | number | string
+    status: $Enums.CreditStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    clearances?: CreditClearanceUncheckedCreateNestedManyWithoutCreditEntryInput
+  }
+
+  export type CustomerCreditEntryCreateOrConnectWithoutCreatedByInput = {
+    where: CustomerCreditEntryWhereUniqueInput
+    create: XOR<CustomerCreditEntryCreateWithoutCreatedByInput, CustomerCreditEntryUncheckedCreateWithoutCreatedByInput>
+  }
+
+  export type CustomerCreditEntryCreateManyCreatedByInputEnvelope = {
+    data: CustomerCreditEntryCreateManyCreatedByInput | CustomerCreditEntryCreateManyCreatedByInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type CreditClearanceCreateWithoutClearedByInput = {
+    publicId: string
+    clearedSectionKeys: JsonNullValueInput | InputJsonValue
+    amountCleared: Decimal | DecimalJsLike | number | string
+    paymentMethod: string
+    transactionRef?: string | null
+    clearedAt?: Date | string
+    creditEntry: CustomerCreditEntryCreateNestedOneWithoutClearancesInput
+  }
+
+  export type CreditClearanceUncheckedCreateWithoutClearedByInput = {
+    id?: number
+    publicId: string
+    creditEntryId: number
+    clearedSectionKeys: JsonNullValueInput | InputJsonValue
+    amountCleared: Decimal | DecimalJsLike | number | string
+    paymentMethod: string
+    transactionRef?: string | null
+    clearedAt?: Date | string
+  }
+
+  export type CreditClearanceCreateOrConnectWithoutClearedByInput = {
+    where: CreditClearanceWhereUniqueInput
+    create: XOR<CreditClearanceCreateWithoutClearedByInput, CreditClearanceUncheckedCreateWithoutClearedByInput>
+  }
+
+  export type CreditClearanceCreateManyClearedByInputEnvelope = {
+    data: CreditClearanceCreateManyClearedByInput | CreditClearanceCreateManyClearedByInput[]
+    skipDuplicates?: boolean
+  }
+
   export type BranchUpsertWithoutUsersInput = {
     update: XOR<BranchUpdateWithoutUsersInput, BranchUncheckedUpdateWithoutUsersInput>
     create: XOR<BranchCreateWithoutUsersInput, BranchUncheckedCreateWithoutUsersInput>
@@ -104476,6 +108069,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutUsersInput = {
@@ -104506,6 +108100,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type EmailVerificationOtpUpsertWithWhereUniqueWithoutUserInput = {
@@ -104595,6 +108190,7 @@ export namespace Prisma {
     kycs?: CustomerKycUpdateManyWithoutCustomerNestedInput
     bookings?: BookingUpdateManyWithoutCustomerNestedInput
     cancellationInvoices?: CancellationInvoiceUpdateManyWithoutCustomerNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutCustomerNestedInput
   }
 
   export type CustomerUncheckedUpdateWithoutUserInput = {
@@ -104614,6 +108210,7 @@ export namespace Prisma {
     kycs?: CustomerKycUncheckedUpdateManyWithoutCustomerNestedInput
     bookings?: BookingUncheckedUpdateManyWithoutCustomerNestedInput
     cancellationInvoices?: CancellationInvoiceUncheckedUpdateManyWithoutCustomerNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutCustomerNestedInput
   }
 
   export type AuditLogUpsertWithWhereUniqueWithoutActorInput = {
@@ -105489,6 +109086,72 @@ export namespace Prisma {
     data: XOR<LedgerEntryUpdateManyMutationInput, LedgerEntryUncheckedUpdateManyWithoutVoidedByInput>
   }
 
+  export type CustomerCreditEntryUpsertWithWhereUniqueWithoutCreatedByInput = {
+    where: CustomerCreditEntryWhereUniqueInput
+    update: XOR<CustomerCreditEntryUpdateWithoutCreatedByInput, CustomerCreditEntryUncheckedUpdateWithoutCreatedByInput>
+    create: XOR<CustomerCreditEntryCreateWithoutCreatedByInput, CustomerCreditEntryUncheckedCreateWithoutCreatedByInput>
+  }
+
+  export type CustomerCreditEntryUpdateWithWhereUniqueWithoutCreatedByInput = {
+    where: CustomerCreditEntryWhereUniqueInput
+    data: XOR<CustomerCreditEntryUpdateWithoutCreatedByInput, CustomerCreditEntryUncheckedUpdateWithoutCreatedByInput>
+  }
+
+  export type CustomerCreditEntryUpdateManyWithWhereWithoutCreatedByInput = {
+    where: CustomerCreditEntryScalarWhereInput
+    data: XOR<CustomerCreditEntryUpdateManyMutationInput, CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByInput>
+  }
+
+  export type CustomerCreditEntryScalarWhereInput = {
+    AND?: CustomerCreditEntryScalarWhereInput | CustomerCreditEntryScalarWhereInput[]
+    OR?: CustomerCreditEntryScalarWhereInput[]
+    NOT?: CustomerCreditEntryScalarWhereInput | CustomerCreditEntryScalarWhereInput[]
+    id?: IntFilter<"CustomerCreditEntry"> | number
+    publicId?: StringFilter<"CustomerCreditEntry"> | string
+    customerId?: IntFilter<"CustomerCreditEntry"> | number
+    bookingId?: IntFilter<"CustomerCreditEntry"> | number
+    branchId?: IntFilter<"CustomerCreditEntry"> | number
+    createdById?: IntFilter<"CustomerCreditEntry"> | number
+    sections?: JsonFilter<"CustomerCreditEntry">
+    totalAmount?: DecimalFilter<"CustomerCreditEntry"> | Decimal | DecimalJsLike | number | string
+    clearedAmount?: DecimalFilter<"CustomerCreditEntry"> | Decimal | DecimalJsLike | number | string
+    pendingAmount?: DecimalFilter<"CustomerCreditEntry"> | Decimal | DecimalJsLike | number | string
+    status?: EnumCreditStatusFilter<"CustomerCreditEntry"> | $Enums.CreditStatus
+    createdAt?: DateTimeFilter<"CustomerCreditEntry"> | Date | string
+    updatedAt?: DateTimeFilter<"CustomerCreditEntry"> | Date | string
+  }
+
+  export type CreditClearanceUpsertWithWhereUniqueWithoutClearedByInput = {
+    where: CreditClearanceWhereUniqueInput
+    update: XOR<CreditClearanceUpdateWithoutClearedByInput, CreditClearanceUncheckedUpdateWithoutClearedByInput>
+    create: XOR<CreditClearanceCreateWithoutClearedByInput, CreditClearanceUncheckedCreateWithoutClearedByInput>
+  }
+
+  export type CreditClearanceUpdateWithWhereUniqueWithoutClearedByInput = {
+    where: CreditClearanceWhereUniqueInput
+    data: XOR<CreditClearanceUpdateWithoutClearedByInput, CreditClearanceUncheckedUpdateWithoutClearedByInput>
+  }
+
+  export type CreditClearanceUpdateManyWithWhereWithoutClearedByInput = {
+    where: CreditClearanceScalarWhereInput
+    data: XOR<CreditClearanceUpdateManyMutationInput, CreditClearanceUncheckedUpdateManyWithoutClearedByInput>
+  }
+
+  export type CreditClearanceScalarWhereInput = {
+    AND?: CreditClearanceScalarWhereInput | CreditClearanceScalarWhereInput[]
+    OR?: CreditClearanceScalarWhereInput[]
+    NOT?: CreditClearanceScalarWhereInput | CreditClearanceScalarWhereInput[]
+    id?: IntFilter<"CreditClearance"> | number
+    publicId?: StringFilter<"CreditClearance"> | string
+    creditEntryId?: IntFilter<"CreditClearance"> | number
+    clearedSectionKeys?: JsonFilter<"CreditClearance">
+    amountCleared?: DecimalFilter<"CreditClearance"> | Decimal | DecimalJsLike | number | string
+    paymentMethod?: StringFilter<"CreditClearance"> | string
+    transactionRef?: StringNullableFilter<"CreditClearance"> | string | null
+    clearedById?: IntFilter<"CreditClearance"> | number
+    clearedAt?: DateTimeFilter<"CreditClearance"> | Date | string
+  }
+
   export type UserCreateWithoutProvidersInput = {
     publicId: string
     name: string
@@ -105531,6 +109194,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutProvidersInput = {
@@ -105576,6 +109241,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutProvidersInput = {
@@ -105636,6 +109303,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutProvidersInput = {
@@ -105681,6 +109350,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserCreateWithoutEmailOtpsInput = {
@@ -105725,6 +109396,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutEmailOtpsInput = {
@@ -105770,6 +109443,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutEmailOtpsInput = {
@@ -105830,6 +109505,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutEmailOtpsInput = {
@@ -105875,6 +109552,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserCreateWithoutCustomerProfileInput = {
@@ -105919,6 +109598,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutCustomerProfileInput = {
@@ -105964,6 +109645,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutCustomerProfileInput = {
@@ -106077,6 +109760,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCustomerInput = {
@@ -106159,6 +109843,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCustomerInput = {
@@ -106211,6 +109896,47 @@ export namespace Prisma {
 
   export type CancellationInvoiceCreateManyCustomerInputEnvelope = {
     data: CancellationInvoiceCreateManyCustomerInput | CancellationInvoiceCreateManyCustomerInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type CustomerCreditEntryCreateWithoutCustomerInput = {
+    publicId: string
+    sections: JsonNullValueInput | InputJsonValue
+    totalAmount: Decimal | DecimalJsLike | number | string
+    clearedAmount?: Decimal | DecimalJsLike | number | string
+    pendingAmount: Decimal | DecimalJsLike | number | string
+    status: $Enums.CreditStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutCreditEntryInput
+    branch: BranchCreateNestedOneWithoutCreditEntriesInput
+    createdBy: UserCreateNestedOneWithoutCreditEntriesCreatedInput
+    clearances?: CreditClearanceCreateNestedManyWithoutCreditEntryInput
+  }
+
+  export type CustomerCreditEntryUncheckedCreateWithoutCustomerInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    createdById: number
+    sections: JsonNullValueInput | InputJsonValue
+    totalAmount: Decimal | DecimalJsLike | number | string
+    clearedAmount?: Decimal | DecimalJsLike | number | string
+    pendingAmount: Decimal | DecimalJsLike | number | string
+    status: $Enums.CreditStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    clearances?: CreditClearanceUncheckedCreateNestedManyWithoutCreditEntryInput
+  }
+
+  export type CustomerCreditEntryCreateOrConnectWithoutCustomerInput = {
+    where: CustomerCreditEntryWhereUniqueInput
+    create: XOR<CustomerCreditEntryCreateWithoutCustomerInput, CustomerCreditEntryUncheckedCreateWithoutCustomerInput>
+  }
+
+  export type CustomerCreditEntryCreateManyCustomerInputEnvelope = {
+    data: CustomerCreditEntryCreateManyCustomerInput | CustomerCreditEntryCreateManyCustomerInput[]
     skipDuplicates?: boolean
   }
 
@@ -106267,6 +109993,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutCustomerProfileInput = {
@@ -106312,6 +110040,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type CustomerKycUpsertWithWhereUniqueWithoutCustomerInput = {
@@ -106396,6 +110126,22 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"CancellationInvoice"> | Date | string
   }
 
+  export type CustomerCreditEntryUpsertWithWhereUniqueWithoutCustomerInput = {
+    where: CustomerCreditEntryWhereUniqueInput
+    update: XOR<CustomerCreditEntryUpdateWithoutCustomerInput, CustomerCreditEntryUncheckedUpdateWithoutCustomerInput>
+    create: XOR<CustomerCreditEntryCreateWithoutCustomerInput, CustomerCreditEntryUncheckedCreateWithoutCustomerInput>
+  }
+
+  export type CustomerCreditEntryUpdateWithWhereUniqueWithoutCustomerInput = {
+    where: CustomerCreditEntryWhereUniqueInput
+    data: XOR<CustomerCreditEntryUpdateWithoutCustomerInput, CustomerCreditEntryUncheckedUpdateWithoutCustomerInput>
+  }
+
+  export type CustomerCreditEntryUpdateManyWithWhereWithoutCustomerInput = {
+    where: CustomerCreditEntryScalarWhereInput
+    data: XOR<CustomerCreditEntryUpdateManyMutationInput, CustomerCreditEntryUncheckedUpdateManyWithoutCustomerInput>
+  }
+
   export type CustomerCreateWithoutKycsInput = {
     publicId: string
     alternatePhone?: string | null
@@ -106412,6 +110158,7 @@ export namespace Prisma {
     user: UserCreateNestedOneWithoutCustomerProfileInput
     bookings?: BookingCreateNestedManyWithoutCustomerInput
     cancellationInvoices?: CancellationInvoiceCreateNestedManyWithoutCustomerInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerUncheckedCreateWithoutKycsInput = {
@@ -106431,6 +110178,7 @@ export namespace Prisma {
     deletedAt?: Date | string | null
     bookings?: BookingUncheckedCreateNestedManyWithoutCustomerInput
     cancellationInvoices?: CancellationInvoiceUncheckedCreateNestedManyWithoutCustomerInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerCreateOrConnectWithoutKycsInput = {
@@ -106501,6 +110249,7 @@ export namespace Prisma {
     user?: UserUpdateOneRequiredWithoutCustomerProfileNestedInput
     bookings?: BookingUpdateManyWithoutCustomerNestedInput
     cancellationInvoices?: CancellationInvoiceUpdateManyWithoutCustomerNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutCustomerNestedInput
   }
 
   export type CustomerUncheckedUpdateWithoutKycsInput = {
@@ -106520,6 +110269,7 @@ export namespace Prisma {
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     bookings?: BookingUncheckedUpdateManyWithoutCustomerNestedInput
     cancellationInvoices?: CancellationInvoiceUncheckedUpdateManyWithoutCustomerNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutCustomerNestedInput
   }
 
   export type FileObjectUpsertWithoutCustomerKycsInput = {
@@ -106699,6 +110449,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutKycFileInput = {
@@ -106781,6 +110532,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutKycFileInput = {
@@ -107158,6 +110910,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutBranchInput = {
@@ -107203,6 +110957,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutBranchInput = {
@@ -107363,6 +111119,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutBranchInput = {
@@ -107445,6 +111202,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutBranchInput = {
@@ -108182,6 +111940,47 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type CustomerCreditEntryCreateWithoutBranchInput = {
+    publicId: string
+    sections: JsonNullValueInput | InputJsonValue
+    totalAmount: Decimal | DecimalJsLike | number | string
+    clearedAmount?: Decimal | DecimalJsLike | number | string
+    pendingAmount: Decimal | DecimalJsLike | number | string
+    status: $Enums.CreditStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    customer: CustomerCreateNestedOneWithoutCreditEntriesInput
+    booking: BookingCreateNestedOneWithoutCreditEntryInput
+    createdBy: UserCreateNestedOneWithoutCreditEntriesCreatedInput
+    clearances?: CreditClearanceCreateNestedManyWithoutCreditEntryInput
+  }
+
+  export type CustomerCreditEntryUncheckedCreateWithoutBranchInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    bookingId: number
+    createdById: number
+    sections: JsonNullValueInput | InputJsonValue
+    totalAmount: Decimal | DecimalJsLike | number | string
+    clearedAmount?: Decimal | DecimalJsLike | number | string
+    pendingAmount: Decimal | DecimalJsLike | number | string
+    status: $Enums.CreditStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    clearances?: CreditClearanceUncheckedCreateNestedManyWithoutCreditEntryInput
+  }
+
+  export type CustomerCreditEntryCreateOrConnectWithoutBranchInput = {
+    where: CustomerCreditEntryWhereUniqueInput
+    create: XOR<CustomerCreditEntryCreateWithoutBranchInput, CustomerCreditEntryUncheckedCreateWithoutBranchInput>
+  }
+
+  export type CustomerCreditEntryCreateManyBranchInputEnvelope = {
+    data: CustomerCreditEntryCreateManyBranchInput | CustomerCreditEntryCreateManyBranchInput[]
+    skipDuplicates?: boolean
+  }
+
   export type UserUpsertWithWhereUniqueWithoutBranchInput = {
     where: UserWhereUniqueInput
     update: XOR<UserUpdateWithoutBranchInput, UserUncheckedUpdateWithoutBranchInput>
@@ -108786,6 +112585,22 @@ export namespace Prisma {
     data: XOR<PaymentSessionUpdateManyMutationInput, PaymentSessionUncheckedUpdateManyWithoutBranchInput>
   }
 
+  export type CustomerCreditEntryUpsertWithWhereUniqueWithoutBranchInput = {
+    where: CustomerCreditEntryWhereUniqueInput
+    update: XOR<CustomerCreditEntryUpdateWithoutBranchInput, CustomerCreditEntryUncheckedUpdateWithoutBranchInput>
+    create: XOR<CustomerCreditEntryCreateWithoutBranchInput, CustomerCreditEntryUncheckedCreateWithoutBranchInput>
+  }
+
+  export type CustomerCreditEntryUpdateWithWhereUniqueWithoutBranchInput = {
+    where: CustomerCreditEntryWhereUniqueInput
+    data: XOR<CustomerCreditEntryUpdateWithoutBranchInput, CustomerCreditEntryUncheckedUpdateWithoutBranchInput>
+  }
+
+  export type CustomerCreditEntryUpdateManyWithWhereWithoutBranchInput = {
+    where: CustomerCreditEntryScalarWhereInput
+    data: XOR<CustomerCreditEntryUpdateManyMutationInput, CustomerCreditEntryUncheckedUpdateManyWithoutBranchInput>
+  }
+
   export type BranchCreateWithoutStaffActivityLogsInput = {
     publicId: string
     name: string
@@ -108813,6 +112628,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutStaffActivityLogsInput = {
@@ -108843,6 +112659,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutStaffActivityLogsInput = {
@@ -108888,6 +112705,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutStaffActivityLogsInput = {
@@ -108918,6 +112736,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchCreateWithoutPricingSettingInput = {
@@ -108947,6 +112766,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPricingSettingInput = {
@@ -108977,6 +112797,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPricingSettingInput = {
@@ -109022,6 +112843,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPricingSettingInput = {
@@ -109052,6 +112874,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type PricingDiscountSlabCreateWithoutCategoryInput = {
@@ -109397,6 +113220,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutCaptureConfigsInput = {
@@ -109427,6 +113251,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutCaptureConfigsInput = {
@@ -109502,6 +113327,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutCaptureConfigsInput = {
@@ -109532,6 +113358,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutCaptureConfigsInput = {
@@ -109597,6 +113424,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutVehiclesInput = {
@@ -109627,6 +113455,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutVehiclesInput = {
@@ -110085,6 +113914,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutVehiclesInput = {
@@ -110115,6 +113945,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutVehiclesInput = {
@@ -110716,6 +114547,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutBranchPricingDefaultsInput = {
@@ -110746,6 +114578,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutBranchPricingDefaultsInput = {
@@ -110821,6 +114654,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutBranchPricingDefaultsInput = {
@@ -110851,6 +114685,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutBranchPricingDefaultsInput = {
@@ -111462,6 +115297,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPricingDiscountSlabsInput = {
@@ -111492,6 +115328,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPricingDiscountSlabsInput = {
@@ -111567,6 +115404,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPricingDiscountSlabsInput = {
@@ -111597,6 +115435,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutPricingDiscountSlabsInput = {
@@ -111662,6 +115501,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutCategoryDepositSettingsInput = {
@@ -111692,6 +115532,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutCategoryDepositSettingsInput = {
@@ -111767,6 +115608,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutCategoryDepositSettingsInput = {
@@ -111797,6 +115639,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type VehicleCategoryUpsertWithoutCategoryDepositSettingsInput = {
@@ -111887,6 +115730,7 @@ export namespace Prisma {
     user: UserCreateNestedOneWithoutCustomerProfileInput
     kycs?: CustomerKycCreateNestedManyWithoutCustomerInput
     cancellationInvoices?: CancellationInvoiceCreateNestedManyWithoutCustomerInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerUncheckedCreateWithoutBookingsInput = {
@@ -111906,6 +115750,7 @@ export namespace Prisma {
     deletedAt?: Date | string | null
     kycs?: CustomerKycUncheckedCreateNestedManyWithoutCustomerInput
     cancellationInvoices?: CancellationInvoiceUncheckedCreateNestedManyWithoutCustomerInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerCreateOrConnectWithoutBookingsInput = {
@@ -111940,6 +115785,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutBookingsInput = {
@@ -111970,6 +115816,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutBookingsInput = {
@@ -112019,6 +115866,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutBookingsCreatedInput = {
@@ -112064,6 +115913,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutBookingsCreatedInput = {
@@ -113090,6 +116941,42 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type CustomerCreditEntryCreateWithoutBookingInput = {
+    publicId: string
+    sections: JsonNullValueInput | InputJsonValue
+    totalAmount: Decimal | DecimalJsLike | number | string
+    clearedAmount?: Decimal | DecimalJsLike | number | string
+    pendingAmount: Decimal | DecimalJsLike | number | string
+    status: $Enums.CreditStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    customer: CustomerCreateNestedOneWithoutCreditEntriesInput
+    branch: BranchCreateNestedOneWithoutCreditEntriesInput
+    createdBy: UserCreateNestedOneWithoutCreditEntriesCreatedInput
+    clearances?: CreditClearanceCreateNestedManyWithoutCreditEntryInput
+  }
+
+  export type CustomerCreditEntryUncheckedCreateWithoutBookingInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    createdById: number
+    sections: JsonNullValueInput | InputJsonValue
+    totalAmount: Decimal | DecimalJsLike | number | string
+    clearedAmount?: Decimal | DecimalJsLike | number | string
+    pendingAmount: Decimal | DecimalJsLike | number | string
+    status: $Enums.CreditStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    clearances?: CreditClearanceUncheckedCreateNestedManyWithoutCreditEntryInput
+  }
+
+  export type CustomerCreditEntryCreateOrConnectWithoutBookingInput = {
+    where: CustomerCreditEntryWhereUniqueInput
+    create: XOR<CustomerCreditEntryCreateWithoutBookingInput, CustomerCreditEntryUncheckedCreateWithoutBookingInput>
+  }
+
   export type FileObjectUpsertWithoutBookingKycsInput = {
     update: XOR<FileObjectUpdateWithoutBookingKycsInput, FileObjectUncheckedUpdateWithoutBookingKycsInput>
     create: XOR<FileObjectCreateWithoutBookingKycsInput, FileObjectUncheckedCreateWithoutBookingKycsInput>
@@ -113159,6 +117046,7 @@ export namespace Prisma {
     user?: UserUpdateOneRequiredWithoutCustomerProfileNestedInput
     kycs?: CustomerKycUpdateManyWithoutCustomerNestedInput
     cancellationInvoices?: CancellationInvoiceUpdateManyWithoutCustomerNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutCustomerNestedInput
   }
 
   export type CustomerUncheckedUpdateWithoutBookingsInput = {
@@ -113178,6 +117066,7 @@ export namespace Prisma {
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     kycs?: CustomerKycUncheckedUpdateManyWithoutCustomerNestedInput
     cancellationInvoices?: CancellationInvoiceUncheckedUpdateManyWithoutCustomerNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutCustomerNestedInput
   }
 
   export type BranchUpsertWithoutBookingsInput = {
@@ -113218,6 +117107,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutBookingsInput = {
@@ -113248,6 +117138,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type UserUpsertWithoutBookingsCreatedInput = {
@@ -113303,6 +117194,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutBookingsCreatedInput = {
@@ -113348,6 +117241,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type BookingPhotoUpsertWithWhereUniqueWithoutBookingInput = {
@@ -114078,6 +117973,48 @@ export namespace Prisma {
     data: XOR<LedgerEntryUpdateManyMutationInput, LedgerEntryUncheckedUpdateManyWithoutBookingInput>
   }
 
+  export type CustomerCreditEntryUpsertWithoutBookingInput = {
+    update: XOR<CustomerCreditEntryUpdateWithoutBookingInput, CustomerCreditEntryUncheckedUpdateWithoutBookingInput>
+    create: XOR<CustomerCreditEntryCreateWithoutBookingInput, CustomerCreditEntryUncheckedCreateWithoutBookingInput>
+    where?: CustomerCreditEntryWhereInput
+  }
+
+  export type CustomerCreditEntryUpdateToOneWithWhereWithoutBookingInput = {
+    where?: CustomerCreditEntryWhereInput
+    data: XOR<CustomerCreditEntryUpdateWithoutBookingInput, CustomerCreditEntryUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type CustomerCreditEntryUpdateWithoutBookingInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    sections?: JsonNullValueInput | InputJsonValue
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    clearedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pendingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumCreditStatusFieldUpdateOperationsInput | $Enums.CreditStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    customer?: CustomerUpdateOneRequiredWithoutCreditEntriesNestedInput
+    branch?: BranchUpdateOneRequiredWithoutCreditEntriesNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutCreditEntriesCreatedNestedInput
+    clearances?: CreditClearanceUpdateManyWithoutCreditEntryNestedInput
+  }
+
+  export type CustomerCreditEntryUncheckedUpdateWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    createdById?: IntFieldUpdateOperationsInput | number
+    sections?: JsonNullValueInput | InputJsonValue
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    clearedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pendingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumCreditStatusFieldUpdateOperationsInput | $Enums.CreditStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    clearances?: CreditClearanceUncheckedUpdateManyWithoutCreditEntryNestedInput
+  }
+
   export type VehicleCreateWithoutBookingItemsInput = {
     publicId: string
     make: string
@@ -114221,6 +118158,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutItemsInput = {
@@ -114303,6 +118241,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutItemsInput = {
@@ -114470,6 +118409,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutItemsInput = {
@@ -114552,6 +118492,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingCreateWithoutPhotosInput = {
@@ -114633,6 +118574,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutPhotosInput = {
@@ -114715,6 +118657,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutPhotosInput = {
@@ -114884,6 +118827,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutPhotosInput = {
@@ -114966,6 +118910,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type FileObjectUpsertWithoutBookingPhotosInput = {
@@ -115131,6 +119076,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDamagesInput = {
@@ -115213,6 +119159,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDamagesInput = {
@@ -115326,6 +119273,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutApprovedDamageReportsInput = {
@@ -115371,6 +119320,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutApprovedDamageReportsInput = {
@@ -115497,6 +119448,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDamagesInput = {
@@ -115579,6 +119531,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type VehicleUpsertWithoutDamageReportsInput = {
@@ -115704,6 +119657,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutApprovedDamageReportsInput = {
@@ -115749,6 +119704,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type BookingPhotoUpsertWithWhereUniqueWithoutDamageReportInput = {
@@ -115846,6 +119803,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDepositInput = {
@@ -115928,6 +119886,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDepositInput = {
@@ -116025,6 +119984,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDepositInput = {
@@ -116107,6 +120067,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type InvoiceCreateWithoutPaymentsInput = {
@@ -116306,6 +120267,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutInvoiceInput = {
@@ -116388,6 +120350,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutInvoiceInput = {
@@ -116585,6 +120548,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutInvoiceInput = {
@@ -116667,6 +120631,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type InvoiceItemUpsertWithWhereUniqueWithoutInvoiceInput = {
@@ -116853,6 +120818,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutActorAuditLogsInput = {
@@ -116898,6 +120865,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutActorAuditLogsInput = {
@@ -116947,6 +120916,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutApproverAuditLogsInput = {
@@ -116992,6 +120963,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutApproverAuditLogsInput = {
@@ -117026,6 +120999,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutAuditLogsInput = {
@@ -117056,6 +121030,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutAuditLogsInput = {
@@ -117116,6 +121091,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutActorAuditLogsInput = {
@@ -117161,6 +121138,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUpsertWithoutApproverAuditLogsInput = {
@@ -117216,6 +121195,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutApproverAuditLogsInput = {
@@ -117261,6 +121242,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type BranchUpsertWithoutAuditLogsInput = {
@@ -117301,6 +121284,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutAuditLogsInput = {
@@ -117331,6 +121315,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchCreateWithoutGstRuleInput = {
@@ -117360,6 +121345,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutGstRuleInput = {
@@ -117390,6 +121376,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutGstRuleInput = {
@@ -117435,6 +121422,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutGstRuleInput = {
@@ -117465,6 +121453,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BookingCreateWithoutCancellationInvoiceInput = {
@@ -117546,6 +121535,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCancellationInvoiceInput = {
@@ -117628,6 +121618,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCancellationInvoiceInput = {
@@ -117651,6 +121642,7 @@ export namespace Prisma {
     user: UserCreateNestedOneWithoutCustomerProfileInput
     kycs?: CustomerKycCreateNestedManyWithoutCustomerInput
     bookings?: BookingCreateNestedManyWithoutCustomerInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerUncheckedCreateWithoutCancellationInvoicesInput = {
@@ -117670,6 +121662,7 @@ export namespace Prisma {
     deletedAt?: Date | string | null
     kycs?: CustomerKycUncheckedCreateNestedManyWithoutCustomerInput
     bookings?: BookingUncheckedCreateNestedManyWithoutCustomerInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerCreateOrConnectWithoutCancellationInvoicesInput = {
@@ -117803,6 +121796,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCancellationInvoiceInput = {
@@ -117885,6 +121879,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type CustomerUpsertWithoutCancellationInvoicesInput = {
@@ -117914,6 +121909,7 @@ export namespace Prisma {
     user?: UserUpdateOneRequiredWithoutCustomerProfileNestedInput
     kycs?: CustomerKycUpdateManyWithoutCustomerNestedInput
     bookings?: BookingUpdateManyWithoutCustomerNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutCustomerNestedInput
   }
 
   export type CustomerUncheckedUpdateWithoutCancellationInvoicesInput = {
@@ -117933,6 +121929,7 @@ export namespace Prisma {
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     kycs?: CustomerKycUncheckedUpdateManyWithoutCustomerNestedInput
     bookings?: BookingUncheckedUpdateManyWithoutCustomerNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutCustomerNestedInput
   }
 
   export type FileObjectUpsertWithoutCancellationInvoicesInput = {
@@ -118092,6 +122089,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutReturnReceiptInput = {
@@ -118174,6 +122172,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutReturnReceiptInput = {
@@ -118313,6 +122312,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutReturnReceiptInput = {
@@ -118395,6 +122395,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BranchFeatureFlagCreateWithoutFlagInput = {
@@ -118510,6 +122511,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutFeatureFlagsInput = {
@@ -118540,6 +122542,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutFeatureFlagsInput = {
@@ -118617,6 +122620,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutFeatureFlagsInput = {
@@ -118647,6 +122651,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type FeatureFlagUpsertWithoutBranchFlagsInput = {
@@ -118970,6 +122975,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutVehicleSwapsInput = {
@@ -119052,6 +123058,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutVehicleSwapsInput = {
@@ -119229,6 +123236,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutVehicleSwapsInput = {
@@ -119274,6 +123283,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutVehicleSwapsInput = {
@@ -119429,6 +123440,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutVehicleSwapsInput = {
@@ -119511,6 +123523,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type VehicleUpsertWithoutSwapsAsOriginalInput = {
@@ -119706,6 +123719,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutVehicleSwapsInput = {
@@ -119751,6 +123766,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type BookingExtensionUpsertWithoutVehicleSwapInput = {
@@ -119859,6 +123876,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutDiscountRulesCreatedInput = {
@@ -119904,6 +123923,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutDiscountRulesCreatedInput = {
@@ -120017,6 +124038,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDiscountRuleInput = {
@@ -120099,6 +124121,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDiscountRuleInput = {
@@ -120211,6 +124234,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutDiscountRulesCreatedInput = {
@@ -120256,6 +124281,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type CouponUsageLogUpsertWithWhereUniqueWithoutDiscountRuleInput = {
@@ -120369,6 +124396,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutDurationDiscountSlabsInput = {
@@ -120399,6 +124427,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutDurationDiscountSlabsInput = {
@@ -120444,6 +124473,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutDurationDiscountSlabsInput = {
@@ -120474,6 +124504,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchCreateWithoutDiscountConfigInput = {
@@ -120503,6 +124534,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutDiscountConfigInput = {
@@ -120533,6 +124565,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutDiscountConfigInput = {
@@ -120578,6 +124611,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutDiscountConfigInput = {
@@ -120608,6 +124642,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BookingCreateWithoutDiscountApplicationInput = {
@@ -120689,6 +124724,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDiscountApplicationInput = {
@@ -120771,6 +124807,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDiscountApplicationInput = {
@@ -120992,6 +125029,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDiscountApplicationInput = {
@@ -121074,6 +125112,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type DiscountRuleUpsertWithoutApplicationsInput = {
@@ -121432,6 +125471,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutManualDiscountsIssuedInput = {
@@ -121477,6 +125518,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutManualDiscountsIssuedInput = {
@@ -121526,6 +125569,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutManualDiscountsApprovedInput = {
@@ -121571,6 +125616,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutManualDiscountsApprovedInput = {
@@ -121657,6 +125704,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutManualDiscountInput = {
@@ -121739,6 +125787,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutManualDiscountInput = {
@@ -121841,6 +125890,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutManualDiscountsIssuedInput = {
@@ -121886,6 +125937,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUpsertWithoutManualDiscountsApprovedInput = {
@@ -121941,6 +125994,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutManualDiscountsApprovedInput = {
@@ -121986,6 +126041,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type BookingUpsertWithoutManualDiscountInput = {
@@ -122078,6 +126135,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutManualDiscountInput = {
@@ -122160,6 +126218,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type DiscountApplicationUpsertWithoutManualDiscountInput = {
@@ -122237,6 +126296,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPaymentConfigInput = {
@@ -122267,6 +126327,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPaymentConfigInput = {
@@ -122312,6 +126373,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPaymentConfigInput = {
@@ -122342,6 +126404,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BookingCreateWithoutPaymentTransactionsInput = {
@@ -122423,6 +126486,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutPaymentTransactionsInput = {
@@ -122505,6 +126569,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutPaymentTransactionsInput = {
@@ -122539,6 +126604,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPaymentTransactionsInput = {
@@ -122569,6 +126635,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPaymentTransactionsInput = {
@@ -122618,6 +126685,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutCollectedPaymentsInput = {
@@ -122663,6 +126732,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutCollectedPaymentsInput = {
@@ -122712,6 +126783,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutConfirmedPaymentsInput = {
@@ -122757,6 +126830,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutConfirmedPaymentsInput = {
@@ -122806,6 +126881,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutRejectedPaymentsInput = {
@@ -122851,6 +126928,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutRejectedPaymentsInput = {
@@ -123046,6 +127125,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutPaymentTransactionsInput = {
@@ -123128,6 +127208,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BranchUpsertWithoutPaymentTransactionsInput = {
@@ -123168,6 +127249,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPaymentTransactionsInput = {
@@ -123198,6 +127280,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type UserUpsertWithoutCollectedPaymentsInput = {
@@ -123253,6 +127336,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutCollectedPaymentsInput = {
@@ -123298,6 +127383,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUpsertWithoutConfirmedPaymentsInput = {
@@ -123353,6 +127440,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutConfirmedPaymentsInput = {
@@ -123398,6 +127487,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUpsertWithoutRejectedPaymentsInput = {
@@ -123453,6 +127544,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRejectedPaymentsInput = {
@@ -123498,6 +127591,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type CashShiftUpsertWithoutTransactionsInput = {
@@ -123689,6 +127784,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutRefundRequestsInput = {
@@ -123771,6 +127867,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutRefundRequestsInput = {
@@ -123805,6 +127902,7 @@ export namespace Prisma {
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutRefundRequestsInput = {
@@ -123835,6 +127933,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutRefundRequestsInput = {
@@ -123884,6 +127983,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutRefundRequestsMadeInput = {
@@ -123929,6 +128030,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutRefundRequestsMadeInput = {
@@ -123978,6 +128081,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutRefundRequestsApprovedInput = {
@@ -124023,6 +128128,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutRefundRequestsApprovedInput = {
@@ -124072,6 +128179,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutRefundRequestsCompletedInput = {
@@ -124117,6 +128226,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutRefundRequestsCompletedInput = {
@@ -124214,6 +128325,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutRefundRequestsInput = {
@@ -124296,6 +128408,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BranchUpsertWithoutRefundRequestsInput = {
@@ -124336,6 +128449,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutRefundRequestsInput = {
@@ -124366,6 +128480,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type UserUpsertWithoutRefundRequestsMadeInput = {
@@ -124421,6 +128536,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRefundRequestsMadeInput = {
@@ -124466,6 +128583,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUpsertWithoutRefundRequestsApprovedInput = {
@@ -124521,6 +128640,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRefundRequestsApprovedInput = {
@@ -124566,6 +128687,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUpsertWithoutRefundRequestsCompletedInput = {
@@ -124621,6 +128744,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRefundRequestsCompletedInput = {
@@ -124666,6 +128791,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserCreateWithoutOpenShiftsInput = {
@@ -124710,6 +128837,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutOpenShiftsInput = {
@@ -124755,6 +128884,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutOpenShiftsInput = {
@@ -124789,6 +128920,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutCashShiftsInput = {
@@ -124819,6 +128951,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutCashShiftsInput = {
@@ -124868,6 +129001,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutReconciledShiftsInput = {
@@ -124913,6 +129048,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutReconciledShiftsInput = {
@@ -125034,6 +129171,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutOpenShiftsInput = {
@@ -125079,6 +129218,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type BranchUpsertWithoutCashShiftsInput = {
@@ -125119,6 +129260,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutCashShiftsInput = {
@@ -125149,6 +129291,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type UserUpsertWithoutReconciledShiftsInput = {
@@ -125204,6 +129347,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutReconciledShiftsInput = {
@@ -125249,6 +129394,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type PaymentTransactionUpsertWithWhereUniqueWithoutCashShiftInput = {
@@ -125346,6 +129493,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutExtensionsInput = {
@@ -125428,6 +129576,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutExtensionsInput = {
@@ -125462,6 +129611,7 @@ export namespace Prisma {
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutExtensionsInput = {
@@ -125492,6 +129642,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutExtensionsInput = {
@@ -125541,6 +129692,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutInitiatedExtensionsInput = {
@@ -125586,6 +129739,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutInitiatedExtensionsInput = {
@@ -125828,6 +129983,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutActiveExtensionInput = {
@@ -125910,6 +130066,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutActiveExtensionInput = {
@@ -126012,6 +130169,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutExtensionsInput = {
@@ -126094,6 +130252,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BranchUpsertWithoutExtensionsInput = {
@@ -126134,6 +130293,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutExtensionsInput = {
@@ -126164,6 +130324,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type UserUpsertWithoutInitiatedExtensionsInput = {
@@ -126219,6 +130380,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutInitiatedExtensionsInput = {
@@ -126264,6 +130427,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type VehicleUpsertWithoutExtensionSwapsInput = {
@@ -126483,6 +130648,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutChargeConfigInput = {
@@ -126513,6 +130679,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutChargeConfigInput = {
@@ -126558,6 +130725,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutChargeConfigInput = {
@@ -126588,6 +130756,7 @@ export namespace Prisma {
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type BookingCreateWithoutChargeEntriesInput = {
@@ -126669,6 +130838,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutChargeEntriesInput = {
@@ -126751,6 +130921,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutChargeEntriesInput = {
@@ -126800,6 +130971,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutChargeEntriesCreatedInput = {
@@ -126845,6 +131018,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutChargeEntriesCreatedInput = {
@@ -126984,6 +131159,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutChargeEntriesInput = {
@@ -127066,6 +131242,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type UserUpsertWithoutChargeEntriesCreatedInput = {
@@ -127121,6 +131298,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutChargeEntriesCreatedInput = {
@@ -127166,6 +131345,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type ChargeOverrideUpsertWithoutChargeEntryInput = {
@@ -127295,6 +131476,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutChargeOverridesInput = {
@@ -127377,6 +131559,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutChargeOverridesInput = {
@@ -127466,6 +131649,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutOverridesActedInput = {
@@ -127511,6 +131696,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutOverridesActedInput = {
@@ -127560,6 +131747,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutOverridesApprovedInput = {
@@ -127605,6 +131794,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutOverridesApprovedInput = {
@@ -127702,6 +131893,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutChargeOverridesInput = {
@@ -127784,6 +131976,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type ChargeEntryUpsertWithoutOverrideInput = {
@@ -127885,6 +132078,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutOverridesActedInput = {
@@ -127930,6 +132125,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUpsertWithoutOverridesApprovedInput = {
@@ -127985,6 +132182,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutOverridesApprovedInput = {
@@ -128030,6 +132229,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type BookingCreateWithoutFuelRecordInput = {
@@ -128111,6 +132312,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutFuelRecordInput = {
@@ -128193,6 +132395,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutFuelRecordInput = {
@@ -128242,6 +132445,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutFuelPickupCapturesInput = {
@@ -128287,6 +132492,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutFuelPickupCapturesInput = {
@@ -128336,6 +132543,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutFuelReturnCapturesInput = {
@@ -128381,6 +132590,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutFuelReturnCapturesInput = {
@@ -128478,6 +132689,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutFuelRecordInput = {
@@ -128560,6 +132772,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type UserUpsertWithoutFuelPickupCapturesInput = {
@@ -128615,6 +132828,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutFuelPickupCapturesInput = {
@@ -128660,6 +132875,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUpsertWithoutFuelReturnCapturesInput = {
@@ -128715,6 +132932,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutFuelReturnCapturesInput = {
@@ -128760,6 +132979,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type BookingCreateWithoutSafetyDepositRequestInput = {
@@ -128841,6 +133062,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutSafetyDepositRequestInput = {
@@ -128923,6 +133145,7 @@ export namespace Prisma {
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutSafetyDepositRequestInput = {
@@ -128972,6 +133195,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutSafetyDepositRequestsInput = {
@@ -129017,6 +133242,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutSafetyDepositRequestsInput = {
@@ -129066,6 +133293,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutSafetyDepositApprovalsInput = {
@@ -129111,6 +133340,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutSafetyDepositApprovalsInput = {
@@ -129208,6 +133439,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutSafetyDepositRequestInput = {
@@ -129290,6 +133522,7 @@ export namespace Prisma {
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type UserUpsertWithoutSafetyDepositRequestsInput = {
@@ -129345,6 +133578,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSafetyDepositRequestsInput = {
@@ -129390,6 +133625,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUpsertWithoutSafetyDepositApprovalsInput = {
@@ -129445,6 +133682,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSafetyDepositApprovalsInput = {
@@ -129490,6 +133729,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type BookingCreateWithoutPaymentSessionsInput = {
@@ -129571,6 +133812,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutPaymentSessionsInput = {
@@ -129653,6 +133895,7 @@ export namespace Prisma {
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutPaymentSessionsInput = {
@@ -129687,6 +133930,7 @@ export namespace Prisma {
     cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryCreateNestedManyWithoutBranchInput
   }
 
   export type BranchUncheckedCreateWithoutPaymentSessionsInput = {
@@ -129717,6 +133961,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
     refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
     extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+    creditEntries?: CustomerCreditEntryUncheckedCreateNestedManyWithoutBranchInput
   }
 
   export type BranchCreateOrConnectWithoutPaymentSessionsInput = {
@@ -129766,6 +134011,8 @@ export namespace Prisma {
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutPaymentSessionsOpenedInput = {
@@ -129811,6 +134058,8 @@ export namespace Prisma {
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutPaymentSessionsOpenedInput = {
@@ -129954,6 +134203,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutActivePaymentSessionInput = {
@@ -130036,6 +134286,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutActivePaymentSessionInput = {
@@ -130138,6 +134389,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutPaymentSessionsInput = {
@@ -130220,6 +134472,7 @@ export namespace Prisma {
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BranchUpsertWithoutPaymentSessionsInput = {
@@ -130260,6 +134513,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUpdateManyWithoutBranchNestedInput
   }
 
   export type BranchUncheckedUpdateWithoutPaymentSessionsInput = {
@@ -130290,6 +134544,7 @@ export namespace Prisma {
     cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
     refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
     extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+    creditEntries?: CustomerCreditEntryUncheckedUpdateManyWithoutBranchNestedInput
   }
 
   export type UserUpsertWithoutPaymentSessionsOpenedInput = {
@@ -130345,6 +134600,8 @@ export namespace Prisma {
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutPaymentSessionsOpenedInput = {
@@ -130390,6 +134647,8 @@ export namespace Prisma {
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type LedgerEntryUpsertWithWhereUniqueWithoutSessionInput = {
@@ -130559,6 +134818,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutLedgerEntriesInput = {
@@ -130641,6 +134901,7 @@ export namespace Prisma {
     fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutLedgerEntriesInput = {
@@ -130690,6 +134951,8 @@ export namespace Prisma {
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutLedgerEntriesActedInput = {
@@ -130735,6 +134998,8 @@ export namespace Prisma {
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutLedgerEntriesActedInput = {
@@ -130784,6 +135049,8 @@ export namespace Prisma {
     safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
     paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
   }
 
   export type UserUncheckedCreateWithoutLedgerEntriesVoidedInput = {
@@ -130829,6 +135096,8 @@ export namespace Prisma {
     safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
     paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
   }
 
   export type UserCreateOrConnectWithoutLedgerEntriesVoidedInput = {
@@ -130988,6 +135257,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutLedgerEntriesInput = {
@@ -131070,6 +135340,7 @@ export namespace Prisma {
     fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type UserUpsertWithoutLedgerEntriesActedInput = {
@@ -131125,6 +135396,8 @@ export namespace Prisma {
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutLedgerEntriesActedInput = {
@@ -131170,6 +135443,8 @@ export namespace Prisma {
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUpsertWithoutLedgerEntriesVoidedInput = {
@@ -131225,6 +135500,8 @@ export namespace Prisma {
     safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutLedgerEntriesVoidedInput = {
@@ -131270,6 +135547,1115 @@ export namespace Prisma {
     safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+  }
+
+  export type CustomerCreateWithoutCreditEntriesInput = {
+    publicId: string
+    alternatePhone?: string | null
+    dob?: string | null
+    addressLine1?: string
+    city?: string
+    state?: string
+    country?: string
+    zipCode?: string
+    isProfileCompleted?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    user: UserCreateNestedOneWithoutCustomerProfileInput
+    kycs?: CustomerKycCreateNestedManyWithoutCustomerInput
+    bookings?: BookingCreateNestedManyWithoutCustomerInput
+    cancellationInvoices?: CancellationInvoiceCreateNestedManyWithoutCustomerInput
+  }
+
+  export type CustomerUncheckedCreateWithoutCreditEntriesInput = {
+    id?: number
+    publicId: string
+    userId: number
+    alternatePhone?: string | null
+    dob?: string | null
+    addressLine1?: string
+    city?: string
+    state?: string
+    country?: string
+    zipCode?: string
+    isProfileCompleted?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    kycs?: CustomerKycUncheckedCreateNestedManyWithoutCustomerInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutCustomerInput
+    cancellationInvoices?: CancellationInvoiceUncheckedCreateNestedManyWithoutCustomerInput
+  }
+
+  export type CustomerCreateOrConnectWithoutCreditEntriesInput = {
+    where: CustomerWhereUniqueInput
+    create: XOR<CustomerCreateWithoutCreditEntriesInput, CustomerUncheckedCreateWithoutCreditEntriesInput>
+  }
+
+  export type BookingCreateWithoutCreditEntryInput = {
+    publicId: string
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
+    customer: CustomerCreateNestedOneWithoutBookingsInput
+    branch: BranchCreateNestedOneWithoutBookingsInput
+    createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
+    photos?: BookingPhotoCreateNestedManyWithoutBookingInput
+    damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
+    deposit?: DepositCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+  }
+
+  export type BookingUncheckedCreateWithoutCreditEntryInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
+    damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
+    deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+  }
+
+  export type BookingCreateOrConnectWithoutCreditEntryInput = {
+    where: BookingWhereUniqueInput
+    create: XOR<BookingCreateWithoutCreditEntryInput, BookingUncheckedCreateWithoutCreditEntryInput>
+  }
+
+  export type BranchCreateWithoutCreditEntriesInput = {
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleCreateNestedManyWithoutBranchInput
+    bookings?: BookingCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigCreateNestedManyWithoutBranchInput
+    auditLogs?: AuditLogCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchUncheckedCreateWithoutCreditEntriesInput = {
+    id?: number
+    publicId: string
+    name: string
+    address: string
+    phone?: string | null
+    createdAt?: Date | string
+    deletedAt?: Date | string | null
+    users?: UserUncheckedCreateNestedManyWithoutBranchInput
+    vehicles?: VehicleUncheckedCreateNestedManyWithoutBranchInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutBranchInput
+    pricingSetting?: BranchPricingSettingUncheckedCreateNestedOneWithoutBranchInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedCreateNestedManyWithoutBranchInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedCreateNestedManyWithoutBranchInput
+    gstRule?: GSTRuleUncheckedCreateNestedOneWithoutBranchInput
+    featureFlags?: BranchFeatureFlagUncheckedCreateNestedManyWithoutBranchInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedCreateNestedManyWithoutBranchInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorBranchInput
+    staffActivityLogs?: StaffActivityLogUncheckedCreateNestedManyWithoutBranchInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedCreateNestedManyWithoutBranchInput
+    discountConfig?: BranchDiscountConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentConfig?: BranchPaymentConfigUncheckedCreateNestedOneWithoutBranchInput
+    chargeConfig?: BranchChargeConfigUncheckedCreateNestedOneWithoutBranchInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBranchInput
+    cashShifts?: CashShiftUncheckedCreateNestedManyWithoutBranchInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBranchInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBranchInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBranchInput
+  }
+
+  export type BranchCreateOrConnectWithoutCreditEntriesInput = {
+    where: BranchWhereUniqueInput
+    create: XOR<BranchCreateWithoutCreditEntriesInput, BranchUncheckedCreateWithoutCreditEntriesInput>
+  }
+
+  export type UserCreateWithoutCreditEntriesCreatedInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+  }
+
+  export type UserUncheckedCreateWithoutCreditEntriesCreatedInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+  }
+
+  export type UserCreateOrConnectWithoutCreditEntriesCreatedInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutCreditEntriesCreatedInput, UserUncheckedCreateWithoutCreditEntriesCreatedInput>
+  }
+
+  export type CreditClearanceCreateWithoutCreditEntryInput = {
+    publicId: string
+    clearedSectionKeys: JsonNullValueInput | InputJsonValue
+    amountCleared: Decimal | DecimalJsLike | number | string
+    paymentMethod: string
+    transactionRef?: string | null
+    clearedAt?: Date | string
+    clearedBy: UserCreateNestedOneWithoutCreditClearancesActedInput
+  }
+
+  export type CreditClearanceUncheckedCreateWithoutCreditEntryInput = {
+    id?: number
+    publicId: string
+    clearedSectionKeys: JsonNullValueInput | InputJsonValue
+    amountCleared: Decimal | DecimalJsLike | number | string
+    paymentMethod: string
+    transactionRef?: string | null
+    clearedById: number
+    clearedAt?: Date | string
+  }
+
+  export type CreditClearanceCreateOrConnectWithoutCreditEntryInput = {
+    where: CreditClearanceWhereUniqueInput
+    create: XOR<CreditClearanceCreateWithoutCreditEntryInput, CreditClearanceUncheckedCreateWithoutCreditEntryInput>
+  }
+
+  export type CreditClearanceCreateManyCreditEntryInputEnvelope = {
+    data: CreditClearanceCreateManyCreditEntryInput | CreditClearanceCreateManyCreditEntryInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type CustomerUpsertWithoutCreditEntriesInput = {
+    update: XOR<CustomerUpdateWithoutCreditEntriesInput, CustomerUncheckedUpdateWithoutCreditEntriesInput>
+    create: XOR<CustomerCreateWithoutCreditEntriesInput, CustomerUncheckedCreateWithoutCreditEntriesInput>
+    where?: CustomerWhereInput
+  }
+
+  export type CustomerUpdateToOneWithWhereWithoutCreditEntriesInput = {
+    where?: CustomerWhereInput
+    data: XOR<CustomerUpdateWithoutCreditEntriesInput, CustomerUncheckedUpdateWithoutCreditEntriesInput>
+  }
+
+  export type CustomerUpdateWithoutCreditEntriesInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    alternatePhone?: NullableStringFieldUpdateOperationsInput | string | null
+    dob?: NullableStringFieldUpdateOperationsInput | string | null
+    addressLine1?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    zipCode?: StringFieldUpdateOperationsInput | string
+    isProfileCompleted?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    user?: UserUpdateOneRequiredWithoutCustomerProfileNestedInput
+    kycs?: CustomerKycUpdateManyWithoutCustomerNestedInput
+    bookings?: BookingUpdateManyWithoutCustomerNestedInput
+    cancellationInvoices?: CancellationInvoiceUpdateManyWithoutCustomerNestedInput
+  }
+
+  export type CustomerUncheckedUpdateWithoutCreditEntriesInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    userId?: IntFieldUpdateOperationsInput | number
+    alternatePhone?: NullableStringFieldUpdateOperationsInput | string | null
+    dob?: NullableStringFieldUpdateOperationsInput | string | null
+    addressLine1?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    zipCode?: StringFieldUpdateOperationsInput | string
+    isProfileCompleted?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycs?: CustomerKycUncheckedUpdateManyWithoutCustomerNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutCustomerNestedInput
+    cancellationInvoices?: CancellationInvoiceUncheckedUpdateManyWithoutCustomerNestedInput
+  }
+
+  export type BookingUpsertWithoutCreditEntryInput = {
+    update: XOR<BookingUpdateWithoutCreditEntryInput, BookingUncheckedUpdateWithoutCreditEntryInput>
+    create: XOR<BookingCreateWithoutCreditEntryInput, BookingUncheckedCreateWithoutCreditEntryInput>
+    where?: BookingWhereInput
+  }
+
+  export type BookingUpdateToOneWithWhereWithoutCreditEntryInput = {
+    where?: BookingWhereInput
+    data: XOR<BookingUpdateWithoutCreditEntryInput, BookingUncheckedUpdateWithoutCreditEntryInput>
+  }
+
+  export type BookingUpdateWithoutCreditEntryInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
+    customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
+    photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateWithoutCreditEntryInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+  }
+
+  export type BranchUpsertWithoutCreditEntriesInput = {
+    update: XOR<BranchUpdateWithoutCreditEntriesInput, BranchUncheckedUpdateWithoutCreditEntriesInput>
+    create: XOR<BranchCreateWithoutCreditEntriesInput, BranchUncheckedCreateWithoutCreditEntriesInput>
+    where?: BranchWhereInput
+  }
+
+  export type BranchUpdateToOneWithWhereWithoutCreditEntriesInput = {
+    where?: BranchWhereInput
+    data: XOR<BranchUpdateWithoutCreditEntriesInput, BranchUncheckedUpdateWithoutCreditEntriesInput>
+  }
+
+  export type BranchUpdateWithoutCreditEntriesInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUpdateManyWithoutBranchNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBranchNestedInput
+  }
+
+  export type BranchUncheckedUpdateWithoutCreditEntriesInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    users?: UserUncheckedUpdateManyWithoutBranchNestedInput
+    vehicles?: VehicleUncheckedUpdateManyWithoutBranchNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutBranchNestedInput
+    pricingSetting?: BranchPricingSettingUncheckedUpdateOneWithoutBranchNestedInput
+    pricingDiscountSlabs?: PricingDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    categoryDepositSettings?: CategoryDepositSettingUncheckedUpdateManyWithoutBranchNestedInput
+    branchPricingDefaults?: BranchPricingDefaultsUncheckedUpdateManyWithoutBranchNestedInput
+    gstRule?: GSTRuleUncheckedUpdateOneWithoutBranchNestedInput
+    featureFlags?: BranchFeatureFlagUncheckedUpdateManyWithoutBranchNestedInput
+    captureConfigs?: VehiclePhotoCaptureConfigUncheckedUpdateManyWithoutBranchNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutActorBranchNestedInput
+    staffActivityLogs?: StaffActivityLogUncheckedUpdateManyWithoutBranchNestedInput
+    durationDiscountSlabs?: DurationDiscountSlabUncheckedUpdateManyWithoutBranchNestedInput
+    discountConfig?: BranchDiscountConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentConfig?: BranchPaymentConfigUncheckedUpdateOneWithoutBranchNestedInput
+    chargeConfig?: BranchChargeConfigUncheckedUpdateOneWithoutBranchNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBranchNestedInput
+    cashShifts?: CashShiftUncheckedUpdateManyWithoutBranchNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBranchNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBranchNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBranchNestedInput
+  }
+
+  export type UserUpsertWithoutCreditEntriesCreatedInput = {
+    update: XOR<UserUpdateWithoutCreditEntriesCreatedInput, UserUncheckedUpdateWithoutCreditEntriesCreatedInput>
+    create: XOR<UserCreateWithoutCreditEntriesCreatedInput, UserUncheckedCreateWithoutCreditEntriesCreatedInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutCreditEntriesCreatedInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutCreditEntriesCreatedInput, UserUncheckedUpdateWithoutCreditEntriesCreatedInput>
+  }
+
+  export type UserUpdateWithoutCreditEntriesCreatedInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutCreditEntriesCreatedInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+  }
+
+  export type CreditClearanceUpsertWithWhereUniqueWithoutCreditEntryInput = {
+    where: CreditClearanceWhereUniqueInput
+    update: XOR<CreditClearanceUpdateWithoutCreditEntryInput, CreditClearanceUncheckedUpdateWithoutCreditEntryInput>
+    create: XOR<CreditClearanceCreateWithoutCreditEntryInput, CreditClearanceUncheckedCreateWithoutCreditEntryInput>
+  }
+
+  export type CreditClearanceUpdateWithWhereUniqueWithoutCreditEntryInput = {
+    where: CreditClearanceWhereUniqueInput
+    data: XOR<CreditClearanceUpdateWithoutCreditEntryInput, CreditClearanceUncheckedUpdateWithoutCreditEntryInput>
+  }
+
+  export type CreditClearanceUpdateManyWithWhereWithoutCreditEntryInput = {
+    where: CreditClearanceScalarWhereInput
+    data: XOR<CreditClearanceUpdateManyMutationInput, CreditClearanceUncheckedUpdateManyWithoutCreditEntryInput>
+  }
+
+  export type CustomerCreditEntryCreateWithoutClearancesInput = {
+    publicId: string
+    sections: JsonNullValueInput | InputJsonValue
+    totalAmount: Decimal | DecimalJsLike | number | string
+    clearedAmount?: Decimal | DecimalJsLike | number | string
+    pendingAmount: Decimal | DecimalJsLike | number | string
+    status: $Enums.CreditStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    customer: CustomerCreateNestedOneWithoutCreditEntriesInput
+    booking: BookingCreateNestedOneWithoutCreditEntryInput
+    branch: BranchCreateNestedOneWithoutCreditEntriesInput
+    createdBy: UserCreateNestedOneWithoutCreditEntriesCreatedInput
+  }
+
+  export type CustomerCreditEntryUncheckedCreateWithoutClearancesInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    bookingId: number
+    branchId: number
+    createdById: number
+    sections: JsonNullValueInput | InputJsonValue
+    totalAmount: Decimal | DecimalJsLike | number | string
+    clearedAmount?: Decimal | DecimalJsLike | number | string
+    pendingAmount: Decimal | DecimalJsLike | number | string
+    status: $Enums.CreditStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type CustomerCreditEntryCreateOrConnectWithoutClearancesInput = {
+    where: CustomerCreditEntryWhereUniqueInput
+    create: XOR<CustomerCreditEntryCreateWithoutClearancesInput, CustomerCreditEntryUncheckedCreateWithoutClearancesInput>
+  }
+
+  export type UserCreateWithoutCreditClearancesActedInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+  }
+
+  export type UserUncheckedCreateWithoutCreditClearancesActedInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+  }
+
+  export type UserCreateOrConnectWithoutCreditClearancesActedInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutCreditClearancesActedInput, UserUncheckedCreateWithoutCreditClearancesActedInput>
+  }
+
+  export type CustomerCreditEntryUpsertWithoutClearancesInput = {
+    update: XOR<CustomerCreditEntryUpdateWithoutClearancesInput, CustomerCreditEntryUncheckedUpdateWithoutClearancesInput>
+    create: XOR<CustomerCreditEntryCreateWithoutClearancesInput, CustomerCreditEntryUncheckedCreateWithoutClearancesInput>
+    where?: CustomerCreditEntryWhereInput
+  }
+
+  export type CustomerCreditEntryUpdateToOneWithWhereWithoutClearancesInput = {
+    where?: CustomerCreditEntryWhereInput
+    data: XOR<CustomerCreditEntryUpdateWithoutClearancesInput, CustomerCreditEntryUncheckedUpdateWithoutClearancesInput>
+  }
+
+  export type CustomerCreditEntryUpdateWithoutClearancesInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    sections?: JsonNullValueInput | InputJsonValue
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    clearedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pendingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumCreditStatusFieldUpdateOperationsInput | $Enums.CreditStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    customer?: CustomerUpdateOneRequiredWithoutCreditEntriesNestedInput
+    booking?: BookingUpdateOneRequiredWithoutCreditEntryNestedInput
+    branch?: BranchUpdateOneRequiredWithoutCreditEntriesNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutCreditEntriesCreatedNestedInput
+  }
+
+  export type CustomerCreditEntryUncheckedUpdateWithoutClearancesInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    createdById?: IntFieldUpdateOperationsInput | number
+    sections?: JsonNullValueInput | InputJsonValue
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    clearedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pendingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumCreditStatusFieldUpdateOperationsInput | $Enums.CreditStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type UserUpsertWithoutCreditClearancesActedInput = {
+    update: XOR<UserUpdateWithoutCreditClearancesActedInput, UserUncheckedUpdateWithoutCreditClearancesActedInput>
+    create: XOR<UserCreateWithoutCreditClearancesActedInput, UserUncheckedCreateWithoutCreditClearancesActedInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutCreditClearancesActedInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutCreditClearancesActedInput, UserUncheckedUpdateWithoutCreditClearancesActedInput>
+  }
+
+  export type UserUpdateWithoutCreditClearancesActedInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutCreditClearancesActedInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
   }
 
   export type EmailVerificationOtpCreateManyUserInput = {
@@ -131893,6 +137279,32 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type CustomerCreditEntryCreateManyCreatedByInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    bookingId: number
+    branchId: number
+    sections: JsonNullValueInput | InputJsonValue
+    totalAmount: Decimal | DecimalJsLike | number | string
+    clearedAmount?: Decimal | DecimalJsLike | number | string
+    pendingAmount: Decimal | DecimalJsLike | number | string
+    status: $Enums.CreditStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type CreditClearanceCreateManyClearedByInput = {
+    id?: number
+    publicId: string
+    creditEntryId: number
+    clearedSectionKeys: JsonNullValueInput | InputJsonValue
+    amountCleared: Decimal | DecimalJsLike | number | string
+    paymentMethod: string
+    transactionRef?: string | null
+    clearedAt?: Date | string
+  }
+
   export type EmailVerificationOtpUpdateWithoutUserInput = {
     phone?: StringFieldUpdateOperationsInput | string
     otpHash?: StringFieldUpdateOperationsInput | string
@@ -132184,6 +137596,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCreatedByInput = {
@@ -132266,6 +137679,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutCreatedByInput = {
@@ -133797,6 +139211,84 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type CustomerCreditEntryUpdateWithoutCreatedByInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    sections?: JsonNullValueInput | InputJsonValue
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    clearedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pendingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumCreditStatusFieldUpdateOperationsInput | $Enums.CreditStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    customer?: CustomerUpdateOneRequiredWithoutCreditEntriesNestedInput
+    booking?: BookingUpdateOneRequiredWithoutCreditEntryNestedInput
+    branch?: BranchUpdateOneRequiredWithoutCreditEntriesNestedInput
+    clearances?: CreditClearanceUpdateManyWithoutCreditEntryNestedInput
+  }
+
+  export type CustomerCreditEntryUncheckedUpdateWithoutCreatedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    sections?: JsonNullValueInput | InputJsonValue
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    clearedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pendingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumCreditStatusFieldUpdateOperationsInput | $Enums.CreditStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    clearances?: CreditClearanceUncheckedUpdateManyWithoutCreditEntryNestedInput
+  }
+
+  export type CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    sections?: JsonNullValueInput | InputJsonValue
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    clearedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pendingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumCreditStatusFieldUpdateOperationsInput | $Enums.CreditStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CreditClearanceUpdateWithoutClearedByInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    clearedSectionKeys?: JsonNullValueInput | InputJsonValue
+    amountCleared?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    transactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    clearedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    creditEntry?: CustomerCreditEntryUpdateOneRequiredWithoutClearancesNestedInput
+  }
+
+  export type CreditClearanceUncheckedUpdateWithoutClearedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    creditEntryId?: IntFieldUpdateOperationsInput | number
+    clearedSectionKeys?: JsonNullValueInput | InputJsonValue
+    amountCleared?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    transactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    clearedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CreditClearanceUncheckedUpdateManyWithoutClearedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    creditEntryId?: IntFieldUpdateOperationsInput | number
+    clearedSectionKeys?: JsonNullValueInput | InputJsonValue
+    amountCleared?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    transactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    clearedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type CustomerKycCreateManyCustomerInput = {
     id?: number
     publicId: string
@@ -133882,6 +139374,21 @@ export namespace Prisma {
     generatedAt?: Date | string | null
     sentToCustomer?: boolean
     sentAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type CustomerCreditEntryCreateManyCustomerInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    branchId: number
+    createdById: number
+    sections: JsonNullValueInput | InputJsonValue
+    totalAmount: Decimal | DecimalJsLike | number | string
+    clearedAmount?: Decimal | DecimalJsLike | number | string
+    pendingAmount: Decimal | DecimalJsLike | number | string
+    status: $Enums.CreditStatus
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -133991,6 +139498,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCustomerInput = {
@@ -134073,6 +139581,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutCustomerInput = {
@@ -134184,6 +139693,52 @@ export namespace Prisma {
     generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     sentToCustomer?: BoolFieldUpdateOperationsInput | boolean
     sentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CustomerCreditEntryUpdateWithoutCustomerInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    sections?: JsonNullValueInput | InputJsonValue
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    clearedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pendingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumCreditStatusFieldUpdateOperationsInput | $Enums.CreditStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutCreditEntryNestedInput
+    branch?: BranchUpdateOneRequiredWithoutCreditEntriesNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutCreditEntriesCreatedNestedInput
+    clearances?: CreditClearanceUpdateManyWithoutCreditEntryNestedInput
+  }
+
+  export type CustomerCreditEntryUncheckedUpdateWithoutCustomerInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    createdById?: IntFieldUpdateOperationsInput | number
+    sections?: JsonNullValueInput | InputJsonValue
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    clearedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pendingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumCreditStatusFieldUpdateOperationsInput | $Enums.CreditStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    clearances?: CreditClearanceUncheckedUpdateManyWithoutCreditEntryNestedInput
+  }
+
+  export type CustomerCreditEntryUncheckedUpdateManyWithoutCustomerInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    createdById?: IntFieldUpdateOperationsInput | number
+    sections?: JsonNullValueInput | InputJsonValue
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    clearedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pendingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumCreditStatusFieldUpdateOperationsInput | $Enums.CreditStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -134458,6 +140013,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutKycFileInput = {
@@ -134540,6 +140096,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutKycFileInput = {
@@ -135076,6 +140633,21 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type CustomerCreditEntryCreateManyBranchInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    bookingId: number
+    createdById: number
+    sections: JsonNullValueInput | InputJsonValue
+    totalAmount: Decimal | DecimalJsLike | number | string
+    clearedAmount?: Decimal | DecimalJsLike | number | string
+    pendingAmount: Decimal | DecimalJsLike | number | string
+    status: $Enums.CreditStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type UserUpdateWithoutBranchInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
@@ -135118,6 +140690,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutBranchInput = {
@@ -135163,6 +140737,8 @@ export namespace Prisma {
     paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type UserUncheckedUpdateManyWithoutBranchInput = {
@@ -135337,6 +140913,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutBranchInput = {
@@ -135419,6 +140996,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutBranchInput = {
@@ -136113,6 +141691,52 @@ export namespace Prisma {
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
     actorId?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CustomerCreditEntryUpdateWithoutBranchInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    sections?: JsonNullValueInput | InputJsonValue
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    clearedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pendingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumCreditStatusFieldUpdateOperationsInput | $Enums.CreditStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    customer?: CustomerUpdateOneRequiredWithoutCreditEntriesNestedInput
+    booking?: BookingUpdateOneRequiredWithoutCreditEntryNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutCreditEntriesCreatedNestedInput
+    clearances?: CreditClearanceUpdateManyWithoutCreditEntryNestedInput
+  }
+
+  export type CustomerCreditEntryUncheckedUpdateWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    bookingId?: IntFieldUpdateOperationsInput | number
+    createdById?: IntFieldUpdateOperationsInput | number
+    sections?: JsonNullValueInput | InputJsonValue
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    clearedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pendingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumCreditStatusFieldUpdateOperationsInput | $Enums.CreditStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    clearances?: CreditClearanceUncheckedUpdateManyWithoutCreditEntryNestedInput
+  }
+
+  export type CustomerCreditEntryUncheckedUpdateManyWithoutBranchInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    bookingId?: IntFieldUpdateOperationsInput | number
+    createdById?: IntFieldUpdateOperationsInput | number
+    sections?: JsonNullValueInput | InputJsonValue
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    clearedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pendingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumCreditStatusFieldUpdateOperationsInput | $Enums.CreditStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -138098,6 +143722,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDiscountRuleInput = {
@@ -138180,6 +143805,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutDiscountRuleInput = {
@@ -138544,6 +144170,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutActiveExtensionInput = {
@@ -138626,6 +144253,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutActiveExtensionInput = {
@@ -138928,6 +144556,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutActivePaymentSessionInput = {
@@ -139010,6 +144639,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutActivePaymentSessionInput = {
@@ -139075,6 +144705,49 @@ export namespace Prisma {
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
+  export type CreditClearanceCreateManyCreditEntryInput = {
+    id?: number
+    publicId: string
+    clearedSectionKeys: JsonNullValueInput | InputJsonValue
+    amountCleared: Decimal | DecimalJsLike | number | string
+    paymentMethod: string
+    transactionRef?: string | null
+    clearedById: number
+    clearedAt?: Date | string
+  }
+
+  export type CreditClearanceUpdateWithoutCreditEntryInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    clearedSectionKeys?: JsonNullValueInput | InputJsonValue
+    amountCleared?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    transactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    clearedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    clearedBy?: UserUpdateOneRequiredWithoutCreditClearancesActedNestedInput
+  }
+
+  export type CreditClearanceUncheckedUpdateWithoutCreditEntryInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    clearedSectionKeys?: JsonNullValueInput | InputJsonValue
+    amountCleared?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    transactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    clearedById?: IntFieldUpdateOperationsInput | number
+    clearedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CreditClearanceUncheckedUpdateManyWithoutCreditEntryInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    clearedSectionKeys?: JsonNullValueInput | InputJsonValue
+    amountCleared?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    transactionRef?: NullableStringFieldUpdateOperationsInput | string | null
+    clearedById?: IntFieldUpdateOperationsInput | number
+    clearedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
 
 
   /**
@@ -139136,6 +144809,10 @@ export namespace Prisma {
      * @deprecated Use PaymentSessionCountOutputTypeDefaultArgs instead
      */
     export type PaymentSessionCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = PaymentSessionCountOutputTypeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use CustomerCreditEntryCountOutputTypeDefaultArgs instead
+     */
+    export type CustomerCreditEntryCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CustomerCreditEntryCountOutputTypeDefaultArgs<ExtArgs>
     /**
      * @deprecated Use UserDefaultArgs instead
      */
@@ -139372,6 +145049,14 @@ export namespace Prisma {
      * @deprecated Use LedgerEntryDefaultArgs instead
      */
     export type LedgerEntryArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = LedgerEntryDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use CustomerCreditEntryDefaultArgs instead
+     */
+    export type CustomerCreditEntryArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CustomerCreditEntryDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use CreditClearanceDefaultArgs instead
+     */
+    export type CreditClearanceArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CreditClearanceDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany
