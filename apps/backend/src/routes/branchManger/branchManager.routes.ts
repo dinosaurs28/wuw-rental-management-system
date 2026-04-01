@@ -77,6 +77,7 @@ import { upload } from "../../middlewares/upload.middleware.js";
 import discountRouter from "./discount.routes.js";
 import paymentRouter from "./payment.routes.js";
 import extensionRouter from "./extension.routes.js";
+import ledgerRouter from "./ledger.routes.js";
 import {
   GetBranchChargeConfig,
   UpsertBranchChargeConfig,
@@ -257,5 +258,8 @@ router.post("/safety-deposit-requests/:publicId/reject", ManagerCheck, RejectSaf
 
 // Vehicle FASTag configuration
 router.patch("/vehicles/:vehicleId/fastag", ManagerCheck, UpdateVehicleFastag);
+
+// ── Customer Credit Ledger ────────────────────────────────────────────────────
+router.use("/ledger", ledgerRouter);
 
 export default router;
