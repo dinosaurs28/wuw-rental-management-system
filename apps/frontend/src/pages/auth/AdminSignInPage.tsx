@@ -60,7 +60,7 @@ export default function AdminSignInPage() {
             <div className="h-6 w-6 rounded-md bg-white text-black flex items-center justify-center font-bold">
               V
             </div>
-            WUW Admin Test Staging
+            WUW Admin
           </div>
           <div className="space-y-2">
             <h1 className="text-4xl font-bold tracking-tight">
