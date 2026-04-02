@@ -1,0 +1,136 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches:
+      - staging
+
+# Cancel in-progress runs on the same branch
+concurrency:
+  group: deploy-staging-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ──────────────────────────────────────────────
+  # 1. Detect which apps actually changed
+  # ──────────────────────────────────────────────
+  detect-changes:
+    name: Detect changed apps
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # dorny/paths-filter compares HEAD against the previous push
+      # so it only triggers the right deploy job
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'apps/frontend/**'
+              - 'packages/**'
+            backend:
+              - 'apps/backend/**'
+              - 'packages/**'
+
+  # ──────────────────────────────────────────────
+  # 2. Deploy Frontend → Cloudflare Pages
+  # ──────────────────────────────────────────────
+  deploy-frontend:
+    name: Deploy Frontend (Cloudflare Pages)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9          # pin to the version you use locally
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        run: pnpm --filter frontend build
+        env:
+          # ── Add every VITE_* var your frontend needs ──
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+          # VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+
+      # Wrangler reads CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID from env.
+      # Replace <YOUR_CF_PROJECT_NAME> with your Cloudflare Pages project name.
+      - name: Deploy to Cloudflare Pages
+        run: |
+          pnpm dlx wrangler pages deploy apps/frontend/dist \
+            --project-name=<YOUR_CF_PROJECT_NAME> \
+            --branch=staging \
+            --commit-dirty=true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  # ──────────────────────────────────────────────
+  # 3. Deploy Backend → Digital Ocean VPS (pm2)
+  # ──────────────────────────────────────────────
+  deploy-backend:
+    name: Deploy Backend (Digital Ocean VPS)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Setup SSH access to VPS ──────────────────
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DO_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "${{ secrets.DO_VPS_HOST }}" >> ~/.ssh/known_hosts
+
+      # ── Deploy on VPS via SSH ────────────────────
+      # Strategy: git pull on the server → pnpm install → build → pm2 restart
+      # The VPS must have a GitHub deploy key with read access to this repo.
+      # (See "VPS one-time setup" section in the README)
+      - name: Deploy on VPS
+        run: |
+          ssh -i ~/.ssh/id_rsa \
+              -o StrictHostKeyChecking=no \
+              "${{ secrets.DO_VPS_USER }}@${{ secrets.DO_VPS_HOST }}" \
+              -p "${{ secrets.DO_VPS_PORT || '22' }}" \
+              bash << 'ENDSSH'
+            set -e
+
+            cd /var/www/vrms        # ← change to your app directory on the VPS
+
+            echo "==> Pulling latest code..."
+            git pull origin staging
+
+            echo "==> Installing dependencies..."
+            pnpm install --frozen-lockfile
+
+            echo "==> Building backend..."
+            pnpm --filter backend build
+
+            echo "==> Restarting pm2 process..."
+            # Starts the process if it doesn't exist, restarts if it does
+            pm2 describe vrms-backend > /dev/null 2>&1 \
+              && pm2 restart vrms-backend \
+              || pm2 start apps/backend/dist/index.js \
+                  --name vrms-backend \
+                  --env staging
+
+            pm2 save
+            echo "==> Done."
+          ENDSSH

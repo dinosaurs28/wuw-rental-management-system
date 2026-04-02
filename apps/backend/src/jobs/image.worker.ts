@@ -50,6 +50,18 @@ export function initImageWorker(): void {
       console.log(`Processing image for vehicle ${vehicleId}: ${originalName}`);
 
       try {
+        // Check if file exists before reading
+        try {
+          await fs.access(filePath);
+        } catch (accessError) {
+          console.warn(`[ImageWorker] Skipping job ${job.id}: File not found at ${filePath}`);
+          // We return gracefully but maybe the job should be considered failed technically?
+          // Since it's a permanent error (file missing), we shouldn't retry.
+          // Returning normally marks it as completed in BullMQ if not throwing.
+          // But throwing a clear error allows us to see it in failed jobs if needed.
+          throw new Error(`File not found: ${filePath}`);
+        }
+
         const fileBuffer = await fs.readFile(filePath);
 
         // 1. Process Main Image (Optimized)

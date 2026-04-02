@@ -1,10 +1,5 @@
-import dotenv from "dotenv";
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const envPath = join(__dirname, "..", ".env");
-dotenv.config({ path: envPath });
+import "./env.js";
+import { join } from "path";
 import express, { Request, Response } from "express";
 import cors from "cors";
 import { StatusCode } from "./types/statusCode.js";
@@ -29,6 +24,14 @@ import { initInvoiceWorker } from "./jobs/invoice.worker.js";
 import { initDelayedCashAlertWorker } from "./jobs/delayedCashAlert.worker.js";
 import { initInsuranceAlertWorker } from "./jobs/insurance-alert.worker.js";
 import insuranceAlertRouter from "./routes/insurance-alert/insurance-alert.routes.js";
+import fs from "fs";
+
+// Ensure uploads directory exists at project root (where server is typically started)
+const uploadsDir = join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  console.log(`[Startup] Created missing uploads directory at: ${uploadsDir}`);
+}
 
 // Initialize passport AFTER env vars are loaded
 initializePassport();
