@@ -72,7 +72,7 @@ jobs:
       - name: Deploy to Cloudflare Pages
         run: |
           pnpm dlx wrangler pages deploy apps/frontend/dist \
-            --project-name=<YOUR_CF_PROJECT_NAME> \
+            --project-name=wowrentals-staging \
             --branch=staging \
             --commit-dirty=true
         env:
@@ -119,6 +119,9 @@ jobs:
 
             echo "==> Installing dependencies..."
             pnpm install --frozen-lockfile
+
+            echo "==> Generating Prisma client..."
+            pnpm --filter @repo/database db:generate
 
             echo "==> Building backend..."
             pnpm --filter backend build
