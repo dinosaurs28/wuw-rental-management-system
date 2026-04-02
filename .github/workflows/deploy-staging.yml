@@ -132,10 +132,10 @@ jobs:
 
             echo "==> Restarting pm2 process..."
             # Starts the process if it doesn't exist, restarts if it does
-            pm2 describe vrms-backend > /dev/null 2>&1 \
-              && pm2 restart vrms-backend \
+            pm2 describe vr-backend > /dev/null 2>&1 \
+              && pm2 restart vr-backend \
               || pm2 start apps/backend/dist/index.js \
-                  --name vrms-backend \
+                  --name vr-backend \
                   --env staging
 
             pm2 save
