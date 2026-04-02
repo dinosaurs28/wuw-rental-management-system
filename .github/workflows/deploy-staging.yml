@@ -65,7 +65,7 @@ jobs:
         run: pnpm --filter frontend build
         env:
           # ── Add every VITE_* var your frontend needs ──
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
           # VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
 
       # Wrangler reads CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID from env.
