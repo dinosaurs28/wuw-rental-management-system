@@ -116,7 +116,12 @@ jobs:
               bash << 'ENDSSH'
             set -e
 
-            cd /var/www/vrms        # ← change to your app directory on the VPS
+            # Load nvm and set PATH so pnpm/pm2 are available
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            export PATH="$HOME/.local/share/pnpm:$PATH"
+
+            cd /var/www/vrms
 
             echo "==> Pulling latest code..."
             git pull origin staging
@@ -133,7 +138,6 @@ jobs:
             pnpm --filter backend build
 
             echo "==> Restarting pm2 process..."
-            # Starts the process if it doesn't exist, restarts if it does
             pm2 describe wuw-backend > /dev/null 2>&1 \
               && pm2 restart wuw-backend \
               || pm2 start apps/backend/dist/index.js \
