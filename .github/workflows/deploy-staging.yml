@@ -59,7 +59,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build shared packages
-        run: pnpm --filter @repo/schemas build
+        run: |
+          pnpm --filter @repo/schemas build
+          pnpm --filter @repo/database db:generate
+          pnpm --filter @repo/database build
 
       - name: Build frontend
         run: pnpm --filter frontend build
@@ -123,19 +126,18 @@ jobs:
 
             echo "==> Building shared packages..."
             pnpm --filter @repo/schemas build
-
-            echo "==> Generating Prisma client..."
             pnpm --filter @repo/database db:generate
+            pnpm --filter @repo/database build
 
             echo "==> Building backend..."
             pnpm --filter backend build
 
             echo "==> Restarting pm2 process..."
             # Starts the process if it doesn't exist, restarts if it does
-            pm2 describe vr-backend > /dev/null 2>&1 \
-              && pm2 restart vr-backend \
+            pm2 describe wuw-backend > /dev/null 2>&1 \
+              && pm2 restart wuw-backend \
               || pm2 start apps/backend/dist/index.js \
-                  --name vr-backend \
+                  --name wuw-backend \
                   --env staging
 
             pm2 save

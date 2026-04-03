@@ -5,11 +5,12 @@
   "type": "module",
   "exports": {
     "./client": {
-      "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     }
   },
   "scripts": {
+    "build": "tsc",
     "db:generate": "prisma generate",
     "db:push": "prisma db push --skip-generate",
     "db:migrate:dev": "prisma migrate dev",
