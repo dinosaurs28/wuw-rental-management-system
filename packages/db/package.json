@@ -10,7 +10,7 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node --input-type=module --eval \"import{cpSync}from'node:fs';cpSync('src/generated','dist/generated',{recursive:true});\"",
     "db:generate": "prisma generate",
     "db:push": "prisma db push --skip-generate",
     "db:migrate:dev": "prisma migrate dev",
