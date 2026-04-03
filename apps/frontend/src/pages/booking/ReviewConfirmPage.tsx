@@ -42,6 +42,8 @@ export const ReviewConfirmPage = () => {
     apiDurationDiscountPercent,
     apiTaxAmount,
     apiFinalTotal,
+    paymentFlow,
+    advancePayAmount,
     couponCode,
     couponDiscountAmount,
     setCouponCode,
@@ -179,6 +181,22 @@ export const ReviewConfirmPage = () => {
                           ₹{Math.max(0, apiFinalTotal - couponDiscountAmount).toFixed(2)}
                         </span>
                       </div>
+
+                      {paymentFlow === "ADVANCE" && advancePayAmount > 0 && (
+                        <div className="mt-3 p-3 rounded-lg bg-orange-50 border border-orange-200 space-y-2">
+                          <p className="text-xs font-semibold text-orange-700 uppercase tracking-wide">Advance Payment Plan</p>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-orange-600">Pay Now (Advance)</span>
+                            <span className="font-bold text-orange-700">₹{advancePayAmount.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-zinc-500">Remaining at pickup</span>
+                            <span className="font-medium text-zinc-700">
+                              ₹{Math.max(0, apiFinalTotal - couponDiscountAmount - advancePayAmount).toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
