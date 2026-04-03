@@ -351,13 +351,16 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {/* View Button */}
                   {doc.file?.url && (
-                    <button
+                    <div
+                      role="button"
+                      tabIndex={0}
                       onClick={(e) => handleViewDocument(e, doc)}
-                      className="p-2 rounded-lg hover:bg-zinc-100 transition-colors"
+                      onKeyDown={(e) => e.key === 'Enter' && handleViewDocument(e as any, doc)}
+                      className="p-2 rounded-lg hover:bg-zinc-100 transition-colors cursor-pointer"
                       title="View document"
                     >
                       <Eye className="size-4 sm:size-5 text-zinc-500" />
-                    </button>
+                    </div>
                   )}
 
                   {/* Selection Indicator */}
