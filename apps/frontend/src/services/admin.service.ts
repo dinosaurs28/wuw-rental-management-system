@@ -578,4 +578,45 @@ export const adminService = {
         const response = await apiClient.get<{ data: AuditLog }>(`/admin/audit/logs/${publicId}`);
         return response.data.data;
     },
+
+    // ── Invoice Report ────────────────────────────────────────────────────────
+
+    getInvoiceReport: async (params: {
+        startDate: string;
+        endDate: string;
+        branchId?: string;
+        status?: string;
+        page?: string;
+        limit?: string;
+    }): Promise<any> => {
+        const response = await apiClient.get('/admin/dashboard/reports/invoices', { params });
+        return response.data;
+    },
+
+    // ── Receipt Report ────────────────────────────────────────────────────────
+
+    getReceiptReport: async (params: {
+        startDate: string;
+        endDate: string;
+        branchId?: string;
+        page?: string;
+        limit?: string;
+    }): Promise<any> => {
+        const response = await apiClient.get('/admin/dashboard/reports/receipts', { params });
+        return response.data;
+    },
+
+    // ── Customer Report ───────────────────────────────────────────────────────
+
+    getCustomerReport: async (params: {
+        startDate?: string;
+        endDate?: string;
+        branchId?: string;
+        search?: string;
+        page?: string;
+        limit?: string;
+    }): Promise<any> => {
+        const response = await apiClient.get('/admin/dashboard/reports/customers', { params });
+        return response.data;
+    },
 };

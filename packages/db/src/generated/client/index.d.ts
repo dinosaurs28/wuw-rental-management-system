@@ -318,6 +318,11 @@ export type CustomerCreditEntry = $Result.DefaultSelection<Prisma.$CustomerCredi
  * 
  */
 export type CreditClearance = $Result.DefaultSelection<Prisma.$CreditClearancePayload>
+/**
+ * Model CreditNote
+ * 
+ */
+export type CreditNote = $Result.DefaultSelection<Prisma.$CreditNotePayload>
 
 /**
  * Enums
@@ -808,6 +813,14 @@ export const CreditStatus: {
 
 export type CreditStatus = (typeof CreditStatus)[keyof typeof CreditStatus]
 
+
+export const CreditNoteStatus: {
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED'
+};
+
+export type CreditNoteStatus = (typeof CreditNoteStatus)[keyof typeof CreditNoteStatus]
+
 }
 
 export type AuthProvider = $Enums.AuthProvider
@@ -981,6 +994,10 @@ export const LedgerEntryClassification: typeof $Enums.LedgerEntryClassification
 export type CreditStatus = $Enums.CreditStatus
 
 export const CreditStatus: typeof $Enums.CreditStatus
+
+export type CreditNoteStatus = $Enums.CreditNoteStatus
+
+export const CreditNoteStatus: typeof $Enums.CreditNoteStatus
 
 /**
  * ##  Prisma Client ʲˢ
@@ -1714,6 +1731,16 @@ export class PrismaClient<
     * ```
     */
   get creditClearance(): Prisma.CreditClearanceDelegate<ExtArgs>;
+
+  /**
+   * `prisma.creditNote`: Exposes CRUD operations for the **CreditNote** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more CreditNotes
+    * const creditNotes = await prisma.creditNote.findMany()
+    * ```
+    */
+  get creditNote(): Prisma.CreditNoteDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -2215,7 +2242,8 @@ export namespace Prisma {
     PaymentSession: 'PaymentSession',
     LedgerEntry: 'LedgerEntry',
     CustomerCreditEntry: 'CustomerCreditEntry',
-    CreditClearance: 'CreditClearance'
+    CreditClearance: 'CreditClearance',
+    CreditNote: 'CreditNote'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -2231,7 +2259,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehiclePhotoCaptureConfig" | "vehicle" | "vehiclePricingOverride" | "vehicleCustomPricing" | "branchPricingDefaults" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "whatsAppSupportConfig" | "gSTRule" | "timezoneSetting" | "cancellationInvoice" | "returnReceipt" | "featureFlag" | "branchFeatureFlag" | "vehicleFeatureFlag" | "vehicleSwap" | "discountRule" | "durationDiscountSlab" | "branchDiscountConfig" | "discountApplication" | "couponUsageLog" | "manualDiscount" | "branchPaymentConfig" | "paymentTransaction" | "refundRequest" | "cashShift" | "bookingExtension" | "branchChargeConfig" | "chargeEntry" | "chargeOverride" | "fuelRecord" | "safetyDepositRequest" | "paymentSession" | "ledgerEntry" | "customerCreditEntry" | "creditClearance"
+      modelProps: "user" | "userProvider" | "emailVerificationOtp" | "customer" | "customerKyc" | "fileObject" | "branch" | "staffActivityLog" | "branchPricingSetting" | "vehicleCategory" | "vehiclePhotoCaptureConfig" | "vehicle" | "vehiclePricingOverride" | "vehicleCustomPricing" | "branchPricingDefaults" | "vehicleInsurance" | "vehicleMaintenanceRecord" | "vehicleImage" | "pricingRule" | "pricingDiscountSlab" | "categoryDepositSetting" | "booking" | "bookingItem" | "bookingPhoto" | "damageReport" | "deposit" | "payment" | "paymentWebhookLog" | "invoice" | "invoiceItem" | "auditLog" | "systemSetting" | "whatsAppSupportConfig" | "gSTRule" | "timezoneSetting" | "cancellationInvoice" | "returnReceipt" | "featureFlag" | "branchFeatureFlag" | "vehicleFeatureFlag" | "vehicleSwap" | "discountRule" | "durationDiscountSlab" | "branchDiscountConfig" | "discountApplication" | "couponUsageLog" | "manualDiscount" | "branchPaymentConfig" | "paymentTransaction" | "refundRequest" | "cashShift" | "bookingExtension" | "branchChargeConfig" | "chargeEntry" | "chargeOverride" | "fuelRecord" | "safetyDepositRequest" | "paymentSession" | "ledgerEntry" | "customerCreditEntry" | "creditClearance" | "creditNote"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -6505,6 +6533,76 @@ export namespace Prisma {
           }
         }
       }
+      CreditNote: {
+        payload: Prisma.$CreditNotePayload<ExtArgs>
+        fields: Prisma.CreditNoteFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.CreditNoteFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditNotePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.CreditNoteFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditNotePayload>
+          }
+          findFirst: {
+            args: Prisma.CreditNoteFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditNotePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.CreditNoteFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditNotePayload>
+          }
+          findMany: {
+            args: Prisma.CreditNoteFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditNotePayload>[]
+          }
+          create: {
+            args: Prisma.CreditNoteCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditNotePayload>
+          }
+          createMany: {
+            args: Prisma.CreditNoteCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.CreditNoteCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditNotePayload>[]
+          }
+          delete: {
+            args: Prisma.CreditNoteDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditNotePayload>
+          }
+          update: {
+            args: Prisma.CreditNoteUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditNotePayload>
+          }
+          deleteMany: {
+            args: Prisma.CreditNoteDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.CreditNoteUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.CreditNoteUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditNotePayload>
+          }
+          aggregate: {
+            args: Prisma.CreditNoteAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateCreditNote>
+          }
+          groupBy: {
+            args: Prisma.CreditNoteGroupByArgs<ExtArgs>
+            result: $Utils.Optional<CreditNoteGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.CreditNoteCountArgs<ExtArgs>
+            result: $Utils.Optional<CreditNoteCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -6697,6 +6795,7 @@ export namespace Prisma {
     ledgerEntriesVoided: number
     creditEntriesCreated: number
     creditClearancesActed: number
+    creditNotesIssued: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6731,6 +6830,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: boolean | UserCountOutputTypeCountLedgerEntriesVoidedArgs
     creditEntriesCreated?: boolean | UserCountOutputTypeCountCreditEntriesCreatedArgs
     creditClearancesActed?: boolean | UserCountOutputTypeCountCreditClearancesActedArgs
+    creditNotesIssued?: boolean | UserCountOutputTypeCountCreditNotesIssuedArgs
   }
 
   // Custom InputTypes
@@ -6961,6 +7061,13 @@ export namespace Prisma {
     where?: CreditClearanceWhereInput
   }
 
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountCreditNotesIssuedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CreditNoteWhereInput
+  }
+
 
   /**
    * Count Type CustomerCountOutputType
@@ -7032,6 +7139,7 @@ export namespace Prisma {
     invoicePdfs: number
     cancellationInvoices: number
     returnReceiptPdfs: number
+    creditNotePdfs: number
   }
 
   export type FileObjectCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -7042,6 +7150,7 @@ export namespace Prisma {
     invoicePdfs?: boolean | FileObjectCountOutputTypeCountInvoicePdfsArgs
     cancellationInvoices?: boolean | FileObjectCountOutputTypeCountCancellationInvoicesArgs
     returnReceiptPdfs?: boolean | FileObjectCountOutputTypeCountReturnReceiptPdfsArgs
+    creditNotePdfs?: boolean | FileObjectCountOutputTypeCountCreditNotePdfsArgs
   }
 
   // Custom InputTypes
@@ -7102,6 +7211,13 @@ export namespace Prisma {
    */
   export type FileObjectCountOutputTypeCountReturnReceiptPdfsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ReturnReceiptWhereInput
+  }
+
+  /**
+   * FileObjectCountOutputType without action
+   */
+  export type FileObjectCountOutputTypeCountCreditNotePdfsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CreditNoteWhereInput
   }
 
 
@@ -7475,6 +7591,7 @@ export namespace Prisma {
     chargeOverrides: number
     paymentSessions: number
     ledgerEntries: number
+    creditNotes: number
   }
 
   export type BookingCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -7489,6 +7606,7 @@ export namespace Prisma {
     chargeOverrides?: boolean | BookingCountOutputTypeCountChargeOverridesArgs
     paymentSessions?: boolean | BookingCountOutputTypeCountPaymentSessionsArgs
     ledgerEntries?: boolean | BookingCountOutputTypeCountLedgerEntriesArgs
+    creditNotes?: boolean | BookingCountOutputTypeCountCreditNotesArgs
   }
 
   // Custom InputTypes
@@ -7579,6 +7697,13 @@ export namespace Prisma {
     where?: LedgerEntryWhereInput
   }
 
+  /**
+   * BookingCountOutputType without action
+   */
+  export type BookingCountOutputTypeCountCreditNotesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CreditNoteWhereInput
+  }
+
 
   /**
    * Count Type DamageReportCountOutputType
@@ -7618,11 +7743,13 @@ export namespace Prisma {
   export type InvoiceCountOutputType = {
     items: number
     payments: number
+    creditNotes: number
   }
 
   export type InvoiceCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     items?: boolean | InvoiceCountOutputTypeCountItemsArgs
     payments?: boolean | InvoiceCountOutputTypeCountPaymentsArgs
+    creditNotes?: boolean | InvoiceCountOutputTypeCountCreditNotesArgs
   }
 
   // Custom InputTypes
@@ -7648,6 +7775,44 @@ export namespace Prisma {
    */
   export type InvoiceCountOutputTypeCountPaymentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: PaymentWhereInput
+  }
+
+  /**
+   * InvoiceCountOutputType without action
+   */
+  export type InvoiceCountOutputTypeCountCreditNotesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CreditNoteWhereInput
+  }
+
+
+  /**
+   * Count Type ReturnReceiptCountOutputType
+   */
+
+  export type ReturnReceiptCountOutputType = {
+    creditNotes: number
+  }
+
+  export type ReturnReceiptCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    creditNotes?: boolean | ReturnReceiptCountOutputTypeCountCreditNotesArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * ReturnReceiptCountOutputType without action
+   */
+  export type ReturnReceiptCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReturnReceiptCountOutputType
+     */
+    select?: ReturnReceiptCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * ReturnReceiptCountOutputType without action
+   */
+  export type ReturnReceiptCountOutputTypeCountCreditNotesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CreditNoteWhereInput
   }
 
 
@@ -8176,6 +8341,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: boolean | User$ledgerEntriesVoidedArgs<ExtArgs>
     creditEntriesCreated?: boolean | User$creditEntriesCreatedArgs<ExtArgs>
     creditClearancesActed?: boolean | User$creditClearancesActedArgs<ExtArgs>
+    creditNotesIssued?: boolean | User$creditNotesIssuedArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -8246,6 +8412,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: boolean | User$ledgerEntriesVoidedArgs<ExtArgs>
     creditEntriesCreated?: boolean | User$creditEntriesCreatedArgs<ExtArgs>
     creditClearancesActed?: boolean | User$creditClearancesActedArgs<ExtArgs>
+    creditNotesIssued?: boolean | User$creditNotesIssuedArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type UserIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -8288,6 +8455,7 @@ export namespace Prisma {
       ledgerEntriesVoided: Prisma.$LedgerEntryPayload<ExtArgs>[]
       creditEntriesCreated: Prisma.$CustomerCreditEntryPayload<ExtArgs>[]
       creditClearancesActed: Prisma.$CreditClearancePayload<ExtArgs>[]
+      creditNotesIssued: Prisma.$CreditNotePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -8700,6 +8868,7 @@ export namespace Prisma {
     ledgerEntriesVoided<T extends User$ledgerEntriesVoidedArgs<ExtArgs> = {}>(args?: Subset<T, User$ledgerEntriesVoidedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LedgerEntryPayload<ExtArgs>, T, "findMany"> | Null>
     creditEntriesCreated<T extends User$creditEntriesCreatedArgs<ExtArgs> = {}>(args?: Subset<T, User$creditEntriesCreatedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CustomerCreditEntryPayload<ExtArgs>, T, "findMany"> | Null>
     creditClearancesActed<T extends User$creditClearancesActedArgs<ExtArgs> = {}>(args?: Subset<T, User$creditClearancesActedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CreditClearancePayload<ExtArgs>, T, "findMany"> | Null>
+    creditNotesIssued<T extends User$creditNotesIssuedArgs<ExtArgs> = {}>(args?: Subset<T, User$creditNotesIssuedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CreditNotePayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -9716,6 +9885,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: CreditClearanceScalarFieldEnum | CreditClearanceScalarFieldEnum[]
+  }
+
+  /**
+   * User.creditNotesIssued
+   */
+  export type User$creditNotesIssuedArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditNote
+     */
+    select?: CreditNoteSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditNoteInclude<ExtArgs> | null
+    where?: CreditNoteWhereInput
+    orderBy?: CreditNoteOrderByWithRelationInput | CreditNoteOrderByWithRelationInput[]
+    cursor?: CreditNoteWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CreditNoteScalarFieldEnum | CreditNoteScalarFieldEnum[]
   }
 
   /**
@@ -14190,6 +14379,7 @@ export namespace Prisma {
     invoicePdfs?: boolean | FileObject$invoicePdfsArgs<ExtArgs>
     cancellationInvoices?: boolean | FileObject$cancellationInvoicesArgs<ExtArgs>
     returnReceiptPdfs?: boolean | FileObject$returnReceiptPdfsArgs<ExtArgs>
+    creditNotePdfs?: boolean | FileObject$creditNotePdfsArgs<ExtArgs>
     _count?: boolean | FileObjectCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["fileObject"]>
 
@@ -14221,6 +14411,7 @@ export namespace Prisma {
     invoicePdfs?: boolean | FileObject$invoicePdfsArgs<ExtArgs>
     cancellationInvoices?: boolean | FileObject$cancellationInvoicesArgs<ExtArgs>
     returnReceiptPdfs?: boolean | FileObject$returnReceiptPdfsArgs<ExtArgs>
+    creditNotePdfs?: boolean | FileObject$creditNotePdfsArgs<ExtArgs>
     _count?: boolean | FileObjectCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type FileObjectIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -14235,6 +14426,7 @@ export namespace Prisma {
       invoicePdfs: Prisma.$InvoicePayload<ExtArgs>[]
       cancellationInvoices: Prisma.$CancellationInvoicePayload<ExtArgs>[]
       returnReceiptPdfs: Prisma.$ReturnReceiptPayload<ExtArgs>[]
+      creditNotePdfs: Prisma.$CreditNotePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -14615,6 +14807,7 @@ export namespace Prisma {
     invoicePdfs<T extends FileObject$invoicePdfsArgs<ExtArgs> = {}>(args?: Subset<T, FileObject$invoicePdfsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InvoicePayload<ExtArgs>, T, "findMany"> | Null>
     cancellationInvoices<T extends FileObject$cancellationInvoicesArgs<ExtArgs> = {}>(args?: Subset<T, FileObject$cancellationInvoicesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CancellationInvoicePayload<ExtArgs>, T, "findMany"> | Null>
     returnReceiptPdfs<T extends FileObject$returnReceiptPdfsArgs<ExtArgs> = {}>(args?: Subset<T, FileObject$returnReceiptPdfsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReturnReceiptPayload<ExtArgs>, T, "findMany"> | Null>
+    creditNotePdfs<T extends FileObject$creditNotePdfsArgs<ExtArgs> = {}>(args?: Subset<T, FileObject$creditNotePdfsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CreditNotePayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -15111,6 +15304,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: ReturnReceiptScalarFieldEnum | ReturnReceiptScalarFieldEnum[]
+  }
+
+  /**
+   * FileObject.creditNotePdfs
+   */
+  export type FileObject$creditNotePdfsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditNote
+     */
+    select?: CreditNoteSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditNoteInclude<ExtArgs> | null
+    where?: CreditNoteWhereInput
+    orderBy?: CreditNoteOrderByWithRelationInput | CreditNoteOrderByWithRelationInput[]
+    cursor?: CreditNoteWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CreditNoteScalarFieldEnum | CreditNoteScalarFieldEnum[]
   }
 
   /**
@@ -32323,6 +32536,7 @@ export namespace Prisma {
     paymentSessions?: boolean | Booking$paymentSessionsArgs<ExtArgs>
     ledgerEntries?: boolean | Booking$ledgerEntriesArgs<ExtArgs>
     creditEntry?: boolean | Booking$creditEntryArgs<ExtArgs>
+    creditNotes?: boolean | Booking$creditNotesArgs<ExtArgs>
     _count?: boolean | BookingCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["booking"]>
 
@@ -32489,6 +32703,7 @@ export namespace Prisma {
     paymentSessions?: boolean | Booking$paymentSessionsArgs<ExtArgs>
     ledgerEntries?: boolean | Booking$ledgerEntriesArgs<ExtArgs>
     creditEntry?: boolean | Booking$creditEntryArgs<ExtArgs>
+    creditNotes?: boolean | Booking$creditNotesArgs<ExtArgs>
     _count?: boolean | BookingCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type BookingIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -32531,6 +32746,7 @@ export namespace Prisma {
       paymentSessions: Prisma.$PaymentSessionPayload<ExtArgs>[]
       ledgerEntries: Prisma.$LedgerEntryPayload<ExtArgs>[]
       creditEntry: Prisma.$CustomerCreditEntryPayload<ExtArgs> | null
+      creditNotes: Prisma.$CreditNotePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -32985,6 +33201,7 @@ export namespace Prisma {
     paymentSessions<T extends Booking$paymentSessionsArgs<ExtArgs> = {}>(args?: Subset<T, Booking$paymentSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentSessionPayload<ExtArgs>, T, "findMany"> | Null>
     ledgerEntries<T extends Booking$ledgerEntriesArgs<ExtArgs> = {}>(args?: Subset<T, Booking$ledgerEntriesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LedgerEntryPayload<ExtArgs>, T, "findMany"> | Null>
     creditEntry<T extends Booking$creditEntryArgs<ExtArgs> = {}>(args?: Subset<T, Booking$creditEntryArgs<ExtArgs>>): Prisma__CustomerCreditEntryClient<$Result.GetResult<Prisma.$CustomerCreditEntryPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    creditNotes<T extends Booking$creditNotesArgs<ExtArgs> = {}>(args?: Subset<T, Booking$creditNotesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CreditNotePayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -33814,6 +34031,26 @@ export namespace Prisma {
      */
     include?: CustomerCreditEntryInclude<ExtArgs> | null
     where?: CustomerCreditEntryWhereInput
+  }
+
+  /**
+   * Booking.creditNotes
+   */
+  export type Booking$creditNotesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditNote
+     */
+    select?: CreditNoteSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditNoteInclude<ExtArgs> | null
+    where?: CreditNoteWhereInput
+    orderBy?: CreditNoteOrderByWithRelationInput | CreditNoteOrderByWithRelationInput[]
+    cursor?: CreditNoteWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CreditNoteScalarFieldEnum | CreditNoteScalarFieldEnum[]
   }
 
   /**
@@ -40436,6 +40673,7 @@ export namespace Prisma {
     booking?: boolean | BookingDefaultArgs<ExtArgs>
     items?: boolean | Invoice$itemsArgs<ExtArgs>
     payments?: boolean | Invoice$paymentsArgs<ExtArgs>
+    creditNotes?: boolean | Invoice$creditNotesArgs<ExtArgs>
     _count?: boolean | InvoiceCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["invoice"]>
 
@@ -40478,6 +40716,7 @@ export namespace Prisma {
     booking?: boolean | BookingDefaultArgs<ExtArgs>
     items?: boolean | Invoice$itemsArgs<ExtArgs>
     payments?: boolean | Invoice$paymentsArgs<ExtArgs>
+    creditNotes?: boolean | Invoice$creditNotesArgs<ExtArgs>
     _count?: boolean | InvoiceCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type InvoiceIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -40492,6 +40731,7 @@ export namespace Prisma {
       booking: Prisma.$BookingPayload<ExtArgs>
       items: Prisma.$InvoiceItemPayload<ExtArgs>[]
       payments: Prisma.$PaymentPayload<ExtArgs>[]
+      creditNotes: Prisma.$CreditNotePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -40875,6 +41115,7 @@ export namespace Prisma {
     booking<T extends BookingDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BookingDefaultArgs<ExtArgs>>): Prisma__BookingClient<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     items<T extends Invoice$itemsArgs<ExtArgs> = {}>(args?: Subset<T, Invoice$itemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InvoiceItemPayload<ExtArgs>, T, "findMany"> | Null>
     payments<T extends Invoice$paymentsArgs<ExtArgs> = {}>(args?: Subset<T, Invoice$paymentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentPayload<ExtArgs>, T, "findMany"> | Null>
+    creditNotes<T extends Invoice$creditNotesArgs<ExtArgs> = {}>(args?: Subset<T, Invoice$creditNotesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CreditNotePayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -41296,6 +41537,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: PaymentScalarFieldEnum | PaymentScalarFieldEnum[]
+  }
+
+  /**
+   * Invoice.creditNotes
+   */
+  export type Invoice$creditNotesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditNote
+     */
+    select?: CreditNoteSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditNoteInclude<ExtArgs> | null
+    where?: CreditNoteWhereInput
+    orderBy?: CreditNoteOrderByWithRelationInput | CreditNoteOrderByWithRelationInput[]
+    cursor?: CreditNoteWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CreditNoteScalarFieldEnum | CreditNoteScalarFieldEnum[]
   }
 
   /**
@@ -48832,6 +49093,8 @@ export namespace Prisma {
     createdAt?: boolean
     receiptPdfFile?: boolean | ReturnReceipt$receiptPdfFileArgs<ExtArgs>
     booking?: boolean | BookingDefaultArgs<ExtArgs>
+    creditNotes?: boolean | ReturnReceipt$creditNotesArgs<ExtArgs>
+    _count?: boolean | ReturnReceiptCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["returnReceipt"]>
 
   export type ReturnReceiptSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -48869,6 +49132,8 @@ export namespace Prisma {
   export type ReturnReceiptInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     receiptPdfFile?: boolean | ReturnReceipt$receiptPdfFileArgs<ExtArgs>
     booking?: boolean | BookingDefaultArgs<ExtArgs>
+    creditNotes?: boolean | ReturnReceipt$creditNotesArgs<ExtArgs>
+    _count?: boolean | ReturnReceiptCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type ReturnReceiptIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     receiptPdfFile?: boolean | ReturnReceipt$receiptPdfFileArgs<ExtArgs>
@@ -48880,6 +49145,7 @@ export namespace Prisma {
     objects: {
       receiptPdfFile: Prisma.$FileObjectPayload<ExtArgs> | null
       booking: Prisma.$BookingPayload<ExtArgs>
+      creditNotes: Prisma.$CreditNotePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -49260,6 +49526,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     receiptPdfFile<T extends ReturnReceipt$receiptPdfFileArgs<ExtArgs> = {}>(args?: Subset<T, ReturnReceipt$receiptPdfFileArgs<ExtArgs>>): Prisma__FileObjectClient<$Result.GetResult<Prisma.$FileObjectPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     booking<T extends BookingDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BookingDefaultArgs<ExtArgs>>): Prisma__BookingClient<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    creditNotes<T extends ReturnReceipt$creditNotesArgs<ExtArgs> = {}>(args?: Subset<T, ReturnReceipt$creditNotesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CreditNotePayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -49640,6 +49907,26 @@ export namespace Prisma {
      */
     include?: FileObjectInclude<ExtArgs> | null
     where?: FileObjectWhereInput
+  }
+
+  /**
+   * ReturnReceipt.creditNotes
+   */
+  export type ReturnReceipt$creditNotesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditNote
+     */
+    select?: CreditNoteSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditNoteInclude<ExtArgs> | null
+    where?: CreditNoteWhereInput
+    orderBy?: CreditNoteOrderByWithRelationInput | CreditNoteOrderByWithRelationInput[]
+    cursor?: CreditNoteWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CreditNoteScalarFieldEnum | CreditNoteScalarFieldEnum[]
   }
 
   /**
@@ -77490,6 +77777,1171 @@ export namespace Prisma {
 
 
   /**
+   * Model CreditNote
+   */
+
+  export type AggregateCreditNote = {
+    _count: CreditNoteCountAggregateOutputType | null
+    _avg: CreditNoteAvgAggregateOutputType | null
+    _sum: CreditNoteSumAggregateOutputType | null
+    _min: CreditNoteMinAggregateOutputType | null
+    _max: CreditNoteMaxAggregateOutputType | null
+  }
+
+  export type CreditNoteAvgAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    invoiceId: number | null
+    receiptId: number | null
+    amount: Decimal | null
+    issuedById: number | null
+    pdfFileId: number | null
+  }
+
+  export type CreditNoteSumAggregateOutputType = {
+    id: number | null
+    bookingId: number | null
+    invoiceId: number | null
+    receiptId: number | null
+    amount: Decimal | null
+    issuedById: number | null
+    pdfFileId: number | null
+  }
+
+  export type CreditNoteMinAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    creditNoteNumber: string | null
+    bookingId: number | null
+    invoiceId: number | null
+    receiptId: number | null
+    amount: Decimal | null
+    reason: string | null
+    status: $Enums.CreditNoteStatus | null
+    issuedById: number | null
+    pdfFileId: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type CreditNoteMaxAggregateOutputType = {
+    id: number | null
+    publicId: string | null
+    creditNoteNumber: string | null
+    bookingId: number | null
+    invoiceId: number | null
+    receiptId: number | null
+    amount: Decimal | null
+    reason: string | null
+    status: $Enums.CreditNoteStatus | null
+    issuedById: number | null
+    pdfFileId: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type CreditNoteCountAggregateOutputType = {
+    id: number
+    publicId: number
+    creditNoteNumber: number
+    bookingId: number
+    invoiceId: number
+    receiptId: number
+    amount: number
+    reason: number
+    status: number
+    issuedById: number
+    pdfFileId: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type CreditNoteAvgAggregateInputType = {
+    id?: true
+    bookingId?: true
+    invoiceId?: true
+    receiptId?: true
+    amount?: true
+    issuedById?: true
+    pdfFileId?: true
+  }
+
+  export type CreditNoteSumAggregateInputType = {
+    id?: true
+    bookingId?: true
+    invoiceId?: true
+    receiptId?: true
+    amount?: true
+    issuedById?: true
+    pdfFileId?: true
+  }
+
+  export type CreditNoteMinAggregateInputType = {
+    id?: true
+    publicId?: true
+    creditNoteNumber?: true
+    bookingId?: true
+    invoiceId?: true
+    receiptId?: true
+    amount?: true
+    reason?: true
+    status?: true
+    issuedById?: true
+    pdfFileId?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type CreditNoteMaxAggregateInputType = {
+    id?: true
+    publicId?: true
+    creditNoteNumber?: true
+    bookingId?: true
+    invoiceId?: true
+    receiptId?: true
+    amount?: true
+    reason?: true
+    status?: true
+    issuedById?: true
+    pdfFileId?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type CreditNoteCountAggregateInputType = {
+    id?: true
+    publicId?: true
+    creditNoteNumber?: true
+    bookingId?: true
+    invoiceId?: true
+    receiptId?: true
+    amount?: true
+    reason?: true
+    status?: true
+    issuedById?: true
+    pdfFileId?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type CreditNoteAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CreditNote to aggregate.
+     */
+    where?: CreditNoteWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CreditNotes to fetch.
+     */
+    orderBy?: CreditNoteOrderByWithRelationInput | CreditNoteOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: CreditNoteWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CreditNotes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CreditNotes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned CreditNotes
+    **/
+    _count?: true | CreditNoteCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: CreditNoteAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: CreditNoteSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: CreditNoteMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: CreditNoteMaxAggregateInputType
+  }
+
+  export type GetCreditNoteAggregateType<T extends CreditNoteAggregateArgs> = {
+        [P in keyof T & keyof AggregateCreditNote]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateCreditNote[P]>
+      : GetScalarType<T[P], AggregateCreditNote[P]>
+  }
+
+
+
+
+  export type CreditNoteGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CreditNoteWhereInput
+    orderBy?: CreditNoteOrderByWithAggregationInput | CreditNoteOrderByWithAggregationInput[]
+    by: CreditNoteScalarFieldEnum[] | CreditNoteScalarFieldEnum
+    having?: CreditNoteScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: CreditNoteCountAggregateInputType | true
+    _avg?: CreditNoteAvgAggregateInputType
+    _sum?: CreditNoteSumAggregateInputType
+    _min?: CreditNoteMinAggregateInputType
+    _max?: CreditNoteMaxAggregateInputType
+  }
+
+  export type CreditNoteGroupByOutputType = {
+    id: number
+    publicId: string
+    creditNoteNumber: string | null
+    bookingId: number
+    invoiceId: number | null
+    receiptId: number | null
+    amount: Decimal
+    reason: string
+    status: $Enums.CreditNoteStatus
+    issuedById: number
+    pdfFileId: number | null
+    createdAt: Date
+    updatedAt: Date
+    _count: CreditNoteCountAggregateOutputType | null
+    _avg: CreditNoteAvgAggregateOutputType | null
+    _sum: CreditNoteSumAggregateOutputType | null
+    _min: CreditNoteMinAggregateOutputType | null
+    _max: CreditNoteMaxAggregateOutputType | null
+  }
+
+  type GetCreditNoteGroupByPayload<T extends CreditNoteGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<CreditNoteGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof CreditNoteGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], CreditNoteGroupByOutputType[P]>
+            : GetScalarType<T[P], CreditNoteGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type CreditNoteSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    creditNoteNumber?: boolean
+    bookingId?: boolean
+    invoiceId?: boolean
+    receiptId?: boolean
+    amount?: boolean
+    reason?: boolean
+    status?: boolean
+    issuedById?: boolean
+    pdfFileId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    pdfFile?: boolean | CreditNote$pdfFileArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    invoice?: boolean | CreditNote$invoiceArgs<ExtArgs>
+    receipt?: boolean | CreditNote$receiptArgs<ExtArgs>
+    issuedBy?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["creditNote"]>
+
+  export type CreditNoteSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    publicId?: boolean
+    creditNoteNumber?: boolean
+    bookingId?: boolean
+    invoiceId?: boolean
+    receiptId?: boolean
+    amount?: boolean
+    reason?: boolean
+    status?: boolean
+    issuedById?: boolean
+    pdfFileId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    pdfFile?: boolean | CreditNote$pdfFileArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    invoice?: boolean | CreditNote$invoiceArgs<ExtArgs>
+    receipt?: boolean | CreditNote$receiptArgs<ExtArgs>
+    issuedBy?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["creditNote"]>
+
+  export type CreditNoteSelectScalar = {
+    id?: boolean
+    publicId?: boolean
+    creditNoteNumber?: boolean
+    bookingId?: boolean
+    invoiceId?: boolean
+    receiptId?: boolean
+    amount?: boolean
+    reason?: boolean
+    status?: boolean
+    issuedById?: boolean
+    pdfFileId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type CreditNoteInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    pdfFile?: boolean | CreditNote$pdfFileArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    invoice?: boolean | CreditNote$invoiceArgs<ExtArgs>
+    receipt?: boolean | CreditNote$receiptArgs<ExtArgs>
+    issuedBy?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type CreditNoteIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    pdfFile?: boolean | CreditNote$pdfFileArgs<ExtArgs>
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+    invoice?: boolean | CreditNote$invoiceArgs<ExtArgs>
+    receipt?: boolean | CreditNote$receiptArgs<ExtArgs>
+    issuedBy?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $CreditNotePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "CreditNote"
+    objects: {
+      pdfFile: Prisma.$FileObjectPayload<ExtArgs> | null
+      booking: Prisma.$BookingPayload<ExtArgs>
+      invoice: Prisma.$InvoicePayload<ExtArgs> | null
+      receipt: Prisma.$ReturnReceiptPayload<ExtArgs> | null
+      issuedBy: Prisma.$UserPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      publicId: string
+      creditNoteNumber: string | null
+      bookingId: number
+      invoiceId: number | null
+      receiptId: number | null
+      amount: Prisma.Decimal
+      reason: string
+      status: $Enums.CreditNoteStatus
+      issuedById: number
+      pdfFileId: number | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["creditNote"]>
+    composites: {}
+  }
+
+  type CreditNoteGetPayload<S extends boolean | null | undefined | CreditNoteDefaultArgs> = $Result.GetResult<Prisma.$CreditNotePayload, S>
+
+  type CreditNoteCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<CreditNoteFindManyArgs, 'select' | 'include' | 'distinct' | 'relationLoadStrategy'> & {
+      select?: CreditNoteCountAggregateInputType | true
+    }
+
+  export interface CreditNoteDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['CreditNote'], meta: { name: 'CreditNote' } }
+    /**
+     * Find zero or one CreditNote that matches the filter.
+     * @param {CreditNoteFindUniqueArgs} args - Arguments to find a CreditNote
+     * @example
+     * // Get one CreditNote
+     * const creditNote = await prisma.creditNote.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends CreditNoteFindUniqueArgs>(args: SelectSubset<T, CreditNoteFindUniqueArgs<ExtArgs>>): Prisma__CreditNoteClient<$Result.GetResult<Prisma.$CreditNotePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one CreditNote that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {CreditNoteFindUniqueOrThrowArgs} args - Arguments to find a CreditNote
+     * @example
+     * // Get one CreditNote
+     * const creditNote = await prisma.creditNote.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends CreditNoteFindUniqueOrThrowArgs>(args: SelectSubset<T, CreditNoteFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CreditNoteClient<$Result.GetResult<Prisma.$CreditNotePayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first CreditNote that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CreditNoteFindFirstArgs} args - Arguments to find a CreditNote
+     * @example
+     * // Get one CreditNote
+     * const creditNote = await prisma.creditNote.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends CreditNoteFindFirstArgs>(args?: SelectSubset<T, CreditNoteFindFirstArgs<ExtArgs>>): Prisma__CreditNoteClient<$Result.GetResult<Prisma.$CreditNotePayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first CreditNote that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CreditNoteFindFirstOrThrowArgs} args - Arguments to find a CreditNote
+     * @example
+     * // Get one CreditNote
+     * const creditNote = await prisma.creditNote.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends CreditNoteFindFirstOrThrowArgs>(args?: SelectSubset<T, CreditNoteFindFirstOrThrowArgs<ExtArgs>>): Prisma__CreditNoteClient<$Result.GetResult<Prisma.$CreditNotePayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more CreditNotes that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CreditNoteFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all CreditNotes
+     * const creditNotes = await prisma.creditNote.findMany()
+     * 
+     * // Get first 10 CreditNotes
+     * const creditNotes = await prisma.creditNote.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const creditNoteWithIdOnly = await prisma.creditNote.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends CreditNoteFindManyArgs>(args?: SelectSubset<T, CreditNoteFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CreditNotePayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a CreditNote.
+     * @param {CreditNoteCreateArgs} args - Arguments to create a CreditNote.
+     * @example
+     * // Create one CreditNote
+     * const CreditNote = await prisma.creditNote.create({
+     *   data: {
+     *     // ... data to create a CreditNote
+     *   }
+     * })
+     * 
+     */
+    create<T extends CreditNoteCreateArgs>(args: SelectSubset<T, CreditNoteCreateArgs<ExtArgs>>): Prisma__CreditNoteClient<$Result.GetResult<Prisma.$CreditNotePayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many CreditNotes.
+     * @param {CreditNoteCreateManyArgs} args - Arguments to create many CreditNotes.
+     * @example
+     * // Create many CreditNotes
+     * const creditNote = await prisma.creditNote.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends CreditNoteCreateManyArgs>(args?: SelectSubset<T, CreditNoteCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many CreditNotes and returns the data saved in the database.
+     * @param {CreditNoteCreateManyAndReturnArgs} args - Arguments to create many CreditNotes.
+     * @example
+     * // Create many CreditNotes
+     * const creditNote = await prisma.creditNote.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many CreditNotes and only return the `id`
+     * const creditNoteWithIdOnly = await prisma.creditNote.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends CreditNoteCreateManyAndReturnArgs>(args?: SelectSubset<T, CreditNoteCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CreditNotePayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a CreditNote.
+     * @param {CreditNoteDeleteArgs} args - Arguments to delete one CreditNote.
+     * @example
+     * // Delete one CreditNote
+     * const CreditNote = await prisma.creditNote.delete({
+     *   where: {
+     *     // ... filter to delete one CreditNote
+     *   }
+     * })
+     * 
+     */
+    delete<T extends CreditNoteDeleteArgs>(args: SelectSubset<T, CreditNoteDeleteArgs<ExtArgs>>): Prisma__CreditNoteClient<$Result.GetResult<Prisma.$CreditNotePayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one CreditNote.
+     * @param {CreditNoteUpdateArgs} args - Arguments to update one CreditNote.
+     * @example
+     * // Update one CreditNote
+     * const creditNote = await prisma.creditNote.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends CreditNoteUpdateArgs>(args: SelectSubset<T, CreditNoteUpdateArgs<ExtArgs>>): Prisma__CreditNoteClient<$Result.GetResult<Prisma.$CreditNotePayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more CreditNotes.
+     * @param {CreditNoteDeleteManyArgs} args - Arguments to filter CreditNotes to delete.
+     * @example
+     * // Delete a few CreditNotes
+     * const { count } = await prisma.creditNote.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends CreditNoteDeleteManyArgs>(args?: SelectSubset<T, CreditNoteDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more CreditNotes.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CreditNoteUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many CreditNotes
+     * const creditNote = await prisma.creditNote.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends CreditNoteUpdateManyArgs>(args: SelectSubset<T, CreditNoteUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one CreditNote.
+     * @param {CreditNoteUpsertArgs} args - Arguments to update or create a CreditNote.
+     * @example
+     * // Update or create a CreditNote
+     * const creditNote = await prisma.creditNote.upsert({
+     *   create: {
+     *     // ... data to create a CreditNote
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the CreditNote we want to update
+     *   }
+     * })
+     */
+    upsert<T extends CreditNoteUpsertArgs>(args: SelectSubset<T, CreditNoteUpsertArgs<ExtArgs>>): Prisma__CreditNoteClient<$Result.GetResult<Prisma.$CreditNotePayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of CreditNotes.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CreditNoteCountArgs} args - Arguments to filter CreditNotes to count.
+     * @example
+     * // Count the number of CreditNotes
+     * const count = await prisma.creditNote.count({
+     *   where: {
+     *     // ... the filter for the CreditNotes we want to count
+     *   }
+     * })
+    **/
+    count<T extends CreditNoteCountArgs>(
+      args?: Subset<T, CreditNoteCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], CreditNoteCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a CreditNote.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CreditNoteAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends CreditNoteAggregateArgs>(args: Subset<T, CreditNoteAggregateArgs>): Prisma.PrismaPromise<GetCreditNoteAggregateType<T>>
+
+    /**
+     * Group by CreditNote.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CreditNoteGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends CreditNoteGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: CreditNoteGroupByArgs['orderBy'] }
+        : { orderBy?: CreditNoteGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, CreditNoteGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCreditNoteGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the CreditNote model
+   */
+  readonly fields: CreditNoteFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for CreditNote.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__CreditNoteClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    pdfFile<T extends CreditNote$pdfFileArgs<ExtArgs> = {}>(args?: Subset<T, CreditNote$pdfFileArgs<ExtArgs>>): Prisma__FileObjectClient<$Result.GetResult<Prisma.$FileObjectPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    booking<T extends BookingDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BookingDefaultArgs<ExtArgs>>): Prisma__BookingClient<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    invoice<T extends CreditNote$invoiceArgs<ExtArgs> = {}>(args?: Subset<T, CreditNote$invoiceArgs<ExtArgs>>): Prisma__InvoiceClient<$Result.GetResult<Prisma.$InvoicePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    receipt<T extends CreditNote$receiptArgs<ExtArgs> = {}>(args?: Subset<T, CreditNote$receiptArgs<ExtArgs>>): Prisma__ReturnReceiptClient<$Result.GetResult<Prisma.$ReturnReceiptPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    issuedBy<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the CreditNote model
+   */ 
+  interface CreditNoteFieldRefs {
+    readonly id: FieldRef<"CreditNote", 'Int'>
+    readonly publicId: FieldRef<"CreditNote", 'String'>
+    readonly creditNoteNumber: FieldRef<"CreditNote", 'String'>
+    readonly bookingId: FieldRef<"CreditNote", 'Int'>
+    readonly invoiceId: FieldRef<"CreditNote", 'Int'>
+    readonly receiptId: FieldRef<"CreditNote", 'Int'>
+    readonly amount: FieldRef<"CreditNote", 'Decimal'>
+    readonly reason: FieldRef<"CreditNote", 'String'>
+    readonly status: FieldRef<"CreditNote", 'CreditNoteStatus'>
+    readonly issuedById: FieldRef<"CreditNote", 'Int'>
+    readonly pdfFileId: FieldRef<"CreditNote", 'Int'>
+    readonly createdAt: FieldRef<"CreditNote", 'DateTime'>
+    readonly updatedAt: FieldRef<"CreditNote", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * CreditNote findUnique
+   */
+  export type CreditNoteFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditNote
+     */
+    select?: CreditNoteSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditNoteInclude<ExtArgs> | null
+    /**
+     * Filter, which CreditNote to fetch.
+     */
+    where: CreditNoteWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CreditNote findUniqueOrThrow
+   */
+  export type CreditNoteFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditNote
+     */
+    select?: CreditNoteSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditNoteInclude<ExtArgs> | null
+    /**
+     * Filter, which CreditNote to fetch.
+     */
+    where: CreditNoteWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CreditNote findFirst
+   */
+  export type CreditNoteFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditNote
+     */
+    select?: CreditNoteSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditNoteInclude<ExtArgs> | null
+    /**
+     * Filter, which CreditNote to fetch.
+     */
+    where?: CreditNoteWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CreditNotes to fetch.
+     */
+    orderBy?: CreditNoteOrderByWithRelationInput | CreditNoteOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CreditNotes.
+     */
+    cursor?: CreditNoteWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CreditNotes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CreditNotes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CreditNotes.
+     */
+    distinct?: CreditNoteScalarFieldEnum | CreditNoteScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CreditNote findFirstOrThrow
+   */
+  export type CreditNoteFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditNote
+     */
+    select?: CreditNoteSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditNoteInclude<ExtArgs> | null
+    /**
+     * Filter, which CreditNote to fetch.
+     */
+    where?: CreditNoteWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CreditNotes to fetch.
+     */
+    orderBy?: CreditNoteOrderByWithRelationInput | CreditNoteOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CreditNotes.
+     */
+    cursor?: CreditNoteWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CreditNotes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CreditNotes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CreditNotes.
+     */
+    distinct?: CreditNoteScalarFieldEnum | CreditNoteScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CreditNote findMany
+   */
+  export type CreditNoteFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditNote
+     */
+    select?: CreditNoteSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditNoteInclude<ExtArgs> | null
+    /**
+     * Filter, which CreditNotes to fetch.
+     */
+    where?: CreditNoteWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CreditNotes to fetch.
+     */
+    orderBy?: CreditNoteOrderByWithRelationInput | CreditNoteOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing CreditNotes.
+     */
+    cursor?: CreditNoteWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CreditNotes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CreditNotes.
+     */
+    skip?: number
+    distinct?: CreditNoteScalarFieldEnum | CreditNoteScalarFieldEnum[]
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CreditNote create
+   */
+  export type CreditNoteCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditNote
+     */
+    select?: CreditNoteSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditNoteInclude<ExtArgs> | null
+    /**
+     * The data needed to create a CreditNote.
+     */
+    data: XOR<CreditNoteCreateInput, CreditNoteUncheckedCreateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CreditNote createMany
+   */
+  export type CreditNoteCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many CreditNotes.
+     */
+    data: CreditNoteCreateManyInput | CreditNoteCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * CreditNote createManyAndReturn
+   */
+  export type CreditNoteCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditNote
+     */
+    select?: CreditNoteSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many CreditNotes.
+     */
+    data: CreditNoteCreateManyInput | CreditNoteCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditNoteIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * CreditNote update
+   */
+  export type CreditNoteUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditNote
+     */
+    select?: CreditNoteSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditNoteInclude<ExtArgs> | null
+    /**
+     * The data needed to update a CreditNote.
+     */
+    data: XOR<CreditNoteUpdateInput, CreditNoteUncheckedUpdateInput>
+    /**
+     * Choose, which CreditNote to update.
+     */
+    where: CreditNoteWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CreditNote updateMany
+   */
+  export type CreditNoteUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update CreditNotes.
+     */
+    data: XOR<CreditNoteUpdateManyMutationInput, CreditNoteUncheckedUpdateManyInput>
+    /**
+     * Filter which CreditNotes to update
+     */
+    where?: CreditNoteWhereInput
+  }
+
+  /**
+   * CreditNote upsert
+   */
+  export type CreditNoteUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditNote
+     */
+    select?: CreditNoteSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditNoteInclude<ExtArgs> | null
+    /**
+     * The filter to search for the CreditNote to update in case it exists.
+     */
+    where: CreditNoteWhereUniqueInput
+    /**
+     * In case the CreditNote found by the `where` argument doesn't exist, create a new CreditNote with this data.
+     */
+    create: XOR<CreditNoteCreateInput, CreditNoteUncheckedCreateInput>
+    /**
+     * In case the CreditNote was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<CreditNoteUpdateInput, CreditNoteUncheckedUpdateInput>
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CreditNote delete
+   */
+  export type CreditNoteDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditNote
+     */
+    select?: CreditNoteSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditNoteInclude<ExtArgs> | null
+    /**
+     * Filter which CreditNote to delete.
+     */
+    where: CreditNoteWhereUniqueInput
+    relationLoadStrategy?: RelationLoadStrategy
+  }
+
+  /**
+   * CreditNote deleteMany
+   */
+  export type CreditNoteDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CreditNotes to delete
+     */
+    where?: CreditNoteWhereInput
+  }
+
+  /**
+   * CreditNote.pdfFile
+   */
+  export type CreditNote$pdfFileArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FileObject
+     */
+    select?: FileObjectSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FileObjectInclude<ExtArgs> | null
+    where?: FileObjectWhereInput
+  }
+
+  /**
+   * CreditNote.invoice
+   */
+  export type CreditNote$invoiceArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Invoice
+     */
+    select?: InvoiceSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InvoiceInclude<ExtArgs> | null
+    where?: InvoiceWhereInput
+  }
+
+  /**
+   * CreditNote.receipt
+   */
+  export type CreditNote$receiptArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReturnReceipt
+     */
+    select?: ReturnReceiptSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReturnReceiptInclude<ExtArgs> | null
+    where?: ReturnReceiptWhereInput
+  }
+
+  /**
+   * CreditNote without action
+   */
+  export type CreditNoteDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditNote
+     */
+    select?: CreditNoteSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CreditNoteInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -78652,6 +80104,25 @@ export namespace Prisma {
   export type CreditClearanceScalarFieldEnum = (typeof CreditClearanceScalarFieldEnum)[keyof typeof CreditClearanceScalarFieldEnum]
 
 
+  export const CreditNoteScalarFieldEnum: {
+    id: 'id',
+    publicId: 'publicId',
+    creditNoteNumber: 'creditNoteNumber',
+    bookingId: 'bookingId',
+    invoiceId: 'invoiceId',
+    receiptId: 'receiptId',
+    amount: 'amount',
+    reason: 'reason',
+    status: 'status',
+    issuedById: 'issuedById',
+    pdfFileId: 'pdfFileId',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type CreditNoteScalarFieldEnum = (typeof CreditNoteScalarFieldEnum)[keyof typeof CreditNoteScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -79378,6 +80849,20 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'CreditNoteStatus'
+   */
+  export type EnumCreditNoteStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CreditNoteStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'CreditNoteStatus[]'
+   */
+  export type ListEnumCreditNoteStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CreditNoteStatus[]'>
+    
+
+
+  /**
    * Reference to a field of type 'Float'
    */
   export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -79444,6 +80929,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryListRelationFilter
     creditEntriesCreated?: CustomerCreditEntryListRelationFilter
     creditClearancesActed?: CreditClearanceListRelationFilter
+    creditNotesIssued?: CreditNoteListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -79493,6 +80979,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryOrderByRelationAggregateInput
     creditEntriesCreated?: CustomerCreditEntryOrderByRelationAggregateInput
     creditClearancesActed?: CreditClearanceOrderByRelationAggregateInput
+    creditNotesIssued?: CreditNoteOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -79545,6 +81032,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryListRelationFilter
     creditEntriesCreated?: CustomerCreditEntryListRelationFilter
     creditClearancesActed?: CreditClearanceListRelationFilter
+    creditNotesIssued?: CreditNoteListRelationFilter
   }, "id" | "publicId" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -79935,6 +81423,7 @@ export namespace Prisma {
     invoicePdfs?: InvoiceListRelationFilter
     cancellationInvoices?: CancellationInvoiceListRelationFilter
     returnReceiptPdfs?: ReturnReceiptListRelationFilter
+    creditNotePdfs?: CreditNoteListRelationFilter
   }
 
   export type FileObjectOrderByWithRelationInput = {
@@ -79952,6 +81441,7 @@ export namespace Prisma {
     invoicePdfs?: InvoiceOrderByRelationAggregateInput
     cancellationInvoices?: CancellationInvoiceOrderByRelationAggregateInput
     returnReceiptPdfs?: ReturnReceiptOrderByRelationAggregateInput
+    creditNotePdfs?: CreditNoteOrderByRelationAggregateInput
   }
 
   export type FileObjectWhereUniqueInput = Prisma.AtLeast<{
@@ -79972,6 +81462,7 @@ export namespace Prisma {
     invoicePdfs?: InvoiceListRelationFilter
     cancellationInvoices?: CancellationInvoiceListRelationFilter
     returnReceiptPdfs?: ReturnReceiptListRelationFilter
+    creditNotePdfs?: CreditNoteListRelationFilter
   }, "id" | "publicId">
 
   export type FileObjectOrderByWithAggregationInput = {
@@ -81341,6 +82832,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionListRelationFilter
     ledgerEntries?: LedgerEntryListRelationFilter
     creditEntry?: XOR<CustomerCreditEntryNullableRelationFilter, CustomerCreditEntryWhereInput> | null
+    creditNotes?: CreditNoteListRelationFilter
   }
 
   export type BookingOrderByWithRelationInput = {
@@ -81432,6 +82924,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionOrderByRelationAggregateInput
     ledgerEntries?: LedgerEntryOrderByRelationAggregateInput
     creditEntry?: CustomerCreditEntryOrderByWithRelationInput
+    creditNotes?: CreditNoteOrderByRelationAggregateInput
   }
 
   export type BookingWhereUniqueInput = Prisma.AtLeast<{
@@ -81526,6 +83019,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionListRelationFilter
     ledgerEntries?: LedgerEntryListRelationFilter
     creditEntry?: XOR<CustomerCreditEntryNullableRelationFilter, CustomerCreditEntryWhereInput> | null
+    creditNotes?: CreditNoteListRelationFilter
   }, "id" | "publicId" | "transactionId" | "remainingPaymentId">
 
   export type BookingOrderByWithAggregationInput = {
@@ -82182,6 +83676,7 @@ export namespace Prisma {
     booking?: XOR<BookingRelationFilter, BookingWhereInput>
     items?: InvoiceItemListRelationFilter
     payments?: PaymentListRelationFilter
+    creditNotes?: CreditNoteListRelationFilter
   }
 
   export type InvoiceOrderByWithRelationInput = {
@@ -82202,6 +83697,7 @@ export namespace Prisma {
     booking?: BookingOrderByWithRelationInput
     items?: InvoiceItemOrderByRelationAggregateInput
     payments?: PaymentOrderByRelationAggregateInput
+    creditNotes?: CreditNoteOrderByRelationAggregateInput
   }
 
   export type InvoiceWhereUniqueInput = Prisma.AtLeast<{
@@ -82225,6 +83721,7 @@ export namespace Prisma {
     booking?: XOR<BookingRelationFilter, BookingWhereInput>
     items?: InvoiceItemListRelationFilter
     payments?: PaymentListRelationFilter
+    creditNotes?: CreditNoteListRelationFilter
   }, "id" | "publicId" | "bookingId" | "invoiceNumber">
 
   export type InvoiceOrderByWithAggregationInput = {
@@ -82877,6 +84374,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"ReturnReceipt"> | Date | string
     receiptPdfFile?: XOR<FileObjectNullableRelationFilter, FileObjectWhereInput> | null
     booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    creditNotes?: CreditNoteListRelationFilter
   }
 
   export type ReturnReceiptOrderByWithRelationInput = {
@@ -82894,6 +84392,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     receiptPdfFile?: FileObjectOrderByWithRelationInput
     booking?: BookingOrderByWithRelationInput
+    creditNotes?: CreditNoteOrderByRelationAggregateInput
   }
 
   export type ReturnReceiptWhereUniqueInput = Prisma.AtLeast<{
@@ -82914,6 +84413,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"ReturnReceipt"> | Date | string
     receiptPdfFile?: XOR<FileObjectNullableRelationFilter, FileObjectWhereInput> | null
     booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    creditNotes?: CreditNoteListRelationFilter
   }, "id" | "publicId" | "bookingId" | "receiptNumber">
 
   export type ReturnReceiptOrderByWithAggregationInput = {
@@ -85760,6 +87260,115 @@ export namespace Prisma {
     clearedAt?: DateTimeWithAggregatesFilter<"CreditClearance"> | Date | string
   }
 
+  export type CreditNoteWhereInput = {
+    AND?: CreditNoteWhereInput | CreditNoteWhereInput[]
+    OR?: CreditNoteWhereInput[]
+    NOT?: CreditNoteWhereInput | CreditNoteWhereInput[]
+    id?: IntFilter<"CreditNote"> | number
+    publicId?: StringFilter<"CreditNote"> | string
+    creditNoteNumber?: StringNullableFilter<"CreditNote"> | string | null
+    bookingId?: IntFilter<"CreditNote"> | number
+    invoiceId?: IntNullableFilter<"CreditNote"> | number | null
+    receiptId?: IntNullableFilter<"CreditNote"> | number | null
+    amount?: DecimalFilter<"CreditNote"> | Decimal | DecimalJsLike | number | string
+    reason?: StringFilter<"CreditNote"> | string
+    status?: EnumCreditNoteStatusFilter<"CreditNote"> | $Enums.CreditNoteStatus
+    issuedById?: IntFilter<"CreditNote"> | number
+    pdfFileId?: IntNullableFilter<"CreditNote"> | number | null
+    createdAt?: DateTimeFilter<"CreditNote"> | Date | string
+    updatedAt?: DateTimeFilter<"CreditNote"> | Date | string
+    pdfFile?: XOR<FileObjectNullableRelationFilter, FileObjectWhereInput> | null
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    invoice?: XOR<InvoiceNullableRelationFilter, InvoiceWhereInput> | null
+    receipt?: XOR<ReturnReceiptNullableRelationFilter, ReturnReceiptWhereInput> | null
+    issuedBy?: XOR<UserRelationFilter, UserWhereInput>
+  }
+
+  export type CreditNoteOrderByWithRelationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    creditNoteNumber?: SortOrderInput | SortOrder
+    bookingId?: SortOrder
+    invoiceId?: SortOrderInput | SortOrder
+    receiptId?: SortOrderInput | SortOrder
+    amount?: SortOrder
+    reason?: SortOrder
+    status?: SortOrder
+    issuedById?: SortOrder
+    pdfFileId?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    pdfFile?: FileObjectOrderByWithRelationInput
+    booking?: BookingOrderByWithRelationInput
+    invoice?: InvoiceOrderByWithRelationInput
+    receipt?: ReturnReceiptOrderByWithRelationInput
+    issuedBy?: UserOrderByWithRelationInput
+  }
+
+  export type CreditNoteWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    publicId?: string
+    creditNoteNumber?: string
+    AND?: CreditNoteWhereInput | CreditNoteWhereInput[]
+    OR?: CreditNoteWhereInput[]
+    NOT?: CreditNoteWhereInput | CreditNoteWhereInput[]
+    bookingId?: IntFilter<"CreditNote"> | number
+    invoiceId?: IntNullableFilter<"CreditNote"> | number | null
+    receiptId?: IntNullableFilter<"CreditNote"> | number | null
+    amount?: DecimalFilter<"CreditNote"> | Decimal | DecimalJsLike | number | string
+    reason?: StringFilter<"CreditNote"> | string
+    status?: EnumCreditNoteStatusFilter<"CreditNote"> | $Enums.CreditNoteStatus
+    issuedById?: IntFilter<"CreditNote"> | number
+    pdfFileId?: IntNullableFilter<"CreditNote"> | number | null
+    createdAt?: DateTimeFilter<"CreditNote"> | Date | string
+    updatedAt?: DateTimeFilter<"CreditNote"> | Date | string
+    pdfFile?: XOR<FileObjectNullableRelationFilter, FileObjectWhereInput> | null
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
+    invoice?: XOR<InvoiceNullableRelationFilter, InvoiceWhereInput> | null
+    receipt?: XOR<ReturnReceiptNullableRelationFilter, ReturnReceiptWhereInput> | null
+    issuedBy?: XOR<UserRelationFilter, UserWhereInput>
+  }, "id" | "publicId" | "creditNoteNumber">
+
+  export type CreditNoteOrderByWithAggregationInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    creditNoteNumber?: SortOrderInput | SortOrder
+    bookingId?: SortOrder
+    invoiceId?: SortOrderInput | SortOrder
+    receiptId?: SortOrderInput | SortOrder
+    amount?: SortOrder
+    reason?: SortOrder
+    status?: SortOrder
+    issuedById?: SortOrder
+    pdfFileId?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: CreditNoteCountOrderByAggregateInput
+    _avg?: CreditNoteAvgOrderByAggregateInput
+    _max?: CreditNoteMaxOrderByAggregateInput
+    _min?: CreditNoteMinOrderByAggregateInput
+    _sum?: CreditNoteSumOrderByAggregateInput
+  }
+
+  export type CreditNoteScalarWhereWithAggregatesInput = {
+    AND?: CreditNoteScalarWhereWithAggregatesInput | CreditNoteScalarWhereWithAggregatesInput[]
+    OR?: CreditNoteScalarWhereWithAggregatesInput[]
+    NOT?: CreditNoteScalarWhereWithAggregatesInput | CreditNoteScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"CreditNote"> | number
+    publicId?: StringWithAggregatesFilter<"CreditNote"> | string
+    creditNoteNumber?: StringNullableWithAggregatesFilter<"CreditNote"> | string | null
+    bookingId?: IntWithAggregatesFilter<"CreditNote"> | number
+    invoiceId?: IntNullableWithAggregatesFilter<"CreditNote"> | number | null
+    receiptId?: IntNullableWithAggregatesFilter<"CreditNote"> | number | null
+    amount?: DecimalWithAggregatesFilter<"CreditNote"> | Decimal | DecimalJsLike | number | string
+    reason?: StringWithAggregatesFilter<"CreditNote"> | string
+    status?: EnumCreditNoteStatusWithAggregatesFilter<"CreditNote"> | $Enums.CreditNoteStatus
+    issuedById?: IntWithAggregatesFilter<"CreditNote"> | number
+    pdfFileId?: IntNullableWithAggregatesFilter<"CreditNote"> | number | null
+    createdAt?: DateTimeWithAggregatesFilter<"CreditNote"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"CreditNote"> | Date | string
+  }
+
   export type UserCreateInput = {
     publicId: string
     name: string
@@ -85805,6 +87414,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -85853,6 +87463,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUpdateInput = {
@@ -85900,6 +87511,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -85948,6 +87560,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -86352,6 +87965,7 @@ export namespace Prisma {
     invoicePdfs?: InvoiceCreateNestedManyWithoutInvoicePdfFileInput
     cancellationInvoices?: CancellationInvoiceCreateNestedManyWithoutInvoicePdfFileInput
     returnReceiptPdfs?: ReturnReceiptCreateNestedManyWithoutReceiptPdfFileInput
+    creditNotePdfs?: CreditNoteCreateNestedManyWithoutPdfFileInput
   }
 
   export type FileObjectUncheckedCreateInput = {
@@ -86369,6 +87983,7 @@ export namespace Prisma {
     invoicePdfs?: InvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
     cancellationInvoices?: CancellationInvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
     returnReceiptPdfs?: ReturnReceiptUncheckedCreateNestedManyWithoutReceiptPdfFileInput
+    creditNotePdfs?: CreditNoteUncheckedCreateNestedManyWithoutPdfFileInput
   }
 
   export type FileObjectUpdateInput = {
@@ -86385,6 +88000,7 @@ export namespace Prisma {
     invoicePdfs?: InvoiceUpdateManyWithoutInvoicePdfFileNestedInput
     cancellationInvoices?: CancellationInvoiceUpdateManyWithoutInvoicePdfFileNestedInput
     returnReceiptPdfs?: ReturnReceiptUpdateManyWithoutReceiptPdfFileNestedInput
+    creditNotePdfs?: CreditNoteUpdateManyWithoutPdfFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateInput = {
@@ -86402,6 +88018,7 @@ export namespace Prisma {
     invoicePdfs?: InvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
     cancellationInvoices?: CancellationInvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
     returnReceiptPdfs?: ReturnReceiptUncheckedUpdateManyWithoutReceiptPdfFileNestedInput
+    creditNotePdfs?: CreditNoteUncheckedUpdateManyWithoutPdfFileNestedInput
   }
 
   export type FileObjectCreateManyInput = {
@@ -87810,6 +89427,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateInput = {
@@ -87894,6 +89512,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUpdateInput = {
@@ -87977,6 +89596,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateInput = {
@@ -88061,6 +89681,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingCreateManyInput = {
@@ -88770,6 +90391,7 @@ export namespace Prisma {
     booking: BookingCreateNestedOneWithoutInvoiceInput
     items?: InvoiceItemCreateNestedManyWithoutInvoiceInput
     payments?: PaymentCreateNestedManyWithoutInvoiceInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutInvoiceInput
   }
 
   export type InvoiceUncheckedCreateInput = {
@@ -88788,6 +90410,7 @@ export namespace Prisma {
     createdAt?: Date | string
     items?: InvoiceItemUncheckedCreateNestedManyWithoutInvoiceInput
     payments?: PaymentUncheckedCreateNestedManyWithoutInvoiceInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutInvoiceInput
   }
 
   export type InvoiceUpdateInput = {
@@ -88805,6 +90428,7 @@ export namespace Prisma {
     booking?: BookingUpdateOneRequiredWithoutInvoiceNestedInput
     items?: InvoiceItemUpdateManyWithoutInvoiceNestedInput
     payments?: PaymentUpdateManyWithoutInvoiceNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutInvoiceNestedInput
   }
 
   export type InvoiceUncheckedUpdateInput = {
@@ -88823,6 +90447,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: InvoiceItemUncheckedUpdateManyWithoutInvoiceNestedInput
     payments?: PaymentUncheckedUpdateManyWithoutInvoiceNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutInvoiceNestedInput
   }
 
   export type InvoiceCreateManyInput = {
@@ -89511,6 +91136,7 @@ export namespace Prisma {
     createdAt?: Date | string
     receiptPdfFile?: FileObjectCreateNestedOneWithoutReturnReceiptPdfsInput
     booking: BookingCreateNestedOneWithoutReturnReceiptInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutReceiptInput
   }
 
   export type ReturnReceiptUncheckedCreateInput = {
@@ -89526,6 +91152,7 @@ export namespace Prisma {
     receiptPdfFileId?: number | null
     generatedAt?: Date | string | null
     createdAt?: Date | string
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutReceiptInput
   }
 
   export type ReturnReceiptUpdateInput = {
@@ -89540,6 +91167,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     receiptPdfFile?: FileObjectUpdateOneWithoutReturnReceiptPdfsNestedInput
     booking?: BookingUpdateOneRequiredWithoutReturnReceiptNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutReceiptNestedInput
   }
 
   export type ReturnReceiptUncheckedUpdateInput = {
@@ -89555,6 +91183,7 @@ export namespace Prisma {
     receiptPdfFileId?: NullableIntFieldUpdateOperationsInput | number | null
     generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutReceiptNestedInput
   }
 
   export type ReturnReceiptCreateManyInput = {
@@ -92640,6 +94269,110 @@ export namespace Prisma {
     clearedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type CreditNoteCreateInput = {
+    publicId: string
+    creditNoteNumber?: string | null
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.CreditNoteStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    pdfFile?: FileObjectCreateNestedOneWithoutCreditNotePdfsInput
+    booking: BookingCreateNestedOneWithoutCreditNotesInput
+    invoice?: InvoiceCreateNestedOneWithoutCreditNotesInput
+    receipt?: ReturnReceiptCreateNestedOneWithoutCreditNotesInput
+    issuedBy: UserCreateNestedOneWithoutCreditNotesIssuedInput
+  }
+
+  export type CreditNoteUncheckedCreateInput = {
+    id?: number
+    publicId: string
+    creditNoteNumber?: string | null
+    bookingId: number
+    invoiceId?: number | null
+    receiptId?: number | null
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.CreditNoteStatus
+    issuedById: number
+    pdfFileId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type CreditNoteUpdateInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    creditNoteNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumCreditNoteStatusFieldUpdateOperationsInput | $Enums.CreditNoteStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    pdfFile?: FileObjectUpdateOneWithoutCreditNotePdfsNestedInput
+    booking?: BookingUpdateOneRequiredWithoutCreditNotesNestedInput
+    invoice?: InvoiceUpdateOneWithoutCreditNotesNestedInput
+    receipt?: ReturnReceiptUpdateOneWithoutCreditNotesNestedInput
+    issuedBy?: UserUpdateOneRequiredWithoutCreditNotesIssuedNestedInput
+  }
+
+  export type CreditNoteUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    creditNoteNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    bookingId?: IntFieldUpdateOperationsInput | number
+    invoiceId?: NullableIntFieldUpdateOperationsInput | number | null
+    receiptId?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumCreditNoteStatusFieldUpdateOperationsInput | $Enums.CreditNoteStatus
+    issuedById?: IntFieldUpdateOperationsInput | number
+    pdfFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CreditNoteCreateManyInput = {
+    id?: number
+    publicId: string
+    creditNoteNumber?: string | null
+    bookingId: number
+    invoiceId?: number | null
+    receiptId?: number | null
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.CreditNoteStatus
+    issuedById: number
+    pdfFileId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type CreditNoteUpdateManyMutationInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    creditNoteNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumCreditNoteStatusFieldUpdateOperationsInput | $Enums.CreditNoteStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CreditNoteUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    creditNoteNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    bookingId?: IntFieldUpdateOperationsInput | number
+    invoiceId?: NullableIntFieldUpdateOperationsInput | number | null
+    receiptId?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumCreditNoteStatusFieldUpdateOperationsInput | $Enums.CreditNoteStatus
+    issuedById?: IntFieldUpdateOperationsInput | number
+    pdfFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type IntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -92858,6 +94591,12 @@ export namespace Prisma {
     none?: CreditClearanceWhereInput
   }
 
+  export type CreditNoteListRelationFilter = {
+    every?: CreditNoteWhereInput
+    some?: CreditNoteWhereInput
+    none?: CreditNoteWhereInput
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -92940,6 +94679,10 @@ export namespace Prisma {
   }
 
   export type CreditClearanceOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type CreditNoteOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -98362,6 +100105,91 @@ export namespace Prisma {
     clearedById?: SortOrder
   }
 
+  export type EnumCreditNoteStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.CreditNoteStatus | EnumCreditNoteStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CreditNoteStatus[] | ListEnumCreditNoteStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CreditNoteStatus[] | ListEnumCreditNoteStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumCreditNoteStatusFilter<$PrismaModel> | $Enums.CreditNoteStatus
+  }
+
+  export type CreditNoteCountOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    creditNoteNumber?: SortOrder
+    bookingId?: SortOrder
+    invoiceId?: SortOrder
+    receiptId?: SortOrder
+    amount?: SortOrder
+    reason?: SortOrder
+    status?: SortOrder
+    issuedById?: SortOrder
+    pdfFileId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type CreditNoteAvgOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    invoiceId?: SortOrder
+    receiptId?: SortOrder
+    amount?: SortOrder
+    issuedById?: SortOrder
+    pdfFileId?: SortOrder
+  }
+
+  export type CreditNoteMaxOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    creditNoteNumber?: SortOrder
+    bookingId?: SortOrder
+    invoiceId?: SortOrder
+    receiptId?: SortOrder
+    amount?: SortOrder
+    reason?: SortOrder
+    status?: SortOrder
+    issuedById?: SortOrder
+    pdfFileId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type CreditNoteMinOrderByAggregateInput = {
+    id?: SortOrder
+    publicId?: SortOrder
+    creditNoteNumber?: SortOrder
+    bookingId?: SortOrder
+    invoiceId?: SortOrder
+    receiptId?: SortOrder
+    amount?: SortOrder
+    reason?: SortOrder
+    status?: SortOrder
+    issuedById?: SortOrder
+    pdfFileId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type CreditNoteSumOrderByAggregateInput = {
+    id?: SortOrder
+    bookingId?: SortOrder
+    invoiceId?: SortOrder
+    receiptId?: SortOrder
+    amount?: SortOrder
+    issuedById?: SortOrder
+    pdfFileId?: SortOrder
+  }
+
+  export type EnumCreditNoteStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.CreditNoteStatus | EnumCreditNoteStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CreditNoteStatus[] | ListEnumCreditNoteStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CreditNoteStatus[] | ListEnumCreditNoteStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumCreditNoteStatusWithAggregatesFilter<$PrismaModel> | $Enums.CreditNoteStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumCreditNoteStatusFilter<$PrismaModel>
+    _max?: NestedEnumCreditNoteStatusFilter<$PrismaModel>
+  }
+
   export type BranchCreateNestedOneWithoutUsersInput = {
     create?: XOR<BranchCreateWithoutUsersInput, BranchUncheckedCreateWithoutUsersInput>
     connectOrCreate?: BranchCreateOrConnectWithoutUsersInput
@@ -98591,6 +100419,13 @@ export namespace Prisma {
     connect?: CreditClearanceWhereUniqueInput | CreditClearanceWhereUniqueInput[]
   }
 
+  export type CreditNoteCreateNestedManyWithoutIssuedByInput = {
+    create?: XOR<CreditNoteCreateWithoutIssuedByInput, CreditNoteUncheckedCreateWithoutIssuedByInput> | CreditNoteCreateWithoutIssuedByInput[] | CreditNoteUncheckedCreateWithoutIssuedByInput[]
+    connectOrCreate?: CreditNoteCreateOrConnectWithoutIssuedByInput | CreditNoteCreateOrConnectWithoutIssuedByInput[]
+    createMany?: CreditNoteCreateManyIssuedByInputEnvelope
+    connect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+  }
+
   export type EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput = {
     create?: XOR<EmailVerificationOtpCreateWithoutUserInput, EmailVerificationOtpUncheckedCreateWithoutUserInput> | EmailVerificationOtpCreateWithoutUserInput[] | EmailVerificationOtpUncheckedCreateWithoutUserInput[]
     connectOrCreate?: EmailVerificationOtpCreateOrConnectWithoutUserInput | EmailVerificationOtpCreateOrConnectWithoutUserInput[]
@@ -98812,6 +100647,13 @@ export namespace Prisma {
     connectOrCreate?: CreditClearanceCreateOrConnectWithoutClearedByInput | CreditClearanceCreateOrConnectWithoutClearedByInput[]
     createMany?: CreditClearanceCreateManyClearedByInputEnvelope
     connect?: CreditClearanceWhereUniqueInput | CreditClearanceWhereUniqueInput[]
+  }
+
+  export type CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput = {
+    create?: XOR<CreditNoteCreateWithoutIssuedByInput, CreditNoteUncheckedCreateWithoutIssuedByInput> | CreditNoteCreateWithoutIssuedByInput[] | CreditNoteUncheckedCreateWithoutIssuedByInput[]
+    connectOrCreate?: CreditNoteCreateOrConnectWithoutIssuedByInput | CreditNoteCreateOrConnectWithoutIssuedByInput[]
+    createMany?: CreditNoteCreateManyIssuedByInputEnvelope
+    connect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -99292,6 +101134,20 @@ export namespace Prisma {
     deleteMany?: CreditClearanceScalarWhereInput | CreditClearanceScalarWhereInput[]
   }
 
+  export type CreditNoteUpdateManyWithoutIssuedByNestedInput = {
+    create?: XOR<CreditNoteCreateWithoutIssuedByInput, CreditNoteUncheckedCreateWithoutIssuedByInput> | CreditNoteCreateWithoutIssuedByInput[] | CreditNoteUncheckedCreateWithoutIssuedByInput[]
+    connectOrCreate?: CreditNoteCreateOrConnectWithoutIssuedByInput | CreditNoteCreateOrConnectWithoutIssuedByInput[]
+    upsert?: CreditNoteUpsertWithWhereUniqueWithoutIssuedByInput | CreditNoteUpsertWithWhereUniqueWithoutIssuedByInput[]
+    createMany?: CreditNoteCreateManyIssuedByInputEnvelope
+    set?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    disconnect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    delete?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    connect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    update?: CreditNoteUpdateWithWhereUniqueWithoutIssuedByInput | CreditNoteUpdateWithWhereUniqueWithoutIssuedByInput[]
+    updateMany?: CreditNoteUpdateManyWithWhereWithoutIssuedByInput | CreditNoteUpdateManyWithWhereWithoutIssuedByInput[]
+    deleteMany?: CreditNoteScalarWhereInput | CreditNoteScalarWhereInput[]
+  }
+
   export type IntFieldUpdateOperationsInput = {
     set?: number
     increment?: number
@@ -99752,6 +101608,20 @@ export namespace Prisma {
     deleteMany?: CreditClearanceScalarWhereInput | CreditClearanceScalarWhereInput[]
   }
 
+  export type CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput = {
+    create?: XOR<CreditNoteCreateWithoutIssuedByInput, CreditNoteUncheckedCreateWithoutIssuedByInput> | CreditNoteCreateWithoutIssuedByInput[] | CreditNoteUncheckedCreateWithoutIssuedByInput[]
+    connectOrCreate?: CreditNoteCreateOrConnectWithoutIssuedByInput | CreditNoteCreateOrConnectWithoutIssuedByInput[]
+    upsert?: CreditNoteUpsertWithWhereUniqueWithoutIssuedByInput | CreditNoteUpsertWithWhereUniqueWithoutIssuedByInput[]
+    createMany?: CreditNoteCreateManyIssuedByInputEnvelope
+    set?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    disconnect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    delete?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    connect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    update?: CreditNoteUpdateWithWhereUniqueWithoutIssuedByInput | CreditNoteUpdateWithWhereUniqueWithoutIssuedByInput[]
+    updateMany?: CreditNoteUpdateManyWithWhereWithoutIssuedByInput | CreditNoteUpdateManyWithWhereWithoutIssuedByInput[]
+    deleteMany?: CreditNoteScalarWhereInput | CreditNoteScalarWhereInput[]
+  }
+
   export type UserCreateNestedOneWithoutProvidersInput = {
     create?: XOR<UserCreateWithoutProvidersInput, UserUncheckedCreateWithoutProvidersInput>
     connectOrCreate?: UserCreateOrConnectWithoutProvidersInput
@@ -100051,6 +101921,13 @@ export namespace Prisma {
     connect?: ReturnReceiptWhereUniqueInput | ReturnReceiptWhereUniqueInput[]
   }
 
+  export type CreditNoteCreateNestedManyWithoutPdfFileInput = {
+    create?: XOR<CreditNoteCreateWithoutPdfFileInput, CreditNoteUncheckedCreateWithoutPdfFileInput> | CreditNoteCreateWithoutPdfFileInput[] | CreditNoteUncheckedCreateWithoutPdfFileInput[]
+    connectOrCreate?: CreditNoteCreateOrConnectWithoutPdfFileInput | CreditNoteCreateOrConnectWithoutPdfFileInput[]
+    createMany?: CreditNoteCreateManyPdfFileInputEnvelope
+    connect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+  }
+
   export type BookingPhotoUncheckedCreateNestedManyWithoutFileInput = {
     create?: XOR<BookingPhotoCreateWithoutFileInput, BookingPhotoUncheckedCreateWithoutFileInput> | BookingPhotoCreateWithoutFileInput[] | BookingPhotoUncheckedCreateWithoutFileInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutFileInput | BookingPhotoCreateOrConnectWithoutFileInput[]
@@ -100098,6 +101975,13 @@ export namespace Prisma {
     connectOrCreate?: ReturnReceiptCreateOrConnectWithoutReceiptPdfFileInput | ReturnReceiptCreateOrConnectWithoutReceiptPdfFileInput[]
     createMany?: ReturnReceiptCreateManyReceiptPdfFileInputEnvelope
     connect?: ReturnReceiptWhereUniqueInput | ReturnReceiptWhereUniqueInput[]
+  }
+
+  export type CreditNoteUncheckedCreateNestedManyWithoutPdfFileInput = {
+    create?: XOR<CreditNoteCreateWithoutPdfFileInput, CreditNoteUncheckedCreateWithoutPdfFileInput> | CreditNoteCreateWithoutPdfFileInput[] | CreditNoteUncheckedCreateWithoutPdfFileInput[]
+    connectOrCreate?: CreditNoteCreateOrConnectWithoutPdfFileInput | CreditNoteCreateOrConnectWithoutPdfFileInput[]
+    createMany?: CreditNoteCreateManyPdfFileInputEnvelope
+    connect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
   }
 
   export type BookingPhotoUpdateManyWithoutFileNestedInput = {
@@ -100198,6 +102082,20 @@ export namespace Prisma {
     deleteMany?: ReturnReceiptScalarWhereInput | ReturnReceiptScalarWhereInput[]
   }
 
+  export type CreditNoteUpdateManyWithoutPdfFileNestedInput = {
+    create?: XOR<CreditNoteCreateWithoutPdfFileInput, CreditNoteUncheckedCreateWithoutPdfFileInput> | CreditNoteCreateWithoutPdfFileInput[] | CreditNoteUncheckedCreateWithoutPdfFileInput[]
+    connectOrCreate?: CreditNoteCreateOrConnectWithoutPdfFileInput | CreditNoteCreateOrConnectWithoutPdfFileInput[]
+    upsert?: CreditNoteUpsertWithWhereUniqueWithoutPdfFileInput | CreditNoteUpsertWithWhereUniqueWithoutPdfFileInput[]
+    createMany?: CreditNoteCreateManyPdfFileInputEnvelope
+    set?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    disconnect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    delete?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    connect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    update?: CreditNoteUpdateWithWhereUniqueWithoutPdfFileInput | CreditNoteUpdateWithWhereUniqueWithoutPdfFileInput[]
+    updateMany?: CreditNoteUpdateManyWithWhereWithoutPdfFileInput | CreditNoteUpdateManyWithWhereWithoutPdfFileInput[]
+    deleteMany?: CreditNoteScalarWhereInput | CreditNoteScalarWhereInput[]
+  }
+
   export type BookingPhotoUncheckedUpdateManyWithoutFileNestedInput = {
     create?: XOR<BookingPhotoCreateWithoutFileInput, BookingPhotoUncheckedCreateWithoutFileInput> | BookingPhotoCreateWithoutFileInput[] | BookingPhotoUncheckedCreateWithoutFileInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutFileInput | BookingPhotoCreateOrConnectWithoutFileInput[]
@@ -100294,6 +102192,20 @@ export namespace Prisma {
     update?: ReturnReceiptUpdateWithWhereUniqueWithoutReceiptPdfFileInput | ReturnReceiptUpdateWithWhereUniqueWithoutReceiptPdfFileInput[]
     updateMany?: ReturnReceiptUpdateManyWithWhereWithoutReceiptPdfFileInput | ReturnReceiptUpdateManyWithWhereWithoutReceiptPdfFileInput[]
     deleteMany?: ReturnReceiptScalarWhereInput | ReturnReceiptScalarWhereInput[]
+  }
+
+  export type CreditNoteUncheckedUpdateManyWithoutPdfFileNestedInput = {
+    create?: XOR<CreditNoteCreateWithoutPdfFileInput, CreditNoteUncheckedCreateWithoutPdfFileInput> | CreditNoteCreateWithoutPdfFileInput[] | CreditNoteUncheckedCreateWithoutPdfFileInput[]
+    connectOrCreate?: CreditNoteCreateOrConnectWithoutPdfFileInput | CreditNoteCreateOrConnectWithoutPdfFileInput[]
+    upsert?: CreditNoteUpsertWithWhereUniqueWithoutPdfFileInput | CreditNoteUpsertWithWhereUniqueWithoutPdfFileInput[]
+    createMany?: CreditNoteCreateManyPdfFileInputEnvelope
+    set?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    disconnect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    delete?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    connect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    update?: CreditNoteUpdateWithWhereUniqueWithoutPdfFileInput | CreditNoteUpdateWithWhereUniqueWithoutPdfFileInput[]
+    updateMany?: CreditNoteUpdateManyWithWhereWithoutPdfFileInput | CreditNoteUpdateManyWithWhereWithoutPdfFileInput[]
+    deleteMany?: CreditNoteScalarWhereInput | CreditNoteScalarWhereInput[]
   }
 
   export type UserCreateNestedManyWithoutBranchInput = {
@@ -102341,6 +104253,13 @@ export namespace Prisma {
     connect?: CustomerCreditEntryWhereUniqueInput
   }
 
+  export type CreditNoteCreateNestedManyWithoutBookingInput = {
+    create?: XOR<CreditNoteCreateWithoutBookingInput, CreditNoteUncheckedCreateWithoutBookingInput> | CreditNoteCreateWithoutBookingInput[] | CreditNoteUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: CreditNoteCreateOrConnectWithoutBookingInput | CreditNoteCreateOrConnectWithoutBookingInput[]
+    createMany?: CreditNoteCreateManyBookingInputEnvelope
+    connect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+  }
+
   export type BookingPhotoUncheckedCreateNestedManyWithoutBookingInput = {
     create?: XOR<BookingPhotoCreateWithoutBookingInput, BookingPhotoUncheckedCreateWithoutBookingInput> | BookingPhotoCreateWithoutBookingInput[] | BookingPhotoUncheckedCreateWithoutBookingInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutBookingInput | BookingPhotoCreateOrConnectWithoutBookingInput[]
@@ -102470,6 +104389,13 @@ export namespace Prisma {
     create?: XOR<CustomerCreditEntryCreateWithoutBookingInput, CustomerCreditEntryUncheckedCreateWithoutBookingInput>
     connectOrCreate?: CustomerCreditEntryCreateOrConnectWithoutBookingInput
     connect?: CustomerCreditEntryWhereUniqueInput
+  }
+
+  export type CreditNoteUncheckedCreateNestedManyWithoutBookingInput = {
+    create?: XOR<CreditNoteCreateWithoutBookingInput, CreditNoteUncheckedCreateWithoutBookingInput> | CreditNoteCreateWithoutBookingInput[] | CreditNoteUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: CreditNoteCreateOrConnectWithoutBookingInput | CreditNoteCreateOrConnectWithoutBookingInput[]
+    createMany?: CreditNoteCreateManyBookingInputEnvelope
+    connect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
   }
 
   export type NullableEnumRentalPeriodTypeFieldUpdateOperationsInput = {
@@ -102796,6 +104722,20 @@ export namespace Prisma {
     update?: XOR<XOR<CustomerCreditEntryUpdateToOneWithWhereWithoutBookingInput, CustomerCreditEntryUpdateWithoutBookingInput>, CustomerCreditEntryUncheckedUpdateWithoutBookingInput>
   }
 
+  export type CreditNoteUpdateManyWithoutBookingNestedInput = {
+    create?: XOR<CreditNoteCreateWithoutBookingInput, CreditNoteUncheckedCreateWithoutBookingInput> | CreditNoteCreateWithoutBookingInput[] | CreditNoteUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: CreditNoteCreateOrConnectWithoutBookingInput | CreditNoteCreateOrConnectWithoutBookingInput[]
+    upsert?: CreditNoteUpsertWithWhereUniqueWithoutBookingInput | CreditNoteUpsertWithWhereUniqueWithoutBookingInput[]
+    createMany?: CreditNoteCreateManyBookingInputEnvelope
+    set?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    disconnect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    delete?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    connect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    update?: CreditNoteUpdateWithWhereUniqueWithoutBookingInput | CreditNoteUpdateWithWhereUniqueWithoutBookingInput[]
+    updateMany?: CreditNoteUpdateManyWithWhereWithoutBookingInput | CreditNoteUpdateManyWithWhereWithoutBookingInput[]
+    deleteMany?: CreditNoteScalarWhereInput | CreditNoteScalarWhereInput[]
+  }
+
   export type BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput = {
     create?: XOR<BookingPhotoCreateWithoutBookingInput, BookingPhotoUncheckedCreateWithoutBookingInput> | BookingPhotoCreateWithoutBookingInput[] | BookingPhotoUncheckedCreateWithoutBookingInput[]
     connectOrCreate?: BookingPhotoCreateOrConnectWithoutBookingInput | BookingPhotoCreateOrConnectWithoutBookingInput[]
@@ -103040,6 +104980,20 @@ export namespace Prisma {
     update?: XOR<XOR<CustomerCreditEntryUpdateToOneWithWhereWithoutBookingInput, CustomerCreditEntryUpdateWithoutBookingInput>, CustomerCreditEntryUncheckedUpdateWithoutBookingInput>
   }
 
+  export type CreditNoteUncheckedUpdateManyWithoutBookingNestedInput = {
+    create?: XOR<CreditNoteCreateWithoutBookingInput, CreditNoteUncheckedCreateWithoutBookingInput> | CreditNoteCreateWithoutBookingInput[] | CreditNoteUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: CreditNoteCreateOrConnectWithoutBookingInput | CreditNoteCreateOrConnectWithoutBookingInput[]
+    upsert?: CreditNoteUpsertWithWhereUniqueWithoutBookingInput | CreditNoteUpsertWithWhereUniqueWithoutBookingInput[]
+    createMany?: CreditNoteCreateManyBookingInputEnvelope
+    set?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    disconnect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    delete?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    connect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    update?: CreditNoteUpdateWithWhereUniqueWithoutBookingInput | CreditNoteUpdateWithWhereUniqueWithoutBookingInput[]
+    updateMany?: CreditNoteUpdateManyWithWhereWithoutBookingInput | CreditNoteUpdateManyWithWhereWithoutBookingInput[]
+    deleteMany?: CreditNoteScalarWhereInput | CreditNoteScalarWhereInput[]
+  }
+
   export type VehicleCreateNestedOneWithoutBookingItemsInput = {
     create?: XOR<VehicleCreateWithoutBookingItemsInput, VehicleUncheckedCreateWithoutBookingItemsInput>
     connectOrCreate?: VehicleCreateOrConnectWithoutBookingItemsInput
@@ -103272,6 +105226,13 @@ export namespace Prisma {
     connect?: PaymentWhereUniqueInput | PaymentWhereUniqueInput[]
   }
 
+  export type CreditNoteCreateNestedManyWithoutInvoiceInput = {
+    create?: XOR<CreditNoteCreateWithoutInvoiceInput, CreditNoteUncheckedCreateWithoutInvoiceInput> | CreditNoteCreateWithoutInvoiceInput[] | CreditNoteUncheckedCreateWithoutInvoiceInput[]
+    connectOrCreate?: CreditNoteCreateOrConnectWithoutInvoiceInput | CreditNoteCreateOrConnectWithoutInvoiceInput[]
+    createMany?: CreditNoteCreateManyInvoiceInputEnvelope
+    connect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+  }
+
   export type InvoiceItemUncheckedCreateNestedManyWithoutInvoiceInput = {
     create?: XOR<InvoiceItemCreateWithoutInvoiceInput, InvoiceItemUncheckedCreateWithoutInvoiceInput> | InvoiceItemCreateWithoutInvoiceInput[] | InvoiceItemUncheckedCreateWithoutInvoiceInput[]
     connectOrCreate?: InvoiceItemCreateOrConnectWithoutInvoiceInput | InvoiceItemCreateOrConnectWithoutInvoiceInput[]
@@ -103284,6 +105245,13 @@ export namespace Prisma {
     connectOrCreate?: PaymentCreateOrConnectWithoutInvoiceInput | PaymentCreateOrConnectWithoutInvoiceInput[]
     createMany?: PaymentCreateManyInvoiceInputEnvelope
     connect?: PaymentWhereUniqueInput | PaymentWhereUniqueInput[]
+  }
+
+  export type CreditNoteUncheckedCreateNestedManyWithoutInvoiceInput = {
+    create?: XOR<CreditNoteCreateWithoutInvoiceInput, CreditNoteUncheckedCreateWithoutInvoiceInput> | CreditNoteCreateWithoutInvoiceInput[] | CreditNoteUncheckedCreateWithoutInvoiceInput[]
+    connectOrCreate?: CreditNoteCreateOrConnectWithoutInvoiceInput | CreditNoteCreateOrConnectWithoutInvoiceInput[]
+    createMany?: CreditNoteCreateManyInvoiceInputEnvelope
+    connect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
   }
 
   export type EnumInvoiceStatusFieldUpdateOperationsInput = {
@@ -103336,6 +105304,20 @@ export namespace Prisma {
     deleteMany?: PaymentScalarWhereInput | PaymentScalarWhereInput[]
   }
 
+  export type CreditNoteUpdateManyWithoutInvoiceNestedInput = {
+    create?: XOR<CreditNoteCreateWithoutInvoiceInput, CreditNoteUncheckedCreateWithoutInvoiceInput> | CreditNoteCreateWithoutInvoiceInput[] | CreditNoteUncheckedCreateWithoutInvoiceInput[]
+    connectOrCreate?: CreditNoteCreateOrConnectWithoutInvoiceInput | CreditNoteCreateOrConnectWithoutInvoiceInput[]
+    upsert?: CreditNoteUpsertWithWhereUniqueWithoutInvoiceInput | CreditNoteUpsertWithWhereUniqueWithoutInvoiceInput[]
+    createMany?: CreditNoteCreateManyInvoiceInputEnvelope
+    set?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    disconnect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    delete?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    connect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    update?: CreditNoteUpdateWithWhereUniqueWithoutInvoiceInput | CreditNoteUpdateWithWhereUniqueWithoutInvoiceInput[]
+    updateMany?: CreditNoteUpdateManyWithWhereWithoutInvoiceInput | CreditNoteUpdateManyWithWhereWithoutInvoiceInput[]
+    deleteMany?: CreditNoteScalarWhereInput | CreditNoteScalarWhereInput[]
+  }
+
   export type InvoiceItemUncheckedUpdateManyWithoutInvoiceNestedInput = {
     create?: XOR<InvoiceItemCreateWithoutInvoiceInput, InvoiceItemUncheckedCreateWithoutInvoiceInput> | InvoiceItemCreateWithoutInvoiceInput[] | InvoiceItemUncheckedCreateWithoutInvoiceInput[]
     connectOrCreate?: InvoiceItemCreateOrConnectWithoutInvoiceInput | InvoiceItemCreateOrConnectWithoutInvoiceInput[]
@@ -103362,6 +105344,20 @@ export namespace Prisma {
     update?: PaymentUpdateWithWhereUniqueWithoutInvoiceInput | PaymentUpdateWithWhereUniqueWithoutInvoiceInput[]
     updateMany?: PaymentUpdateManyWithWhereWithoutInvoiceInput | PaymentUpdateManyWithWhereWithoutInvoiceInput[]
     deleteMany?: PaymentScalarWhereInput | PaymentScalarWhereInput[]
+  }
+
+  export type CreditNoteUncheckedUpdateManyWithoutInvoiceNestedInput = {
+    create?: XOR<CreditNoteCreateWithoutInvoiceInput, CreditNoteUncheckedCreateWithoutInvoiceInput> | CreditNoteCreateWithoutInvoiceInput[] | CreditNoteUncheckedCreateWithoutInvoiceInput[]
+    connectOrCreate?: CreditNoteCreateOrConnectWithoutInvoiceInput | CreditNoteCreateOrConnectWithoutInvoiceInput[]
+    upsert?: CreditNoteUpsertWithWhereUniqueWithoutInvoiceInput | CreditNoteUpsertWithWhereUniqueWithoutInvoiceInput[]
+    createMany?: CreditNoteCreateManyInvoiceInputEnvelope
+    set?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    disconnect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    delete?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    connect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    update?: CreditNoteUpdateWithWhereUniqueWithoutInvoiceInput | CreditNoteUpdateWithWhereUniqueWithoutInvoiceInput[]
+    updateMany?: CreditNoteUpdateManyWithWhereWithoutInvoiceInput | CreditNoteUpdateManyWithWhereWithoutInvoiceInput[]
+    deleteMany?: CreditNoteScalarWhereInput | CreditNoteScalarWhereInput[]
   }
 
   export type InvoiceCreateNestedOneWithoutItemsInput = {
@@ -103517,6 +105513,20 @@ export namespace Prisma {
     connect?: BookingWhereUniqueInput
   }
 
+  export type CreditNoteCreateNestedManyWithoutReceiptInput = {
+    create?: XOR<CreditNoteCreateWithoutReceiptInput, CreditNoteUncheckedCreateWithoutReceiptInput> | CreditNoteCreateWithoutReceiptInput[] | CreditNoteUncheckedCreateWithoutReceiptInput[]
+    connectOrCreate?: CreditNoteCreateOrConnectWithoutReceiptInput | CreditNoteCreateOrConnectWithoutReceiptInput[]
+    createMany?: CreditNoteCreateManyReceiptInputEnvelope
+    connect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+  }
+
+  export type CreditNoteUncheckedCreateNestedManyWithoutReceiptInput = {
+    create?: XOR<CreditNoteCreateWithoutReceiptInput, CreditNoteUncheckedCreateWithoutReceiptInput> | CreditNoteCreateWithoutReceiptInput[] | CreditNoteUncheckedCreateWithoutReceiptInput[]
+    connectOrCreate?: CreditNoteCreateOrConnectWithoutReceiptInput | CreditNoteCreateOrConnectWithoutReceiptInput[]
+    createMany?: CreditNoteCreateManyReceiptInputEnvelope
+    connect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+  }
+
   export type FileObjectUpdateOneWithoutReturnReceiptPdfsNestedInput = {
     create?: XOR<FileObjectCreateWithoutReturnReceiptPdfsInput, FileObjectUncheckedCreateWithoutReturnReceiptPdfsInput>
     connectOrCreate?: FileObjectCreateOrConnectWithoutReturnReceiptPdfsInput
@@ -103533,6 +105543,34 @@ export namespace Prisma {
     upsert?: BookingUpsertWithoutReturnReceiptInput
     connect?: BookingWhereUniqueInput
     update?: XOR<XOR<BookingUpdateToOneWithWhereWithoutReturnReceiptInput, BookingUpdateWithoutReturnReceiptInput>, BookingUncheckedUpdateWithoutReturnReceiptInput>
+  }
+
+  export type CreditNoteUpdateManyWithoutReceiptNestedInput = {
+    create?: XOR<CreditNoteCreateWithoutReceiptInput, CreditNoteUncheckedCreateWithoutReceiptInput> | CreditNoteCreateWithoutReceiptInput[] | CreditNoteUncheckedCreateWithoutReceiptInput[]
+    connectOrCreate?: CreditNoteCreateOrConnectWithoutReceiptInput | CreditNoteCreateOrConnectWithoutReceiptInput[]
+    upsert?: CreditNoteUpsertWithWhereUniqueWithoutReceiptInput | CreditNoteUpsertWithWhereUniqueWithoutReceiptInput[]
+    createMany?: CreditNoteCreateManyReceiptInputEnvelope
+    set?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    disconnect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    delete?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    connect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    update?: CreditNoteUpdateWithWhereUniqueWithoutReceiptInput | CreditNoteUpdateWithWhereUniqueWithoutReceiptInput[]
+    updateMany?: CreditNoteUpdateManyWithWhereWithoutReceiptInput | CreditNoteUpdateManyWithWhereWithoutReceiptInput[]
+    deleteMany?: CreditNoteScalarWhereInput | CreditNoteScalarWhereInput[]
+  }
+
+  export type CreditNoteUncheckedUpdateManyWithoutReceiptNestedInput = {
+    create?: XOR<CreditNoteCreateWithoutReceiptInput, CreditNoteUncheckedCreateWithoutReceiptInput> | CreditNoteCreateWithoutReceiptInput[] | CreditNoteUncheckedCreateWithoutReceiptInput[]
+    connectOrCreate?: CreditNoteCreateOrConnectWithoutReceiptInput | CreditNoteCreateOrConnectWithoutReceiptInput[]
+    upsert?: CreditNoteUpsertWithWhereUniqueWithoutReceiptInput | CreditNoteUpsertWithWhereUniqueWithoutReceiptInput[]
+    createMany?: CreditNoteCreateManyReceiptInputEnvelope
+    set?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    disconnect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    delete?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    connect?: CreditNoteWhereUniqueInput | CreditNoteWhereUniqueInput[]
+    update?: CreditNoteUpdateWithWhereUniqueWithoutReceiptInput | CreditNoteUpdateWithWhereUniqueWithoutReceiptInput[]
+    updateMany?: CreditNoteUpdateManyWithWhereWithoutReceiptInput | CreditNoteUpdateManyWithWhereWithoutReceiptInput[]
+    deleteMany?: CreditNoteScalarWhereInput | CreditNoteScalarWhereInput[]
   }
 
   export type BranchFeatureFlagCreateNestedManyWithoutFlagInput = {
@@ -105176,6 +107214,86 @@ export namespace Prisma {
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutCreditClearancesActedInput, UserUpdateWithoutCreditClearancesActedInput>, UserUncheckedUpdateWithoutCreditClearancesActedInput>
   }
 
+  export type FileObjectCreateNestedOneWithoutCreditNotePdfsInput = {
+    create?: XOR<FileObjectCreateWithoutCreditNotePdfsInput, FileObjectUncheckedCreateWithoutCreditNotePdfsInput>
+    connectOrCreate?: FileObjectCreateOrConnectWithoutCreditNotePdfsInput
+    connect?: FileObjectWhereUniqueInput
+  }
+
+  export type BookingCreateNestedOneWithoutCreditNotesInput = {
+    create?: XOR<BookingCreateWithoutCreditNotesInput, BookingUncheckedCreateWithoutCreditNotesInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutCreditNotesInput
+    connect?: BookingWhereUniqueInput
+  }
+
+  export type InvoiceCreateNestedOneWithoutCreditNotesInput = {
+    create?: XOR<InvoiceCreateWithoutCreditNotesInput, InvoiceUncheckedCreateWithoutCreditNotesInput>
+    connectOrCreate?: InvoiceCreateOrConnectWithoutCreditNotesInput
+    connect?: InvoiceWhereUniqueInput
+  }
+
+  export type ReturnReceiptCreateNestedOneWithoutCreditNotesInput = {
+    create?: XOR<ReturnReceiptCreateWithoutCreditNotesInput, ReturnReceiptUncheckedCreateWithoutCreditNotesInput>
+    connectOrCreate?: ReturnReceiptCreateOrConnectWithoutCreditNotesInput
+    connect?: ReturnReceiptWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutCreditNotesIssuedInput = {
+    create?: XOR<UserCreateWithoutCreditNotesIssuedInput, UserUncheckedCreateWithoutCreditNotesIssuedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutCreditNotesIssuedInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type EnumCreditNoteStatusFieldUpdateOperationsInput = {
+    set?: $Enums.CreditNoteStatus
+  }
+
+  export type FileObjectUpdateOneWithoutCreditNotePdfsNestedInput = {
+    create?: XOR<FileObjectCreateWithoutCreditNotePdfsInput, FileObjectUncheckedCreateWithoutCreditNotePdfsInput>
+    connectOrCreate?: FileObjectCreateOrConnectWithoutCreditNotePdfsInput
+    upsert?: FileObjectUpsertWithoutCreditNotePdfsInput
+    disconnect?: FileObjectWhereInput | boolean
+    delete?: FileObjectWhereInput | boolean
+    connect?: FileObjectWhereUniqueInput
+    update?: XOR<XOR<FileObjectUpdateToOneWithWhereWithoutCreditNotePdfsInput, FileObjectUpdateWithoutCreditNotePdfsInput>, FileObjectUncheckedUpdateWithoutCreditNotePdfsInput>
+  }
+
+  export type BookingUpdateOneRequiredWithoutCreditNotesNestedInput = {
+    create?: XOR<BookingCreateWithoutCreditNotesInput, BookingUncheckedCreateWithoutCreditNotesInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutCreditNotesInput
+    upsert?: BookingUpsertWithoutCreditNotesInput
+    connect?: BookingWhereUniqueInput
+    update?: XOR<XOR<BookingUpdateToOneWithWhereWithoutCreditNotesInput, BookingUpdateWithoutCreditNotesInput>, BookingUncheckedUpdateWithoutCreditNotesInput>
+  }
+
+  export type InvoiceUpdateOneWithoutCreditNotesNestedInput = {
+    create?: XOR<InvoiceCreateWithoutCreditNotesInput, InvoiceUncheckedCreateWithoutCreditNotesInput>
+    connectOrCreate?: InvoiceCreateOrConnectWithoutCreditNotesInput
+    upsert?: InvoiceUpsertWithoutCreditNotesInput
+    disconnect?: InvoiceWhereInput | boolean
+    delete?: InvoiceWhereInput | boolean
+    connect?: InvoiceWhereUniqueInput
+    update?: XOR<XOR<InvoiceUpdateToOneWithWhereWithoutCreditNotesInput, InvoiceUpdateWithoutCreditNotesInput>, InvoiceUncheckedUpdateWithoutCreditNotesInput>
+  }
+
+  export type ReturnReceiptUpdateOneWithoutCreditNotesNestedInput = {
+    create?: XOR<ReturnReceiptCreateWithoutCreditNotesInput, ReturnReceiptUncheckedCreateWithoutCreditNotesInput>
+    connectOrCreate?: ReturnReceiptCreateOrConnectWithoutCreditNotesInput
+    upsert?: ReturnReceiptUpsertWithoutCreditNotesInput
+    disconnect?: ReturnReceiptWhereInput | boolean
+    delete?: ReturnReceiptWhereInput | boolean
+    connect?: ReturnReceiptWhereUniqueInput
+    update?: XOR<XOR<ReturnReceiptUpdateToOneWithWhereWithoutCreditNotesInput, ReturnReceiptUpdateWithoutCreditNotesInput>, ReturnReceiptUncheckedUpdateWithoutCreditNotesInput>
+  }
+
+  export type UserUpdateOneRequiredWithoutCreditNotesIssuedNestedInput = {
+    create?: XOR<UserCreateWithoutCreditNotesIssuedInput, UserUncheckedCreateWithoutCreditNotesIssuedInput>
+    connectOrCreate?: UserCreateOrConnectWithoutCreditNotesIssuedInput
+    upsert?: UserUpsertWithoutCreditNotesIssuedInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutCreditNotesIssuedInput, UserUpdateWithoutCreditNotesIssuedInput>, UserUncheckedUpdateWithoutCreditNotesIssuedInput>
+  }
+
   export type NestedIntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -106274,6 +108392,23 @@ export namespace Prisma {
     _max?: NestedEnumCreditStatusFilter<$PrismaModel>
   }
 
+  export type NestedEnumCreditNoteStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.CreditNoteStatus | EnumCreditNoteStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CreditNoteStatus[] | ListEnumCreditNoteStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CreditNoteStatus[] | ListEnumCreditNoteStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumCreditNoteStatusFilter<$PrismaModel> | $Enums.CreditNoteStatus
+  }
+
+  export type NestedEnumCreditNoteStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.CreditNoteStatus | EnumCreditNoteStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CreditNoteStatus[] | ListEnumCreditNoteStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CreditNoteStatus[] | ListEnumCreditNoteStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumCreditNoteStatusWithAggregatesFilter<$PrismaModel> | $Enums.CreditNoteStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumCreditNoteStatusFilter<$PrismaModel>
+    _max?: NestedEnumCreditNoteStatusFilter<$PrismaModel>
+  }
+
   export type BranchCreateWithoutUsersInput = {
     publicId: string
     name: string
@@ -106644,6 +108779,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCreatedByInput = {
@@ -106727,6 +108863,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCreatedByInput = {
@@ -108031,6 +110168,45 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type CreditNoteCreateWithoutIssuedByInput = {
+    publicId: string
+    creditNoteNumber?: string | null
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.CreditNoteStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    pdfFile?: FileObjectCreateNestedOneWithoutCreditNotePdfsInput
+    booking: BookingCreateNestedOneWithoutCreditNotesInput
+    invoice?: InvoiceCreateNestedOneWithoutCreditNotesInput
+    receipt?: ReturnReceiptCreateNestedOneWithoutCreditNotesInput
+  }
+
+  export type CreditNoteUncheckedCreateWithoutIssuedByInput = {
+    id?: number
+    publicId: string
+    creditNoteNumber?: string | null
+    bookingId: number
+    invoiceId?: number | null
+    receiptId?: number | null
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.CreditNoteStatus
+    pdfFileId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type CreditNoteCreateOrConnectWithoutIssuedByInput = {
+    where: CreditNoteWhereUniqueInput
+    create: XOR<CreditNoteCreateWithoutIssuedByInput, CreditNoteUncheckedCreateWithoutIssuedByInput>
+  }
+
+  export type CreditNoteCreateManyIssuedByInputEnvelope = {
+    data: CreditNoteCreateManyIssuedByInput | CreditNoteCreateManyIssuedByInput[]
+    skipDuplicates?: boolean
+  }
+
   export type BranchUpsertWithoutUsersInput = {
     update: XOR<BranchUpdateWithoutUsersInput, BranchUncheckedUpdateWithoutUsersInput>
     create: XOR<BranchCreateWithoutUsersInput, BranchUncheckedCreateWithoutUsersInput>
@@ -109152,6 +111328,41 @@ export namespace Prisma {
     clearedAt?: DateTimeFilter<"CreditClearance"> | Date | string
   }
 
+  export type CreditNoteUpsertWithWhereUniqueWithoutIssuedByInput = {
+    where: CreditNoteWhereUniqueInput
+    update: XOR<CreditNoteUpdateWithoutIssuedByInput, CreditNoteUncheckedUpdateWithoutIssuedByInput>
+    create: XOR<CreditNoteCreateWithoutIssuedByInput, CreditNoteUncheckedCreateWithoutIssuedByInput>
+  }
+
+  export type CreditNoteUpdateWithWhereUniqueWithoutIssuedByInput = {
+    where: CreditNoteWhereUniqueInput
+    data: XOR<CreditNoteUpdateWithoutIssuedByInput, CreditNoteUncheckedUpdateWithoutIssuedByInput>
+  }
+
+  export type CreditNoteUpdateManyWithWhereWithoutIssuedByInput = {
+    where: CreditNoteScalarWhereInput
+    data: XOR<CreditNoteUpdateManyMutationInput, CreditNoteUncheckedUpdateManyWithoutIssuedByInput>
+  }
+
+  export type CreditNoteScalarWhereInput = {
+    AND?: CreditNoteScalarWhereInput | CreditNoteScalarWhereInput[]
+    OR?: CreditNoteScalarWhereInput[]
+    NOT?: CreditNoteScalarWhereInput | CreditNoteScalarWhereInput[]
+    id?: IntFilter<"CreditNote"> | number
+    publicId?: StringFilter<"CreditNote"> | string
+    creditNoteNumber?: StringNullableFilter<"CreditNote"> | string | null
+    bookingId?: IntFilter<"CreditNote"> | number
+    invoiceId?: IntNullableFilter<"CreditNote"> | number | null
+    receiptId?: IntNullableFilter<"CreditNote"> | number | null
+    amount?: DecimalFilter<"CreditNote"> | Decimal | DecimalJsLike | number | string
+    reason?: StringFilter<"CreditNote"> | string
+    status?: EnumCreditNoteStatusFilter<"CreditNote"> | $Enums.CreditNoteStatus
+    issuedById?: IntFilter<"CreditNote"> | number
+    pdfFileId?: IntNullableFilter<"CreditNote"> | number | null
+    createdAt?: DateTimeFilter<"CreditNote"> | Date | string
+    updatedAt?: DateTimeFilter<"CreditNote"> | Date | string
+  }
+
   export type UserCreateWithoutProvidersInput = {
     publicId: string
     name: string
@@ -109196,6 +111407,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutProvidersInput = {
@@ -109243,6 +111455,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutProvidersInput = {
@@ -109305,6 +111518,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutProvidersInput = {
@@ -109352,6 +111566,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserCreateWithoutEmailOtpsInput = {
@@ -109398,6 +111613,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutEmailOtpsInput = {
@@ -109445,6 +111661,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutEmailOtpsInput = {
@@ -109507,6 +111724,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutEmailOtpsInput = {
@@ -109554,6 +111772,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserCreateWithoutCustomerProfileInput = {
@@ -109600,6 +111819,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutCustomerProfileInput = {
@@ -109647,6 +111867,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutCustomerProfileInput = {
@@ -109761,6 +111982,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCustomerInput = {
@@ -109844,6 +112066,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCustomerInput = {
@@ -109995,6 +112218,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutCustomerProfileInput = {
@@ -110042,6 +112266,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type CustomerKycUpsertWithWhereUniqueWithoutCustomerInput = {
@@ -110199,6 +112424,7 @@ export namespace Prisma {
     invoicePdfs?: InvoiceCreateNestedManyWithoutInvoicePdfFileInput
     cancellationInvoices?: CancellationInvoiceCreateNestedManyWithoutInvoicePdfFileInput
     returnReceiptPdfs?: ReturnReceiptCreateNestedManyWithoutReceiptPdfFileInput
+    creditNotePdfs?: CreditNoteCreateNestedManyWithoutPdfFileInput
   }
 
   export type FileObjectUncheckedCreateWithoutCustomerKycsInput = {
@@ -110215,6 +112441,7 @@ export namespace Prisma {
     invoicePdfs?: InvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
     cancellationInvoices?: CancellationInvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
     returnReceiptPdfs?: ReturnReceiptUncheckedCreateNestedManyWithoutReceiptPdfFileInput
+    creditNotePdfs?: CreditNoteUncheckedCreateNestedManyWithoutPdfFileInput
   }
 
   export type FileObjectCreateOrConnectWithoutCustomerKycsInput = {
@@ -110296,6 +112523,7 @@ export namespace Prisma {
     invoicePdfs?: InvoiceUpdateManyWithoutInvoicePdfFileNestedInput
     cancellationInvoices?: CancellationInvoiceUpdateManyWithoutInvoicePdfFileNestedInput
     returnReceiptPdfs?: ReturnReceiptUpdateManyWithoutReceiptPdfFileNestedInput
+    creditNotePdfs?: CreditNoteUpdateManyWithoutPdfFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateWithoutCustomerKycsInput = {
@@ -110312,6 +112540,7 @@ export namespace Prisma {
     invoicePdfs?: InvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
     cancellationInvoices?: CancellationInvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
     returnReceiptPdfs?: ReturnReceiptUncheckedUpdateManyWithoutReceiptPdfFileNestedInput
+    creditNotePdfs?: CreditNoteUncheckedUpdateManyWithoutPdfFileNestedInput
   }
 
   export type BookingPhotoCreateWithoutFileInput = {
@@ -110450,6 +112679,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutKycFileInput = {
@@ -110533,6 +112763,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutKycFileInput = {
@@ -110584,6 +112815,7 @@ export namespace Prisma {
     booking: BookingCreateNestedOneWithoutInvoiceInput
     items?: InvoiceItemCreateNestedManyWithoutInvoiceInput
     payments?: PaymentCreateNestedManyWithoutInvoiceInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutInvoiceInput
   }
 
   export type InvoiceUncheckedCreateWithoutInvoicePdfFileInput = {
@@ -110601,6 +112833,7 @@ export namespace Prisma {
     createdAt?: Date | string
     items?: InvoiceItemUncheckedCreateNestedManyWithoutInvoiceInput
     payments?: PaymentUncheckedCreateNestedManyWithoutInvoiceInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutInvoiceInput
   }
 
   export type InvoiceCreateOrConnectWithoutInvoicePdfFileInput = {
@@ -110667,6 +112900,7 @@ export namespace Prisma {
     generatedAt?: Date | string | null
     createdAt?: Date | string
     booking: BookingCreateNestedOneWithoutReturnReceiptInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutReceiptInput
   }
 
   export type ReturnReceiptUncheckedCreateWithoutReceiptPdfFileInput = {
@@ -110681,6 +112915,7 @@ export namespace Prisma {
     refundAmount?: Decimal | DecimalJsLike | number | string
     generatedAt?: Date | string | null
     createdAt?: Date | string
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutReceiptInput
   }
 
   export type ReturnReceiptCreateOrConnectWithoutReceiptPdfFileInput = {
@@ -110690,6 +112925,45 @@ export namespace Prisma {
 
   export type ReturnReceiptCreateManyReceiptPdfFileInputEnvelope = {
     data: ReturnReceiptCreateManyReceiptPdfFileInput | ReturnReceiptCreateManyReceiptPdfFileInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type CreditNoteCreateWithoutPdfFileInput = {
+    publicId: string
+    creditNoteNumber?: string | null
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.CreditNoteStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutCreditNotesInput
+    invoice?: InvoiceCreateNestedOneWithoutCreditNotesInput
+    receipt?: ReturnReceiptCreateNestedOneWithoutCreditNotesInput
+    issuedBy: UserCreateNestedOneWithoutCreditNotesIssuedInput
+  }
+
+  export type CreditNoteUncheckedCreateWithoutPdfFileInput = {
+    id?: number
+    publicId: string
+    creditNoteNumber?: string | null
+    bookingId: number
+    invoiceId?: number | null
+    receiptId?: number | null
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.CreditNoteStatus
+    issuedById: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type CreditNoteCreateOrConnectWithoutPdfFileInput = {
+    where: CreditNoteWhereUniqueInput
+    create: XOR<CreditNoteCreateWithoutPdfFileInput, CreditNoteUncheckedCreateWithoutPdfFileInput>
+  }
+
+  export type CreditNoteCreateManyPdfFileInputEnvelope = {
+    data: CreditNoteCreateManyPdfFileInput | CreditNoteCreateManyPdfFileInput[]
     skipDuplicates?: boolean
   }
 
@@ -110868,6 +113142,22 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"ReturnReceipt"> | Date | string
   }
 
+  export type CreditNoteUpsertWithWhereUniqueWithoutPdfFileInput = {
+    where: CreditNoteWhereUniqueInput
+    update: XOR<CreditNoteUpdateWithoutPdfFileInput, CreditNoteUncheckedUpdateWithoutPdfFileInput>
+    create: XOR<CreditNoteCreateWithoutPdfFileInput, CreditNoteUncheckedCreateWithoutPdfFileInput>
+  }
+
+  export type CreditNoteUpdateWithWhereUniqueWithoutPdfFileInput = {
+    where: CreditNoteWhereUniqueInput
+    data: XOR<CreditNoteUpdateWithoutPdfFileInput, CreditNoteUncheckedUpdateWithoutPdfFileInput>
+  }
+
+  export type CreditNoteUpdateManyWithWhereWithoutPdfFileInput = {
+    where: CreditNoteScalarWhereInput
+    data: XOR<CreditNoteUpdateManyMutationInput, CreditNoteUncheckedUpdateManyWithoutPdfFileInput>
+  }
+
   export type UserCreateWithoutBranchInput = {
     publicId: string
     name: string
@@ -110912,6 +113202,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutBranchInput = {
@@ -110959,6 +113250,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutBranchInput = {
@@ -111120,6 +113412,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutBranchInput = {
@@ -111203,6 +113496,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutBranchInput = {
@@ -115069,6 +117363,7 @@ export namespace Prisma {
     invoicePdfs?: InvoiceCreateNestedManyWithoutInvoicePdfFileInput
     cancellationInvoices?: CancellationInvoiceCreateNestedManyWithoutInvoicePdfFileInput
     returnReceiptPdfs?: ReturnReceiptCreateNestedManyWithoutReceiptPdfFileInput
+    creditNotePdfs?: CreditNoteCreateNestedManyWithoutPdfFileInput
   }
 
   export type FileObjectUncheckedCreateWithoutVehicleImagesInput = {
@@ -115085,6 +117380,7 @@ export namespace Prisma {
     invoicePdfs?: InvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
     cancellationInvoices?: CancellationInvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
     returnReceiptPdfs?: ReturnReceiptUncheckedCreateNestedManyWithoutReceiptPdfFileInput
+    creditNotePdfs?: CreditNoteUncheckedCreateNestedManyWithoutPdfFileInput
   }
 
   export type FileObjectCreateOrConnectWithoutVehicleImagesInput = {
@@ -115186,6 +117482,7 @@ export namespace Prisma {
     invoicePdfs?: InvoiceUpdateManyWithoutInvoicePdfFileNestedInput
     cancellationInvoices?: CancellationInvoiceUpdateManyWithoutInvoicePdfFileNestedInput
     returnReceiptPdfs?: ReturnReceiptUpdateManyWithoutReceiptPdfFileNestedInput
+    creditNotePdfs?: CreditNoteUpdateManyWithoutPdfFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateWithoutVehicleImagesInput = {
@@ -115202,6 +117499,7 @@ export namespace Prisma {
     invoicePdfs?: InvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
     cancellationInvoices?: CancellationInvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
     returnReceiptPdfs?: ReturnReceiptUncheckedUpdateManyWithoutReceiptPdfFileNestedInput
+    creditNotePdfs?: CreditNoteUncheckedUpdateManyWithoutPdfFileNestedInput
   }
 
   export type VehicleCategoryCreateWithoutPricingRulesInput = {
@@ -115691,6 +117989,7 @@ export namespace Prisma {
     invoicePdfs?: InvoiceCreateNestedManyWithoutInvoicePdfFileInput
     cancellationInvoices?: CancellationInvoiceCreateNestedManyWithoutInvoicePdfFileInput
     returnReceiptPdfs?: ReturnReceiptCreateNestedManyWithoutReceiptPdfFileInput
+    creditNotePdfs?: CreditNoteCreateNestedManyWithoutPdfFileInput
   }
 
   export type FileObjectUncheckedCreateWithoutBookingKycsInput = {
@@ -115707,6 +118006,7 @@ export namespace Prisma {
     invoicePdfs?: InvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
     cancellationInvoices?: CancellationInvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
     returnReceiptPdfs?: ReturnReceiptUncheckedCreateNestedManyWithoutReceiptPdfFileInput
+    creditNotePdfs?: CreditNoteUncheckedCreateNestedManyWithoutPdfFileInput
   }
 
   export type FileObjectCreateOrConnectWithoutBookingKycsInput = {
@@ -115868,6 +118168,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutBookingsCreatedInput = {
@@ -115915,6 +118216,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutBookingsCreatedInput = {
@@ -116071,6 +118373,7 @@ export namespace Prisma {
     invoicePdfFile?: FileObjectCreateNestedOneWithoutInvoicePdfsInput
     items?: InvoiceItemCreateNestedManyWithoutInvoiceInput
     payments?: PaymentCreateNestedManyWithoutInvoiceInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutInvoiceInput
   }
 
   export type InvoiceUncheckedCreateWithoutBookingInput = {
@@ -116088,6 +118391,7 @@ export namespace Prisma {
     createdAt?: Date | string
     items?: InvoiceItemUncheckedCreateNestedManyWithoutInvoiceInput
     payments?: PaymentUncheckedCreateNestedManyWithoutInvoiceInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutInvoiceInput
   }
 
   export type InvoiceCreateOrConnectWithoutBookingInput = {
@@ -116144,6 +118448,7 @@ export namespace Prisma {
     generatedAt?: Date | string | null
     createdAt?: Date | string
     receiptPdfFile?: FileObjectCreateNestedOneWithoutReturnReceiptPdfsInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutReceiptInput
   }
 
   export type ReturnReceiptUncheckedCreateWithoutBookingInput = {
@@ -116158,6 +118463,7 @@ export namespace Prisma {
     receiptPdfFileId?: number | null
     generatedAt?: Date | string | null
     createdAt?: Date | string
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutReceiptInput
   }
 
   export type ReturnReceiptCreateOrConnectWithoutBookingInput = {
@@ -116977,6 +119283,45 @@ export namespace Prisma {
     create: XOR<CustomerCreditEntryCreateWithoutBookingInput, CustomerCreditEntryUncheckedCreateWithoutBookingInput>
   }
 
+  export type CreditNoteCreateWithoutBookingInput = {
+    publicId: string
+    creditNoteNumber?: string | null
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.CreditNoteStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    pdfFile?: FileObjectCreateNestedOneWithoutCreditNotePdfsInput
+    invoice?: InvoiceCreateNestedOneWithoutCreditNotesInput
+    receipt?: ReturnReceiptCreateNestedOneWithoutCreditNotesInput
+    issuedBy: UserCreateNestedOneWithoutCreditNotesIssuedInput
+  }
+
+  export type CreditNoteUncheckedCreateWithoutBookingInput = {
+    id?: number
+    publicId: string
+    creditNoteNumber?: string | null
+    invoiceId?: number | null
+    receiptId?: number | null
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.CreditNoteStatus
+    issuedById: number
+    pdfFileId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type CreditNoteCreateOrConnectWithoutBookingInput = {
+    where: CreditNoteWhereUniqueInput
+    create: XOR<CreditNoteCreateWithoutBookingInput, CreditNoteUncheckedCreateWithoutBookingInput>
+  }
+
+  export type CreditNoteCreateManyBookingInputEnvelope = {
+    data: CreditNoteCreateManyBookingInput | CreditNoteCreateManyBookingInput[]
+    skipDuplicates?: boolean
+  }
+
   export type FileObjectUpsertWithoutBookingKycsInput = {
     update: XOR<FileObjectUpdateWithoutBookingKycsInput, FileObjectUncheckedUpdateWithoutBookingKycsInput>
     create: XOR<FileObjectCreateWithoutBookingKycsInput, FileObjectUncheckedCreateWithoutBookingKycsInput>
@@ -117001,6 +119346,7 @@ export namespace Prisma {
     invoicePdfs?: InvoiceUpdateManyWithoutInvoicePdfFileNestedInput
     cancellationInvoices?: CancellationInvoiceUpdateManyWithoutInvoicePdfFileNestedInput
     returnReceiptPdfs?: ReturnReceiptUpdateManyWithoutReceiptPdfFileNestedInput
+    creditNotePdfs?: CreditNoteUpdateManyWithoutPdfFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateWithoutBookingKycsInput = {
@@ -117017,6 +119363,7 @@ export namespace Prisma {
     invoicePdfs?: InvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
     cancellationInvoices?: CancellationInvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
     returnReceiptPdfs?: ReturnReceiptUncheckedUpdateManyWithoutReceiptPdfFileNestedInput
+    creditNotePdfs?: CreditNoteUncheckedUpdateManyWithoutPdfFileNestedInput
   }
 
   export type CustomerUpsertWithoutBookingsInput = {
@@ -117196,6 +119543,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutBookingsCreatedInput = {
@@ -117243,6 +119591,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type BookingPhotoUpsertWithWhereUniqueWithoutBookingInput = {
@@ -117350,6 +119699,7 @@ export namespace Prisma {
     invoicePdfFile?: FileObjectUpdateOneWithoutInvoicePdfsNestedInput
     items?: InvoiceItemUpdateManyWithoutInvoiceNestedInput
     payments?: PaymentUpdateManyWithoutInvoiceNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutInvoiceNestedInput
   }
 
   export type InvoiceUncheckedUpdateWithoutBookingInput = {
@@ -117367,6 +119717,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: InvoiceItemUncheckedUpdateManyWithoutInvoiceNestedInput
     payments?: PaymentUncheckedUpdateManyWithoutInvoiceNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutInvoiceNestedInput
   }
 
   export type CancellationInvoiceUpsertWithoutBookingInput = {
@@ -117435,6 +119786,7 @@ export namespace Prisma {
     generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     receiptPdfFile?: FileObjectUpdateOneWithoutReturnReceiptPdfsNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutReceiptNestedInput
   }
 
   export type ReturnReceiptUncheckedUpdateWithoutBookingInput = {
@@ -117449,6 +119801,7 @@ export namespace Prisma {
     receiptPdfFileId?: NullableIntFieldUpdateOperationsInput | number | null
     generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutReceiptNestedInput
   }
 
   export type VehicleSwapUpsertWithWhereUniqueWithoutBookingInput = {
@@ -118015,6 +120368,22 @@ export namespace Prisma {
     clearances?: CreditClearanceUncheckedUpdateManyWithoutCreditEntryNestedInput
   }
 
+  export type CreditNoteUpsertWithWhereUniqueWithoutBookingInput = {
+    where: CreditNoteWhereUniqueInput
+    update: XOR<CreditNoteUpdateWithoutBookingInput, CreditNoteUncheckedUpdateWithoutBookingInput>
+    create: XOR<CreditNoteCreateWithoutBookingInput, CreditNoteUncheckedCreateWithoutBookingInput>
+  }
+
+  export type CreditNoteUpdateWithWhereUniqueWithoutBookingInput = {
+    where: CreditNoteWhereUniqueInput
+    data: XOR<CreditNoteUpdateWithoutBookingInput, CreditNoteUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type CreditNoteUpdateManyWithWhereWithoutBookingInput = {
+    where: CreditNoteScalarWhereInput
+    data: XOR<CreditNoteUpdateManyMutationInput, CreditNoteUncheckedUpdateManyWithoutBookingInput>
+  }
+
   export type VehicleCreateWithoutBookingItemsInput = {
     publicId: string
     make: string
@@ -118159,6 +120528,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutItemsInput = {
@@ -118242,6 +120612,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutItemsInput = {
@@ -118410,6 +120781,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutItemsInput = {
@@ -118493,6 +120865,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingCreateWithoutPhotosInput = {
@@ -118575,6 +120948,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutPhotosInput = {
@@ -118658,6 +121032,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutPhotosInput = {
@@ -118678,6 +121053,7 @@ export namespace Prisma {
     invoicePdfs?: InvoiceCreateNestedManyWithoutInvoicePdfFileInput
     cancellationInvoices?: CancellationInvoiceCreateNestedManyWithoutInvoicePdfFileInput
     returnReceiptPdfs?: ReturnReceiptCreateNestedManyWithoutReceiptPdfFileInput
+    creditNotePdfs?: CreditNoteCreateNestedManyWithoutPdfFileInput
   }
 
   export type FileObjectUncheckedCreateWithoutBookingPhotosInput = {
@@ -118694,6 +121070,7 @@ export namespace Prisma {
     invoicePdfs?: InvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
     cancellationInvoices?: CancellationInvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
     returnReceiptPdfs?: ReturnReceiptUncheckedCreateNestedManyWithoutReceiptPdfFileInput
+    creditNotePdfs?: CreditNoteUncheckedCreateNestedManyWithoutPdfFileInput
   }
 
   export type FileObjectCreateOrConnectWithoutBookingPhotosInput = {
@@ -118828,6 +121205,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutPhotosInput = {
@@ -118911,6 +121289,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type FileObjectUpsertWithoutBookingPhotosInput = {
@@ -118937,6 +121316,7 @@ export namespace Prisma {
     invoicePdfs?: InvoiceUpdateManyWithoutInvoicePdfFileNestedInput
     cancellationInvoices?: CancellationInvoiceUpdateManyWithoutInvoicePdfFileNestedInput
     returnReceiptPdfs?: ReturnReceiptUpdateManyWithoutReceiptPdfFileNestedInput
+    creditNotePdfs?: CreditNoteUpdateManyWithoutPdfFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateWithoutBookingPhotosInput = {
@@ -118953,6 +121333,7 @@ export namespace Prisma {
     invoicePdfs?: InvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
     cancellationInvoices?: CancellationInvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
     returnReceiptPdfs?: ReturnReceiptUncheckedUpdateManyWithoutReceiptPdfFileNestedInput
+    creditNotePdfs?: CreditNoteUncheckedUpdateManyWithoutPdfFileNestedInput
   }
 
   export type DamageReportUpsertWithoutPhotosInput = {
@@ -119077,6 +121458,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDamagesInput = {
@@ -119160,6 +121542,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDamagesInput = {
@@ -119275,6 +121658,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutApprovedDamageReportsInput = {
@@ -119322,6 +121706,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutApprovedDamageReportsInput = {
@@ -119449,6 +121834,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDamagesInput = {
@@ -119532,6 +121918,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type VehicleUpsertWithoutDamageReportsInput = {
@@ -119659,6 +122046,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutApprovedDamageReportsInput = {
@@ -119706,6 +122094,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type BookingPhotoUpsertWithWhereUniqueWithoutDamageReportInput = {
@@ -119804,6 +122193,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDepositInput = {
@@ -119887,6 +122277,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDepositInput = {
@@ -119985,6 +122376,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDepositInput = {
@@ -120068,6 +122460,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type InvoiceCreateWithoutPaymentsInput = {
@@ -120084,6 +122477,7 @@ export namespace Prisma {
     invoicePdfFile?: FileObjectCreateNestedOneWithoutInvoicePdfsInput
     booking: BookingCreateNestedOneWithoutInvoiceInput
     items?: InvoiceItemCreateNestedManyWithoutInvoiceInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutInvoiceInput
   }
 
   export type InvoiceUncheckedCreateWithoutPaymentsInput = {
@@ -120101,6 +122495,7 @@ export namespace Prisma {
     generatedAt?: Date | string | null
     createdAt?: Date | string
     items?: InvoiceItemUncheckedCreateNestedManyWithoutInvoiceInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutInvoiceInput
   }
 
   export type InvoiceCreateOrConnectWithoutPaymentsInput = {
@@ -120133,6 +122528,7 @@ export namespace Prisma {
     invoicePdfFile?: FileObjectUpdateOneWithoutInvoicePdfsNestedInput
     booking?: BookingUpdateOneRequiredWithoutInvoiceNestedInput
     items?: InvoiceItemUpdateManyWithoutInvoiceNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutInvoiceNestedInput
   }
 
   export type InvoiceUncheckedUpdateWithoutPaymentsInput = {
@@ -120150,6 +122546,7 @@ export namespace Prisma {
     generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: InvoiceItemUncheckedUpdateManyWithoutInvoiceNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutInvoiceNestedInput
   }
 
   export type FileObjectCreateWithoutInvoicePdfsInput = {
@@ -120165,6 +122562,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageCreateNestedManyWithoutFileInput
     cancellationInvoices?: CancellationInvoiceCreateNestedManyWithoutInvoicePdfFileInput
     returnReceiptPdfs?: ReturnReceiptCreateNestedManyWithoutReceiptPdfFileInput
+    creditNotePdfs?: CreditNoteCreateNestedManyWithoutPdfFileInput
   }
 
   export type FileObjectUncheckedCreateWithoutInvoicePdfsInput = {
@@ -120181,6 +122579,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageUncheckedCreateNestedManyWithoutFileInput
     cancellationInvoices?: CancellationInvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
     returnReceiptPdfs?: ReturnReceiptUncheckedCreateNestedManyWithoutReceiptPdfFileInput
+    creditNotePdfs?: CreditNoteUncheckedCreateNestedManyWithoutPdfFileInput
   }
 
   export type FileObjectCreateOrConnectWithoutInvoicePdfsInput = {
@@ -120268,6 +122667,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutInvoiceInput = {
@@ -120351,6 +122751,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutInvoiceInput = {
@@ -120416,6 +122817,45 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type CreditNoteCreateWithoutInvoiceInput = {
+    publicId: string
+    creditNoteNumber?: string | null
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.CreditNoteStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    pdfFile?: FileObjectCreateNestedOneWithoutCreditNotePdfsInput
+    booking: BookingCreateNestedOneWithoutCreditNotesInput
+    receipt?: ReturnReceiptCreateNestedOneWithoutCreditNotesInput
+    issuedBy: UserCreateNestedOneWithoutCreditNotesIssuedInput
+  }
+
+  export type CreditNoteUncheckedCreateWithoutInvoiceInput = {
+    id?: number
+    publicId: string
+    creditNoteNumber?: string | null
+    bookingId: number
+    receiptId?: number | null
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.CreditNoteStatus
+    issuedById: number
+    pdfFileId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type CreditNoteCreateOrConnectWithoutInvoiceInput = {
+    where: CreditNoteWhereUniqueInput
+    create: XOR<CreditNoteCreateWithoutInvoiceInput, CreditNoteUncheckedCreateWithoutInvoiceInput>
+  }
+
+  export type CreditNoteCreateManyInvoiceInputEnvelope = {
+    data: CreditNoteCreateManyInvoiceInput | CreditNoteCreateManyInvoiceInput[]
+    skipDuplicates?: boolean
+  }
+
   export type FileObjectUpsertWithoutInvoicePdfsInput = {
     update: XOR<FileObjectUpdateWithoutInvoicePdfsInput, FileObjectUncheckedUpdateWithoutInvoicePdfsInput>
     create: XOR<FileObjectCreateWithoutInvoicePdfsInput, FileObjectUncheckedCreateWithoutInvoicePdfsInput>
@@ -120440,6 +122880,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageUpdateManyWithoutFileNestedInput
     cancellationInvoices?: CancellationInvoiceUpdateManyWithoutInvoicePdfFileNestedInput
     returnReceiptPdfs?: ReturnReceiptUpdateManyWithoutReceiptPdfFileNestedInput
+    creditNotePdfs?: CreditNoteUpdateManyWithoutPdfFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateWithoutInvoicePdfsInput = {
@@ -120456,6 +122897,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
     cancellationInvoices?: CancellationInvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
     returnReceiptPdfs?: ReturnReceiptUncheckedUpdateManyWithoutReceiptPdfFileNestedInput
+    creditNotePdfs?: CreditNoteUncheckedUpdateManyWithoutPdfFileNestedInput
   }
 
   export type BookingUpsertWithoutInvoiceInput = {
@@ -120549,6 +122991,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutInvoiceInput = {
@@ -120632,6 +123075,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type InvoiceItemUpsertWithWhereUniqueWithoutInvoiceInput = {
@@ -120694,6 +123138,22 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"Payment"> | Date | string
   }
 
+  export type CreditNoteUpsertWithWhereUniqueWithoutInvoiceInput = {
+    where: CreditNoteWhereUniqueInput
+    update: XOR<CreditNoteUpdateWithoutInvoiceInput, CreditNoteUncheckedUpdateWithoutInvoiceInput>
+    create: XOR<CreditNoteCreateWithoutInvoiceInput, CreditNoteUncheckedCreateWithoutInvoiceInput>
+  }
+
+  export type CreditNoteUpdateWithWhereUniqueWithoutInvoiceInput = {
+    where: CreditNoteWhereUniqueInput
+    data: XOR<CreditNoteUpdateWithoutInvoiceInput, CreditNoteUncheckedUpdateWithoutInvoiceInput>
+  }
+
+  export type CreditNoteUpdateManyWithWhereWithoutInvoiceInput = {
+    where: CreditNoteScalarWhereInput
+    data: XOR<CreditNoteUpdateManyMutationInput, CreditNoteUncheckedUpdateManyWithoutInvoiceInput>
+  }
+
   export type InvoiceCreateWithoutItemsInput = {
     publicId: string
     subtotal: Decimal | DecimalJsLike | number | string
@@ -120708,6 +123168,7 @@ export namespace Prisma {
     invoicePdfFile?: FileObjectCreateNestedOneWithoutInvoicePdfsInput
     booking: BookingCreateNestedOneWithoutInvoiceInput
     payments?: PaymentCreateNestedManyWithoutInvoiceInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutInvoiceInput
   }
 
   export type InvoiceUncheckedCreateWithoutItemsInput = {
@@ -120725,6 +123186,7 @@ export namespace Prisma {
     generatedAt?: Date | string | null
     createdAt?: Date | string
     payments?: PaymentUncheckedCreateNestedManyWithoutInvoiceInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutInvoiceInput
   }
 
   export type InvoiceCreateOrConnectWithoutItemsInput = {
@@ -120757,6 +123219,7 @@ export namespace Prisma {
     invoicePdfFile?: FileObjectUpdateOneWithoutInvoicePdfsNestedInput
     booking?: BookingUpdateOneRequiredWithoutInvoiceNestedInput
     payments?: PaymentUpdateManyWithoutInvoiceNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutInvoiceNestedInput
   }
 
   export type InvoiceUncheckedUpdateWithoutItemsInput = {
@@ -120774,6 +123237,7 @@ export namespace Prisma {
     generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     payments?: PaymentUncheckedUpdateManyWithoutInvoiceNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutInvoiceNestedInput
   }
 
   export type UserCreateWithoutActorAuditLogsInput = {
@@ -120820,6 +123284,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutActorAuditLogsInput = {
@@ -120867,6 +123332,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutActorAuditLogsInput = {
@@ -120918,6 +123384,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutApproverAuditLogsInput = {
@@ -120965,6 +123432,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutApproverAuditLogsInput = {
@@ -121093,6 +123561,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutActorAuditLogsInput = {
@@ -121140,6 +123609,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUpsertWithoutApproverAuditLogsInput = {
@@ -121197,6 +123667,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutApproverAuditLogsInput = {
@@ -121244,6 +123715,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type BranchUpsertWithoutAuditLogsInput = {
@@ -121536,6 +124008,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCancellationInvoiceInput = {
@@ -121619,6 +124092,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCancellationInvoiceInput = {
@@ -121683,6 +124157,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageCreateNestedManyWithoutFileInput
     invoicePdfs?: InvoiceCreateNestedManyWithoutInvoicePdfFileInput
     returnReceiptPdfs?: ReturnReceiptCreateNestedManyWithoutReceiptPdfFileInput
+    creditNotePdfs?: CreditNoteCreateNestedManyWithoutPdfFileInput
   }
 
   export type FileObjectUncheckedCreateWithoutCancellationInvoicesInput = {
@@ -121699,6 +124174,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageUncheckedCreateNestedManyWithoutFileInput
     invoicePdfs?: InvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
     returnReceiptPdfs?: ReturnReceiptUncheckedCreateNestedManyWithoutReceiptPdfFileInput
+    creditNotePdfs?: CreditNoteUncheckedCreateNestedManyWithoutPdfFileInput
   }
 
   export type FileObjectCreateOrConnectWithoutCancellationInvoicesInput = {
@@ -121797,6 +124273,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCancellationInvoiceInput = {
@@ -121880,6 +124357,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type CustomerUpsertWithoutCancellationInvoicesInput = {
@@ -121956,6 +124434,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageUpdateManyWithoutFileNestedInput
     invoicePdfs?: InvoiceUpdateManyWithoutInvoicePdfFileNestedInput
     returnReceiptPdfs?: ReturnReceiptUpdateManyWithoutReceiptPdfFileNestedInput
+    creditNotePdfs?: CreditNoteUpdateManyWithoutPdfFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateWithoutCancellationInvoicesInput = {
@@ -121972,6 +124451,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
     invoicePdfs?: InvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
     returnReceiptPdfs?: ReturnReceiptUncheckedUpdateManyWithoutReceiptPdfFileNestedInput
+    creditNotePdfs?: CreditNoteUncheckedUpdateManyWithoutPdfFileNestedInput
   }
 
   export type FileObjectCreateWithoutReturnReceiptPdfsInput = {
@@ -121987,6 +124467,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageCreateNestedManyWithoutFileInput
     invoicePdfs?: InvoiceCreateNestedManyWithoutInvoicePdfFileInput
     cancellationInvoices?: CancellationInvoiceCreateNestedManyWithoutInvoicePdfFileInput
+    creditNotePdfs?: CreditNoteCreateNestedManyWithoutPdfFileInput
   }
 
   export type FileObjectUncheckedCreateWithoutReturnReceiptPdfsInput = {
@@ -122003,6 +124484,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageUncheckedCreateNestedManyWithoutFileInput
     invoicePdfs?: InvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
     cancellationInvoices?: CancellationInvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
+    creditNotePdfs?: CreditNoteUncheckedCreateNestedManyWithoutPdfFileInput
   }
 
   export type FileObjectCreateOrConnectWithoutReturnReceiptPdfsInput = {
@@ -122090,6 +124572,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutReturnReceiptInput = {
@@ -122173,11 +124656,51 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutReturnReceiptInput = {
     where: BookingWhereUniqueInput
     create: XOR<BookingCreateWithoutReturnReceiptInput, BookingUncheckedCreateWithoutReturnReceiptInput>
+  }
+
+  export type CreditNoteCreateWithoutReceiptInput = {
+    publicId: string
+    creditNoteNumber?: string | null
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.CreditNoteStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    pdfFile?: FileObjectCreateNestedOneWithoutCreditNotePdfsInput
+    booking: BookingCreateNestedOneWithoutCreditNotesInput
+    invoice?: InvoiceCreateNestedOneWithoutCreditNotesInput
+    issuedBy: UserCreateNestedOneWithoutCreditNotesIssuedInput
+  }
+
+  export type CreditNoteUncheckedCreateWithoutReceiptInput = {
+    id?: number
+    publicId: string
+    creditNoteNumber?: string | null
+    bookingId: number
+    invoiceId?: number | null
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.CreditNoteStatus
+    issuedById: number
+    pdfFileId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type CreditNoteCreateOrConnectWithoutReceiptInput = {
+    where: CreditNoteWhereUniqueInput
+    create: XOR<CreditNoteCreateWithoutReceiptInput, CreditNoteUncheckedCreateWithoutReceiptInput>
+  }
+
+  export type CreditNoteCreateManyReceiptInputEnvelope = {
+    data: CreditNoteCreateManyReceiptInput | CreditNoteCreateManyReceiptInput[]
+    skipDuplicates?: boolean
   }
 
   export type FileObjectUpsertWithoutReturnReceiptPdfsInput = {
@@ -122204,6 +124727,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageUpdateManyWithoutFileNestedInput
     invoicePdfs?: InvoiceUpdateManyWithoutInvoicePdfFileNestedInput
     cancellationInvoices?: CancellationInvoiceUpdateManyWithoutInvoicePdfFileNestedInput
+    creditNotePdfs?: CreditNoteUpdateManyWithoutPdfFileNestedInput
   }
 
   export type FileObjectUncheckedUpdateWithoutReturnReceiptPdfsInput = {
@@ -122220,6 +124744,7 @@ export namespace Prisma {
     vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
     invoicePdfs?: InvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
     cancellationInvoices?: CancellationInvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
+    creditNotePdfs?: CreditNoteUncheckedUpdateManyWithoutPdfFileNestedInput
   }
 
   export type BookingUpsertWithoutReturnReceiptInput = {
@@ -122313,6 +124838,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutReturnReceiptInput = {
@@ -122396,6 +124922,23 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
+  }
+
+  export type CreditNoteUpsertWithWhereUniqueWithoutReceiptInput = {
+    where: CreditNoteWhereUniqueInput
+    update: XOR<CreditNoteUpdateWithoutReceiptInput, CreditNoteUncheckedUpdateWithoutReceiptInput>
+    create: XOR<CreditNoteCreateWithoutReceiptInput, CreditNoteUncheckedCreateWithoutReceiptInput>
+  }
+
+  export type CreditNoteUpdateWithWhereUniqueWithoutReceiptInput = {
+    where: CreditNoteWhereUniqueInput
+    data: XOR<CreditNoteUpdateWithoutReceiptInput, CreditNoteUncheckedUpdateWithoutReceiptInput>
+  }
+
+  export type CreditNoteUpdateManyWithWhereWithoutReceiptInput = {
+    where: CreditNoteScalarWhereInput
+    data: XOR<CreditNoteUpdateManyMutationInput, CreditNoteUncheckedUpdateManyWithoutReceiptInput>
   }
 
   export type BranchFeatureFlagCreateWithoutFlagInput = {
@@ -122976,6 +125519,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutVehicleSwapsInput = {
@@ -123059,6 +125603,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutVehicleSwapsInput = {
@@ -123238,6 +125783,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutVehicleSwapsInput = {
@@ -123285,6 +125831,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutVehicleSwapsInput = {
@@ -123441,6 +125988,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutVehicleSwapsInput = {
@@ -123524,6 +126072,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type VehicleUpsertWithoutSwapsAsOriginalInput = {
@@ -123721,6 +126270,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutVehicleSwapsInput = {
@@ -123768,6 +126318,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type BookingExtensionUpsertWithoutVehicleSwapInput = {
@@ -123878,6 +126429,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutDiscountRulesCreatedInput = {
@@ -123925,6 +126477,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutDiscountRulesCreatedInput = {
@@ -124039,6 +126592,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDiscountRuleInput = {
@@ -124122,6 +126676,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDiscountRuleInput = {
@@ -124236,6 +126791,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutDiscountRulesCreatedInput = {
@@ -124283,6 +126839,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type CouponUsageLogUpsertWithWhereUniqueWithoutDiscountRuleInput = {
@@ -124725,6 +127282,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutDiscountApplicationInput = {
@@ -124808,6 +127366,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutDiscountApplicationInput = {
@@ -125030,6 +127589,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDiscountApplicationInput = {
@@ -125113,6 +127673,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type DiscountRuleUpsertWithoutApplicationsInput = {
@@ -125473,6 +128034,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutManualDiscountsIssuedInput = {
@@ -125520,6 +128082,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutManualDiscountsIssuedInput = {
@@ -125571,6 +128134,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutManualDiscountsApprovedInput = {
@@ -125618,6 +128182,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutManualDiscountsApprovedInput = {
@@ -125705,6 +128270,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutManualDiscountInput = {
@@ -125788,6 +128354,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutManualDiscountInput = {
@@ -125892,6 +128459,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutManualDiscountsIssuedInput = {
@@ -125939,6 +128507,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUpsertWithoutManualDiscountsApprovedInput = {
@@ -125996,6 +128565,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutManualDiscountsApprovedInput = {
@@ -126043,6 +128613,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type BookingUpsertWithoutManualDiscountInput = {
@@ -126136,6 +128707,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutManualDiscountInput = {
@@ -126219,6 +128791,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type DiscountApplicationUpsertWithoutManualDiscountInput = {
@@ -126487,6 +129060,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutPaymentTransactionsInput = {
@@ -126570,6 +129144,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutPaymentTransactionsInput = {
@@ -126687,6 +129262,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutCollectedPaymentsInput = {
@@ -126734,6 +129310,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutCollectedPaymentsInput = {
@@ -126785,6 +129362,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutConfirmedPaymentsInput = {
@@ -126832,6 +129410,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutConfirmedPaymentsInput = {
@@ -126883,6 +129462,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutRejectedPaymentsInput = {
@@ -126930,6 +129510,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutRejectedPaymentsInput = {
@@ -127126,6 +129707,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutPaymentTransactionsInput = {
@@ -127209,6 +129791,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BranchUpsertWithoutPaymentTransactionsInput = {
@@ -127338,6 +129921,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutCollectedPaymentsInput = {
@@ -127385,6 +129969,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUpsertWithoutConfirmedPaymentsInput = {
@@ -127442,6 +130027,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutConfirmedPaymentsInput = {
@@ -127489,6 +130075,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUpsertWithoutRejectedPaymentsInput = {
@@ -127546,6 +130133,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRejectedPaymentsInput = {
@@ -127593,6 +130181,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type CashShiftUpsertWithoutTransactionsInput = {
@@ -127785,6 +130374,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutRefundRequestsInput = {
@@ -127868,6 +130458,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutRefundRequestsInput = {
@@ -127985,6 +130576,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutRefundRequestsMadeInput = {
@@ -128032,6 +130624,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutRefundRequestsMadeInput = {
@@ -128083,6 +130676,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutRefundRequestsApprovedInput = {
@@ -128130,6 +130724,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutRefundRequestsApprovedInput = {
@@ -128181,6 +130776,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutRefundRequestsCompletedInput = {
@@ -128228,6 +130824,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutRefundRequestsCompletedInput = {
@@ -128326,6 +130923,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutRefundRequestsInput = {
@@ -128409,6 +131007,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BranchUpsertWithoutRefundRequestsInput = {
@@ -128538,6 +131137,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRefundRequestsMadeInput = {
@@ -128585,6 +131185,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUpsertWithoutRefundRequestsApprovedInput = {
@@ -128642,6 +131243,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRefundRequestsApprovedInput = {
@@ -128689,6 +131291,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUpsertWithoutRefundRequestsCompletedInput = {
@@ -128746,6 +131349,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRefundRequestsCompletedInput = {
@@ -128793,6 +131397,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserCreateWithoutOpenShiftsInput = {
@@ -128839,6 +131444,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutOpenShiftsInput = {
@@ -128886,6 +131492,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutOpenShiftsInput = {
@@ -129003,6 +131610,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutReconciledShiftsInput = {
@@ -129050,6 +131658,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutReconciledShiftsInput = {
@@ -129173,6 +131782,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutOpenShiftsInput = {
@@ -129220,6 +131830,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type BranchUpsertWithoutCashShiftsInput = {
@@ -129349,6 +131960,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutReconciledShiftsInput = {
@@ -129396,6 +132008,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type PaymentTransactionUpsertWithWhereUniqueWithoutCashShiftInput = {
@@ -129494,6 +132107,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutExtensionsInput = {
@@ -129577,6 +132191,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutExtensionsInput = {
@@ -129694,6 +132309,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutInitiatedExtensionsInput = {
@@ -129741,6 +132357,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutInitiatedExtensionsInput = {
@@ -129984,6 +132601,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutActiveExtensionInput = {
@@ -130067,6 +132685,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutActiveExtensionInput = {
@@ -130170,6 +132789,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutExtensionsInput = {
@@ -130253,6 +132873,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BranchUpsertWithoutExtensionsInput = {
@@ -130382,6 +133003,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutInitiatedExtensionsInput = {
@@ -130429,6 +133051,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type VehicleUpsertWithoutExtensionSwapsInput = {
@@ -130839,6 +133462,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutChargeEntriesInput = {
@@ -130922,6 +133546,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutChargeEntriesInput = {
@@ -130973,6 +133598,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutChargeEntriesCreatedInput = {
@@ -131020,6 +133646,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutChargeEntriesCreatedInput = {
@@ -131160,6 +133787,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutChargeEntriesInput = {
@@ -131243,6 +133871,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type UserUpsertWithoutChargeEntriesCreatedInput = {
@@ -131300,6 +133929,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutChargeEntriesCreatedInput = {
@@ -131347,6 +133977,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type ChargeOverrideUpsertWithoutChargeEntryInput = {
@@ -131477,6 +134108,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutChargeOverridesInput = {
@@ -131560,6 +134192,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutChargeOverridesInput = {
@@ -131651,6 +134284,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutOverridesActedInput = {
@@ -131698,6 +134332,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutOverridesActedInput = {
@@ -131749,6 +134384,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutOverridesApprovedInput = {
@@ -131796,6 +134432,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutOverridesApprovedInput = {
@@ -131894,6 +134531,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutChargeOverridesInput = {
@@ -131977,6 +134615,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type ChargeEntryUpsertWithoutOverrideInput = {
@@ -132080,6 +134719,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutOverridesActedInput = {
@@ -132127,6 +134767,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUpsertWithoutOverridesApprovedInput = {
@@ -132184,6 +134825,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutOverridesApprovedInput = {
@@ -132231,6 +134873,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type BookingCreateWithoutFuelRecordInput = {
@@ -132313,6 +134956,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutFuelRecordInput = {
@@ -132396,6 +135040,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutFuelRecordInput = {
@@ -132447,6 +135092,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutFuelPickupCapturesInput = {
@@ -132494,6 +135140,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutFuelPickupCapturesInput = {
@@ -132545,6 +135192,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutFuelReturnCapturesInput = {
@@ -132592,6 +135240,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutFuelReturnCapturesInput = {
@@ -132690,6 +135339,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutFuelRecordInput = {
@@ -132773,6 +135423,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type UserUpsertWithoutFuelPickupCapturesInput = {
@@ -132830,6 +135481,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutFuelPickupCapturesInput = {
@@ -132877,6 +135529,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUpsertWithoutFuelReturnCapturesInput = {
@@ -132934,6 +135587,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutFuelReturnCapturesInput = {
@@ -132981,6 +135635,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type BookingCreateWithoutSafetyDepositRequestInput = {
@@ -133063,6 +135718,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutSafetyDepositRequestInput = {
@@ -133146,6 +135802,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutSafetyDepositRequestInput = {
@@ -133197,6 +135854,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutSafetyDepositRequestsInput = {
@@ -133244,6 +135902,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutSafetyDepositRequestsInput = {
@@ -133295,6 +135954,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutSafetyDepositApprovalsInput = {
@@ -133342,6 +136002,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutSafetyDepositApprovalsInput = {
@@ -133440,6 +136101,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutSafetyDepositRequestInput = {
@@ -133523,6 +136185,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type UserUpsertWithoutSafetyDepositRequestsInput = {
@@ -133580,6 +136243,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSafetyDepositRequestsInput = {
@@ -133627,6 +136291,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUpsertWithoutSafetyDepositApprovalsInput = {
@@ -133684,6 +136349,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSafetyDepositApprovalsInput = {
@@ -133731,6 +136397,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type BookingCreateWithoutPaymentSessionsInput = {
@@ -133813,6 +136480,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutPaymentSessionsInput = {
@@ -133896,6 +136564,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutPaymentSessionsInput = {
@@ -134013,6 +136682,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutPaymentSessionsOpenedInput = {
@@ -134060,6 +136730,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutPaymentSessionsOpenedInput = {
@@ -134204,6 +136875,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutActivePaymentSessionInput = {
@@ -134287,6 +136959,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutActivePaymentSessionInput = {
@@ -134390,6 +137063,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutPaymentSessionsInput = {
@@ -134473,6 +137147,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BranchUpsertWithoutPaymentSessionsInput = {
@@ -134602,6 +137277,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutPaymentSessionsOpenedInput = {
@@ -134649,6 +137325,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type LedgerEntryUpsertWithWhereUniqueWithoutSessionInput = {
@@ -134819,6 +137496,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutLedgerEntriesInput = {
@@ -134902,6 +137580,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutLedgerEntriesInput = {
@@ -134953,6 +137632,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutLedgerEntriesActedInput = {
@@ -135000,6 +137680,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutLedgerEntriesActedInput = {
@@ -135051,6 +137732,7 @@ export namespace Prisma {
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutLedgerEntriesVoidedInput = {
@@ -135098,6 +137780,7 @@ export namespace Prisma {
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutLedgerEntriesVoidedInput = {
@@ -135258,6 +137941,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutLedgerEntriesInput = {
@@ -135341,6 +138025,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type UserUpsertWithoutLedgerEntriesActedInput = {
@@ -135398,6 +138083,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutLedgerEntriesActedInput = {
@@ -135445,6 +138131,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUpsertWithoutLedgerEntriesVoidedInput = {
@@ -135502,6 +138189,7 @@ export namespace Prisma {
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutLedgerEntriesVoidedInput = {
@@ -135549,6 +138237,7 @@ export namespace Prisma {
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type CustomerCreateWithoutCreditEntriesInput = {
@@ -135675,6 +138364,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
     paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditNotes?: CreditNoteCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutCreditEntryInput = {
@@ -135758,6 +138448,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
     paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
     ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditNotes?: CreditNoteUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutCreditEntryInput = {
@@ -135875,6 +138566,7 @@ export namespace Prisma {
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutCreditEntriesCreatedInput = {
@@ -135922,6 +138614,7 @@ export namespace Prisma {
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutCreditEntriesCreatedInput = {
@@ -136101,6 +138794,7 @@ export namespace Prisma {
     activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCreditEntryInput = {
@@ -136184,6 +138878,7 @@ export namespace Prisma {
     safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BranchUpsertWithoutCreditEntriesInput = {
@@ -136313,6 +139008,7 @@ export namespace Prisma {
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutCreditEntriesCreatedInput = {
@@ -136360,6 +139056,7 @@ export namespace Prisma {
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type CreditClearanceUpsertWithWhereUniqueWithoutCreditEntryInput = {
@@ -136458,6 +139155,7 @@ export namespace Prisma {
     ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditNotesIssued?: CreditNoteCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserUncheckedCreateWithoutCreditClearancesActedInput = {
@@ -136505,6 +139203,7 @@ export namespace Prisma {
     ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
     ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditNotesIssued?: CreditNoteUncheckedCreateNestedManyWithoutIssuedByInput
   }
 
   export type UserCreateOrConnectWithoutCreditClearancesActedInput = {
@@ -136609,6 +139308,7 @@ export namespace Prisma {
     ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutCreditClearancesActedInput = {
@@ -136656,6 +139356,805 @@ export namespace Prisma {
     ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
+  }
+
+  export type FileObjectCreateWithoutCreditNotePdfsInput = {
+    publicId: string
+    key: string
+    url: string
+    mime: string
+    size: number
+    createdAt?: Date | string
+    bookingPhotos?: BookingPhotoCreateNestedManyWithoutFileInput
+    customerKycs?: CustomerKycCreateNestedManyWithoutFileInput
+    bookingKycs?: BookingCreateNestedManyWithoutKycFileInput
+    vehicleImages?: VehicleImageCreateNestedManyWithoutFileInput
+    invoicePdfs?: InvoiceCreateNestedManyWithoutInvoicePdfFileInput
+    cancellationInvoices?: CancellationInvoiceCreateNestedManyWithoutInvoicePdfFileInput
+    returnReceiptPdfs?: ReturnReceiptCreateNestedManyWithoutReceiptPdfFileInput
+  }
+
+  export type FileObjectUncheckedCreateWithoutCreditNotePdfsInput = {
+    id?: number
+    publicId: string
+    key: string
+    url: string
+    mime: string
+    size: number
+    createdAt?: Date | string
+    bookingPhotos?: BookingPhotoUncheckedCreateNestedManyWithoutFileInput
+    customerKycs?: CustomerKycUncheckedCreateNestedManyWithoutFileInput
+    bookingKycs?: BookingUncheckedCreateNestedManyWithoutKycFileInput
+    vehicleImages?: VehicleImageUncheckedCreateNestedManyWithoutFileInput
+    invoicePdfs?: InvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
+    cancellationInvoices?: CancellationInvoiceUncheckedCreateNestedManyWithoutInvoicePdfFileInput
+    returnReceiptPdfs?: ReturnReceiptUncheckedCreateNestedManyWithoutReceiptPdfFileInput
+  }
+
+  export type FileObjectCreateOrConnectWithoutCreditNotePdfsInput = {
+    where: FileObjectWhereUniqueInput
+    create: XOR<FileObjectCreateWithoutCreditNotePdfsInput, FileObjectUncheckedCreateWithoutCreditNotePdfsInput>
+  }
+
+  export type BookingCreateWithoutCreditNotesInput = {
+    publicId: string
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    depositMethod?: $Enums.DepositMethod | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    kycFile?: FileObjectCreateNestedOneWithoutBookingKycsInput
+    customer: CustomerCreateNestedOneWithoutBookingsInput
+    branch: BranchCreateNestedOneWithoutBookingsInput
+    createdBy: UserCreateNestedOneWithoutBookingsCreatedInput
+    photos?: BookingPhotoCreateNestedManyWithoutBookingInput
+    damages?: DamageReportCreateNestedManyWithoutBookingInput
+    items?: BookingItemCreateNestedManyWithoutBookingInput
+    deposit?: DepositCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutBookingInput
+    discountRule?: DiscountRuleCreateNestedOneWithoutBookingsInput
+    discountApplication?: DiscountApplicationCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestCreateNestedManyWithoutBookingInput
+    activeExtension?: BookingExtensionCreateNestedOneWithoutActiveForBookingsInput
+    extensions?: BookingExtensionCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestCreateNestedOneWithoutBookingInput
+    activePaymentSession?: PaymentSessionCreateNestedOneWithoutActiveForBookingsInput
+    paymentSessions?: PaymentSessionCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingUncheckedCreateWithoutCreditNotesInput = {
+    id?: number
+    publicId: string
+    customerId: number
+    branchId: number
+    startAt: Date | string
+    endAt: Date | string
+    days: number
+    rentalPeriodType?: $Enums.RentalPeriodType | null
+    actualHours?: Decimal | DecimalJsLike | number | string | null
+    billableHours?: Decimal | DecimalJsLike | number | string | null
+    startOdometer?: number | null
+    endOdometer?: number | null
+    totalKmDriven?: number | null
+    freeKmLimit?: number | null
+    extraKmCharged?: number | null
+    holdExpiresAt?: Date | string | null
+    totalBase: Decimal | DecimalJsLike | number | string
+    totalDiscount: Decimal | DecimalJsLike | number | string
+    totalDeposit: Decimal | DecimalJsLike | number | string
+    totalTax?: Decimal | DecimalJsLike | number | string
+    totalFinal: Decimal | DecimalJsLike | number | string
+    status?: $Enums.BookingStatus
+    transactionId?: string | null
+    paymentStatus?: $Enums.PaymentStatus
+    pricingSnapshot: JsonNullValueInput | InputJsonValue
+    createdById: number
+    depositMethod?: $Enums.DepositMethod | null
+    kycFileId?: number | null
+    isAdvancePayment?: boolean
+    advanceAmount?: Decimal | DecimalJsLike | number | string
+    advancePaidAt?: Date | string | null
+    advancePaymentId?: string | null
+    advancePaymentMode?: $Enums.DepositMethod | null
+    remainingBalance?: Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: Date | string | null
+    remainingPaymentId?: string | null
+    remainingPaymentMode?: $Enums.DepositMethod | null
+    remainingPaidDuring?: string | null
+    safetyDeposit?: Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: Date | string | null
+    safetyDepositMethod?: $Enums.DepositMethod | null
+    safetyDepositRefunded?: boolean
+    safetyDepositRefundedAt?: Date | string | null
+    safetyDepositSetOff?: boolean
+    cancelledAt?: Date | string | null
+    cancellationReason?: string | null
+    requiresManagerConfirmation?: boolean
+    couponCode?: string | null
+    discountRuleId?: number | null
+    originalEndAt?: Date | string | null
+    extensionCount?: number
+    lastExtendedAt?: Date | string | null
+    activeExtensionId?: number | null
+    displacedByExtensionId?: number | null
+    extensionDisplacedAt?: Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: number
+    activePaymentSessionId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    photos?: BookingPhotoUncheckedCreateNestedManyWithoutBookingInput
+    damages?: DamageReportUncheckedCreateNestedManyWithoutBookingInput
+    items?: BookingItemUncheckedCreateNestedManyWithoutBookingInput
+    deposit?: DepositUncheckedCreateNestedOneWithoutBookingInput
+    invoice?: InvoiceUncheckedCreateNestedOneWithoutBookingInput
+    cancellationInvoice?: CancellationInvoiceUncheckedCreateNestedOneWithoutBookingInput
+    returnReceipt?: ReturnReceiptUncheckedCreateNestedOneWithoutBookingInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutBookingInput
+    discountApplication?: DiscountApplicationUncheckedCreateNestedOneWithoutBookingInput
+    manualDiscount?: ManualDiscountUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
+    refundRequests?: RefundRequestUncheckedCreateNestedManyWithoutBookingInput
+    extensions?: BookingExtensionUncheckedCreateNestedManyWithoutBookingInput
+    chargeEntries?: ChargeEntryUncheckedCreateNestedManyWithoutBookingInput
+    chargeOverrides?: ChargeOverrideUncheckedCreateNestedManyWithoutBookingInput
+    fuelRecord?: FuelRecordUncheckedCreateNestedOneWithoutBookingInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedCreateNestedOneWithoutBookingInput
+    paymentSessions?: PaymentSessionUncheckedCreateNestedManyWithoutBookingInput
+    ledgerEntries?: LedgerEntryUncheckedCreateNestedManyWithoutBookingInput
+    creditEntry?: CustomerCreditEntryUncheckedCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingCreateOrConnectWithoutCreditNotesInput = {
+    where: BookingWhereUniqueInput
+    create: XOR<BookingCreateWithoutCreditNotesInput, BookingUncheckedCreateWithoutCreditNotesInput>
+  }
+
+  export type InvoiceCreateWithoutCreditNotesInput = {
+    publicId: string
+    subtotal: Decimal | DecimalJsLike | number | string
+    discount: Decimal | DecimalJsLike | number | string
+    tax: Decimal | DecimalJsLike | number | string
+    damageCharges: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    status?: $Enums.InvoiceStatus
+    invoiceNumber?: string | null
+    generatedAt?: Date | string | null
+    createdAt?: Date | string
+    invoicePdfFile?: FileObjectCreateNestedOneWithoutInvoicePdfsInput
+    booking: BookingCreateNestedOneWithoutInvoiceInput
+    items?: InvoiceItemCreateNestedManyWithoutInvoiceInput
+    payments?: PaymentCreateNestedManyWithoutInvoiceInput
+  }
+
+  export type InvoiceUncheckedCreateWithoutCreditNotesInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discount: Decimal | DecimalJsLike | number | string
+    tax: Decimal | DecimalJsLike | number | string
+    damageCharges: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    status?: $Enums.InvoiceStatus
+    invoiceNumber?: string | null
+    invoicePdfFileId?: number | null
+    generatedAt?: Date | string | null
+    createdAt?: Date | string
+    items?: InvoiceItemUncheckedCreateNestedManyWithoutInvoiceInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutInvoiceInput
+  }
+
+  export type InvoiceCreateOrConnectWithoutCreditNotesInput = {
+    where: InvoiceWhereUniqueInput
+    create: XOR<InvoiceCreateWithoutCreditNotesInput, InvoiceUncheckedCreateWithoutCreditNotesInput>
+  }
+
+  export type ReturnReceiptCreateWithoutCreditNotesInput = {
+    publicId: string
+    receiptNumber?: string | null
+    lineItems?: JsonNullValueInput | InputJsonValue
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    depositPaid?: Decimal | DecimalJsLike | number | string
+    amountDue?: Decimal | DecimalJsLike | number | string
+    refundAmount?: Decimal | DecimalJsLike | number | string
+    generatedAt?: Date | string | null
+    createdAt?: Date | string
+    receiptPdfFile?: FileObjectCreateNestedOneWithoutReturnReceiptPdfsInput
+    booking: BookingCreateNestedOneWithoutReturnReceiptInput
+  }
+
+  export type ReturnReceiptUncheckedCreateWithoutCreditNotesInput = {
+    id?: number
+    publicId: string
+    bookingId: number
+    receiptNumber?: string | null
+    lineItems?: JsonNullValueInput | InputJsonValue
+    totalCharges?: Decimal | DecimalJsLike | number | string
+    depositPaid?: Decimal | DecimalJsLike | number | string
+    amountDue?: Decimal | DecimalJsLike | number | string
+    refundAmount?: Decimal | DecimalJsLike | number | string
+    receiptPdfFileId?: number | null
+    generatedAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
+  export type ReturnReceiptCreateOrConnectWithoutCreditNotesInput = {
+    where: ReturnReceiptWhereUniqueInput
+    create: XOR<ReturnReceiptCreateWithoutCreditNotesInput, ReturnReceiptUncheckedCreateWithoutCreditNotesInput>
+  }
+
+  export type UserCreateWithoutCreditNotesIssuedInput = {
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    branch?: BranchCreateNestedOneWithoutUsersInput
+    emailOtps?: EmailVerificationOtpCreateNestedManyWithoutUserInput
+    providers?: UserProviderCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceCreateNestedManyWithoutClearedByInput
+  }
+
+  export type UserUncheckedCreateWithoutCreditNotesIssuedInput = {
+    id?: number
+    publicId: string
+    name: string
+    email: string
+    passwordHash?: string | null
+    phone?: string
+    authProvider?: $Enums.AuthProvider
+    emailVerifiedAt?: Date | string | null
+    role: $Enums.Role
+    branchId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deletedAt?: Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedCreateNestedManyWithoutUserInput
+    providers?: UserProviderUncheckedCreateNestedManyWithoutUserInput
+    customerProfile?: CustomerUncheckedCreateNestedOneWithoutUserInput
+    actorAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    approverAuditLogs?: AuditLogUncheckedCreateNestedManyWithoutApproverInput
+    bookingsCreated?: BookingUncheckedCreateNestedManyWithoutCreatedByInput
+    approvedDamageReports?: DamageReportUncheckedCreateNestedManyWithoutApprovedByInput
+    vehicleSwaps?: VehicleSwapUncheckedCreateNestedManyWithoutSwappedByInput
+    discountRulesCreated?: DiscountRuleUncheckedCreateNestedManyWithoutCreatedByInput
+    manualDiscountsIssued?: ManualDiscountUncheckedCreateNestedManyWithoutIssuedByInput
+    manualDiscountsApproved?: ManualDiscountUncheckedCreateNestedManyWithoutApprovedByInput
+    collectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutCollectedByInput
+    confirmedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutConfirmedByInput
+    rejectedPayments?: PaymentTransactionUncheckedCreateNestedManyWithoutRejectedByInput
+    openShifts?: CashShiftUncheckedCreateNestedManyWithoutEmployeeInput
+    reconciledShifts?: CashShiftUncheckedCreateNestedManyWithoutReconciledByInput
+    refundRequestsMade?: RefundRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    refundRequestsApproved?: RefundRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    refundRequestsCompleted?: RefundRequestUncheckedCreateNestedManyWithoutCompletedByInput
+    initiatedExtensions?: BookingExtensionUncheckedCreateNestedManyWithoutActorInput
+    chargeEntriesCreated?: ChargeEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    overridesActed?: ChargeOverrideUncheckedCreateNestedManyWithoutActorInput
+    overridesApproved?: ChargeOverrideUncheckedCreateNestedManyWithoutApproverInput
+    fuelPickupCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByPickupInput
+    fuelReturnCaptures?: FuelRecordUncheckedCreateNestedManyWithoutCapturedByReturnInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedCreateNestedManyWithoutRequestedByInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedCreateNestedManyWithoutApprovedByInput
+    paymentSessionsOpened?: PaymentSessionUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesActed?: LedgerEntryUncheckedCreateNestedManyWithoutActorInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedCreateNestedManyWithoutVoidedByInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedCreateNestedManyWithoutCreatedByInput
+    creditClearancesActed?: CreditClearanceUncheckedCreateNestedManyWithoutClearedByInput
+  }
+
+  export type UserCreateOrConnectWithoutCreditNotesIssuedInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutCreditNotesIssuedInput, UserUncheckedCreateWithoutCreditNotesIssuedInput>
+  }
+
+  export type FileObjectUpsertWithoutCreditNotePdfsInput = {
+    update: XOR<FileObjectUpdateWithoutCreditNotePdfsInput, FileObjectUncheckedUpdateWithoutCreditNotePdfsInput>
+    create: XOR<FileObjectCreateWithoutCreditNotePdfsInput, FileObjectUncheckedCreateWithoutCreditNotePdfsInput>
+    where?: FileObjectWhereInput
+  }
+
+  export type FileObjectUpdateToOneWithWhereWithoutCreditNotePdfsInput = {
+    where?: FileObjectWhereInput
+    data: XOR<FileObjectUpdateWithoutCreditNotePdfsInput, FileObjectUncheckedUpdateWithoutCreditNotePdfsInput>
+  }
+
+  export type FileObjectUpdateWithoutCreditNotePdfsInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    url?: StringFieldUpdateOperationsInput | string
+    mime?: StringFieldUpdateOperationsInput | string
+    size?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    bookingPhotos?: BookingPhotoUpdateManyWithoutFileNestedInput
+    customerKycs?: CustomerKycUpdateManyWithoutFileNestedInput
+    bookingKycs?: BookingUpdateManyWithoutKycFileNestedInput
+    vehicleImages?: VehicleImageUpdateManyWithoutFileNestedInput
+    invoicePdfs?: InvoiceUpdateManyWithoutInvoicePdfFileNestedInput
+    cancellationInvoices?: CancellationInvoiceUpdateManyWithoutInvoicePdfFileNestedInput
+    returnReceiptPdfs?: ReturnReceiptUpdateManyWithoutReceiptPdfFileNestedInput
+  }
+
+  export type FileObjectUncheckedUpdateWithoutCreditNotePdfsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    url?: StringFieldUpdateOperationsInput | string
+    mime?: StringFieldUpdateOperationsInput | string
+    size?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    bookingPhotos?: BookingPhotoUncheckedUpdateManyWithoutFileNestedInput
+    customerKycs?: CustomerKycUncheckedUpdateManyWithoutFileNestedInput
+    bookingKycs?: BookingUncheckedUpdateManyWithoutKycFileNestedInput
+    vehicleImages?: VehicleImageUncheckedUpdateManyWithoutFileNestedInput
+    invoicePdfs?: InvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
+    cancellationInvoices?: CancellationInvoiceUncheckedUpdateManyWithoutInvoicePdfFileNestedInput
+    returnReceiptPdfs?: ReturnReceiptUncheckedUpdateManyWithoutReceiptPdfFileNestedInput
+  }
+
+  export type BookingUpsertWithoutCreditNotesInput = {
+    update: XOR<BookingUpdateWithoutCreditNotesInput, BookingUncheckedUpdateWithoutCreditNotesInput>
+    create: XOR<BookingCreateWithoutCreditNotesInput, BookingUncheckedCreateWithoutCreditNotesInput>
+    where?: BookingWhereInput
+  }
+
+  export type BookingUpdateToOneWithWhereWithoutCreditNotesInput = {
+    where?: BookingWhereInput
+    data: XOR<BookingUpdateWithoutCreditNotesInput, BookingUncheckedUpdateWithoutCreditNotesInput>
+  }
+
+  export type BookingUpdateWithoutCreditNotesInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    kycFile?: FileObjectUpdateOneWithoutBookingKycsNestedInput
+    customer?: CustomerUpdateOneRequiredWithoutBookingsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutBookingsNestedInput
+    createdBy?: UserUpdateOneRequiredWithoutBookingsCreatedNestedInput
+    photos?: BookingPhotoUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutBookingNestedInput
+    discountRule?: DiscountRuleUpdateOneWithoutBookingsNestedInput
+    discountApplication?: DiscountApplicationUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUpdateManyWithoutBookingNestedInput
+    activeExtension?: BookingExtensionUpdateOneWithoutActiveForBookingsNestedInput
+    extensions?: BookingExtensionUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUpdateOneWithoutBookingNestedInput
+    activePaymentSession?: PaymentSessionUpdateOneWithoutActiveForBookingsNestedInput
+    paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateWithoutCreditNotesInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    customerId?: IntFieldUpdateOperationsInput | number
+    branchId?: IntFieldUpdateOperationsInput | number
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    days?: IntFieldUpdateOperationsInput | number
+    rentalPeriodType?: NullableEnumRentalPeriodTypeFieldUpdateOperationsInput | $Enums.RentalPeriodType | null
+    actualHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    billableHours?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    startOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    endOdometer?: NullableIntFieldUpdateOperationsInput | number | null
+    totalKmDriven?: NullableIntFieldUpdateOperationsInput | number | null
+    freeKmLimit?: NullableIntFieldUpdateOperationsInput | number | null
+    extraKmCharged?: NullableIntFieldUpdateOperationsInput | number | null
+    holdExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalBase?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDiscount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalTax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalFinal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    pricingSnapshot?: JsonNullValueInput | InputJsonValue
+    createdById?: IntFieldUpdateOperationsInput | number
+    depositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    kycFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    isAdvancePayment?: BoolFieldUpdateOperationsInput | boolean
+    advanceAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    advancePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    advancePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    advancePaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingBalance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remainingPaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    remainingPaymentMode?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    remainingPaidDuring?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyDeposit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    safetyDepositPaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositMethod?: NullableEnumDepositMethodFieldUpdateOperationsInput | $Enums.DepositMethod | null
+    safetyDepositRefunded?: BoolFieldUpdateOperationsInput | boolean
+    safetyDepositRefundedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    safetyDepositSetOff?: BoolFieldUpdateOperationsInput | boolean
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requiresManagerConfirmation?: BoolFieldUpdateOperationsInput | boolean
+    couponCode?: NullableStringFieldUpdateOperationsInput | string | null
+    discountRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    originalEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    extensionCount?: IntFieldUpdateOperationsInput | number
+    lastExtendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activeExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    displacedByExtensionId?: NullableIntFieldUpdateOperationsInput | number | null
+    extensionDisplacedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    frozenChargeConfig?: NullableJsonNullValueInput | InputJsonValue
+    chargeConfigVersion?: IntFieldUpdateOperationsInput | number
+    activePaymentSessionId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    photos?: BookingPhotoUncheckedUpdateManyWithoutBookingNestedInput
+    damages?: DamageReportUncheckedUpdateManyWithoutBookingNestedInput
+    items?: BookingItemUncheckedUpdateManyWithoutBookingNestedInput
+    deposit?: DepositUncheckedUpdateOneWithoutBookingNestedInput
+    invoice?: InvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    cancellationInvoice?: CancellationInvoiceUncheckedUpdateOneWithoutBookingNestedInput
+    returnReceipt?: ReturnReceiptUncheckedUpdateOneWithoutBookingNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutBookingNestedInput
+    discountApplication?: DiscountApplicationUncheckedUpdateOneWithoutBookingNestedInput
+    manualDiscount?: ManualDiscountUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
+    refundRequests?: RefundRequestUncheckedUpdateManyWithoutBookingNestedInput
+    extensions?: BookingExtensionUncheckedUpdateManyWithoutBookingNestedInput
+    chargeEntries?: ChargeEntryUncheckedUpdateManyWithoutBookingNestedInput
+    chargeOverrides?: ChargeOverrideUncheckedUpdateManyWithoutBookingNestedInput
+    fuelRecord?: FuelRecordUncheckedUpdateOneWithoutBookingNestedInput
+    safetyDepositRequest?: SafetyDepositRequestUncheckedUpdateOneWithoutBookingNestedInput
+    paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
+    ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
+    creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+  }
+
+  export type InvoiceUpsertWithoutCreditNotesInput = {
+    update: XOR<InvoiceUpdateWithoutCreditNotesInput, InvoiceUncheckedUpdateWithoutCreditNotesInput>
+    create: XOR<InvoiceCreateWithoutCreditNotesInput, InvoiceUncheckedCreateWithoutCreditNotesInput>
+    where?: InvoiceWhereInput
+  }
+
+  export type InvoiceUpdateToOneWithWhereWithoutCreditNotesInput = {
+    where?: InvoiceWhereInput
+    data: XOR<InvoiceUpdateWithoutCreditNotesInput, InvoiceUncheckedUpdateWithoutCreditNotesInput>
+  }
+
+  export type InvoiceUpdateWithoutCreditNotesInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    damageCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumInvoiceStatusFieldUpdateOperationsInput | $Enums.InvoiceStatus
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    invoicePdfFile?: FileObjectUpdateOneWithoutInvoicePdfsNestedInput
+    booking?: BookingUpdateOneRequiredWithoutInvoiceNestedInput
+    items?: InvoiceItemUpdateManyWithoutInvoiceNestedInput
+    payments?: PaymentUpdateManyWithoutInvoiceNestedInput
+  }
+
+  export type InvoiceUncheckedUpdateWithoutCreditNotesInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    damageCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumInvoiceStatusFieldUpdateOperationsInput | $Enums.InvoiceStatus
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoicePdfFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    items?: InvoiceItemUncheckedUpdateManyWithoutInvoiceNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutInvoiceNestedInput
+  }
+
+  export type ReturnReceiptUpsertWithoutCreditNotesInput = {
+    update: XOR<ReturnReceiptUpdateWithoutCreditNotesInput, ReturnReceiptUncheckedUpdateWithoutCreditNotesInput>
+    create: XOR<ReturnReceiptCreateWithoutCreditNotesInput, ReturnReceiptUncheckedCreateWithoutCreditNotesInput>
+    where?: ReturnReceiptWhereInput
+  }
+
+  export type ReturnReceiptUpdateToOneWithWhereWithoutCreditNotesInput = {
+    where?: ReturnReceiptWhereInput
+    data: XOR<ReturnReceiptUpdateWithoutCreditNotesInput, ReturnReceiptUncheckedUpdateWithoutCreditNotesInput>
+  }
+
+  export type ReturnReceiptUpdateWithoutCreditNotesInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    receiptNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    lineItems?: JsonNullValueInput | InputJsonValue
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    depositPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    refundAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    receiptPdfFile?: FileObjectUpdateOneWithoutReturnReceiptPdfsNestedInput
+    booking?: BookingUpdateOneRequiredWithoutReturnReceiptNestedInput
+  }
+
+  export type ReturnReceiptUncheckedUpdateWithoutCreditNotesInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    bookingId?: IntFieldUpdateOperationsInput | number
+    receiptNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    lineItems?: JsonNullValueInput | InputJsonValue
+    totalCharges?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    depositPaid?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    amountDue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    refundAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    receiptPdfFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type UserUpsertWithoutCreditNotesIssuedInput = {
+    update: XOR<UserUpdateWithoutCreditNotesIssuedInput, UserUncheckedUpdateWithoutCreditNotesIssuedInput>
+    create: XOR<UserCreateWithoutCreditNotesIssuedInput, UserUncheckedCreateWithoutCreditNotesIssuedInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutCreditNotesIssuedInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutCreditNotesIssuedInput, UserUncheckedUpdateWithoutCreditNotesIssuedInput>
+  }
+
+  export type UserUpdateWithoutCreditNotesIssuedInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    branch?: BranchUpdateOneWithoutUsersNestedInput
+    emailOtps?: EmailVerificationOtpUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutCreditNotesIssuedInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: StringFieldUpdateOperationsInput | string
+    authProvider?: EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+    emailVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    branchId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailOtps?: EmailVerificationOtpUncheckedUpdateManyWithoutUserNestedInput
+    providers?: UserProviderUncheckedUpdateManyWithoutUserNestedInput
+    customerProfile?: CustomerUncheckedUpdateOneWithoutUserNestedInput
+    actorAuditLogs?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    approverAuditLogs?: AuditLogUncheckedUpdateManyWithoutApproverNestedInput
+    bookingsCreated?: BookingUncheckedUpdateManyWithoutCreatedByNestedInput
+    approvedDamageReports?: DamageReportUncheckedUpdateManyWithoutApprovedByNestedInput
+    vehicleSwaps?: VehicleSwapUncheckedUpdateManyWithoutSwappedByNestedInput
+    discountRulesCreated?: DiscountRuleUncheckedUpdateManyWithoutCreatedByNestedInput
+    manualDiscountsIssued?: ManualDiscountUncheckedUpdateManyWithoutIssuedByNestedInput
+    manualDiscountsApproved?: ManualDiscountUncheckedUpdateManyWithoutApprovedByNestedInput
+    collectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutCollectedByNestedInput
+    confirmedPayments?: PaymentTransactionUncheckedUpdateManyWithoutConfirmedByNestedInput
+    rejectedPayments?: PaymentTransactionUncheckedUpdateManyWithoutRejectedByNestedInput
+    openShifts?: CashShiftUncheckedUpdateManyWithoutEmployeeNestedInput
+    reconciledShifts?: CashShiftUncheckedUpdateManyWithoutReconciledByNestedInput
+    refundRequestsMade?: RefundRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    refundRequestsApproved?: RefundRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    refundRequestsCompleted?: RefundRequestUncheckedUpdateManyWithoutCompletedByNestedInput
+    initiatedExtensions?: BookingExtensionUncheckedUpdateManyWithoutActorNestedInput
+    chargeEntriesCreated?: ChargeEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    overridesActed?: ChargeOverrideUncheckedUpdateManyWithoutActorNestedInput
+    overridesApproved?: ChargeOverrideUncheckedUpdateManyWithoutApproverNestedInput
+    fuelPickupCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByPickupNestedInput
+    fuelReturnCaptures?: FuelRecordUncheckedUpdateManyWithoutCapturedByReturnNestedInput
+    safetyDepositRequests?: SafetyDepositRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+    safetyDepositApprovals?: SafetyDepositRequestUncheckedUpdateManyWithoutApprovedByNestedInput
+    paymentSessionsOpened?: PaymentSessionUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesActed?: LedgerEntryUncheckedUpdateManyWithoutActorNestedInput
+    ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
+    creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
+    creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
   }
 
   export type EmailVerificationOtpCreateManyUserInput = {
@@ -137305,6 +140804,21 @@ export namespace Prisma {
     clearedAt?: Date | string
   }
 
+  export type CreditNoteCreateManyIssuedByInput = {
+    id?: number
+    publicId: string
+    creditNoteNumber?: string | null
+    bookingId: number
+    invoiceId?: number | null
+    receiptId?: number | null
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.CreditNoteStatus
+    pdfFileId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type EmailVerificationOtpUpdateWithoutUserInput = {
     phone?: StringFieldUpdateOperationsInput | string
     otpHash?: StringFieldUpdateOperationsInput | string
@@ -137597,6 +141111,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCreatedByInput = {
@@ -137680,6 +141195,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutCreatedByInput = {
@@ -139289,6 +142805,50 @@ export namespace Prisma {
     clearedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type CreditNoteUpdateWithoutIssuedByInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    creditNoteNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumCreditNoteStatusFieldUpdateOperationsInput | $Enums.CreditNoteStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    pdfFile?: FileObjectUpdateOneWithoutCreditNotePdfsNestedInput
+    booking?: BookingUpdateOneRequiredWithoutCreditNotesNestedInput
+    invoice?: InvoiceUpdateOneWithoutCreditNotesNestedInput
+    receipt?: ReturnReceiptUpdateOneWithoutCreditNotesNestedInput
+  }
+
+  export type CreditNoteUncheckedUpdateWithoutIssuedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    creditNoteNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    bookingId?: IntFieldUpdateOperationsInput | number
+    invoiceId?: NullableIntFieldUpdateOperationsInput | number | null
+    receiptId?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumCreditNoteStatusFieldUpdateOperationsInput | $Enums.CreditNoteStatus
+    pdfFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CreditNoteUncheckedUpdateManyWithoutIssuedByInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    creditNoteNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    bookingId?: IntFieldUpdateOperationsInput | number
+    invoiceId?: NullableIntFieldUpdateOperationsInput | number | null
+    receiptId?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumCreditNoteStatusFieldUpdateOperationsInput | $Enums.CreditNoteStatus
+    pdfFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type CustomerKycCreateManyCustomerInput = {
     id?: number
     publicId: string
@@ -139499,6 +143059,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutCustomerInput = {
@@ -139582,6 +143143,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutCustomerInput = {
@@ -139879,6 +143441,21 @@ export namespace Prisma {
     createdAt?: Date | string
   }
 
+  export type CreditNoteCreateManyPdfFileInput = {
+    id?: number
+    publicId: string
+    creditNoteNumber?: string | null
+    bookingId: number
+    invoiceId?: number | null
+    receiptId?: number | null
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.CreditNoteStatus
+    issuedById: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type BookingPhotoUpdateWithoutFileInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
@@ -140014,6 +143591,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutKycFileInput = {
@@ -140097,6 +143675,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutKycFileInput = {
@@ -140199,6 +143778,7 @@ export namespace Prisma {
     booking?: BookingUpdateOneRequiredWithoutInvoiceNestedInput
     items?: InvoiceItemUpdateManyWithoutInvoiceNestedInput
     payments?: PaymentUpdateManyWithoutInvoiceNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutInvoiceNestedInput
   }
 
   export type InvoiceUncheckedUpdateWithoutInvoicePdfFileInput = {
@@ -140216,6 +143796,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: InvoiceItemUncheckedUpdateManyWithoutInvoiceNestedInput
     payments?: PaymentUncheckedUpdateManyWithoutInvoiceNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutInvoiceNestedInput
   }
 
   export type InvoiceUncheckedUpdateManyWithoutInvoicePdfFileInput = {
@@ -140294,6 +143875,7 @@ export namespace Prisma {
     generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     booking?: BookingUpdateOneRequiredWithoutReturnReceiptNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutReceiptNestedInput
   }
 
   export type ReturnReceiptUncheckedUpdateWithoutReceiptPdfFileInput = {
@@ -140308,6 +143890,7 @@ export namespace Prisma {
     refundAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutReceiptNestedInput
   }
 
   export type ReturnReceiptUncheckedUpdateManyWithoutReceiptPdfFileInput = {
@@ -140322,6 +143905,50 @@ export namespace Prisma {
     refundAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     generatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CreditNoteUpdateWithoutPdfFileInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    creditNoteNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumCreditNoteStatusFieldUpdateOperationsInput | $Enums.CreditNoteStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutCreditNotesNestedInput
+    invoice?: InvoiceUpdateOneWithoutCreditNotesNestedInput
+    receipt?: ReturnReceiptUpdateOneWithoutCreditNotesNestedInput
+    issuedBy?: UserUpdateOneRequiredWithoutCreditNotesIssuedNestedInput
+  }
+
+  export type CreditNoteUncheckedUpdateWithoutPdfFileInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    creditNoteNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    bookingId?: IntFieldUpdateOperationsInput | number
+    invoiceId?: NullableIntFieldUpdateOperationsInput | number | null
+    receiptId?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumCreditNoteStatusFieldUpdateOperationsInput | $Enums.CreditNoteStatus
+    issuedById?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CreditNoteUncheckedUpdateManyWithoutPdfFileInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    creditNoteNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    bookingId?: IntFieldUpdateOperationsInput | number
+    invoiceId?: NullableIntFieldUpdateOperationsInput | number | null
+    receiptId?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumCreditNoteStatusFieldUpdateOperationsInput | $Enums.CreditNoteStatus
+    issuedById?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type UserCreateManyBranchInput = {
@@ -140692,6 +144319,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutBranchInput = {
@@ -140739,6 +144367,7 @@ export namespace Prisma {
     ledgerEntriesVoided?: LedgerEntryUncheckedUpdateManyWithoutVoidedByNestedInput
     creditEntriesCreated?: CustomerCreditEntryUncheckedUpdateManyWithoutCreatedByNestedInput
     creditClearancesActed?: CreditClearanceUncheckedUpdateManyWithoutClearedByNestedInput
+    creditNotesIssued?: CreditNoteUncheckedUpdateManyWithoutIssuedByNestedInput
   }
 
   export type UserUncheckedUpdateManyWithoutBranchInput = {
@@ -140914,6 +144543,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutBranchInput = {
@@ -140997,6 +144627,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutBranchInput = {
@@ -142706,6 +146337,21 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type CreditNoteCreateManyBookingInput = {
+    id?: number
+    publicId: string
+    creditNoteNumber?: string | null
+    invoiceId?: number | null
+    receiptId?: number | null
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.CreditNoteStatus
+    issuedById: number
+    pdfFileId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type BookingPhotoUpdateWithoutBookingInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     type?: EnumBookingPhotoTypeFieldUpdateOperationsInput | $Enums.BookingPhotoType
@@ -143339,6 +146985,50 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type CreditNoteUpdateWithoutBookingInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    creditNoteNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumCreditNoteStatusFieldUpdateOperationsInput | $Enums.CreditNoteStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    pdfFile?: FileObjectUpdateOneWithoutCreditNotePdfsNestedInput
+    invoice?: InvoiceUpdateOneWithoutCreditNotesNestedInput
+    receipt?: ReturnReceiptUpdateOneWithoutCreditNotesNestedInput
+    issuedBy?: UserUpdateOneRequiredWithoutCreditNotesIssuedNestedInput
+  }
+
+  export type CreditNoteUncheckedUpdateWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    creditNoteNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceId?: NullableIntFieldUpdateOperationsInput | number | null
+    receiptId?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumCreditNoteStatusFieldUpdateOperationsInput | $Enums.CreditNoteStatus
+    issuedById?: IntFieldUpdateOperationsInput | number
+    pdfFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CreditNoteUncheckedUpdateManyWithoutBookingInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    creditNoteNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceId?: NullableIntFieldUpdateOperationsInput | number | null
+    receiptId?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumCreditNoteStatusFieldUpdateOperationsInput | $Enums.CreditNoteStatus
+    issuedById?: IntFieldUpdateOperationsInput | number
+    pdfFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type BookingPhotoCreateManyDamageReportInput = {
     id?: number
     publicId: string
@@ -143398,6 +147088,21 @@ export namespace Prisma {
     createdAt?: Date | string
   }
 
+  export type CreditNoteCreateManyInvoiceInput = {
+    id?: number
+    publicId: string
+    creditNoteNumber?: string | null
+    bookingId: number
+    receiptId?: number | null
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.CreditNoteStatus
+    issuedById: number
+    pdfFileId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type InvoiceItemUpdateWithoutInvoiceInput = {
     publicId?: StringFieldUpdateOperationsInput | string
     label?: StringFieldUpdateOperationsInput | string
@@ -143454,6 +147159,109 @@ export namespace Prisma {
     status?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CreditNoteUpdateWithoutInvoiceInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    creditNoteNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumCreditNoteStatusFieldUpdateOperationsInput | $Enums.CreditNoteStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    pdfFile?: FileObjectUpdateOneWithoutCreditNotePdfsNestedInput
+    booking?: BookingUpdateOneRequiredWithoutCreditNotesNestedInput
+    receipt?: ReturnReceiptUpdateOneWithoutCreditNotesNestedInput
+    issuedBy?: UserUpdateOneRequiredWithoutCreditNotesIssuedNestedInput
+  }
+
+  export type CreditNoteUncheckedUpdateWithoutInvoiceInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    creditNoteNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    bookingId?: IntFieldUpdateOperationsInput | number
+    receiptId?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumCreditNoteStatusFieldUpdateOperationsInput | $Enums.CreditNoteStatus
+    issuedById?: IntFieldUpdateOperationsInput | number
+    pdfFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CreditNoteUncheckedUpdateManyWithoutInvoiceInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    creditNoteNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    bookingId?: IntFieldUpdateOperationsInput | number
+    receiptId?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumCreditNoteStatusFieldUpdateOperationsInput | $Enums.CreditNoteStatus
+    issuedById?: IntFieldUpdateOperationsInput | number
+    pdfFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CreditNoteCreateManyReceiptInput = {
+    id?: number
+    publicId: string
+    creditNoteNumber?: string | null
+    bookingId: number
+    invoiceId?: number | null
+    amount: Decimal | DecimalJsLike | number | string
+    reason: string
+    status?: $Enums.CreditNoteStatus
+    issuedById: number
+    pdfFileId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type CreditNoteUpdateWithoutReceiptInput = {
+    publicId?: StringFieldUpdateOperationsInput | string
+    creditNoteNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumCreditNoteStatusFieldUpdateOperationsInput | $Enums.CreditNoteStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    pdfFile?: FileObjectUpdateOneWithoutCreditNotePdfsNestedInput
+    booking?: BookingUpdateOneRequiredWithoutCreditNotesNestedInput
+    invoice?: InvoiceUpdateOneWithoutCreditNotesNestedInput
+    issuedBy?: UserUpdateOneRequiredWithoutCreditNotesIssuedNestedInput
+  }
+
+  export type CreditNoteUncheckedUpdateWithoutReceiptInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    creditNoteNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    bookingId?: IntFieldUpdateOperationsInput | number
+    invoiceId?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumCreditNoteStatusFieldUpdateOperationsInput | $Enums.CreditNoteStatus
+    issuedById?: IntFieldUpdateOperationsInput | number
+    pdfFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CreditNoteUncheckedUpdateManyWithoutReceiptInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    publicId?: StringFieldUpdateOperationsInput | string
+    creditNoteNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    bookingId?: IntFieldUpdateOperationsInput | number
+    invoiceId?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    status?: EnumCreditNoteStatusFieldUpdateOperationsInput | $Enums.CreditNoteStatus
+    issuedById?: IntFieldUpdateOperationsInput | number
+    pdfFileId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type BranchFeatureFlagCreateManyFlagInput = {
@@ -143723,6 +147531,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutDiscountRuleInput = {
@@ -143806,6 +147615,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutDiscountRuleInput = {
@@ -144171,6 +147981,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutActiveExtensionInput = {
@@ -144254,6 +148065,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutActiveExtensionInput = {
@@ -144557,6 +148369,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutActivePaymentSessionInput = {
@@ -144640,6 +148453,7 @@ export namespace Prisma {
     paymentSessions?: PaymentSessionUncheckedUpdateManyWithoutBookingNestedInput
     ledgerEntries?: LedgerEntryUncheckedUpdateManyWithoutBookingNestedInput
     creditEntry?: CustomerCreditEntryUncheckedUpdateOneWithoutBookingNestedInput
+    creditNotes?: CreditNoteUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutActivePaymentSessionInput = {
@@ -144789,6 +148603,10 @@ export namespace Prisma {
      * @deprecated Use InvoiceCountOutputTypeDefaultArgs instead
      */
     export type InvoiceCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = InvoiceCountOutputTypeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ReturnReceiptCountOutputTypeDefaultArgs instead
+     */
+    export type ReturnReceiptCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ReturnReceiptCountOutputTypeDefaultArgs<ExtArgs>
     /**
      * @deprecated Use FeatureFlagCountOutputTypeDefaultArgs instead
      */
@@ -145057,6 +148875,10 @@ export namespace Prisma {
      * @deprecated Use CreditClearanceDefaultArgs instead
      */
     export type CreditClearanceArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CreditClearanceDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use CreditNoteDefaultArgs instead
+     */
+    export type CreditNoteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CreditNoteDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

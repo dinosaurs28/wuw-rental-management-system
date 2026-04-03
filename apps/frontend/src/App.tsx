@@ -68,6 +68,9 @@ import { AdminBranchDetailPage } from "./pages/admin/AdminBranchDetailPage";
 import { AdminWhatsAppConfigPage } from "./pages/admin/AdminWhatsAppConfigPage";
 import { AdminAuditLogPage } from "./pages/admin/AdminAuditLogPage";
 import { AdminStaffActivityPage } from "./pages/admin/AdminStaffActivityPage";
+import { InvoiceReportPage } from "./pages/admin/reports/InvoiceReportPage";
+import { ReceiptReportPage } from "./pages/admin/reports/ReceiptReportPage";
+import { CustomerReportPage } from "./pages/admin/reports/CustomerReportPage";
 import { ManagerStaffActivityPage } from "./pages/manager/ManagerStaffActivityPage";
 import { LedgerPage } from "./pages/manager/LedgerPage";
 import { CustomerCreditPage } from "./pages/manager/CustomerCreditPage";
@@ -282,6 +285,9 @@ function App() {
               element={<FleetExecutivePage />}
             />
             <Route path="/admin/reports/gst" element={<GSTReportPage />} />
+            <Route path="/admin/reports/invoices" element={<InvoiceReportPage />} />
+            <Route path="/admin/reports/receipts" element={<ReceiptReportPage />} />
+            <Route path="/admin/reports/customers" element={<CustomerReportPage />} />
             <Route
               path="/admin/discount-rules"
               element={<AdminDiscountRulesPage />}

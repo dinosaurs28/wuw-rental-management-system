@@ -597,9 +597,8 @@ async function main() {
 
   await prisma.branchFeatureFlag.create({
     data: {
-      publicId: nanoid(),
       branchId: manipalBranch.id,
-      featureFlagId: branchDiscountFlag.id,
+      flagId: branchDiscountFlag.id,
       enabled: true,
     },
   });

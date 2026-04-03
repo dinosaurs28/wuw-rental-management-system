@@ -78,6 +78,7 @@ import discountRouter from "./discount.routes.js";
 import paymentRouter from "./payment.routes.js";
 import extensionRouter from "./extension.routes.js";
 import ledgerRouter from "./ledger.routes.js";
+import creditNoteRouter from "./creditNote.routes.js";
 import {
   GetBranchChargeConfig,
   UpsertBranchChargeConfig,
@@ -261,5 +262,8 @@ router.patch("/vehicles/:vehicleId/fastag", ManagerCheck, UpdateVehicleFastag);
 
 // ── Customer Credit Ledger ────────────────────────────────────────────────────
 router.use("/ledger", ledgerRouter);
+
+// ── Credit Notes ──────────────────────────────────────────────────────────────
+router.use("/credit-notes", creditNoteRouter);
 
 export default router;

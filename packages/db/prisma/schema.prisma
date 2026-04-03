@@ -212,6 +212,7 @@ model User {
   ledgerEntriesVoided   LedgerEntry[]          @relation("LedgerEntryVoidedBy")
   creditEntriesCreated  CustomerCreditEntry[]  @relation("CreditEntryCreator")
   creditClearancesActed CreditClearance[]      @relation("CreditClearanceActor")
+  creditNotesIssued     CreditNote[]           @relation("CreditNoteIssuer")
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   deletedAt             DateTime?
@@ -308,6 +309,7 @@ model FileObject {
   invoicePdfs   Invoice[]      @relation("InvoicePdf")
   cancellationInvoices  CancellationInvoice[] @relation("CancellationInvoicePdf")
   returnReceiptPdfs ReturnReceipt[] @relation("ReturnReceiptPdf")
+  creditNotePdfs    CreditNote[]   @relation("CreditNotePdf")
 
   @@index([publicId])
 }
@@ -843,6 +845,7 @@ model Booking {
 
   // Credit Ledger
   creditEntry            CustomerCreditEntry?
+  creditNotes            CreditNote[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -994,7 +997,8 @@ model Invoice {
   booking   Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   items     InvoiceItem[]
   payments  Payment[]
-  createdAt DateTime      @default(now())
+  creditNotes CreditNote[]
+  createdAt   DateTime      @default(now())
 
   @@index([bookingId])
   @@index([invoicePdfFileId])
@@ -1176,8 +1180,9 @@ model ReturnReceipt {
   receiptPdfFile   FileObject? @relation("ReturnReceiptPdf", fields: [receiptPdfFileId], references: [id], onDelete: SetNull)
   generatedAt      DateTime?
 
-  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  booking     Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  creditNotes CreditNote[]
+  createdAt   DateTime     @default(now())
 
   @@index([bookingId])
   @@index([receiptPdfFileId])
@@ -2114,4 +2119,43 @@ model CreditClearance {
   clearedBy   User                @relation("CreditClearanceActor", fields: [clearedById], references: [id])
 
   @@index([creditEntryId])
+}
+
+// ── Credit Note ───────────────────────────────────────────────────────────────
+
+enum CreditNoteStatus {
+  APPROVED
+  REJECTED
+}
+
+model CreditNote {
+  id               Int              @id @default(autoincrement())
+  publicId         String           @unique
+  creditNoteNumber String?          @unique
+
+  bookingId        Int
+  invoiceId        Int?
+  receiptId        Int?
+
+  amount           Decimal          @db.Decimal(10, 2)
+  reason           String
+  status           CreditNoteStatus @default(APPROVED)
+
+  issuedById       Int
+
+  pdfFileId        Int?
+  pdfFile          FileObject?      @relation("CreditNotePdf", fields: [pdfFileId], references: [id], onDelete: SetNull)
+
+  booking          Booking          @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  invoice          Invoice?         @relation(fields: [invoiceId], references: [id])
+  receipt          ReturnReceipt?   @relation(fields: [receiptId], references: [id])
+  issuedBy         User             @relation("CreditNoteIssuer", fields: [issuedById], references: [id])
+
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([bookingId])
+  @@index([invoiceId])
+  @@index([receiptId])
+  @@index([issuedById])
 }
