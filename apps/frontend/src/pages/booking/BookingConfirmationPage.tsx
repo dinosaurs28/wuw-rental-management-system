@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useBlocker, Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
   CheckCircle,
@@ -78,13 +78,18 @@ export const BookingConfirmationPage = () => {
   const [holdExpiresAt, setHoldExpiresAt] = useState<string | null>(null);
 
   // Block browser back button while booking hold is active
-  const blocker = useBlocker(() => !!bookingData && !allowNavigationRef.current);
-
   useEffect(() => {
-    if (blocker.state === "blocked") {
-      setShowCancelDialog(true);
-    }
-  }, [blocker.state]);
+    if (!bookingData || allowNavigationRef.current) return;
+    window.history.pushState(null, '', window.location.href);
+    const handlePopState = () => {
+      if (!allowNavigationRef.current) {
+        window.history.pushState(null, '', window.location.href);
+        setShowCancelDialog(true);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [bookingData]);
 
   // Get booking state from store
   const {
@@ -234,8 +239,7 @@ export const BookingConfirmationPage = () => {
     const id = holdId ?? bookingData?.holdId;
     if (!id) {
       allowNavigationRef.current = true;
-      if (blocker.state === "blocked") blocker.proceed();
-      else navigate("/booking/review-confirm");
+      navigate("/booking/review-confirm");
       return;
     }
     setIsCancelling(true);
@@ -244,8 +248,7 @@ export const BookingConfirmationPage = () => {
       clearBookingState();
       toast.info("Booking hold cancelled.");
       allowNavigationRef.current = true;
-      if (blocker.state === "blocked") blocker.proceed();
-      else navigate("/booking/review-confirm");
+      navigate("/booking/review-confirm");
     } catch {
       toast.error("Failed to cancel hold. Please try again.");
     } finally {
@@ -741,10 +744,7 @@ export const BookingConfirmationPage = () => {
 
           <AlertDialog
             open={showCancelDialog}
-            onOpenChange={(open) => {
-              if (!open && blocker.state === "blocked") blocker.reset();
-              setShowCancelDialog(open);
-            }}
+            onOpenChange={setShowCancelDialog}
           >
             <AlertDialogContent>
               <AlertDialogHeader>
