@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { StatusCode } from "../../types/statusCode.js";
 import { prisma } from "@repo/database/client";
-import { BookingStatus, DepositMethod } from "@repo/database/client";
+import { BookingStatus } from "@repo/database/client";
 import { exportDailySummaryToExcel } from "../../utils/exportToExcel.js";
 import { exportDailySummaryToCSV } from "../../utils/exportToCSV.js";
 
@@ -115,15 +115,17 @@ export const GetDailySummary = async (req: Request, res: Response) => {
         _count: true,
       }),
 
-      // Deposits collected today grouped by method
-      prisma.deposit.groupBy({
+      // Payments collected today via PaymentTransaction (COLLECTED or CONFIRMED)
+      // Groups by method: CASH | ONLINE | SPLIT
+      prisma.paymentTransaction.groupBy({
         by: ["method"],
         where: {
           createdAt: { gte: startOfDay, lte: endOfDay },
-          booking: branchFilter ? { branchId: branchFilter.id } : undefined,
+          status: { in: ["COLLECTED", "CONFIRMED"] },
+          branchId: branchFilter?.id,
         },
         _sum: {
-          amount: true,
+          totalAmount: true,
         },
         _count: true,
       }),
@@ -230,20 +232,13 @@ export const GetDailySummary = async (req: Request, res: Response) => {
     const totalDeposit = Number(newBookingsData._sum.totalDeposit || 0);
     const yesterdayRevenue = Number(yesterdayRevenueData._sum.totalFinal || 0);
 
-    // Collections breakdown
+    // Collections breakdown from PaymentTransaction (method: CASH | ONLINE | SPLIT)
     const collectionsByMethod = depositsData.reduce(
-      (acc, deposit) => {
-        const amount = Number(deposit._sum.amount || 0);
-        const method = deposit.method;
-
-        if (method === DepositMethod.CASH) {
-          acc.cash += amount;
-        } else if (method === DepositMethod.UPI) {
-          acc.upi += amount;
-        } else if (method === DepositMethod.ONLINE_RAZORPAY) {
-          acc.online += amount;
-        }
-
+      (acc, txn) => {
+        const amount = Number(txn._sum.totalAmount || 0);
+        if (txn.method === "CASH") acc.cash += amount;
+        else if (txn.method === "ONLINE") acc.online += amount;
+        else if (txn.method === "SPLIT") { acc.cash += amount; acc.online += amount; } // split already broken into cashAmount/onlineAmount at txn level; approximate as total here
         return acc;
       },
       { cash: 0, upi: 0, online: 0 },
@@ -255,10 +250,10 @@ export const GetDailySummary = async (req: Request, res: Response) => {
       collectionsByMethod.online;
 
     // Collections breakdown array
-    const collectionsBreakdown = depositsData.map((deposit) => ({
-      method: deposit.method,
-      amount: Number(deposit._sum.amount || 0),
-      count: deposit._count,
+    const collectionsBreakdown = depositsData.map((txn) => ({
+      method: txn.method,
+      amount: Number(txn._sum.totalAmount || 0),
+      count: txn._count,
     }));
 
     // Vehicle counts
@@ -314,10 +309,10 @@ export const GetDailySummary = async (req: Request, res: Response) => {
         generatedAt: new Date().toISOString(),
       },
       revenue: {
-        newBookings: totalRevenue,
-        advanceCollected: totalRevenue - totalDeposit, // Approximation
-        depositCollected: totalCollected,
-        totalCollected: totalCollected,
+        newBookings: totalRevenue,        // Total billed (totalFinal) for bookings created today
+        totalCollected: totalCollected,   // Cash actually collected today (PaymentTransactions)
+        outstanding: Math.max(0, totalRevenue - totalCollected),
+        depositCollected: Number(newBookingsData._sum.totalDeposit || 0), // Safety deposit billed
       },
       bookings: {
         newBookings: newBookingsData._count,

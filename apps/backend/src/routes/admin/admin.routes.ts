@@ -28,6 +28,9 @@ import { GetInsurancePermitExpiry } from "../../controller/admin/insurancePermit
 import { GetCollectionReport } from "../../controller/admin/collectionReportController.js";
 import { GetFleetExecutiveReport } from "../../controller/admin/fleetExecutiveController.js";
 import { GetGSTReport } from "../../controller/admin/gstReportController.js";
+import { GetInvoiceReport } from "../../controller/admin/invoiceReportController.js";
+import { GetReceiptReport } from "../../controller/admin/receiptReportController.js";
+import { GetCustomerReport } from "../../controller/admin/customerReportController.js";
 import { GetAllCategories } from "../../controller/admin/category.controller.js";
 import { getGlobalKpiStats } from "../../controller/admin/globalKpi.controller.js";
 import { GetAllVehicles } from "../../controller/admin/vehicle.controller.js";
@@ -91,6 +94,9 @@ router.get(
   GetFleetExecutiveReport,
 );
 router.get("/dashboard/reports/gst", AdminCheck, GetGSTReport);
+router.get("/dashboard/reports/invoices", AdminCheck, GetInvoiceReport);
+router.get("/dashboard/reports/receipts", AdminCheck, GetReceiptReport);
+router.get("/dashboard/reports/customers", AdminCheck, GetCustomerReport);
 
 router.get("/dashboard/categories", AdminCheck, GetAllCategories);
 router.get("/dashboard/vehicles", AdminCheck, GetAllVehicles);

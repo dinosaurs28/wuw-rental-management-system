@@ -126,6 +126,21 @@ const reportItems = [
     url: "/admin/reports/gst",
     icon: Receipt,
   },
+  {
+    title: "Invoice Report",
+    url: "/admin/reports/invoices",
+    icon: FileText,
+  },
+  {
+    title: "Receipt Report",
+    url: "/admin/reports/receipts",
+    icon: Receipt,
+  },
+  {
+    title: "Customer Report",
+    url: "/admin/reports/customers",
+    icon: Users,
+  },
 ];
 
 export function AdminLayout() {

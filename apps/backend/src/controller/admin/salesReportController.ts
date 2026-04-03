@@ -266,12 +266,27 @@ export const GetSalesReport = async (req: Request, res: Response) => {
     const totalDiscounts = Number(summaryMetrics._sum.totalDiscount || 0);
     const netRevenue = totalRevenue - totalDiscounts;
 
-    // Calculate outstanding amount (bookings not fully paid)
+    // Collected amount per booking from PaymentTransaction (COLLECTED or CONFIRMED,
+    // excluding safety deposits and refunds which are not rental revenue)
+    const REVENUE_PURPOSES = ["ADVANCE", "REMAINING_BALANCE", "FULL_PAYMENT", "EXTENSION", "DAMAGE_FEE"];
+    const bookingIds = bookings.map((b) => b.id);
+    const collectedTxns = await prisma.paymentTransaction.findMany({
+      where: {
+        bookingId: { in: bookingIds },
+        status: { in: ["COLLECTED", "CONFIRMED"] },
+        purpose: { in: REVENUE_PURPOSES as any },
+      },
+      select: { bookingId: true, totalAmount: true },
+    });
+    const collectedByBooking = collectedTxns.reduce<Record<number, number>>((acc, t) => {
+      acc[t.bookingId] = (acc[t.bookingId] ?? 0) + Number(t.totalAmount);
+      return acc;
+    }, {});
+
     const outstandingAmount = bookings.reduce((sum, booking) => {
-      if (booking.paymentStatus !== PaymentStatus.SUCCESS) {
-        return sum + Number(booking.totalFinal || 0);
-      }
-      return sum;
+      const collected = collectedByBooking[booking.id] ?? 0;
+      const due = Math.max(0, Number(booking.totalFinal) - collected);
+      return sum + due;
     }, 0);
 
     // Format bookings data
@@ -305,14 +320,8 @@ export const GetSalesReport = async (req: Request, res: Response) => {
         totalTax: Number(booking.invoice?.tax || 0),
         depositAmount: Number(booking.totalDeposit),
         totalAmount: Number(booking.totalFinal),
-        amountPaid:
-          booking.paymentStatus === PaymentStatus.SUCCESS
-            ? Number(booking.totalFinal)
-            : 0,
-        balanceAmount:
-          booking.paymentStatus === PaymentStatus.SUCCESS
-            ? 0
-            : Number(booking.totalFinal),
+        amountPaid: collectedByBooking[booking.id] ?? 0,
+        balanceAmount: Math.max(0, Number(booking.totalFinal) - (collectedByBooking[booking.id] ?? 0)),
       },
       payment: {
         depositMethod: booking.depositMethod || "N/A",

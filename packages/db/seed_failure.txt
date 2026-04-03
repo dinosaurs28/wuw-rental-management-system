@@ -4,14 +4,14 @@
 }
 PrismaClientValidationError: 
 Invalid `prisma.branchFeatureFlag.create()` invocation in
-C:\Freelance\vrms\packages\db\prisma\seed.ts:598:34
+/Users/sushan/Projects/freelance/wuw-rental-management-system/packages/db/prisma/seed.ts:598:34
 
   595   },
   596 });
   597 
 → 598 await prisma.branchFeatureFlag.create({
         data: {
-          publicId: "ox8k4hjpy6wzqhcu",
+          publicId: "9mavw4d0eqi6hfow",
           branchId: 3,
           featureFlagId: 4,
           enabled: true,

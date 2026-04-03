@@ -1085,6 +1085,22 @@ exports.Prisma.CreditClearanceScalarFieldEnum = {
   clearedAt: 'clearedAt'
 };
 
+exports.Prisma.CreditNoteScalarFieldEnum = {
+  id: 'id',
+  publicId: 'publicId',
+  creditNoteNumber: 'creditNoteNumber',
+  bookingId: 'bookingId',
+  invoiceId: 'invoiceId',
+  receiptId: 'receiptId',
+  amount: 'amount',
+  reason: 'reason',
+  status: 'status',
+  issuedById: 'issuedById',
+  pdfFileId: 'pdfFileId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1471,6 +1487,11 @@ exports.CreditStatus = exports.$Enums.CreditStatus = {
   CLEARED: 'CLEARED'
 };
 
+exports.CreditNoteStatus = exports.$Enums.CreditNoteStatus = {
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED'
+};
+
 exports.Prisma.ModelName = {
   User: 'User',
   UserProvider: 'UserProvider',
@@ -1532,7 +1553,8 @@ exports.Prisma.ModelName = {
   PaymentSession: 'PaymentSession',
   LedgerEntry: 'LedgerEntry',
   CustomerCreditEntry: 'CustomerCreditEntry',
-  CreditClearance: 'CreditClearance'
+  CreditClearance: 'CreditClearance',
+  CreditNote: 'CreditNote'
 };
 
 /**

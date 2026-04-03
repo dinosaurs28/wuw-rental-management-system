@@ -37,88 +37,55 @@ export const GetCollectionReport = async (req: Request, res: Response) => {
     start.setHours(0, 0, 0, 0);
     end.setHours(23, 59, 59, 999);
 
-    // Build filter conditions for payments
-    const paymentFilter: any = {
-      createdAt: {
-        gte: start,
-        lte: end,
-      },
-    };
-
+    // Payment method filter — PaymentTransaction uses CASH | ONLINE | SPLIT
+    const txnMethodFilter: any = {};
     if (paymentMethod && paymentMethod !== "all") {
-      paymentFilter.method =
-        paymentMethod === "ONLINE" ? "ONLINE_RAZORPAY" : paymentMethod;
+      // Map legacy "ONLINE_RAZORPAY" to "ONLINE" for backward compat with existing UIs
+      txnMethodFilter.method = paymentMethod === "ONLINE_RAZORPAY" ? "ONLINE" : paymentMethod;
     }
 
-    // Build filter for branch
-    let branchFilter: any = {};
+    // Build branch filter
+    let branchDbId: number | undefined;
     if (branchId && branchId !== "all") {
       const branch = await prisma.branch.findUnique({
         where: { publicId: branchId as string },
+        select: { id: true },
       });
-      if (branch) {
-        branchFilter = { branchId: branch.id };
-      }
+      if (branch) branchDbId = branch.id;
     }
 
     // ========================================================================
-    // Fetch payment data
+    // Fetch payment data from PaymentTransaction (all methods: CASH, ONLINE, SPLIT)
+    // Only COLLECTED or CONFIRMED transactions represent actual collected money
     // ========================================================================
 
     const [payments, branches] = await Promise.all([
-      prisma.payment.findMany({
+      prisma.paymentTransaction.findMany({
         where: {
-          ...paymentFilter,
-          invoice: {
-            booking: branchFilter.branchId
-              ? {
-                  branchId: branchFilter.branchId,
-                }
-              : undefined,
-          },
+          createdAt: { gte: start, lte: end },
+          status: { in: ["COLLECTED", "CONFIRMED"] },
+          ...(branchDbId ? { branchId: branchDbId } : {}),
+          ...txnMethodFilter,
         },
         include: {
-          invoice: {
+          booking: {
             include: {
-              booking: {
+              customer: {
                 include: {
-                  customer: {
-                    include: {
-                      user: {
-                        select: {
-                          name: true,
-                          phone: true,
-                        },
-                      },
-                    },
-                  },
-                  branch: {
-                    select: {
-                      id: true,
-                      name: true,
-                      publicId: true,
-                    },
-                  },
+                  user: { select: { name: true, phone: true } },
                 },
               },
+              branch: { select: { id: true, name: true, publicId: true } },
             },
           },
         },
-        orderBy: {
-          createdAt: "desc",
-        },
+        orderBy: { createdAt: "desc" },
       }),
 
       // Fetch all branches for breakdown
       prisma.branch.findMany({
-        where: {
-          deletedAt: null,
-        },
-        select: {
-          id: true,
-          name: true,
-          publicId: true,
-        },
+        where: { deletedAt: null },
+        select: { id: true, name: true, publicId: true },
       }),
     ]);
 
@@ -127,31 +94,23 @@ export const GetCollectionReport = async (req: Request, res: Response) => {
     // ========================================================================
 
     const totalCollected = payments.reduce(
-      (sum, payment) => sum + Number(payment.amount),
+      (sum, payment) => sum + Number(payment.totalAmount),
       0,
     );
     const totalTransactions = payments.length;
 
-    // Payment method breakdown
-    const methodBreakdown = {
-      CASH: {
-        amount: 0,
-        count: 0,
-      },
-      UPI: {
-        amount: 0,
-        count: 0,
-      },
-      ONLINE_RAZORPAY: {
-        amount: 0,
-        count: 0,
-      },
+    // Payment method breakdown — PaymentTransaction.method: CASH | ONLINE | SPLIT
+    const methodBreakdown: Record<string, { amount: number; count: number }> = {
+      CASH: { amount: 0, count: 0 },
+      ONLINE: { amount: 0, count: 0 },
+      SPLIT: { amount: 0, count: 0 },
     };
 
     payments.forEach((payment) => {
-      if (payment.method in methodBreakdown) {
-        methodBreakdown[payment.method].amount += Number(payment.amount);
-        methodBreakdown[payment.method].count += 1;
+      const m = payment.method as string;
+      if (m in methodBreakdown) {
+        methodBreakdown[m]!.amount += Number(payment.totalAmount);
+        methodBreakdown[m]!.count += 1;
       }
     });
 
@@ -163,42 +122,30 @@ export const GetCollectionReport = async (req: Request, res: Response) => {
         branchId: branch.publicId,
         totalCollected: 0,
         transactionCount: 0,
-        byMethod: {
-          CASH: 0,
-          UPI: 0,
-          ONLINE_RAZORPAY: 0,
-        },
+        byMethod: { CASH: 0, ONLINE: 0, SPLIT: 0 },
       };
     });
 
     payments.forEach((payment) => {
-      const branchId = payment.invoice.booking.branch.id;
-      if (branchBreakdown[branchId]) {
-        branchBreakdown[branchId].totalCollected += Number(payment.amount);
-        branchBreakdown[branchId].transactionCount += 1;
-        if (payment.method in branchBreakdown[branchId].byMethod) {
-          branchBreakdown[branchId].byMethod[payment.method] += Number(
-            payment.amount,
-          );
+      const bid = payment.booking.branch.id;
+      if (branchBreakdown[bid]) {
+        branchBreakdown[bid].totalCollected += Number(payment.totalAmount);
+        branchBreakdown[bid].transactionCount += 1;
+        const m = payment.method as string;
+        if (m in branchBreakdown[bid].byMethod) {
+          branchBreakdown[bid].byMethod[m] += Number(payment.totalAmount);
         }
       }
     });
 
     // Daily collection trend (group by date)
-    const dailyTrend: Record<
-      string,
-      { date: string; amount: number; count: number }
-    > = {};
+    const dailyTrend: Record<string, { date: string; amount: number; count: number }> = {};
     payments.forEach((payment) => {
       const dateKey = payment.createdAt.toISOString().split("T")[0] as string;
       if (!dailyTrend[dateKey]) {
-        dailyTrend[dateKey] = {
-          date: dateKey,
-          amount: 0,
-          count: 0,
-        };
+        dailyTrend[dateKey] = { date: dateKey, amount: 0, count: 0 };
       }
-      dailyTrend[dateKey]!.amount += Number(payment.amount);
+      dailyTrend[dateKey]!.amount += Number(payment.totalAmount);
       dailyTrend[dateKey]!.count += 1;
     });
 
@@ -208,13 +155,13 @@ export const GetCollectionReport = async (req: Request, res: Response) => {
 
     const paymentDetails = payments.map((payment) => ({
       paymentId: payment.publicId,
-      bookingId: payment.invoice.booking.publicId,
-      customerName: payment.invoice.booking.customer.user.name,
-      customerPhone: payment.invoice.booking.customer.user.phone,
-      amount: Number(payment.amount),
+      bookingId: payment.booking.publicId,
+      customerName: payment.booking.customer.user.name,
+      customerPhone: payment.booking.customer.user.phone,
+      amount: Number(payment.totalAmount),
       method: payment.method,
-      // type: payment.type, // property does not exist on Payment
-      branch: payment.invoice.booking.branch.name,
+      purpose: payment.purpose,
+      branch: payment.booking.branch.name,
       collectedAt: payment.createdAt.toISOString(),
     }));
 
