@@ -21,6 +21,7 @@ import {
 import { useVehicleDetails } from "@/hooks/useVehicleDetails";
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
 import { useSearchStore } from "@/store/search.store";
+import { useAuthStore } from "@/store/auth.store";
 import { cn } from "@/lib/utils";
 
 export const VehicleDetailsPage = () => {
@@ -31,6 +32,8 @@ export const VehicleDetailsPage = () => {
   // Get dates from search store (set on listing page)
   const searchPickupDate = useSearchStore((state) => state.pickupDate);
   const searchReturnDate = useSearchStore((state) => state.returnDate);
+
+  const { isAuthenticated } = useAuthStore();
 
   // Get dates, times and actions from vehicle rental store
   const {
@@ -201,11 +204,21 @@ export const VehicleDetailsPage = () => {
       });
     }
 
+    // If not authenticated, save booking intent and redirect to sign-in.
+    // The vehicle rental store is already populated above and persists to
+    // sessionStorage, so the state survives the sign-in redirect.
+    if (!isAuthenticated) {
+      useAuthStore.getState().setBookingIntent();
+      navigate("/auth/sign-in");
+      return;
+    }
+
     // Navigate to review & confirm page
     navigate("/booking/review-confirm");
   }, [
     vehicleId,
     vehicle,
+    isAuthenticated,
     paymentFlow,
     setVehicleId,
     setVehicleFullDetails,
