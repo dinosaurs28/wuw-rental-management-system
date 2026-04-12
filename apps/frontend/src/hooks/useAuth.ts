@@ -35,7 +35,13 @@ export const useSignIn = () => {
             role: response.data.role || "",
           });
         }
-        navigate("/my-bookings");
+        const { hasBookingIntent, clearBookingIntent } = useAuthStore.getState();
+        if (hasBookingIntent) {
+          clearBookingIntent();
+          navigate("/booking/review-confirm");
+        } else {
+          navigate("/my-bookings");
+        }
       }
     },
     onError: (error: any) => {
@@ -91,7 +97,13 @@ export const useVerifyOtp = () => {
       // Backend sets JWT cookie, removes verifySession
       // We should update the store. Since verifyOtp might not return full user, we can call checkAuth.
       await checkAuth();
-      navigate("/my-bookings");
+      const { hasBookingIntent, clearBookingIntent } = useAuthStore.getState();
+      if (hasBookingIntent) {
+        clearBookingIntent();
+        navigate("/booking/review-confirm");
+      } else {
+        navigate("/my-bookings");
+      }
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || "Invalid OTP";

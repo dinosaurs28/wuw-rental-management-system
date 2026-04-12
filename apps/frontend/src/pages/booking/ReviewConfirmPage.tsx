@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Lock } from "lucide-react";
@@ -22,6 +22,7 @@ import { EmptyBookingState } from "@/components/booking/EmptyBookingState";
 import { TermsCheckbox } from "@/components/booking/TermsCheckbox";
 
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
+import { useAuthStore } from "@/store/auth.store";
 
 export const ReviewConfirmPage = () => {
   const navigate = useNavigate();
@@ -49,6 +50,12 @@ export const ReviewConfirmPage = () => {
     setCouponCode,
     hasVehicleSelected,
   } = useVehicleRentalStore();
+
+  // Clear any stale booking intent when the user lands here — prevents a
+  // subsequent unrelated sign-in from incorrectly redirecting to review.
+  useEffect(() => {
+    useAuthStore.getState().clearBookingIntent();
+  }, []);
 
   // Check if we have vehicle selected
   const hasVehicle = hasVehicleSelected();
