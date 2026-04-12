@@ -37,6 +37,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format, parse } from "date-fns";
 
 import { useAuthStore } from "@/store/auth.store";
+import { useVehicleRentalStore } from "@/store/vehicleRental.store";
 import { userService } from "@/services/user.service";
 import { cn } from "@/lib/utils";
 
@@ -119,6 +120,15 @@ export function ProfilePage() {
       await userService.updateProfile(data);
       setOriginalData(data);
       toast.success("Profile updated successfully");
+      // If the user came from the review page to complete their profile,
+      // send them back automatically.
+      const { hasBookingIntent, clearBookingIntent } = useAuthStore.getState();
+      const hasVehicle = useVehicleRentalStore.getState().hasVehicleSelected();
+      if (hasBookingIntent && hasVehicle) {
+        clearBookingIntent();
+        navigate("/booking/review-confirm");
+        return;
+      }
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;

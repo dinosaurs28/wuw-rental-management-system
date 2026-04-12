@@ -13,18 +13,22 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  hasBookingIntent: boolean;
 
   // Actions
   checkAuth: () => Promise<void>;
   login: (userData: User) => void;
   signup: (userData: User) => void;
   logout: () => Promise<void>;
+  setBookingIntent: () => void;
+  clearBookingIntent: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
   isLoading: true, // Start loading to check session
+  hasBookingIntent: false,
 
   checkAuth: async () => {
     set({ isLoading: true });
@@ -67,6 +71,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (e) {
       console.error("Logout failed", e);
     }
-    set({ user: null, isAuthenticated: false });
+    set({ user: null, isAuthenticated: false, hasBookingIntent: false });
   },
+
+  setBookingIntent: () => set({ hasBookingIntent: true }),
+  clearBookingIntent: () => set({ hasBookingIntent: false }),
 }));

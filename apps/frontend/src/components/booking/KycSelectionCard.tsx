@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+// Note: Link removed — KYC upload is now inline, no navigation away from review page
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,7 +11,9 @@ import {
 } from "@/components/ui/dialog";
 import { useVehicleRentalStore } from "@/store/vehicleRental.store";
 import { useKycStore } from "@/store/kyc.store";
+import { useAuthStore } from "@/store/auth.store";
 import { kycService, type KycDocument } from "@/services/kyc.service";
+import { InlineKycUpload } from "./InlineKycUpload";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Check, FileText, ArrowRight, Eye, Upload, User } from "lucide-react";
@@ -40,49 +43,50 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
   const [error, setError] = useState<string | null>(null);
   const [profileNotFound, setProfileNotFound] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [showInlineKycUpload, setShowInlineKycUpload] = useState(false);
   const [previewImage, setPreviewImage] = useState<{
     url: string;
     title: string;
   } | null>(null);
 
+  const fetchDocuments = useCallback(async () => {
+    setIsFetching(true);
+    setError(null);
+    setProfileNotFound(false);
+    try {
+      const response = await kycService.getDocuments();
+      // Show all documents regardless of status
+      setUploadedDocuments(response.data);
+      const pendingDocs = response.data.filter(
+        (doc) => doc.status === "PENDING",
+      );
+      setPendingCount(pendingDocs.length);
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const message =
+        err?.response?.data?.message || "Failed to load KYC documents";
+
+      // Handle "Customer profile not found" error specifically
+      if (
+        (status === 400 || status === 404) &&
+        message === "Customer profile not found"
+      ) {
+        setProfileNotFound(true);
+        setIsFetching(false);
+        return; // Don't show error toast for this case
+      }
+
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsFetching(false);
+    }
+  }, [setUploadedDocuments, setIsFetching]);
+
   // Fetch KYC documents on mount
   useEffect(() => {
-    const fetchDocuments = async () => {
-      setIsFetching(true);
-      setError(null);
-      setProfileNotFound(false);
-      try {
-        const response = await kycService.getDocuments();
-        // Show all documents regardless of status
-        setUploadedDocuments(response.data);
-        const pendingDocs = response.data.filter(
-          (doc) => doc.status === "PENDING",
-        );
-        setPendingCount(pendingDocs.length);
-      } catch (err: any) {
-        const status = err?.response?.status;
-        const message =
-          err?.response?.data?.message || "Failed to load KYC documents";
-
-        // Handle "Customer profile not found" error specifically
-        if (
-          (status === 400 || status === 404) &&
-          message === "Customer profile not found"
-        ) {
-          setProfileNotFound(true);
-          setIsFetching(false);
-          return; // Don't show error toast for this case
-        }
-
-        setError(message);
-        toast.error(message);
-      } finally {
-        setIsFetching(false);
-      }
-    };
-
     fetchDocuments();
-  }, [setUploadedDocuments, setIsFetching]);
+  }, [fetchDocuments]);
 
   const handleSelectDocument = (doc: KycDocument) => {
     setSelectedKyc(doc.file.publicId);
@@ -149,7 +153,10 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
             </p>
             <Button
               className="bg-orange-600 hover:bg-orange-700"
-              onClick={() => navigate("/profile")}
+              onClick={() => {
+                useAuthStore.getState().setBookingIntent();
+                navigate("/profile");
+              }}
             >
               Complete Profile
               <ArrowRight className="ml-2 size-4" />
@@ -225,14 +232,25 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
                 </p>
               </>
             )}
-            <Button asChild className="bg-primary hover:bg-primary/90">
-              <Link to="/verification/kyc">
+            {showInlineKycUpload ? (
+              <InlineKycUpload
+                onUploadSuccess={() => {
+                  setShowInlineKycUpload(false);
+                  fetchDocuments();
+                }}
+                onCancel={() => setShowInlineKycUpload(false)}
+              />
+            ) : (
+              <Button
+                className="bg-primary hover:bg-primary/90"
+                onClick={() => setShowInlineKycUpload(true)}
+              >
                 {pendingCount > 0
                   ? "Manage KYC Documents"
                   : "Complete KYC Verification"}
                 <ArrowRight className="ml-2 size-4" />
-              </Link>
-            </Button>
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -381,18 +399,28 @@ export const KycSelectionCard = ({ className }: KycSelectionCardProps) => {
             );
           })}
 
-          {/* Upload New Document Link */}
+          {/* Upload New Document / Inline Panel */}
           <div className="pt-3 border-t border-zinc-100">
-            <Link
-              to="/verification/kyc"
-              className="flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors py-2"
-            >
-              <Upload className="size-4" />
-              <span>
-                Not the document you uploaded?{" "}
-                <span className="text-primary font-medium">Upload here</span>
-              </span>
-            </Link>
+            {showInlineKycUpload ? (
+              <InlineKycUpload
+                onUploadSuccess={() => {
+                  setShowInlineKycUpload(false);
+                  fetchDocuments();
+                }}
+                onCancel={() => setShowInlineKycUpload(false)}
+              />
+            ) : (
+              <button
+                onClick={() => setShowInlineKycUpload(true)}
+                className="flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors py-2 w-full"
+              >
+                <Upload className="size-4" />
+                <span>
+                  Not the document you uploaded?{" "}
+                  <span className="text-primary font-medium">Upload here</span>
+                </span>
+              </button>
+            )}
           </div>
         </CardContent>
       </Card>
