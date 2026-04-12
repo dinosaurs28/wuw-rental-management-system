@@ -76,10 +76,10 @@ export const Footer = () => {
                 </li>
                 <li>
                   <Link
-                    to="#"
+                    to="/contact"
                     className="text-zinc-500 font-semibold hover:text-zinc-900 hover:translate-x-1 inline-flex transition-all duration-300"
                   >
-                    Concierge
+                    Contact Us
                   </Link>
                 </li>
                 <li>
