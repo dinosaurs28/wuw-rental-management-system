@@ -9,6 +9,7 @@ interface BookingStatusBadgeProps {
 const statusStyles: Record<string, { bg: string; text: string }> = {
   // Booking statuses
   CONFIRMED: { bg: "bg-green-100", text: "text-green-700" },
+  PICKED_UP: { bg: "bg-indigo-100", text: "text-indigo-700" },
   RETURNED: { bg: "bg-blue-100", text: "text-blue-700" },
   CANCELLED: { bg: "bg-red-100", text: "text-red-700" },
 
@@ -31,8 +32,10 @@ export function BookingStatusBadge({
   const style = statusStyles[normalizedStatus] || statusStyles.DEFAULT;
 
   // Format display text
-  const displayText =
-    status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+  const displayText = normalizedStatus
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
 
   return (
     <span
