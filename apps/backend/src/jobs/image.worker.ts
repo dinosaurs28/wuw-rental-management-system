@@ -108,7 +108,7 @@ export function initImageWorker(): void {
 
         // 2. Process Thumbnail
         const thumbBuffer = await sharp(fileBuffer)
-          .resize({ width: 300, height: 300, fit: "cover" })
+          .resize({ width: 600, height: 400, fit: "inside", withoutEnlargement: true })
           .webp({ quality: 80 })
           .toBuffer();
 

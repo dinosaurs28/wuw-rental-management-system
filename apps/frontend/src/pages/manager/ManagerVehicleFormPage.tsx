@@ -208,6 +208,7 @@ export const ManagerVehicleFormPage = () => {
       const formData = new FormData();
       formData.append("make", data.make);
       formData.append("model", data.model);
+      formData.append("year", data.year.toString());
       formData.append("regNo", data.licensePlate);
       formData.append("odo", data.odo.toString());
       formData.append("categoryId", data.category);

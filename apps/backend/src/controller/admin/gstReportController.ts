@@ -53,10 +53,9 @@ export const GetGSTReport = async (req: Request, res: Response) => {
           gte: start,
           lte: end,
         },
+        status: { in: ["FINALIZED", "PAID"] },
         booking: branchFilter.branchId
-          ? {
-              branchId: branchFilter.branchId, // Use direct branchId relation
-            }
+          ? { branchId: branchFilter.branchId }
           : undefined,
       },
       include: {
@@ -76,6 +75,14 @@ export const GetGSTReport = async (req: Request, res: Response) => {
               select: {
                 name: true,
                 publicId: true,
+                gstRule: {
+                  select: {
+                    gstNumber: true,
+                    cgstRate: true,
+                    sgstRate: true,
+                    igstRate: true,
+                  },
+                },
               },
             },
           },
@@ -102,46 +109,40 @@ export const GetGSTReport = async (req: Request, res: Response) => {
     const gstBreakdown = invoices.map((invoice: any) => {
       const taxableAmount = Number(invoice.subtotal);
       const gstAmount = Number(invoice.tax);
+      const gstRule = invoice.booking.branch.gstRule;
 
-      // Determine if inter-state or intra-state
-      // For now, assuming all are intra-state (CGST + SGST = 9% + 9% = 18%)
-      const isInterState = false; // TODO: Compare customer state with branch state
+      const cgstRate = Number(gstRule?.cgstRate ?? 9);
+      const sgstRate = Number(gstRule?.sgstRate ?? 9);
+      const totalRate = cgstRate + sgstRate;
 
-      let cgst = 0;
-      let sgst = 0;
-      let igst = 0;
-
-      if (isInterState) {
-        igst = gstAmount;
-        totalIGST += gstAmount;
-      } else {
-        cgst = gstAmount / 2;
-        sgst = gstAmount / 2;
-        totalCGST += cgst;
-        totalSGST += sgst;
-      }
+      // All assumed intra-state (CGST + SGST)
+      const cgst = totalRate > 0 ? (gstAmount * cgstRate) / totalRate : gstAmount / 2;
+      const sgst = totalRate > 0 ? (gstAmount * sgstRate) / totalRate : gstAmount / 2;
+      const igst = 0;
 
       totalTaxableAmount += taxableAmount;
+      totalCGST += cgst;
+      totalSGST += sgst;
       totalGST += gstAmount;
-      totalInvoiceAmount += taxableAmount + gstAmount;
+      totalInvoiceAmount += Number(invoice.total);
 
       return {
         invoiceId: invoice.publicId,
-        invoiceNumber: invoice.publicId,
+        invoiceNumber: invoice.invoiceNumber || invoice.publicId,
         bookingId: invoice.booking.publicId,
         customerName: invoice.booking.customer.user.name,
         customerPhone: invoice.booking.customer.user.phone,
+        gstin: gstRule?.gstNumber || "-",
         branch: invoice.booking.branch.name,
-        branchState: "", // Branch model doesn't have state
         invoiceDate: invoice.createdAt.toISOString(),
         taxableAmount,
         cgst,
         sgst,
         igst,
         totalGST: gstAmount,
-        totalAmount: taxableAmount + gstAmount,
-        gstRate: 18, // Assuming 18% GST rate
-        isInterState,
+        totalAmount: Number(invoice.total),
+        gstRate: totalRate,
+        isInterState: false,
       };
     });
 
@@ -169,19 +170,17 @@ export const GetGSTReport = async (req: Request, res: Response) => {
 
       const taxableAmount = Number(invoice.subtotal);
       const gstAmount = Number(invoice.tax);
-      const isInterState = false;
+      const gstRule = invoice.booking.branch.gstRule;
+      const cgstRate = Number(gstRule?.cgstRate ?? 9);
+      const sgstRate = Number(gstRule?.sgstRate ?? 9);
+      const totalRate = cgstRate + sgstRate;
 
       monthlyBreakdown[monthKey].invoiceCount += 1;
       monthlyBreakdown[monthKey].taxableAmount += taxableAmount;
       monthlyBreakdown[monthKey].totalGST += gstAmount;
-      monthlyBreakdown[monthKey].totalAmount += taxableAmount + gstAmount;
-
-      if (isInterState) {
-        monthlyBreakdown[monthKey].igst += gstAmount;
-      } else {
-        monthlyBreakdown[monthKey].cgst += gstAmount / 2;
-        monthlyBreakdown[monthKey].sgst += gstAmount / 2;
-      }
+      monthlyBreakdown[monthKey].totalAmount += Number(invoice.total);
+      monthlyBreakdown[monthKey].cgst += totalRate > 0 ? (gstAmount * cgstRate) / totalRate : gstAmount / 2;
+      monthlyBreakdown[monthKey].sgst += totalRate > 0 ? (gstAmount * sgstRate) / totalRate : gstAmount / 2;
     });
 
     // ========================================================================
@@ -208,19 +207,17 @@ export const GetGSTReport = async (req: Request, res: Response) => {
 
       const taxableAmount = Number(invoice.subtotal);
       const gstAmount = Number(invoice.tax);
-      const isInterState = false;
+      const gstRule = invoice.booking.branch.gstRule;
+      const cgstRate = Number(gstRule?.cgstRate ?? 9);
+      const sgstRate = Number(gstRule?.sgstRate ?? 9);
+      const totalRate = cgstRate + sgstRate;
 
       branchBreakdown[branchName].invoiceCount += 1;
       branchBreakdown[branchName].taxableAmount += taxableAmount;
       branchBreakdown[branchName].totalGST += gstAmount;
-      branchBreakdown[branchName].totalAmount += taxableAmount + gstAmount;
-
-      if (isInterState) {
-        branchBreakdown[branchName].igst += gstAmount;
-      } else {
-        branchBreakdown[branchName].cgst += gstAmount / 2;
-        branchBreakdown[branchName].sgst += gstAmount / 2;
-      }
+      branchBreakdown[branchName].totalAmount += Number(invoice.total);
+      branchBreakdown[branchName].cgst += totalRate > 0 ? (gstAmount * cgstRate) / totalRate : gstAmount / 2;
+      branchBreakdown[branchName].sgst += totalRate > 0 ? (gstAmount * sgstRate) / totalRate : gstAmount / 2;
     });
 
     // ========================================================================

@@ -79,6 +79,7 @@ interface Invoice {
   invoiceNumber: string;
   bookingId: string;
   customerName: string;
+  gstin: string;
   branch: string;
   invoiceDate: string;
   taxableAmount: number;
@@ -204,7 +205,7 @@ export const GSTReport = ({
   const columns: ColumnDef<Invoice>[] = [
     {
       accessorKey: "invoiceNumber",
-      header: "Invoice #",
+      header: "Invoice No",
       cell: ({ row }) => (
         <span className="font-mono text-xs">{row.original.invoiceNumber}</span>
       ),
@@ -219,8 +220,15 @@ export const GSTReport = ({
       header: "Customer",
     },
     {
+      accessorKey: "gstin",
+      header: "GSTIN",
+      cell: ({ row }) => (
+        <span className="font-mono text-xs">{row.original.gstin}</span>
+      ),
+    },
+    {
       accessorKey: "taxableAmount",
-      header: "Taxable Amt",
+      header: "Taxable Value",
       cell: ({ row }) => (
         <span className="font-medium">
           {formatCurrency(row.original.taxableAmount)}
@@ -228,8 +236,35 @@ export const GSTReport = ({
       ),
     },
     {
+      accessorKey: "cgst",
+      header: "CGST",
+      cell: ({ row }) => (
+        <span className="text-green-700">
+          {formatCurrency(row.original.cgst)}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "sgst",
+      header: "SGST",
+      cell: ({ row }) => (
+        <span className="text-blue-700">
+          {formatCurrency(row.original.sgst)}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "igst",
+      header: "IGST",
+      cell: ({ row }) => (
+        <span className="text-amber-700">
+          {formatCurrency(row.original.igst)}
+        </span>
+      ),
+    },
+    {
       accessorKey: "totalGST",
-      header: "GST",
+      header: "Total Tax",
       cell: ({ row }) => (
         <span className="font-medium text-orange-600">
           {formatCurrency(row.original.totalGST)}
@@ -238,7 +273,7 @@ export const GSTReport = ({
     },
     {
       accessorKey: "totalAmount",
-      header: "Total",
+      header: "Total Amount",
       cell: ({ row }) => (
         <span className="font-bold">
           {formatCurrency(row.original.totalAmount)}
