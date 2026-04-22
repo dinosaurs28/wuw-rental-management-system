@@ -1535,7 +1535,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/Users/sushan/Projects/freelance/wuw-rental-management-system/packages/db/src/generated/client",
+      "value": "C:\\Freelance\\vrms\\packages\\db\\src\\generated\\client",
       "fromEnvVar": null
     },
     "config": {
@@ -1544,14 +1544,14 @@ const config = {
     "binaryTargets": [
       {
         "fromEnvVar": null,
-        "value": "darwin-arm64",
+        "value": "windows",
         "native": true
       }
     ],
     "previewFeatures": [
       "relationJoins"
     ],
-    "sourceFilePath": "/Users/sushan/Projects/freelance/wuw-rental-management-system/packages/db/prisma/schema.prisma",
+    "sourceFilePath": "C:\\Freelance\\vrms\\packages\\db\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
