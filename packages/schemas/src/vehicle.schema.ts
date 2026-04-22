@@ -17,6 +17,7 @@ export const bookingSummarySchema = z.object({
 export const createVehicleSchema = z.object({
   make: z.string().min(1, "Make is required"),
   model: z.string().min(1, "Model is required"),
+  year: z.coerce.number().int().min(1900).max(new Date().getFullYear() + 1).optional(),
   regNo: z.string().min(1, "Registration Number is required"),
   odo: z.coerce.number().min(0),
   insuranceExpiry: z.string(),
