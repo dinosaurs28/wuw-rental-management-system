@@ -154,58 +154,49 @@ export const exportDailySummaryToExcel = async (
   ]);
   summarySheet.addRow([]);
 
-  // Revenue Section
-  summarySheet.addRow(["REVENUE METRICS"]);
-  createHeaderRow(
-    summarySheet,
-    ["Metric", "Amount"],
-    (summarySheet.lastRow?.number ?? 0) + 1,
-  );
-  summarySheet.addRow([
-    "New Bookings",
-    formatCurrencyForExcel(data.revenue.newBookings),
-  ]);
-  summarySheet.addRow([
-    "Advance Collected",
-    formatCurrencyForExcel(data.revenue.advanceCollected),
-  ]);
-  summarySheet.addRow([
-    "Deposit Collected",
-    formatCurrencyForExcel(data.revenue.depositCollected),
-  ]);
-  summarySheet.addRow([
-    "Total Collected",
-    formatCurrencyForExcel(data.revenue.totalCollected),
-  ]);
+  // Booking vs Billed Section
+  summarySheet.addRow(["BOOKING VALUE vs BILLED AMOUNT"]);
+  summarySheet.addRow(["Note: Booking Value = amount committed at booking time. Billed Amount = actual invoice total after vehicle return."]);
+  createHeaderRow(summarySheet, ["Metric", "Amount", "Count"], (summarySheet.lastRow?.number ?? 0) + 1);
+  summarySheet.addRow(["Booking Value (New Bookings Today)", formatCurrencyForExcel(data.revenue.bookingValue), data.bookings.newBookings]);
+  summarySheet.addRow(["Billed Amount (Invoices Finalized Today)", formatCurrencyForExcel(data.revenue.invoicedAmount), data.revenue.invoicedCount]);
+  summarySheet.addRow([]);
+
+  // Collections Section
+  summarySheet.addRow(["COLLECTIONS — WHAT WAS ACTUALLY RECEIVED TODAY"]);
+  createHeaderRow(summarySheet, ["Metric", "Amount"], (summarySheet.lastRow?.number ?? 0) + 1);
+  summarySheet.addRow(["Advance Collected", formatCurrencyForExcel(data.revenue.advanceCollected)]);
+  summarySheet.addRow(["Safety Deposit Collected", formatCurrencyForExcel(data.revenue.safetyDepositCollected)]);
+  summarySheet.addRow(["Damage Fees Collected", formatCurrencyForExcel(data.revenue.damageFeesCollected)]);
+  summarySheet.addRow(["Total Collected (All Purposes)", formatCurrencyForExcel(data.revenue.totalCollected)]);
+  summarySheet.addRow([]);
+
+  // Damage Section
+  summarySheet.addRow(["DAMAGE — CHARGED vs COLLECTED"]);
+  createHeaderRow(summarySheet, ["Metric", "Amount / Count"], (summarySheet.lastRow?.number ?? 0) + 1);
+  summarySheet.addRow(["New Damage Reports Filed", data.damages.newReports]);
+  summarySheet.addRow(["Estimated Cost (at filing)", formatCurrencyForExcel(data.damages.totalEstimatedCost)]);
+  summarySheet.addRow(["Approved Reports", data.damages.approvedCount]);
+  summarySheet.addRow(["Final Cost Charged (approved)", formatCurrencyForExcel(data.damages.totalFinalCost)]);
+  summarySheet.addRow(["Damage Fees Collected", formatCurrencyForExcel(data.damages.collected)]);
+  summarySheet.addRow(["Pending Approval", data.damages.pendingApproval]);
   summarySheet.addRow([]);
 
   // Bookings Section
-  summarySheet.addRow(["BOOKING METRICS"]);
-  createHeaderRow(
-    summarySheet,
-    ["Metric", "Count"],
-    (summarySheet.lastRow?.number ?? 0) + 1,
-  );
+  summarySheet.addRow(["BOOKING ACTIVITY"]);
+  createHeaderRow(summarySheet, ["Metric", "Count"], (summarySheet.lastRow?.number ?? 0) + 1);
   summarySheet.addRow(["New Bookings", data.bookings.newBookings]);
   summarySheet.addRow(["Pickups", data.bookings.pickups]);
   summarySheet.addRow(["Returns", data.bookings.returns]);
   summarySheet.addRow(["Cancellations", data.bookings.cancellations]);
-  summarySheet.addRow(["Active", data.bookings.active]);
+  summarySheet.addRow(["Active (Currently Out)", data.bookings.active]);
   summarySheet.addRow([]);
 
-  // Collections Breakdown
-  summarySheet.addRow(["COLLECTIONS BREAKDOWN"]);
-  createHeaderRow(
-    summarySheet,
-    ["Payment Method", "Amount", "Count"],
-    (summarySheet.lastRow?.number ?? 0) + 1,
-  );
+  // Collections by Method Breakdown
+  summarySheet.addRow(["COLLECTIONS BY PAYMENT METHOD"]);
+  createHeaderRow(summarySheet, ["Payment Method", "Amount", "Transactions"], (summarySheet.lastRow?.number ?? 0) + 1);
   data.collections.breakdown.forEach((item: any) => {
-    summarySheet.addRow([
-      item.method,
-      formatCurrencyForExcel(item.amount),
-      item.count,
-    ]);
+    summarySheet.addRow([item.method, formatCurrencyForExcel(item.amount), item.count]);
   });
 
   autoFitColumns(summarySheet);
@@ -696,7 +687,7 @@ export const exportGSTToExcel = async (
       invoice.invoiceNumber,
       formatDateForExcel(invoice.invoiceDate),
       invoice.customerName,
-      "", // GSTIN not available in current model
+      invoice.gstin || "-",
       formatCurrencyForExcel(invoice.taxableAmount),
       formatCurrencyForExcel(invoice.cgst),
       formatCurrencyForExcel(invoice.sgst),

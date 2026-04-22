@@ -19,10 +19,13 @@ export interface ReportMetadata {
 // ============================================================================
 
 export interface DailySummaryRevenue {
-  newBookings: number;
-  advanceCollected: number;
-  depositCollected: number;
-  totalCollected: number;
+  bookingValue: number;           // totalFinal committed at booking creation time today
+  invoicedAmount: number;         // actual billed amount from invoices finalized today
+  invoicedCount: number;
+  advanceCollected: number;       // advance payments collected today
+  safetyDepositCollected: number; // safety deposit collected today
+  damageFeesCollected: number;    // damage fees collected today
+  totalCollected: number;         // all payments collected today (all purposes)
 }
 
 export interface DailySummaryBookings {
@@ -49,15 +52,23 @@ export interface CollectionBreakdownItem {
 
 export interface DailySummaryCollections {
   cash: number;
-  upi: number;
   online: number;
+  split: number;
   total: number;
   breakdown: CollectionBreakdownItem[];
+  byPurpose: {
+    advance: number;
+    safetyDeposit: number;
+    damageFees: number;
+  };
 }
 
 export interface DailySummaryDamages {
   newReports: number;
-  totalEstimatedCost: number;
+  totalEstimatedCost: number; // estimated cost at time of filing
+  approvedCount: number;
+  totalFinalCost: number;     // final cost charged (approved reports)
+  collected: number;          // damage fees actually paid by customers today
   pendingApproval: number;
 }
 
