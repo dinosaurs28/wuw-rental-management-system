@@ -81,6 +81,7 @@ export const AddVehicle = async (req: Request, res: Response) => {
     const {
       make,
       model,
+      year,
       regNo,
       odo,
       insuranceExpiry,
@@ -119,6 +120,7 @@ export const AddVehicle = async (req: Request, res: Response) => {
         categoryId: Number(categoryId),
         make,
         model,
+        year: year ?? null,
         regNo,
         odo: Number(odo),
         advancePayAmount: advancePayAmount ?? 0,
