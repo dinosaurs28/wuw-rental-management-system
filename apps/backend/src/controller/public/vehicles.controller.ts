@@ -326,7 +326,7 @@ export const getPublicVehiclesDetails = async (req: Request, res: Response) => {
         updatedAt: true,
         category: { select: { id: true, name: true } },  // TASK-015: only name needed
         branch:   { select: { id: true, name: true } },  // TASK-015: drop pricingSetting (unused)
-        images: { include: { file: true } },
+        images: { where: { isThumbnail: false }, include: { file: true } },
         pricingOverride: true,
         customPricing: true,
       },

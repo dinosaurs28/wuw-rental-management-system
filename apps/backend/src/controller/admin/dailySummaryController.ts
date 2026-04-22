@@ -18,14 +18,12 @@ export const GetDailySummary = async (req: Request, res: Response) => {
   try {
     const { date, branchId, export: exportFormat } = req.query;
 
-    // Validate date parameter
     if (!date || typeof date !== "string") {
       return res.status(StatusCode.BAD_REQUEST).json({
         message: "Date parameter is required (format: YYYY-MM-DD)",
       });
     }
 
-    // Parse date and create date range for the day
     const reportDate = new Date(date);
     if (isNaN(reportDate.getTime())) {
       return res.status(StatusCode.BAD_REQUEST).json({
@@ -35,11 +33,9 @@ export const GetDailySummary = async (req: Request, res: Response) => {
 
     const startOfDay = new Date(reportDate);
     startOfDay.setHours(0, 0, 0, 0);
-
     const endOfDay = new Date(reportDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    // Yesterday's dates for comparison
     const yesterday = new Date(reportDate);
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStart = new Date(yesterday);
@@ -47,7 +43,6 @@ export const GetDailySummary = async (req: Request, res: Response) => {
     const yesterdayEnd = new Date(yesterday);
     yesterdayEnd.setHours(23, 59, 59, 999);
 
-    // Find branch if branchId is provided
     let branchFilter: { id: number } | undefined;
     let branchName: string = "All Branches";
 
@@ -56,67 +51,46 @@ export const GetDailySummary = async (req: Request, res: Response) => {
         where: { publicId: branchId as string },
         select: { id: true, name: true },
       });
-
       if (!branch) {
-        return res.status(StatusCode.NOT_FOUND).json({
-          message: "Branch not found",
-        });
+        return res.status(StatusCode.NOT_FOUND).json({ message: "Branch not found" });
       }
-
       branchFilter = { id: branch.id };
       branchName = branch.name;
     }
 
-    // ========================================================================
-    // Execute all queries in parallel for optimal performance
-    // ========================================================================
-
+    // =========================================================================
+    // Execute all queries in parallel
+    // =========================================================================
     const [
-      // New bookings aggregate
       newBookingsData,
-
-      // Deposits grouped by method
-      depositsData,
-
-      // Damage reports
+      collectionsByMethodData,
+      advanceCollectedData,
+      damageApprovedData,
+      safetyDepositCollectedData,
+      invoicedTodayData,
       damagesData,
-
-      // Maintenance records
       maintenanceData,
-
-      // Vehicle status counts
       vehicleStatusData,
-
-      // Yesterday's revenue for comparison
       yesterdayRevenueData,
-
-      // Booking status transitions for today
       pickedUpCount,
       returnedCount,
       cancelledCount,
-
-      // Active bookings (current)
       activeBookingsCount,
-
-      // Available vehicles start of day (approximation)
       availableVehiclesStart,
     ] = await Promise.all([
-      // New bookings created today with aggregates
+
+      // Bookings created today — committed booking value (totalFinal at booking time)
       prisma.booking.aggregate({
         where: {
           createdAt: { gte: startOfDay, lte: endOfDay },
           branchId: branchFilter?.id,
           deletedAt: null,
         },
-        _sum: {
-          totalFinal: true,
-          totalDeposit: true,
-        },
+        _sum: { totalFinal: true, totalDeposit: true },
         _count: true,
       }),
 
-      // Payments collected today via PaymentTransaction (COLLECTED or CONFIRMED)
-      // Groups by method: CASH | ONLINE | SPLIT
+      // All payments collected today — grouped by method (CASH/ONLINE/SPLIT)
       prisma.paymentTransaction.groupBy({
         by: ["method"],
         where: {
@@ -124,43 +98,86 @@ export const GetDailySummary = async (req: Request, res: Response) => {
           status: { in: ["COLLECTED", "CONFIRMED"] },
           branchId: branchFilter?.id,
         },
-        _sum: {
-          totalAmount: true,
-        },
+        _sum: { totalAmount: true },
         _count: true,
       }),
 
-      // Damage reports filed today
+      // Advance payments collected today — use Booking.advanceAmount where advancePaidAt is today.
+      // PaymentTransaction.purpose is never set to ADVANCE in the current flow (BOOKING sessions
+      // always get FULL_PAYMENT). The booking model has the accurate advance amount & paid-at date.
+      prisma.booking.aggregate({
+        where: {
+          isAdvancePayment: true,
+          advancePaidAt: { gte: startOfDay, lte: endOfDay },
+          branchId: branchFilter?.id,
+          deletedAt: null,
+        },
+        _sum: { advanceAmount: true },
+        _count: true,
+      }),
+
+      // Damage fees charged today — finalCost from approved damage reports.
+      // Damage fees are collected as part of the return session (REMAINING_BALANCE) and
+      // are not separately tracked in PaymentTransaction. Using approved finalCost is the
+      // most accurate "damage charged today" figure available.
+      prisma.damageReport.aggregate({
+        where: {
+          createdAt: { gte: startOfDay, lte: endOfDay },
+          status: "APPROVED",
+          booking: branchFilter ? { branchId: branchFilter.id } : undefined,
+        },
+        _sum: { finalCost: true },
+        _count: true,
+      }),
+
+      // Safety deposit collected today — use Booking.safetyDeposit where safetyDepositPaidAt is today.
+      // Safety deposit is added via a ledger entry (not a PaymentTransaction with purpose=SAFETY_DEPOSIT),
+      // so the booking model field is the correct source.
+      prisma.booking.aggregate({
+        where: {
+          safetyDepositPaidAt: { gte: startOfDay, lte: endOfDay },
+          branchId: branchFilter?.id,
+          deletedAt: null,
+        },
+        _sum: { safetyDeposit: true },
+        _count: true,
+      }),
+
+      // Invoices finalized today — actual billed amount (computed at vehicle return)
+      prisma.invoice.aggregate({
+        where: {
+          createdAt: { gte: startOfDay, lte: endOfDay },
+          status: { in: ["FINALIZED", "PAID"] },
+          booking: branchFilter ? { branchId: branchFilter.id } : undefined,
+        },
+        _sum: { total: true },
+        _count: true,
+      }),
+
+      // All damage reports filed today — estimated cost + count
       prisma.damageReport.aggregate({
         where: {
           createdAt: { gte: startOfDay, lte: endOfDay },
           booking: branchFilter ? { branchId: branchFilter.id } : undefined,
         },
         _count: true,
-        _sum: {
-          estimatedCost: true,
-        },
+        _sum: { estimatedCost: true },
       }),
 
-      // Maintenance done today
+      // Maintenance records today
       prisma.vehicleMaintenanceRecord.aggregate({
         where: {
           servicedAt: { gte: startOfDay, lte: endOfDay },
           vehicle: branchFilter ? { branchId: branchFilter.id } : undefined,
         },
         _count: true,
-        _sum: {
-          cost: true,
-        },
+        _sum: { cost: true },
       }),
 
-      // Vehicle status counts (current)
+      // Vehicle status counts (current snapshot)
       prisma.vehicle.groupBy({
         by: ["status"],
-        where: {
-          branchId: branchFilter?.id,
-          deletedAt: null,
-        },
+        where: { branchId: branchFilter?.id, deletedAt: null },
         _count: true,
       }),
 
@@ -171,13 +188,10 @@ export const GetDailySummary = async (req: Request, res: Response) => {
           branchId: branchFilter?.id,
           deletedAt: null,
         },
-        _sum: {
-          totalFinal: true,
-        },
+        _sum: { totalFinal: true },
         _count: true,
       }),
 
-      // Pickups today (bookings that changed to PICKED_UP status)
       prisma.booking.count({
         where: {
           updatedAt: { gte: startOfDay, lte: endOfDay },
@@ -186,7 +200,6 @@ export const GetDailySummary = async (req: Request, res: Response) => {
         },
       }),
 
-      // Returns today (bookings that changed to RETURNED status)
       prisma.booking.count({
         where: {
           updatedAt: { gte: startOfDay, lte: endOfDay },
@@ -195,7 +208,6 @@ export const GetDailySummary = async (req: Request, res: Response) => {
         },
       }),
 
-      // Cancellations today
       prisma.booking.count({
         where: {
           updatedAt: { gte: startOfDay, lte: endOfDay },
@@ -204,7 +216,6 @@ export const GetDailySummary = async (req: Request, res: Response) => {
         },
       }),
 
-      // Active bookings (picked up but not returned)
       prisma.booking.count({
         where: {
           status: BookingStatus.PICKED_UP,
@@ -213,84 +224,12 @@ export const GetDailySummary = async (req: Request, res: Response) => {
         },
       }),
 
-      // Available vehicles now
       prisma.vehicle.count({
-        where: {
-          status: "AVAILABLE",
-          branchId: branchFilter?.id,
-          deletedAt: null,
-        },
+        where: { status: "AVAILABLE", branchId: branchFilter?.id, deletedAt: null },
       }),
     ]);
 
-    // ========================================================================
-    // Process and format the data
-    // ========================================================================
-
-    // Revenue calculations
-    const totalRevenue = Number(newBookingsData._sum.totalFinal || 0);
-    const totalDeposit = Number(newBookingsData._sum.totalDeposit || 0);
-    const yesterdayRevenue = Number(yesterdayRevenueData._sum.totalFinal || 0);
-
-    // Collections breakdown from PaymentTransaction (method: CASH | ONLINE | SPLIT)
-    const collectionsByMethod = depositsData.reduce(
-      (acc, txn) => {
-        const amount = Number(txn._sum.totalAmount || 0);
-        if (txn.method === "CASH") acc.cash += amount;
-        else if (txn.method === "ONLINE") acc.online += amount;
-        else if (txn.method === "SPLIT") { acc.cash += amount; acc.online += amount; } // split already broken into cashAmount/onlineAmount at txn level; approximate as total here
-        return acc;
-      },
-      { cash: 0, upi: 0, online: 0 },
-    );
-
-    const totalCollected =
-      collectionsByMethod.cash +
-      collectionsByMethod.upi +
-      collectionsByMethod.online;
-
-    // Collections breakdown array
-    const collectionsBreakdown = depositsData.map((txn) => ({
-      method: txn.method,
-      amount: Number(txn._sum.totalAmount || 0),
-      count: txn._count,
-    }));
-
-    // Vehicle counts
-    const availableCount =
-      vehicleStatusData.find((v) => v.status === "AVAILABLE")?._count || 0;
-    const rentedCount =
-      vehicleStatusData.find((v) => v.status === "OUT_FOR_RENTAL")?._count || 0;
-    const totalVehicles = vehicleStatusData.reduce(
-      (sum, v) => sum + v._count,
-      0,
-    );
-
-    // Calculate utilization rate
-    const currentUtilization =
-      totalVehicles > 0
-        ? ((rentedCount / totalVehicles) * 100).toFixed(1)
-        : "0.0";
-
-    // Comparison calculations
-    const revenueVsYesterday =
-      yesterdayRevenue !== 0
-        ? (
-            ((totalRevenue - yesterdayRevenue) / yesterdayRevenue) *
-            100
-          ).toFixed(1)
-        : "0.0";
-
-    const bookingsVsYesterday =
-      yesterdayRevenueData._count !== 0
-        ? (
-            ((newBookingsData._count - yesterdayRevenueData._count) /
-              yesterdayRevenueData._count) *
-            100
-          ).toFixed(1)
-        : "0.0";
-
-    // Pending damage approvals (status PENDING)
+    // Pending damage approvals (separate sequential query — tiny)
     const pendingDamagesCount = await prisma.damageReport.count({
       where: {
         status: "PENDING",
@@ -298,22 +237,86 @@ export const GetDailySummary = async (req: Request, res: Response) => {
       },
     });
 
-    // ========================================================================
-    // Build response object
-    // ========================================================================
+    // =========================================================================
+    // Compute aggregates
+    // =========================================================================
 
+    // Booking value = totalFinal committed at booking creation time
+    const bookingValue = Number(newBookingsData._sum.totalFinal || 0);
+
+    // Invoiced amount = actual billed value from finalized invoices today
+    const invoicedAmount = Number(invoicedTodayData._sum.total || 0);
+
+    // Collections by method
+    const collectionsByMethod = collectionsByMethodData.reduce(
+      (acc, txn) => {
+        const amount = Number(txn._sum.totalAmount || 0);
+        if (txn.method === "CASH") acc.cash += amount;
+        else if (txn.method === "ONLINE") acc.online += amount;
+        else if (txn.method === "SPLIT") acc.split += amount;
+        return acc;
+      },
+      { cash: 0, online: 0, split: 0 },
+    );
+
+    const totalCollected =
+      collectionsByMethod.cash +
+      collectionsByMethod.online +
+      collectionsByMethod.split;
+
+    // Advance: sum of Booking.advanceAmount where advancePaidAt = today
+    const advanceCollected = Number(advanceCollectedData._sum.advanceAmount || 0);
+    // Damage approved: finalCost from approved damage reports today (charged, collected via return settlement)
+    const damageFeesCollected = Number(damageApprovedData._sum.finalCost || 0);
+    const damageApprovedCount = damageApprovedData._count;
+    // Safety deposit: sum of Booking.safetyDeposit where safetyDepositPaidAt = today
+    const safetyDepositCollected = Number(safetyDepositCollectedData._sum.safetyDeposit || 0);
+
+    const collectionsBreakdown = collectionsByMethodData.map((txn) => ({
+      method: txn.method,
+      amount: Number(txn._sum.totalAmount || 0),
+      count: txn._count,
+    }));
+
+    // Vehicle fleet counts
+    const availableCount = vehicleStatusData.find((v) => v.status === "AVAILABLE")?._count || 0;
+    const rentedCount = vehicleStatusData.find((v) => v.status === "OUT_FOR_RENTAL")?._count || 0;
+    const totalVehicles = vehicleStatusData.reduce((sum, v) => sum + v._count, 0);
+    const currentUtilization =
+      totalVehicles > 0 ? ((rentedCount / totalVehicles) * 100).toFixed(1) : "0.0";
+
+    // Comparison vs yesterday
+    const yesterdayRevenue = Number(yesterdayRevenueData._sum.totalFinal || 0);
+    const revenueVsYesterday =
+      yesterdayRevenue !== 0
+        ? (((bookingValue - yesterdayRevenue) / yesterdayRevenue) * 100).toFixed(1)
+        : "0.0";
+    const bookingsVsYesterday =
+      yesterdayRevenueData._count !== 0
+        ? (((newBookingsData._count - yesterdayRevenueData._count) / yesterdayRevenueData._count) * 100).toFixed(1)
+        : "0.0";
+
+    // =========================================================================
+    // Build response
+    // =========================================================================
     const reportData = {
       metadata: {
-        date: date,
+        date,
         branch: branchName,
         generatedAt: new Date().toISOString(),
       },
+
+      // Revenue section — clearly separates booking value, billed value, and collected
       revenue: {
-        newBookings: totalRevenue,        // Total billed (totalFinal) for bookings created today
-        totalCollected: totalCollected,   // Cash actually collected today (PaymentTransactions)
-        outstanding: Math.max(0, totalRevenue - totalCollected),
-        depositCollected: Number(newBookingsData._sum.totalDeposit || 0), // Safety deposit billed
+        bookingValue,           // Value committed at booking creation today (totalFinal)
+        invoicedAmount,         // Actual billed amount from invoices finalized today (after return charges)
+        invoicedCount: invoicedTodayData._count,
+        advanceCollected,       // Advance payments collected today
+        safetyDepositCollected, // Safety deposit collected today
+        damageFeesCollected,    // Damage fees collected today
+        totalCollected,         // All payments collected today (all purposes, all methods)
       },
+
       bookings: {
         newBookings: newBookingsData._count,
         pickups: pickedUpCount,
@@ -321,51 +324,57 @@ export const GetDailySummary = async (req: Request, res: Response) => {
         cancellations: cancelledCount,
         active: activeBookingsCount,
       },
+
       vehicles: {
-        availableStartOfDay: availableVehiclesStart, // Approximation
+        availableStartOfDay: availableVehiclesStart,
         availableEndOfDay: availableCount,
         rentedOut: pickedUpCount,
         returned: returnedCount,
         currentUtilization: parseFloat(currentUtilization),
       },
+
       collections: {
         cash: collectionsByMethod.cash,
-        upi: collectionsByMethod.upi,
         online: collectionsByMethod.online,
+        split: collectionsByMethod.split,
         total: totalCollected,
         breakdown: collectionsBreakdown,
+        // Purpose-wise breakdown
+        byPurpose: {
+          advance: advanceCollected,
+          safetyDeposit: safetyDepositCollected,
+          damageFees: damageFeesCollected,
+        },
       },
+
       damages: {
         newReports: damagesData._count,
-        totalEstimatedCost: Number(damagesData._sum.estimatedCost || 0),
+        totalEstimatedCost: Number(damagesData._sum.estimatedCost || 0), // estimated at report filing
+        approvedCount: damageApprovedCount,
+        totalFinalCost: damageFeesCollected, // final cost from approved reports (collected via return settlement)
+        collected: damageFeesCollected,
         pendingApproval: pendingDamagesCount,
       },
+
       maintenance: {
         vehiclesServiced: maintenanceData._count,
         totalCost: Number(maintenanceData._sum.cost || 0),
       },
+
       comparison: {
         revenueVsYesterday: parseFloat(revenueVsYesterday),
         bookingsVsYesterday: parseFloat(bookingsVsYesterday),
-        revenueVsLastWeekSameDay: 0, // TODO: Implement if needed
+        revenueVsLastWeekSameDay: 0,
       },
     };
 
-    // ========================================================================
-    // Handle export if requested
-    // ========================================================================
-
     if (exportFormat === "xlsx") {
-      const filename = `daily-summary-${date}`;
-      return await exportDailySummaryToExcel(res, reportData, filename);
+      return await exportDailySummaryToExcel(res, reportData, `daily-summary-${date}`);
     }
-
     if (exportFormat === "csv") {
-      const filename = `daily-summary-${date}`;
-      return exportDailySummaryToCSV(res, reportData, filename);
+      return exportDailySummaryToCSV(res, reportData, `daily-summary-${date}`);
     }
 
-    // Return JSON response
     return res.status(StatusCode.OK).json({
       message: "Daily summary generated successfully",
       data: reportData,

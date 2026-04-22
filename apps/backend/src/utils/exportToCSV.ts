@@ -92,63 +92,40 @@ export const exportDailySummaryToCSV = (
     value: formatDateForCSV(data.metadata.generatedAt),
   });
 
-  // Revenue Section
-  csvData.push({
-    section: "Revenue",
-    key: "New Bookings",
-    value: formatCurrencyForCSV(data.revenue.newBookings),
-  });
-  csvData.push({
-    section: "Revenue",
-    key: "Advance Collected",
-    value: formatCurrencyForCSV(data.revenue.advanceCollected),
-  });
-  csvData.push({
-    section: "Revenue",
-    key: "Deposit Collected",
-    value: formatCurrencyForCSV(data.revenue.depositCollected),
-  });
-  csvData.push({
-    section: "Revenue",
-    key: "Total Collected",
-    value: formatCurrencyForCSV(data.revenue.totalCollected),
-  });
+  // Booking Value vs Billed Amount
+  csvData.push({ section: "Booking vs Billed", key: "Booking Value (New Bookings Today)", value: formatCurrencyForCSV(data.revenue.bookingValue) });
+  csvData.push({ section: "Booking vs Billed", key: "Billed Amount (Invoices Finalized Today)", value: formatCurrencyForCSV(data.revenue.invoicedAmount) });
+  csvData.push({ section: "Booking vs Billed", key: "Invoices Finalized Count", value: data.revenue.invoicedCount.toString() });
 
-  // Bookings Section
-  csvData.push({
-    section: "Bookings",
-    key: "New Bookings",
-    value: data.bookings.newBookings.toString(),
-  });
-  csvData.push({
-    section: "Bookings",
-    key: "Pickups",
-    value: data.bookings.pickups.toString(),
-  });
-  csvData.push({
-    section: "Bookings",
-    key: "Returns",
-    value: data.bookings.returns.toString(),
-  });
-  csvData.push({
-    section: "Bookings",
-    key: "Cancellations",
-    value: data.bookings.cancellations.toString(),
-  });
-  csvData.push({
-    section: "Bookings",
-    key: "Active",
-    value: data.bookings.active.toString(),
-  });
+  // Collections (what was actually received)
+  csvData.push({ section: "Collections", key: "Advance Collected", value: formatCurrencyForCSV(data.revenue.advanceCollected) });
+  csvData.push({ section: "Collections", key: "Safety Deposit Collected", value: formatCurrencyForCSV(data.revenue.safetyDepositCollected) });
+  csvData.push({ section: "Collections", key: "Damage Fees Collected", value: formatCurrencyForCSV(data.revenue.damageFeesCollected) });
+  csvData.push({ section: "Collections", key: "Total Collected (All Purposes)", value: formatCurrencyForCSV(data.revenue.totalCollected) });
 
-  // Collections Breakdown
+  // Collections by method
   data.collections.breakdown.forEach((item: any) => {
     csvData.push({
-      section: "Collections",
+      section: "Collections by Method",
       key: item.method,
       value: `${formatCurrencyForCSV(item.amount)} (${item.count} transactions)`,
     });
   });
+
+  // Damage — charged vs collected
+  csvData.push({ section: "Damage", key: "New Reports Filed", value: data.damages.newReports.toString() });
+  csvData.push({ section: "Damage", key: "Estimated Cost (at filing)", value: formatCurrencyForCSV(data.damages.totalEstimatedCost) });
+  csvData.push({ section: "Damage", key: "Approved Reports", value: data.damages.approvedCount.toString() });
+  csvData.push({ section: "Damage", key: "Final Cost Charged (approved)", value: formatCurrencyForCSV(data.damages.totalFinalCost) });
+  csvData.push({ section: "Damage", key: "Damage Fees Collected", value: formatCurrencyForCSV(data.damages.collected) });
+  csvData.push({ section: "Damage", key: "Pending Approval", value: data.damages.pendingApproval.toString() });
+
+  // Bookings
+  csvData.push({ section: "Bookings", key: "New Bookings", value: data.bookings.newBookings.toString() });
+  csvData.push({ section: "Bookings", key: "Pickups", value: data.bookings.pickups.toString() });
+  csvData.push({ section: "Bookings", key: "Returns", value: data.bookings.returns.toString() });
+  csvData.push({ section: "Bookings", key: "Cancellations", value: data.bookings.cancellations.toString() });
+  csvData.push({ section: "Bookings", key: "Active (Currently Out)", value: data.bookings.active.toString() });
 
   const csv = arrayToCSV(csvData, ["section", "key", "value"]);
   sendCSVFile(res, csv, filename);
@@ -329,31 +306,29 @@ export const exportGSTToCSV = (
   filename: string,
 ): void => {
   const csvData = data.invoices.map((invoice: any) => ({
-    "Invoice Number": invoice.invoiceNumber,
+    "Invoice No": invoice.invoiceNumber,
     Date: formatDateForCSV(invoice.invoiceDate),
     Customer: invoice.customerName,
-    "Taxable Amount": formatCurrencyForCSV(invoice.taxableAmount),
+    GSTIN: invoice.gstin || "-",
+    "Taxable Value": formatCurrencyForCSV(invoice.taxableAmount),
     CGST: formatCurrencyForCSV(invoice.cgst),
     SGST: formatCurrencyForCSV(invoice.sgst),
     IGST: formatCurrencyForCSV(invoice.igst),
-    "Total GST": formatCurrencyForCSV(invoice.totalGST),
+    "Total Tax": formatCurrencyForCSV(invoice.totalGST),
     "Total Amount": formatCurrencyForCSV(invoice.totalAmount),
-    "GST Rate": `${invoice.gstRate}%`,
-    Type: invoice.isInterState ? "Inter-State" : "Intra-State",
   }));
 
   const fields = [
-    "Invoice Number",
+    "Invoice No",
     "Date",
     "Customer",
-    "Taxable Amount",
+    "GSTIN",
+    "Taxable Value",
     "CGST",
     "SGST",
     "IGST",
-    "Total GST",
+    "Total Tax",
     "Total Amount",
-    "GST Rate",
-    "Type",
   ];
   const csv = arrayToCSV(csvData, fields);
   sendCSVFile(res, csv, filename);

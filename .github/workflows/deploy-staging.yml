@@ -124,6 +124,7 @@ jobs:
             cd /var/www/vrms
 
             echo "==> Pulling latest code..."
+            git checkout -- . 2>/dev/null || true
             git pull origin staging
 
             echo "==> Installing dependencies..."

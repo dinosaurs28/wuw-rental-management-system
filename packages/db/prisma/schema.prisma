@@ -560,6 +560,7 @@ model Vehicle {
   categoryId      Int
   make            String
   model           String
+  year            Int?
   regNo           String        @unique
   odo             Int
   fuelLevel       Int           @default(0)
