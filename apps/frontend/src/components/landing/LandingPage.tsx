@@ -106,7 +106,7 @@ export const LandingPage = () => {
                   </p>
                 </div>
                 <Link
-                  to="#"
+                  to="/vehicles"
                   className="group hidden md:flex items-center gap-2 text-zinc-900 font-bold text-lg hover:text-orange-600 transition-colors pb-4"
                 >
                   Explore Our Fleet
@@ -165,7 +165,7 @@ export const LandingPage = () => {
                   </div>
                   <div className="relative z-10 mt-6 md:mt-0">
                     <Link
-                      to="#"
+                      to="/contact"
                       className="px-8 py-5 bg-white text-orange-600 rounded-full font-bold text-lg hover:bg-zinc-950 hover:text-white transition-colors flex items-center gap-2"
                     >
                       Contact Concierge

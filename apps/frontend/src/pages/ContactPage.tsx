@@ -39,10 +39,10 @@ export const ContactPage = () => {
                       Location
                     </p>
                     <p className="text-zinc-900 font-semibold text-lg leading-snug">
-                      Near Syndicate Circle
+                      No. 16, Anath Nagar 1st Stage,<br />Near Syndicate Circle
                     </p>
                     <p className="text-zinc-500 font-medium mt-1">
-                      Manipal, Karnataka
+                      Manipal - 576104
                     </p>
                   </div>
                 </div>
@@ -111,12 +111,8 @@ export const ContactPage = () => {
                     </p>
                     <div className="space-y-1.5">
                       <div className="flex justify-between gap-8 text-zinc-900 font-semibold">
-                        <span>Monday – Saturday</span>
-                        <span>9:00 AM – 7:00 PM</span>
-                      </div>
-                      <div className="flex justify-between gap-8 text-zinc-500 font-medium">
-                        <span>Sunday</span>
-                        <span>10:00 AM – 5:00 PM</span>
+                        <span>All Days of the Week</span>
+                        <span>8:00 AM – 11:00 PM</span>
                       </div>
                     </div>
                   </div>
