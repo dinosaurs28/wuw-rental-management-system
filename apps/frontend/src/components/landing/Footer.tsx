@@ -71,7 +71,7 @@ export const Footer = () => {
                     to="/faq"
                     className="text-zinc-500 font-semibold hover:text-zinc-900 hover:translate-x-1 inline-flex transition-all duration-300"
                   >
-                    Help Center
+                    FAQs
                   </Link>
                 </li>
                 <li>
