@@ -94,25 +94,13 @@ export const VehiclePricingCard = ({
       <CardContent className="p-0">
         {/* Price Header */}
         <div className="p-5 sm:p-8 border-b border-zinc-200">
-          <div className="flex items-baseline justify-between mb-4">
-            <div>
-              <span className="text-4xl lg:text-5xl font-serif font-black text-zinc-900 tracking-tight">
-                {formatCurrency(vehicle.pricing.daily)}
-              </span>
-              <span className="text-sm font-bold text-zinc-500 uppercase tracking-wider ml-2">
-                /day
-              </span>
-            </div>
-            <div
-              className={cn(
-                "px-4 py-1.5 rounded-full text-xs font-black tracking-[0.2em] uppercase border",
-                isAvailable
-                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                  : "bg-red-500/10 text-red-400 border-red-500/20",
-              )}
-            >
-              {isAvailable ? "Available" : "Not Available"}
-            </div>
+          <div className="flex items-baseline mb-4">
+            <span className="text-4xl lg:text-5xl font-serif font-black text-zinc-900 tracking-tight">
+              {formatCurrency(vehicle.pricing.daily)}
+            </span>
+            <span className="text-sm font-bold text-zinc-500 uppercase tracking-wider ml-2">
+              /day
+            </span>
           </div>
           <div className="flex items-center gap-2 text-sm font-bold tracking-wider text-zinc-400 uppercase">
             <MapPin className="size-4 text-orange-500" />
