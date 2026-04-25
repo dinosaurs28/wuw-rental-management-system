@@ -4,13 +4,14 @@ import { format } from "date-fns";
 // Existing Customer Interfaces...
 // Types for booking summary request
 export interface CreateBookingSummaryRequest {
-  vehicles: string[]; // Vehicle public IDs
-  start: string; // ISO date string
-  end: string; // ISO date string
-  file_public_id: string; // KYC document file public ID
+  vehicles?: string[];   // Direct vehicle public IDs (admin/employee flow)
+  groupKeys?: string[];  // Group keys for atomic vehicle assignment (public flow)
+  start: string;
+  end: string;
+  file_public_id: string;
   payment_type: "CASH" | "ONLINE";
   payment_flow?: "FULL" | "ADVANCE";
-  couponCode?: string; // Optional coupon code
+  couponCode?: string;
 }
 
 // Types for booking summary response

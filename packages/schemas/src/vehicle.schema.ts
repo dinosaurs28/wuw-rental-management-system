@@ -4,15 +4,21 @@ export const getVehicleDetailsSchema = z.object({
   id: z.string().min(16, "Vehicle ID length is invalid."),
 });
 
-export const bookingSummarySchema = z.object({
-  vehicles: z.array(z.string().min(1)),
-  start: z.string().min(1),
-  end: z.string().min(1),
-  file_public_id: z.string().min(1),
-  payment_type: z.enum(["CASH", "ONLINE"]),
-  payment_flow: z.enum(["FULL", "ADVANCE"]).default("FULL"),
-  couponCode: z.string().min(1).max(50).optional(),
-});
+export const bookingSummarySchema = z
+  .object({
+    vehicles: z.array(z.string().min(1)).optional().default([]),
+    groupKeys: z.array(z.string().min(1)).optional().default([]),
+    start: z.string().min(1),
+    end: z.string().min(1),
+    file_public_id: z.string().min(1),
+    payment_type: z.enum(["CASH", "ONLINE"]),
+    payment_flow: z.enum(["FULL", "ADVANCE"]).default("FULL"),
+    couponCode: z.string().min(1).max(50).optional(),
+  })
+  .refine(
+    (data) => (data.vehicles.length + (data.groupKeys?.length ?? 0)) > 0,
+    { message: "At least one vehicle or group key is required", path: ["vehicles"] },
+  );
 
 export const createVehicleSchema = z.object({
   make: z.string().min(1, "Make is required"),

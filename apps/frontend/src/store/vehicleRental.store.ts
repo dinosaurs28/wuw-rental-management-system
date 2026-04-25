@@ -2,8 +2,9 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
 interface VehicleRentalState {
-  // Vehicle info
+  // Vehicle info — exactly one of selectedVehicleId or selectedGroupKey is set
   selectedVehicleId: string | null;
+  selectedGroupKey: string | null;
   name: string | null;
   model: string | null;
   make: string | null;
@@ -52,6 +53,7 @@ interface VehicleRentalState {
 
   // Actions
   setVehicleId: (vehicleId: string | null) => void;
+  setGroupKey: (groupKey: string | null) => void;
   setVehicleDetails: (details: {
     name: string;
     model: string;
@@ -178,6 +180,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
     (set, get) => ({
       // Initial state
       selectedVehicleId: null,
+      selectedGroupKey: null,
       name: null,
       model: null,
       make: null,
@@ -215,7 +218,8 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
       grandFinalTotal: 0,
 
       // Actions
-      setVehicleId: (vehicleId) => set({ selectedVehicleId: vehicleId }),
+      setVehicleId: (vehicleId) => set({ selectedVehicleId: vehicleId, selectedGroupKey: null }),
+      setGroupKey: (groupKey) => set({ selectedGroupKey: groupKey, selectedVehicleId: null }),
 
       setVehicleDetails: (details) =>
         set({
@@ -397,6 +401,7 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
       clearVehicleSelection: () =>
         set({
           selectedVehicleId: null,
+          selectedGroupKey: null,
           name: null,
           model: null,
           make: null,
@@ -525,8 +530,8 @@ export const useVehicleRentalStore = create<VehicleRentalState>()(
       },
 
       hasVehicleSelected: () => {
-        const { selectedVehicleId, name, startDate, endDate } = get();
-        return !!(selectedVehicleId && name && startDate && endDate);
+        const { selectedVehicleId, selectedGroupKey, name, startDate, endDate } = get();
+        return !!((selectedVehicleId || selectedGroupKey) && name && startDate && endDate);
       },
     }),
     {

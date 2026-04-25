@@ -137,7 +137,7 @@ export const VehicleGrid = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {vehicles.map((vehicle) => (
           <MemoizedVehicleCard
-            key={vehicle.publicId}
+            key={"groupKey" in vehicle ? vehicle.groupKey : (vehicle as any).publicId}
             vehicle={vehicle}
             basePath={basePath}
             startDateTime={startDateTime}

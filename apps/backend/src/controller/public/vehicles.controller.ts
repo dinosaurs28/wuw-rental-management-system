@@ -18,6 +18,29 @@ import {
 
 const pricingEngine = new PricingEngineService();
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function buildGroupKey(make: string, model: string, categoryId: number, branchId: number): string {
+  return `${make}__${model}__${categoryId}__${branchId}`;
+}
+
+function parseGroupKey(groupKey: string): { make: string; model: string; categoryId: number; branchId: number } | null {
+  const idx = groupKey.indexOf("__");
+  if (idx === -1) return null;
+  const rest1 = groupKey.slice(idx + 2);
+  const idx2 = rest1.indexOf("__");
+  if (idx2 === -1) return null;
+  const rest2 = rest1.slice(idx2 + 2);
+  const idx3 = rest2.indexOf("__");
+  if (idx3 === -1) return null;
+  const make = groupKey.slice(0, idx);
+  const model = rest1.slice(0, idx2);
+  const categoryId = parseInt(rest2.slice(0, idx3), 10);
+  const branchId = parseInt(rest2.slice(idx3 + 2), 10);
+  if (isNaN(categoryId) || isNaN(branchId)) return null;
+  return { make, model, categoryId, branchId };
+}
+
 // ── Listing ───────────────────────────────────────────────────────────────────
 
 export const getPublicVehicles = async (req: Request, res: Response) => {
@@ -59,7 +82,7 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
       }
     }
 
-    const cacheKey = `public:vehicles:${category || "all"}:${branch || "all"}:${
+    const cacheKey = `public:vehicles:grouped:${category || "all"}:${branch || "all"}:${
       search || "all"
     }:${make || "all"}:${model || "all"}:${sort || "none"}:${start || "all"}:${end || "all"}:${limit}:${offset}`;
 
@@ -102,25 +125,20 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
     if (categoryObj) filters.categoryId = categoryObj.id;
     if (branchObj) filters.branchId = branchObj.id;
 
-    // ── Fetch vehicles (single query) ─────────────────────────────────────────
+    // ── Fetch vehicles (single query, no skip/take — pagination applied after grouping) ───
 
     console.time("[perf] listing:vehicles-query");
     const vehicles = await prisma.vehicle.findMany({
       where: filters,
-      skip: Number(offset),
-      take: Number(limit),
       include: {
-        category: { select: { id: true, name: true } },  // TASK-013: only fetch id+name
-        branch:   { select: { id: true, name: true } },  // TASK-013: skip large pricingSetting JSON
+        category: { select: { id: true, name: true } },
+        branch:   { select: { id: true, name: true } },
         images: {
           where: { isThumbnail: true },
           select: { file: { select: { url: true } } },
         },
       },
-      orderBy:
-        sort === "price_low_to_high" || sort === "price_high_to_low"
-          ? { createdAt: "desc" } // price sort applied in-memory below
-          : { createdAt: "desc" },
+      orderBy: { createdAt: "desc" },
     });
     console.timeEnd("[perf] listing:vehicles-query");
 
@@ -201,57 +219,91 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
     }
     console.timeEnd("[perf] listing:pricing");
 
-    // ── Build response (no async in loop) ─────────────────────────────────────
+    // ── Group vehicles by make+model+category+branch ──────────────────────────
 
-    const finalResponse = [];
+    interface GroupEntry {
+      groupKey: string;
+      make: string;
+      model: string;
+      category: string;
+      branch: string;
+      availableCount: number;
+      imageUrl: any[];
+      pricing: { daily: number; hourly?: number; halfDay?: number };
+      pricingDetails?: { price: number; finalPrice: number; type: string };
+      minDailyPrice: number;
+    }
+
+    const groupMap = new Map<string, GroupEntry>();
+
     for (const v of availableVehicles) {
+      const gk = buildGroupKey(v.make, v.model, v.categoryId, v.branchId);
+
+      let daily = 0;
+      let hourly: number | undefined;
+      let halfDay: number | undefined;
+      let pricingDetails: GroupEntry["pricingDetails"];
+
       if (durationPriceMap && durationInfo) {
         const lp = durationPriceMap.get(v.id);
-        const finalPrice = lp?.finalPrice ?? 0;
-        const basePrice = lp?.price ?? 0;
-
-        finalResponse.push({
-          publicId: v.publicId,
-          make: v.make,
-          model: v.model,
-          category: v.category.name,
-          branch: v.branch.name,
-          imageUrl: v.images,
-          pricing: { daily: finalPrice },
-          pricingDetails: {
-            price: basePrice,
-            finalPrice,
-            type: durationInfo.periodType,
-          },
-        });
+        daily = lp?.finalPrice ?? 0;
+        pricingDetails = { price: lp?.price ?? 0, finalPrice: daily, type: durationInfo.periodType };
       } else {
         const fp = fallbackPriceMap?.get(v.id);
-        finalResponse.push({
-          publicId: v.publicId,
+        daily   = fp?.daily   ?? 0;
+        hourly  = fp?.hourly;
+        halfDay = fp?.halfDay;
+      }
+
+      const existing = groupMap.get(gk);
+      if (!existing) {
+        groupMap.set(gk, {
+          groupKey: gk,
           make: v.make,
           model: v.model,
           category: v.category.name,
           branch: v.branch.name,
+          availableCount: 1,
           imageUrl: v.images,
-          pricing: {
-            daily:   fp?.daily   ?? 0,
-            hourly:  fp?.hourly  ?? 0,
-            halfDay: fp?.halfDay ?? 0,
-          },
-          pricingDetails: undefined,
+          pricing: { daily, ...(hourly !== undefined ? { hourly } : {}), ...(halfDay !== undefined ? { halfDay } : {}) },
+          pricingDetails,
+          minDailyPrice: daily,
         });
+      } else {
+        existing.availableCount++;
+        // Keep the lowest-priced vehicle as the representative
+        if (daily < existing.minDailyPrice) {
+          existing.minDailyPrice = daily;
+          existing.imageUrl = v.images;
+          existing.pricing = { daily, ...(hourly !== undefined ? { hourly } : {}), ...(halfDay !== undefined ? { halfDay } : {}) };
+          existing.pricingDetails = pricingDetails;
+        }
       }
     }
 
-    // ── Price sorting (in-memory on pre-computed prices) ──────────────────────
+    // ── Build flat response and sort ──────────────────────────────────────────
+
+    const allGroups = Array.from(groupMap.values()).map((g) => ({
+      groupKey:       g.groupKey,
+      make:           g.make,
+      model:          g.model,
+      category:       g.category,
+      branch:         g.branch,
+      availableCount: g.availableCount,
+      imageUrl:       g.imageUrl,
+      pricing:        g.pricing,
+      pricingDetails: g.pricingDetails,
+    }));
 
     if (sort === "price_low_to_high") {
-      finalResponse.sort((a, b) => a.pricing.daily - b.pricing.daily);
+      allGroups.sort((a, b) => a.pricing.daily - b.pricing.daily);
     } else if (sort === "price_high_to_low") {
-      finalResponse.sort((a, b) => b.pricing.daily - a.pricing.daily);
+      allGroups.sort((a, b) => b.pricing.daily - a.pricing.daily);
     }
 
-    const result = { count: finalResponse.length, data: finalResponse };
+    // Paginate grouped results
+    const paginatedGroups = allGroups.slice(Number(offset), Number(offset) + Number(limit));
+    const result = { count: allGroups.length, data: paginatedGroups };
 
     // Cache with 30-second TTL (TASK-022)
     try {
@@ -266,6 +318,179 @@ export const getPublicVehicles = async (req: Request, res: Response) => {
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
       message: "Internal server error while fetching public vehicles",
     });
+  }
+};
+
+// ── Group Detail ──────────────────────────────────────────────────────────────
+
+export const getVehicleGroupDetails = async (req: Request, res: Response) => {
+  try {
+    const groupKey = decodeURIComponent(req.params.groupKey ?? "");
+    const parsed = parseGroupKey(groupKey);
+    if (!parsed) {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid group key format" });
+    }
+    const { make, model, categoryId, branchId } = parsed;
+
+    const { start, end } = req.query as { start?: string; end?: string };
+
+    let startDate: DateTime | null = null;
+    let endDate: DateTime | null = null;
+
+    if (start) {
+      startDate = TimezoneService.parseISO(start);
+      endDate = end ? TimezoneService.parseISO(end) : startDate.plus({ hours: 24 });
+      if (startDate.toMillis() === endDate!.toMillis()) endDate = startDate.plus({ hours: 24 });
+      if (!startDate.isValid || !endDate!.isValid) {
+        return res.status(StatusCode.BAD_REQUEST).json({ message: "Invalid start or end date format" });
+      }
+    }
+
+    const cacheKey = `public:vehicles:group:${groupKey}:${start || "nodate"}:${end || "nodate"}`;
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) return res.status(StatusCode.OK).json(JSON.parse(cached));
+    } catch { /* non-fatal */ }
+
+    // Fetch all vehicles in this group
+    const groupVehicles = await prisma.vehicle.findMany({
+      where: { make, model, categoryId, branchId, deletedAt: null, insuranceExpiry: { gt: new Date() } },
+      select: {
+        id: true,
+        publicId: true,
+        make: true,
+        model: true,
+        odo: true,
+        fuelLevel: true,
+        advancePayAmount: true,
+        insuranceExpiry: true,
+        status: true,
+        fastagNumber: true,
+        hasFastag: true,
+        branchId: true,
+        categoryId: true,
+        category: { select: { id: true, name: true } },
+        branch:   { select: { id: true, name: true } },
+        images:   { where: { isThumbnail: false }, include: { file: true } },
+        customPricing: true,
+        pricingOverride: true,
+      },
+      orderBy: { odo: "asc" },
+    });
+
+    if (groupVehicles.length === 0) {
+      return res.status(StatusCode.NOT_FOUND).json({ message: "No vehicles found for this group" });
+    }
+
+    // Only AVAILABLE vehicles can be booked; exclude INACTIVE, OUT_FOR_RENTAL, MAINTENANCE, etc.
+    const bookableVehicles = groupVehicles.filter((v) => v.status === "AVAILABLE");
+    let availableCount: number;
+    let representativeVehicle = bookableVehicles[0] ?? groupVehicles[0]!;
+
+    if (startDate && endDate) {
+      const startPrisma = TimezoneService.toPrisma(startDate);
+      const endPrisma   = TimezoneService.toPrisma(endDate);
+      const vehicleIdToPublicId = new Map(bookableVehicles.map((v) => [v.id, v.publicId]));
+      const unavailableIds = await getUnavailableVehicleIds(
+        bookableVehicles.map((v) => v.id),
+        startPrisma,
+        endPrisma,
+        vehicleIdToPublicId,
+      );
+      availableCount = bookableVehicles.filter((v) => !unavailableIds.has(v.id)).length;
+      const firstAvailable = bookableVehicles.find((v) => !unavailableIds.has(v.id));
+      if (firstAvailable) representativeVehicle = firstAvailable;
+    } else {
+      availableCount = bookableVehicles.length;
+    }
+
+    // Collect deduplicated images from all vehicles (up to 10)
+    const seenUrls = new Set<string>();
+    const allImages: string[] = [];
+    for (const v of groupVehicles) {
+      for (const img of v.images) {
+        const url = img.file.url;
+        if (!seenUrls.has(url)) { seenUrls.add(url); allImages.push(url); }
+        if (allImages.length >= 10) break;
+      }
+      if (allImages.length >= 10) break;
+    }
+
+    // Compute pricing from the representative vehicle
+    let pricingDetails: any = null;
+    let deposit = 0;
+    let availability: boolean | null = null;
+
+    if (startDate && endDate) {
+      availability = availableCount > 0;
+      const isInsuranceValid = new Date(representativeVehicle.insuranceExpiry) > new Date();
+      if (isInsuranceValid && availability) {
+        try {
+          pricingDetails = await pricingEngine.calculateBookingPrice(
+            representativeVehicle.id,
+            startDate,
+            endDate,
+            representativeVehicle.branchId,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            representativeVehicle.categoryId,
+            representativeVehicle.customPricing,
+          );
+          deposit = Number(pricingDetails.deposit);
+          pricingDetails = {
+            basePrice:        Number(pricingDetails.basePrice),
+            discountAmount:   Number(pricingDetails.discountAmount),
+            discountPercent:  Number(pricingDetails.discountPercent),
+            deposit:          Number(pricingDetails.deposit),
+            taxAmount:        Number(pricingDetails.taxAmount),
+            cgstAmount:       Number(pricingDetails.cgstAmount),
+            sgstAmount:       Number(pricingDetails.sgstAmount),
+            taxRate:          Number(pricingDetails.taxRate),
+            finalTotal:       Number(pricingDetails.finalTotal),
+            freeKmLimit:      pricingDetails.freeKmLimit,
+            extraKmRate:      Number(pricingDetails.extraKmRate),
+            pricingBreakdown: {
+              periodType:      pricingDetails.pricingBreakdown.periodType,
+              duration:        pricingDetails.pricingBreakdown.duration,
+              applicablePrice: Number(pricingDetails.pricingBreakdown.applicablePrice),
+              priceSource:     pricingDetails.pricingBreakdown.priceSource,
+            },
+          };
+        } catch {
+          // pricing failure is non-fatal
+        }
+      }
+    }
+
+    const firstCat = groupVehicles[0]!.category;
+    const firstBranch = groupVehicles[0]!.branch;
+
+    const response = {
+      groupKey,
+      make,
+      model,
+      category:       firstCat.name,
+      branch:         firstBranch.name,
+      availableCount,
+      totalCount:     groupVehicles.length,
+      images:         allImages,
+      pricing:        { daily: pricingDetails?.pricingBreakdown?.applicablePrice ?? null },
+      deposit,
+      availability,
+      pricingDetails,
+      advancePayAmount: Number(representativeVehicle.advancePayAmount ?? 0),
+    };
+
+    try {
+      await redis.set(cacheKey, JSON.stringify({ message: "Success", data: response }), "EX", 30);
+    } catch { /* non-fatal */ }
+
+    return res.status(StatusCode.OK).json({ message: "Success", data: response });
+  } catch (e) {
+    console.error("Error fetching vehicle group details:", e);
+    return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };
 
