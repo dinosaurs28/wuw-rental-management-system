@@ -31,6 +31,7 @@ export const ReviewConfirmPage = () => {
   // Get all booking state from store
   const {
     selectedVehicleId,
+    selectedGroupKey,
     startDate,
     endDate,
     startTime,
@@ -66,7 +67,7 @@ export const ReviewConfirmPage = () => {
   // Handle Confirm & Pay click - just validate and navigate
   const handleConfirmAndPay = () => {
     if (
-      !selectedVehicleId ||
+      (!selectedVehicleId && !selectedGroupKey) ||
       !startDate ||
       !endDate ||
       !selectedKycFilePublicId ||

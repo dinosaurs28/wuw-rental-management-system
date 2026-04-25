@@ -94,6 +94,7 @@ export const BookingConfirmationPage = () => {
   // Get booking state from store
   const {
     selectedVehicleId,
+    selectedGroupKey,
     make,
     model,
     category,
@@ -116,7 +117,7 @@ export const BookingConfirmationPage = () => {
     const createBooking = async () => {
       // Validate required data
       if (
-        !selectedVehicleId ||
+        (!selectedVehicleId && !selectedGroupKey) ||
         !startDate ||
         !endDate ||
         !selectedKycFilePublicId ||
@@ -149,11 +150,13 @@ export const BookingConfirmationPage = () => {
           : `${endDate}T${endTime}:00.000Z`;
 
         const response = await bookingService.createBookingSummary({
-          vehicles: [selectedVehicleId],
+          ...(selectedGroupKey
+            ? { groupKeys: [selectedGroupKey] }
+            : { vehicles: [selectedVehicleId!] }),
           start: startDateTime,
           end: endDateTime,
-          file_public_id: selectedKycFilePublicId,
-          payment_type: paymentType,
+          file_public_id: selectedKycFilePublicId!,
+          payment_type: paymentType!,
           payment_flow: paymentFlow,
           ...(couponCode ? { couponCode } : {}),
         });

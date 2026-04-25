@@ -57,7 +57,13 @@ export const VehicleCard = ({
     if (startDateTime) params.set("start", startDateTime);
     if (endDateTime) params.set("end", endDateTime);
     const query = params.toString();
-    navigate(`${basePath}/${vehicle.publicId}${query ? `?${query}` : ""}`);
+
+    // Grouped public vehicles use groupKey; manager/employee vehicles use publicId
+    if ("groupKey" in vehicle) {
+      navigate(`${basePath}/group/${encodeURIComponent(vehicle.groupKey)}${query ? `?${query}` : ""}`);
+    } else {
+      navigate(`${basePath}/${(vehicle as any).publicId}${query ? `?${query}` : ""}`);
+    }
   };
 
   const hasPricingDetails =
@@ -92,6 +98,22 @@ export const VehicleCard = ({
           <div className="absolute top-4 right-4 z-10">
             <span className="px-3 py-1.5 text-[10px] font-black tracking-[0.15em] bg-orange-500/80 backdrop-blur-md text-white rounded-full uppercase">
               {vehicle.pricingDetails!.type.replace("_", " ")}
+            </span>
+          </div>
+        )}
+        {/* Available Count Badge (public grouped vehicles only) */}
+        {"availableCount" in vehicle && (
+          <div className="absolute bottom-4 right-4 z-10">
+            <span
+              className={`px-3 py-1.5 text-[10px] font-black tracking-[0.15em] backdrop-blur-md text-white rounded-full uppercase ${
+                vehicle.availableCount >= 3
+                  ? "bg-emerald-500/80"
+                  : vehicle.availableCount >= 1
+                  ? "bg-yellow-500/80"
+                  : "bg-red-500/80"
+              }`}
+            >
+              {vehicle.availableCount} available
             </span>
           </div>
         )}

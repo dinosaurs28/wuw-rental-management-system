@@ -20,22 +20,65 @@ export interface VehicleImage {
   };
 }
 
-// Public-facing vehicle (from /public/vehicles)
+// Public-facing grouped vehicle (from /public/vehicles — one entry per make+model+category+branch)
 export interface PublicVehicle {
-  publicId: string;
+  groupKey: string;
   make: string;
   model: string;
-  category: string; // Just the name
+  category: string;
   branch: string;
+  availableCount: number;
   imageUrl: VehicleImage[];
   pricing: {
     daily: number;
+    hourly?: number;
+    halfDay?: number;
   };
   pricingDetails?: {
     price: number;
     finalPrice: number;
     type: "HOURLY" | "HALF_DAY" | "FULL_DAY" | "MULTI_DAY";
   };
+}
+
+// Group details response (from /public/vehicles/group/:groupKey)
+export interface VehicleGroupDetails {
+  groupKey: string;
+  make: string;
+  model: string;
+  category: string;
+  branch: string;
+  availableCount: number;
+  totalCount: number;
+  images: string[];
+  pricing: { daily: number | null };
+  deposit: number;
+  availability: boolean | null;
+  advancePayAmount: number;
+  pricingDetails: {
+    basePrice: number;
+    discountAmount: number;
+    discountPercent: number;
+    deposit: number;
+    taxAmount: number;
+    cgstAmount: number;
+    sgstAmount: number;
+    taxRate: number;
+    finalTotal: number;
+    freeKmLimit: number;
+    extraKmRate: number;
+    pricingBreakdown: {
+      periodType: "HOURLY" | "HALF_DAY" | "FULL_DAY" | "MULTI_DAY";
+      duration: { billableDuration: number; days: number; hours: number; minutes: number };
+      applicablePrice: number;
+      priceSource: string;
+    };
+  } | null;
+}
+
+export interface VehicleGroupDetailsResponse {
+  message?: string;
+  data: VehicleGroupDetails;
 }
 
 // Manager vehicle (from /branchManager/dashboard/vehicles)
@@ -225,6 +268,26 @@ export interface VehicleDetailsParams {
   startDate?: string;
   endDate?: string;
 }
+
+export const fetchVehicleGroupDetails = async (
+  groupKey: string,
+  startDate?: string,
+  endDate?: string,
+): Promise<VehicleGroupDetailsResponse> => {
+  try {
+    const response = await axios.get<VehicleGroupDetailsResponse>(
+      `${API_URL}/public/vehicles/group/${encodeURIComponent(groupKey)}`,
+      {
+        params: { start: startDate, end: endDate },
+        withCredentials: true,
+      },
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching vehicle group details:", error);
+    throw error;
+  }
+};
 
 export const fetchVehicleDetails = async (
   params: VehicleDetailsParams,

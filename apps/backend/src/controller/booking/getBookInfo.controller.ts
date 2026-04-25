@@ -4,7 +4,7 @@ import { prisma } from "@repo/database/client";
 import { bookingSummarySchema } from "@repo/schemas";
 import { redis } from "../../lib/redisconfig.js";
 import { getUnavailableVehicleIds } from "../../utils/availability/availabilityBatch.js";
-import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
+import { invalidateVehicleAvailability, invalidateGroupListingCache } from "../../utils/cache/vehicleCacheKeys.js";
 import { initiatePhonePePayment } from "../../utils/payment/paymentCreate.utils.js";
 import { createID } from "../../utils/nanoID.js";
 import jwt from "jsonwebtoken";
@@ -14,6 +14,73 @@ import { DurationCalculatorService } from "../../services/pricing/duration-calcu
 import Decimal from "decimal.js";
 
 const pricingEngine = new PricingEngineService();
+
+function parseGroupKey(groupKey: string): { make: string; model: string; categoryId: number; branchId: number } | null {
+  const idx = groupKey.indexOf("__");
+  if (idx === -1) return null;
+  const rest1 = groupKey.slice(idx + 2);
+  const idx2 = rest1.indexOf("__");
+  if (idx2 === -1) return null;
+  const rest2 = rest1.slice(idx2 + 2);
+  const idx3 = rest2.indexOf("__");
+  if (idx3 === -1) return null;
+  const make = groupKey.slice(0, idx);
+  const model = rest1.slice(0, idx2);
+  const categoryId = parseInt(rest2.slice(0, idx3), 10);
+  const branchId = parseInt(rest2.slice(idx3 + 2), 10);
+  if (isNaN(categoryId) || isNaN(branchId)) return null;
+  return { make, model, categoryId, branchId };
+}
+
+/**
+ * Atomically resolves a groupKey to the best available vehicle within a Prisma transaction.
+ * Checks only DB-level CONFIRMED/PICKED_UP conflicts — Redis holds are checked outside.
+ * Selects the lowest-odometer candidate to distribute fleet wear evenly.
+ */
+async function resolveVehicleFromGroup(
+  groupKey: string,
+  startDate: Date,
+  endDate: Date,
+  tx: typeof prisma,
+): Promise<NonNullable<Awaited<ReturnType<typeof prisma.vehicle.findFirst>>>> {
+  const parsed = parseGroupKey(groupKey);
+  if (!parsed) throw Object.assign(new Error("Invalid groupKey format"), { code: "INVALID_GROUP_KEY", status: 400 });
+
+  const { make, model, categoryId, branchId } = parsed;
+
+  const candidates = await tx.vehicle.findMany({
+    where: { make, model, categoryId, branchId, status: "AVAILABLE", deletedAt: null, insuranceExpiry: { gt: new Date() } },
+    include: {
+      category: true,
+      branch: { include: { pricingSetting: true } },
+      pricingOverride: true,
+      customPricing: true,
+    },
+    orderBy: { odo: "asc" },
+    take: 10,
+  });
+
+  if (candidates.length === 0) {
+    throw Object.assign(new Error("No vehicles available for this group"), { code: "NO_VEHICLE_AVAILABLE", status: 409 });
+  }
+
+  for (const candidate of candidates) {
+    const conflict = await tx.bookingItem.findFirst({
+      where: {
+        vehicleId: candidate.id,
+        booking: {
+          status: { in: ["CONFIRMED", "PICKED_UP"] },
+          startAt: { lt: endDate },
+          endAt:   { gt: startDate },
+        },
+      },
+      select: { id: true },
+    });
+    if (!conflict) return candidate as any;
+  }
+
+  throw Object.assign(new Error("All vehicles in this group are booked for the selected dates"), { code: "NO_VEHICLE_AVAILABLE", status: 409 });
+}
 
 export const createBookingSummary = async (req: Request, res: Response) => {
   try {
@@ -43,7 +110,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
         message: "Customer doesnt Exists",
       });
     }
-    const { vehicles, start, end, file_public_id, payment_flow, couponCode } = parsed.data;
+    const { vehicles, groupKeys, start, end, file_public_id, payment_flow, couponCode } = parsed.data;
     const customerId = userData.customerProfile.id;
     const kycFile = await prisma.fileObject.findUnique({
       where: { publicId: file_public_id },
@@ -85,13 +152,26 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       });
     }
 
+    // ── Resolve groupKeys to specific vehicles (atomic within the DB transaction below) ──
+    // We pre-check here (outside tx) to return early on obvious mismatches.
+    // The transaction below re-validates and assigns the actual vehicle atomically.
+    const resolvedGroupVehicles: (typeof vehiclesData) = [];
+    const resolvedGroupKeys: string[] = groupKeys ?? [];
+
+    if (resolvedGroupKeys.length > 0) {
+      for (const gk of resolvedGroupKeys) {
+        if (!parseGroupKey(gk)) {
+          return res.status(StatusCode.BAD_REQUEST).json({ message: `Invalid group key: ${gk}` });
+        }
+      }
+    }
+
+    // ── Fetch directly-referenced vehicles ────────────────────────────────────
     const vehiclesData = await prisma.vehicle.findMany({
-      where: { publicId: { in: vehicles } },
+      where: { publicId: { in: vehicles.length > 0 ? vehicles : ["__none__"] } },
       include: {
         category: true,
-        branch: {
-          include: { pricingSetting: true },
-        },
+        branch: { include: { pricingSetting: true } },
         pricingOverride: true,
         customPricing: true,
       },
@@ -99,7 +179,7 @@ export const createBookingSummary = async (req: Request, res: Response) => {
 
     if (vehiclesData.length !== vehicles.length) {
       const foundIds = vehiclesData.map((v) => v.publicId);
-      const missingIds = vehicles.filter((id) => !foundIds.includes(id));
+      const missingIds = vehicles.filter((id: string) => !foundIds.includes(id));
       return res.status(StatusCode.NOT_FOUND).json({
         message: "One or more vehicles not found",
         missingVehicles: missingIds,
@@ -108,14 +188,19 @@ export const createBookingSummary = async (req: Request, res: Response) => {
 
     const items: any = [];
 
-    // GST Rule Fetching
-    const branchId = vehiclesData[0]?.branchId;
+    // GST Rule Fetching — branchId is resolved from either directly-referenced vehicles
+    // or from the parsed groupKey (for pure group-key bookings)
+    let bookingBranchId: number | undefined = vehiclesData[0]?.branchId;
+    if (!bookingBranchId && resolvedGroupKeys.length > 0) {
+      const firstParsed = parseGroupKey(resolvedGroupKeys[0]!);
+      bookingBranchId = firstParsed?.branchId;
+    }
     let cgstRate = 9;
     let sgstRate = 9;
 
-    if (branchId) {
+    if (bookingBranchId) {
       const gstRule = await prisma.gSTRule.findUnique({
-        where: { branchId },
+        where: { branchId: bookingBranchId },
       });
       if (gstRule) {
         cgstRate = Number(gstRule.cgstRate);
@@ -139,19 +224,21 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       endDateDt,
     );
 
-    // Batch availability check (DB + Redis holds) — single call for all vehicles
-    const vehicleIdToPublicId = new Map(vehiclesData.map((v) => [v.id, v.publicId]));
-    const unavailableIds = await getUnavailableVehicleIds(
-      vehiclesData.map((v) => v.id),
-      startDate,
-      endDate,
-      vehicleIdToPublicId,
-    );
-    for (const v of vehiclesData) {
-      if (unavailableIds.has(v.id)) {
-        return res.status(StatusCode.CONFLICT).json({
-          message: `Vehicle ${v.make} ${v.model} is not available for the selected dates`,
-        });
+    // Batch availability check (DB + Redis holds) — single call for directly-referenced vehicles
+    if (vehiclesData.length > 0) {
+      const vehicleIdToPublicId = new Map(vehiclesData.map((v) => [v.id, v.publicId]));
+      const unavailableIds = await getUnavailableVehicleIds(
+        vehiclesData.map((v) => v.id),
+        startDate,
+        endDate,
+        vehicleIdToPublicId,
+      );
+      for (const v of vehiclesData) {
+        if (unavailableIds.has(v.id)) {
+          return res.status(StatusCode.CONFLICT).json({
+            message: `Vehicle ${v.make} ${v.model} is not available for the selected dates`,
+          });
+        }
       }
     }
 
@@ -287,12 +374,87 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       );
     }
     const booking = await prisma.$transaction(async (tx) => {
+      // Atomically resolve each groupKey to a specific vehicle within the transaction
+      for (const gk of resolvedGroupKeys) {
+        try {
+          const resolved = await resolveVehicleFromGroup(gk, startDate, endDate, tx as any);
+          resolvedGroupVehicles.push(resolved as any);
+        } catch (err: any) {
+          if (err.code === "NO_VEHICLE_AVAILABLE") {
+            const parsed2 = parseGroupKey(gk);
+            throw Object.assign(
+              new Error(`No vehicles available for ${parsed2?.make ?? ""} ${parsed2?.model ?? ""} on the selected dates. Please try different dates or refresh to see current availability.`),
+              { code: "NO_VEHICLE_AVAILABLE", status: 409 },
+            );
+          }
+          throw err;
+        }
+      }
+
+      // Re-price the resolved group vehicles and add them to items
+      for (const v of resolvedGroupVehicles) {
+        const pricingResult = await pricingEngine.calculateBookingPrice(
+          v.id,
+          startDateDt,
+          endDateDt,
+          v.branchId,
+          customerId,
+          couponCode?.toUpperCase(),
+        );
+
+        const baseTotal       = Number(pricingResult.basePrice.toString());
+        const discountPercent = Number(pricingResult.discountPercent.toString()) / 100;
+        const discountAmount  = Number(pricingResult.discountAmount.toString());
+        const deposit         = Number(pricingResult.deposit.toString());
+        const taxAmount       = Number(pricingResult.taxAmount.toString());
+        const cgstAmount      = Number(pricingResult.cgstAmount.toString());
+        const sgstAmount      = Number(pricingResult.sgstAmount.toString());
+        const finalTotal      = Number(pricingResult.finalTotal.add(pricingResult.deposit).toString());
+
+        items.push({
+          publicId:          v.publicId,
+          make:              v.make,
+          model:             v.model,
+          category:          v.category.name,
+          branch:            v.branch.name,
+          vehicleId:         v.id,
+          days:              bookingDuration.days,
+          baseTotal,
+          discountAmount,
+          discountPercent:   discountPercent * 100,
+          appliedCouponCode: pricingResult.appliedCouponCode ?? null,
+          couponRuleId:      pricingResult.couponRuleId ?? null,
+          deposit,
+          taxAmount,
+          cgstAmount,
+          sgstAmount,
+          taxRate:    Number(pricingResult.taxRate.toString()),
+          finalTotal,
+          pricingBreakdown: {
+            periodType:    pricingResult.pricingBreakdown.periodType,
+            billableHours: bookingDuration.billableDuration,
+            actualHours:   bookingDuration.actualDuration,
+            freeKmLimit:   pricingResult.freeKmLimit,
+            extraKmRate:   Number(pricingResult.extraKmRate.toString()),
+          },
+        });
+
+        grandBaseTotal      += baseTotal;
+        grandDiscountTotal  += discountAmount;
+        grandTaxTotal       += taxAmount;
+        grandCGSTTotal      += cgstAmount;
+        grandSGSTTotal      += sgstAmount;
+        grandDeposit        += deposit;
+        grandFinalTotal     += finalTotal;
+        grandAdvanceAmount  += Number(v.advancePayAmount ?? 0);
+      }
+
       const newBooking = await tx.booking.create({
         data: {
           publicId: createID(),
           customerId: customerId,
           kycFileId: kycFile.id,
-          branchId: vehiclesData[0]!.branchId,
+          branchId: (vehiclesData[0]?.branchId ?? resolvedGroupVehicles[0]?.branchId)!,
           startAt: startDate,
           endAt: endDate,
           days: bookingDuration.days,
@@ -376,18 +538,26 @@ export const createBookingSummary = async (req: Request, res: Response) => {
 
     await redis.setex(holdId, holdExpiry, JSON.stringify(holdData));
 
+    const allBookedVehicles = [...vehiclesData, ...resolvedGroupVehicles];
     const pipeline = redis.pipeline();
-    for (const v of vehiclesData) {
+    for (const v of allBookedVehicles) {
       pipeline.sadd(`vehicle_holds:${v.publicId}`, holdId);
       pipeline.expire(`vehicle_holds:${v.publicId}`, holdExpiry);
     }
     await pipeline.exec();
 
-    // Targeted availability cache invalidation (TASK-019)
+    // Targeted availability cache invalidation
     try {
-      await invalidateVehicleAvailability(redis, vehiclesData.map((v) => v.id));
+      await invalidateVehicleAvailability(redis, allBookedVehicles.map((v) => v.id));
     } catch (redisErr) {
       console.warn("[booking] Cache invalidation failed (non-fatal):", redisErr);
+    }
+
+    // Invalidate group listing caches for all affected groups
+    try {
+      await invalidateGroupListingCache(redis as any);
+    } catch (redisErr) {
+      console.warn("[booking] Group cache invalidation failed (non-fatal):", redisErr);
     }
 
     return res.status(StatusCode.OK).json({
@@ -421,6 +591,12 @@ export const createBookingSummary = async (req: Request, res: Response) => {
       },
     });
   } catch (e: any) {
+    if (e?.code === "NO_VEHICLE_AVAILABLE") {
+      return res.status(409).json({ code: "NO_VEHICLE_AVAILABLE", message: e.message });
+    }
+    if (e?.code === "INVALID_GROUP_KEY") {
+      return res.status(StatusCode.BAD_REQUEST).json({ message: e.message });
+    }
     console.error("Error generating booking summary:", e);
     return res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
       message: "Internal server error while generating booking summary",
