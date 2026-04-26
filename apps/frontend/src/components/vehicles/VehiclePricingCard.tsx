@@ -288,7 +288,7 @@ export const VehiclePricingCard = ({
         </div>
 
         {/* Advance Payment Option */}
-        {vehicle.advancePayAmount && vehicle.advancePayAmount > 0 && pd && (
+        {!!vehicle.advancePayAmount && vehicle.advancePayAmount > 0 && !!pd && (
           <div className="px-5 py-4 sm:px-8 sm:py-6 border-b border-zinc-200 space-y-3">
             <p className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">
               Payment Plan
